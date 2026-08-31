@@ -92,6 +92,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const collapseAllCount = useWorkspaceStore((s) => s.collapseAllCount);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
   const openTab = useWorkspaceStore((s) => s.openTab);
+  const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
+  const isPickingFolder = !!folderPickerPrompt?.isOpen;
 
   const { showContextMenu } = useAppContextMenu();
 
@@ -253,6 +255,18 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const handleSelect = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
+
+      // Folder Picker Mode: clicking a folder chooses it
+      if (isPickingFolder) {
+        if (isFolder && folderPickerPrompt) {
+          const folderPath = getDocumentPath(item, allDocs);
+          const onSelect = folderPickerPrompt.onSelect;
+          useWorkspaceStore.setState({ folderPickerPrompt: null });
+          onSelect(folderPath, item);
+        }
+        return;
+      }
+
       const isCtrl = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
 
@@ -281,7 +295,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         openTab(item.id, item.title);
       }
     },
-    [isFolder, isOpen, item.id, item.title, openTab, selectDocRange, selectSingleDoc, toggleDocSelection]
+    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, selectDocRange, selectSingleDoc, toggleDocSelection]
   );
 
   const handleSaveRename = useCallback(async () => {
@@ -772,6 +786,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       isBeingDragged={isBeingDragged}
       isDropTarget={isDropTarget}
       isEditing={isEditing}
+      isDisabled={isPickingFolder && !isFolder}
+      isFolderPickerTarget={isPickingFolder && isFolder}
       title={item.title}
       typeBadge={typeBadge}
       icon={
@@ -804,11 +820,12 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       actions={actions}
       onSelect={handleSelect}
       onDoubleClick={(e) => {
+        if (isPickingFolder) return;
         e.stopPropagation();
         setLocalIsEditing(true);
       }}
-      onContextMenu={handleContextMenu}
-      onPointerDown={handlePointerDown}
+      onContextMenu={isPickingFolder ? undefined : handleContextMenu}
+      onPointerDown={isPickingFolder ? undefined : handlePointerDown}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
     >
@@ -829,28 +846,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   );
 };
 
-export const FileTreeNode: React.FC<FileTreeNodeProps> = React.memo(
-  FileTreeNodeComponent,
-  (prev, next) => {
-    if (prev.item.id !== next.item.id) return false;
-    if (prev.item.title !== next.item.title) return false;
-    if (prev.item.is_folder !== next.item.is_folder) return false;
-    if (prev.item.is_bookmarked !== next.item.is_bookmarked) return false;
-    if (prev.item.doc_type !== next.item.doc_type) return false;
-    if (prev.level !== next.level) return false;
-    if (prev.sortOrder !== next.sortOrder) return false;
-    if (prev.item.is_folder) {
-      const prevChildren = prev.allDocs.filter((d) => d.parent_id === prev.item.id);
-      const nextChildren = next.allDocs.filter((d) => d.parent_id === next.item.id);
-      if (prevChildren.length !== nextChildren.length) return false;
-      for (let i = 0; i < prevChildren.length; i++) {
-        if (prevChildren[i].id !== nextChildren[i].id || prevChildren[i].title !== nextChildren[i].title) {
-          return false;
-        }
-      }
-    }
-    return true;
-  }
-);
+export const FileTreeNode: React.FC<FileTreeNodeProps> = React.memo(FileTreeNodeComponent);
 
 FileTreeNode.displayName = 'FileTreeNode';

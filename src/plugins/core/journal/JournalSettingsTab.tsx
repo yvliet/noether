@@ -1,7 +1,7 @@
 import React from 'react';
 import { useJournalSettings, DEFAULT_JOURNAL_SETTINGS } from './journalSettings';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { RotateCcwIcon } from '@/components/common/Icons';
+import { RotateCcwIcon, Folder01Icon } from '@/components/common/Icons';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 
 export const JournalSettingsTab: React.FC = () => {
@@ -17,7 +17,22 @@ export const JournalSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useJournalSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const { showToast, promptFolderSelection, setIsSettingsOpen } = useWorkspaceStore();
+
+  const handlePickFolder = () => {
+    promptFolderSelection({
+      title: 'Click on a folder',
+      allowRoot: true,
+      onSelect: (folderPath) => {
+        setDailyFolder(folderPath);
+        setIsSettingsOpen(true, 'journal-settings');
+        showToast(folderPath ? `Journal location set to "${folderPath}"` : 'Journal location set to Hearth root', 'success');
+      },
+      onCancel: () => {
+        setIsSettingsOpen(true, 'journal-settings');
+      },
+    });
+  };
 
   const isModified =
     dailyFormat !== DEFAULT_JOURNAL_SETTINGS.dailyFormat ||
@@ -94,13 +109,20 @@ export const JournalSettingsTab: React.FC = () => {
                 <RotateCcwIcon size={13} />
               </button>
             )}
-            <input
-              type="text"
-              value={dailyFolder}
-              onChange={(e) => setDailyFolder(e.target.value)}
-              placeholder="e.g. Journal"
-              className="w-40 bg-[#181818] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors"
-            />
+            <button
+              type="button"
+              onClick={handlePickFolder}
+              className="flex items-center gap-2 bg-[#181818] hover:bg-[#222222] active:bg-[#151515] border border-[#383838] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors cursor-pointer group"
+              title="Click to select folder in File Explorer"
+            >
+              <Folder01Icon size={13} className="text-[#888] group-hover:text-white transition-colors" />
+              <span className="max-w-[130px] truncate text-[#dcddde]">
+                {dailyFolder ? dailyFolder : 'Hearth root ( / )'}
+              </span>
+              <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[#282828] px-1.5 py-0.5 rounded border border-[#383838]">
+                Set
+              </span>
+            </button>
           </div>
         </div>
 

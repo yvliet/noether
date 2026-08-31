@@ -88,6 +88,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
+  const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
+  const cancelFolderSelection = useWorkspaceStore((s) => s.cancelFolderSelection);
 
   const documents = useDocumentStore((s) => s.documents);
   const createNewNote = useDocumentStore((s) => s.createNewNote);
@@ -273,11 +275,18 @@ export const LeftSidebar: React.FC = React.memo(() => {
         return;
       }
 
-      // Escape: Clear selection
-      if (e.key === 'Escape' && currentSelected.length > 0) {
-        e.preventDefault();
-        clearSelection();
-        return;
+      // Escape: Cancel folder picking or clear selection
+      if (e.key === 'Escape') {
+        if (useWorkspaceStore.getState().folderPickerPrompt?.isOpen) {
+          e.preventDefault();
+          cancelFolderSelection();
+          return;
+        }
+        if (currentSelected.length > 0) {
+          e.preventDefault();
+          clearSelection();
+          return;
+        }
       }
 
       // Delete / Backspace: Delete selected items

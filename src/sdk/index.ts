@@ -46,6 +46,7 @@ export type {
   SettingsAPI,
   ConfirmDialogConfig,
   InputDialogConfig,
+  FolderPickerConfig,
 } from '../core/app/apiTypes';
 
 // ── Extension Point Types ──

@@ -25,6 +25,8 @@ export interface TreeNodeRowProps {
   isBeingDragged?: boolean;
   isDropTarget?: boolean;
   isEditing?: boolean;
+  isDisabled?: boolean;
+  isFolderPickerTarget?: boolean;
   renameInput?: React.ReactNode;
   actions?: TreeNodeAction[];
   onSelect?: (e: React.MouseEvent) => void;
@@ -53,6 +55,8 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   isBeingDragged = false,
   isDropTarget = false,
   isEditing = false,
+  isDisabled = false,
+  isFolderPickerTarget = false,
   renameInput,
   actions = [],
   onSelect,
@@ -77,23 +81,27 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
       {/* Node Row */}
       <div
         id={`flint-tree-item-${id}`}
-        onPointerDown={onPointerDown}
-        onClick={onSelect}
-        onDoubleClick={onDoubleClick}
-        onContextMenu={onContextMenu}
-        onPointerEnter={onPointerEnter}
-        onPointerLeave={onPointerLeave}
+        onPointerDown={isDisabled ? undefined : onPointerDown}
+        onClick={isDisabled ? undefined : onSelect}
+        onDoubleClick={isDisabled ? undefined : onDoubleClick}
+        onContextMenu={isDisabled ? undefined : onContextMenu}
+        onPointerEnter={isDisabled ? undefined : onPointerEnter}
+        onPointerLeave={isDisabled ? undefined : onPointerLeave}
         style={{ paddingLeft: `${8 + level * 16}px` }}
-        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md cursor-pointer transition-colors duration-150 w-full ${
-          isBeingDragged
-            ? 'opacity-40 bg-[var(--flint-bg-main,#1c1c1c)]'
+        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md transition-colors duration-150 w-full ${
+          isDisabled
+            ? 'cursor-not-allowed opacity-35 text-[var(--flint-text-muted,#888888)] hover:bg-transparent'
+            : isFolderPickerTarget
+            ? 'cursor-pointer text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-accent,#ea580c)]/20 hover:border-[var(--flint-accent,#ea580c)]/40 border border-transparent font-medium'
+            : isBeingDragged
+            ? 'cursor-pointer opacity-40 bg-[var(--flint-bg-main,#1c1c1c)]'
             : isHighlighted
-            ? 'bg-[#82691b] text-white font-normal shadow-sm'
+            ? 'cursor-pointer bg-[#82691b] text-white font-normal shadow-sm'
             : isDropTarget
-            ? 'bg-transparent text-[var(--flint-text-primary,#ffffff)] font-normal'
+            ? 'cursor-pointer bg-transparent text-[var(--flint-text-primary,#ffffff)] font-normal'
             : isSelected || isMultiSelected || (isActive && !isFolder) || isEditing
-            ? 'bg-[var(--flint-bg-sidebar-active,#2a2a2a)] text-[var(--flint-text-primary,#ffffff)] font-normal'
-            : 'text-[var(--flint-text-muted,#888888)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#dcddde)] font-normal'
+            ? 'cursor-pointer bg-[var(--flint-bg-sidebar-active,#2a2a2a)] text-[var(--flint-text-primary,#ffffff)] font-normal'
+            : 'cursor-pointer text-[var(--flint-text-muted,#888888)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#dcddde)] font-normal'
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -124,7 +132,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         </div>
 
         {/* Hover Action Buttons on Right */}
-        {!isEditing && actions.length > 0 && (
+        {!isEditing && !isDisabled && actions.length > 0 && (
           <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1.5">
             {actions.map((action) => (
               <button

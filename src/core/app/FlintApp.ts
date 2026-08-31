@@ -228,6 +228,12 @@ export class FlintApp {
       openInputDialog: (config: InputDialogConfig): void => {
         storeRefs.workspace?.getState()?.openInputDialog(config);
       },
+      promptFolderSelection: (config: any): void => {
+        storeRefs.workspace?.getState()?.promptFolderSelection(config);
+      },
+      cancelFolderSelection: (): void => {
+        storeRefs.workspace?.getState()?.cancelFolderSelection();
+      },
       openCommandPalette: (): void => {
         storeRefs.workspace?.getState()?.setIsCommandPaletteOpen(true);
       },

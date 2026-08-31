@@ -172,6 +172,15 @@ export interface ToastConfig {
   type?: 'info' | 'success' | 'warning';
 }
 
+export interface FolderPickerConfig {
+  isOpen: boolean;
+  title?: string;
+  message?: string;
+  allowRoot?: boolean;
+  onSelect: (folderPath: string, folderItem?: DocumentItem | null) => void;
+  onCancel?: () => void;
+}
+
 export interface OpenCustomTabOptions {
   id?: string;
   viewType: string;
@@ -305,6 +314,10 @@ interface WorkspaceState {
   toast: ToastConfig | null;
   showToast: (message: string, type?: 'info' | 'success' | 'warning') => void;
   hideToast: () => void;
+
+  folderPickerPrompt: FolderPickerConfig | null;
+  promptFolderSelection: (config: Omit<FolderPickerConfig, 'isOpen'>) => void;
+  cancelFolderSelection: () => void;
 
   // Collapse all
   collapseAllCount: number;
@@ -1770,6 +1783,21 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }, 3000);
   },
   hideToast: () => set({ toast: null }),
+
+  folderPickerPrompt: null,
+  promptFolderSelection: (config) => {
+    set({
+      isSettingsOpen: false,
+      isLeftSidebarOpen: true,
+      activeLeftView: 'files',
+      folderPickerPrompt: { ...config, isOpen: true },
+    });
+  },
+  cancelFolderSelection: () => {
+    const current = get().folderPickerPrompt;
+    set({ folderPickerPrompt: null });
+    current?.onCancel?.();
+  },
 
   collapseAllCount: 0,
   triggerCollapseAll: () => set((s) => ({ collapseAllCount: s.collapseAllCount + 1 })),

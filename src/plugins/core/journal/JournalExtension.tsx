@@ -83,7 +83,26 @@ export class JournalExtension extends Extension {
     const docs = this.app.hearth.documents;
     let targetFolderId: string | null = null;
     if (folder) {
-      const existingFolder = docs.find((d) => d.is_folder && d.title.toLowerCase() === folder.toLowerCase());
+      const getPath = (d: any): string => {
+        const parts = [d.title];
+        let curr = d.parent_id;
+        const visited = new Set();
+        while (curr && !visited.has(curr)) {
+          visited.add(curr);
+          const p = docs.find((x) => x.id === curr);
+          if (!p) break;
+          parts.unshift(p.title);
+          curr = p.parent_id;
+        }
+        return parts.join('/');
+      };
+
+      const existingFolder = docs.find(
+        (d) =>
+          d.is_folder &&
+          (d.title.toLowerCase() === folder.toLowerCase() ||
+            getPath(d).toLowerCase() === folder.toLowerCase())
+      );
       if (existingFolder) {
         targetFolderId = existingFolder.id;
       }

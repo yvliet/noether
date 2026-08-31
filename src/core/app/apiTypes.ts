@@ -55,6 +55,23 @@ export interface InputDialogConfig {
   onCancel?: () => void;
 }
 
+/**
+ * Configuration options for `app.workspace.promptFolderSelection()`.
+ * @since 0.2.0
+ */
+export interface FolderPickerConfig {
+  /** Title text shown in the folder selection banner header. */
+  title?: string;
+  /** Informational message body describing what folder to select. */
+  message?: string;
+  /** Whether selecting the root folder is allowed (defaults to true). */
+  allowRoot?: boolean;
+  /** Callback invoked when a folder is selected. */
+  onSelect: (folderPath: string, folderItem?: DocumentItem | null) => void;
+  /** Optional callback invoked when folder selection is cancelled. */
+  onCancel?: () => void;
+}
+
 // ─── Workspace API ──────────────────────────────────────────────
 
 /**
@@ -268,6 +285,21 @@ export interface WorkspaceAPI {
    * @since 0.1.0
    */
   openInputDialog(config: InputDialogConfig): void;
+
+  /**
+   * Prompts the user to pick a folder from the File Explorer sidebar.
+   * Closes any open settings modal and switches the left sidebar to the file tree.
+   *
+   * @param config - Folder picker configuration and callbacks.
+   * @since 0.2.0
+   */
+  promptFolderSelection(config: FolderPickerConfig): void;
+
+  /**
+   * Cancels the active folder selection mode and invokes any onCancel callback.
+   * @since 0.2.0
+   */
+  cancelFolderSelection(): void;
 
   /**
    * Opens the Quick Open (command palette) overlay.

@@ -19,6 +19,7 @@ const CommandPalette = React.lazy(() => import('@/components/search/CommandPalet
 const HelpModal = React.lazy(() => import('@/components/modals/HelpModal').then(m => ({ default: m.HelpModal })));
 const ConfirmModal = React.lazy(() => import('@/components/modals/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
 const PromptModal = React.lazy(() => import('@/components/modals/PromptModal').then(m => ({ default: m.PromptModal })));
+import { dragTooltipManager, FOLDER_SVG } from '@/lib/dragTooltip';
 
 import { FlintLogoIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
@@ -341,6 +342,56 @@ export const AppShell: React.FC = React.memo(() => {
       platform.setWindowTitle(`${effectiveHearth}﹕Flint`);
     }
   }, [hearthName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, documents, activeDocument]);
+
+  const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
+  const cancelFolderSelection = useWorkspaceStore((s) => s.cancelFolderSelection);
+
+  // Folder Picker cursor tooltip using native Flint dragTooltipManager
+  useEffect(() => {
+    if (!folderPickerPrompt?.isOpen) {
+      dragTooltipManager.hide();
+      return;
+    }
+
+    const title = folderPickerPrompt.title || 'Click on a folder';
+    const subtitle = 'Right-click to cancel';
+
+    const handlePointerMove = (e: PointerEvent | MouseEvent) => {
+      dragTooltipManager.show(title, subtitle, FOLDER_SVG, e.clientX + 12, e.clientY + 12);
+    };
+
+    const handleCancel = (e: Event) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragTooltipManager.hide();
+      cancelFolderSelection();
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      if (e.button === 2) {
+        handleCancel(e);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCancel(e);
+      }
+    };
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true });
+    window.addEventListener('contextmenu', handleCancel, true);
+    window.addEventListener('pointerdown', handlePointerDown, true);
+    window.addEventListener('keydown', handleKeyDown, true);
+
+    return () => {
+      dragTooltipManager.hide();
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('contextmenu', handleCancel, true);
+      window.removeEventListener('pointerdown', handlePointerDown, true);
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [folderPickerPrompt?.isOpen, folderPickerPrompt?.title, cancelFolderSelection]);
 
   if (isLoading) {
     return (
