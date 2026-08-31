@@ -210,98 +210,116 @@ export async function getTrashItems(skipCleanup = false): Promise<TrashItem[]> {
 }
 
 /**
- * Restores a specific trash item (and its child items if folder) back to documents
+ * Restores multiple trash items (and their child items if folders) back to documents in a single atomic batch
  */
-export async function restoreTrashItem(trashOrOriginalId: string): Promise<DocumentItem[]> {
-  const allTrash = await dbAdapter.query<TrashItem>(`SELECT * FROM trash_items`);
-  const targetTrash = allTrash.find((t) => t.id === trashOrOriginalId || t.original_id === trashOrOriginalId);
-  if (!targetTrash) return [];
+export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Promise<DocumentItem[]> {
+  if (!trashOrOriginalIds || trashOrOriginalIds.length === 0) return [];
 
-  // Find all children in trash if folder
-  const itemsToRestore: TrashItem[] = [targetTrash];
-  if (targetTrash.is_folder) {
-    const findChildren = (parentId: string) => {
-      const children = allTrash.filter((t) => t.parent_id === parentId);
+  const allTrash = await dbAdapter.query<TrashItem>(`SELECT * FROM trash_items`);
+  const targetIds = new Set(trashOrOriginalIds);
+  const targets = allTrash.filter((t) => targetIds.has(t.id) || targetIds.has(t.original_id));
+  if (targets.length === 0) return [];
+
+  const itemsToRestore: TrashItem[] = [];
+  const addedIds = new Set<string>();
+
+  const collectTrashItemAndChildren = (item: TrashItem) => {
+    if (addedIds.has(item.id)) return;
+    itemsToRestore.push(item);
+    addedIds.add(item.id);
+
+    if (item.is_folder) {
+      const children = allTrash.filter((t) => t.parent_id === item.original_id);
       for (const child of children) {
-        if (!itemsToRestore.some((item) => item.id === child.id)) {
-          itemsToRestore.push(child);
-          if (child.is_folder) {
-            findChildren(child.original_id);
-          }
-        }
+        collectTrashItemAndChildren(child);
       }
-    };
-    findChildren(targetTrash.original_id);
+    }
+  };
+
+  for (const t of targets) {
+    collectTrashItemAndChildren(t);
   }
 
   // Get current active documents to check if parent folder still exists
   const existingDocs = await dbAdapter.query<DocumentItem>(`SELECT id, is_folder FROM documents`);
   const existingFolderIds = new Set(existingDocs.filter((d) => d.is_folder).map((d) => d.id));
-  // Also consider folders being restored in this batch as valid parents
   for (const item of itemsToRestore) {
     if (item.is_folder) {
       existingFolderIds.add(item.original_id);
     }
   }
 
-  const restoredDocs: DocumentItem[] = [];
   const now = Date.now();
+  const queries: { sql: string; params?: any[] }[] = [];
+  const restoredDocs: DocumentItem[] = [];
 
   for (const item of itemsToRestore) {
-    // If the original parent folder does not exist anymore, restore to vault root (null)
     const validParentId = item.parent_id && existingFolderIds.has(item.parent_id) ? item.parent_id : null;
 
-    try {
-      await dbAdapter.execute(
-        `INSERT OR REPLACE INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          item.original_id,
-          validParentId,
-          item.title,
-          item.content_json,
-          item.is_daily_note,
-          item.is_folder,
-          item.is_bookmarked || 0,
-          item.doc_type || 'base',
-          item.properties || '{}',
-          now,
-          now,
-        ]
-      );
+    queries.push({
+      sql: `INSERT OR REPLACE INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      params: [
+        item.original_id,
+        validParentId,
+        item.title,
+        item.content_json,
+        item.is_daily_note,
+        item.is_folder,
+        item.is_bookmarked || 0,
+        item.doc_type || 'base',
+        item.properties || '{}',
+        now,
+        now,
+      ],
+    });
 
-      // Remove from trash
-      await dbAdapter.execute(`DELETE FROM trash_items WHERE id = ?`, [item.id]);
+    queries.push({
+      sql: `DELETE FROM trash_items WHERE id = ?`,
+      params: [item.id],
+    });
 
-      // Re-save markdown file to disk if applicable and delete from .trash
-      if (!item.is_folder && platform.isDesktop() && item.content_json) {
-        try {
-          const md = jsonToMarkdown(item.content_json, item.title);
-          await platform.saveMarkdownFile(item.title, md, item.original_path || item.title);
-          await platform.deleteTrashFile(item.original_path || item.title);
-        } catch (e) {}
-      }
-
-      restoredDocs.push({
-        id: item.original_id,
-        parent_id: validParentId,
-        title: item.title,
-        content_json: item.content_json,
-        is_daily_note: item.is_daily_note,
-        is_folder: item.is_folder,
-        is_bookmarked: item.is_bookmarked || 0,
-        doc_type: item.doc_type || 'base',
-        properties: item.properties || '{}',
-        created_at: now,
-        updated_at: now,
-      });
-    } catch (err) {
-      console.error('[Flint Trash] Failed to restore trash item:', err);
-    }
+    restoredDocs.push({
+      id: item.original_id,
+      parent_id: validParentId,
+      title: item.title,
+      content_json: item.content_json,
+      is_daily_note: item.is_daily_note,
+      is_folder: item.is_folder,
+      is_bookmarked: item.is_bookmarked || 0,
+      doc_type: item.doc_type || 'base',
+      properties: item.properties || '{}',
+      created_at: now,
+      updated_at: now,
+    });
   }
 
-  await dbAdapter.persist();
+  // Execute all SQL statements in a single fast WASM transaction
+  await dbAdapter.transaction(queries);
+
+  // Background non-blocking disk writes on Desktop
+  if (platform.isDesktop()) {
+    (async () => {
+      for (const item of itemsToRestore) {
+        if (!item.is_folder && item.content_json) {
+          try {
+            const md = jsonToMarkdown(item.content_json, item.title);
+            await platform.saveMarkdownFile(item.title, md, item.original_path || item.title);
+            await platform.deleteTrashFile(item.original_path || item.title);
+          } catch (e) {}
+        }
+      }
+    })();
+  }
+
   return restoredDocs;
+}
+
+/**
+ * Restores a specific trash item (and its child items if folder) back to documents
+ */
+export async function restoreTrashItem(trashOrOriginalId: string): Promise<DocumentItem[]> {
+  return restoreTrashItemsBatch([trashOrOriginalId]);
 }
 
 /**

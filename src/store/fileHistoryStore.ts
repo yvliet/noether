@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { DocumentItem } from '@/types';
-import { restoreTrashItem, moveToTrash } from '@/lib/db/trash';
+import { restoreTrashItem, restoreTrashItemsBatch, moveToTrash, moveDocumentsToTrash } from '@/lib/db/trash';
 import { updateDocumentTitle, updateInternalLinksAcrossDocuments, moveDocument as dbMoveDocument, getAllDocuments } from '@/lib/db/documents';
 import { useDocumentStore } from './documentStore';
 import { useWorkspaceStore } from './workspaceStore';
@@ -182,28 +182,23 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         }
         useWorkspaceStore.getState().showToast(`Undid creation of "${action.item.title}"`, 'info');
       } else if (action.type === 'delete') {
-        // Sort folders first so parent directories exist before restoring children
-        const sortedItems = [...action.items].sort((a, b) => (b.is_folder ? 1 : 0) - (a.is_folder ? 1 : 0));
-        const restoredIds = new Set<string>();
+        // 1. Instantaneous 0ms Optimistic UI Update: Merge items back into store immediately
+        const currentDocs = useDocumentStore.getState().documents;
+        const currentIds = new Set(currentDocs.map((d) => d.id));
+        const itemsToAdd = action.items.filter((i) => !currentIds.has(i.id));
+        const optimisticDocs = [...itemsToAdd, ...currentDocs];
 
-        for (const item of sortedItems) {
-          if (!restoredIds.has(item.id)) {
-            const restored = await restoreTrashItem(item.id);
-            for (const r of restored) {
-              restoredIds.add(r.id);
-            }
-          }
-        }
-
-        const docs = await getAllDocuments();
-        useDocumentStore.setState({ documents: docs });
+        useDocumentStore.setState({
+          documents: optimisticDocs,
+          selectedDocIds: action.items.map((i) => i.id),
+        });
 
         if (action.activeDocIdBefore) {
-          await useDocumentStore.getState().setActiveDocumentById(action.activeDocIdBefore);
+          useDocumentStore.getState().setActiveDocumentById(action.activeDocIdBefore);
         } else {
-          const firstNonFolder = sortedItems.find((i) => !i.is_folder);
+          const firstNonFolder = action.items.find((i) => !i.is_folder);
           if (firstNonFolder) {
-            await useDocumentStore.getState().setActiveDocumentById(firstNonFolder.id);
+            useDocumentStore.getState().setActiveDocumentById(firstNonFolder.id);
           }
         }
 
@@ -212,6 +207,12 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         } else {
           useWorkspaceStore.getState().showToast(`Restored "${action.items[0]?.title || 'item'}"`, 'success');
         }
+
+        // 2. High-speed atomic batch restore in SQLite
+        const batchIds = action.items.map((i) => i.id);
+        await restoreTrashItemsBatch(batchIds);
+        const finalDocs = await getAllDocuments();
+        useDocumentStore.setState({ documents: finalDocs });
       } else if (action.type === 'rename') {
         await updateDocumentTitle(action.id, action.oldTitle);
 
@@ -300,31 +301,35 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         }
         useWorkspaceStore.getState().showToast(`Restored "${action.item.title}"`, 'success');
       } else if (action.type === 'delete') {
-        // Re-delete all items in the batch
-        for (const item of action.items) {
-          await moveToTrash(item.id);
-        }
         const deletedIds = action.items.map((i) => i.id);
+        const deletedSet = new Set(deletedIds);
+
+        // 1. Instantaneous 0ms Optimistic UI Update: Remove items from store immediately
+        const currentDocs = useDocumentStore.getState().documents;
+        const optimisticDocs = currentDocs.filter((d) => !deletedSet.has(d.id));
+        useDocumentStore.setState({ documents: optimisticDocs, selectedDocIds: [] });
         useWorkspaceStore.getState().closeTabsForDocuments(deletedIds);
 
-        const docs = await getAllDocuments();
         const active = useDocumentStore.getState().activeDocument;
-
-        if (active && deletedIds.includes(active.id)) {
-          const nextDoc = docs.find((d) => !d.is_folder && !deletedIds.includes(d.id));
+        if (active && deletedSet.has(active.id)) {
+          const nextDoc = optimisticDocs.find((d) => !d.is_folder);
           if (nextDoc) {
-            await useDocumentStore.getState().setActiveDocumentById(nextDoc.id);
+            useDocumentStore.getState().setActiveDocumentById(nextDoc.id);
           } else {
             useDocumentStore.setState({ activeDocument: null, headings: [], backlinks: [] });
           }
         }
-        useDocumentStore.setState({ documents: docs });
 
         if (action.items.length > 1) {
           useWorkspaceStore.getState().showToast(`Deleted ${action.items.length} items`, 'info');
         } else {
           useWorkspaceStore.getState().showToast(`Deleted "${action.items[0]?.title || 'item'}"`, 'info');
         }
+
+        // 2. High-speed atomic batch move to trash in SQLite
+        await moveDocumentsToTrash(deletedIds);
+        const finalDocs = await getAllDocuments();
+        useDocumentStore.setState({ documents: finalDocs });
       } else if (action.type === 'rename') {
         await updateDocumentTitle(action.id, action.newTitle);
 
