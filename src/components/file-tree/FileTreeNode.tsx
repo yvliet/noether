@@ -64,7 +64,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   sortOrder = 'alphabetical',
 }) => {
   const isFolder = !!item.is_folder;
-  const isSelected = useDocumentStore((s) => (isFolder ? s.selectedDocIds.includes(item.id) : false));
+  const isSelected = useDocumentStore((s) => (isFolder ? s.selectedDocIds.length > 1 && s.selectedDocIds.includes(item.id) : s.selectedDocIds.includes(item.id)));
   const isMultiSelected = useDocumentStore((s) => s.selectedDocIds.length > 1 && s.selectedDocIds.includes(item.id));
   const isStoreEditing = useDocumentStore((s) => s.editingDocId === item.id);
   const activeDocId = useDocumentStore((s) => s.activeDocument?.id);
@@ -73,7 +73,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const createNewFolder = useDocumentStore((s) => s.createNewFolder);
   const renameDocument = useDocumentStore((s) => s.renameDocument);
-  const updateDocumentTitleInMemory = useDocumentStore((s) => s.updateDocumentTitleInMemory);
   const moveDocument = useDocumentStore((s) => s.moveDocument);
   const moveDocuments = useDocumentStore((s) => s.moveDocuments);
   const removeDocument = useDocumentStore((s) => s.removeDocument);
@@ -271,11 +270,13 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         return;
       }
 
-      selectSingleDoc(item.id);
-
       if (isFolder) {
         setIsOpen(!isOpen);
+        if (useDocumentStore.getState().selectedDocIds.length <= 1) {
+          useDocumentStore.setState({ selectedDocIds: [] });
+        }
       } else {
+        selectSingleDoc(item.id);
         openTab(item.id, item.title);
       }
     },
@@ -292,7 +293,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       if (isStoreEditing) setEditingDocId(null);
       setLocalIsEditing(false);
       setEditTitle(originalTitleRef.current);
-      updateDocumentTitleInMemory(item.id, originalTitleRef.current);
       return;
     }
 
@@ -305,9 +305,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       await renameDocument(item.id, trimmed);
     } else {
       setEditTitle(originalTitleRef.current);
-      updateDocumentTitleInMemory(item.id, originalTitleRef.current);
     }
-  }, [isDuplicateName, editTitle, isStoreEditing, item.id, renameDocument, setEditingDocId, updateDocumentTitleInMemory]);
+  }, [isDuplicateName, editTitle, isStoreEditing, item.id, renameDocument, setEditingDocId]);
 
   const handleCancelRename = useCallback(() => {
     if (saveTimerRef.current) {
@@ -317,8 +316,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     if (isStoreEditing) setEditingDocId(null);
     setLocalIsEditing(false);
     setEditTitle(originalTitleRef.current);
-    updateDocumentTitleInMemory(item.id, originalTitleRef.current);
-  }, [isStoreEditing, item.id, setEditingDocId, updateDocumentTitleInMemory]);
+  }, [isStoreEditing, setEditingDocId]);
 
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
@@ -795,7 +793,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           value={editTitle}
           onChange={(val) => {
             setEditTitle(val);
-            updateDocumentTitleInMemory(item.id, val);
           }}
           onSubmit={handleSaveRename}
           onCancel={handleCancelRename}

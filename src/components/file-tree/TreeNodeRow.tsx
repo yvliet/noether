@@ -84,7 +84,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onPointerEnter={onPointerEnter}
         onPointerLeave={onPointerLeave}
         style={{ paddingLeft: `${8 + level * 16}px` }}
-        className={`group flex items-center justify-between py-1.5 pr-3 my-0 rounded-md cursor-pointer transition-colors duration-200 w-full ${
+        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md cursor-pointer transition-colors duration-150 w-full ${
           isBeingDragged
             ? 'opacity-40 bg-[var(--flint-bg-main,#1c1c1c)]'
             : isHighlighted
@@ -110,14 +110,14 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
           {isEditing && renameInput ? (
             renameInput
           ) : (
-            <span className="truncate flex-1 text-[13px] tracking-tight font-normal">
+            <span className="truncate flex-1 min-w-0 text-[13px] tracking-tight font-normal">
               {title}
             </span>
           )}
 
           {/* Optional Type Badge (e.g. CANVAS) */}
           {typeBadge && !isEditing && (
-            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 border border-neutral-700 tracking-wider">
+            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 border border-neutral-700 tracking-wider shrink-0">
               {typeBadge}
             </span>
           )}
@@ -125,7 +125,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
 
         {/* Hover Action Buttons on Right */}
         {!isEditing && actions.length > 0 && (
-          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-0.5 transition-opacity pointer-events-none group-hover:pointer-events-auto ml-1.5 shrink-0">
+          <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1.5">
             {actions.map((action) => (
               <button
                 key={action.id}
@@ -135,10 +135,10 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
                   e.stopPropagation();
                   action.onClick(e);
                 }}
-                className={`p-0.5 transition-colors ${
+                className={`p-0.5 rounded hover:bg-[var(--flint-bg-card-hover,#333333)] transition-colors ${
                   action.isDanger
                     ? 'text-[var(--flint-text-muted,#777777)] hover:text-rose-400'
-                    : 'text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary)]'
+                    : 'text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)]'
                 } ${action.className || ''}`}
               >
                 {action.icon}

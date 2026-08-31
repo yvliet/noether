@@ -18,14 +18,24 @@ export const TreeNodeRenameInput: React.FC<TreeNodeRenameInputProps> = React.mem
   className = '',
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
+  const hasSelectedRef = useRef(false);
 
   useEffect(() => {
-    requestAnimationFrame(() => {
-      if (inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
-      }
-    });
+    if (!hasSelectedRef.current) {
+      hasSelectedRef.current = true;
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          const val = inputRef.current.value || '';
+          const lastDot = val.lastIndexOf('.');
+          if (lastDot > 0 && !val.startsWith('.')) {
+            inputRef.current.setSelectionRange(0, lastDot);
+          } else {
+            inputRef.current.select();
+          }
+        }
+      });
+    }
   }, []);
 
   const handleSubmit = (e?: React.FormEvent) => {
