@@ -68,7 +68,8 @@ export interface NavigationHistoryItem {
 export function saveTabsSession(vaultPath?: string) {
   if (typeof window === 'undefined') return;
   const { restoreTabs } = useSettingsStore.getState();
-  const vPath = vaultPath || useWorkspaceStore.getState().vaultPath || 'default';
+  const vPath = (vaultPath || useWorkspaceStore.getState().hearthPath || useWorkspaceStore.getState().vaultPath || '').trim();
+  if (!vPath || vPath === 'default') return;
   const key = `flint_workspace_tabs_v1:${vPath}`;
 
   if (!restoreTabs) {
@@ -128,7 +129,8 @@ export function loadSavedTabsSession(vaultPath?: string): PersistedTabsState | n
   const { restoreTabs } = useSettingsStore.getState();
   if (!restoreTabs) return null;
 
-  const vPath = vaultPath || useWorkspaceStore.getState().vaultPath || 'default';
+  const vPath = (vaultPath || useWorkspaceStore.getState().hearthPath || useWorkspaceStore.getState().vaultPath || '').trim();
+  if (!vPath || vPath === 'default') return null;
   const key = `flint_workspace_tabs_v1:${vPath}`;
 
   try {
@@ -318,6 +320,7 @@ interface WorkspaceState {
   selectHearthFolder: () => Promise<void>;
   selectParentFolder: () => Promise<string | null>;
   createNewHearth: (name: string, parentPath: string) => Promise<void>;
+  renameHearth: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; error?: string }>;
   removeRecentHearth: (path: string) => Promise<void>;
   switchHearth: (path: string) => Promise<void>;
   openHearthInExplorer: () => Promise<void>;
@@ -331,6 +334,7 @@ interface WorkspaceState {
   initVaultInfo: () => Promise<void>;
   selectVaultFolder: () => Promise<void>;
   createNewVault: (name: string, parentPath: string) => Promise<void>;
+  renameVault: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; error?: string }>;
   removeRecentVault: (path: string) => Promise<void>;
   switchVault: (path: string) => Promise<void>;
   openVaultInExplorer: () => Promise<void>;
@@ -637,7 +641,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   restoreTabsSession: (docs: DocumentItem[]) => {
-    const saved = loadSavedTabsSession(get().vaultPath);
+    const activePath = get().hearthPath || get().vaultPath;
+    if (!activePath) return false;
+    const saved = loadSavedTabsSession(activePath);
     if (!saved || !saved.tabs || saved.tabs.length === 0) return false;
 
     const docMap = new Map(docs.map((d) => [d.id, d]));
@@ -657,10 +663,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             metadata: tab.metadata,
           });
         }
-      } else {
+      } else if (tab.document_id && tab.document_id.startsWith('__')) {
         validTabs.push({
           id: tab.id,
-          document_id: tab.document_id || '',
+          document_id: tab.document_id,
           title: tab.title || 'Untitled',
           view_mode: tab.view_mode as any,
           view_type: tab.view_type,
@@ -1793,6 +1799,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           vaultName: hearth.name || 'Flint Hearth',
           recentVaults: recentList,
         });
+        dbAdapter.setActiveHearthPath(hearth.path);
       }
     } catch (e) {
       console.error('Error fetching hearth info:', e);
@@ -1802,19 +1809,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const onHearth = platform.onHearthChanged || platform.onVaultChanged;
     onHearth((hearth) => {
       if (hearth?.path) {
-        set({
-          hearthPath: hearth.path,
-          hearthName: hearth.name || 'Flint Hearth',
-          recentHearths: (hearth as any).recentHearths || (hearth as any).recentVaults || [],
-          vaultPath: hearth.path,
-          vaultName: hearth.name || 'Flint Hearth',
-          recentVaults: (hearth as any).recentHearths || (hearth as any).recentVaults || [],
-          tabs: [],
-          activeTabId: null,
-        });
-        dbAdapter.resetAndReload().then(() => {
-          useDocumentStore.getState().loadInitialData();
-        });
+        const currentPath = get().hearthPath || get().vaultPath;
+        if (currentPath && hearth.path && currentPath.toLowerCase() === hearth.path.toLowerCase()) {
+          return;
+        }
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+        }
       }
     });
   },
@@ -1825,23 +1826,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   selectHearthFolder: async () => {
     try {
+      const currentPath = get().hearthPath || get().vaultPath;
+      if (currentPath) {
+        saveTabsSession(currentPath);
+        await dbAdapter.persist();
+      }
+      dbAdapter.setSwitchingHearth(true);
       const res = await (platform.selectHearthFolder ? platform.selectHearthFolder() : platform.selectVaultFolder());
       if (!res.canceled && res.path) {
-        set({
-          hearthPath: res.path,
-          hearthName: res.name || 'Hearth',
-          recentHearths: (res as any).recentHearths || (res as any).recentVaults || [],
-          vaultPath: res.path,
-          vaultName: res.name || 'Hearth',
-          recentVaults: (res as any).recentHearths || (res as any).recentVaults || [],
-          tabs: [],
-          activeTabId: null,
-        });
-        await dbAdapter.resetAndReload();
-        await useDocumentStore.getState().loadInitialData();
-        get().showToast(`Opened Hearth: ${res.name}`, 'success');
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+          return;
+        }
+      } else {
+        dbAdapter.setSwitchingHearth(false);
       }
     } catch (e) {
+      dbAdapter.setSwitchingHearth(false);
       console.error('Error selecting hearth folder:', e);
     }
   },
@@ -1864,24 +1865,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   createNewHearth: async (name: string, parentPath: string) => {
     try {
-      const createFn = platform.createNewHearth || platform.createNewVault;
-      const res = await createFn(name, parentPath);
+      const currentPath = get().hearthPath || get().vaultPath;
+      if (currentPath) {
+        saveTabsSession(currentPath);
+        await dbAdapter.persist();
+      }
+      dbAdapter.setSwitchingHearth(true);
+      const res = await platform.createNewHearth(name, parentPath);
       if (res.success && res.path) {
-        set({
-          hearthPath: res.path,
-          hearthName: res.name || name || 'Hearth',
-          recentHearths: (res as any).recentHearths || (res as any).recentVaults || [],
-          vaultPath: res.path,
-          vaultName: res.name || name || 'Hearth',
-          recentVaults: (res as any).recentHearths || (res as any).recentVaults || [],
-          tabs: [],
-          activeTabId: null,
-        });
-        await dbAdapter.resetAndReload();
-        await useDocumentStore.getState().loadInitialData();
-        get().showToast(`Created Hearth: ${res.name}`, 'success');
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+          return;
+        }
+      } else {
+        dbAdapter.setSwitchingHearth(false);
       }
     } catch (e) {
+      dbAdapter.setSwitchingHearth(false);
       console.error('Error creating new hearth:', e);
     }
   },
@@ -1890,10 +1890,63 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     return get().createNewHearth(name, parentPath);
   },
 
+  renameHearth: async (targetPath: string, newName: string) => {
+    try {
+      const cleanName = (newName || '').trim();
+      if (!cleanName) return { success: false, error: 'Name cannot be empty' };
+
+      const activePath = targetPath || get().hearthPath || get().vaultPath;
+      const isCurrent = !activePath || activePath === get().hearthPath || activePath === get().vaultPath;
+
+      // If the active hearth is being renamed, flush pending SQLite writes first
+      if (isCurrent) {
+        try {
+          await dbAdapter.persist();
+        } catch (_) {}
+      }
+
+      const res = await platform.renameHearth(activePath, cleanName);
+      if (res && res.success) {
+        const list = res.recentHearths || [];
+        const finalPath = res.path || activePath;
+
+        set((state) => ({
+          recentHearths: list.length > 0 ? list : state.recentHearths.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
+          recentVaults: list.length > 0 ? list : state.recentVaults.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
+          hearthName: isCurrent ? cleanName : state.hearthName,
+          vaultName: isCurrent ? cleanName : state.vaultName,
+          hearthPath: isCurrent ? finalPath : state.hearthPath,
+          vaultPath: isCurrent ? finalPath : state.vaultPath,
+        }));
+
+        if (isCurrent) {
+          dbAdapter.setActiveHearthPath(finalPath);
+          try {
+            await platform.setWindowTitle(`Flint`);
+          } catch (_) {}
+        }
+
+        get().showToast(`Renamed Hearth to "${cleanName}"`, 'success');
+        return { success: true, path: finalPath, name: cleanName };
+      } else {
+        const errorMsg = res?.error || 'Failed to rename Hearth';
+        get().showToast(errorMsg, 'warning');
+        return { success: false, error: errorMsg };
+      }
+    } catch (e: any) {
+      console.error('Error renaming hearth:', e);
+      get().showToast(e.message || 'Failed to rename Hearth', 'warning');
+      return { success: false, error: e.message };
+    }
+  },
+
+  renameVault: async (targetPath: string, newName: string) => {
+    return get().renameHearth(targetPath, newName);
+  },
+
   removeRecentHearth: async (targetPath: string) => {
     try {
-      const removeFn = platform.removeRecentHearth || platform.removeRecentVault;
-      const res = await removeFn(targetPath);
+      const res = await platform.removeRecentHearth(targetPath);
       if (res.success) {
         const list = (res as any).recentHearths || (res as any).recentVaults || [];
         set({ recentHearths: list, recentVaults: list });
@@ -1910,25 +1963,27 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   switchHearth: async (hearthPath: string) => {
     try {
-      const switchFn = platform.setCurrentHearth || platform.setCurrentVault;
-      const res = await switchFn(hearthPath);
+      const currentPath = get().hearthPath || get().vaultPath;
+      if (hearthPath && currentPath && hearthPath.toLowerCase() === currentPath.toLowerCase()) {
+        get().showToast('This Hearth is already open', 'info');
+        return;
+      }
+      if (currentPath) {
+        saveTabsSession(currentPath);
+        await dbAdapter.persist();
+      }
+      dbAdapter.setSwitchingHearth(true);
+      const res = await platform.setCurrentHearth(hearthPath);
       if (res.success && res.path) {
-        const list = (res as any).recentHearths || (res as any).recentVaults || [];
-        set({
-          hearthPath: res.path,
-          hearthName: res.name || 'Hearth',
-          recentHearths: list,
-          vaultPath: res.path,
-          vaultName: res.name || 'Hearth',
-          recentVaults: list,
-          tabs: [],
-          activeTabId: null,
-        });
-        await dbAdapter.resetAndReload();
-        await useDocumentStore.getState().loadInitialData();
-        get().showToast(`Switched Hearth to ${res.name}`, 'success');
+        if (typeof window !== 'undefined') {
+          window.location.reload();
+          return;
+        }
+      } else {
+        dbAdapter.setSwitchingHearth(false);
       }
     } catch (e) {
+      dbAdapter.setSwitchingHearth(false);
       console.error('Error switching hearth:', e);
     }
   },

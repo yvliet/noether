@@ -62,7 +62,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     const closePane = useWorkspaceStore((s) => s.closePane);
     const splitPane = useWorkspaceStore((s) => s.splitPane);
 
-    const vaultPath = useWorkspaceStore((s) => s.vaultPath);
+    const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
     const showToast = useWorkspaceStore((s) => s.showToast);
     const documents = useDocumentStore((s) => s.documents);
     const { showContextMenu } = useAppContextMenu();
@@ -198,7 +198,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 title: 'Copy absolute path',
                 onClick: async () => {
                   const rel = getDocumentPath(doc, documents) + '.md';
-                  const abs = vaultPath ? `${vaultPath}/${rel}` : `/${rel}`;
+                  const abs = hearthPath ? `${hearthPath}/${rel}` : `/${rel}`;
                   await navigator.clipboard.writeText(abs);
                   showToast('Copied absolute path', 'success');
                 },
@@ -217,7 +217,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
 
         showContextMenu(e, items, { scope: 'tab', data: tab });
       },
-      [tabs, paneId, isOnly, closeTabInPane, splitPane, closePane, documents, vaultPath, showToast, showContextMenu]
+      [tabs, paneId, isOnly, closeTabInPane, splitPane, closePane, documents, hearthPath, showToast, showContextMenu]
     );
 
     const handleBarContextMenu = useCallback(

@@ -21,6 +21,7 @@ export const HearthModal: React.FC = React.memo(() => {
   const selectHearthFolder = useWorkspaceStore((state) => state.selectHearthFolder);
   const selectParentFolder = useWorkspaceStore((state) => state.selectParentFolder);
   const createNewHearth = useWorkspaceStore((state) => state.createNewHearth);
+  const renameHearth = useWorkspaceStore((state) => state.renameHearth);
   const removeRecentHearth = useWorkspaceStore((state) => state.removeRecentHearth);
   const switchHearth = useWorkspaceStore((state) => state.switchHearth);
   const openHearthInExplorer = useWorkspaceStore((state) => state.openHearthInExplorer);
@@ -67,21 +68,19 @@ export const HearthModal: React.FC = React.memo(() => {
 
   const handleSwitchHearth = async (targetPath: string) => {
     if (editingHearthPath) return;
+    if (targetPath && hearthPath && targetPath.toLowerCase() === hearthPath.toLowerCase()) {
+      showToast('This Hearth is already open', 'info');
+      setIsHearthModalOpen(false);
+      return;
+    }
     await switchHearth(targetPath);
     setIsHearthModalOpen(false);
   };
 
-  const handleSaveRename = (targetPath: string) => {
+  const handleSaveRename = async (targetPath: string) => {
     const trimmed = editHearthName.trim();
     if (trimmed) {
-      const updated = recentHearths.map((v) =>
-        v.path === targetPath ? { ...v, name: trimmed } : v
-      );
-      useWorkspaceStore.setState({ recentHearths: updated, recentVaults: updated });
-      if (targetPath === hearthPath) {
-        useWorkspaceStore.setState({ hearthName: trimmed, vaultName: trimmed });
-      }
-      showToast(`Renamed Hearth to "${trimmed}"`, 'success');
+      await renameHearth(targetPath, trimmed);
     }
     setEditingHearthPath(null);
   };
@@ -122,7 +121,7 @@ export const HearthModal: React.FC = React.memo(() => {
       title: 'Reveal Hearth in file explorer',
       icon: <FolderOpenIcon size={14} />,
       onClick: () => {
-        platform.openVaultInExplorer(rv.path);
+        platform.openHearthInExplorer(rv.path);
       },
     },
     { type: 'separator' },
@@ -195,10 +194,10 @@ export const HearthModal: React.FC = React.memo(() => {
                           }}
                           onBlur={() => handleSaveRename(rv.path)}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-full bg-[var(--flint-bg-input)] border border-[var(--flint-accent)] focus:border-[var(--flint-accent-hover,var(--flint-accent))] rounded px-1.5 py-0.5 text-[13px] text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
+                          className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-[var(--flint-text-primary,#fff)] font-normal caret-[var(--flint-text-primary,#fff)] selection:bg-[#505560] selection:text-white"
                         />
                       ) : (
-                        <span className="text-[13px] text-[var(--flint-text-primary)] font-normal truncate">
+                        <span className="text-[13px] text-[var(--flint-text-primary)] font-normal tracking-tight truncate">
                           {rv.name || 'Hearth'}
                         </span>
                       )}

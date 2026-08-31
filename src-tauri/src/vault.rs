@@ -242,6 +242,106 @@ pub fn create_new_vault(
 }
 
 #[tauri::command]
+pub fn rename_hearth(
+    app: AppHandle,
+    state: tauri::State<AppState>,
+    target_path: String,
+    new_name: String,
+) -> Value {
+    let clean_name = new_name.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'], "_").trim().to_string();
+    if clean_name.is_empty() {
+        return json!({ "success": false, "error": "Name cannot be empty" });
+    }
+
+    let target = if target_path.trim().is_empty() {
+        let cfg = state.config.lock().unwrap();
+        cfg.current_vault_path.clone()
+    } else {
+        target_path.clone()
+    };
+
+    let target_path_buf = PathBuf::from(&target);
+    let mut final_path = target.clone();
+
+    if target_path_buf.exists() {
+        let parent = target_path_buf.parent().unwrap_or_else(|| Path::new("."));
+        let target_new_path = parent.join(&clean_name);
+
+        if target_new_path != target_path_buf {
+            let is_case_only = target_new_path.to_string_lossy().to_lowercase() == target_path_buf.to_string_lossy().to_lowercase();
+            if !is_case_only && target_new_path.exists() {
+                return json!({
+                    "success": false,
+                    "error": format!("A folder named \"{}\" already exists at this location.", clean_name)
+                });
+            }
+
+            // Cross-platform rename with retry loop and case-insensitive intermediate rename support
+            if is_case_only {
+                let temp_path = parent.join(format!("{}.__flint_tmp_rename__", clean_name));
+                let _ = fs::rename(&target_path_buf, &temp_path);
+                if let Err(e) = fs::rename(&temp_path, &target_new_path) {
+                    return json!({ "success": false, "error": format!("Failed to rename folder: {}", e) });
+                }
+            } else {
+                let mut renamed = false;
+                let mut last_err = String::new();
+                for attempt in 0..5 {
+                    if fs::rename(&target_path_buf, &target_new_path).is_ok() {
+                        renamed = true;
+                        break;
+                    } else if let Err(e) = fs::rename(&target_path_buf, &target_new_path) {
+                        last_err = e.to_string();
+                        std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1)));
+                    }
+                }
+                if !renamed {
+                    return json!({ "success": false, "error": format!("Could not rename folder on disk: {}", last_err) });
+                }
+            }
+            final_path = target_new_path.to_string_lossy().to_string();
+        }
+    }
+
+    let mut cfg = state.config.lock().unwrap();
+    let is_current = cfg.current_vault_path == target || target.is_empty();
+    if is_current {
+        cfg.current_vault_path = final_path.clone();
+    }
+
+    for item in &mut cfg.recent_vaults {
+        if item.path == target {
+            item.path = final_path.clone();
+            item.name = clean_name.clone();
+        }
+    }
+    save_config(&cfg);
+
+    let payload = json!({
+        "success": true,
+        "path": final_path,
+        "name": clean_name,
+        "recentHearths": cfg.recent_vaults,
+        "recentVaults": cfg.recent_vaults,
+    });
+
+    let _ = app.emit("hearth-changed", payload.clone());
+    let _ = app.emit("vault-changed", payload.clone());
+
+    payload
+}
+
+#[tauri::command]
+pub fn rename_vault(
+    app: AppHandle,
+    state: tauri::State<AppState>,
+    target_path: String,
+    new_name: String,
+) -> Value {
+    rename_hearth(app, state, target_path, new_name)
+}
+
+#[tauri::command]
 pub fn remove_recent_vault(state: tauri::State<AppState>, vault_path: String) -> Value {
     let mut cfg = state.config.lock().unwrap();
     cfg.recent_vaults.retain(|v| v.path != vault_path);

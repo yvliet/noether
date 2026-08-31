@@ -176,6 +176,8 @@ declare global {
       selectParentFolder?: () => Promise<{ canceled: boolean; path?: string }>;
       createNewHearth?: (name: string, parentPath: string) => Promise<{ success: boolean; path: string; name: string; recentHearths: RecentHearthItem[]; error?: string }>;
       createNewVault?: (name: string, parentPath: string) => Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
+      renameHearth?: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentHearthItem[]; error?: string }>;
+      renameVault?: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }>;
       removeRecentHearth?: (hearthPath: string) => Promise<{ success: boolean; recentHearths: RecentHearthItem[] }>;
       removeRecentVault?: (vaultPath: string) => Promise<{ success: boolean; recentVaults: RecentVaultItem[] }>;
       setCurrentHearth?: (hearthPath: string) => Promise<{ success: boolean; path: string; name: string; recentHearths: RecentHearthItem[] }>;
@@ -185,11 +187,11 @@ declare global {
       scanHearthFiles?: (customHearthPath?: string) => Promise<HearthDiskItem[]>;
       scanVaultFiles?: (customVaultPath?: string) => Promise<VaultDiskItem[]>;
       // Database & Files
-      saveDatabase?: (bytes: Uint8Array) => Promise<{ success: boolean; path?: string; error?: string }>;
-      loadDatabase?: () => Promise<Uint8Array | ArrayBuffer | null>;
-      saveMarkdownFile?: (filename: string, content: string, relativePath?: string) => Promise<{ success: boolean; path?: string; error?: string }>;
-      deleteMarkdownFile?: (filenameOrPath: string) => Promise<{ success: boolean; error?: string }>;
-      renameMarkdownFile?: (oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string) => Promise<{ success: boolean; error?: string }>;
+      saveDatabase?: (bytes: Uint8Array, customVaultPath?: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+      loadDatabase?: (customVaultPath?: string) => Promise<Uint8Array | ArrayBuffer | null>;
+      saveMarkdownFile?: (filename: string, content: string, relativePath?: string, vaultPath?: string) => Promise<{ success: boolean; path?: string; error?: string }>;
+      deleteMarkdownFile?: (filenameOrPath: string, vaultPath?: string) => Promise<{ success: boolean; error?: string }>;
+      renameMarkdownFile?: (oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string) => Promise<{ success: boolean; error?: string }>;
       openPluginsFolder?: () => Promise<{ success: boolean; path?: string }>;
       openExtensionsFolder?: () => Promise<{ success: boolean; path?: string }>;
       openTrashFolder?: () => Promise<{ success: boolean; path?: string; error?: string }>;

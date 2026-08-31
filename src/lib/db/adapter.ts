@@ -29,11 +29,28 @@ class UniversalDatabase {
   private db: any = null;
   private isInitialized = false;
   private saveTimeout: any = null;
+  private activeHearthPath: string = '';
+  private isSwitchingHearth: boolean = false;
   private idbDbName = 'FlintStorage';
   private idbStoreName = 'sqlite_blob';
   private idbKey = 'database_bytes';
   private statusListeners: Set<(isActive: boolean) => void> = new Set();
   private statementCache: Map<string, any> = new Map();
+
+  public setSwitchingHearth(switching: boolean) {
+    this.isSwitchingHearth = switching;
+    if (switching && this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+  }
+
+  public setActiveHearthPath(path: string) {
+    this.activeHearthPath = path || '';
+    if (path) {
+      this.idbKey = `flint_db_${path.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+    }
+  }
 
   public isReady(): boolean {
     return Boolean(this.isInitialized && this.db);
@@ -57,7 +74,10 @@ class UniversalDatabase {
     });
   }
 
-  public async init(): Promise<void> {
+  public async init(hearthPath?: string): Promise<void> {
+    if (hearthPath) {
+      this.setActiveHearthPath(hearthPath);
+    }
     if (this.isInitialized) return;
 
     try {
@@ -83,21 +103,19 @@ class UniversalDatabase {
         locateFile: (file: string) => `./${file}`,
       });
 
-      // Load saved SQLite database: Check Desktop disk storage first, then IndexedDB
+      // Load saved SQLite database: In desktop mode, ALWAYS load directly from active Hearth disk
       let savedBytes: Uint8Array | ArrayBuffer | null = null;
       if (platform.isDesktop()) {
         try {
-          const diskData = await platform.loadDatabase();
+          const diskData = await platform.loadDatabase(this.activeHearthPath);
           if (diskData && (diskData as any).length > 0) {
             savedBytes = diskData;
-            console.log('[Flint DB] Loaded SQLite database directly from vault disk (.flint/flint.sqlite)');
+            console.log('[Flint DB] Loaded SQLite database directly from Hearth disk (.flint/flint.sqlite)');
           }
         } catch (e) {
-          console.warn('[Flint DB] Disk load error, falling back to IndexedDB', e);
+          console.warn('[Flint DB] Disk load error:', e);
         }
-      }
-
-      if (!savedBytes) {
+      } else {
         savedBytes = await this.loadFromIndexedDB();
         if (savedBytes && (savedBytes as any).byteLength > 0) {
           console.log('[Flint DB] Loaded SQLite database from IndexedDB storage');
@@ -129,7 +147,11 @@ class UniversalDatabase {
     }
   }
 
-  public async resetAndReload(): Promise<void> {
+  public async resetAndReload(newHearthPath?: string): Promise<void> {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
     if (this.db) {
       try {
         this.db.close();
@@ -138,7 +160,10 @@ class UniversalDatabase {
     }
     this.isInitialized = false;
     this.notifyStatus(false);
-    await this.init();
+    if (newHearthPath) {
+      this.setActiveHearthPath(newHearthPath);
+    }
+    await this.init(this.activeHearthPath);
   }
 
   private executeSchema() {
@@ -285,21 +310,21 @@ class UniversalDatabase {
   }
 
   public async persist(): Promise<void> {
-    if (!this.db) return;
+    if (!this.db || this.isSwitchingHearth) return;
     try {
       const binary = this.db.export();
 
       // 1. If in Desktop mode, save directly to physical file on disk (.flint/flint.sqlite)
       if (platform.isDesktop()) {
         try {
-          await platform.saveDatabase(binary);
+          await platform.saveDatabase(binary, this.activeHearthPath);
         } catch (e) {
           console.error('[Flint DB] Error saving to disk:', e);
         }
+      } else {
+        // 2. In browser web mode, save to IndexedDB
+        await this.saveToIndexedDB(binary);
       }
-
-      // 2. Also save to IndexedDB as browser cache/backup
-      await this.saveToIndexedDB(binary);
     } catch (err) {
       console.error('[Flint DB] Persist error:', err);
     }

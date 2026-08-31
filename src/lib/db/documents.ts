@@ -1227,7 +1227,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
 
     const removedDocIds: string[] = [];
     for (const doc of existingDocs) {
-      if (doc.is_folder || doc.id === 'welcome-to-flint') continue;
+      if (doc.is_folder) continue;
       const docPath = getDocumentPath(doc, existingDocs).toLowerCase();
       const docTitle = (doc.title || '').toLowerCase();
       const docTitleMd = `${docTitle}.md`;

@@ -394,7 +394,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                       onClick={async () => {
                         await restoreFromTrash(item.id);
                       }}
-                      title="Restore to vault"
+                      title="Restore to Hearth"
                       className="px-2.5 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
                     >
                       <RotateCcwIcon size={12} />
@@ -716,7 +716,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
     if (platform.isDesktop()) {
       platform.openPluginsFolder();
     } else {
-      showToast('Plugins folder: .flint/plugins/ inside vault', 'info');
+      showToast('Plugins folder: .flint/plugins/ inside Hearth', 'info');
     }
   }, [showToast]);
 
@@ -2090,8 +2090,9 @@ interface FilesTabProps {
 }
 
 const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
-  const vaultName = useWorkspaceStore((s) => s.vaultName);
-  const setVaultName = useWorkspaceStore((s) => s.setVaultName);
+  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+  const renameHearth = useWorkspaceStore((s) => s.renameHearth);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
 
@@ -2111,22 +2112,21 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const setAutoUpdateLinks = useSettingsStore((s) => s.setAutoUpdateLinks);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
 
-  const [tempVaultName, setTempVaultName] = useState(vaultName);
+  const [tempHearthName, setTempHearthName] = useState(hearthName);
 
   useEffect(() => {
     loadTrash();
   }, [loadTrash]);
 
   useEffect(() => {
-    setTempVaultName(vaultName);
-  }, [vaultName]);
+    setTempHearthName(hearthName);
+  }, [hearthName]);
 
-  const handleSaveVaultName = useCallback(() => {
-    if (tempVaultName.trim()) {
-      setVaultName(tempVaultName.trim());
-      showToast('Hearth name saved', 'success');
+  const handleSaveHearthName = useCallback(async () => {
+    if (tempHearthName.trim()) {
+      await renameHearth(hearthPath, tempHearthName.trim());
     }
-  }, [tempVaultName, setVaultName, showToast]);
+  }, [tempHearthName, hearthPath, renameHearth]);
 
   const isFilesModified =
     skipDeleteConfirmation !== DEFAULT_SETTINGS.skipDeleteConfirmation ||
@@ -2173,16 +2173,16 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={tempVaultName}
-                onChange={(e) => setTempVaultName(e.target.value)}
+                value={tempHearthName}
+                onChange={(e) => setTempHearthName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveVaultName();
+                  if (e.key === 'Enter') handleSaveHearthName();
                 }}
                 className="bg-[#2a2a2a] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none w-44 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors"
               />
-              {tempVaultName !== vaultName && (
+              {tempHearthName !== hearthName && (
                 <button
-                  onClick={handleSaveVaultName}
+                  onClick={handleSaveHearthName}
                   style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
                   className="px-3.5 py-1.5 hover:brightness-110 active:brightness-90 text-white text-xs font-semibold rounded-[5px] shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 cursor-pointer transition-all"
                 >
@@ -2252,13 +2252,13 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               <FieldResetButton
                 isModified={newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation}
                 onReset={() => setNewNoteLocation(DEFAULT_SETTINGS.newNoteLocation)}
-                title="Restore default (Vault root)"
+                title="Restore default (Hearth root)"
               />
               <CustomSelect
                 value={newNoteLocation}
                 onChange={(val) => setNewNoteLocation(val as NewNoteLocation)}
                 options={[
-                  { value: 'root', label: 'Vault root folder' },
+                  { value: 'root', label: 'Hearth root folder' },
                   { value: 'same', label: 'Same folder as current file' },
                 ]}
               />
@@ -2285,7 +2285,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                 options={[
                   { value: 'shortest', label: 'Shortest path when possible' },
                   { value: 'relative', label: 'Relative path from file' },
-                  { value: 'absolute', label: 'Absolute path in vault' },
+                  { value: 'absolute', label: 'Absolute path in Hearth' },
                 ]}
               />
             </div>
@@ -2825,8 +2825,8 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   const app = useFlintApp();
   const allSettingTabs = useSettingTabs();
 
-  const vaultName = useWorkspaceStore((s) => s.vaultName);
-  const setVaultName = useWorkspaceStore((s) => s.setVaultName);
+  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
+  const setHearthName = useWorkspaceStore((s) => s.setHearthName);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const restoreAllDefaults = useSettingsStore((s) => s.restoreAllDefaults);
 
@@ -2844,19 +2844,21 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   }, [initialTab]);
 
   useEffect(() => {
-    platform.getCurrentVault().then((data) => {
+    const getFn = platform.getCurrentHearth || platform.getCurrentVault;
+    getFn().then((data) => {
       if (data?.name) {
-        setVaultName(data.name);
+        setHearthName(data.name);
       }
     });
     app.plugins.init();
     dbAdapter.init().then(() => {
       useDocumentStore.getState().loadTrash();
     });
-  }, [app, setVaultName]);
+  }, [app, setHearthName]);
 
   useEffect(() => {
-    const unsub = platform.onVaultFilesChanged(async () => {
+    const onFiles = platform.onHearthFilesChanged || platform.onVaultFilesChanged;
+    const unsub = onFiles(async () => {
       await dbAdapter.resetAndReload();
       useDocumentStore.getState().loadTrash();
     });
@@ -2867,11 +2869,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
   // When closing or unmounting Settings, apply any pending appearance/zoom updates to DOM
   useEffect(() => {
-    platform.setWindowTitle(`Settings﹕${vaultName || 'Hearth'}﹕Flint`);
+    platform.setWindowTitle(`Settings﹕${hearthName || 'Hearth'}﹕Flint`);
     return () => {
       applyAppearanceDOM();
     };
-  }, [vaultName]);
+  }, [hearthName]);
 
   const isMaximized = useIsMaximized();
 
@@ -3054,7 +3056,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           <span className="font-medium text-xs text-[var(--flint-text-muted,#888)] flex items-center gap-1.5 select-none">
             <span className="text-[var(--flint-text-secondary,#ccc)]">Settings</span>
             <span className="text-[var(--flint-text-faint,#555)]">﹕</span>
-            <span className="text-[var(--flint-text-primary)] font-medium">{vaultName || 'Flint Hearth'}</span>
+            <span className="text-[var(--flint-text-primary)] font-medium">{hearthName || 'Flint Hearth'}</span>
             <span className="text-[var(--flint-text-faint,#555)]">﹕</span>
             <span className="text-[var(--flint-text-muted,#888)]">Flint</span>
           </span>

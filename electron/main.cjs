@@ -21,10 +21,10 @@ function loadConfig() {
   } catch (e) {
     console.error('Error reading config:', e);
   }
-  const defaultVault = path.join(app.getPath('documents'), 'Flint Vault');
+  const defaultVault = path.join(app.getPath('documents'), 'Flint Hearth');
   return {
     currentVaultPath: defaultVault,
-    recentVaults: [{ path: defaultVault, name: 'Flint Vault', lastOpened: Date.now() }],
+    recentVaults: [{ path: defaultVault, name: 'Flint Hearth', lastOpened: Date.now() }],
   };
 }
 
@@ -39,7 +39,7 @@ function saveConfig(config) {
 let appConfig = loadConfig();
 
 function getVaultDbPath(vaultPath) {
-  const targetVault = vaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+  const targetVault = vaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
   const flintDir = path.join(targetVault, '.flint');
   if (!fs.existsSync(flintDir)) {
     fs.mkdirSync(flintDir, { recursive: true });
@@ -130,7 +130,7 @@ function createSettingsWindow() {
     return;
   }
 
-  const currentVaultName = path.basename(appConfig.currentVaultPath || '') || 'Flint Vault';
+  const currentVaultName = path.basename(appConfig.currentVaultPath || '') || 'Flint Hearth';
 
   settingsWindow = new BrowserWindow({
     width: 960,
@@ -187,7 +187,7 @@ function createVaultWindow() {
       contextIsolation: true,
       webSecurity: false,
     },
-    title: 'Flint Vault Switcher',
+    title: 'Flint Hearth Switcher',
   });
 
   attachWindowEvents(vaultWindow);
@@ -297,8 +297,18 @@ function registerIpc() {
     createVaultWindow();
     return { success: true };
   });
+  ipcMain.handle('open-hearth-window', () => {
+    createVaultWindow();
+    return { success: true };
+  });
 
   ipcMain.handle('close-vault-window', () => {
+    if (vaultWindow && !vaultWindow.isDestroyed()) {
+      vaultWindow.close();
+    }
+    return { success: true };
+  });
+  ipcMain.handle('close-hearth-window', () => {
     if (vaultWindow && !vaultWindow.isDestroyed()) {
       vaultWindow.close();
     }
@@ -315,20 +325,22 @@ function registerIpc() {
       settingsWindow.close();
     }
     return { success: true };
-  });
-
-  // Vault Management IPC Handlers
-  ipcMain.handle('get-current-vault', async () => {
+  });  // Hearth & Vault Management IPC Handlers
+  const handleGetCurrentHearth = async () => {
     const vaultPath = appConfig.currentVaultPath;
-    const vaultName = path.basename(vaultPath) || 'Flint Vault';
-    return { path: vaultPath, name: vaultName, recentVaults: appConfig.recentVaults || [] };
-  });
+    const vaultName = path.basename(vaultPath) || 'Flint Hearth';
+    return { path: vaultPath, name: vaultName, recentHearths: appConfig.recentVaults || [], recentVaults: appConfig.recentVaults || [] };
+  };
+
+  ipcMain.handle('get-current-hearth', handleGetCurrentHearth);
+  ipcMain.handle('get-current-vault', handleGetCurrentHearth);
 
   function notifyVaultChanged(vaultData) {
     if (vaultData?.path) {
       setupVaultWatcher(vaultData.path);
     }
     if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('hearth-changed', vaultData);
       mainWindow.webContents.send('vault-changed', vaultData);
       mainWindow.focus();
     }
@@ -337,11 +349,11 @@ function registerIpc() {
     }
   }
 
-  ipcMain.handle('select-vault-folder', async () => {
+  const handleSelectHearthFolder = async () => {
     const parentWin = vaultWindow && !vaultWindow.isDestroyed() ? vaultWindow : mainWindow;
     if (!parentWin) return { canceled: true };
     const result = await dialog.showOpenDialog(parentWin, {
-      title: 'Select Vault Folder',
+      title: 'Select Hearth Folder',
       properties: ['openDirectory', 'createDirectory'],
       defaultPath: appConfig.currentVaultPath || app.getPath('documents'),
     });
@@ -351,7 +363,7 @@ function registerIpc() {
     }
 
     const chosenPath = result.filePaths[0];
-    const chosenName = path.basename(chosenPath) || 'Vault';
+    const chosenName = path.basename(chosenPath) || 'Hearth';
 
     appConfig.currentVaultPath = chosenPath;
     const recents = (appConfig.recentVaults || []).filter((v) => v.path !== chosenPath);
@@ -359,33 +371,39 @@ function registerIpc() {
     appConfig.recentVaults = recents.slice(0, 10);
     saveConfig(appConfig);
 
-    const data = { canceled: false, path: chosenPath, name: chosenName, recentVaults: appConfig.recentVaults };
+    const data = { canceled: false, path: chosenPath, name: chosenName, recentHearths: appConfig.recentVaults, recentVaults: appConfig.recentVaults };
     notifyVaultChanged(data);
     return data;
-  });
+  };
 
-  ipcMain.handle('set-current-vault', async (event, vaultPath) => {
+  ipcMain.handle('select-hearth-folder', handleSelectHearthFolder);
+  ipcMain.handle('select-vault-folder', handleSelectHearthFolder);
+
+  const handleSetCurrentHearth = async (event, vaultPath) => {
     if (!fs.existsSync(vaultPath)) {
       try {
         fs.mkdirSync(vaultPath, { recursive: true });
       } catch (e) {}
     }
-    const chosenName = path.basename(vaultPath) || 'Vault';
+    const chosenName = path.basename(vaultPath) || 'Hearth';
     appConfig.currentVaultPath = vaultPath;
     const recents = (appConfig.recentVaults || []).filter((v) => v.path !== vaultPath);
     recents.unshift({ path: vaultPath, name: chosenName, lastOpened: Date.now() });
     appConfig.recentVaults = recents.slice(0, 10);
     saveConfig(appConfig);
-    const data = { success: true, path: vaultPath, name: chosenName, recentVaults: appConfig.recentVaults };
+    const data = { success: true, path: vaultPath, name: chosenName, recentHearths: appConfig.recentVaults, recentVaults: appConfig.recentVaults };
     notifyVaultChanged(data);
     return data;
-  });
+  };
+
+  ipcMain.handle('set-current-hearth', handleSetCurrentHearth);
+  ipcMain.handle('set-current-vault', handleSetCurrentHearth);
 
   ipcMain.handle('select-parent-folder', async () => {
     const parentWin = vaultWindow && !vaultWindow.isDestroyed() ? vaultWindow : mainWindow;
     if (!parentWin) return { canceled: true };
     const result = await dialog.showOpenDialog(parentWin, {
-      title: 'Select Folder for New Vault',
+      title: 'Select Folder for New Hearth',
       properties: ['openDirectory', 'createDirectory'],
       defaultPath: app.getPath('documents'),
     });
@@ -395,9 +413,9 @@ function registerIpc() {
     return { canceled: false, path: result.filePaths[0] };
   });
 
-  ipcMain.handle('create-new-vault', async (event, { name, parentPath }) => {
+  const handleCreateNewHearth = async (event, { name, parentPath }) => {
     try {
-      const cleanName = (name || 'New Vault').replace(/[/\\?%*:|"<>]/g, '_').trim();
+      const cleanName = (name || 'New Hearth').replace(/[/\\?%*:|"<>]/g, '_').trim();
       const baseDir = parentPath || app.getPath('documents');
       const newVaultPath = path.join(baseDir, cleanName);
 
@@ -411,38 +429,193 @@ function registerIpc() {
       appConfig.recentVaults = recents.slice(0, 10);
       saveConfig(appConfig);
 
-      const data = { success: true, path: newVaultPath, name: cleanName, recentVaults: appConfig.recentVaults };
+      const data = { success: true, path: newVaultPath, name: cleanName, recentHearths: appConfig.recentVaults, recentVaults: appConfig.recentVaults };
       notifyVaultChanged(data);
       return data;
     } catch (err) {
-      console.error('[Flint Vault] Error creating new vault:', err);
+      console.error('[Flint Hearth] Error creating new hearth:', err);
       return { success: false, error: err.message };
     }
-  });
+  };
 
-  ipcMain.handle('remove-recent-vault', async (event, targetPath) => {
+  ipcMain.handle('create-new-hearth', handleCreateNewHearth);
+  ipcMain.handle('create-new-vault', handleCreateNewHearth);
+
+  const handleRenameHearth = async (event, { targetPath, newName }) => {
+    try {
+      const cleanName = (newName || '').replace(/[/\\?%*:|"<>]/g, '_').trim();
+      if (!cleanName) return { success: false, error: 'Name cannot be empty' };
+
+      const target = path.resolve(targetPath || appConfig.currentVaultPath);
+      let finalPath = target;
+
+      if (target && fs.existsSync(target)) {
+        const parentDir = path.dirname(target);
+        const targetNewPath = path.resolve(parentDir, cleanName);
+
+        if (targetNewPath !== target) {
+          const isCaseOnlyRename = targetNewPath.toLowerCase() === target.toLowerCase();
+
+          if (!isCaseOnlyRename && fs.existsSync(targetNewPath)) {
+            return { success: false, error: `A folder named "${cleanName}" already exists at this location.` };
+          }
+
+          // Temporarily teardown file watcher and flush debounce timeout to release Windows OS handles
+          if (vaultWatcherTimeout) {
+            clearTimeout(vaultWatcherTimeout);
+            vaultWatcherTimeout = null;
+          }
+          if (vaultWatcher) {
+            try {
+              vaultWatcher.close();
+            } catch (e) {}
+            vaultWatcher = null;
+          }
+
+          // Allow OS handles (like Windows ReadDirectoryChangesW) to be freed by the event loop
+          await new Promise((r) => setTimeout(r, 120));
+
+          let renamedOnDisk = false;
+          let lastError = null;
+
+          // If Windows case-only rename (e.g. "my hearth" -> "My Hearth"), use a temporary intermediary
+          if (isCaseOnlyRename) {
+            const tempPath = path.join(parentDir, `.__flint_rename_tmp_${Date.now()}__`);
+            for (let attempt = 0; attempt < 5; attempt++) {
+              try {
+                fs.renameSync(target, tempPath);
+                fs.renameSync(tempPath, targetNewPath);
+                finalPath = targetNewPath;
+                renamedOnDisk = true;
+                break;
+              } catch (renameErr) {
+                lastError = renameErr;
+                if (fs.existsSync(tempPath) && !fs.existsSync(target)) {
+                  try { fs.renameSync(tempPath, target); } catch (_) {}
+                }
+                await new Promise((r) => setTimeout(r, 100 * (attempt + 1)));
+              }
+            }
+          } else {
+            for (let attempt = 0; attempt < 5; attempt++) {
+              try {
+                fs.renameSync(target, targetNewPath);
+                finalPath = targetNewPath;
+                renamedOnDisk = true;
+                break;
+              } catch (renameErr) {
+                lastError = renameErr;
+                await new Promise((r) => setTimeout(r, 100 * (attempt + 1)));
+              }
+            }
+          }
+
+          if (!renamedOnDisk) {
+            console.warn('[Flint Hearth] Could not physically rename directory on disk:', lastError);
+            setupVaultWatcher(appConfig.currentVaultPath);
+            return {
+              success: false,
+              error: `Cannot rename Hearth folder on disk (${lastError?.message || 'File locked by OS'}). Please try again.`,
+            };
+          }
+        }
+      }
+
+      // Update appConfig
+      const isCurrent = appConfig.currentVaultPath && (
+        path.resolve(appConfig.currentVaultPath).toLowerCase() === target.toLowerCase() ||
+        path.resolve(appConfig.currentVaultPath).toLowerCase() === finalPath.toLowerCase()
+      );
+
+      if (isCurrent) {
+        appConfig.currentVaultPath = finalPath;
+      }
+
+      let updatedRecents = (appConfig.recentVaults || []).map((v) => {
+        if (v.path && path.resolve(v.path).toLowerCase() === target.toLowerCase()) {
+          return { ...v, path: finalPath, name: cleanName };
+        }
+        return v;
+      });
+
+      if (!updatedRecents.some((v) => path.resolve(v.path).toLowerCase() === finalPath.toLowerCase())) {
+        updatedRecents.unshift({ path: finalPath, name: cleanName, lastOpened: Date.now() });
+      }
+
+      appConfig.recentVaults = updatedRecents;
+      saveConfig(appConfig);
+
+      // Re-arm watcher on active path
+      setupVaultWatcher(appConfig.currentVaultPath);
+
+      const data = {
+        success: true,
+        path: finalPath,
+        name: cleanName,
+        recentHearths: appConfig.recentVaults,
+        recentVaults: appConfig.recentVaults,
+      };
+
+      notifyVaultChanged(data);
+      return data;
+    } catch (err) {
+      console.error('[Flint Hearth] Error renaming hearth:', err);
+      setupVaultWatcher(appConfig.currentVaultPath);
+      return { success: false, error: err.message };
+    }
+  };
+
+  ipcMain.handle('rename-hearth', handleRenameHearth);
+  ipcMain.handle('rename-vault', handleRenameHearth);
+
+  const handleRemoveRecentHearth = async (event, targetPath) => {
     try {
       appConfig.recentVaults = (appConfig.recentVaults || []).filter((v) => v.path !== targetPath);
       saveConfig(appConfig);
-      return { success: true, recentVaults: appConfig.recentVaults };
+      return { success: true, recentHearths: appConfig.recentVaults, recentVaults: appConfig.recentVaults };
     } catch (err) {
       return { success: false, error: err.message };
     }
-  });
+  };
 
-  ipcMain.handle('open-vault-in-explorer', async (event, vaultPath) => {
+  ipcMain.handle('remove-recent-hearth', handleRemoveRecentHearth);
+  ipcMain.handle('remove-recent-vault', handleRemoveRecentHearth);
+
+  const handleOpenHearthInExplorer = async (event, vaultPath) => {
     const target = vaultPath || appConfig.currentVaultPath;
     if (fs.existsSync(target)) {
       shell.openPath(target);
       return { success: true };
     }
     return { success: false, error: 'Folder does not exist' };
+  };
+
+  ipcMain.handle('open-hearth-in-explorer', handleOpenHearthInExplorer);
+  ipcMain.handle('open-vault-in-explorer', handleOpenHearthInExplorer);
+
+  ipcMain.handle('scan-hearth-files', async (event, customHearthPath) => {
+    try {
+      const targetVault = customHearthPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
+      if (!fs.existsSync(targetVault)) {
+        fs.mkdirSync(targetVault, { recursive: true });
+      }
+      return scanVaultDirectory(targetVault, targetVault);
+    } catch (err) {
+      console.error('[Flint Hearth] Error scanning hearth files:', err);
+      return [];
+    }
   });
 
-  ipcMain.handle('save-database', async (event, uint8Array) => {
+  ipcMain.handle('save-database', async (event, payload) => {
     try {
-      const dbFile = getVaultDbPath(appConfig.currentVaultPath);
-      const buffer = Buffer.from(uint8Array);
+      let bytes = payload;
+      let targetPath = null;
+      if (payload && (payload.bytes || payload.vaultPath)) {
+        bytes = payload.bytes;
+        targetPath = payload.vaultPath;
+      }
+      const dbFile = getVaultDbPath(targetPath || appConfig.currentVaultPath);
+      const buffer = Buffer.from(bytes);
       fs.writeFileSync(dbFile, buffer);
       return { success: true, path: dbFile };
     } catch (err) {
@@ -451,9 +624,9 @@ function registerIpc() {
     }
   });
 
-  ipcMain.handle('load-database', async () => {
+  ipcMain.handle('load-database', async (event, customVaultPath) => {
     try {
-      const dbFile = getVaultDbPath(appConfig.currentVaultPath);
+      const dbFile = getVaultDbPath(customVaultPath || appConfig.currentVaultPath);
       if (fs.existsSync(dbFile)) {
         const buffer = fs.readFileSync(dbFile);
         return buffer;
@@ -508,20 +681,20 @@ function registerIpc() {
 
   ipcMain.handle('scan-vault-files', async (event, customVaultPath) => {
     try {
-      const targetVault = customVaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = customVaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       if (!fs.existsSync(targetVault)) {
         fs.mkdirSync(targetVault, { recursive: true });
       }
       return scanVaultDirectory(targetVault, targetVault);
     } catch (err) {
-      console.error('[Flint Vault] Error scanning vault files:', err);
+      console.error('[Flint Hearth] Error scanning hearth files:', err);
       return [];
     }
   });
 
-  ipcMain.handle('save-markdown-file', async (event, { filename, content, relativePath }) => {
+  ipcMain.handle('save-markdown-file', async (event, { filename, content, relativePath, vaultPath }) => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = vaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       if (!fs.existsSync(targetVault)) {
         fs.mkdirSync(targetVault, { recursive: true });
       }
@@ -541,14 +714,16 @@ function registerIpc() {
       fs.writeFileSync(filePath, content, 'utf8');
       return { success: true, path: filePath };
     } catch (err) {
-      console.error('[Flint Vault] Error saving file:', err);
+      console.error('[Flint Hearth] Error saving file:', err);
       return { success: false, error: err.message };
     }
   });
 
-  ipcMain.handle('delete-markdown-file', async (event, filenameOrPath) => {
+  ipcMain.handle('delete-markdown-file', async (event, payload) => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const filenameOrPath = typeof payload === 'string' ? payload : payload?.filenameOrPath;
+      const vaultPath = typeof payload === 'object' ? payload?.vaultPath : null;
+      const targetVault = vaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const cleanRel = (filenameOrPath || 'Untitled').replace(/\\/g, '/');
       const fileWithExt = cleanRel.toLowerCase().endsWith('.md') ? cleanRel : cleanRel + '.md';
       const filePath = path.join(targetVault, fileWithExt);
@@ -577,7 +752,7 @@ function registerIpc() {
   // Trash Directory IPC Handlers
   ipcMain.handle('open-trash-folder', async () => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const trashDir = path.join(targetVault, '.trash');
       if (!fs.existsSync(trashDir)) {
         fs.mkdirSync(trashDir, { recursive: true });
@@ -591,7 +766,7 @@ function registerIpc() {
 
   ipcMain.handle('save-trash-file', async (event, { filename, content, relativePath }) => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const trashDir = path.join(targetVault, '.trash');
       if (!fs.existsSync(trashDir)) {
         fs.mkdirSync(trashDir, { recursive: true });
@@ -612,14 +787,14 @@ function registerIpc() {
       fs.writeFileSync(filePath, content, 'utf8');
       return { success: true, path: filePath };
     } catch (err) {
-      console.error('[Flint Vault] Error saving trash file:', err);
+      console.error('[Flint Hearth] Error saving trash file:', err);
       return { success: false, error: err.message };
     }
   });
 
   ipcMain.handle('delete-trash-file', async (event, filenameOrPath) => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const trashDir = path.join(targetVault, '.trash');
       const cleanRel = (filenameOrPath || 'Untitled').replace(/\\/g, '/');
       const fileWithExt = cleanRel.toLowerCase().endsWith('.md') ? cleanRel : cleanRel + '.md';
@@ -648,7 +823,7 @@ function registerIpc() {
 
   ipcMain.handle('empty-trash-folder', async () => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const trashDir = path.join(targetVault, '.trash');
       if (fs.existsSync(trashDir)) {
         fs.rmSync(trashDir, { recursive: true, force: true });
@@ -662,7 +837,7 @@ function registerIpc() {
 
   ipcMain.handle('rename-markdown-file', async (event, { oldFilename, newFilename, oldRelativePath, newRelativePath }) => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       let oldPath, newPath;
 
       if (oldRelativePath && newRelativePath) {
@@ -693,7 +868,7 @@ function registerIpc() {
 
   // Community Plugin IPC Handlers
   ipcMain.handle('open-plugins-folder', async () => {
-    const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+    const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
     const pluginsDir = path.join(targetVault, '.flint', 'plugins');
     if (!fs.existsSync(pluginsDir)) {
       fs.mkdirSync(pluginsDir, { recursive: true });
@@ -704,7 +879,7 @@ function registerIpc() {
 
   ipcMain.handle('list-installed-plugins', async () => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const pluginsDir = path.join(targetVault, '.flint', 'plugins');
       if (!fs.existsSync(pluginsDir)) {
         fs.mkdirSync(pluginsDir, { recursive: true });
@@ -742,7 +917,7 @@ function registerIpc() {
 
   ipcMain.handle('read-plugin-bundle', async (event, pluginFolder) => {
     try {
-      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Vault');
+      const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const pluginDir = path.join(targetVault, '.flint', 'plugins', pluginFolder);
       const mainJsPath = path.join(pluginDir, 'main.js');
       const stylesCssPath = path.join(pluginDir, 'styles.css');

@@ -11,6 +11,8 @@ import {
   Settings02Icon,
   ArrowUpDownIcon,
   CheckIcon,
+  Edit02Icon,
+  FolderOpenIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -77,13 +79,15 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const activeCustomTab = sidebarTabs.find((t) => t.id === activeLeftView);
   const leftSidebarWidth = useWorkspaceStore((s) => s.leftSidebarWidth);
   const setLeftSidebarWidth = useWorkspaceStore((s) => s.setLeftSidebarWidth);
-  const hearthName = useWorkspaceStore((s) => s.hearthName);
+  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);
   const triggerCollapseAll = useWorkspaceStore((s) => s.triggerCollapseAll);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
+  const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
 
   const documents = useDocumentStore((s) => s.documents);
   const createNewNote = useDocumentStore((s) => s.createNewNote);
@@ -620,7 +624,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             ))}
 
             {/* Standard Hearth Root Documents & Folders */}
-            <div data-tree-section="vault-files" className="flex flex-col gap-0.5">
+            <div data-tree-section="hearth-files" className="flex flex-col gap-0.5">
               {rootDocs.map((doc) => (
                 <FileTreeNode key={doc.id} item={doc} allDocs={documents} sortOrder={sortOrder} />
               ))}
@@ -665,8 +669,30 @@ export const LeftSidebar: React.FC = React.memo(() => {
       <div className="h-10 pr-2 flex items-center justify-between text-xs text-[var(--flint-text-muted)] bg-[var(--flint-bg-sidebar)] border-t border-[var(--flint-border-base)]">
         <button
           onClick={() => setIsHearthModalOpen(true)}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            showContextMenu(e, [
+              {
+                id: 'open-switcher',
+                title: 'Open Hearth switcher',
+                icon: <ArrowUpDownIcon size={14} />,
+                onClick: () => setIsHearthModalOpen(true),
+              },
+              { type: 'separator' },
+              {
+                id: 'reveal-in-explorer',
+                title: 'Reveal Hearth in file explorer',
+                icon: <FolderOpenIcon size={14} />,
+                onClick: () => {
+                  platform.openHearthInExplorer(hearthPath);
+                },
+              },
+            ]);
+          }}
           className="flex-1 min-w-0 h-full pl-3 pr-2 flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer group text-left"
-          title="Hearth switcher (Ctrl+Shift+O)"
+          data-tooltip="Hearth switcher"
+          data-tooltip-shortcut="Ctrl+Shift+O"
           data-tooltip-position="top"
           data-tooltip-anchor="[data-hearth-name]"
         >

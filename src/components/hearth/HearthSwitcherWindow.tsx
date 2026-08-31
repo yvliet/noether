@@ -77,19 +77,38 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
 
   const handleOpenRecent = useCallback(async (targetPath: string) => {
     if (editingHearthPath) return;
+    if (targetPath && currentHearthPath && targetPath.toLowerCase() === currentHearthPath.toLowerCase()) {
+      const closeFn = platform.closeHearthWindow || platform.closeVaultWindow;
+      await closeFn?.();
+      return;
+    }
     const switchFn = platform.setCurrentHearth || platform.setCurrentVault;
     await switchFn(targetPath);
-  }, [editingHearthPath]);
+  }, [editingHearthPath, currentHearthPath]);
 
-  const handleSaveRename = useCallback((targetPath: string) => {
+  const handleSaveRename = useCallback(async (targetPath: string) => {
     const trimmed = editHearthName.trim();
     if (trimmed) {
-      setRecentHearths((prev) =>
-        prev.map((v) => (v.path === targetPath ? { ...v, name: trimmed } : v))
-      );
+      const renameFn = platform.renameHearth || platform.renameVault;
+      const res = await renameFn(targetPath, trimmed);
+      if (res && res.success) {
+        const newPath = res.path || targetPath;
+        if (targetPath === currentHearthPath) {
+          setCurrentHearthPath(newPath);
+        }
+        if (res.recentHearths && res.recentHearths.length > 0) {
+          setRecentHearths(res.recentHearths);
+        } else {
+          setRecentHearths((prev) =>
+            prev.map((v) => (v.path === targetPath ? { ...v, name: trimmed, path: newPath } : v))
+          );
+        }
+      } else if (res?.error) {
+        alert(res.error);
+      }
     }
     setEditingHearthPath(null);
-  }, [editHearthName]);
+  }, [editHearthName, currentHearthPath]);
 
   const handleRemoveRecent = useCallback(async (targetPath: string) => {
     const removeFn = platform.removeRecentHearth || platform.removeRecentVault;
@@ -166,10 +185,10 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                         }}
                         onBlur={() => handleSaveRename(rv.path)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-[#161616] border border-[var(--flint-accent)] focus:border-[var(--flint-accent-hover,var(--flint-accent))] rounded px-1.5 py-0.5 text-[13px] text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.4)]"
+                        className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-white font-normal caret-white selection:bg-[#505560] selection:text-white"
                       />
                     ) : (
-                      <span className="text-[13px] text-white font-normal truncate">
+                      <span className="text-[13px] text-white font-normal tracking-tight truncate">
                         {rv.name || 'Hearth'}
                       </span>
                     )}
@@ -252,7 +271,8 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                           <button
                             onClick={() => {
                               setActiveMenuPath(null);
-                              platform.openVaultInExplorer(rv.path);
+                              const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
+                              openFn(rv.path);
                             }}
                             className="w-full text-left px-2.5 py-1.5 hover:bg-[#2c2c2c] rounded-md text-[#dcddde] hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
                           >

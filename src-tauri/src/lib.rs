@@ -165,6 +165,8 @@ pub fn run() {
             vault::get_current_vault,
             vault::set_current_vault,
             vault::create_new_vault,
+            vault::rename_hearth,
+            vault::rename_vault,
             vault::remove_recent_vault,
             vault::open_vault_in_explorer,
             vault::scan_vault_files,

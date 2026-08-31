@@ -53,6 +53,7 @@ export interface IPlatformAdapter {
   selectHearthFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentHearths?: RecentVaultItem[] }>;
   selectParentFolder(): Promise<{ canceled: boolean; path?: string }>;
   createNewHearth(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[]; error?: string }>;
+  renameHearth(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentVaultItem[]; error?: string }>;
   removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[] }>;
   setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[] }>;
   openHearthInExplorer(hearthPath?: string): Promise<{ success: boolean; error?: string }>;
@@ -61,6 +62,7 @@ export interface IPlatformAdapter {
   getCurrentVault(): Promise<{ path: string; name: string; recentVaults: RecentVaultItem[] }>;
   selectVaultFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentVaults?: RecentVaultItem[] }>;
   createNewVault(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
+  renameVault(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }>;
   removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[] }>;
   setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[] }>;
   openVaultInExplorer(vaultPath?: string): Promise<{ success: boolean; error?: string }>;
@@ -68,18 +70,18 @@ export interface IPlatformAdapter {
   // File I/O
   scanHearthFiles(customHearthPath?: string): Promise<VaultDiskItem[]>;
   scanVaultFiles(customVaultPath?: string): Promise<VaultDiskItem[]>;
-  saveMarkdownFile(filename: string, content: string, relativePath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }>;
-  deleteMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }>;
-  renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string): Promise<{ success: boolean; error?: string }>;
+  deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
+  renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
   openTrashFolder(): Promise<{ success: boolean; path?: string; error?: string }>;
   saveTrashFile(filename: string, content: string, relativePath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   deleteTrashFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }>;
   emptyTrashFolder(): Promise<{ success: boolean; error?: string }>;
 
   // Database
-  saveDatabase(bytes: Uint8Array): Promise<{ success: boolean; path?: string; error?: string }>;
-  loadDatabase(): Promise<Uint8Array | ArrayBuffer | null>;
+  saveDatabase(bytes: Uint8Array, customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null>;
 
   // Internal write echo suppression
   recordInternalWrite(): void;
@@ -111,6 +113,16 @@ export interface IPlatformAdapter {
 
 class PlatformAdapterImpl implements IPlatformAdapter {
   private lastInternalWriteTimestamp = 0;
+
+  constructor() {
+    // Auto-bind all prototype methods so destructuring or passing references retains `this`
+    const proto = Object.getPrototypeOf(this);
+    for (const key of Object.getOwnPropertyNames(proto)) {
+      if (key !== 'constructor' && typeof (this as any)[key] === 'function') {
+        (this as any)[key] = (this as any)[key].bind(this);
+      }
+    }
+  }
 
   public recordInternalWrite(): void {
     this.lastInternalWriteTimestamp = Date.now();
@@ -256,11 +268,17 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   // Multi-window / Modal management
   public async openHearthWindow(): Promise<{ success: boolean }> {
+    if (this.isElectron() && window.electronAPI?.openHearthWindow) {
+      return await window.electronAPI.openHearthWindow();
+    }
     useWorkspaceStore.getState().setIsHearthModalOpen(true);
     return { success: true };
   }
 
   public async closeHearthWindow(): Promise<{ success: boolean }> {
+    if (this.isElectron() && window.electronAPI?.closeHearthWindow) {
+      return await window.electronAPI.closeHearthWindow();
+    }
     useWorkspaceStore.getState().setIsHearthModalOpen(false);
     return { success: true };
   }
@@ -368,6 +386,49 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { ...res, recentVaults: res.recentHearths };
   }
 
+  public async renameHearth(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentVaultItem[]; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        const { tauriCore } = await getTauriModules();
+        let res: any;
+        try {
+          res = await tauriCore?.invoke('rename_hearth', { targetPath, newName });
+        } catch (_) {
+          res = await tauriCore?.invoke('rename_vault', { targetPath, newName });
+        }
+        return { success: Boolean(res?.success), path: res?.path, name: res?.name, recentHearths: res?.recentHearths || res?.recentVaults || [], error: res?.error };
+      } catch (e: any) {
+        return { success: false, error: e.message, recentHearths: [] };
+      }
+    }
+    if (this.isElectron()) {
+      try {
+        const fn = window.electronAPI?.renameHearth || window.electronAPI?.renameVault;
+        if (fn) {
+          const res: any = await fn(targetPath, newName);
+          if (res) {
+            return {
+              success: Boolean(res.success),
+              path: res.path || targetPath,
+              name: res.name || newName,
+              recentHearths: res.recentHearths || res.recentVaults || [],
+              error: res.error,
+            };
+          }
+        }
+      } catch (e: any) {
+        console.warn('[Platform] Electron rename error:', e);
+        return { success: false, error: e?.message || 'Failed to rename Hearth', recentHearths: [] };
+      }
+    }
+    return { success: true, path: targetPath, name: newName, recentHearths: [] };
+  }
+
+  public async renameVault(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }> {
+    const res = await this.renameHearth(targetPath, newName);
+    return { success: res.success, path: res.path, name: res.name, recentVaults: res.recentHearths, error: res.error };
+  }
+
   public async removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[] }> {
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
@@ -468,14 +529,14 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return [];
   }
 
-  public async saveMarkdownFile(filename: string, content: string, relativePath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
+  public async saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
     this.recordInternalWrite();
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('save_markdown_file', { filename, content, relativePath: relativePath || null });
+      return await tauriCore?.invoke('save_markdown_file', { filename, content, relativePath: relativePath || null, vaultPath: vaultPath || null });
     }
     if (this.isElectron()) {
-      return (await window.electronAPI?.saveMarkdownFile?.(filename, content, relativePath)) || { success: false };
+      return (await window.electronAPI?.saveMarkdownFile?.(filename, content, relativePath, vaultPath)) || { success: false };
     }
     return { success: false };
   }
@@ -495,19 +556,19 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: true };
   }
 
-  public async deleteMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }> {
+  public async deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
     this.recordInternalWrite();
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('delete_markdown_file', { filenameOrPath });
+      return await tauriCore?.invoke('delete_markdown_file', { filenameOrPath, vaultPath: vaultPath || null });
     }
     if (this.isElectron()) {
-      return (await window.electronAPI?.deleteMarkdownFile?.(filenameOrPath)) || { success: false };
+      return (await window.electronAPI?.deleteMarkdownFile?.(filenameOrPath, vaultPath)) || { success: false };
     }
     return { success: false };
   }
 
-  public async renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string): Promise<{ success: boolean; error?: string }> {
+  public async renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
     this.recordInternalWrite();
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
@@ -516,10 +577,11 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         newFilename: newFilename || null,
         oldRelativePath: oldRelativePath || null,
         newRelativePath: newRelativePath || null,
+        vaultPath: vaultPath || null,
       });
     }
     if (this.isElectron()) {
-      return (await window.electronAPI?.renameMarkdownFile?.(oldFilename, newFilename, oldRelativePath, newRelativePath)) || { success: false };
+      return (await window.electronAPI?.renameMarkdownFile?.(oldFilename, newFilename, oldRelativePath, newRelativePath, vaultPath)) || { success: false };
     }
     return { success: false };
   }
@@ -572,21 +634,21 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   // Database persistence
-  public async saveDatabase(bytes: Uint8Array): Promise<{ success: boolean; path?: string; error?: string }> {
+  public async saveDatabase(bytes: Uint8Array, customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('save_database', { bytes });
+      return await tauriCore?.invoke('save_database', { bytes, vaultPath: customVaultPath || null });
     }
     if (this.isElectron()) {
-      return (await window.electronAPI?.saveDatabase?.(bytes)) || { success: false };
+      return (await window.electronAPI?.saveDatabase?.(bytes, customVaultPath)) || { success: false };
     }
     return { success: false };
   }
 
-  public async loadDatabase(): Promise<Uint8Array | ArrayBuffer | null> {
+  public async loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null> {
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
-      const raw: any = await tauriCore?.invoke('load_database');
+      const raw: any = await tauriCore?.invoke('load_database', { vaultPath: customVaultPath || null });
       if (raw) {
         if (raw instanceof Uint8Array) return raw;
         if (Array.isArray(raw)) return new Uint8Array(raw);
@@ -595,7 +657,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       return null;
     }
     if (this.isElectron()) {
-      return (await window.electronAPI?.loadDatabase?.()) || null;
+      return (await window.electronAPI?.loadDatabase?.(customVaultPath)) || null;
     }
     return null;
   }

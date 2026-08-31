@@ -48,7 +48,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
 
   const toggleSplitView = useWorkspaceStore((s) => s.toggleSplitView);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
-  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -349,7 +349,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     setIsOpen(false);
     const folders = documents.filter((d) => d.is_folder);
     if (folders.length === 0) {
-      showToast('No folders exist in this vault', 'info');
+      showToast('No folders exist in this Hearth', 'info');
       return;
     }
     openInputDialog({
@@ -454,7 +454,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     } else if (type === 'relative') {
       textToCopy = relPath;
     } else {
-      textToCopy = vaultPath ? `${vaultPath}/${relPath}` : `/${relPath}`;
+      textToCopy = hearthPath ? `${hearthPath}/${relPath}` : `/${relPath}`;
     }
 
     try {
@@ -475,7 +475,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleOpenInDefaultApp = () => {
     setIsOpen(false);
     if (platform.isDesktop()) {
-      platform.openVaultInExplorer(vaultPath);
+      const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
+      openFn(hearthPath);
     }
     showToast('Opening file in default application', 'info');
   };
@@ -484,9 +485,10 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleShowInExplorer = () => {
     setIsOpen(false);
     if (platform.isDesktop()) {
-      platform.openVaultInExplorer(vaultPath);
+      const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
+      openFn(hearthPath);
     } else {
-      showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
+      showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
     }
   };
 
