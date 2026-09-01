@@ -15,6 +15,7 @@ const CODE_REGEX = /`([^`\n]+)`/g;
 const STRIKE_REGEX = /~~([^~\n]+)~~/g;
 const HIGHLIGHT_REGEX = /==([^=\n]+)==/g;
 const WIKI_REGEX = /\[\[([^\]\n]+)\]\]/g;
+const MD_LINK_REGEX = /\[([^\]\n]+)\]\(([^)\n]+)\)/g;
 const TAG_REGEX = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_\-\/]*)/g;
 const HEX_COLOR_REGEX = /^[0-9a-fA-F]{3,6}$/;
 const BLOCK_MATH_REGEX = /\$\$([\s\S]*?)\$\$/g;
@@ -429,6 +430,56 @@ function scanBlockDecorations(
 
         decorations.push(
           Decoration.inline(matchEnd - 2, matchEnd, {
+            class: 'md-syntax-hidden',
+          })
+        );
+      }
+    }
+
+    // F2. Markdown Links: [text](url)
+    MD_LINK_REGEX.lastIndex = 0;
+    let mdLinkMatch: RegExpExecArray | null;
+    while ((mdLinkMatch = MD_LINK_REGEX.exec(text)) !== null) {
+      if (mdLinkMatch.index > 0 && text[mdLinkMatch.index - 1] === '!') {
+        continue;
+      }
+      const matchStart = blockStart + mdLinkMatch.index;
+      const matchEnd = matchStart + mdLinkMatch[0].length;
+      const linkText = mdLinkMatch[1];
+      const linkUrl = mdLinkMatch[2];
+      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
+
+      if (isMatchFocused) {
+        decorations.push(
+          Decoration.inline(matchStart, matchStart + 1, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+        decorations.push(
+          Decoration.inline(matchStart + 1, matchStart + 1 + linkText.length, {
+            class: 'md-link is-focused',
+            'data-link-url': linkUrl,
+          })
+        );
+        decorations.push(
+          Decoration.inline(matchStart + 1 + linkText.length, matchEnd, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+      } else {
+        decorations.push(
+          Decoration.inline(matchStart, matchStart + 1, {
+            class: 'md-syntax-hidden',
+          })
+        );
+        decorations.push(
+          Decoration.inline(matchStart + 1, matchStart + 1 + linkText.length, {
+            class: 'md-link',
+            'data-link-url': linkUrl,
+          })
+        );
+        decorations.push(
+          Decoration.inline(matchStart + 1 + linkText.length, matchEnd, {
             class: 'md-syntax-hidden',
           })
         );

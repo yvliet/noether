@@ -205,9 +205,55 @@ export const MarkdownShortcuts = Extension.create({
       'Mod-Shift-4': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),
       'Mod-Shift-$': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),
       'Mod-$': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),
+
+      // Markdown Link: Ctrl+K / Cmd+K
+      'Mod-k': ({ editor }) => insertOrWrapMarkdownLink(editor),
+      'Mod-K': ({ editor }) => insertOrWrapMarkdownLink(editor),
     };
   },
 });
+
+export function insertOrWrapMarkdownLink(editor: any): boolean {
+  if (!editor) return false;
+  const { state } = editor;
+  const { selection } = state;
+  const range = getEffectiveTextRange(state.doc, selection);
+
+  if (!range.empty && range.text) {
+    const selText = range.text;
+    const from = range.from;
+    const to = range.to;
+
+    // If selected text already is a URL
+    if (selText.startsWith('http://') || selText.startsWith('https://') || selText.startsWith('mailto:')) {
+      editor
+        .chain()
+        .focus()
+        .insertContentAt({ from, to }, `[](${selText})`)
+        .setTextSelection(from + 1)
+        .run();
+    } else {
+      // Normal text -> wrap in [selectedText]() and place cursor in ()
+      editor
+        .chain()
+        .focus()
+        .insertContentAt({ from, to }, `[${selText}]()`)
+        .setTextSelection(from + selText.length + 3)
+        .run();
+    }
+    return true;
+  }
+
+  // Collapsed selection -> insert []() and put cursor inside []
+  const { from } = selection;
+  editor
+    .chain()
+    .focus()
+    .insertContentAt({ from, to: from }, '[]()')
+    .setTextSelection(from + 1)
+    .run();
+  return true;
+}
 
 export function isFormatActive(editor: any, marker: string): boolean {
   if (!editor) return false;

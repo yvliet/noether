@@ -484,15 +484,21 @@ textarea.bg-transparent {
 }
 
 .theme-light .md-wikilink,
+.theme-light .md-link,
 .theme-light .ProseMirror .md-wikilink,
-.theme-light .tiptap-reading-view .md-wikilink {
+.theme-light .ProseMirror .md-link,
+.theme-light .tiptap-reading-view .md-wikilink,
+.theme-light .tiptap-reading-view .md-link {
   color: var(--flint-accent) !important;
   text-decoration-color: var(--flint-border-strong) !important;
 }
 
 .theme-light .md-wikilink:hover,
+.theme-light .md-link:hover,
 .theme-light .ProseMirror .md-wikilink:hover,
-.theme-light .tiptap-reading-view .md-wikilink:hover {
+.theme-light .ProseMirror .md-link:hover,
+.theme-light .tiptap-reading-view .md-wikilink:hover,
+.theme-light .tiptap-reading-view .md-link:hover {
   color: var(--flint-accent-hover) !important;
   text-decoration-color: var(--flint-accent-hover) !important;
 }
@@ -1051,8 +1057,11 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
 }
 
 .md-wikilink,
+.md-link,
 .ProseMirror .md-wikilink,
-.tiptap-reading-view .md-wikilink {
+.ProseMirror .md-link,
+.tiptap-reading-view .md-wikilink,
+.tiptap-reading-view .md-link {
   color: var(--flint-accent);
   text-decoration: underline;
   text-decoration-color: var(--flint-border-strong);
@@ -1063,8 +1072,11 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
 }
 
 .md-wikilink:hover,
+.md-link:hover,
 .ProseMirror .md-wikilink:hover,
-.tiptap-reading-view .md-wikilink:hover {
+.ProseMirror .md-link:hover,
+.tiptap-reading-view .md-wikilink:hover,
+.tiptap-reading-view .md-link:hover {
   color: var(--flint-accent-hover, var(--flint-accent));
   text-decoration-color: var(--flint-accent-hover, var(--flint-accent));
 }
@@ -1667,7 +1679,7 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   overflow-x: auto;
   margin: 1.25rem 0;
   border-radius: 0px;
-  border: 1px solid var(--flint-border-base, #292929);
+  border: none;
   background-color: transparent;
   box-shadow: none;
 }
@@ -1675,6 +1687,7 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
 .ProseMirror table,
 .flint-table {
   border-collapse: collapse;
+  border-spacing: 0;
   table-layout: fixed;
   width: 100%;
   margin: 0;
@@ -1682,6 +1695,8 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   overflow: hidden;
   font-size: 13.5px;
   line-height: 1.5;
+  background-color: transparent;
+  border: 1px solid var(--flint-border-base, #292929);
 }
 
 .ProseMirror table td,
@@ -1694,16 +1709,24 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   box-sizing: border-box;
   position: relative;
   border: 1px solid var(--flint-border-base, #292929);
-  background-color: rgba(34, 34, 34, 0.25);
+  background-color: transparent;
   color: var(--flint-text-secondary, #dcddde);
   font-weight: normal;
   text-align: left;
 }
 
 .ProseMirror table .selectedCell,
-.flint-table .selectedCell {
-  background-color: var(--flint-accent-subtle, rgba(234, 88, 12, 0.15)) !important;
-  border-color: var(--flint-accent, #ea580c) !important;
+.flint-table .selectedCell,
+.ProseMirror table td.selectedCell,
+.ProseMirror table th.selectedCell {
+  background-color: var(--flint-selection-bg, #4a4e57) !important;
+  color: var(--flint-selection-text, #ffffff) !important;
+  border-color: var(--flint-border-strong, #383838) !important;
+}
+
+.ProseMirror table .selectedCell::after,
+.flint-table .selectedCell::after {
+  display: none !important;
 }
 
 .ProseMirror table .column-resize-handle,
@@ -1713,10 +1736,9 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   top: 0;
   bottom: 0;
   width: 4px;
-  background-color: var(--flint-accent, #ea580c);
+  background-color: transparent !important;
   pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+  opacity: 0 !important;
   z-index: 20;
 }
 
@@ -1724,14 +1746,27 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
 .ProseMirror table td:hover .column-resize-handle,
 .flint-table th:hover .column-resize-handle,
 .flint-table td:hover .column-resize-handle {
-  opacity: 0.7;
+  opacity: 0 !important;
+  background-color: transparent !important;
+}
+
+.resize-cursor,
+.ProseMirror.resize-cursor,
+.ProseMirror.resize-cursor * {
+  cursor: col-resize !important;
 }
 
 
 /* Light Theme Overrides for Tables */
 .theme-light .ProseMirror .tableWrapper {
+  border: none;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.theme-light .ProseMirror table,
+.theme-light .flint-table {
   border-color: #e4e4e7;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .theme-light .ProseMirror table td,
@@ -1739,8 +1774,17 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
 .theme-light .flint-table td,
 .theme-light .flint-table th {
   border-color: #e4e4e7;
-  background-color: #ffffff;
+  background-color: transparent;
   color: #27272a;
+}
+
+.theme-light .ProseMirror table .selectedCell,
+.theme-light .flint-table .selectedCell,
+.theme-light .ProseMirror table td.selectedCell,
+.theme-light .ProseMirror table th.selectedCell {
+  background-color: #d1d5db !important;
+  color: #111827 !important;
+  border-color: #9ca3af !important;
 }
 
 
