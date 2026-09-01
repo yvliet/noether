@@ -168,10 +168,14 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       const isDoc = tab.document_id && !tab.document_id.startsWith('__');
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) : null;
 
+      const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
+      const canCloseTab = splitTabs.length > 1 || !isTabEmpty;
+
       const items: ContextMenuItem[] = [
         {
           id: 'close-split-tab',
           title: 'Close tab',
+          disabled: !canCloseTab,
           onClick: () => {
             closeTabInPane(targetPaneId, tab.id);
           },
@@ -333,6 +337,8 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           const displayTitle = getTabDisplayTitle(tab);
           const isDraggingThis = splitTabReorder.isDragging && splitTabReorder.dragIndex === index;
           const tabReorderStyle = splitTabReorder.getTabStyle(index, isTabActive);
+          const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
+          const canCloseTab = splitTabs.length > 1 || !isTabEmpty;
 
           return (
             <div
@@ -346,7 +352,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 setActiveTabInPane(targetPaneId, tab.id);
               }}
               onAuxClick={(e) => {
-                if (e.button === 1) {
+                if (e.button === 1 && canCloseTab) {
                   e.preventDefault();
                   e.stopPropagation();
                   closeTabInPane(targetPaneId, tab.id);
@@ -446,16 +452,18 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeTabInPane(targetPaneId, tab.id);
-                }}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center transition-colors cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
-              >
-                <Cancel01Icon size={13} />
-              </button>
+              {canCloseTab && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTabInPane(targetPaneId, tab.id);
+                  }}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center transition-colors cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+                >
+                  <Cancel01Icon size={13} />
+                </button>
+              )}
             </div>
           );
         })}

@@ -92,12 +92,15 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
         const isDoc = tab.document_id && !tab.document_id.startsWith('__');
         const doc = isDoc ? documents.find((d) => d.id === tab.document_id) : null;
 
+        const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
+        const canCloseTab = tabs.length > 1 || !isOnly || !isTabEmpty;
+
         const items: ContextMenuItem[] = [
           {
             id: 'close-tab',
             title: 'Close tab',
             shortcut: 'Ctrl+W',
-            disabled: tabs.length <= 1 && isOnly,
+            disabled: !canCloseTab,
             onClick: () => {
               closeTabInPane(paneId, tab.id);
             },
@@ -313,6 +316,9 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             if (numberShortcut) tabShortcuts.push(numberShortcut);
 
             const tabReorderStyle = tabReorder.getTabStyle(index, isTabActive);
+            const isSingleTab = tabs.length <= 1 && isOnly;
+            const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
+            const canCloseTab = !isSingleTab || !isTabEmpty;
 
             return (
               <div
@@ -327,7 +333,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   setActiveTabInPane(paneId, tab.id);
                 }}
                 onAuxClick={(e) => {
-                  if (e.button === 1 && (tabs.length > 1 || !isOnly)) {
+                  if (e.button === 1 && canCloseTab) {
                     e.preventDefault();
                     e.stopPropagation();
                     closeTabInPane(paneId, tab.id);
@@ -427,7 +433,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   </span>
                 </div>
 
-                {(tabs.length > 1 || !isOnly) && (
+                {canCloseTab && (
                   <button
                     type="button"
                     data-no-drag="true"

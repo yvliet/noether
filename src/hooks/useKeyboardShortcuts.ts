@@ -309,13 +309,12 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // 15. Tab Controls
       // Close active tab: Ctrl + W
       if (isMatch('workspace:close-tab', ['Ctrl+W'])) {
         e.preventDefault();
         if (ws.isSplitView && ws.activePane === 'split' && ws.splitActiveTabId) {
           ws.closeSplitTab(ws.splitActiveTabId);
-        } else if (ws.activeTabId && (ws.tabs.length > 1 || ws.isSplitView)) {
+        } else if (ws.activeTabId) {
           ws.closeTab(ws.activeTabId);
         }
         return;

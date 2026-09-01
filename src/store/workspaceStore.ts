@@ -1246,12 +1246,24 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const currentPane = panes[paneId];
     if (!currentPane) return;
 
+    const tabToClose = currentPane.tabs.find((t) => t.id === tabId);
+    if (!tabToClose) return;
+
+    const isCurrentTabEmpty =
+      (!tabToClose.document_id || tabToClose.document_id === '') &&
+      (!tabToClose.view_type || tabToClose.view_type === 'document');
+
     const remainingTabs = currentPane.tabs.filter((t) => t.id !== tabId);
 
     // If no remaining tabs in this pane:
     if (remainingTabs.length === 0) {
       const allPaneIds = getAllPaneIds(layoutTree);
       if (allPaneIds.length <= 1) {
+        // If it's already the one and only empty new tab, cannot close it
+        if (isCurrentTabEmpty) {
+          return;
+        }
+
         // Fallback to empty new tab
         const fallbackTab: TabItem = {
           id: `tab-empty-${Date.now()}`,
