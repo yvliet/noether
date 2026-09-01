@@ -134,6 +134,24 @@ optgroup {
   font-family: inherit;
 }
 
+/* Ensure truncated text, headings, filenames, and rename inputs have 4px paint margin for descender glyphs (g, y, p, q, j) without altering layout box size */
+.truncate,
+[data-truncate] {
+  overflow: clip !important;
+  overflow-clip-margin: 4px !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+input[type="text"],
+input[type="search"],
+input:not([type]),
+textarea,
+.tree-node-title,
+.flint-tree-item-title {
+  overflow-clip-margin: 4px;
+}
+
 /* ==========================================================================
    Comprehensive Semantic Utility Redirects (Guarantees 100% Theme Reactivity)
    TODO: Retained because arbitrary hex utility classes (e.g., bg-[#1e1e1e]) 

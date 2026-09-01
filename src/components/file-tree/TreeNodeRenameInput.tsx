@@ -44,7 +44,7 @@ export const TreeNodeRenameInput: React.FC<TreeNodeRenameInputProps> = React.mem
   };
 
   return (
-    <form onSubmit={handleSubmit} className="relative flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
+    <form onSubmit={handleSubmit} className="relative flex-1 min-w-0 overflow-visible" onClick={(e) => e.stopPropagation()}>
       <input
         ref={inputRef}
         type="text"
@@ -60,7 +60,8 @@ export const TreeNodeRenameInput: React.FC<TreeNodeRenameInputProps> = React.mem
             onCancel();
           }
         }}
-        className={`w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-white font-normal caret-white selection:bg-[#505560] selection:text-white ${className}`}
+        style={{ overflowClipMargin: '4px' }}
+        className={`w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-white font-normal caret-white selection:bg-[#505560] selection:text-white leading-tight ${className}`}
       />
 
       {/* Warning / Error Tooltip */}

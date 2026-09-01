@@ -717,7 +717,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
           <ArrowUpDownIcon size={15} className="shrink-0 text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] transition-colors" />
           <span
             data-hearth-name
-            className="truncate font-medium text-xs text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] transition-colors"
+            style={{ overflowClipMargin: '4px' }}
+            className="overflow-clip text-ellipsis whitespace-nowrap font-medium text-xs text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] transition-colors leading-tight"
           >
             {hearthName || 'Flint Hearth'}
           </span>

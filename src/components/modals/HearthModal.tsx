@@ -174,7 +174,7 @@ export const HearthModal: React.FC = React.memo(() => {
                     }}
                     className="group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors bg-transparent text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#e0e0e0)]"
                   >
-                    <div className="flex flex-col min-w-0 pr-2 flex-1 select-none">
+                    <div className="flex flex-col min-w-0 pr-2 flex-1 select-none overflow-visible">
                       {isEditing ? (
                         <input
                           ref={editInputRef}
@@ -194,7 +194,7 @@ export const HearthModal: React.FC = React.memo(() => {
                           }}
                           onBlur={() => handleSaveRename(rv.path)}
                           onClick={(e) => e.stopPropagation()}
-                          className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-[var(--flint-text-primary,#fff)] font-normal caret-[var(--flint-text-primary,#fff)] selection:bg-[#505560] selection:text-white"
+                          className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-[var(--flint-text-primary,#fff)] font-normal caret-[var(--flint-text-primary,#fff)] selection:bg-[#505560] selection:text-white leading-tight"
                         />
                       ) : (
                         <span className="text-[13px] text-[var(--flint-text-primary)] font-normal tracking-tight truncate">

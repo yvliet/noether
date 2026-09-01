@@ -88,7 +88,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onPointerEnter={isDisabled ? undefined : onPointerEnter}
         onPointerLeave={isDisabled ? undefined : onPointerLeave}
         style={{ paddingLeft: `${8 + level * 16}px` }}
-        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md transition-colors duration-150 w-full ${
+        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md transition-colors duration-150 w-full overflow-visible ${
           isDisabled
             ? 'cursor-not-allowed opacity-35 text-[var(--flint-text-muted,#888888)] hover:bg-transparent'
             : isFolderPickerTarget
@@ -104,7 +104,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
             : 'cursor-pointer text-[var(--flint-text-muted,#888888)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#dcddde)] font-normal'
         }`}
       >
-        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-visible">
           {/* Left Icon (Chevron or File/Plugin Icon) */}
           {icon ? (
             <div className="w-4 h-4 flex items-center justify-center shrink-0">
@@ -118,7 +118,10 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
           {isEditing && renameInput ? (
             renameInput
           ) : (
-            <span className="truncate flex-1 min-w-0 text-[13px] tracking-tight font-normal">
+            <span
+              style={{ overflowClipMargin: '4px' }}
+              className="overflow-clip text-ellipsis whitespace-nowrap flex-1 min-w-0 text-[13px] tracking-tight font-normal leading-tight"
+            >
               {title}
             </span>
           )}
