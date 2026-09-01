@@ -116,7 +116,9 @@ function scanMarkdownFiles(dirPath, baseDir = dirPath) {
 }
 
 function parseFrontmatter(content) {
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!content) return { properties: {}, body: '' };
+  const normalized = content.replace(/\r\n/g, '\n');
+  const match = normalized.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
   if (!match) return { properties: {}, body: content };
 
   const yamlStr = match[1];
@@ -153,7 +155,7 @@ function serializeFrontmatter(properties, body) {
     }
   }
   yamlLines.push('---', '');
-  return yamlLines.join('\n') + body;
+  return yamlLines.join('\n') + (body.startsWith('\n') ? body.slice(1) : body);
 }
 
 function readNoteFile(notePath) {
@@ -177,7 +179,11 @@ function writeNoteFile(notePath, content, properties) {
     }
   }
 
-  const fullContent = properties ? serializeFrontmatter(properties, content) : content;
+  // If content itself already has frontmatter, extract and merge it
+  const { properties: parsedProps, body } = parseFrontmatter(content);
+  const mergedProps = { ...parsedProps, ...(properties || {}) };
+
+  const fullContent = Object.keys(mergedProps).length > 0 ? serializeFrontmatter(mergedProps, body) : body;
   const dir = path.dirname(notePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(notePath, fullContent, 'utf8');

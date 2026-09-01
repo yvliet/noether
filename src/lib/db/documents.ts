@@ -114,11 +114,13 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
     try {
       const doc = (await dbAdapter.query<DocumentItem>(`SELECT * FROM documents WHERE id = ? LIMIT 1`, [id]))[0];
       if (doc && !doc.is_folder) {
+        const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+        const relPath = getDocumentPath(doc, allDocs);
         const mdContent = jsonToMarkdown(doc.content_json, doc.title, propertiesJson);
-        await platform.saveMarkdownFile(doc.title, mdContent);
+        await platform.saveMarkdownFile(doc.title, mdContent, relPath);
 
         const isLocked = isDocumentLocked(propertiesJson);
-        await platform.setFileAttributes(doc.title, { readonly: isLocked, mtime: now });
+        await platform.setFileAttributes(relPath || doc.title, { readonly: isLocked, mtime: now });
       }
     } catch (e) {
       console.error('[Flint Docs] Failed to sync updated properties to disk:', e);
@@ -193,8 +195,10 @@ export async function createDocument(
   // Persist raw markdown file to disk if not a folder
   if (!isFolder && platform.isDesktop()) {
     try {
+      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const relPath = getDocumentPath({ id, title, parent_id: parentId }, allDocs);
       const md = jsonToMarkdown(defaultContent, title);
-      await platform.saveMarkdownFile(title, md);
+      await platform.saveMarkdownFile(title, md, relPath);
     } catch (e) {}
   }
 
@@ -274,9 +278,12 @@ export async function updateDocumentTitle(id: string, newTitle: string): Promise
     `UPDATE documents SET title = ?, updated_at = ? WHERE id = ?`,
     [newTitle, now, id]
   );
-  if (oldTitle && oldTitle !== newTitle && platform.isDesktop()) {
+  if (oldTitle && oldTitle !== newTitle && platform.isDesktop() && doc) {
     try {
-      await platform.renameMarkdownFile(oldTitle, newTitle);
+      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const oldRelPath = getDocumentPath({ id, title: oldTitle, parent_id: doc.parent_id }, allDocs);
+      const newRelPath = getDocumentPath({ id, title: newTitle, parent_id: doc.parent_id }, allDocs);
+      await platform.renameMarkdownFile(oldTitle, newTitle, oldRelPath, newRelPath);
     } catch (e) {}
   }
   return { oldTitle };
@@ -443,17 +450,19 @@ export function formatFrontmatter(properties?: DocumentProperties | string): str
  * Parses YAML frontmatter from raw Markdown text
  */
 export function parseFrontmatter(rawText: string): { properties: DocumentProperties; bodyText: string } {
-  if (!rawText || !rawText.startsWith('---')) {
-    return { properties: {}, bodyText: rawText || '' };
+  if (!rawText) return { properties: {}, bodyText: '' };
+  const normalized = rawText.replace(/\r\n/g, '\n');
+  if (!normalized.startsWith('---')) {
+    return { properties: {}, bodyText: rawText };
   }
 
-  const endIdx = rawText.indexOf('\n---', 3);
+  const endIdx = normalized.indexOf('\n---', 3);
   if (endIdx === -1) {
     return { properties: {}, bodyText: rawText };
   }
 
-  const frontmatterStr = rawText.slice(3, endIdx).trim();
-  const bodyText = rawText.slice(endIdx + 4).replace(/^\n+/, '');
+  const frontmatterStr = normalized.slice(3, endIdx).trim();
+  const bodyText = normalized.slice(endIdx + 4).replace(/^\n+/, '');
   const properties: DocumentProperties = {};
 
   for (const line of frontmatterStr.split('\n')) {
@@ -635,7 +644,9 @@ function isTableDelimiterRow(line: string): boolean {
 }
 
 /**
- * Converts raw Markdown into TipTap JSON string AST conforming to Flint schema
+ * Converts a raw Markdown body string into TipTap JSON string
+ * In Flint Live Preview, each line is stored as a paragraph so that LivePreviewSyntax
+ * can perform high-performance, real-time token rendering.
  */
 export function markdownToTipTapJson(md: string): string {
   if (!md || !md.trim()) {
@@ -647,60 +658,9 @@ export function markdownToTipTapJson(md: string): string {
 
   const lines = md.replace(/\r\n/g, '\n').split('\n');
   const content: any[] = [];
-  let i = 0;
 
-  while (i < lines.length) {
+  for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-
-    // Check for GFM table start: current line has pipes, and next line is a delimiter row
-    if (
-      line.includes('|') &&
-      i + 1 < lines.length &&
-      isTableDelimiterRow(lines[i + 1])
-    ) {
-      const headerCells = parseMarkdownTableRow(line);
-      const colCount = Math.max(headerCells.length, 1);
-      const tableRows: any[] = [];
-
-      // Header row
-      tableRows.push({
-        type: 'tableRow',
-        content: headerCells.map((h) => ({
-          type: 'tableHeader',
-          content: h
-            ? [{ type: 'paragraph', content: [{ type: 'text', text: h }] }]
-            : [{ type: 'paragraph', content: [] }],
-        })),
-      });
-
-      // Skip header and delimiter lines
-      i += 2;
-
-      // Data rows
-      while (i < lines.length && lines[i].trim() && lines[i].includes('|')) {
-        const rowCells = parseMarkdownTableRow(lines[i]);
-        while (rowCells.length < colCount) {
-          rowCells.push('');
-        }
-        tableRows.push({
-          type: 'tableRow',
-          content: rowCells.slice(0, colCount).map((c) => ({
-            type: 'tableCell',
-            content: c
-              ? [{ type: 'paragraph', content: [{ type: 'text', text: c }] }]
-              : [{ type: 'paragraph', content: [] }],
-          })),
-        });
-        i++;
-      }
-
-      content.push({
-        type: 'table',
-        content: tableRows,
-      });
-      continue;
-    }
-
     if (!line) {
       content.push({
         type: 'paragraph',
@@ -712,7 +672,6 @@ export function markdownToTipTapJson(md: string): string {
         content: [{ type: 'text', text: line }],
       });
     }
-    i++;
   }
 
   return JSON.stringify({
@@ -720,6 +679,8 @@ export function markdownToTipTapJson(md: string): string {
     content: content.length > 0 ? content : [{ type: 'paragraph', content: [] }],
   });
 }
+
+
 
 /**
  * Parses TipTap JSON content, extracts text blocks, updates SQLite blocks & FTS table,
@@ -920,14 +881,16 @@ export async function saveDocumentAndSynchronize(
 
   // 5. Auto-export to raw Markdown (.md) in Flint Vault on disk for 100% portability
   try {
-    const docRecord = (await dbAdapter.query<{ title: string; properties?: string }>(`SELECT title, properties FROM documents WHERE id = ?`, [documentId]))[0];
+    const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string }>(`SELECT id, parent_id, title, properties FROM documents WHERE id = ?`, [documentId]))[0];
     const docTitle = title || docRecord?.title || 'Untitled';
     const docProps = docRecord?.properties || '{}';
     const mdContent = jsonToMarkdown(contentJson, docTitle, docProps);
-    if (platform.isDesktop()) {
-      await platform.saveMarkdownFile(docTitle, mdContent);
+    if (platform.isDesktop() && docRecord) {
+      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
+      await platform.saveMarkdownFile(docTitle, mdContent, relPath);
       const isLocked = isDocumentLocked(docProps);
-      await platform.setFileAttributes(docTitle, { readonly: isLocked, mtime: now });
+      await platform.setFileAttributes(relPath || docTitle, { readonly: isLocked, mtime: now });
     }
   } catch (e) {
     console.error('Error auto-exporting markdown file:', e);
@@ -1160,13 +1123,13 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       // Find matching document by relative path or by (title + parentId) or by title
       const pathKey = (parentRelPath ? `${parentRelPath}/${fileName}` : fileName).toLowerCase();
 
-      // If this file was moved to trash by the user, remove ghost from disk and skip resurrecting
-      if (trashSet.has(pathKey) || trashSet.has(fileName.toLowerCase())) {
+      // If a file actively exists on disk, clean up any stale trash record referencing this path
+      if (trashSet.has(pathKey)) {
         try {
-          await platform.deleteMarkdownFile(file.relativePath || fileName);
+          await dbAdapter.execute(`DELETE FROM trash_items WHERE LOWER(original_path) = ?`, [pathKey]);
         } catch (e) {}
-        continue;
       }
+
       let matchedDoc = docMapByPath.get(pathKey);
 
       if (!matchedDoc) {
@@ -1200,12 +1163,14 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         const isPlaceholder =
           !matchedDoc.content_json ||
           matchedDoc.content_json === '{}' ||
-          matchedDoc.content_json === '{"type":"doc","content":[{"type":"paragraph"}]}';
+          matchedDoc.content_json === '{"type":"doc","content":[{"type":"paragraph"}]}' ||
+          matchedDoc.content_json.includes('"text":"Untitled"') ||
+          matchedDoc.content_json === `{"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"${matchedDoc.title}"}]},{"type":"paragraph","content":[]}]}`;
 
-        if (fileContent.trim() && (isPlaceholder || (file.mtime && file.mtime > (matchedDoc.updated_at || 0) + 2000))) {
+        if (fileContent.trim() && (isPlaceholder || (file.mtime && file.mtime > (matchedDoc.updated_at || 0) + 500))) {
           const { properties, bodyText } = parseFrontmatter(fileContent);
           const contentJson = markdownToTipTapJson(bodyText);
-          const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
+          const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : (matchedDoc.properties || '{}');
           await dbAdapter.execute(
             `UPDATE documents SET content_json = ?, properties = ?, updated_at = ? WHERE id = ?`,
             [contentJson, propertiesJson, file.mtime || Date.now(), matchedDoc.id]

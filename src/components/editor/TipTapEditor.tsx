@@ -1240,7 +1240,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   const isInternalUpdateRef = useRef(false);
 
-  // Keep editor content in sync ONLY when active document switches externally
+  // Keep editor content in sync when active document switches or updates externally
   useEffect(() => {
     if (!editor || !content) return;
     if (content === lastEmittedJsonRef.current) {
@@ -1250,12 +1250,15 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       isInternalUpdateRef.current = false;
       return;
     }
-    if (editor.isFocused) {
-      return;
-    }
     try {
       const currentJson = JSON.stringify(editor.getJSON());
       if (currentJson !== content) {
+        const textLen = editor.getText().trim().length;
+        // If focused and user has written substantial content, preserve active typing.
+        // Otherwise (e.g. placeholder, empty note, or external MCP/sync update), apply incoming content!
+        if (editor.isFocused && textLen > 20 && Math.abs(currentJson.length - content.length) < 10) {
+          return;
+        }
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);
         const parsed = typeof content === 'string' ? JSON.parse(content) : content;
         editor.commands.setContent(parsed, false);

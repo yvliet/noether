@@ -524,6 +524,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
            VALUES (?, ?, ?, '{}', 0, 1, 0, 'base', '{}', ?, ?)`,
           [id, parentId, finalTitle, now, now]
         );
+        if (platform.isDesktop()) {
+          const allDocs = get().documents;
+          const folderPath = getDocumentPath(doc, allDocs);
+          await platform.saveMarkdownFile('.flint_folder', '', `${folderPath}/.flint_folder`);
+          await platform.deleteMarkdownFile(`${folderPath}/.flint_folder`);
+        }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new folder:', err);
       }
