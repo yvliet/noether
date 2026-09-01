@@ -234,6 +234,7 @@ interface WorkspaceState {
   openEmptyTab: () => void;
   closeTab: (tabId: string) => void;
   closeTabsForDocuments: (docIds: string[]) => void;
+  cleanUpDeadTabs: () => void;
   setActiveTabId: (tabId: string) => void;
   reorderTabs: (sourceIndex: number, destinationIndex: number) => void;
   updateTabTitle: (documentId: string, title: string) => void;
@@ -559,11 +560,69 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   closeTabsForDocuments: (docIds) => {
     if (!docIds || docIds.length === 0) return;
-    const idSet = new Set(docIds);
-    const { tabs, activeTabId, mainViewMode } = get();
-    let newTabs = tabs.filter((t) => !t.document_id || !idSet.has(t.document_id));
+    const { closeTabsOnDelete } = useSettingsStore.getState();
+    if (!closeTabsOnDelete) return;
 
-    if (newTabs.length === 0) {
+    const idSet = new Set(docIds);
+    const { layoutTree, panes, focusedPaneId } = get();
+    const allPaneIds = getAllPaneIds(layoutTree);
+
+    let newLayoutTree = layoutTree;
+    const newPanes: Record<PaneId, PaneModel> = {};
+    const panesToClose: PaneId[] = [];
+
+    for (const paneId of allPaneIds) {
+      const pModel = panes[paneId];
+      if (!pModel) continue;
+
+      const remainingTabs = pModel.tabs.filter((t) => !t.document_id || !idSet.has(t.document_id));
+
+      if (remainingTabs.length === 0) {
+        if (allPaneIds.length <= 1 || panesToClose.length === allPaneIds.length - 1) {
+          const fallbackTab: TabItem = {
+            id: `tab-empty-${Date.now()}`,
+            document_id: '',
+            title: 'New tab',
+            view_mode: 'document',
+            view_type: 'document',
+          };
+          newPanes[paneId] = {
+            id: paneId,
+            tabs: [fallbackTab],
+            activeTabId: fallbackTab.id,
+            activeDocumentId: null,
+          };
+        } else {
+          panesToClose.push(paneId);
+        }
+      } else {
+        let nextActiveTabId = pModel.activeTabId;
+        const isActiveClosed = pModel.tabs.some((t) => t.id === pModel.activeTabId && t.document_id && idSet.has(t.document_id));
+        if (isActiveClosed || !remainingTabs.some((t) => t.id === nextActiveTabId)) {
+          const closedIndex = pModel.tabs.findIndex((t) => t.id === pModel.activeTabId);
+          const nextIndex = Math.max(0, Math.min(closedIndex >= 0 ? closedIndex : 0, remainingTabs.length - 1));
+          nextActiveTabId = remainingTabs[nextIndex].id;
+        }
+        const nextTab = remainingTabs.find((t) => t.id === nextActiveTabId);
+        newPanes[paneId] = {
+          ...pModel,
+          tabs: remainingTabs,
+          activeTabId: nextActiveTabId,
+          activeDocumentId: nextTab?.document_id || null,
+        };
+      }
+    }
+
+    // Prune closed panes from layout tree
+    for (const pId of panesToClose) {
+      const pruned = removePaneNode(newLayoutTree, pId);
+      if (pruned) {
+        newLayoutTree = pruned;
+      }
+    }
+
+    const finalPaneIds = getAllPaneIds(newLayoutTree);
+    if (finalPaneIds.length === 0 || Object.keys(newPanes).length === 0) {
       const fallbackTab: TabItem = {
         id: `tab-empty-${Date.now()}`,
         document_id: '',
@@ -571,70 +630,82 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         view_mode: 'document',
         view_type: 'document',
       };
-      newTabs = [fallbackTab];
+      newLayoutTree = createInitialLayoutTree('main');
+      newPanes['main'] = {
+        id: 'main',
+        tabs: [fallbackTab],
+        activeTabId: fallbackTab.id,
+        activeDocumentId: null,
+      };
     }
 
-    if (newTabs.length === tabs.length && newTabs[0]?.id === tabs[0]?.id) return;
+    // Normalize single pane root ID if needed
+    if (newLayoutTree.type === 'pane' && newLayoutTree.id !== 'main') {
+      const oldId = newLayoutTree.id;
+      const oldModel = newPanes[oldId];
+      delete newPanes[oldId];
+      newLayoutTree.id = 'main';
+      if (oldModel) {
+        newPanes['main'] = {
+          ...oldModel,
+          id: 'main',
+        };
+      }
+    }
 
-    let nextActiveTabId = activeTabId;
-    const isCurrentActiveClosed = tabs.some((t) => t.id === activeTabId && t.document_id && idSet.has(t.document_id));
+    let nextFocusedId = focusedPaneId;
+    const remainingIds = getAllPaneIds(newLayoutTree);
+    if (!newPanes[nextFocusedId]) {
+      nextFocusedId = remainingIds[0] || 'main';
+    }
 
-    if (isCurrentActiveClosed || !newTabs.some((t) => t.id === nextActiveTabId)) {
-      const nextTab = newTabs[newTabs.length - 1];
-      nextActiveTabId = nextTab.id;
+    const isNowSplit = newLayoutTree.type === 'split';
+    const mainModel = newPanes['main'] || newPanes[remainingIds[0]];
+    const splitModel = isNowSplit ? newPanes[remainingIds[1]] : undefined;
 
-      if (mainViewMode !== 'graph' && mainViewMode !== 'tasks') {
-        if (nextTab.view_type && nextTab.view_type !== 'document') {
-          set({ mainViewMode: nextTab.view_type as any, tabs: newTabs, activeTabId: nextActiveTabId });
-          return;
-        } else if (nextTab.view_mode === 'graph' || nextTab.document_id === '__graph__') {
-          set({ mainViewMode: 'graph', tabs: newTabs, activeTabId: nextActiveTabId });
-          return;
-        } else if (nextTab.view_mode === 'canvas' || nextTab.document_id === '__canvas__') {
-          set({ mainViewMode: 'canvas', tabs: newTabs, activeTabId: nextActiveTabId });
-          return;
-        } else if (nextTab.view_mode === 'tasks' || nextTab.document_id === '__tasks__') {
-          set({ mainViewMode: 'tasks', tabs: newTabs, activeTabId: nextActiveTabId });
-          return;
-        } else if (nextTab.document_id && !nextTab.document_id.startsWith('__')) {
-          set({ mainViewMode: 'document', tabs: newTabs, activeTabId: nextActiveTabId });
-          useDocumentStore.getState().setActiveDocumentById(nextTab.document_id);
-          return;
-        } else {
-          set({ mainViewMode: 'document', tabs: newTabs, activeTabId: nextActiveTabId });
-          useDocumentStore.setState({ activeDocument: null });
-          return;
+    set({
+      layoutTree: newLayoutTree,
+      panes: newPanes,
+      focusedPaneId: nextFocusedId,
+      isSplitView: isNowSplit,
+      activePane: nextFocusedId === 'main' ? 'main' : 'split',
+      tabs: mainModel?.tabs || [],
+      activeTabId: mainModel?.activeTabId || null,
+      splitTabs: isNowSplit ? splitModel?.tabs || [] : [],
+      splitActiveTabId: isNowSplit ? splitModel?.activeTabId || null : null,
+      splitActiveDocumentId: isNowSplit ? splitModel?.activeDocumentId || null : null,
+    });
+
+    // Update active document in DocumentStore for focused pane
+    const focusedModel = newPanes[nextFocusedId];
+    const focusedActiveTab = focusedModel?.tabs.find((t) => t.id === focusedModel.activeTabId);
+    if (focusedActiveTab && focusedActiveTab.document_id && !focusedActiveTab.document_id.startsWith('__')) {
+      useDocumentStore.getState().setActiveDocumentById(focusedActiveTab.document_id, { preserveViewMode: true });
+    } else {
+      useDocumentStore.setState({ activeDocument: null });
+    }
+
+    saveTabsSession(get().vaultPath);
+  },
+
+  cleanUpDeadTabs: () => {
+    const { panes } = get();
+    const docs = useDocumentStore.getState().documents;
+    const docIdSet = new Set(docs.map((d) => d.id));
+
+    const deadDocIds = new Set<string>();
+    for (const pane of Object.values(panes || {})) {
+      for (const tab of pane.tabs || []) {
+        if (tab.document_id && !tab.document_id.startsWith('__')) {
+          if (!docIdSet.has(tab.document_id)) {
+            deadDocIds.add(tab.document_id);
+          }
         }
       }
     }
 
-    set({ tabs: newTabs, activeTabId: nextActiveTabId });
-
-    // Also clean up matching closed documents in splitTabs
-    const { isSplitView, splitTabs, splitActiveTabId } = get();
-    if (isSplitView && splitTabs.length > 0) {
-      const newSplitTabs = splitTabs.filter((t) => !t.document_id || !idSet.has(t.document_id));
-      if (newSplitTabs.length === 0) {
-        set({
-          isSplitView: false,
-          activePane: 'main',
-          splitTabs: [],
-          splitActiveTabId: null,
-          splitActiveDocumentId: null,
-        });
-      } else if (newSplitTabs.length !== splitTabs.length) {
-        let nextSplitActiveTabId = splitActiveTabId;
-        const isCurrentSplitActiveClosed = splitTabs.some((t) => t.id === splitActiveTabId && t.document_id && idSet.has(t.document_id));
-        if (isCurrentSplitActiveClosed || !newSplitTabs.some((t) => t.id === nextSplitActiveTabId)) {
-          nextSplitActiveTabId = newSplitTabs[newSplitTabs.length - 1].id;
-        }
-        const activeSplitTab = newSplitTabs.find((t) => t.id === nextSplitActiveTabId);
-        set({
-          splitTabs: newSplitTabs,
-          splitActiveTabId: nextSplitActiveTabId,
-          splitActiveDocumentId: activeSplitTab?.document_id || null,
-        });
-      }
+    if (deadDocIds.size > 0) {
+      get().closeTabsForDocuments(Array.from(deadDocIds));
     }
   },
 
@@ -691,6 +762,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             title: doc.title || tab.title || 'Untitled',
             view_mode: (tab.view_mode as any) || (doc.doc_type === 'canvas' ? 'canvas' : 'document'),
             view_type: tab.view_type || (doc.doc_type === 'canvas' ? 'canvas' : 'document'),
+            icon: tab.icon,
+            metadata: tab.metadata,
+          };
+        }
+        const { closeTabsOnDelete } = useSettingsStore.getState();
+        if (!closeTabsOnDelete) {
+          return {
+            id: tab.id,
+            document_id: tab.document_id,
+            title: tab.title || 'Untitled',
+            view_mode: (tab.view_mode as any) || 'document',
+            view_type: tab.view_type || 'document',
             icon: tab.icon,
             metadata: tab.metadata,
           };

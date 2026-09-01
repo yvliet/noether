@@ -7,6 +7,7 @@ import { TipTapEditor } from './TipTapEditor';
 import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
+import { DeadDocumentView } from './DeadDocumentView';
 import { useFlintApp, usePluginList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders } from '@/core/app/AppContext';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked } from '@/lib/db/documents';
 import { DocumentProperties } from '@/types';
@@ -511,6 +512,24 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       setIsReadingMode((prev) => !prev);
     }
   }, [currentDoc, openSplitTab, isLocked, showToast]);
+
+  const isDeadTab = useMemo(() => {
+    if (!activeTab) return false;
+    const tabDocId = activeTab.document_id;
+    if (!tabDocId || tabDocId.startsWith('__')) return false;
+    return !documents.some((d) => d.id === tabDocId);
+  }, [activeTab, documents]);
+
+  if (isDeadTab && activeTab) {
+    return (
+      <DeadDocumentView
+        paneId={currentPaneId}
+        tabId={activeTab.id}
+        documentId={activeTab.document_id}
+        title={activeTab.title || 'Untitled'}
+      />
+    );
+  }
 
   return (
     <div

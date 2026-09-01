@@ -60,6 +60,7 @@ export interface SettingsState {
   // Files and Links
   skipDeleteConfirmation: boolean;
   skipRenameConfirmation: boolean;
+  closeTabsOnDelete: boolean;
   newNoteLocation: NewNoteLocation;
   linkFormat: LinkFormat;
   autoUpdateLinks: boolean;
@@ -105,6 +106,7 @@ export interface SettingsState {
   setTabSize: (val: TabSize) => void;
   setSkipDeleteConfirmation: (val: boolean) => void;
   setSkipRenameConfirmation: (val: boolean) => void;
+  setCloseTabsOnDelete: (val: boolean) => void;
   setNewNoteLocation: (val: NewNoteLocation) => void;
   setLinkFormat: (val: LinkFormat) => void;
   setAutoUpdateLinks: (val: boolean) => void;
@@ -158,6 +160,7 @@ export const DEFAULT_SETTINGS = {
 
   skipDeleteConfirmation: false,
   skipRenameConfirmation: false,
+  closeTabsOnDelete: true,
   newNoteLocation: 'root' as NewNoteLocation,
   linkFormat: 'shortest' as LinkFormat,
   autoUpdateLinks: true,
@@ -441,6 +444,7 @@ export const useSettingsStore = create<SettingsState>()(
         }
         set({ skipRenameConfirmation });
       },
+      setCloseTabsOnDelete: (closeTabsOnDelete) => set({ closeTabsOnDelete }),
       setNewNoteLocation: (newNoteLocation) => set({ newNoteLocation }),
       setLinkFormat: (linkFormat) => set({ linkFormat }),
       setAutoUpdateLinks: (autoUpdateLinks) => set({ autoUpdateLinks }),
@@ -524,6 +528,7 @@ export const useSettingsStore = create<SettingsState>()(
           set({
             skipDeleteConfirmation: DEFAULT_SETTINGS.skipDeleteConfirmation,
             skipRenameConfirmation: DEFAULT_SETTINGS.skipRenameConfirmation,
+            closeTabsOnDelete: DEFAULT_SETTINGS.closeTabsOnDelete,
             newNoteLocation: DEFAULT_SETTINGS.newNoteLocation,
             linkFormat: DEFAULT_SETTINGS.linkFormat,
             autoUpdateLinks: DEFAULT_SETTINGS.autoUpdateLinks,

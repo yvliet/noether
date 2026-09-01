@@ -67,6 +67,10 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       const isDoc = tab.document_id && !tab.document_id.startsWith('__');
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
 
+      if (isDoc && !doc) {
+        return <Alert02Icon size={13} className="shrink-0 text-amber-400" />;
+      }
+
       for (const dec of tabDecorators) {
         if (dec.matches && !dec.matches(tab, doc)) continue;
         const customIcon = dec.getIcon?.(tab, doc, isActive);

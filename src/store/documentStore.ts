@@ -162,7 +162,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         const { tabs, activeTabId } = useWorkspaceStore.getState();
         const activeTab = tabs.find((t) => t.id === activeTabId);
         if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
-          await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+          const docExists = docs.some((d) => d.id === activeTab.document_id);
+          if (docExists) {
+            await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+          } else {
+            set({ activeDocument: null });
+          }
         } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
           useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
           set({ activeDocument: null });
@@ -766,22 +771,25 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const remainingDocs = prevDocs.filter((d) => !deletedIds.has(d.id));
     const nextSelectedDocIds = selectedDocIds.filter((selId) => !deletedIds.has(selId));
 
-    // 2. Instantaneously close tabs for all deleted documents
-    useWorkspaceStore.getState().closeTabsForDocuments(Array.from(deletedIds));
+    // 2. Instantaneously close tabs for all deleted documents (if enabled by setting)
+    const { closeTabsOnDelete } = useSettingsStore.getState();
+    if (closeTabsOnDelete) {
+      useWorkspaceStore.getState().closeTabsForDocuments(Array.from(deletedIds));
+    }
 
     // 3. Instantaneously calculate next active document if current was deleted
     let nextActiveDoc = active;
     const isCurrentActiveDeleted = active && deletedIds.has(active.id);
     if (isCurrentActiveDeleted) {
-      nextActiveDoc = remainingDocs.find((d) => !d.is_folder) || null;
-      const currentMode = useWorkspaceStore.getState().mainViewMode;
-      const shouldPreserve = currentMode !== 'document';
-      if (nextActiveDoc) {
-        if (currentMode === 'document' && !shouldPreserve) {
-          useWorkspaceStore.getState().openTab(nextActiveDoc.id, nextActiveDoc.title);
-        }
-      } else if (currentMode === 'document') {
-        useWorkspaceStore.getState().openEmptyTab();
+      if (closeTabsOnDelete) {
+        const focusedPane = useWorkspaceStore.getState().panes[useWorkspaceStore.getState().focusedPaneId || 'main'];
+        const focusedTab = focusedPane?.tabs.find((t) => t.id === focusedPane.activeTabId);
+        nextActiveDoc = focusedTab?.document_id && !focusedTab.document_id.startsWith('__')
+          ? remainingDocs.find((d) => d.id === focusedTab.document_id) || null
+          : null;
+      } else {
+        // Keeping dead tab open: active document becomes null (rendered as DeadDocumentView)
+        nextActiveDoc = null;
       }
     }
 

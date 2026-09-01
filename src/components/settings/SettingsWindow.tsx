@@ -2104,6 +2104,8 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const setSkipDeleteConfirmation = useSettingsStore((s) => s.setSkipDeleteConfirmation);
   const skipRenameConfirmation = useSettingsStore((s) => s.skipRenameConfirmation);
   const setSkipRenameConfirmation = useSettingsStore((s) => s.setSkipRenameConfirmation);
+  const closeTabsOnDelete = useSettingsStore((s) => s.closeTabsOnDelete);
+  const setCloseTabsOnDelete = useSettingsStore((s) => s.setCloseTabsOnDelete);
   const newNoteLocation = useSettingsStore((s) => s.newNoteLocation);
   const setNewNoteLocation = useSettingsStore((s) => s.setNewNoteLocation);
   const linkFormat = useSettingsStore((s) => s.linkFormat);
@@ -2132,6 +2134,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const isFilesModified =
     skipDeleteConfirmation !== DEFAULT_SETTINGS.skipDeleteConfirmation ||
     skipRenameConfirmation !== DEFAULT_SETTINGS.skipRenameConfirmation ||
+    closeTabsOnDelete !== DEFAULT_SETTINGS.closeTabsOnDelete ||
     newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation ||
     linkFormat !== DEFAULT_SETTINGS.linkFormat ||
     autoUpdateLinks !== DEFAULT_SETTINGS.autoUpdateLinks;
@@ -2190,6 +2193,34 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                   Save
                 </button>
               )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Close tabs when files are deleted</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Automatically close open tabs when their file is deleted. When turned off, dead tabs remain open as error views.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={closeTabsOnDelete !== DEFAULT_SETTINGS.closeTabsOnDelete}
+                onReset={() => {
+                  setCloseTabsOnDelete(DEFAULT_SETTINGS.closeTabsOnDelete);
+                  useWorkspaceStore.getState().cleanUpDeadTabs();
+                }}
+                title="Restore default (Enabled)"
+              />
+              <ToggleSwitch
+                checked={closeTabsOnDelete}
+                onChange={(val) => {
+                  setCloseTabsOnDelete(val);
+                  if (val) {
+                    useWorkspaceStore.getState().cleanUpDeadTabs();
+                  }
+                }}
+              />
             </div>
           </div>
 

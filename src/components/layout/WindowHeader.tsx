@@ -739,6 +739,10 @@ export const WindowHeader: React.FC = React.memo(() => {
       const isDoc = tab.document_id && !tab.document_id.startsWith('__');
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
 
+      if (isDoc && !doc) {
+        return <Alert02Icon size={13} className="shrink-0 text-amber-400" />;
+      }
+
       for (const dec of tabDecorators) {
         if (dec.matches && !dec.matches(tab, doc)) continue;
         const customIcon = dec.getIcon?.(tab, doc, isActive);
@@ -840,6 +844,10 @@ export const WindowHeader: React.FC = React.memo(() => {
     (tab: TabItem) => {
       const isDoc = tab.document_id && !tab.document_id.startsWith('__');
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
+
+      if (isDoc && !doc) {
+        return `${tab.title || 'Untitled'} (File deleted)`;
+      }
 
       for (const dec of tabDecorators) {
         if (dec.matches && !dec.matches(tab, doc)) continue;
