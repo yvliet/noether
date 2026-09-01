@@ -77,7 +77,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
   }, [isSubmenuOpen, calculateSubmenuPosition]);
 
   if (item.type === 'separator') {
-    return <div className="border-t border-[var(--flint-border-subtle,#2e2e2e)] my-1 mx-1" />;
+    return <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />;
   }
 
   if (item.type === 'header') {
@@ -131,7 +131,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
         tabIndex={0}
         onClick={handleClick}
         onMouseDown={(e) => e.preventDefault()}
-        className={`w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs transition-colors flex items-center justify-between gap-3 cursor-pointer group outline-none select-none ${
+        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs transition-colors flex items-center justify-between gap-3 cursor-pointer group outline-none select-none ${
           item.disabled
             ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted,#777)]'
             : item.isDanger
@@ -158,47 +158,22 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
                 : item.icon
             ) : null}
           </span>
-          <span className="truncate whitespace-nowrap">{item.title}</span>
+          <span className="truncate flex-1">{item.title}</span>
         </div>
 
-        {(item.checked || item.shortcut || hasSubmenu || item.rightSlot) && (
-          <div
-            className="flex items-center gap-1.5 shrink-0 pl-2"
-            onClick={(e) => {
-              if (item.rightSlot || hasSubmenu) {
-                e.stopPropagation();
-                if (isSubmenuOpen) {
-                  onRequestCloseSubmenu();
-                } else {
-                  calculateSubmenuPosition();
-                  onRequestOpenSubmenu();
-                }
-              }
-            }}
-          >
-            {item.checked && (
-              <CheckIcon
-                size={13}
-                className={item.isDanger ? 'text-[#ff6b6b]' : 'text-[var(--flint-text-primary)]'}
-              />
-            )}
-
-            {item.shortcut && (
-              <span className="text-[11px] text-[var(--flint-text-muted,#777777)] group-hover:text-[var(--flint-text-primary)]">
-                {item.shortcut}
-              </span>
-            )}
-
-            {item.rightSlot ? (
-              item.rightSlot
-            ) : hasSubmenu ? (
-              <ChevronRightIcon
-                size={12}
-                className="text-[var(--flint-text-muted,#777777)] group-hover:text-[var(--flint-text-primary)]"
-              />
-            ) : null}
-          </div>
-        )}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {item.shortcut && (
+            <span className="text-[11px] text-[var(--flint-text-muted,#777777)] group-hover:text-[var(--flint-text-secondary,#bbbbbb)]">
+              {item.shortcut}
+            </span>
+          )}
+          {item.checked && (
+            <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0" />
+          )}
+          {hasSubmenu && (
+            <ChevronRightIcon size={12} className="text-[var(--flint-text-muted,#777)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+          )}
+        </div>
       </div>
 
       {/* Nested Submenu Portal or Absolute Container */}
@@ -216,7 +191,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
           className={
             item.customSubmenu
               ? 'w-max bg-transparent select-none'
-              : 'w-max min-w-[160px] max-w-[280px] bg-[var(--flint-bg-popover,#1e1e1e)] border border-[var(--flint-border-base,#333333)] rounded-[8px] p-[4px] text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none'
+              : 'w-max min-w-[160px] max-w-[280px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none'
           }
           onClick={(e) => e.stopPropagation()}
         >
@@ -477,7 +452,7 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
         zIndex: 99999,
         boxShadow: 'var(--flint-shadow-2)',
       }}
-      className="w-max min-w-[180px] max-w-[320px] max-h-[85vh] bg-[var(--flint-bg-popover,#1e1e1e)] border border-[var(--flint-border-base,#333333)] rounded-[8px] p-[4px] text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none"
+      className="w-max min-w-[180px] max-w-[320px] max-h-[85vh] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none"
     >
       <MenuList
         items={items}

@@ -13,6 +13,8 @@ import {
   CheckIcon,
   Edit02Icon,
   FolderOpenIcon,
+  CancelCircleIcon,
+  ChevronsUpDownIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -106,9 +108,20 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
   const [sortOrder, setSortOrder] = useState<FileSortOrder>('alphabetical');
   const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const [isCaseSensitive, setIsCaseSensitive] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isVerticalSplitResizing, setIsVerticalSplitResizing] = useState(false);
   const sortMenuRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (activeLeftView === 'search') {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [activeLeftView]);
 
   const dockItems = useSidebarDockStore((s) => s.items);
   const splitRatioLeft = useSidebarDockStore((s) => s.splitRatioLeft);
@@ -201,7 +214,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
     if (!sortMenuRef.current) return;
     const rect = sortMenuRef.current.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
-    const menuWidth = 224;
+    const menuWidth = 185;
     const vw = window.innerWidth;
 
     let top: number | undefined = undefined;
@@ -385,12 +398,21 @@ export const LeftSidebar: React.FC = React.memo(() => {
     );
   }, [documents, sortOrder]);
 
-  // Filter if search query exists
-  const filteredDocs = useMemo(() => {
-    return searchQuery
-      ? documents.filter((d) => d.title.toLowerCase().includes(searchQuery.toLowerCase()))
-      : null;
-  }, [documents, searchQuery]);
+  // Filter search results with sorting and case sensitivity support
+  const searchFilteredDocs = useMemo(() => {
+    const q = searchQuery.trim();
+    if (!q) return [];
+
+    return sortDocuments(
+      documents.filter((d) => {
+        if (isCaseSensitive) {
+          return d.title.includes(q);
+        }
+        return d.title.toLowerCase().includes(q.toLowerCase());
+      }),
+      sortOrder
+    );
+  }, [documents, searchQuery, isCaseSensitive, sortOrder]);
 
   const handleCreateNote = useCallback(async () => {
     setSearchQuery('');
@@ -488,8 +510,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
         />
       </div>
 
-      {/* Top Action Header (Centered Minimal Obsidian Toolbar) - Hide if viewing docked pane */}
-      {!isDockedTop && (
+      {/* Top Action Header (Centered Minimal Obsidian Toolbar) - Hide if viewing docked pane or in search view */}
+      {!isDockedTop && activeLeftView !== 'search' && (
         <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--flint-text-muted)]">
           <button
             onClick={handleCreateNote}
@@ -521,7 +543,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           {/* Sort Menu Button */}
           <div className="relative">
             <button
-              ref={sortMenuRef}
+              ref={activeLeftView !== 'search' ? sortMenuRef : undefined}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!isSortMenuOpen) updateSortMenuPos();
@@ -536,50 +558,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
             >
               <Sorting01Icon size={14} />
             </button>
-
-            {/* Sort Menu Dropdown - Portal to body so it never clips inside sidebar */}
-            {isSortMenuOpen &&
-              createPortal(
-                <div
-                  data-sort-menu="true"
-                  style={{
-                    position: 'fixed',
-                    top: sortMenuPos.top != null ? `${sortMenuPos.top}px` : undefined,
-                    left: sortMenuPos.left != null ? `${sortMenuPos.left}px` : undefined,
-                    right: sortMenuPos.right != null ? `${sortMenuPos.right}px` : undefined,
-                    bottom: sortMenuPos.bottom != null ? `${sortMenuPos.bottom}px` : undefined,
-                    background: 'var(--flint-bg-card)',
-                    border: '1px solid var(--flint-border-base)',
-                  }}
-                  className="w-56 rounded-lg shadow-2xl py-1.5 text-xs text-[var(--flint-text-secondary)] select-none z-[99999] backdrop-blur-md animate-fadeIn"
-                >
-                  <div className="px-3 py-1 text-[10px] uppercase font-semibold text-[var(--flint-text-faint)] tracking-wider">
-                    File Sorting
-                  </div>
-                  {SORT_OPTIONS.map((opt, i) => (
-                    <React.Fragment key={opt.id}>
-                      {i > 0 && SORT_OPTIONS[i - 1].group !== opt.group && (
-                        <div className="h-px bg-[var(--flint-border-subtle)] my-1" />
-                      )}
-                      <button
-                        onClick={() => {
-                          setSortOrder(opt.id);
-                          setIsSortMenuOpen(false);
-                        }}
-                        className={`w-full px-3 py-1.5 flex items-center justify-between text-left transition-colors cursor-pointer ${
-                          sortOrder === opt.id
-                            ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] font-medium'
-                            : 'hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
-                        }`}
-                      >
-                        <span>{opt.label}</span>
-                        {sortOrder === opt.id && <CheckIcon size={12} className="text-[var(--flint-accent)]" />}
-                      </button>
-                    </React.Fragment>
-                  ))}
-                </div>,
-                document.body
-              )}
           </div>
 
           <button
@@ -592,19 +570,70 @@ export const LeftSidebar: React.FC = React.memo(() => {
         </div>
       )}
 
-      {/* Inline Search Input - Only shown in search view */}
-      {activeLeftView === 'search' && !isDockedTop && (
-        <div className="px-2 pb-2">
-          <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)]">
-            <Search01Icon size={13} className="text-[var(--flint-text-muted)] shrink-0" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search file names..."
-              className="bg-transparent outline-none flex-1 text-xs text-[var(--flint-text-primary)] placeholder-[var(--flint-text-faint)]"
-            />
+      {/* Top Search Header - Shown in search view (replaces top action toolbar) */}
+      {!isDockedTop && activeLeftView === 'search' && (
+        <div className="pt-2 px-2 pb-1.5 flex flex-col gap-1.5">
+          {/* Top Search Input Row */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)] transition-colors">
+              <Search01Icon size={14} className="text-[var(--flint-text-muted)] shrink-0" />
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search..."
+                className="bg-transparent outline-none flex-1 text-xs text-[var(--flint-text-primary)] placeholder-[var(--flint-text-faint)] min-w-0"
+              />
+              <button
+                type="button"
+                onClick={() => setIsCaseSensitive((prev) => !prev)}
+                title={isCaseSensitive ? 'Match case: ON' : 'Match case: OFF'}
+                className={`px-1 py-0.5 rounded text-[11px] font-semibold leading-none cursor-pointer transition-colors ${
+                  isCaseSensitive
+                    ? 'bg-[var(--flint-accent)] text-white'
+                    : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
+                }`}
+              >
+                Aa
+              </button>
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  title="Clear search"
+                  className="p-0.5 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer transition-colors"
+                >
+                  <CancelCircleIcon size={13} />
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Results Count & Sort Dropdown Row */}
+          <div className="flex items-center justify-between px-1 text-xs text-[var(--flint-text-muted)] select-none">
+            <span className="text-[11px]">
+              {searchFilteredDocs.length} {searchFilteredDocs.length === 1 ? 'result' : 'results'}
+            </span>
+            <button
+              ref={activeLeftView === 'search' ? sortMenuRef : undefined}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isSortMenuOpen) updateSortMenuPos();
+                setIsSortMenuOpen((prev) => !prev);
+              }}
+              title="Change sort order"
+              className="flex items-center gap-1 text-[11px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer hover:bg-[var(--flint-bg-card-hover)] px-1.5 py-0.5 rounded transition-colors"
+            >
+              <span className="truncate max-w-[130px]">
+                {SORT_OPTIONS.find((o) => o.id === sortOrder)?.label || 'File name (A to Z)'}
+              </span>
+              <ChevronsUpDownIcon size={12} className="shrink-0 opacity-70" />
+            </button>
+          </div>
+
+          {/* Subtle separator line */}
+          <div className="border-b border-[var(--flint-border-base)] -mx-2 mt-0.5 opacity-60" />
         </div>
       )}
 
@@ -621,17 +650,18 @@ export const LeftSidebar: React.FC = React.memo(() => {
           <SidebarDockPane zone="left-top" />
         ) : activeCustomTab ? (
           activeCustomTab.render(app)
-        ) : filteredDocs ? (
-          <div data-tree-section="search-results" className="flex-1 flex flex-col">
-            <div className="text-[10px] text-[var(--flint-text-muted)] px-2 mb-1 uppercase font-medium">
-              Search Results ({filteredDocs.length})
+        ) : activeLeftView === 'search' ? (
+          !searchQuery.trim() ? null : searchFilteredDocs.length === 0 ? (
+            <div className="px-2 py-4 text-xs text-[var(--flint-text-muted)] select-none">
+              No matches found.
             </div>
-            <div className="flex flex-col gap-0.5 flex-1">
-              {filteredDocs.map((doc) => (
+          ) : (
+            <div data-tree-section="search-results" className="flex-1 flex flex-col gap-0.5">
+              {searchFilteredDocs.map((doc) => (
                 <FileTreeNode key={doc.id} item={doc} allDocs={documents} sortOrder={sortOrder} />
               ))}
             </div>
-          </div>
+          )
         ) : (
           <div className="flex flex-col gap-0.5 flex-1">
             {/* Dynamic Plugin File Tree Sections */}
@@ -655,6 +685,49 @@ export const LeftSidebar: React.FC = React.memo(() => {
           </div>
         )}
       </div>
+
+      {/* Sort Menu Dropdown - Portal to body so it never clips inside sidebar */}
+      {isSortMenuOpen &&
+        createPortal(
+          <div
+            data-sort-menu="true"
+            style={{
+              position: 'fixed',
+              top: sortMenuPos.top != null ? `${sortMenuPos.top}px` : undefined,
+              left: sortMenuPos.left != null ? `${sortMenuPos.left}px` : undefined,
+              right: sortMenuPos.right != null ? `${sortMenuPos.right}px` : undefined,
+              bottom: sortMenuPos.bottom != null ? `${sortMenuPos.bottom}px` : undefined,
+              background: 'var(--flint-bg-popover, var(--flint-bg-card))',
+              border: '1px solid var(--flint-border-base)',
+              boxShadow: 'var(--flint-shadow-2)',
+            }}
+            className="w-[185px] rounded-lg p-1 text-xs text-[var(--flint-text-secondary)] select-none z-[99999] backdrop-blur-md animate-fadeIn flex flex-col gap-[1px]"
+          >
+            {SORT_OPTIONS.map((opt, i) => (
+              <React.Fragment key={opt.id}>
+                {i > 0 && SORT_OPTIONS[i - 1].group !== opt.group && (
+                  <div className="h-[1px] bg-[var(--flint-border-base)] my-1 mx-1" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortOrder(opt.id);
+                    setIsSortMenuOpen(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs transition-colors cursor-pointer ${
+                    sortOrder === opt.id
+                      ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] font-medium'
+                      : 'hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
+                  }`}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {sortOrder === opt.id && <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1.5" />}
+                </button>
+              </React.Fragment>
+            ))}
+          </div>,
+          document.body
+        )}
 
       {/* Bottom Split (if any docked items in left-bottom) */}
       {hasBottomSplit && (

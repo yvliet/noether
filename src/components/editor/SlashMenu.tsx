@@ -8,7 +8,7 @@ import {
   CheckmarkSquare02Icon,
   QuoteDownIcon,
   CodeIcon,
-  Divide01Icon,
+  MinusSignIcon,
   Brain02Icon,
   TableIcon,
   ChevronRightIcon,
@@ -210,7 +210,7 @@ function renderIcon(name: string) {
     case 'code':
       return <CodeIcon size={16} />;
     case 'divider':
-      return <Divide01Icon size={16} />;
+      return <MinusSignIcon size={16} />;
     case 'card':
       return <Brain02Icon size={16} />;
     case 'table':

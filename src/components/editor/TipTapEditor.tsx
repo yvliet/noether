@@ -64,12 +64,14 @@ import {
   Search01Icon,
   ParagraphIcon,
   PaintBrush01Icon,
+  TextFontIcon,
   SigmaIcon,
   PercentIcon,
   RemoveFormattingIcon,
   Menu01Icon,
   TextFootnoteIcon,
   TextSelectionIcon,
+  TextClearIcon,
   TableIcon,
   Database01Icon,
   EyedropperIcon,
@@ -879,7 +881,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         items.push({
           id: 'menu-format',
           title: 'Format',
-          icon: <PaintBrush01Icon size={14} />,
+          icon: <TextFontIcon size={14} />,
           submenu: [
             {
               id: 'fmt-bold',
@@ -1120,7 +1122,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             {
               id: 'ins-hr',
               title: 'Horizontal rule',
-              icon: <Divide01Icon size={14} />,
+              icon: <MinusSignIcon size={14} />,
               onClick: () => {
                 editor.chain().focus().setHorizontalRule().run();
               },
@@ -1286,7 +1288,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           id: 'paste-plain',
           title: 'Paste as plain text',
           shortcut: 'Ctrl+Shift+V',
-          icon: <ClipboardTypeIcon size={14} />,
+          icon: <TextClearIcon size={14} />,
           onClick: async () => {
             try {
               const text = await navigator.clipboard.readText();
@@ -1304,7 +1306,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         id: 'select-all',
         title: 'Select all',
         shortcut: 'Ctrl+A',
-        icon: <TextSelectionIcon size={14} />,
+        icon: <CheckmarkSquare02Icon size={14} />,
         onClick: () => {
           editor.chain().focus().selectAll().run();
         },

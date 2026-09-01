@@ -123,6 +123,7 @@ import {
   Menu01Icon as HugeMenu01Icon,
   TextFootnoteIcon as HugeTextFootnoteIcon,
   TextSelectionIcon as HugeTextSelectionIcon,
+  TextClearIcon as HugeTextClearIcon,
   NeuralNetworkIcon as HugeNeuralNetworkIcon,
   Alert02Icon as HugeAlert02Icon,
   Alert01Icon as HugeAlert01Icon,
@@ -342,6 +343,7 @@ export const Heading601Icon = createIcon(HugeHeading06Icon);
 export const Menu01Icon = createIcon(HugeMenu01Icon);
 export const TextFootnoteIcon = createIcon(HugeTextFootnoteIcon);
 export const TextSelectionIcon = createIcon(HugeTextSelectionIcon);
+export const TextClearIcon = createIcon(HugeTextClearIcon);
 export const TableIcon = createIcon(HugeTableIcon);
 export const ArrowExpandIcon = createIcon(HugeArrowExpandIcon);
 

@@ -168,7 +168,7 @@ function CustomSelectInner<T extends string | number>({
               zIndex: 99999,
               boxShadow: 'var(--flint-shadow-2)',
             }}
-            className={`w-max max-w-[320px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-[6px] p-1 overflow-y-auto overflow-x-hidden select-none ${menuClassName}`}
+            className={`w-max max-w-[320px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 overflow-y-auto overflow-x-hidden select-none ${menuClassName}`}
           >
             {options.map((opt) => {
               const isSelected = opt.value === value;
@@ -180,7 +180,7 @@ function CustomSelectInner<T extends string | number>({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[4px] flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                  className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[5px] flex items-center justify-between gap-3 cursor-pointer transition-colors ${
                     isSelected
                       ? 'bg-[var(--flint-bg-sidebar-active,var(--flint-bg-card-hover))] text-[var(--flint-text-primary)] font-medium'
                       : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'

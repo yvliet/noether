@@ -306,7 +306,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
   return (
     <div
       data-flint-colorpicker="true"
-      className={`w-[220px] bg-[#262626] border border-[#383838] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.6),0_2px_6px_rgba(0,0,0,0.3)] overflow-hidden select-none ${className}`}
+      className={`w-[220px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden select-none ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* 1. Saturation / Value 2D Box */}
