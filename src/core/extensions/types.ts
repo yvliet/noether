@@ -537,3 +537,117 @@ export interface OpenTabOptions {
   replaceCurrentEmpty?: boolean;
 }
 
+/**
+ * JSON Schema for MCP tool input parameters.
+ * Follows the MCP 2024-11-05 specification for tool definition schemas.
+ * @since 0.3.0
+ */
+export interface McpJsonSchema {
+  type: 'object';
+  properties: Record<string, {
+    type: 'string' | 'number' | 'boolean' | 'array' | 'object';
+    description?: string;
+    enum?: string[];
+    items?: Record<string, unknown>;
+    default?: unknown;
+  }>;
+  required?: string[];
+}
+
+/**
+ * Individual content block in an MCP tool result.
+ * @since 0.3.0
+ */
+export type McpContentBlock =
+  | { type: 'text'; text: string }
+  | { type: 'image'; data: string; mimeType: string }
+  | { type: 'resource'; resource: { uri: string; text?: string } };
+
+/**
+ * Standard result returned from an MCP tool execution.
+ * @since 0.3.0
+ */
+export interface McpToolResult {
+  content: McpContentBlock[];
+  isError?: boolean;
+}
+
+/**
+ * MCP Tool registration definition.
+ * Extensions register tools via `this.registerTool()` in their `onload()` method.
+ * Tools are automatically unregistered when the extension is disabled or unloaded.
+ *
+ * Why generic `Record<string, unknown>` for handler args instead of typed generics:
+ * MCP tool calls arrive as untyped JSON from external agents — the handler must
+ * validate and cast at runtime regardless. This keeps the registry type-simple
+ * while handlers remain fully type-safe internally.
+ *
+ * @since 0.3.0
+ */
+export interface McpToolDefinition {
+  /** Unique tool name (auto-prefixed with extensionId_ by Extension.registerTool) */
+  name: string;
+  /** Description explaining to the LLM when and how to call this tool */
+  description: string;
+  /** JSON Schema defining the tool's input parameters */
+  parameters: McpJsonSchema;
+  /** Async execution handler */
+  handler: (args: Record<string, unknown>, app: FlintApp) => Promise<McpToolResult>;
+  /** Owning extension identifier (set automatically by Extension.registerTool) */
+  extensionId?: string;
+  /** Tool category for grouping in UI (e.g. 'documents', 'search', 'graph') */
+  category?: string;
+  /** If true, in-app agent UI should require user confirmation before executing */
+  isDestructive?: boolean;
+}
+
+/**
+ * Parameter/argument definition for an MCP prompt template.
+ * @since 0.3.0
+ */
+export interface McpPromptArgument {
+  name: string;
+  description?: string;
+  required?: boolean;
+}
+
+/**
+ * Message block returned by an MCP prompt template evaluation.
+ * @since 0.3.0
+ */
+export interface McpPromptMessage {
+  role: 'user' | 'assistant';
+  content: {
+    type: 'text';
+    text: string;
+  };
+}
+
+/**
+ * Result returned from evaluating an MCP prompt template.
+ * @since 0.3.0
+ */
+export interface McpPromptResult {
+  description?: string;
+  messages: McpPromptMessage[];
+  isError?: boolean;
+}
+
+/**
+ * MCP Prompt template registration definition.
+ * Extensions and core systems can register reusable prompt workflows for AI agents.
+ * @since 0.3.0
+ */
+export interface McpPromptDefinition {
+  /** Unique prompt name (e.g. 'flint_agent_guide', 'flint_daily_review') */
+  name: string;
+  /** Human-readable description explaining what this prompt accomplishes */
+  description?: string;
+  /** Arguments accepted by the prompt template */
+  arguments?: McpPromptArgument[];
+  /** Handler producing prompt messages populated with live application context */
+  getMessages: (args: Record<string, string>, app: FlintApp) => Promise<McpPromptResult> | McpPromptResult;
+  /** Owning extension identifier */
+  extensionId?: string;
+}
+

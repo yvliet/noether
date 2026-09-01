@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { Bookmark01Icon } from '@/components/common/Icons';
 import { bookmarksReadme } from './readme';
@@ -93,6 +93,88 @@ export class BookmarksExtension extends Extension {
           <LazyBookmarksSettingsTab />
         </React.Suspense>
       ),
+    });
+
+    // ── MCP Tools Registration ──
+
+    // 5. Tool: bookmarks_list
+    this.registerTool({
+      name: 'list',
+      description: 'List all bookmarked documents in the active hearth/vault.',
+      category: 'bookmarks',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder && Boolean(d.is_bookmarked));
+          const bookmarks = docs.map((d) => ({
+            id: d.id,
+            title: d.title,
+            parent_id: d.parent_id,
+            created_at: d.created_at,
+            updated_at: d.updated_at,
+          }));
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ bookmarks, total: bookmarks.length }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 6. Tool: bookmarks_toggle
+    this.registerTool({
+      name: 'toggle',
+      description: 'Toggle the bookmark status of a document in the vault.',
+      category: 'bookmarks',
+      isDestructive: false,
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Target document identifier to bookmark or unbookmark',
+          },
+        },
+        required: ['documentId'],
+      },
+      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const documentId = args.documentId as string;
+          if (!documentId) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'documentId parameter is required' }],
+            };
+          }
+          const isBookmarked = await app.hearth.toggleBookmark(documentId);
+          const doc = app.hearth.getDocumentById(documentId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  documentId,
+                  title: doc?.title || 'Untitled',
+                  isBookmarked,
+                }),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
     });
   }
 }

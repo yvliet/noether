@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { TableIcon } from '@/components/common/Icons';
 import { tablesReadme } from './readme';
@@ -75,8 +75,68 @@ export class TablesExtension extends Extension {
           .run();
       },
     });
+
+    // 4. Register MCP Tools
+    // ── Tool: insert ──
+    this.registerTool({
+      name: 'insert',
+      description: 'Insert a new table grid block into the active document editor.',
+      parameters: {
+        type: 'object',
+        properties: {
+          rows: {
+            type: 'number',
+            description: 'Number of rows in the table (minimum 1, default 3)',
+          },
+          cols: {
+            type: 'number',
+            description: 'Number of columns in the table (minimum 1, default 3)',
+          },
+        },
+        required: ['rows', 'cols'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const rows = Math.max(1, Math.floor(Number(args.rows) || 3));
+          const cols = Math.max(1, Math.floor(Number(args.cols) || 3));
+
+          this.app.events.emit('editor:action', {
+            action: 'insert-table',
+            payload: { rows, cols },
+          });
+
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('flint:insert-table-command', {
+                detail: { rows, cols },
+              })
+            );
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  rows,
+                  cols,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
   }
 }
 
 // Backwards-compat alias
 export const TablesPlugin = TablesExtension;
+export default TablesExtension;

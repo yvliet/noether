@@ -11,7 +11,7 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { PackageIcon, PlusCircleIcon } from '@/components/common/Icons';
 import { propertiesReadme } from './readme';
@@ -76,8 +76,177 @@ export class PropertiesExtension extends Extension {
         app.workspace.showToast('Opened properties panel', 'info');
       },
     });
+
+    // 5. Register MCP Tools
+    // ── Tool: get ──
+    this.registerTool({
+      name: 'get',
+      description: 'Get all frontmatter YAML properties for a document.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Unique document identifier',
+          },
+        },
+        required: ['documentId'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const documentId = String(args.documentId || '').trim();
+          if (!documentId) {
+            throw new Error("Parameter 'documentId' is required.");
+          }
+          const properties = this.app.hearth.getDocumentProperties(documentId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  documentId,
+                  properties,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: set ──
+    this.registerTool({
+      name: 'set',
+      description: 'Set or update a frontmatter property on a document.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Unique document identifier',
+          },
+          key: {
+            type: 'string',
+            description: 'Property key name to set (e.g. "status", "tags", "priority")',
+          },
+          value: {
+            type: 'string',
+            description: 'Property value (string or JSON-encoded value, e.g. ["tag1", "tag2"], true, 123)',
+          },
+        },
+        required: ['documentId', 'key', 'value'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const documentId = String(args.documentId || '').trim();
+          const key = String(args.key || '').trim();
+          if (!documentId) {
+            throw new Error("Parameter 'documentId' is required.");
+          }
+          if (!key) {
+            throw new Error("Parameter 'key' is required.");
+          }
+
+          let value: unknown = args.value;
+          if (typeof value === 'string') {
+            try {
+              value = JSON.parse(value);
+            } catch {
+              // keep as string
+            }
+          }
+
+          await this.app.hearth.updateDocumentProperties(documentId, { [key]: value });
+          const updated = this.app.hearth.getDocumentProperties(documentId);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  documentId,
+                  key,
+                  value,
+                  properties: updated,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: delete ──
+    this.registerTool({
+      name: 'delete',
+      description: 'Delete a frontmatter property from a document.',
+      isDestructive: true,
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Unique document identifier',
+          },
+          key: {
+            type: 'string',
+            description: 'Property key name to remove',
+          },
+        },
+        required: ['documentId', 'key'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const documentId = String(args.documentId || '').trim();
+          const key = String(args.key || '').trim();
+          if (!documentId) {
+            throw new Error("Parameter 'documentId' is required.");
+          }
+          if (!key) {
+            throw new Error("Parameter 'key' is required.");
+          }
+
+          await this.app.hearth.updateDocumentProperties(documentId, { [key]: null });
+          const updated = this.app.hearth.getDocumentProperties(documentId);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  documentId,
+                  deletedKey: key,
+                  properties: updated,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
   }
 }
 
 // Backwards-compat alias
 export const PropertiesPlugin = PropertiesExtension;
+export default PropertiesExtension;

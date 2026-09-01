@@ -21,6 +21,8 @@ import { ContextMenuRegistry } from '../registries/ContextMenuRegistry';
 import { ModalRegistry } from '../registries/ModalRegistry';
 import { PropertyRegistry } from '../registries/PropertyRegistry';
 import { TabDecoratorRegistry } from '../registries/TabDecoratorRegistry';
+import { ToolRegistry } from '../registries/ToolRegistry';
+import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
 import { storeRefs, bindFlintStores } from './storeBridge';
@@ -65,6 +67,8 @@ export class FlintApp {
   public properties: PropertyRegistry;
   /** Tab decorator registry managing custom tab titles, icons, and tooltips. */
   public tabDecorators: TabDecoratorRegistry;
+  /** MCP Tool registry managing AI agent callable tool definitions. */
+  public tools: ToolRegistry;
   /** Central event bus for decoupled inter-extension and system communications. */
   public events: EventBus;
   /** Extensions manager overseeing discovery, loading, enable/disable states, and sandbox. */
@@ -92,8 +96,12 @@ export class FlintApp {
     this.modals = new ModalRegistry();
     this.properties = new PropertyRegistry();
     this.tabDecorators = new TabDecoratorRegistry();
+    this.tools = new ToolRegistry(this);
     this.events = new EventBus();
     this.extensions = new ExtensionManager(this);
+
+    // Register Native Vault-Level MCP Tools
+    registerNativeTools(this);
 
     // Register built-in Extension & Plugin Document Viewer
     this.views.registerView({

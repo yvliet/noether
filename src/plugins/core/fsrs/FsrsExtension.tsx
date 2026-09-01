@@ -13,11 +13,20 @@
 
 import React, { useState, useEffect } from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { Brain02Icon } from '@/components/common/Icons';
 import { fsrsReadme } from './readme';
-import { initFsrsTables, getDueCardCount, deleteCardsForDocument } from './fsrsDb';
+import {
+  initFsrsTables,
+  getDueCards,
+  getDueCardCount,
+  getAllCards,
+  getCardsForDocument,
+  updateCardState,
+  deleteCardsForDocument,
+} from './fsrsDb';
+import { getSchedulingOptions } from './engine';
 
 const LazyFlashcardsView = React.lazy(() =>
   import('./FlashcardsView').then((m) => ({ default: m.FlashcardsView }))
@@ -191,6 +200,182 @@ export class FsrsExtension extends Extension {
       id: 'fsrs-card-syntax',
       hint: "'::' for flashcards",
       order: 10,
+    });
+
+    // ── MCP Tools Registration ──
+
+    // 8. Tool: fsrs_get_due_cards
+    this.registerTool({
+      name: 'get_due_cards',
+      description: 'Get all flashcards currently due for spaced repetition review, with optional document filter.',
+      category: 'study',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Optional document ID to filter due flashcards belonging to a specific note',
+          },
+        },
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const documentId = args.documentId as string | undefined;
+          let cards = await getDueCards();
+          if (documentId) {
+            cards = cards.filter((c) => c.document_id === documentId);
+          }
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ cards, total: cards.length }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 9. Tool: fsrs_get_due_count
+    this.registerTool({
+      name: 'get_due_count',
+      description: 'Get the total number of flashcards currently due for review across the entire vault.',
+      category: 'study',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      handler: async (_args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const count = await getDueCardCount();
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ dueCount: count }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 10. Tool: fsrs_review_card
+    this.registerTool({
+      name: 'review_card',
+      description: 'Record a study review outcome for a flashcard and advance its FSRS-4.5 spaced repetition state.',
+      category: 'study',
+      parameters: {
+        type: 'object',
+        properties: {
+          cardId: {
+            type: 'string',
+            description: 'Unique identifier of the flashcard being reviewed',
+          },
+          rating: {
+            type: 'string',
+            description: 'Review outcome rating',
+            enum: ['Again', 'Hard', 'Good', 'Easy'],
+          },
+        },
+        required: ['cardId', 'rating'],
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const cardId = args.cardId as string;
+          const rating = args.rating as string;
+          if (!cardId || !rating) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'cardId and rating parameters are required' }],
+            };
+          }
+
+          const allCards = await getAllCards();
+          const card = allCards.find((c) => c.id === cardId);
+          if (!card) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: `Flashcard with ID "${cardId}" not found.` }],
+            };
+          }
+
+          const options = getSchedulingOptions(card, new Date());
+          const selectedOption = options.find((opt) => opt.label.toLowerCase() === rating.toLowerCase());
+          if (!selectedOption) {
+            return {
+              isError: true,
+              content: [
+                {
+                  type: 'text',
+                  text: `Invalid rating "${rating}". Must be one of: Again, Hard, Good, Easy.`,
+                },
+              ],
+            };
+          }
+
+          await updateCardState(selectedOption.nextCard);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  cardId,
+                  rating: selectedOption.label,
+                  interval: selectedOption.intervalText,
+                  nextDue: new Date(selectedOption.nextCard.due).toISOString(),
+                  card: selectedOption.nextCard,
+                }),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 11. Tool: fsrs_get_cards_for_document
+    this.registerTool({
+      name: 'get_cards_for_document',
+      description: 'Retrieve all flashcards created in or associated with a specific note/document.',
+      category: 'study',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Target document identifier',
+          },
+        },
+        required: ['documentId'],
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const documentId = args.documentId as string;
+          if (!documentId) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'documentId parameter is required' }],
+            };
+          }
+          const cards = await getCardsForDocument(documentId);
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ documentId, cards, total: cards.length }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
     });
   }
 }

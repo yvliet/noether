@@ -11,9 +11,11 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { Calendar01Icon } from '@/components/common/Icons';
+import { DocumentItem } from '@/types';
+import { getDocumentById } from '@/lib/db/documents';
 import { useJournalSettings } from './journalSettings';
 import { journalReadme } from './readme';
 
@@ -73,11 +75,17 @@ export class JournalExtension extends Extension {
     super(app, manifest);
   }
 
-  public async openJournalNote(): Promise<void> {
+  /**
+   * Resolves or creates the journal note for a given calendar date.
+   *
+   * @param date - Target date to resolve or create journal for (defaults to today).
+   * @returns The resolved or newly created DocumentItem.
+   */
+  public async getOrCreateJournalNote(date: Date = new Date()): Promise<DocumentItem> {
     const { dailyFormat, dailyFolder } = useJournalSettings.getState();
     const format = dailyFormat || 'YYYY-MM-DD';
     const folder = (dailyFolder || '').trim();
-    const dateFormatted = formatDailyDate(new Date(), format);
+    const dateFormatted = formatDailyDate(date, format);
     const dateTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
 
     const docs = this.app.hearth.documents;
@@ -112,16 +120,22 @@ export class JournalExtension extends Extension {
       (d) => !d.is_folder && d.title === dateTitle && (targetFolderId ? d.parent_id === targetFolderId : true)
     );
 
-    this.app.workspace.setMainViewMode('document');
-
     if (existingNote) {
-      this.app.hearth.openDocument(existingNote.id);
-    } else {
-      const newDoc = await this.app.hearth.createNewNote(dateTitle, targetFolderId);
-      if (newDoc) {
-        this.app.hearth.openDocument(newDoc.id);
-      }
+      return existingNote;
     }
+
+    const newDoc = await this.app.hearth.createNewNote(dateTitle, targetFolderId);
+    if (!newDoc) {
+      throw new Error(`Failed to create daily journal note: "${dateTitle}"`);
+    }
+    return newDoc;
+  }
+
+  public async openJournalNote(date: Date = new Date()): Promise<DocumentItem> {
+    const doc = await this.getOrCreateJournalNote(date);
+    this.app.workspace.setMainViewMode('document');
+    this.app.hearth.openDocument(doc.id);
+    return doc;
   }
 
   public onload(): void {
@@ -167,6 +181,169 @@ export class JournalExtension extends Extension {
         this.openJournalNote();
       }, 300);
     }
+
+    // 5. Register MCP Tools
+    // ── Tool: open_today ──
+    this.registerTool({
+      name: 'open_today',
+      description: "Opens or creates today's daily journal note according to configured folder and date format settings.",
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      handler: async (): Promise<McpToolResult> => {
+        try {
+          const doc = await this.openJournalNote(new Date());
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  document: {
+                    id: doc.id,
+                    title: doc.title,
+                    parent_id: doc.parent_id,
+                  },
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: open_date ──
+    this.registerTool({
+      name: 'open_date',
+      description: "Opens or creates a daily journal note for a specific date (ISO format 'YYYY-MM-DD').",
+      parameters: {
+        type: 'object',
+        properties: {
+          date: {
+            type: 'string',
+            description: "ISO date string, e.g. '2024-01-15'",
+          },
+        },
+        required: ['date'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const dateStr = String(args.date || '').trim();
+          if (!dateStr) {
+            throw new Error("Parameter 'date' is required (e.g. '2024-01-15').");
+          }
+          const parts = dateStr.split('-').map(Number);
+          if (parts.length < 3 || isNaN(parts[0]) || isNaN(parts[1]) || isNaN(parts[2])) {
+            throw new Error(`Invalid date format '${dateStr}'. Expected ISO format 'YYYY-MM-DD'.`);
+          }
+          const targetDate = new Date(parts[0], parts[1] - 1, parts[2]);
+          const doc = await this.openJournalNote(targetDate);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  document: {
+                    id: doc.id,
+                    title: doc.title,
+                    parent_id: doc.parent_id,
+                  },
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: append_entry ──
+    this.registerTool({
+      name: 'append_entry',
+      description: "Appends text entry to today's daily journal note.",
+      parameters: {
+        type: 'object',
+        properties: {
+          text: {
+            type: 'string',
+            description: 'Text content to append to the journal note',
+          },
+        },
+        required: ['text'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const text = String(args.text ?? '');
+          if (!text.trim()) {
+            throw new Error("Parameter 'text' cannot be empty.");
+          }
+          const doc = await this.getOrCreateJournalNote(new Date());
+
+          // Load full content JSON from SQLite if not present in memory
+          let fullDoc = doc;
+          if (!fullDoc.content_json) {
+            const dbDoc = await getDocumentById(doc.id);
+            if (dbDoc) fullDoc = dbDoc;
+          }
+
+          let docContent: any = { type: 'doc', content: [] };
+          if (fullDoc.content_json) {
+            try {
+              docContent = JSON.parse(fullDoc.content_json);
+              if (!Array.isArray(docContent.content)) {
+                docContent.content = [];
+              }
+            } catch {
+              docContent = { type: 'doc', content: [] };
+            }
+          }
+
+          const lines = text.split('\n');
+          for (const line of lines) {
+            docContent.content.push({
+              type: 'paragraph',
+              content: line ? [{ type: 'text', text: line }] : [],
+            });
+          }
+
+          const updatedJson = JSON.stringify(docContent);
+          this.app.hearth.saveDocument(doc.id, updatedJson, doc.title);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  documentId: doc.id,
+                  title: doc.title,
+                  appendedText: text,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
   }
 }
 

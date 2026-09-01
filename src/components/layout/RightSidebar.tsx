@@ -46,7 +46,7 @@ export const RightSidebar: React.FC = React.memo(() => {
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
-    document.body.style = 'col-resize';
+    document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     const startX = e.clientX;
     const startWidth = rightSidebarWidth;
@@ -58,7 +58,7 @@ export const RightSidebar: React.FC = React.memo(() => {
 
     const handleMouseUp = () => {
       setIsResizing(false);
-      document.body.style = '';
+      document.body.style.cursor = '';
       document.body.style.userSelect = '';
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
@@ -72,7 +72,7 @@ export const RightSidebar: React.FC = React.memo(() => {
     (e: React.MouseEvent) => {
       e.preventDefault();
       setIsVerticalSplitResizing(true);
-      document.body.style = 'row-resize';
+      document.body.style.cursor = 'row-resize';
       document.body.style.userSelect = 'none';
 
       const sidebarEl = (e.target as HTMLElement).closest('aside[data-sidebar="true"]');
@@ -89,7 +89,7 @@ export const RightSidebar: React.FC = React.memo(() => {
 
       const handleMouseUp = () => {
         setIsVerticalSplitResizing(false);
-        document.body.style = '';
+        document.body.style.cursor = '';
         document.body.style.userSelect = '';
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);

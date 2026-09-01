@@ -12,9 +12,15 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { LinkSquare02Icon } from '@/components/common/Icons';
+import {
+  getBacklinksForDocument,
+  getOutgoingLinksWithDetails,
+  getUnlinkedMentionsForDocument,
+  convertUnlinkedMentionToLink,
+} from '@/lib/db/links';
 import { useBacklinksSettings } from './backlinksSettings';
 import { backlinksReadme } from './readme';
 
@@ -162,6 +168,167 @@ export class BacklinksExtension extends Extension {
       onClick: (app) => {
         app.workspace.setActiveSidebarTab('right', 'backlinks');
         app.workspace.setSidebarOpen('right', true);
+      },
+    });
+
+    // ── MCP Tools Registration ──
+
+    // 7. Tool: backlinks_get_incoming
+    this.registerTool({
+      name: 'get_incoming',
+      description: 'Get incoming backlinks that link to the specified document from other notes.',
+      category: 'backlinks',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Target document identifier to find backlinks for',
+          },
+        },
+        required: ['documentId'],
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const documentId = args.documentId as string;
+          if (!documentId) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'documentId parameter is required' }],
+            };
+          }
+          const backlinks = await getBacklinksForDocument(documentId);
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ documentId, backlinks, total: backlinks.length }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 8. Tool: backlinks_get_outgoing
+    this.registerTool({
+      name: 'get_outgoing',
+      description: 'Get all outgoing wikilinks and document references contained within a note.',
+      category: 'backlinks',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Source document identifier to extract outgoing links from',
+          },
+        },
+        required: ['documentId'],
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const documentId = args.documentId as string;
+          if (!documentId) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'documentId parameter is required' }],
+            };
+          }
+          const outgoingLinks = await getOutgoingLinksWithDetails(documentId);
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ documentId, outgoingLinks, total: outgoingLinks.length }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 9. Tool: backlinks_get_unlinked_mentions
+    this.registerTool({
+      name: 'get_unlinked_mentions',
+      description: 'Find plain-text mentions of a document title in other notes that are not yet wikilinked.',
+      category: 'backlinks',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Document identifier being mentioned',
+          },
+          title: {
+            type: 'string',
+            description: 'Title string to search unlinked mentions for',
+          },
+        },
+        required: ['documentId', 'title'],
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const documentId = args.documentId as string;
+          const title = args.title as string;
+          if (!documentId || !title) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'documentId and title parameters are required' }],
+            };
+          }
+          const mentions = await getUnlinkedMentionsForDocument(documentId, title);
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ documentId, title, mentions, total: mentions.length }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 10. Tool: backlinks_convert_mention
+    this.registerTool({
+      name: 'convert_mention',
+      description: 'Convert a plain-text mention in a source document into a formal [[wikilink]].',
+      category: 'backlinks',
+      isDestructive: false,
+      parameters: {
+        type: 'object',
+        properties: {
+          sourceDocumentId: {
+            type: 'string',
+            description: 'Source document ID where the plain-text mention appears',
+          },
+          title: {
+            type: 'string',
+            description: 'The title string to wrap in wikilink brackets',
+          },
+        },
+        required: ['sourceDocumentId', 'title'],
+      },
+      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const sourceDocumentId = args.sourceDocumentId as string;
+          const title = args.title as string;
+          if (!sourceDocumentId || !title) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'sourceDocumentId and title parameters are required' }],
+            };
+          }
+          const success = await convertUnlinkedMentionToLink(sourceDocumentId, title);
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ success, sourceDocumentId, title }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
       },
     });
   }

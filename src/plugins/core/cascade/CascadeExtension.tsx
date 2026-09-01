@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { CascadeIcon, CascadeBookIcon } from './cascadeIcons';
 import { CascadeStatusBarItem } from './CascadeStatusBarItem';
@@ -26,6 +26,7 @@ import {
   parseCascadePageString,
   formatCascadePageDisplay,
   getAllCascades,
+  getCascadeNotes,
 } from './cascadeManager';
 import { CascadeFolderNode } from './CascadeFolderNode';
 import { useCascadeSettings } from './cascadeSettings';
@@ -409,8 +410,213 @@ export class CascadeExtension extends Extension {
       icon: <CascadeIcon size={14} />,
       render: () => <CascadeSettingsTab />,
     });
+
+    // 11. Register MCP Tools
+    // ── Tool: list ──
+    this.registerTool({
+      name: 'list',
+      description: 'List all cascade books and their member notes in sequential page order.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      handler: async (): Promise<McpToolResult> => {
+        try {
+          const cascades = getAllCascades(this.app.hearth.documents);
+          const result = cascades.map((c) => ({
+            name: c.name,
+            pageCount: c.notes.length,
+            notes: c.notes.map((n) => ({
+              documentId: n.doc.id,
+              title: n.doc.title,
+              pageNumber: n.page,
+              displayPage: formatCascadePageDisplay(n.page),
+            })),
+          }));
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  totalCascades: result.length,
+                  cascades: result,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: get_notes ──
+    this.registerTool({
+      name: 'get_notes',
+      description: 'Get ordered sequential pages in a specific cascade book.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cascadeName: {
+            type: 'string',
+            description: 'Name of the cascade book',
+          },
+        },
+        required: ['cascadeName'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const cascadeName = String(args.cascadeName || '').trim();
+          if (!cascadeName) {
+            throw new Error("Parameter 'cascadeName' is required.");
+          }
+
+          const notes = getCascadeNotes(cascadeName, this.app.hearth.documents);
+          const result = notes.map((n) => ({
+            documentId: n.doc.id,
+            title: n.doc.title,
+            pageNumber: n.page,
+            displayPage: formatCascadePageDisplay(n.page),
+          }));
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  cascadeName,
+                  pageCount: result.length,
+                  pages: result,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: assign_note ──
+    this.registerTool({
+      name: 'assign_note',
+      description: 'Assign a note to a specific page number within a cascade book.',
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Unique document identifier',
+          },
+          cascadeName: {
+            type: 'string',
+            description: 'Name of the cascade book',
+          },
+          pageNumber: {
+            type: 'number',
+            description: 'Page index number (positive integer or Roman/negative integer)',
+          },
+        },
+        required: ['documentId', 'cascadeName', 'pageNumber'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const documentId = String(args.documentId || '').trim();
+          const cascadeName = String(args.cascadeName || '').trim();
+          const pageNumber = Number(args.pageNumber);
+
+          if (!documentId) {
+            throw new Error("Parameter 'documentId' is required.");
+          }
+          if (!cascadeName) {
+            throw new Error("Parameter 'cascadeName' is required.");
+          }
+          if (isNaN(pageNumber)) {
+            throw new Error("Parameter 'pageNumber' must be a valid number.");
+          }
+
+          await assignNoteToCascade(documentId, cascadeName, pageNumber);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  documentId,
+                  cascadeName,
+                  pageNumber,
+                  displayPage: formatCascadePageDisplay(pageNumber),
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: remove_note ──
+    this.registerTool({
+      name: 'remove_note',
+      description: 'Remove a note from its cascade book, resetting its cascade metadata and graph connections.',
+      isDestructive: true,
+      parameters: {
+        type: 'object',
+        properties: {
+          documentId: {
+            type: 'string',
+            description: 'Unique document identifier to remove from cascade',
+          },
+        },
+        required: ['documentId'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const documentId = String(args.documentId || '').trim();
+          if (!documentId) {
+            throw new Error("Parameter 'documentId' is required.");
+          }
+
+          await removeNoteFromCascade(documentId);
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  documentId,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
   }
 }
 
 // Backwards-compat alias
 export const CascadePlugin = CascadeExtension;
+export default CascadeExtension;

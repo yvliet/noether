@@ -55,6 +55,14 @@ export interface WorkspaceEvents {
    * @since 0.2.0
    */
   'file-tree:drop': { sourceId: string; targetId: string; position?: 'inside' | 'before' | 'after' };
+
+  // ── MCP Tool Lifecycle ──
+  /** Emitted when an MCP tool is invoked by an agent or external client. */
+  'mcp:tool-called': { toolName: string; args: Record<string, unknown>; source: string };
+  /** Emitted after an MCP tool execution completes (success or failure). */
+  'mcp:tool-result': { toolName: string; success: boolean; durationMs: number; error?: string };
+  /** Emitted when the set of registered MCP tools changes (extension loaded/unloaded). */
+  'mcp:tools-changed': { count: number };
 }
 
 /**

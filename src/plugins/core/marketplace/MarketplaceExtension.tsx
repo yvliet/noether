@@ -11,10 +11,11 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { Store01Icon } from '@/components/common/Icons';
 import { marketplaceReadme } from './readme';
+import { COMMUNITY_MARKETPLACE_CATALOGUE } from './MarketplaceView';
 
 const LazyMarketplaceView = React.lazy(() =>
   import('./MarketplaceView').then((m) => ({ default: m.MarketplaceView }))
@@ -104,8 +105,114 @@ export class MarketplaceExtension extends Extension {
         </React.Suspense>
       ),
     });
+
+    // 5. Register MCP Tools
+    // ── Tool: list_installed ──
+    this.registerTool({
+      name: 'list_installed',
+      description: 'List all installed extensions (core and community) in the application.',
+      parameters: {
+        type: 'object',
+        properties: {},
+      },
+      handler: async (): Promise<McpToolResult> => {
+        try {
+          const manifests = this.app.extensions.getAllManifests();
+          const list = manifests.map((m) => ({
+            id: m.id,
+            name: m.name,
+            version: m.version,
+            description: m.description,
+            author: m.author,
+            isCore: Boolean(m.isCore),
+            tags: m.tags || [],
+            isEnabled: this.app.extensions.isExtensionEnabled(m.id),
+          }));
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  totalInstalled: list.length,
+                  extensions: list,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
+
+    // ── Tool: search ──
+    this.registerTool({
+      name: 'search',
+      description: 'Search the community extension marketplace catalogue for available plugins and extensions.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Search term to match against extension names, descriptions, and authors',
+          },
+        },
+        required: ['query'],
+      },
+      handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
+        try {
+          const q = String(args.query || '').trim().toLowerCase();
+          const matches = COMMUNITY_MARKETPLACE_CATALOGUE.filter(
+            (p) =>
+              !q ||
+              p.name.toLowerCase().includes(q) ||
+              p.description.toLowerCase().includes(q) ||
+              p.author.toLowerCase().includes(q) ||
+              p.category.toLowerCase().includes(q)
+          );
+
+          const results = matches.map((m) => ({
+            id: m.id,
+            name: m.name,
+            version: m.version,
+            author: m.author,
+            description: m.description,
+            downloads: m.downloads,
+            stars: m.stars,
+            category: m.category,
+            featured: Boolean(m.featured),
+            isInstalled: Boolean(this.app.extensions.getExtensionManifest(m.id)),
+          }));
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  query: q,
+                  totalMatches: results.length,
+                  results,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    });
   }
 }
 
 // Backwards-compat alias
 export const MarketplacePlugin = MarketplaceExtension;
+export default MarketplaceExtension;

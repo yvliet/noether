@@ -102,7 +102,7 @@ export function useTreeDragDrop({
               moveEvent.clientX,
               moveEvent.clientY
             );
-            document.body.style = 'grabbing';
+            document.body.style.cursor = 'grabbing';
             document.body.style.userSelect = 'none';
           }
         }
@@ -243,7 +243,7 @@ export function useTreeDragDrop({
           hoverTimeoutRef.current = null;
         }
 
-        document.body.style = '';
+        document.body.style.cursor = '';
         document.body.style.userSelect = '';
 
         if (hasStartedDrag) {

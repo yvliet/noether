@@ -491,7 +491,7 @@ export function useTabReorder<T>({
           if (Math.hypot(dx, dy) >= dragDistanceThreshold) {
             hasStartedDrag = true;
             justDraggedRef.current = true;
-            document.body.style = 'grabbing';
+            document.body.style.cursor = 'grabbing';
             document.body.style.userSelect = 'none';
 
             const currentItem = itemsRef.current[index];
@@ -524,8 +524,8 @@ export function useTabReorder<T>({
         const targets = computeDragTargets(moveEvent.clientX, moveEvent.clientY, currentItem);
         const isInvalidDrop = !targets.targetPaneId && !targets.targetDockZone;
         const cursorStyle = isInvalidDrop ? 'no-drop' : 'grabbing';
-        targetEl.style = cursorStyle;
-        document.body.style = cursorStyle;
+        targetEl.style.cursor = cursorStyle;
+        document.body.style.cursor = cursorStyle;
 
         broadcastDragState({
           sourceType: 'tab',
@@ -541,8 +541,8 @@ export function useTabReorder<T>({
         window.removeEventListener('pointerup', onPointerUp);
         window.removeEventListener('pointercancel', onPointerUp);
 
-        targetEl.style = '';
-        document.body.style = '';
+        targetEl.style.cursor = '';
+        document.body.style.cursor = '';
         document.body.style.userSelect = '';
         dragTooltipManager.hide();
 
@@ -658,7 +658,7 @@ export function useDockReorder<T extends { id: string; title: string }>({
           if (Math.hypot(dx, dy) >= dragDistanceThreshold) {
             hasStartedDrag = true;
             justDraggedRef.current = true;
-            document.body.style = 'grabbing';
+            document.body.style.cursor = 'grabbing';
             document.body.style.userSelect = 'none';
 
             const currentItem = itemsRef.current[index];
@@ -693,8 +693,8 @@ export function useDockReorder<T extends { id: string; title: string }>({
         const targets = computeDragTargets(moveEvent.clientX, moveEvent.clientY, currentItem);
         const isInvalidDrop = !targets.targetPaneId && !targets.targetDockZone;
         const cursorStyle = isInvalidDrop ? 'no-drop' : 'grabbing';
-        targetEl.style = cursorStyle;
-        document.body.style = cursorStyle;
+        targetEl.style.cursor = cursorStyle;
+        document.body.style.cursor = cursorStyle;
 
         broadcastDragState({
           sourceType: 'dock',
@@ -711,8 +711,8 @@ export function useDockReorder<T extends { id: string; title: string }>({
         window.removeEventListener('pointerup', onPointerUp);
         window.removeEventListener('pointercancel', onPointerUp);
 
-        targetEl.style = '';
-        document.body.style = '';
+        targetEl.style.cursor = '';
+        document.body.style.cursor = '';
         document.body.style.userSelect = '';
         dragTooltipManager.hide();
 

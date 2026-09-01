@@ -53,6 +53,8 @@ import {
   FileTreeItemDecorator,
   TabDecoratorDefinition,
   BreadcrumbProviderDefinition,
+  McpToolDefinition,
+  McpPromptDefinition,
 } from './types';
 
 export abstract class Extension {
@@ -509,6 +511,52 @@ export abstract class Extension {
     const d = this.app.editor.registerBreadcrumbProvider({
       ...provider,
       id: `${this.manifest.id}:${provider.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers an MCP Tool callable by AI agents and external MCP clients.
+   * Tool names are automatically prefixed with the extension's manifest ID
+   * to prevent cross-extension naming collisions.
+   * Automatically unregistered when the extension is disabled or unloaded.
+   *
+   * @param tool - MCP Tool definition with JSON schema and async handler.
+   * @returns A Disposable to unregister the tool early if needed.
+   * @since 0.3.0
+   */
+  public registerTool(tool: McpToolDefinition): Disposable {
+    const scopedName = tool.name.startsWith(`${this.manifest.id}_`)
+      ? tool.name
+      : `${this.manifest.id}_${tool.name}`;
+
+    const d = this.app.tools.registerTool({
+      ...tool,
+      name: scopedName,
+      extensionId: this.manifest.id,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers an MCP Prompt template callable by AI agents and external MCP clients.
+   * Prompt names are automatically prefixed with the extension's manifest ID
+   * to avoid naming conflicts.
+   * Automatically unregistered when the extension is disabled or unloaded.
+   *
+   * @param prompt - MCP Prompt definition with arguments and message generator.
+   * @returns A Disposable to unregister the prompt early if needed.
+   * @since 0.3.0
+   */
+  public registerPrompt(prompt: McpPromptDefinition): Disposable {
+    const scopedName = prompt.name.startsWith(`${this.manifest.id}_`)
+      ? prompt.name
+      : `${this.manifest.id}_${prompt.name}`;
+
+    const d = this.app.tools.registerPrompt({
+      ...prompt,
+      name: scopedName,
+      extensionId: this.manifest.id,
     });
     return this.registerDisposable(d);
   }

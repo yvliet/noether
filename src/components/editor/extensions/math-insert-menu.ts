@@ -115,7 +115,7 @@ export function buildMathInsertSubmenus(
       submenu: items.map((item) => ({
         id: `math-item-${item.id}`,
         title: item.title,
-        onClick: () => onInsert(item.latex, itemOffset),
+        onClick: () => onInsert(item.latex, item.cursorOffset),
       })),
     };
   });

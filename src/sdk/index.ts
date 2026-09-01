@@ -34,6 +34,7 @@
 export { Extension, Plugin } from '../core/extensions/Extension';
 export { ExtensionManager, PluginManager } from '../core/extensions/ExtensionManager';
 export { FlintApp, appInstance } from '../core/app/FlintApp';
+export { registerNativeTools } from '../core/mcp/NativeMcpTools';
 export { EventBus } from '../core/events/EventBus';
 export { renderHugeIconSvg } from '../components/common/Icons';
 export type { IconProps, RenderHugeIconSvgOptions } from '../components/common/Icons';
@@ -77,6 +78,18 @@ export type {
   PropertyIconDefinition,
   FileTreeSectionDefinition,
   FileTreeItemDecorator,
+} from '../core/extensions/types';
+
+// ── MCP Tool & Prompt Types ──
+export type {
+  McpJsonSchema,
+  McpContentBlock,
+  McpToolResult,
+  McpToolDefinition,
+  McpPromptArgument,
+  McpPromptMessage,
+  McpPromptResult,
+  McpPromptDefinition,
 } from '../core/extensions/types';
 
 // ── Event Bus Types ──
