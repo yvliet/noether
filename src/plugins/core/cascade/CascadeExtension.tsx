@@ -31,6 +31,10 @@ import {
 import { CascadeFolderNode } from './CascadeFolderNode';
 import { useCascadeSettings } from './cascadeSettings';
 
+const LazyCascadeView = React.lazy(() =>
+  import('./CascadeView').then((m) => ({ default: m.CascadeView }))
+);
+
 export const CASCADE_MANIFEST: ExtensionManifest = {
   id: 'flint-cascade',
   name: 'Cascade',
@@ -48,7 +52,21 @@ export class CascadeExtension extends Extension {
   }
 
   public onload(): void {
-    // 1. Register Status Bar Item (Right side, beside editor mode and sync icons)
+    // 1. Register Left Sidebar Tab (Top-left, right next to Bookmarks)
+    this.registerSidebarTab({
+      id: 'cascade',
+      title: 'Cascade',
+      icon: <CascadeIcon size={14} />,
+      side: 'left',
+      order: 21,
+      render: () => (
+        <React.Suspense fallback={null}>
+          <LazyCascadeView />
+        </React.Suspense>
+      ),
+    });
+
+    // 2. Register Status Bar Item (Right side, beside editor mode and sync icons)
     this.addStatusBarItem({
       id: 'status-item',
       alignment: 'right',
@@ -150,7 +168,7 @@ export class CascadeExtension extends Extension {
             icon: <CascadeIcon size={12} className="inline mr-1 text-[#aaa]" />,
             onClick: (appInstance) => {
               appInstance.workspace.setSidebarOpen('left', true);
-              appInstance.workspace.setActiveSidebarTab('left', 'files');
+              appInstance.workspace.setActiveSidebarTab('left', 'cascade');
               window.dispatchEvent(
                 new CustomEvent('flint:reveal-tree-item', {
                   detail: { id: `cascade-${cascadeName}` },
@@ -219,24 +237,7 @@ export class CascadeExtension extends Extension {
       ],
     });
 
-    // 8. Register Sidebar Virtual Folders Section
-    this.registerFileTreeSection({
-      id: 'cascade-virtual-folders',
-      order: 10,
-      render: ({ documents }) => {
-        const cascades = getAllCascades(documents);
-        if (cascades.length === 0) return null;
-        return (
-          <>
-            {cascades.map((cascade) => (
-              <CascadeFolderNode key={`cascade-book-${cascade.name}`} cascade={cascade} />
-            ))}
-          </>
-        );
-      },
-    });
-
-    // 9. Register File Tree Item Decorator (Suppress normal tree highlight/editing while active in Cascade)
+    // 8. Register File Tree Item Decorator (Suppress normal tree highlight/editing while active in Cascade)
     this.registerFileTreeDecorator({
       id: 'cascade-node-suppression',
       suppressHighlight: (doc, context) => {
@@ -253,7 +254,17 @@ export class CascadeExtension extends Extension {
       },
     });
 
-    // 7. Register Navigation Commands
+    // 9. Register Navigation Commands
+    this.addCommand({
+      id: 'cmd-open-cascade-view',
+      title: 'Open Cascade sidebar tab',
+      section: 'Navigation',
+      icon: <CascadeIcon size={16} />,
+      action: (app) => {
+        app.workspace.setActiveSidebarTab('left', 'cascade');
+      },
+    });
+
     this.addCommand({
       id: 'cascade:prev-page',
       title: 'Cascade: Previous page in cascade',

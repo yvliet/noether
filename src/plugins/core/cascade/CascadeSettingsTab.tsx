@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCascadeSettings, DEFAULT_CASCADE_SETTINGS } from './cascadeSettings';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
+import { CascadeIcon } from './cascadeIcons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useDocumentStore } from '@/store/documentStore';
+import { getAllCascades } from './cascadeManager';
 
 export const CascadeSettingsTab: React.FC = () => {
   const {
@@ -16,6 +19,17 @@ export const CascadeSettingsTab: React.FC = () => {
   } = useCascadeSettings();
 
   const showToast = useWorkspaceStore((s) => s.showToast);
+  const setActiveLeftView = useWorkspaceStore((s) => s.setActiveLeftView);
+  const setIsLeftSidebarOpen = useWorkspaceStore((s) => s.setIsLeftSidebarOpen);
+  const documents = useDocumentStore((s) => s.documents);
+
+  const allCascades = useMemo(() => getAllCascades(documents), [documents]);
+
+  const handleOpenCascadeSidebar = () => {
+    setIsLeftSidebarOpen(true);
+    setActiveLeftView('cascade' as any);
+    showToast('Opened Cascade in left sidebar', 'info');
+  };
 
   const isModified =
     showInStatusBar !== DEFAULT_CASCADE_SETTINGS.showInStatusBar ||
@@ -49,6 +63,24 @@ export const CascadeSettingsTab: React.FC = () => {
 
       {/* Main Settings Card */}
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* Cascade Count & Quick View */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Active Cascade Books</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              You currently have {allCascades.length} cascade {allCascades.length === 1 ? 'book' : 'books'} in this hearth.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleOpenCascadeSidebar}
+            className="px-3.5 py-1.5 bg-[#282828] hover:bg-[#333] active:bg-[#222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
+          >
+            <CascadeIcon size={13} />
+            <span>Open in Sidebar</span>
+          </button>
+        </div>
+
         {/* Status bar item */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
