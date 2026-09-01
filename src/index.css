@@ -752,6 +752,53 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   pointer-events: none;
 }
 
+/* Quicknote Sticky Note TipTap Overrides */
+.quicknote-prosemirror.ProseMirror {
+  color: inherit !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.quicknote-prosemirror.ProseMirror p {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.quicknote-prosemirror.ProseMirror strong,
+.quicknote-prosemirror.ProseMirror b {
+  color: inherit !important;
+  font-weight: 700;
+}
+
+.quicknote-prosemirror.ProseMirror em,
+.quicknote-prosemirror.ProseMirror i {
+  color: inherit !important;
+  font-style: italic;
+}
+
+.quicknote-prosemirror.ProseMirror p.is-editor-empty:first-child::before {
+  color: currentColor;
+  opacity: 0.35;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+  margin: 0.3rem 0;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > label {
+  margin-top: 0.2rem;
+  user-select: none;
+}
+
 /* Obsidian Live Preview: Heading and Blockquote indicators */
 .ProseMirror h1.is-active-h1::before {
   content: '# ';

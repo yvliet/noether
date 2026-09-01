@@ -2110,6 +2110,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const setLinkFormat = useSettingsStore((s) => s.setLinkFormat);
   const autoUpdateLinks = useSettingsStore((s) => s.autoUpdateLinks);
   const setAutoUpdateLinks = useSettingsStore((s) => s.setAutoUpdateLinks);
+  const promptFolderSelection = useWorkspaceStore((s) => s.promptFolderSelection);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
 
   const [tempHearthName, setTempHearthName] = useState(hearthName);

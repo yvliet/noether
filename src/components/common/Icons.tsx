@@ -129,6 +129,7 @@ import {
   TableIcon as HugeTableIcon,
   ChevronDownIcon as HugeChevronDownIcon,
   ChevronRightIcon as HugeChevronRightIcon,
+  ArrowExpandIcon as HugeArrowExpandIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -288,6 +289,7 @@ export const FilterIcon = createIcon(HugeFilterIcon);
 export const ListTreeIcon = createIcon(HugeListTreeIcon);
 export const CheckIcon = createIcon(HugeCheckIcon);
 export const Maximize2Icon = createIcon(HugeMaximize01Icon);
+export const Maximize01Icon = Maximize2Icon;
 export const Minimize2Icon = createIcon(HugeMinimize01Icon);
 export const PlayIcon = createIcon(HugePlayIcon);
 export const PauseIcon = createIcon(HugePauseIcon);
@@ -341,6 +343,7 @@ export const Menu01Icon = createIcon(HugeMenu01Icon);
 export const TextFootnoteIcon = createIcon(HugeTextFootnoteIcon);
 export const TextSelectionIcon = createIcon(HugeTextSelectionIcon);
 export const TableIcon = createIcon(HugeTableIcon);
+export const ArrowExpandIcon = createIcon(HugeArrowExpandIcon);
 
 /**
  * Custom dual-stacked chevrons indicator.

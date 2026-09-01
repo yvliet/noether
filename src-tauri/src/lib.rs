@@ -194,12 +194,19 @@ pub fn run() {
             vault::window_start_dragging,
             vault::window_set_title,
             vault::notify_user_activity,
+            vault::focus_main_window,
+            vault::register_global_shortcut,
+            vault::unregister_global_shortcut,
             set_accent_icon,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
             let vault_to_watch = initial_vault.clone();
 
+            // Initialize general-purpose global hotkey loop
+            vault::init_global_hotkeys(handle.clone());
+
+            let handle_watcher = handle.clone();
             // Background thread for real-time vault file watcher (cross-platform)
             std::thread::spawn(move || {
                 let (tx, rx) = std::sync::mpsc::channel();
@@ -233,7 +240,7 @@ pub fn run() {
                                 // Debounce slightly
                                 std::thread::sleep(Duration::from_millis(150));
                                 if !vault::is_recent_internal_write() {
-                                    let _ = handle.emit("vault-files-changed", ());
+                                    let _ = handle_watcher.emit("vault-files-changed", ());
                                 }
                             }
                         }

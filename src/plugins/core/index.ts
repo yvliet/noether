@@ -8,6 +8,7 @@ import { BacklinksExtension, BACKLINKS_MANIFEST } from './backlinks/BacklinksExt
 import { TagsExtension, TAGS_MANIFEST } from './tags/TagsExtension';
 import { OutlineExtension, OUTLINE_MANIFEST } from './outline/OutlineExtension';
 import { PropertiesExtension, PROPERTIES_MANIFEST } from './properties/PropertiesExtension';
+import { QuicknoteExtension, QUICKNOTE_MANIFEST } from './quicknote/QuicknoteExtension';
 import { TablesExtension, TABLES_MANIFEST } from './tables/TablesExtension';
 import { BookmarksExtension, BOOKMARKS_MANIFEST } from './bookmarks/BookmarksExtension';
 import { MarketplaceExtension, MARKETPLACE_MANIFEST } from './marketplace/MarketplaceExtension';
@@ -18,6 +19,7 @@ import { DefaultStatusBarExtension, DEFAULT_STATUS_BAR_MANIFEST } from './defaul
 export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(DEFAULT_COMMANDS_MANIFEST, DefaultCommandsExtension);
   app.extensions.registerExtension(DEFAULT_STATUS_BAR_MANIFEST, DefaultStatusBarExtension);
+  app.extensions.registerExtension(QUICKNOTE_MANIFEST, QuicknoteExtension);
   app.extensions.registerExtension(BOOKMARKS_MANIFEST, BookmarksExtension);
   app.extensions.registerExtension(MARKETPLACE_MANIFEST, MarketplaceExtension);
   app.extensions.registerExtension(CASCADE_MANIFEST, CascadeExtension);

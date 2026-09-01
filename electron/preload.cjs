@@ -30,6 +30,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openSettingsWindow: () => ipcRenderer.invoke('open-settings-window'),
   closeSettingsWindow: () => ipcRenderer.invoke('close-settings-window'),
 
+  // General-purpose global hotkeys and window controls
+  registerGlobalShortcut: (id, shortcut) => ipcRenderer.invoke('register-global-shortcut', id, shortcut),
+  unregisterGlobalShortcut: (id) => ipcRenderer.invoke('unregister-global-shortcut', id),
+  onGlobalShortcut: (callback) => {
+    const listener = (event, id) => callback(id);
+    ipcRenderer.on('global-shortcut-activated', listener);
+    return () => ipcRenderer.removeListener('global-shortcut-activated', listener);
+  },
+  focusMainWindow: () => ipcRenderer.invoke('focus-main-window'),
+
   // Hearth event subscriptions
   onHearthChanged: (callback) => {
     const listener = (event, data) => callback(data);

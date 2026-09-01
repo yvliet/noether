@@ -25,7 +25,9 @@ import {
   RotateCcwIcon,
   BookOpen01Icon,
   SourceCodeIcon,
+  SparklesIcon,
 } from '@/components/common/Icons';
+import { platform } from '@/lib/platform/platformAdapter';
 import { defaultCommandsReadme } from './defaultCommandsReadme';
 
 const LazyDefaultCommandsSettingsTab = React.lazy(() =>

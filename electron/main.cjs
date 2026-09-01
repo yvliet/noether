@@ -1,5 +1,5 @@
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, globalShortcut } = require('electron');
 const path = require('path');
 const http = require('http');
 const fs = require('fs');
@@ -206,6 +206,128 @@ function createVaultWindow() {
   });
 }
 
+let sparkWindow = null;
+let currentSparkShortcut = 'Ctrl+Shift+Space';
+
+function createSparkWindow() {
+  if (sparkWindow && !sparkWindow.isDestroyed()) {
+    return sparkWindow;
+  }
+
+  sparkWindow = new BrowserWindow({
+    width: 620,
+    height: 320,
+    minWidth: 480,
+    minHeight: 220,
+    maxWidth: 840,
+    maxHeight: 560,
+    frame: false,
+    transparent: true,
+    backgroundColor: '#00000000',
+    alwaysOnTop: true,
+    skipTaskbar: true,
+    resizable: true,
+    show: false,
+    icon: path.join(__dirname, 'assets', process.platform === 'darwin' ? 'icon.icns' : 'icon.png'),
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+      webSecurity: false,
+    },
+    title: 'Flint Spark',
+  });
+
+  const devUrl = 'http://127.0.0.1:5173?window=spark';
+  checkUrl('http://127.0.0.1:5173').then((isUp) => {
+    if (isUp) {
+      sparkWindow.loadURL(devUrl);
+    } else {
+      sparkWindow.loadFile(path.join(__dirname, '../dist/index.html'), { query: { window: 'spark' } });
+    }
+  });
+
+  sparkWindow.on('closed', () => {
+    sparkWindow = null;
+  });
+
+  return sparkWindow;
+}
+
+function showSparkWindow() {
+  const win = createSparkWindow();
+  if (win && !win.isDestroyed()) {
+    win.center();
+    win.show();
+    win.focus();
+    if (win.webContents) {
+      win.webContents.send('spark-activated');
+    }
+  }
+}
+
+function hideSparkWindow() {
+  if (sparkWindow && !sparkWindow.isDestroyed() && sparkWindow.isVisible()) {
+    sparkWindow.hide();
+  }
+}
+
+function toggleSparkWindow() {
+  if (sparkWindow && !sparkWindow.isDestroyed() && sparkWindow.isVisible()) {
+    hideSparkWindow();
+  } else {
+    showSparkWindow();
+  }
+}
+
+function toElectronAccelerator(hotkey) {
+  if (!hotkey) return 'CommandOrControl+Shift+Space';
+  return hotkey
+    .replace(/\bCtrl\b/gi, 'CommandOrControl')
+    .replace(/\bCmd\b/gi, 'CommandOrControl');
+}
+
+const registeredGlobalShortcuts = new Map();
+
+function registerGenericGlobalShortcut(id, hotkey) {
+  try {
+    if (registeredGlobalShortcuts.has(id)) {
+      globalShortcut.unregister(registeredGlobalShortcuts.get(id));
+      registeredGlobalShortcuts.delete(id);
+    }
+  } catch (e) {}
+
+  if (!hotkey) return;
+  const accelerator = toElectronAccelerator(hotkey);
+
+  try {
+    const success = globalShortcut.register(accelerator, () => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        if (mainWindow.isMinimized()) {
+          mainWindow.restore();
+        }
+        mainWindow.show();
+        mainWindow.focus();
+        mainWindow.webContents.send('global-shortcut-activated', id);
+      }
+    });
+    if (success) {
+      registeredGlobalShortcuts.set(id, accelerator);
+    }
+  } catch (err) {
+    console.error('[Flint GlobalShortcut] Error registering:', id, accelerator, err);
+  }
+}
+
+function unregisterGenericGlobalShortcut(id) {
+  try {
+    if (registeredGlobalShortcuts.has(id)) {
+      globalShortcut.unregister(registeredGlobalShortcuts.get(id));
+      registeredGlobalShortcuts.delete(id);
+    }
+  } catch (e) {}
+}
+
 function attachWindowEvents(win) {
   if (!win) return;
   const sendMaximizedState = () => {
@@ -325,7 +447,31 @@ function registerIpc() {
       settingsWindow.close();
     }
     return { success: true };
-  });  // Hearth & Vault Management IPC Handlers
+  });
+
+  // General-purpose Global Shortcut & Window Focus Controls
+  ipcMain.handle('register-global-shortcut', (event, id, shortcut) => {
+    registerGenericGlobalShortcut(id, shortcut);
+    return { success: true };
+  });
+
+  ipcMain.handle('unregister-global-shortcut', (event, id) => {
+    unregisterGenericGlobalShortcut(id);
+    return { success: true };
+  });
+
+  ipcMain.handle('focus-main-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.show();
+      mainWindow.focus();
+    }
+    return { success: true };
+  });
+
+  // Hearth & Vault Management IPC Handlers
   const handleGetCurrentHearth = async () => {
     const vaultPath = appConfig.currentVaultPath;
     const vaultName = path.basename(vaultPath) || 'Flint Hearth';
@@ -948,6 +1094,10 @@ app.whenReady().then(() => {
       createWindow();
     }
   });
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 app.on('window-all-closed', () => {

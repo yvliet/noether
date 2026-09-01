@@ -163,6 +163,11 @@ declare global {
       closeVaultWindow?: () => Promise<{ success: boolean }>;
       openSettingsWindow?: () => Promise<{ success: boolean }>;
       closeSettingsWindow?: () => Promise<{ success: boolean }>;
+      // General-purpose global hotkeys and window focus
+      registerGlobalShortcut?: (id: string, shortcut: string) => Promise<{ success: boolean }>;
+      unregisterGlobalShortcut?: (id: string) => Promise<{ success: boolean }>;
+      onGlobalShortcut?: (callback: (id: string) => void) => () => void;
+      focusMainWindow?: () => Promise<{ success: boolean }>;
       // Hearth event subscriptions
       onHearthChanged?: (callback: (hearth: { path: string; name: string; recentHearths: RecentHearthItem[] }) => void) => () => void;
       onHearthFilesChanged?: (callback: () => void) => () => void;

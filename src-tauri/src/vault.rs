@@ -871,7 +871,7 @@ pub fn window_maximize(window: tauri::Window) {
 
 #[tauri::command]
 pub fn window_close(window: tauri::Window) {
-    if window.label() == "settings" || window.label() == "vault-switcher" {
+    if window.label() == "settings" || window.label() == "vault-switcher" || window.label() == "spark" {
         let _ = window.hide();
     } else {
         let _ = window.destroy();
@@ -892,3 +892,184 @@ pub fn window_start_dragging(window: tauri::Window) {
 pub fn window_set_title(window: tauri::Window, title: String) {
     let _ = window.set_title(&title);
 }
+
+#[tauri::command]
+pub fn focus_main_window(app: AppHandle) -> Value {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_minimized().unwrap_or(false) {
+            let _ = window.unminimize();
+        }
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+    json!({ "success": true })
+}
+
+#[cfg(target_os = "windows")]
+mod win_hotkey {
+    use std::collections::HashMap;
+    use std::sync::mpsc::{channel, Sender};
+    use std::sync::Mutex;
+    use tauri::{AppHandle, Emitter, Manager};
+
+    pub enum HotkeyAction {
+        Register(String, String),
+        Unregister(String),
+    }
+
+    pub static HOTKEY_SENDER: Mutex<Option<Sender<HotkeyAction>>> = Mutex::new(None);
+
+    const MOD_ALT: u32 = 0x0001;
+    const MOD_CONTROL: u32 = 0x0002;
+    const MOD_SHIFT: u32 = 0x0004;
+    const MOD_WIN: u32 = 0x0008;
+    const MOD_NOREPEAT: u32 = 0x4000;
+    const WM_HOTKEY: u32 = 0x0312;
+
+    #[repr(C)]
+    struct MSG {
+        hwnd: isize,
+        message: u32,
+        wparam: usize,
+        lparam: isize,
+        time: u32,
+        pt_x: i32,
+        pt_y: i32,
+    }
+
+    extern "system" {
+        fn RegisterHotKey(hWnd: isize, id: i32, fsModifiers: u32, vk: u32) -> i32;
+        fn UnregisterHotKey(hWnd: isize, id: i32) -> i32;
+        fn PeekMessageW(lpMsg: *mut MSG, hWnd: isize, wMsgFilterMin: u32, wMsgFilterMax: u32, wRemoveMsg: u32) -> i32;
+    }
+
+    fn parse_shortcut(shortcut: &str) -> (u32, u32) {
+        let mut modifiers = MOD_NOREPEAT;
+        let mut vk = 0u32;
+
+        for part in shortcut.split('+').map(|s| s.trim()) {
+            match part.to_lowercase().as_str() {
+                "ctrl" | "control" | "commandorcontrol" | "cmdorctrl" => modifiers |= MOD_CONTROL,
+                "alt" | "option" => modifiers |= MOD_ALT,
+                "shift" => modifiers |= MOD_SHIFT,
+                "super" | "win" | "cmd" | "command" => modifiers |= MOD_WIN,
+                "space" => vk = 0x20,
+                "enter" | "return" => vk = 0x0D,
+                "tab" => vk = 0x09,
+                "esc" | "escape" => vk = 0x1B,
+                s if s.len() == 1 => {
+                    let ch = s.chars().next().unwrap().to_ascii_uppercase();
+                    vk = ch as u32;
+                }
+                s if s.starts_with('f') && s.len() <= 3 => {
+                    if let Ok(num) = s[1..].parse::<u32>() {
+                        if num >= 1 && num <= 24 {
+                            vk = 0x70 + (num - 1);
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        (modifiers, vk)
+    }
+
+    pub fn start_hotkey_loop(app: AppHandle) {
+        let (tx, rx) = channel::<HotkeyAction>();
+        if let Ok(mut lock) = HOTKEY_SENDER.lock() {
+            *lock = Some(tx);
+        }
+
+        std::thread::spawn(move || {
+            let mut id_to_int: HashMap<String, i32> = HashMap::new();
+            let mut int_to_id: HashMap<i32, String> = HashMap::new();
+            let mut next_int_id = 9000;
+
+            loop {
+                // Check for incoming register/unregister actions
+                while let Ok(action) = rx.try_recv() {
+                    match action {
+                        HotkeyAction::Register(id, shortcut) => {
+                            if let Some(&existing_int) = id_to_int.get(&id) {
+                                unsafe { UnregisterHotKey(0, existing_int); }
+                            }
+                            let int_id = next_int_id;
+                            next_int_id += 1;
+
+                            let (mods, vk) = parse_shortcut(&shortcut);
+                            if vk != 0 {
+                                let res = unsafe { RegisterHotKey(0, int_id, mods, vk) };
+                                if res != 0 {
+                                    id_to_int.insert(id.clone(), int_id);
+                                    int_to_id.insert(int_id, id);
+                                }
+                            }
+                        }
+                        HotkeyAction::Unregister(id) => {
+                            if let Some(int_id) = id_to_int.remove(&id) {
+                                int_to_id.remove(&int_id);
+                                unsafe { UnregisterHotKey(0, int_id); }
+                            }
+                        }
+                    }
+                }
+
+                // Process Windows hotkey messages
+                let mut msg: MSG = unsafe { std::mem::zeroed() };
+                let has_msg = unsafe { PeekMessageW(&mut msg, 0, 0, 0, 1) }; // PM_REMOVE = 1
+                if has_msg != 0 {
+                    if msg.message == WM_HOTKEY {
+                        let int_id = msg.wparam as i32;
+                        if let Some(id) = int_to_id.get(&int_id) {
+                            if let Some(window) = app.get_webview_window("main") {
+                                if window.is_minimized().unwrap_or(false) {
+                                    let _ = window.unminimize();
+                                }
+                                let _ = window.show();
+                                let _ = window.set_focus();
+                            }
+                            let _ = app.emit("global-shortcut-activated", id.clone());
+                        }
+                    }
+                } else {
+                    std::thread::sleep(std::time::Duration::from_millis(20));
+                }
+            }
+        });
+    }
+}
+
+pub fn init_global_hotkeys(app: AppHandle) {
+    #[cfg(target_os = "windows")]
+    {
+        win_hotkey::start_hotkey_loop(app);
+    }
+}
+
+#[tauri::command]
+pub fn register_global_shortcut(id: String, shortcut: String) -> Value {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(lock) = win_hotkey::HOTKEY_SENDER.lock() {
+            if let Some(tx) = lock.as_ref() {
+                let _ = tx.send(win_hotkey::HotkeyAction::Register(id, shortcut));
+            }
+        }
+    }
+    json!({ "success": true })
+}
+
+#[tauri::command]
+pub fn unregister_global_shortcut(id: String) -> Value {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(lock) = win_hotkey::HOTKEY_SENDER.lock() {
+            if let Some(tx) = lock.as_ref() {
+                let _ = tx.send(win_hotkey::HotkeyAction::Unregister(id));
+            }
+        }
+    }
+    json!({ "success": true })
+}
+

@@ -47,7 +47,6 @@ export interface IPlatformAdapter {
   closeVaultWindow(): Promise<{ success: boolean }>;
   openSettingsWindow(): Promise<{ success: boolean }>;
   closeSettingsWindow(): Promise<{ success: boolean }>;
-
   // Hearth configuration & selection
   getCurrentHearth(): Promise<{ path: string; name: string; recentHearths: RecentVaultItem[] }>;
   selectHearthFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentHearths?: RecentVaultItem[] }>;
@@ -298,6 +297,62 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async closeSettingsWindow(): Promise<{ success: boolean }> {
     useWorkspaceStore.getState().setIsSettingsOpen(false);
+    return { success: true };
+  }
+
+  // General-Purpose Global Hotkeys & Window Focus
+  public async registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      const { tauriCore } = await getTauriModules();
+      return (await tauriCore?.invoke('register_global_shortcut', { id, shortcut })) || { success: true };
+    }
+    if (this.isElectron() && window.electronAPI?.registerGlobalShortcut) {
+      return await window.electronAPI.registerGlobalShortcut(id, shortcut);
+    }
+    return { success: true };
+  }
+
+  public async unregisterGlobalShortcut(id: string): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      const { tauriCore } = await getTauriModules();
+      return (await tauriCore?.invoke('unregister_global_shortcut', { id })) || { success: true };
+    }
+    if (this.isElectron() && window.electronAPI?.unregisterGlobalShortcut) {
+      return await window.electronAPI.unregisterGlobalShortcut(id);
+    }
+    return { success: true };
+  }
+
+  public onGlobalShortcut(callback: (id: string) => void): () => void {
+    if (this.isTauri()) {
+      let unlisten: (() => void) | null = null;
+      getTauriModules().then(({ tauriEvent }) => {
+        tauriEvent?.listen('global-shortcut-activated', (event: any) => {
+          const id = typeof event.payload === 'string' ? event.payload : (event.payload?.id || '');
+          callback(id);
+        }).then((fn: any) => {
+          unlisten = fn;
+        });
+      });
+      return () => {
+        if (unlisten) unlisten();
+      };
+    }
+    if (this.isElectron() && window.electronAPI?.onGlobalShortcut) {
+      return window.electronAPI.onGlobalShortcut(callback);
+    }
+    return () => {};
+  }
+
+  public async focusMainWindow(): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      const { tauriCore } = await getTauriModules();
+      return (await tauriCore?.invoke('focus_main_window')) || { success: true };
+    }
+    if (this.isElectron() && window.electronAPI?.focusMainWindow) {
+      return await window.electronAPI.focusMainWindow();
+    }
+    window.focus();
     return { success: true };
   }
 
@@ -866,3 +921,5 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 }
 
 export const platform = new PlatformAdapterImpl();
+export const platformAdapter = platform;
+export default platform;
