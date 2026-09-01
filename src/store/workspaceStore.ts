@@ -71,6 +71,27 @@ export interface NavigationHistoryItem {
   timestamp: number;
 }
 
+function getFolderOpenStateKey(vaultPath?: string): string {
+  const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.hearthPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
+  return `flint_folder_open_state_v1:${vPath || 'default'}`;
+}
+
+export function loadPersistedFolderOpenState(vaultPath?: string): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(getFolderOpenStateKey(vaultPath));
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return {};
+}
+
+export function savePersistedFolderOpenState(state: Record<string, boolean>, vaultPath?: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(getFolderOpenStateKey(vaultPath), JSON.stringify(state));
+  } catch {}
+}
+
 export function saveTabsSession(vaultPath?: string) {
   if (typeof window === 'undefined') return;
   const { restoreTabs } = useSettingsStore.getState();
@@ -335,6 +356,12 @@ interface WorkspaceState {
   // Collapse all
   collapseAllCount: number;
   triggerCollapseAll: () => void;
+
+  // Folder open/collapsed states in file tree
+  folderOpenState: Record<string, boolean>;
+  setFolderOpen: (folderId: string, isOpen: boolean) => void;
+  toggleFolderOpen: (folderId: string) => void;
+  collapseAllFolders: () => void;
 
   // Hearth Management
   hearthName: string;
@@ -1926,7 +1953,30 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   collapseAllCount: 0,
-  triggerCollapseAll: () => set((s) => ({ collapseAllCount: s.collapseAllCount + 1 })),
+  folderOpenState: loadPersistedFolderOpenState(),
+  setFolderOpen: (folderId, isOpen) => {
+    const current = { ...get().folderOpenState, [folderId]: isOpen };
+    savePersistedFolderOpenState(current, get().hearthPath || get().vaultPath);
+    set({ folderOpenState: current });
+  },
+  toggleFolderOpen: (folderId) => {
+    const currentState = get().folderOpenState[folderId] !== undefined ? get().folderOpenState[folderId] : true;
+    const current = { ...get().folderOpenState, [folderId]: !currentState };
+    savePersistedFolderOpenState(current, get().hearthPath || get().vaultPath);
+    set({ folderOpenState: current });
+  },
+  collapseAllFolders: () => {
+    const docs = useDocumentStore.getState().documents;
+    const nextState: Record<string, boolean> = { ...get().folderOpenState };
+    docs.filter((d) => d.is_folder).forEach((f) => {
+      nextState[f.id] = false;
+    });
+    savePersistedFolderOpenState(nextState, get().hearthPath || get().vaultPath);
+    set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
+  },
+  triggerCollapseAll: () => {
+    get().collapseAllFolders();
+  },
 
   // Hearth & Vault state
   hearthName: 'Flint Hearth',
@@ -1936,15 +1986,22 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   vaultPath: '',
   recentVaults: [],
   setHearthName: (name) => set({ hearthName: name, vaultName: name }),
-  setHearthPath: (path) => set({ hearthPath: path, vaultPath: path }),
+  setHearthPath: (path) => {
+    const persisted = loadPersistedFolderOpenState(path);
+    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted });
+  },
   setVaultName: (name) => set({ hearthName: name, vaultName: name }),
-  setVaultPath: (path) => set({ hearthPath: path, vaultPath: path }),
+  setVaultPath: (path) => {
+    const persisted = loadPersistedFolderOpenState(path);
+    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted });
+  },
 
   initHearthInfo: async () => {
     try {
       const hearth = await (platform.getCurrentHearth ? platform.getCurrentHearth() : platform.getCurrentVault());
       if (hearth && hearth.path) {
         const recentList = (hearth as any).recentHearths || (hearth as any).recentVaults || [];
+        const persisted = loadPersistedFolderOpenState(hearth.path);
         set({
           hearthPath: hearth.path,
           hearthName: hearth.name || 'Flint Hearth',
@@ -1952,6 +2009,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           vaultPath: hearth.path,
           vaultName: hearth.name || 'Flint Hearth',
           recentVaults: recentList,
+          folderOpenState: persisted,
         });
         dbAdapter.setActiveHearthPath(hearth.path);
       }

@@ -97,7 +97,18 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const { showContextMenu } = useAppContextMenu();
 
-  const [isOpen, setIsOpen] = useState(true);
+  const folderOpenState = useWorkspaceStore((s) => s.folderOpenState);
+  const setFolderOpen = useWorkspaceStore((s) => s.setFolderOpen);
+  const isOpen = isFolder ? (folderOpenState[item.id] !== undefined ? folderOpenState[item.id] : true) : true;
+
+  const setIsOpen = useCallback(
+    (openOrUpdater: boolean | ((prev: boolean) => boolean)) => {
+      const nextVal = typeof openOrUpdater === 'function' ? openOrUpdater(isOpen) : openOrUpdater;
+      setFolderOpen(item.id, nextVal);
+    },
+    [item.id, isOpen, setFolderOpen]
+  );
+
   const [localIsEditing, setLocalIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
   const [isHighlighted, setIsHighlighted] = useState(false);
@@ -229,9 +240,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     return () => window.removeEventListener('flint:reveal-tree-item', handleReveal as EventListener);
   }, [item.id, isFolder, allDocs]);
 
-  // Auto-expand folder when active document changes
-  const prevActiveDocIdRef = useRef<string | null>(null);
-  const prevEditingDocIdRef = useRef<string | null>(null);
+  // Auto-expand folder only when active document explicitly changes during user navigation
+  const prevActiveDocIdRef = useRef<string | null>(activeDocId || null);
   useEffect(() => {
     if (!isFolder) return;
     const checkDescendant = (docId: string | null | undefined): boolean => {
@@ -244,13 +254,13 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       return false;
     };
 
-    const activeDocChanged = activeDocId !== prevActiveDocIdRef.current;
-    prevActiveDocIdRef.current = activeDocId || null;
-
-    if (activeDocChanged && checkDescendant(activeDocId)) {
-      setIsOpen(true);
+    if (prevActiveDocIdRef.current !== activeDocId) {
+      prevActiveDocIdRef.current = activeDocId || null;
+      if (activeDocId && checkDescendant(activeDocId)) {
+        setIsOpen(true);
+      }
     }
-  }, [isFolder, activeDocId, allDocs, item.id]);
+  }, [isFolder, activeDocId, allDocs, item.id, setIsOpen]);
 
   const handleSelect = useCallback(
     (e: React.MouseEvent) => {
@@ -295,7 +305,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         openTab(item.id, item.title);
       }
     },
-    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, selectDocRange, selectSingleDoc, toggleDocSelection]
+    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen]
   );
 
   const handleSaveRename = useCallback(async () => {
