@@ -204,6 +204,8 @@ export interface DocumentHeaderDefinition {
   id: string;
   /** Display ordering priority. */
   order?: number;
+  /** Optional predicate or boolean indicating whether this header starts folded by default. */
+  defaultFolded?: boolean | ((app: FlintApp, docId?: string) => boolean);
   /** Render function returning the header component. */
   render: (props: {
     documentId: string;

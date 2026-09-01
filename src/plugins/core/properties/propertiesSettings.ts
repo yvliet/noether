@@ -48,7 +48,14 @@ export const usePropertiesSettings = create<PropertiesSettingsState>()(
       ...DEFAULT_PROPERTIES_SETTINGS,
 
       setShowInDocument: (showInDocument) => set({ showInDocument }),
-      setStartFolded: (startFolded) => set({ startFolded }),
+      setStartFolded: (startFolded) => {
+        set({ startFolded });
+        if (typeof window !== 'undefined') {
+          try {
+            window.dispatchEvent(new CustomEvent('flint:header-fold-default-changed', { detail: { startFolded } }));
+          } catch {}
+        }
+      },
       setDefaultPropertyType: (defaultPropertyType) => set({ defaultPropertyType }),
       setSortPropertiesAlphabetically: (sortPropertiesAlphabetically) => set({ sortPropertiesAlphabetically }),
       setPropertyIcon: (propertyKey, iconId) =>
@@ -70,7 +77,18 @@ export const usePropertiesSettings = create<PropertiesSettingsState>()(
         }),
       setHideEmptyProperties: (hideEmptyProperties) => set({ hideEmptyProperties }),
 
-      restoreDefaults: () => set({ ...DEFAULT_PROPERTIES_SETTINGS }),
+      restoreDefaults: () => {
+        set({ ...DEFAULT_PROPERTIES_SETTINGS });
+        if (typeof window !== 'undefined') {
+          try {
+            window.dispatchEvent(
+              new CustomEvent('flint:header-fold-default-changed', {
+                detail: { startFolded: DEFAULT_PROPERTIES_SETTINGS.startFolded },
+              })
+            );
+          } catch {}
+        }
+      },
     }),
     {
       name: 'flint_plugin_data_properties',

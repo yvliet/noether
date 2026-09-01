@@ -210,13 +210,19 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const [isReplaceOpen, setIsReplaceOpen] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
 
+  const defaultHeaderFolded = useMemo(() => {
+    return documentHeaders.some((h) =>
+      typeof h.defaultFolded === 'function' ? h.defaultFolded(app, currentDoc?.id) : !!h.defaultFolded
+    );
+  }, [documentHeaders, app, currentDoc?.id]);
+
   const [isHeaderFolded, setIsHeaderFolded] = useState<boolean>(() => {
-    if (!currentDoc) return false;
+    if (!currentDoc) return defaultHeaderFolded;
     try {
       const stored = localStorage.getItem(`flint_props_folded_${currentDoc.id}`);
-      return stored !== null ? JSON.parse(stored) : false;
+      return stored !== null ? JSON.parse(stored) : defaultHeaderFolded;
     } catch {
-      return false;
+      return defaultHeaderFolded;
     }
   });
 
@@ -265,12 +271,31 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     if (currentDoc) {
       try {
         const stored = localStorage.getItem(`flint_props_folded_${currentDoc.id}`);
-        setIsHeaderFolded(stored !== null ? JSON.parse(stored) : false);
+        setIsHeaderFolded(stored !== null ? JSON.parse(stored) : defaultHeaderFolded);
       } catch {
-        setIsHeaderFolded(false);
+        setIsHeaderFolded(defaultHeaderFolded);
       }
     }
-  }, [currentDoc?.id]);
+  }, [currentDoc?.id, defaultHeaderFolded]);
+
+  useEffect(() => {
+    const handleDefaultFoldChanged = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      const nextStartFolded = detail?.startFolded ?? defaultHeaderFolded;
+      if (currentDoc) {
+        const stored = localStorage.getItem(`flint_props_folded_${currentDoc.id}`);
+        if (stored === null) {
+          setIsHeaderFolded(nextStartFolded);
+        }
+      } else {
+        setIsHeaderFolded(nextStartFolded);
+      }
+    };
+    window.addEventListener('flint:header-fold-default-changed', handleDefaultFoldChanged);
+    return () => {
+      window.removeEventListener('flint:header-fold-default-changed', handleDefaultFoldChanged);
+    };
+  }, [currentDoc?.id, defaultHeaderFolded]);
 
   const toggleHeaderFold = useCallback(() => {
     if (!currentDoc) return;

@@ -18,6 +18,7 @@ import { propertiesReadme } from './readme';
 import { PropertiesView } from './PropertiesView';
 import { DocumentPropertiesHeader } from './DocumentPropertiesHeader';
 import { PropertiesSettingsTab } from './PropertiesSettingsTab';
+import { usePropertiesSettings } from './propertiesSettings';
 
 export const PROPERTIES_MANIFEST: ExtensionManifest = {
   id: 'note-properties',
@@ -50,6 +51,7 @@ export class PropertiesExtension extends Extension {
     this.registerDocumentHeader({
       id: 'note-properties-header',
       order: 10,
+      defaultFolded: () => usePropertiesSettings.getState().startFolded,
       render: ({ documentId, mode, isFolded }) => {
         if (isFolded) return null;
         return <DocumentPropertiesHeader documentId={documentId} mode={mode} isFolded={isFolded} />;
