@@ -762,7 +762,9 @@ function registerIpc() {
       }
       const dbFile = getVaultDbPath(targetPath || appConfig.currentVaultPath);
       const buffer = Buffer.from(bytes);
-      fs.writeFileSync(dbFile, buffer);
+      const tempPath = path.join(path.dirname(dbFile), `.flint_db_tmp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
+      fs.writeFileSync(tempPath, buffer);
+      fs.renameSync(tempPath, dbFile);
       return { success: true, path: dbFile };
     } catch (err) {
       console.error('[Flint DB] Error saving sqlite file to vault disk:', err);
@@ -857,7 +859,9 @@ function registerIpc() {
         const safeFilename = (filename || 'Untitled').replace(/[/\\?%*:|"<>]/g, '_') + '.md';
         filePath = path.join(targetVault, safeFilename);
       }
-      fs.writeFileSync(filePath, content, 'utf8');
+      const tempPath = path.join(path.dirname(filePath), `.__flint_write_tmp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
+      fs.writeFileSync(tempPath, content, 'utf8');
+      fs.renameSync(tempPath, filePath);
       return { success: true, path: filePath };
     } catch (err) {
       console.error('[Flint Hearth] Error saving file:', err);

@@ -83,8 +83,9 @@ export interface IPlatformAdapter {
   loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null>;
 
   // Internal write echo suppression
-  recordInternalWrite(): void;
+  recordInternalWrite(pathOrContent?: string): void;
   isRecentInternalWrite(thresholdMs?: number): boolean;
+  isInternalWriteMatch(relativePath: string, hashOrMtime?: string | number): boolean;
 
   // Events
   onHearthChanged(callback: (hearth: { path: string; name: string; recentHearths: RecentVaultItem[] }) => void): () => void;
@@ -112,6 +113,7 @@ export interface IPlatformAdapter {
 
 class PlatformAdapterImpl implements IPlatformAdapter {
   private lastInternalWriteTimestamp = 0;
+  private pendingInternalWrites = new Map<string, number>();
 
   constructor() {
     // Auto-bind all prototype methods so destructuring or passing references retains `this`
@@ -123,12 +125,34 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     }
   }
 
-  public recordInternalWrite(): void {
+  public recordInternalWrite(pathOrContent?: string): void {
     this.lastInternalWriteTimestamp = Date.now();
+    if (pathOrContent) {
+      const clean = pathOrContent.replace(/\\/g, '/').toLowerCase();
+      this.pendingInternalWrites.set(clean, Date.now());
+      // Clean up entries older than 10 seconds
+      if (this.pendingInternalWrites.size > 100) {
+        const cutoff = Date.now() - 10000;
+        for (const [k, v] of this.pendingInternalWrites.entries()) {
+          if (v < cutoff) this.pendingInternalWrites.delete(k);
+        }
+      }
+    }
   }
 
   public isRecentInternalWrite(thresholdMs = 2500): boolean {
     return Date.now() - this.lastInternalWriteTimestamp < thresholdMs;
+  }
+
+  public isInternalWriteMatch(relativePath: string, _hashOrMtime?: string | number): boolean {
+    if (!relativePath) return this.isRecentInternalWrite();
+    const clean = relativePath.replace(/\\/g, '/').toLowerCase();
+    const writeTime = this.pendingInternalWrites.get(clean);
+    if (writeTime && Date.now() - writeTime < 4000) {
+      this.pendingInternalWrites.delete(clean);
+      return true;
+    }
+    return this.isRecentInternalWrite();
   }
 
   public isTauri(): boolean {

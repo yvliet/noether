@@ -891,6 +891,16 @@ export async function saveDocumentAndSynchronize(
       await platform.saveMarkdownFile(docTitle, mdContent, relPath);
       const isLocked = isDocumentLocked(docProps);
       await platform.setFileAttributes(relPath || docTitle, { readonly: isLocked, mtime: now });
+
+      const normRel = (relPath || docTitle).replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+      const contentHash = computeFastHash(mdContent);
+      try {
+        await dbAdapter.execute(
+          `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+          [manifestKey, now, mdContent.length, contentHash, now]
+        );
+      } catch (manifestErr) {}
     }
   } catch (e) {
     console.error('Error auto-exporting markdown file:', e);
@@ -1048,7 +1058,26 @@ export async function moveDocument(
 }
 
 /**
+ * Ultra-fast deterministic non-cryptographic content hash (cyrb53-based)
+ */
+export function computeFastHash(str: string): string {
+  let h1 = 0xdeadbeef ^ 0;
+  let h2 = 0x41c6ce57 ^ 0;
+  for (let i = 0, ch; i < str.length; i++) {
+    ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507);
+  h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+
+/**
  * Scans the physical vault folder on disk and synchronizes all .md files and folders into SQLite.
+ * Uses file_manifest for fast O(N stat) differential indexing — skipping untouched files.
  */
 export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> {
   if (!platform.isDesktop()) {
@@ -1071,6 +1100,17 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       if (t.title) trashSet.add(t.title.toLowerCase());
       if (t.original_path) trashSet.add(t.original_path.toLowerCase());
     }
+
+    // Load file_manifest
+    const manifestMap = new Map<string, { mtime: number; size: number; content_hash: string }>();
+    try {
+      const manifestRows = await dbAdapter.query<{ relative_path: string; mtime: number; size: number; content_hash: string }>(
+        `SELECT relative_path, mtime, size, content_hash FROM file_manifest`
+      );
+      for (const m of manifestRows) {
+        manifestMap.set(m.relative_path.toLowerCase(), m);
+      }
+    } catch (e) {}
 
     const folderMapByPath = new Map<string, string>(); // relative path -> folder ID
     const docMapByPath = new Map<string, DocumentItem>(); // relative path -> doc
@@ -1108,7 +1148,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       }
     }
 
-    // 2. Process markdown files
+    // 2. Process markdown files differentially
     const diskFiles = diskItems.filter((i) => !i.isFolder);
     let syncedCount = 0;
     const modifiedOrAddedDocIds: string[] = [];
@@ -1120,29 +1160,42 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       const parentRelPath = parts.slice(0, -1).join('/');
       const parentId = parentRelPath ? folderMapByPath.get(parentRelPath.toLowerCase()) || null : null;
 
-      // Find matching document by relative path or by (title + parentId) or by title
       const pathKey = (parentRelPath ? `${parentRelPath}/${fileName}` : fileName).toLowerCase();
+      const normKey = pathKey.endsWith('.md') ? pathKey : `${pathKey}.md`;
 
       // If a file actively exists on disk, clean up any stale trash record referencing this path
-      if (trashSet.has(pathKey)) {
+      if (trashSet.has(pathKey) || trashSet.has(normKey)) {
         try {
-          await dbAdapter.execute(`DELETE FROM trash_items WHERE LOWER(original_path) = ?`, [pathKey]);
+          await dbAdapter.execute(`DELETE FROM trash_items WHERE LOWER(original_path) = ? OR LOWER(original_path) = ?`, [pathKey, normKey]);
         } catch (e) {}
       }
 
       let matchedDoc = docMapByPath.get(pathKey);
-
       if (!matchedDoc) {
         matchedDoc = existingDocs.find(
           (d) => !d.is_folder && d.title.toLowerCase() === fileName.toLowerCase() && (d.parent_id || null) === (parentId || null)
         );
       }
-
       if (!matchedDoc && (fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint')) {
         matchedDoc = existingDocs.find((d) => d.id === 'welcome-to-flint');
       }
 
       const fileContent = file.content || '';
+      const fileMtime = file.mtime || Date.now();
+      const fileSize = fileContent.length;
+      const manifestEntry = manifestMap.get(normKey) || manifestMap.get(pathKey);
+
+      // Fast-path: Check if file was already indexed and is untouched on disk
+      if (matchedDoc && manifestEntry && manifestEntry.mtime === fileMtime && manifestEntry.size === fileSize) {
+        // Document is 100% up-to-date in SQLite index! Skip parsing!
+        continue;
+      }
+
+      const contentHash = computeFastHash(fileContent);
+      if (matchedDoc && manifestEntry && manifestEntry.content_hash === contentHash) {
+        // Content hash matches exactly
+        continue;
+      }
 
       if (!matchedDoc) {
         // Create new document
@@ -1150,34 +1203,37 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         const contentJson = markdownToTipTapJson(bodyText);
         const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
         const newId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-        const now = file.mtime || Date.now();
+        const now = fileMtime;
         await dbAdapter.execute(
           `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
            VALUES (?, ?, ?, ?, 0, 0, 0, 'base', ?, ?, ?)`,
           [newId, parentId, fileName, contentJson, propertiesJson, now, now]
         );
+        try {
+          await dbAdapter.execute(
+            `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+            [normKey, fileMtime, fileSize, contentHash, Date.now()]
+          );
+        } catch (e) {}
         modifiedOrAddedDocIds.push(newId);
         syncedCount++;
       } else {
-        // Check if existing document needs content update
-        const isPlaceholder =
-          !matchedDoc.content_json ||
-          matchedDoc.content_json === '{}' ||
-          matchedDoc.content_json === '{"type":"doc","content":[{"type":"paragraph"}]}' ||
-          matchedDoc.content_json.includes('"text":"Untitled"') ||
-          matchedDoc.content_json === `{"type":"doc","content":[{"type":"heading","attrs":{"level":1},"content":[{"type":"text","text":"${matchedDoc.title}"}]},{"type":"paragraph","content":[]}]}`;
-
-        if (fileContent.trim() && (isPlaceholder || (file.mtime && file.mtime > (matchedDoc.updated_at || 0) + 500))) {
-          const { properties, bodyText } = parseFrontmatter(fileContent);
-          const contentJson = markdownToTipTapJson(bodyText);
-          const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : (matchedDoc.properties || '{}');
+        // Update modified existing document
+        const { properties, bodyText } = parseFrontmatter(fileContent);
+        const contentJson = markdownToTipTapJson(bodyText);
+        const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : (matchedDoc.properties || '{}');
+        await dbAdapter.execute(
+          `UPDATE documents SET content_json = ?, properties = ?, updated_at = ? WHERE id = ?`,
+          [contentJson, propertiesJson, fileMtime, matchedDoc.id]
+        );
+        try {
           await dbAdapter.execute(
-            `UPDATE documents SET content_json = ?, properties = ?, updated_at = ? WHERE id = ?`,
-            [contentJson, propertiesJson, file.mtime || Date.now(), matchedDoc.id]
+            `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+            [normKey, fileMtime, fileSize, contentHash, Date.now()]
           );
-          modifiedOrAddedDocIds.push(matchedDoc.id);
-          syncedCount++;
-        }
+        } catch (e) {}
+        modifiedOrAddedDocIds.push(matchedDoc.id);
+        syncedCount++;
       }
     }
 
@@ -1191,6 +1247,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     }
 
     const removedDocIds: string[] = [];
+    const removedPaths: string[] = [];
     for (const doc of existingDocs) {
       if (doc.is_folder) continue;
       const docPath = getDocumentPath(doc, existingDocs).toLowerCase();
@@ -1205,16 +1262,24 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
 
       if (!existsOnDisk && !trashSet.has(docPath) && !trashSet.has(docTitle)) {
         removedDocIds.push(doc.id);
+        removedPaths.push(docPath);
       }
     }
 
     if (removedDocIds.length > 0) {
-      for (const rId of removedDocIds) {
+      for (let i = 0; i < removedDocIds.length; i++) {
+        const rId = removedDocIds[i];
+        const rPath = removedPaths[i];
         await dbAdapter.execute(`DELETE FROM documents WHERE id = ?`, [rId]);
         await dbAdapter.execute(`DELETE FROM blocks WHERE document_id = ?`, [rId]);
         await dbAdapter.execute(`DELETE FROM blocks_fts WHERE document_id = ?`, [rId]);
         await dbAdapter.execute(`DELETE FROM document_links WHERE source_document_id = ? OR target_document_id = ?`, [rId, rId]);
         await dbAdapter.execute(`DELETE FROM document_tags WHERE document_id = ?`, [rId]);
+        if (rPath) {
+          try {
+            await dbAdapter.execute(`DELETE FROM file_manifest WHERE LOWER(relative_path) = ? OR LOWER(relative_path) = ?`, [rPath, `${rPath}.md`]);
+          } catch (e) {}
+        }
       }
     }
 

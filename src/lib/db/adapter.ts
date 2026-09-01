@@ -124,10 +124,20 @@ class UniversalDatabase {
 
       if (savedBytes && ((savedBytes as any).byteLength > 0 || (savedBytes as Uint8Array).length > 0)) {
         try {
-          this.db = new SQL.Database(new Uint8Array(savedBytes as ArrayBuffer));
-          console.log('[Flint DB] Successfully initialized SQLite database with existing notes and documents');
+          const loadedDb = new SQL.Database(new Uint8Array(savedBytes as ArrayBuffer));
+          // Perform integrity check on loaded database
+          const integrity = loadedDb.exec('PRAGMA integrity_check;');
+          const status = integrity[0]?.values[0]?.[0];
+          if (status === 'ok') {
+            this.db = loadedDb;
+            console.log('[Flint DB] Successfully initialized and verified SQLite database integrity');
+          } else {
+            console.warn('[Flint DB] SQLite database integrity check failed (' + status + '). Rebuilding clean database from disk ground truth.');
+            loadedDb.close();
+            this.db = new SQL.Database();
+          }
         } catch (e) {
-          console.warn('[Flint DB] Failed to parse existing bytes, creating fresh db', e);
+          console.warn('[Flint DB] Failed to parse existing bytes or corrupt index, creating fresh db from Markdown ground truth:', e);
           this.db = new SQL.Database();
         }
       } else {
@@ -302,6 +312,9 @@ class UniversalDatabase {
     }
   }
 
+  private isPersisting: boolean = false;
+  private needsPersistAgain: boolean = false;
+
   private scheduleSave() {
     if (this.saveTimeout) clearTimeout(this.saveTimeout);
     this.saveTimeout = setTimeout(() => {
@@ -311,6 +324,12 @@ class UniversalDatabase {
 
   public async persist(): Promise<void> {
     if (!this.db || this.isSwitchingHearth) return;
+    if (this.isPersisting) {
+      this.needsPersistAgain = true;
+      return;
+    }
+
+    this.isPersisting = true;
     try {
       const binary = this.db.export();
 
@@ -327,6 +346,12 @@ class UniversalDatabase {
       }
     } catch (err) {
       console.error('[Flint DB] Persist error:', err);
+    } finally {
+      this.isPersisting = false;
+      if (this.needsPersistAgain) {
+        this.needsPersistAgain = false;
+        this.scheduleSave();
+      }
     }
   }
 

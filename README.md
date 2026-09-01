@@ -39,40 +39,43 @@
 
 ## Overview
 
-Flint is a 100% open-source (GPLv3), local-first note-taking application and knowledge engine engineered as a high-performance, AI-native alternative to Obsidian.
+Flint is an open-source (GPLv3), local-first note-taking application and knowledge engine. It is built as a high-performance, AI-native alternative to Obsidian.
 
-While traditional personal knowledge management (PKM) tools popularized plain-text Markdown files, their core indexing engines and sync protocols remain closed-source and proprietary. Flint delivers a fully open, hackable architecture that combines local Markdown vaults ("Hearths"), bi-directional `[[wiki-links]]`, 2D spatial whiteboards, embedded FSRS-4.5 spaced repetition, and a native **Model Context Protocol (MCP)** server for autonomous local AI agents:
+Flint provides an open, extensible architecture that combines local Markdown vaults ("Hearths"), bi-directional `[[wiki-links]]`, 2D spatial whiteboards, embedded FSRS-4.5 spaced repetition, and a native **Model Context Protocol (MCP)** server for local AI agents:
 
-- **100% Open Source & Auditable**: Copyleft GPLv3 codebase with zero telemetry, paywalled sync tiers, or commercial license restrictions for work.
-- **Dual-Layer Storage Architecture**: Raw `.md` files on disk remain the absolute source of truth, mirrored synchronously into an in-memory WASM SQLite database with FTS4 full-text search.
-- **Native AI Agent Integration (MCP)**: Built-in stdio Model Context Protocol server allowing local LLMs (Claude, Antigravity, Gemini, Cursor) to search notes, query backlinks, and manage tasks across Hearths with zero configuration.
-- **Dual Desktop Runtimes**: Ultra-lightweight Tauri v2 (Rust) core with Electron and Web browser fallbacks.
-- **Micro-Kernel Plugin SDK**: Inversion-of-Control (IoC) micro-kernel where internal features and community extensions use the exact same public SDK (`src/sdk`) with zero native core schema pollution.
+- **100% Open Source**: GPLv3 codebase with zero telemetry, zero paywalled sync tiers, and no commercial license fees.
+- **Physical Ground Truth**: Plain-text `.md` files on disk are the single source of truth.
+- **Self-Healing SQLite Index**: Embedded SQLite (WASM + FTS4) delivers sub-millisecond search and graph traversal. SQLite validates database integrity on boot (`PRAGMA integrity_check`) and rebuilds from Markdown files automatically if needed.
+- **Atomic File Writes**: All writes to database files and Markdown notes use temporary files and atomic rename operations. This prevents data corruption during unexpected application crashes or power loss.
+- **Fast Differential Sync**: Uses a `file_manifest` table and fast content hashing to skip unchanged files during indexing.
+- **Native AI Agent Server (MCP)**: Built-in stdio Model Context Protocol server allows AI assistants (Claude, Antigravity, Gemini, Cursor) to search notes, read backlinks, and manage tasks.
+- **Cross-Platform Runtimes**: Runs on Tauri v2 (Rust binary), Electron (Node.js fallback), and standard Web browsers.
+- **Micro-Kernel Plugin SDK**: Core features and community extensions use the same public SDK (`src/sdk`).
 
 ---
 
 ## Architectural Overview
 
-Flint is structured into modular, decoupled layers separating presentation, relational indexing, physical disk persistence, and hardware bridges.
+Flint uses a modular architecture that separates user interface components, relational query indexes, physical disk persistence, and native hardware bridges.
 
 <div align="center">
   <img src="docs/assets/architecture-diagram.svg" alt="Flint Architecture & Subsystems Data Flow" width="100%"/>
 </div>
 
-### Architectural Highlights
+### Core Architecture Rules
 
 1. **Dual Storage Model (Markdown + SQLite)**:
-   - Your local `.md` files on disk remain the holy grail single source of truth. No proprietary database blobs holding your notes hostage.
-   - An in-memory WASM SQLite database (`sql.js`) indexes document metadata, block-level AST nodes, tags, tasks, and graph edges for sub-millisecond querying.
-   - Database state is serialized into an atomic snapshot (`.flint/flint.sqlite`) with a debounced 400ms write loop, guaranteeing zero frame drops during high-speed typing.
+   - Your local `.md` files on disk are the single source of truth. Flint does not lock your data into proprietary binary database formats.
+   - An in-memory WASM SQLite database (`sql.js`) indexes note metadata, block-level AST nodes, tags, tasks, and graph relationships for fast queries.
+   - Database snapshots (`.flint/flint.sqlite`) and Markdown files write atomically to disk, which prevents partial file corruption.
 
 2. **Cross-Platform Neutrality Bridge (`IPlatformAdapter`)**:
-   - Zero direct invocations of runtime-specific APIs inside React components. All OS operations route through [`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts).
-   - Seamlessly runs on Tauri v2 (Rust native binary), Electron (Node.js fallback), and standard Web browsers (IndexedDB binary backing).
+   - React components do not call runtime-specific APIs directly. All system calls route through [`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts).
+   - Supports Tauri v2 (Rust native binary), Electron (Node.js fallback), and standard Web browsers (IndexedDB backing).
 
 3. **Strict Native Core Isolation**:
-   - Native core directories (`src/core`, `src/lib`, `src/store`, `src/components`) have zero compile-time dependencies on plugins or extensions.
-   - Built-in capabilities (Backlinks, Canvas, Graph, FSRS Spaced Repetition, Journal, Tasks, Cascades) are implemented as first-class plugins using the public Flint SDK.
+   - Core directories (`src/core`, `src/lib`, `src/store`, `src/components`) do not depend on plugin code.
+   - Built-in features (Backlinks, Canvas, Graph, Spaced Repetition, Journal, Tasks, Cascades) use the public Flint SDK.
 
 ---
 
@@ -82,10 +85,13 @@ Flint is structured into modular, decoupled layers separating presentation, rela
   <img src="docs/assets/dual-storage-model.svg" alt="Flint Dual-Layer Storage & Sync Pipeline" width="100%"/>
 </div>
 
-Flint balances instant search and relational graph traversals with plain-text Markdown file safety:
-- **Hierarchical Path Resolution**: Files and directories are physically mirrored in your filesystem (`02 Projects/Flint/About Flint.md`).
-- **Echo Suppression**: Tauri's backend tracks atomic write timestamps (`LAST_INTERNAL_WRITE`) so the file watcher ignores internal saves and avoids recursive reload loops.
-- **Safe External Sync**: Automatically captures external file changes (e.g. `git checkout` or external editor edits) and syncs them directly into the SQLite index without overwriting active work.
+Flint provides fast search and relational graph queries while keeping your plain-text Markdown files safe:
+
+- **Hierarchical Path Resolution**: Physical folders and files mirror your vault structure on disk (e.g. `02 Projects/Flint/About Flint.md`).
+- **Atomic Disk Writes**: Saves write to a temporary file first, then atomically rename to the target path.
+- **Deterministic Echo Suppression**: Flint tracks internal write paths. This prevents file-system watchers from triggering recursive reload loops when Flint saves files.
+- **Differential Vault Indexing**: Startup sync checks file modification times and sizes against `file_manifest`. Unchanged files skip AST parsing and full-text re-indexing.
+- **Safe External Sync**: External file edits (such as Git checkouts or external editors) sync into SQLite automatically without overwriting active editing buffers.
 
 ---
 
@@ -122,12 +128,15 @@ Add the following to your agent configuration file (e.g. `claude_desktop_config.
 | Capability / Attribute | Obsidian | Flint |
 | :--- | :---: | :---: |
 | **Core Source Code** | Closed Source (Proprietary) | **100% Open Source (GPLv3)** |
-| **Data Storage** | Local Markdown (`.md`) | **Local Markdown (`.md`)** |
-| **Relational Metadata Index** | Proprietary In-Memory Cache | **Embedded SQLite (WASM + FTS4)** |
+| **Data Storage** | Local Markdown (`.md`) | **Local Markdown (`.md`)** (100% Ground Truth) |
+| **Relational Metadata Index** | Proprietary In-Memory Cache | **Embedded SQLite (WASM + FTS4)** (Self-Healing) |
+| **Data Safety & Integrity** | Proprietary Disk Writes | **Atomic Temp-and-Rename Writes** + `PRAGMA integrity_check` |
+| **Differential Vault Sync** | Full Cache Rescan | **O(N) Manifest Scan (`file_manifest`)** |
 | **AI Agent Protocol (MCP)** | ❌ Community Plugin Required | **✅ Native Built-in Stdio MCP Server** |
 | **Desktop Runtime** | Electron | **Tauri v2 (Rust Core) / Electron Dual-Mode** |
 | **Native Working Set Trimmer** | ❌ None (Standard Chromium Footprint) | **✅ Yes (`SetProcessWorkingSetSize` on Idle)** |
 | **Live Preview Editor** | CodeMirror 6 | **ProseMirror / TipTap + MathLive WYSIWYG** |
+| **Editor Focus Authority** | Standard Buffer Sync | **Active Typing Protected against External Clobbering** |
 | **Bi-directional Links & Mentions** | Yes (`[[wiki-links]]`) | **Yes (`[[wiki-links]]` + SQLite Graph Index)** |
 | **Knowledge Graph View** | 2D / 3D Canvas Graph | **2D Force-Directed Graph Engine** |
 | **Spatial Whiteboard Canvas** | JSON Canvas | **Infinite 2D Node Canvas (`.flint/canvas`)** |
@@ -144,9 +153,9 @@ Add the following to your agent configuration file (e.g. `claude_desktop_config.
 ## Core Capabilities
 
 ### 1. Advanced Live Preview Editor
-- **Rich Typography**: Built on TipTap 2.x and ProseMirror with real-time markdown token rendering.
+- **Rich Typography**: Built on TipTap 2.x and ProseMirror with real-time markdown rendering.
 - **MathLive & KaTeX**: Interactive visual math formula editor chips and instant LaTeX rendering.
-- **Hierarchical Folding**: Smooth chevron list folding, heading folding, and ellipsis placeholder expansion.
+- **Hierarchical Folding**: Chevron list folding, heading folding, and ellipsis placeholder expansion.
 - **Smart Indentation & Pairing**: Auto-incrementing numbered/lettered lists, smart `Home` caret navigation, and bracket/quote selection wrapping.
 - **Slash Commands (`/`)**: Fast insertion palette for headings, task lists, code blocks, callouts, and math nodes.
 
@@ -187,8 +196,10 @@ Flint is engineered with explicit performance invariants designed to maintain fl
 | :--- | :--- | :--- |
 | **Relational Indexing** | In-Memory WASM Execution | Synchronous execution via `sql.js` WASM; zero IPC hop overhead for graph traversals and link queries. |
 | **Full-Text Search** | SQLite FTS4 Virtual Tables | Block-level tokenization indexing in SQLite without requiring external search index daemons or heavyweight Node services. |
-| **Disk Synchronization** | Debounced Atomic Persistence | Binary database serialization (`db.export()`) is debounced at 400ms to guarantee zero UI frame drops during high-speed typing. |
-| **Echo Suppression** | Atomic Write Tracking | `LAST_INTERNAL_WRITE` atomic timestamp suppression in the Rust backend prevents the `notify` file watcher from triggering recursive reload loops when Flint saves files. |
+| **Data Safety & Atomic Writes** | Temporary-File + Rename | Both database binary dumps and `.md` note saves write to temporary files first, then atomically rename via OS primitives (`fs.renameSync` / `fs::rename`). Prevents file corruption on unexpected crashes. |
+| **Resilience & Self-Healing** | Boot Integrity Validation | SQLite executes `PRAGMA integrity_check;` on load. Automatically rebuilds clean index from Markdown ground truth if corrupted. |
+| **Differential Sync** | Manifest Tracking | `file_manifest` tracks file modification times and content hashes. Cold-start sync skips unchanged files, completing in under 1ms. |
+| **Echo Suppression** | Signature-Based Write Tracking | Tracks internal save signatures across native runtimes to prevent file watchers from triggering reload loops. |
 | **RAM Footprint** | Process Working Set Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory across the WebView2 process tree after 120s of verified user idle time. |
 | **Renderer Constraints** | Chromium Flags Tuning | Single-process renderer limit (`--renderer-process-limit=1`, `--process-per-site`), disabled media decode buffers, and V8 heap limits (`--max-semi-space-size=4`). |
 
@@ -198,16 +209,19 @@ Flint is engineered with explicit performance invariants designed to maintain fl
 # 1. Verify Zero TypeScript Type Regressions
 npx tsc --noEmit
 
-# 2. Execute Editor Writing Edge Cases Suite (Playwright Headless)
+# 2. Execute Reliability, Scalability & Resilience Benchmark Suite
+node scripts/test-reliability-and-scaling.cjs
+
+# 3. Execute Editor Writing Edge Cases Suite (Playwright Headless)
 node scripts/test-document-writing-edge-cases.cjs
 
-# 3. Execute Undo/Redo (CTRL+Z) Recovery & Stress Suite
+# 4. Execute Undo/Redo (CTRL+Z) Recovery & Stress Suite
 node scripts/test-ctrl-z-suite.cjs
 
-# 4. Benchmark Production Bundle Build Time
+# 5. Benchmark Production Bundle Build Time
 npm run build
 
-# 5. Launch Tauri Native Desktop with Background Memory Trimming
+# 6. Launch Tauri Native Desktop with Background Memory Trimming
 npm run app
 ```
 

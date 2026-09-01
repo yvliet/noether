@@ -480,7 +480,8 @@ pub fn save_markdown_file(
         }
     }
 
-    let write_res = fs::write(&file_path, content);
+    let temp_file = file_path.with_extension(format!("tmp.{}", std::process::id()));
+    let write_res = fs::write(&temp_file, content);
 
     // Restore read-only permission if it was previously set
     if was_readonly {
@@ -491,7 +492,10 @@ pub fn save_markdown_file(
     }
 
     match write_res {
-        Ok(_) => json!({ "success": true, "path": file_path.to_string_lossy() }),
+        Ok(_) => {
+            let _ = fs::rename(&temp_file, &file_path);
+            json!({ "success": true, "path": file_path.to_string_lossy() })
+        }
         Err(e) => json!({ "success": false, "error": e.to_string() }),
     }
 }
@@ -635,9 +639,13 @@ pub fn save_database(state: tauri::State<AppState>, bytes: Vec<u8>) -> Value {
     mark_internal_write();
     let cfg = state.config.lock().unwrap();
     let db_file = get_vault_db_path(&cfg.current_vault_path);
+    let temp_file = db_file.with_extension(format!("tmp.{}", std::process::id()));
 
-    match fs::write(&db_file, bytes) {
-        Ok(_) => json!({ "success": true, "path": db_file.to_string_lossy() }),
+    match fs::write(&temp_file, bytes) {
+        Ok(_) => {
+            let _ = fs::rename(&temp_file, &db_file);
+            json!({ "success": true, "path": db_file.to_string_lossy() })
+        }
         Err(e) => json!({ "success": false, "error": e.to_string() }),
     }
 }

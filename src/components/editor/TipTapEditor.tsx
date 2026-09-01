@@ -1253,10 +1253,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     try {
       const currentJson = JSON.stringify(editor.getJSON());
       if (currentJson !== content) {
-        const textLen = editor.getText().trim().length;
-        // If focused and user has written substantial content, preserve active typing.
-        // Otherwise (e.g. placeholder, empty note, or external MCP/sync update), apply incoming content!
-        if (editor.isFocused && textLen > 20 && Math.abs(currentJson.length - content.length) < 10) {
+        // ProseMirror Authority Invariant:
+        // If editor is currently focused with active typing in progress, preserve ProseMirror's buffer.
+        // Otherwise (e.g. document switch, tab restore, or external sync), apply incoming content cleanly.
+        if (editor.isFocused) {
           return;
         }
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);

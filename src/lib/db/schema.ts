@@ -71,6 +71,13 @@ export const SQL_SCHEMA_STATEMENTS = [
     tag TEXT NOT NULL,
     PRIMARY KEY (document_id, tag)
   );`,
+  `CREATE TABLE IF NOT EXISTS file_manifest (
+    relative_path TEXT PRIMARY KEY,
+    mtime INTEGER NOT NULL,
+    size INTEGER NOT NULL,
+    content_hash TEXT NOT NULL,
+    indexed_at INTEGER NOT NULL
+  );`,
   `CREATE INDEX IF NOT EXISTS idx_docs_parent_id ON documents(parent_id);`,
   `CREATE INDEX IF NOT EXISTS idx_docs_title ON documents(title);`,
   `CREATE INDEX IF NOT EXISTS idx_docs_is_folder ON documents(is_folder);`,
@@ -78,7 +85,8 @@ export const SQL_SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_blocks_is_task ON blocks(is_task, task_completed);`,
   `CREATE INDEX IF NOT EXISTS idx_doc_links_target ON document_links(target_document_id);`,
   `CREATE INDEX IF NOT EXISTS idx_trash_deleted_at ON trash_items(deleted_at);`,
-  `CREATE INDEX IF NOT EXISTS idx_doc_tags_tag ON document_tags(tag);`
+  `CREATE INDEX IF NOT EXISTS idx_doc_tags_tag ON document_tags(tag);`,
+  `CREATE INDEX IF NOT EXISTS idx_manifest_mtime ON file_manifest(mtime);`
 ];
 
 export const INITIAL_WELCOME_DOC_ID = 'welcome-to-flint';
