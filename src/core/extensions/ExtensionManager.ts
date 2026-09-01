@@ -330,8 +330,13 @@ export class ExtensionManager {
           config.disabledCorePluginIds ||
           [];
         this.disabledCoreExtensionIds = new Set(Array.isArray(disabledCore) ? disabledCore : []);
-        const enabled = config.enabledExtensions || config.enabledPlugins || [];
-        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : []);
+        const enabled = config.enabledExtensions || config.enabledPlugins;
+        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : ['flint-cascade']);
+        if (Array.isArray(enabled) && !enabled.includes('flint-cascade') && !this.disabledCoreExtensionIds.has('flint-cascade')) {
+          this.enabledExtensionIds.add('flint-cascade');
+        }
+      } else {
+        this.enabledExtensionIds = new Set(['flint-cascade']);
       }
     } catch (e) {
       console.warn('[ExtensionManager] Error loading extension config:', e);

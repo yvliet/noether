@@ -1,8 +1,8 @@
 import React from 'react';
-import { useCascadeSettings } from './cascadeSettings';
-import { CascadeIcon } from './cascadeIcons';
+import { useCascadeSettings, DEFAULT_CASCADE_SETTINGS } from './cascadeSettings';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
-import { CommandIcon, BookOpen01Icon } from '@/components/common/Icons';
+import { RotateCcwIcon } from '@/components/common/Icons';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 export const CascadeSettingsTab: React.FC = () => {
   const {
@@ -12,105 +12,114 @@ export const CascadeSettingsTab: React.FC = () => {
     setAutoRenameSuffix,
     prevPageHotkey,
     nextPageHotkey,
+    restoreDefaults,
   } = useCascadeSettings();
 
+  const showToast = useWorkspaceStore((s) => s.showToast);
+
+  const isModified =
+    showInStatusBar !== DEFAULT_CASCADE_SETTINGS.showInStatusBar ||
+    autoRenameSuffix !== DEFAULT_CASCADE_SETTINGS.autoRenameSuffix ||
+    prevPageHotkey !== DEFAULT_CASCADE_SETTINGS.prevPageHotkey ||
+    nextPageHotkey !== DEFAULT_CASCADE_SETTINGS.nextPageHotkey;
+
   return (
-    <div className="p-6 max-w-2xl space-y-6 text-sm text-[var(--flint-text-primary,#dcddde)] font-sans">
-      {/* Plugin Header */}
-      <div className="flex items-center gap-3 pb-4 border-b border-[var(--flint-border-base,#333)]">
-        <div className="w-10 h-10 rounded-xl bg-[#2a2a2a] text-[#dcddde] flex items-center justify-center shadow-inner">
-          <CascadeIcon size={22} />
-        </div>
+    <div className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4">
         <div>
-          <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-            Cascade
-            <span className="text-xs font-normal px-2 py-0.5 rounded-full bg-[#2a2a2a] text-[#aaa] border border-[#383838]">
-              by Yuliet Li
-            </span>
-          </h2>
-          <p className="text-xs text-[var(--flint-text-muted,#888)]">
-            Create structured books of notes with status-bar linking, sequential navigation, and graph backlinks.
+          <h3 className="text-sm font-semibold text-white mb-0.5">Cascade</h3>
+          <p className="text-[11px] text-[#777]">
+            Organize notes into sequential cascades with status-bar linking, navigation hotkeys, and automatic numbering.
           </p>
         </div>
+        {isModified && (
+          <button
+            onClick={() => {
+              restoreDefaults();
+              showToast('Restored Cascade defaults', 'info');
+            }}
+            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+          >
+            <RotateCcwIcon size={12} />
+            <span>Restore defaults</span>
+          </button>
+        )}
       </div>
 
-      {/* Settings Group: Behavior & Organization */}
-      <div className="space-y-4">
-        <h3 className="text-xs uppercase font-bold tracking-wider text-[var(--flint-text-muted,#888)]">
-          Behavior & Display
-        </h3>
-
-        {/* Show in Status Bar */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--flint-bg-card,#222)] border border-[var(--flint-border-subtle,#2e2e2e)]">
-          <div className="space-y-0.5 pr-4">
-            <div className="font-medium text-white flex items-center gap-1.5">
-              <CascadeIcon size={14} className="text-[#aaa]" />
-              Status bar cascade item
-            </div>
-            <div className="text-xs text-[var(--flint-text-muted,#888)] leading-relaxed">
+      {/* Main Settings Card */}
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* Status bar item */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Status bar cascade item</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
               Show the interactive Cascade icon in the status bar to link notes and adjust page numbers.
-            </div>
+            </span>
           </div>
-          <ToggleSwitch
-            checked={showInStatusBar}
-            onChange={setShowInStatusBar}
-          />
+          <div className="flex items-center gap-2">
+            {showInStatusBar !== DEFAULT_CASCADE_SETTINGS.showInStatusBar && (
+              <button
+                type="button"
+                onClick={() => setShowInStatusBar(DEFAULT_CASCADE_SETTINGS.showInStatusBar)}
+                title="Restore default (Enabled)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <ToggleSwitch checked={showInStatusBar} onChange={setShowInStatusBar} />
+          </div>
         </div>
 
         {/* Automatic [n] Title Suffix */}
-        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--flint-bg-card,#222)] border border-[var(--flint-border-subtle,#2e2e2e)]">
-          <div className="space-y-0.5 pr-4">
-            <div className="font-medium text-white flex items-center gap-1.5">
-              <BookOpen01Icon size={14} className="text-[#aaa]" />
-              Automatic [n] title suffix
-            </div>
-            <div className="text-xs text-[var(--flint-text-muted,#888)] leading-relaxed">
-              Automatically append or update “ [n]” at the end of the note title (e.g. “Untitled [1]”) when assigned to a cascade page.
-            </div>
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Automatic [n] title suffix</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Automatically append or update &ldquo; [n]&rdquo; at the end of the note title when assigned to a cascade page.
+            </span>
           </div>
-          <ToggleSwitch
-            checked={autoRenameSuffix}
-            onChange={setAutoRenameSuffix}
-          />
-        </div>
-      </div>
-
-      {/* Settings Group: Hotkeys & Shortcuts */}
-      <div className="space-y-3 pt-2">
-        <h3 className="text-xs uppercase font-bold tracking-wider text-[var(--flint-text-muted,#888)]">
-          Default Hotkeys
-        </h3>
-
-        <div className="p-3 rounded-lg bg-[var(--flint-bg-card,#222)] border border-[var(--flint-border-subtle,#2e2e2e)] space-y-2.5">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-[#aaa]">Previous Page in Cascade</span>
-            <kbd className="px-2 py-0.5 rounded bg-[#181818] border border-[#333] font-mono text-[11px] text-[#dcddde]">
-              {prevPageHotkey}
-            </kbd>
-          </div>
-
-          <div className="flex items-center justify-between text-xs border-t border-[#2a2a2a] pt-2">
-            <span className="text-[#aaa]">Next Page in Cascade</span>
-            <kbd className="px-2 py-0.5 rounded bg-[#181818] border border-[#333] font-mono text-[11px] text-[#dcddde]">
-              {nextPageHotkey}
-            </kbd>
-          </div>
-
-          <div className="text-[11px] text-[#777] pt-1">
-            Note: You can rebind these hotkeys at any time in Flint's Hotkeys settings tab.
+          <div className="flex items-center gap-2">
+            {autoRenameSuffix !== DEFAULT_CASCADE_SETTINGS.autoRenameSuffix && (
+              <button
+                type="button"
+                onClick={() => setAutoRenameSuffix(DEFAULT_CASCADE_SETTINGS.autoRenameSuffix)}
+                title="Restore default (Enabled)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <ToggleSwitch checked={autoRenameSuffix} onChange={setAutoRenameSuffix} />
           </div>
         </div>
-      </div>
 
-      {/* How it works note */}
-      <div className="p-3.5 rounded-lg bg-[#202020] border border-[#2e2e2e] text-xs text-[#aaa] space-y-1.5">
-        <div className="font-semibold text-white flex items-center gap-1.5">
-          <CommandIcon size={13} />
-          Cascade Properties & Graph Links
+        {/* Previous page shortcut */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Previous page hotkey</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Shortcut to navigate to the previous sequential note in the active cascade.
+            </span>
+          </div>
+          <span className="font-mono text-xs text-[#dcddde] bg-[#181818] px-2.5 py-1 rounded-[5px] border border-[#383838]">
+            {prevPageHotkey}
+          </span>
         </div>
-        <p className="text-[11px] text-[#888] leading-relaxed">
-          Cascaded notes store a <code className="bg-[#181818] px-1 py-0.5 rounded text-white font-mono">Cascade Page</code> property (and optional <code className="bg-[#181818] px-1 py-0.5 rounded text-white font-mono">Cascade</code> book name). Deleting this property automatically removes the note from the cascade. All pages in a cascade are connected as backlinks in the Graph View without modifying your note content.
-        </p>
+
+        {/* Next page shortcut */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Next page hotkey</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Shortcut to navigate to the next sequential note in the active cascade.
+            </span>
+          </div>
+          <span className="font-mono text-xs text-[#dcddde] bg-[#181818] px-2.5 py-1 rounded-[5px] border border-[#383838]">
+            {nextPageHotkey}
+          </span>
+        </div>
       </div>
     </div>
   );

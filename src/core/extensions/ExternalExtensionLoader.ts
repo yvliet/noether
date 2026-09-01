@@ -129,7 +129,12 @@ export class ExternalExtensionLoader {
         namedExports;
 
       if (typeof exportedExtension === 'function') {
-        this.app.extensions.registerExtension(manifest, exportedExtension as any);
+        // Enforce isCore: false for all external/community extensions so they can never spoof core status
+        const communityManifest: ExtensionManifest = {
+          ...manifest,
+          isCore: false,
+        };
+        this.app.extensions.registerExtension(communityManifest, exportedExtension as any);
         console.log(`[ExternalExtensionLoader] Successfully registered community extension "${manifest.name}"`);
         return true;
       } else {

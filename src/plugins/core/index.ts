@@ -22,7 +22,6 @@ export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(QUICKNOTE_MANIFEST, QuicknoteExtension);
   app.extensions.registerExtension(BOOKMARKS_MANIFEST, BookmarksExtension);
   app.extensions.registerExtension(MARKETPLACE_MANIFEST, MarketplaceExtension);
-  app.extensions.registerExtension(CASCADE_MANIFEST, CascadeExtension);
   app.extensions.registerExtension(TABLES_MANIFEST, TablesExtension);
   app.extensions.registerExtension(GRAPH_MANIFEST, GraphExtension);
   app.extensions.registerExtension(CANVAS_MANIFEST, CanvasExtension);
@@ -33,6 +32,9 @@ export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(TAGS_MANIFEST, TagsExtension);
   app.extensions.registerExtension(OUTLINE_MANIFEST, OutlineExtension);
   app.extensions.registerExtension(PROPERTIES_MANIFEST, PropertiesExtension);
+
+  // Bundled community extensions (isCore: false)
+  app.extensions.registerExtension(CASCADE_MANIFEST, CascadeExtension);
 }
 
 // Backwards-compat alias

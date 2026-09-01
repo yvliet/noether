@@ -6,6 +6,13 @@ export interface CascadeContextInfo {
   page?: number;
 }
 
+export const DEFAULT_CASCADE_SETTINGS = {
+  prevPageHotkey: 'Alt+,',
+  nextPageHotkey: 'Alt+.',
+  showInStatusBar: true,
+  autoRenameSuffix: true,
+};
+
 export interface CascadeSettingsState {
   prevPageHotkey: string;
   nextPageHotkey: string;
@@ -18,6 +25,7 @@ export interface CascadeSettingsState {
   setShowInStatusBar: (show: boolean) => void;
   setAutoRenameSuffix: (auto: boolean) => void;
   setActiveCascadeContext: (ctx: CascadeContextInfo | null) => void;
+  restoreDefaults: () => void;
 }
 
 const STORAGE_KEY = 'flint_cascade_settings_v1';
@@ -48,10 +56,10 @@ function persistSettings(state: CascadeSettingsState) {
 const initial = getStoredSettings();
 
 export const useCascadeSettings = create<CascadeSettingsState>((set, get) => ({
-  prevPageHotkey: initial.prevPageHotkey || 'Alt+,',
-  nextPageHotkey: initial.nextPageHotkey || 'Alt+.',
-  showInStatusBar: initial.showInStatusBar ?? true,
-  autoRenameSuffix: initial.autoRenameSuffix ?? true,
+  prevPageHotkey: initial.prevPageHotkey || DEFAULT_CASCADE_SETTINGS.prevPageHotkey,
+  nextPageHotkey: initial.nextPageHotkey || DEFAULT_CASCADE_SETTINGS.nextPageHotkey,
+  showInStatusBar: initial.showInStatusBar ?? DEFAULT_CASCADE_SETTINGS.showInStatusBar,
+  autoRenameSuffix: initial.autoRenameSuffix ?? DEFAULT_CASCADE_SETTINGS.autoRenameSuffix,
   activeCascadeContext: null,
 
   setPrevPageHotkey: (hotkey) => {
@@ -72,5 +80,14 @@ export const useCascadeSettings = create<CascadeSettingsState>((set, get) => ({
   },
   setActiveCascadeContext: (ctx) => {
     set({ activeCascadeContext: ctx });
+  },
+  restoreDefaults: () => {
+    set({
+      prevPageHotkey: DEFAULT_CASCADE_SETTINGS.prevPageHotkey,
+      nextPageHotkey: DEFAULT_CASCADE_SETTINGS.nextPageHotkey,
+      showInStatusBar: DEFAULT_CASCADE_SETTINGS.showInStatusBar,
+      autoRenameSuffix: DEFAULT_CASCADE_SETTINGS.autoRenameSuffix,
+    });
+    persistSettings(get());
   },
 }));

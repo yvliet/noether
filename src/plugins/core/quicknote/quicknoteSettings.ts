@@ -112,6 +112,7 @@ export interface QuicknoteSettingsState {
   closeQuicknote: () => void;
   toggleQuicknote: () => void;
   toggleMinimize: () => void;
+  restoreDefaults: () => void;
 }
 
 export const DEFAULT_QUICKNOTE_SETTINGS = {
@@ -147,6 +148,7 @@ export const useQuicknoteSettings = create<QuicknoteSettingsState>()(
           return { isModalOpen: false };
         }),
       toggleMinimize: () => set((state) => ({ isMinimized: !state.isMinimized })),
+      restoreDefaults: () => set({ ...DEFAULT_QUICKNOTE_SETTINGS }),
     }),
     {
       name: 'flint_quicknote_settings',

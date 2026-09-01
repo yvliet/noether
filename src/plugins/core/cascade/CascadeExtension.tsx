@@ -37,7 +37,7 @@ export const CASCADE_MANIFEST: ExtensionManifest = {
   version: '1.0.0',
   description: 'Organize notes into sequential cascades (books) with status-bar linking, graph backlinks, and custom sidebar folders.',
   author: 'Yuliet Li',
-  isCore: true,
+  isCore: false,
   tags: ['cascade', 'book', 'pages', 'navigation', 'graph', 'backlinks'],
   readme: cascadeReadme,
 };
