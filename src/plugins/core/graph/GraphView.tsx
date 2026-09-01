@@ -617,6 +617,88 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     linksRef.current = [];
   }
 
+  // Helper to extract graph links from in-memory document contents reactively with 0ms latency
+  const extractGraphLinksFromDocs = useCallback((docsList: DocumentItem[]): GraphLink[] => {
+    const docMap = new Map<string, string>();
+    for (const d of docsList) {
+      if (d.is_folder) continue;
+      docMap.set(d.title.toLowerCase(), d.id);
+      const cleanNoExt = d.title.toLowerCase().replace(/\.md$/, '');
+      docMap.set(cleanNoExt, d.id);
+      const base = cleanNoExt.split('/').pop() || cleanNoExt;
+      docMap.set(base, d.id);
+    }
+
+    const links: GraphLink[] = [];
+    const seenPair = new Set<string>();
+
+    for (const d of docsList) {
+      if (d.is_folder || !d.content_json) continue;
+      try {
+        const parsed = typeof d.content_json === 'string' ? JSON.parse(d.content_json) : d.content_json;
+        let text = '';
+        const extractText = (n: any) => {
+          if (!n) return;
+          if (typeof n.text === 'string') text += ' ' + n.text;
+          if (Array.isArray(n.content)) {
+            for (const c of n.content) extractText(c);
+          }
+        };
+        extractText(parsed);
+
+        // 1. WikiLinks [[target]] or [[target|alias]]
+        const wikiRegex = /\[\[(.*?)\]\]/g;
+        let match;
+        while ((match = wikiRegex.exec(text)) !== null) {
+          let raw = match[1]?.trim();
+          if (raw) {
+            if (raw.includes('|')) raw = raw.split('|')[0].trim();
+            if (raw.includes('#')) raw = raw.split('#')[0].trim();
+            const targetKey = raw.toLowerCase().replace(/\.md$/, '');
+            const targetId = docMap.get(targetKey) || docMap.get(targetKey.split('/').pop() || targetKey);
+            if (targetId && targetId !== d.id) {
+              const pairKey = `${d.id}->${targetId}`;
+              if (!seenPair.has(pairKey)) {
+                seenPair.add(pairKey);
+                links.push({
+                  source: d.id,
+                  target: targetId,
+                  hoverAlpha: 0,
+                  dimAlpha: 0,
+                });
+              }
+            }
+          }
+        }
+
+        // 2. Markdown links [text](target)
+        const mdRegex = /\[(.*?)\]\((.*?)\)/g;
+        let mdMatch;
+        while ((mdMatch = mdRegex.exec(text)) !== null) {
+          let raw = mdMatch[2]?.trim();
+          if (raw && !raw.startsWith('http://') && !raw.startsWith('https://') && !raw.startsWith('mailto:') && !raw.startsWith('#')) {
+            const targetKey = raw.toLowerCase().replace(/\.md$/, '');
+            const targetId = docMap.get(targetKey) || docMap.get(targetKey.split('/').pop() || targetKey);
+            if (targetId && targetId !== d.id) {
+              const pairKey = `${d.id}->${targetId}`;
+              if (!seenPair.has(pairKey)) {
+                seenPair.add(pairKey);
+                links.push({
+                  source: d.id,
+                  target: targetId,
+                  hoverAlpha: 0,
+                  dimAlpha: 0,
+                });
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+
+    return links;
+  }, []);
+
   // Load Graph Data with deterministic positions & persistence
   useEffect(() => {
     let disposed = false;
@@ -638,6 +720,62 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const currentDocIds = new Set(docs.map((d) => d.id));
         const prevIds = prevDocIdsRef.current;
 
+        // Helper to query and merge links both from in-memory content and SQLite document_links
+        const syncGraphLinks = async () => {
+          const inMemLinks = extractGraphLinksFromDocs(docs);
+          let rawLinks: Array<{ source_document_id: string; target_document_id: string }> = [];
+          try {
+            rawLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
+              `SELECT source_document_id, target_document_id FROM document_links`
+            );
+          } catch (e) {
+            rawLinks = [];
+          }
+
+          if (disposed || loadSeq !== loadSeqRef.current) return;
+
+          const mergedLinks: GraphLink[] = [];
+          const seenPair = new Set<string>();
+
+          for (const l of inMemLinks) {
+            const key = `${l.source}->${l.target}`;
+            if (!seenPair.has(key)) {
+              seenPair.add(key);
+              mergedLinks.push(l);
+            }
+          }
+
+          for (const l of rawLinks) {
+            if (l.source_document_id && l.target_document_id) {
+              const key = `${l.source_document_id}->${l.target_document_id}`;
+              if (!seenPair.has(key)) {
+                seenPair.add(key);
+                mergedLinks.push({
+                  source: l.source_document_id,
+                  target: l.target_document_id,
+                  hoverAlpha: 0,
+                  dimAlpha: 0,
+                });
+              }
+            }
+          }
+
+          const linkCounts: Record<string, number> = {};
+          mergedLinks.forEach((l) => {
+            linkCounts[l.source] = (linkCounts[l.source] || 0) + 1;
+            linkCounts[l.target] = (linkCounts[l.target] || 0) + 1;
+          });
+
+          for (const n of nodesRef.current) {
+            const count = linkCounts[n.id] || 0;
+            n.linkCount = count;
+            n.radius = Math.min(9, 5.5 + count * 1.4);
+          }
+
+          linksRef.current = mergedLinks;
+          startAnimationRef.current();
+        };
+
         // --- Incremental path: instant 0ms pop-up for newly added / removed nodes ---
         if (prevIds.size > 0 && nodesRef.current.length > 0) {
           const removedIds = new Set<string>();
@@ -646,7 +784,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           }
           const addedDocs = docs.filter((d) => !prevIds.has(d.id));
 
-          // Nothing changed (e.g. metadata update or title edit)
+          // If no files added or removed, check if title changed and sync links
           if (removedIds.size === 0 && addedDocs.length === 0) {
             let titleOrMetaChanged = false;
             for (const d of docs) {
@@ -664,6 +802,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
               startAnimationRef.current();
             }
             prevDocIdsRef.current = currentDocIds;
+            await syncGraphLinks();
+            persistPositions(false);
             return;
           }
 
@@ -684,7 +824,6 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             const existingNodeMap = new Map(nodesRef.current.map((n) => [n.id, n]));
 
             if (isTimelapse) {
-              // During active or paused timelapse: append newly created files to the end of the timelapse sequence
               for (const d of addedDocs) {
                 if (existingNodeMap.has(d.id)) continue;
 
@@ -722,10 +861,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 }
               }
             } else {
-              // Normal non-timelapse mode: emerge instantly with pop animation on frame 0
               const saved = getSavedPositions(vaultPath);
 
-              // Compute current cluster centroid
               let sumX = 0;
               let sumY = 0;
               let validNodesCount = 0;
@@ -819,57 +956,55 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             startAnimationRef.current();
           }
 
-          // Only query database links if nodes were deleted or content was modified
-          if (removedIds.size > 0) {
-            (async () => {
-              try {
-                const rawLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
-                  `SELECT source_document_id, target_document_id FROM document_links`
-                );
-                if (disposed || loadSeq !== loadSeqRef.current) return;
-
-                const linkCounts: Record<string, number> = {};
-                rawLinks.forEach((l) => {
-                  if (l.source_document_id) linkCounts[l.source_document_id] = (linkCounts[l.source_document_id] || 0) + 1;
-                  if (l.target_document_id) linkCounts[l.target_document_id] = (linkCounts[l.target_document_id] || 0) + 1;
-                });
-
-                for (const n of nodesRef.current) {
-                  const count = linkCounts[n.id] || 0;
-                  n.linkCount = count;
-                  n.radius = Math.min(9, 5.5 + count * 1.4);
-                }
-
-                linksRef.current = rawLinks.map((l) => ({
-                  source: l.source_document_id,
-                  target: l.target_document_id,
-                  hoverAlpha: 0,
-                  dimAlpha: 0,
-                }));
-              } catch (e) {}
-            })();
-          }
-
+          // Always synchronize links for added, modified, or removed nodes
+          await syncGraphLinks();
           persistPositions(false);
           return;
         }
 
         // --- Full initial load path (first time only) ---
-        let rawLinks: Array<{ source_document_id: string; target_document_id: string }> = [];
+        const inMemLinks = extractGraphLinksFromDocs(docs);
+        let rawDbLinks: Array<{ source_document_id: string; target_document_id: string }> = [];
         try {
-          rawLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
+          rawDbLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
             `SELECT source_document_id, target_document_id FROM document_links`
           );
         } catch (e) {
-          rawLinks = [];
+          rawDbLinks = [];
         }
 
         if (disposed || loadSeq !== loadSeqRef.current) return;
 
+        const mergedLinks: GraphLink[] = [];
+        const seenPair = new Set<string>();
+
+        for (const l of inMemLinks) {
+          const key = `${l.source}->${l.target}`;
+          if (!seenPair.has(key)) {
+            seenPair.add(key);
+            mergedLinks.push(l);
+          }
+        }
+
+        for (const l of rawDbLinks) {
+          if (l.source_document_id && l.target_document_id) {
+            const key = `${l.source_document_id}->${l.target_document_id}`;
+            if (!seenPair.has(key)) {
+              seenPair.add(key);
+              mergedLinks.push({
+                source: l.source_document_id,
+                target: l.target_document_id,
+                hoverAlpha: 0,
+                dimAlpha: 0,
+              });
+            }
+          }
+        }
+
         const linkCounts: Record<string, number> = {};
-        rawLinks.forEach((l) => {
-          if (l.source_document_id) linkCounts[l.source_document_id] = (linkCounts[l.source_document_id] || 0) + 1;
-          if (l.target_document_id) linkCounts[l.target_document_id] = (linkCounts[l.target_document_id] || 0) + 1;
+        mergedLinks.forEach((l) => {
+          linkCounts[l.source] = (linkCounts[l.source] || 0) + 1;
+          linkCounts[l.target] = (linkCounts[l.target] || 0) + 1;
         });
 
         const saved = getSavedPositions(vaultPath);
@@ -899,24 +1034,21 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           } else {
             // Check if this document connects to an already-placed node in this initial batch
             const existingGraphMap = new Map(graphNodes.map((n) => [n.id, n]));
-            const connLink = rawLinks.find(
+            const connLink = mergedLinks.find(
               (l) =>
-                (l.source_document_id === d.id && existingGraphMap.has(l.target_document_id)) ||
-                (l.target_document_id === d.id && existingGraphMap.has(l.source_document_id))
+                (l.source === d.id && existingGraphMap.has(l.target)) ||
+                (l.target === d.id && existingGraphMap.has(l.source))
             );
 
             if (connLink) {
-              const parentId =
-                connLink.source_document_id === d.id
-                  ? connLink.target_document_id
-                  : connLink.source_document_id;
+              const parentId = connLink.source === d.id ? connLink.target : connLink.source;
               const parentNode = existingGraphMap.get(parentId);
               if (parentNode && Number.isFinite(parentNode.x) && Number.isFinite(parentNode.y)) {
                 const siblingCount = graphNodes.filter((gn) =>
-                  rawLinks.some(
+                  mergedLinks.some(
                     (l) =>
-                      (l.source_document_id === gn.id && l.target_document_id === parentId) ||
-                      (l.target_document_id === gn.id && l.source_document_id === parentId)
+                      (l.source === gn.id && l.target === parentId) ||
+                      (l.target === gn.id && l.source === parentId)
                   )
                 ).length;
                 const goldenAngle = 2.399963;
@@ -961,18 +1093,11 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           });
         }
 
-        const graphLinks: GraphLink[] = rawLinks.map((l) => ({
-          source: l.source_document_id,
-          target: l.target_document_id,
-          hoverAlpha: 0,
-          dimAlpha: 0,
-        }));
-
         if (disposed || loadSeq !== loadSeqRef.current) return;
 
         prevDocIdsRef.current = currentDocIds;
         nodesRef.current = graphNodes;
-        linksRef.current = graphLinks;
+        linksRef.current = mergedLinks;
         timelapseStepRef.current = graphNodes.length;
 
         resizeCanvas();

@@ -762,8 +762,24 @@ export async function saveDocumentAndSynchronize(
             if (targetTitle.includes('|')) {
               targetTitle = targetTitle.split('|')[0].trim();
             }
+            if (targetTitle.includes('#')) {
+              targetTitle = targetTitle.split('#')[0].trim();
+            }
             if (targetTitle) {
               wikiLinks.push(targetTitle);
+            }
+          }
+        }
+
+        // Check for Markdown links: [Text](Target Note)
+        const mdLinkRegex = /\[(.*?)\]\((.*?)\)/g;
+        let mdMatch;
+        while ((mdMatch = mdLinkRegex.exec(pText)) !== null) {
+          let target = mdMatch[2]?.trim();
+          if (target && !target.startsWith('http://') && !target.startsWith('https://') && !target.startsWith('mailto:') && !target.startsWith('#')) {
+            target = target.replace(/\.md$/, '').trim();
+            if (target) {
+              wikiLinks.push(target);
             }
           }
         }
