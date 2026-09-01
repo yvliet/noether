@@ -22,6 +22,9 @@ export const WikiLinkPopup = React.memo(
         ref,
         () => ({
           onKeyDown: ({ event }) => {
+            if (!items || items.length === 0) {
+              return false;
+            }
             if (event.key === 'ArrowUp') {
               setSelectedIndex((prev) => (prev + items.length - 1) % items.length);
               return true;

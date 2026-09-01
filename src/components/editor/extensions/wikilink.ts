@@ -10,6 +10,48 @@ export interface WikiLinkItem {
 
 export const WikiLinkPluginKey = new PluginKey('wikiLinks');
 
+function findWikiSuggestionMatch(config: {
+  char?: string;
+  allowSpaces?: boolean;
+  allowedPrefixes?: string[] | null;
+  startOfLine?: boolean;
+  $position: any;
+}) {
+  const { $position } = config;
+  if (!$position || !$position.parent) return null;
+
+  // Text in the current block from the start of the block up to the cursor position
+  const textBefore = $position.parent.textBetween(0, $position.parentOffset, undefined, '\0');
+
+  // Find the last '[[' before the cursor
+  const lastOpenIndex = textBefore.lastIndexOf('[[');
+  if (lastOpenIndex === -1) return null;
+
+  // Extract query text between '[[' and cursor
+  const textAfterOpen = textBefore.slice(lastOpenIndex + 2);
+
+  // If query contains ']]', ']', another '[', newline, or exceeds reasonable query length,
+  // it is already closed or not an active suggestion query.
+  if (
+    textAfterOpen.includes(']]') ||
+    textAfterOpen.includes(']') ||
+    textAfterOpen.includes('[') ||
+    textAfterOpen.includes('\n') ||
+    textAfterOpen.length > 120
+  ) {
+    return null;
+  }
+
+  const from = $position.start() + lastOpenIndex;
+  const to = $position.pos;
+
+  return {
+    range: { from, to },
+    query: textAfterOpen,
+    text: textBefore.slice(lastOpenIndex),
+  };
+}
+
 export const WikiLinks = Extension.create<{
   suggestion: Omit<SuggestionOptions<WikiLinkItem>, 'editor'>;
 }>({
@@ -21,6 +63,7 @@ export const WikiLinks = Extension.create<{
         char: '[[',
         allowSpaces: true,
         pluginKey: WikiLinkPluginKey,
+        findSuggestionMatch: findWikiSuggestionMatch,
         command: ({ editor, range, props }) => {
           const { state } = editor;
           const { from, to } = range;
@@ -55,3 +98,5 @@ export const WikiLinks = Extension.create<{
     ];
   },
 });
+
+export default WikiLinks;

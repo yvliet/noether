@@ -373,8 +373,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     const docs = get().documents;
-    let finalTitle = title;
-    if (title === 'Untitled') {
+    const baseTitle = (title && title.trim()) || 'Untitled';
+    let finalTitle = baseTitle;
+    if (baseTitle === 'Untitled') {
       const existingTitles = new Set(
         docs
           .filter((d) => !d.is_folder && (d.parent_id || null) === (targetParentId || null))

@@ -432,7 +432,11 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         return;
       }
 
-      const cleanTarget = notePart.toLowerCase();
+      if (!notePart || !notePart.trim()) {
+        return;
+      }
+
+      const cleanTarget = notePart.trim().toLowerCase();
       const cleanWithoutExt = cleanTarget.replace(/\.md$/, '');
       const targetBaseName = cleanWithoutExt.split('/').pop() || cleanWithoutExt;
 
@@ -574,6 +578,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   setSlashMenuProps(null);
                   return true;
                 }
+                if (!props.items || props.items.length === 0) {
+                  return false;
+                }
                 return slashMenuRef.current?.onKeyDown(props) || false;
               },
               onExit: () => {
@@ -611,8 +618,11 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   items: props.items,
                   command: async (item: WikiLinkItem) => {
                     if (item.isNew) {
-                      const newDoc = await createNewNote(item.title);
-                      props.command({ title: newDoc.title, id: newDoc.id });
+                      if (!item.title || !item.title.trim()) return;
+                      const newDoc = await createNewNote(item.title.trim());
+                      if (newDoc) {
+                        props.command({ title: newDoc.title, id: newDoc.id });
+                      }
                     } else {
                       props.command(item);
                     }
@@ -629,8 +639,11 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                         items: props.items,
                         command: async (item: WikiLinkItem) => {
                           if (item.isNew) {
-                            const newDoc = await createNewNote(item.title);
-                            props.command({ title: newDoc.title, id: newDoc.id });
+                            if (!item.title || !item.title.trim()) return;
+                            const newDoc = await createNewNote(item.title.trim());
+                            if (newDoc) {
+                              props.command({ title: newDoc.title, id: newDoc.id });
+                            }
                           } else {
                             props.command(item);
                           }
@@ -644,6 +657,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                 if (props.event.key === 'Escape') {
                   setWikiProps(null);
                   return true;
+                }
+                if (!props.items || props.items.length === 0) {
+                  return false;
                 }
                 return wikiPopupRef.current?.onKeyDown(props) || false;
               },

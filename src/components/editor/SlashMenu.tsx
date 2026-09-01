@@ -42,6 +42,9 @@ export const SlashMenu = React.memo(
         ref,
         () => ({
           onKeyDown: ({ event }) => {
+            if (!items || items.length === 0) {
+              return false;
+            }
             if (activeSubmenuRef.current === 'table') {
               if (event.key === 'Escape' || event.key === 'ArrowLeft') {
                 setActiveSubmenu(null);
