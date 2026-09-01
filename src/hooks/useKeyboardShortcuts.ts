@@ -442,7 +442,7 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // 17. History Navigation: Alt + Left / Alt + A and Alt + Right / Alt + D (when not inside inputs)
+      // 17. History Navigation & Editor Context Guard
       const target = (e.target || document.activeElement) as HTMLElement | null;
       const activeEl = document.activeElement as HTMLElement | null;
       const isInput =
@@ -458,10 +458,15 @@ export function useKeyboardShortcuts() {
         Boolean(target?.closest('[contenteditable="true"]')) ||
         Boolean(target?.closest('.ProseMirror')) ||
         Boolean(target?.closest('.tiptap')) ||
+        Boolean(target?.closest('.flint-doc-wrapper')) ||
+        Boolean(target?.closest('.editor-canvas')) ||
         Boolean(activeEl?.isContentEditable) ||
         Boolean(activeEl?.closest('[contenteditable="true"]')) ||
         Boolean(activeEl?.closest('.ProseMirror')) ||
-        Boolean(activeEl?.closest('.tiptap'));
+        Boolean(activeEl?.closest('.tiptap')) ||
+        Boolean(activeEl?.closest('.flint-doc-wrapper')) ||
+        Boolean(activeEl?.closest('.editor-canvas'));
+      const isAnyEditorOrInput = isInput || isContentEditor;
       const isSidebarFocused = Boolean(target?.closest('[data-sidebar="true"]') || activeEl?.closest('[data-sidebar="true"]'));
       const isCanvasOrGraph = Boolean(
         target?.closest('[data-canvas-view="true"]') ||
@@ -472,10 +477,10 @@ export function useKeyboardShortcuts() {
         ws.mainViewMode === 'graph'
       );
 
-      // 18. File Action Undo & Redo (Ctrl+Z and Ctrl+Y / Ctrl+Shift+Z)
-      if (!isContentEditor && !isInput && (!isCanvasOrGraph || isSidebarFocused)) {
+      // 18. File Action Undo & Redo (Only when explicitly focused in sidebar/file tree)
+      if (!isAnyEditorOrInput && isSidebarFocused) {
         const isUndo =
-          isMatch('workspace:undo-file-action', ['Ctrl+Z']) ||
+          isMatch('workspace:undo-file-action', ['Ctrl+Alt+Z', 'Ctrl+Z']) ||
           ((keyLower === 'z' || code === 'KeyZ') && isCtrlOrMeta && !isShift && !isAlt);
 
         if (isUndo) {
@@ -486,7 +491,7 @@ export function useKeyboardShortcuts() {
         }
 
         const isRedo =
-          isMatch('workspace:redo-file-action', ['Ctrl+Y', 'Ctrl+Shift+Z']) ||
+          isMatch('workspace:redo-file-action', ['Ctrl+Alt+Y', 'Ctrl+Y', 'Ctrl+Shift+Z']) ||
           ((keyLower === 'y' || code === 'KeyY') && isCtrlOrMeta && !isShift && !isAlt) ||
           ((keyLower === 'z' || code === 'KeyZ') && isCtrlOrMeta && isShift && !isAlt);
 
@@ -505,7 +510,7 @@ export function useKeyboardShortcuts() {
         const defaultHotkeys = cmd.hotkey ? [cmd.hotkey] : [];
         if (customHotkey || defaultHotkeys.length > 0) {
           if (isMatch(cmd.id, defaultHotkeys)) {
-            if (!isInput || cmd.allowInInput) {
+            if (!isAnyEditorOrInput || cmd.allowInInput) {
               e.preventDefault();
               e.stopPropagation();
               cmd.action(appInstance);
@@ -515,7 +520,7 @@ export function useKeyboardShortcuts() {
         }
       }
 
-      if (!isInput) {
+      if (!isAnyEditorOrInput) {
         const isBack =
           isMatch('workspace:navigate-back', ['Alt+Left', 'Alt+ArrowLeft', 'Alt+A']) ||
           ((e.key === 'ArrowLeft' || keyLower === 'a' || code === 'KeyA') && isAlt && !isCtrlOrMeta && !isShift);

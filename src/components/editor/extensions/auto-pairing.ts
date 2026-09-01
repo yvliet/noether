@@ -10,10 +10,9 @@ const BRACKET_PAIRS: Record<string, string> = {
   '(': ')',
   '{': '}',
   '"': '"',
-  "'": "'",
 };
 
-const CLOSING_CHARS = new Set([']', ')', '}', '"', "'", '*', '`', '~', '=', '$']);
+const CLOSING_CHARS = new Set([']', ')', '}', '"', '*', '`', '~', '=']);
 
 export interface AutoPairingStorage {
   autoPairing: boolean;
@@ -208,14 +207,6 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   return true;
                 }
 
-                if (key === '$') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  editor.commands.insertMathChip({ latex: selText, startEditing: true });
-                  return true;
-                }
-
                 if (key === '[' || key === ']') {
                   event.preventDefault();
                   event.stopPropagation();
@@ -340,15 +331,6 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   return true;
                 }
 
-                // Auto-pair math $
-                if (key === '$') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  editor.commands.insertMathChip({ latex: '', startEditing: true });
-                  return true;
-                }
-
                 // Auto-pair highlight
                 if (key === '=') {
                   const beforeChar = from > 0 ? state.doc.textBetween(from - 1, from) : '';
@@ -380,8 +362,7 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                     if (
                       (BRACKET_PAIRS[prevChar] && BRACKET_PAIRS[prevChar] === nextChar) ||
                       (prevChar === '*' && nextChar === '*') ||
-                      (prevChar === '`' && nextChar === '`') ||
-                      (prevChar === '$' && nextChar === '$')
+                      (prevChar === '`' && nextChar === '`')
                     ) {
                       event.preventDefault();
                       event.stopPropagation();

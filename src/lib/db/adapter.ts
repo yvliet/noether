@@ -409,4 +409,14 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
     dbAdapter.persist();
   });
+  window.addEventListener('pagehide', () => {
+    dbAdapter.persist();
+  });
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        dbAdapter.persist();
+      }
+    });
+  }
 }

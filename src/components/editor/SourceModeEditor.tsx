@@ -276,11 +276,9 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
       pairs['['] = ']';
       pairs['{'] = '}';
       pairs['"'] = '"';
-      pairs["'"] = "'";
       pairs['`'] = '`';
       pairs['*'] = '*';
       pairs['~'] = '~';
-      pairs['$'] = '$';
     }
 
     if (pairs[e.key] && !isCtrlOrMeta && !e.altKey) {
@@ -311,7 +309,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
     }
 
     // 7. Auto-skip closing character
-    if (selectionStart === selectionEnd && (e.key === ')' || e.key === ']' || e.key === '}' || e.key === '"' || e.key === "'" || e.key === '`' || e.key === '*' || e.key === '~' || e.key === '$')) {
+    if (selectionStart === selectionEnd && (e.key === ')' || e.key === ']' || e.key === '}' || e.key === '"' || e.key === '`' || e.key === '*' || e.key === '~')) {
       if (value[selectionStart] === e.key) {
         e.preventDefault();
         textarea.selectionStart = textarea.selectionEnd = selectionStart + 1;

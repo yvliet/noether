@@ -268,7 +268,7 @@ export class DefaultCommandsExtension extends Extension {
       title: 'Undo file action (restore deleted or renamed file)',
       section: 'Files',
       icon: <RotateCcwIcon size={16} />,
-      hotkey: 'Ctrl+Z',
+      hotkey: 'Ctrl+Alt+Z',
       action: async (app) => {
         await app.workspace.undoFileAction();
       },
@@ -279,7 +279,7 @@ export class DefaultCommandsExtension extends Extension {
       id: 'workspace:redo-file-action',
       title: 'Redo file action',
       section: 'Files',
-      hotkey: 'Ctrl+Y',
+      hotkey: 'Ctrl+Alt+Y',
       action: async (app) => {
         await app.workspace.redoFileAction();
       },

@@ -314,7 +314,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           existing.title !== doc.title ||
           existing.updated_at !== doc.updated_at ||
           existing.parent_id !== doc.parent_id ||
-          existing.doc_type !== doc.doc_type;
+          existing.doc_type !== doc.doc_type ||
+          existing.content_json !== doc.content_json;
 
         return {
           ...(docsNeedUpdate

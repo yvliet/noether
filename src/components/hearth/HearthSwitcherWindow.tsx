@@ -206,10 +206,18 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                             setActiveMenuPath(null);
                           } else {
                             const rect = e.currentTarget.getBoundingClientRect();
-                            setMenuPos({
-                              top: rect.bottom + 4,
-                              right: Math.max(8, window.innerWidth - rect.right),
-                            });
+                            const spaceBelow = window.innerHeight - rect.bottom;
+                            if (spaceBelow < 180 && rect.top > 180) {
+                              setMenuPos({
+                                bottom: window.innerHeight - rect.top + 4,
+                                right: Math.max(8, window.innerWidth - rect.right),
+                              });
+                            } else {
+                              setMenuPos({
+                                top: rect.bottom + 4,
+                                right: Math.max(8, window.innerWidth - rect.right),
+                              });
+                            }
                             setActiveMenuPath(rv.path);
                           }
                         }}

@@ -590,7 +590,21 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
               onUpdate: (props: any) => {
                 const rect = props.clientRect?.();
                 setWikiProps((prev) =>
-                  prev ? { ...prev, items: props.items, rect: rect || null } : null
+                  prev
+                    ? {
+                        ...prev,
+                        items: props.items,
+                        command: async (item: WikiLinkItem) => {
+                          if (item.isNew) {
+                            const newDoc = await createNewNote(item.title);
+                            props.command({ title: newDoc.title, id: newDoc.id });
+                          } else {
+                            props.command(item);
+                          }
+                        },
+                        rect: rect || null,
+                      }
+                    : null
                 );
               },
               onKeyDown: (props: any) => {
@@ -1495,6 +1509,49 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     };
   }, [editor, app]);
 
+  // Smart floating popover positioning with automatic top/bottom flip and screen boundary clamping
+  const getSmartFloatingStyle = useCallback((rect: DOMRect | null, estimatedWidth: number, estimatedHeight: number, gap: number = 6): React.CSSProperties => {
+    if (!rect) return { display: 'none' };
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const margin = 12;
+
+    const spaceBelow = vh - rect.bottom - gap - margin;
+    const spaceAbove = rect.top - gap - margin;
+
+    // Horizontal alignment with boundary clamping
+    let left = rect.left;
+    if (left + estimatedWidth > vw - margin) {
+      left = Math.max(margin, vw - estimatedWidth - margin);
+    }
+    if (left < margin) {
+      left = margin;
+    }
+
+    // Vertical placement: prefer below, flip to above if not enough space below AND more space above
+    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+      const bottom = vh - rect.top + gap;
+      const maxHeight = Math.max(120, Math.min(estimatedHeight, spaceAbove));
+      return {
+        position: 'fixed',
+        left: `${left}px`,
+        bottom: `${bottom}px`,
+        maxHeight: `${maxHeight}px`,
+        zIndex: 50,
+      };
+    } else {
+      const top = rect.bottom + gap;
+      const maxHeight = Math.max(120, Math.min(estimatedHeight, spaceBelow));
+      return {
+        position: 'fixed',
+        left: `${left}px`,
+        top: `${top}px`,
+        maxHeight: `${maxHeight}px`,
+        zIndex: 50,
+      };
+    }
+  }, []);
+
   return (
     <div
       onClick={(e) => {
@@ -1513,15 +1570,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       {/* Minimalist Hover Edge Add-Row / Add-Column Controls */}
       {editable && <TableEdgeControls editor={editor} />}
 
-      {/* Floating Slash Command Menu */}
+      {/* Floating Slash Command Menu with Smart Auto-Flip */}
       {slashMenuProps && slashMenuProps.rect && (
-        <div
-          className="fixed z-50"
-          style={{
-            top: `${slashMenuProps.rect.bottom + 6}px`,
-            left: `${Math.min(slashMenuProps.rect.left, window.innerWidth - 320)}px`,
-          }}
-        >
+        <div style={getSmartFloatingStyle(slashMenuProps.rect, 300, 340, 6)}>
           <SlashMenu
             ref={slashMenuRef}
             items={slashMenuProps.items}
@@ -1530,15 +1581,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         </div>
       )}
 
-      {/* Floating WikiLink Popup */}
+      {/* Floating WikiLink Popup with Smart Auto-Flip */}
       {wikiProps && wikiProps.rect && (
-        <div
-          className="fixed z-50"
-          style={{
-            top: `${wikiProps.rect.bottom + 6}px`,
-            left: `${Math.min(wikiProps.rect.left, window.innerWidth - 280)}px`,
-          }}
-        >
+        <div style={getSmartFloatingStyle(wikiProps.rect, 270, 300, 6)}>
           <WikiLinkPopup
             ref={wikiPopupRef}
             items={wikiProps.items}

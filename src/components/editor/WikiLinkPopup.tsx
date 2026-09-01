@@ -30,7 +30,7 @@ export const WikiLinkPopup = React.memo(
               setSelectedIndex((prev) => (prev + 1) % items.length);
               return true;
             }
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' || event.key === 'Tab') {
               if (items[selectedIndexRef.current]) {
                 command(items[selectedIndexRef.current]);
                 return true;

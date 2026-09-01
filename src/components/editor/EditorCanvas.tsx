@@ -135,21 +135,26 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
   // Determine current document based on explicit documentId prop / active tab / pane
   const currentDoc = useMemo(() => {
+    let targetDocId: string | null = null;
     if (documentId) {
-      return documents.find((d) => d.id === documentId) || null;
-    }
-    if (activeTab) {
+      targetDocId = documentId;
+    } else if (activeTab) {
       const tabDocId = activeTab.document_id;
       if (tabDocId && !tabDocId.startsWith('__')) {
-        return documents.find((d) => d.id === tabDocId) || null;
+        targetDocId = tabDocId;
       }
-      return null;
+    } else if (paneModel?.activeDocumentId && !paneModel.activeDocumentId.startsWith('__')) {
+      targetDocId = paneModel.activeDocumentId;
     }
-    if (paneModel?.activeDocumentId && !paneModel.activeDocumentId.startsWith('__')) {
-      return documents.find((d) => d.id === paneModel.activeDocumentId) || null;
+
+    if (targetDocId) {
+      if (activeDocument && activeDocument.id === targetDocId) {
+        return activeDocument;
+      }
+      return documents.find((d) => d.id === targetDocId) || null;
     }
-    return null;
-  }, [documentId, activeTab, paneModel?.activeDocumentId, documents]);
+    return activeDocument;
+  }, [documentId, activeTab, paneModel?.activeDocumentId, documents, activeDocument]);
 
 
   const matchedBreadcrumbProvider = useMemo(() => {
@@ -311,13 +316,26 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       pendingContentRef.current = null;
       pendingTitleRef.current = null;
 
+      const currentContent = contentToSave !== null ? contentToSave : (currentDoc?.content_json || '{}');
+      const currentTitle = titleToSave !== null ? titleToSave : (currentDoc?.title || undefined);
+
+      useDocumentStore.setState((s) => ({
+        documents: s.documents.map((d) =>
+          d.id === docId ? { ...d, content_json: currentContent, ...(currentTitle ? { title: currentTitle } : {}) } : d
+        ),
+        activeDocument:
+          s.activeDocument && s.activeDocument.id === docId
+            ? { ...s.activeDocument, content_json: currentContent, ...(currentTitle ? { title: currentTitle } : {}) }
+            : s.activeDocument,
+      }));
+
       saveDocumentById(
         docId,
-        contentToSave !== null ? contentToSave : (currentDoc?.content_json || '{}'),
-        titleToSave !== null ? titleToSave : undefined
+        currentContent,
+        currentTitle
       );
     }
-  }, [currentDoc?.content_json, saveDocumentById]);
+  }, [currentDoc?.content_json, currentDoc?.title, saveDocumentById]);
 
   // Sync state when active document changes
   useEffect(() => {
@@ -396,17 +414,21 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     };
   }, [flushPendingSave]);
 
-  // Flush on window blur (alt-tabbing), beforeunload (closing tab/window), and explicit save event
+  // Flush on window blur (alt-tabbing), beforeunload (closing tab/window), pagehide, visibility change, and explicit save event
   useEffect(() => {
     const handleBlurOrUnload = () => {
       flushPendingSave();
     };
     window.addEventListener('blur', handleBlurOrUnload);
     window.addEventListener('beforeunload', handleBlurOrUnload);
+    window.addEventListener('pagehide', handleBlurOrUnload);
+    document.addEventListener('visibilitychange', handleBlurOrUnload);
     window.addEventListener('flint:save-note', handleBlurOrUnload);
     return () => {
       window.removeEventListener('blur', handleBlurOrUnload);
       window.removeEventListener('beforeunload', handleBlurOrUnload);
+      window.removeEventListener('pagehide', handleBlurOrUnload);
+      document.removeEventListener('visibilitychange', handleBlurOrUnload);
       window.removeEventListener('flint:save-note', handleBlurOrUnload);
     };
   }, [flushPendingSave]);

@@ -7,7 +7,7 @@ import { platform } from '@/lib/platform/platformAdapter';
 export async function getAllDocuments(): Promise<DocumentItem[]> {
   try {
     const docs = await dbAdapter.query<DocumentItem>(
-      `SELECT id, parent_id, title, '' as content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
+      `SELECT id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
        FROM documents 
        ORDER BY is_folder DESC, title ASC`
     );
@@ -24,18 +24,18 @@ export async function getAllDocuments(): Promise<DocumentItem[]> {
     } catch (e) {}
     try {
       const docs = await dbAdapter.query<DocumentItem>(
-        `SELECT id, parent_id, title, '' as content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
+        `SELECT id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
          FROM documents 
          ORDER BY is_folder DESC, title ASC`
       );
       return docs;
     } catch (fallbackErr) {
-      const raw = await dbAdapter.query<any>(`SELECT id, parent_id, title, '' as content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at FROM documents ORDER BY is_folder DESC, title ASC`);
+      const raw = await dbAdapter.query<any>(`SELECT id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at FROM documents ORDER BY is_folder DESC, title ASC`);
       return raw.map((d: any) => ({
         id: d.id,
         parent_id: d.parent_id || null,
         title: d.title || 'Untitled',
-        content_json: '',
+        content_json: d.content_json || '',
         is_daily_note: d.is_daily_note || 0,
         is_folder: d.is_folder || 0,
         is_bookmarked: d.is_bookmarked || 0,
