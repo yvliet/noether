@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useSidebarDockStore } from '@/store/sidebarDockStore';
 import { useGraphSettings } from './graphSettings';
 import { useDocumentStore } from '@/store/documentStore';
 import { dbAdapter } from '@/lib/db/adapter';
@@ -149,13 +150,101 @@ function getDeterministicNodePos(docId: string, index = 0): { x: number; y: numb
 
 export interface GraphViewProps {
   isSidebar?: boolean;
+  tabId?: string;
+  documentId?: string;
 }
 
-export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: propIsSidebar }) => {
+function getFloatingTabsStorageKey(vaultPath?: string): string {
+  const vp = (vaultPath || 'default').trim();
+  return `flint_graph_floating_tabs_v1:${vp}`;
+}
+
+function isTabFloating(tabId?: string, vaultPath?: string): boolean {
+  if (!tabId) return false;
+  // 1. Check workspaceStore / sidebarDockStore metadata
+  try {
+    const ws = useWorkspaceStore.getState();
+    for (const p of Object.values(ws.panes || {})) {
+      const t = p.tabs.find((tab) => tab.id === tabId);
+      if (t && t.metadata?.isFloating !== undefined) {
+        return !!t.metadata.isFloating;
+      }
+    }
+    const mainTab = ws.tabs.find((t) => t.id === tabId);
+    if (mainTab && mainTab.metadata?.isFloating !== undefined) {
+      return !!mainTab.metadata.isFloating;
+    }
+    const dockItem = useSidebarDockStore.getState().items.find((it) => it.id === tabId);
+    if (dockItem && dockItem.metadata?.isFloating !== undefined) {
+      return !!dockItem.metadata.isFloating;
+    }
+  } catch {}
+
+  // 2. Check localStorage set
+  try {
+    const key = getFloatingTabsStorageKey(vaultPath);
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) {
+        return list.includes(tabId);
+      }
+    }
+  } catch {}
+  return false;
+}
+
+function setTabFloatingState(tabId: string | undefined, isFloating: boolean, vaultPath?: string) {
+  if (!tabId) return;
+  // 1. Update localStorage set
+  try {
+    const key = getFloatingTabsStorageKey(vaultPath);
+    const raw = localStorage.getItem(key);
+    let set = new Set<string>();
+    if (raw) {
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) set = new Set(list);
+    }
+    if (isFloating) {
+      set.add(tabId);
+    } else {
+      set.delete(tabId);
+    }
+    localStorage.setItem(key, JSON.stringify(Array.from(set)));
+  } catch {}
+
+  // 2. Update metadata in workspaceStore / sidebarDockStore
+  try {
+    useWorkspaceStore.setState((state) => {
+      const updateTab = (t: any) => (t.id === tabId ? { ...t, metadata: { ...t.metadata, isFloating } } : t);
+      const newPanes: Record<string, any> = {};
+      for (const [pId, pModel] of Object.entries(state.panes || {})) {
+        newPanes[pId] = {
+          ...pModel,
+          tabs: pModel.tabs.map(updateTab),
+        };
+      }
+      return {
+        tabs: state.tabs.map(updateTab),
+        splitTabs: state.splitTabs.map(updateTab),
+        panes: newPanes,
+      };
+    });
+
+    useSidebarDockStore.setState((state) => ({
+      items: state.items.map((it) => (it.id === tabId ? { ...it, metadata: { ...it.metadata, isFloating } } : it)),
+    }));
+  } catch {}
+}
+
+export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: propIsSidebar, tabId: propTabId, documentId: propDocId }) => {
   const setMainViewMode = useWorkspaceStore((s) => s.setMainViewMode);
   const openTab = useWorkspaceStore((s) => s.openTab);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
   const vaultPath = useWorkspaceStore((s) => s.vaultPath);
+  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
+  const resolvedTabId = propTabId || activeTabId || propDocId || 'graph-main';
+
   const graphFocusCamera = useGraphSettings((s) => s.timelapseFocusCamera);
   const graphFocusCameraRef = useRef(graphFocusCamera);
   useEffect(() => {
@@ -200,10 +289,21 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const timelapseEndTimerRef = useRef<any>(null);
   const savedTimelapseAlphaRef = useRef(0.5);
 
-  // Float Mode State (zero-gravity continuous ambient hovering motion)
-  const [isFloatActive, setIsFloatActive] = useState(false);
-  const isFloatActiveRef = useRef(false);
+  // Float Mode State (zero-gravity continuous ambient hovering motion per graph instance)
+  const [isFloatActive, setIsFloatActive] = useState(() => isTabFloating(resolvedTabId, vaultPath));
+  const isFloatActiveRef = useRef(isFloatActive);
   const floatStartTimeRef = useRef(0);
+
+  useEffect(() => {
+    isFloatActiveRef.current = isFloatActive;
+    if (isFloatActive) {
+      if (floatStartTimeRef.current === 0) {
+        floatStartTimeRef.current = performance.now();
+      }
+      alphaRef.current = Math.max(alphaRef.current, 0.15);
+      startAnimationRef.current();
+    }
+  }, [isFloatActive]);
 
   // Pre-timelapse snapshot of node positions to guarantee 100% exact layout convergence
   const preTimelapseLayoutRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -474,26 +574,25 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   // Toggle Float Mode: ambient zero-gravity hovering motion where nodes move around themselves
   const toggleFloatMode = useCallback(() => {
     if (isTimelapseActiveRef.current) return;
-    setIsFloatActive((prev) => {
-      const next = !prev;
-      isFloatActiveRef.current = next;
-      if (next) {
-        floatStartTimeRef.current = performance.now();
-        alphaRef.current = Math.max(alphaRef.current, 0.15);
-        if (graphFocusCameraRef.current) {
-          centerGraph(nodesRef.current);
-        }
-      } else {
-        alphaRef.current = 0.35;
+    const next = !isFloatActiveRef.current;
+    isFloatActiveRef.current = next;
+    setIsFloatActive(next);
+    setTabFloatingState(resolvedTabId, next, vaultPath);
+    if (next) {
+      floatStartTimeRef.current = performance.now();
+      alphaRef.current = Math.max(alphaRef.current, 0.15);
+      if (graphFocusCameraRef.current) {
+        centerGraph(nodesRef.current);
       }
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      startAnimationRef.current();
-      return next;
-    });
-  }, [centerGraph]);
+    } else {
+      alphaRef.current = 0.35;
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    startAnimationRef.current();
+  }, [centerGraph, resolvedTabId, vaultPath]);
 
   const handleFitToCenter = useCallback(() => {
     if (

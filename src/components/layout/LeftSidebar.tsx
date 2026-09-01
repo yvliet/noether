@@ -124,7 +124,16 @@ export const LeftSidebar: React.FC = React.memo(() => {
     if (activeLeftView === 'files' || activeLeftView === 'search') return false;
     return (
       activeLeftView.startsWith('doc:') ||
-      dockItems.some((it) => (it.id === activeLeftView || it.viewType === activeLeftView) && it.zone === 'left-top' && it.enabled)
+      dockItems.some(
+        (it) =>
+          (it.id === activeLeftView ||
+            it.viewType === activeLeftView ||
+            it.extensionId === activeLeftView ||
+            it.documentId === activeLeftView ||
+            `doc:${it.documentId}` === activeLeftView) &&
+          it.zone === 'left-top' &&
+          it.enabled
+      )
     );
   }, [activeLeftView, dockItems]);
 

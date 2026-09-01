@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useFlintApp, useSidebarTabs, useViews, usePluginList } from '@/core/app/AppContext';
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 
@@ -17,17 +18,62 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
   usePluginList(); // Reactive updates on plugin state changes
   const items = useSidebarDockStore((s) => s.items);
   const activeItemId = useSidebarDockStore((s) => s.activeItemByZone[zone]);
+  const activeLeftView = useWorkspaceStore((s) => s.activeLeftView);
+  const activeRightTab = useWorkspaceStore((s) => s.activeRightTab);
   const leftTabs = useSidebarTabs('left');
   const rightTabs = useSidebarTabs('right');
 
   const activeItem = useMemo(() => {
-    const direct = items.find((it) => it.id === activeItemId && it.zone === zone && it.enabled);
-    if (direct) return direct;
+    // 1. If left-top zone, check activeLeftView first if it's not files/search
+    if (zone === 'left-top' && activeLeftView && activeLeftView !== 'files' && activeLeftView !== 'search') {
+      const match = items.find(
+        (it) =>
+          it.zone === 'left-top' &&
+          it.enabled &&
+          (it.id === activeLeftView ||
+            it.viewType === activeLeftView ||
+            it.extensionId === activeLeftView ||
+            it.documentId === activeLeftView ||
+            `doc:${it.documentId}` === activeLeftView)
+      );
+      if (match) return match;
+    }
+
+    // 2. If right-top zone, check activeRightTab first
+    if (zone === 'right-top' && activeRightTab) {
+      const match = items.find(
+        (it) =>
+          it.zone === 'right-top' &&
+          it.enabled &&
+          (it.id === activeRightTab ||
+            it.viewType === activeRightTab ||
+            it.extensionId === activeRightTab ||
+            it.documentId === activeRightTab ||
+            `doc:${it.documentId}` === activeRightTab ||
+            it.id.endsWith(`:${activeRightTab}`))
+      );
+      if (match) return match;
+    }
+
+    // 3. Check direct match on activeItemId for this zone
+    if (activeItemId) {
+      const direct = items.find((it) => it.id === activeItemId && it.zone === zone && it.enabled);
+      if (direct) return direct;
+    }
+
+    // 4. Fallback to first enabled item in this zone
     const zoneItems = items
       .filter((it) => it.zone === zone && it.enabled)
       .sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
+
+    if (zone === 'left-top') {
+      // In left-top, filter out files/search fallback since LeftSidebar handles those directly
+      const nonBuiltIn = zoneItems.filter((it) => it.id !== 'files' && it.id !== 'search');
+      return nonBuiltIn.length > 0 ? nonBuiltIn[0] : null;
+    }
+
     return zoneItems.length > 0 ? zoneItems[0] : null;
-  }, [items, activeItemId, zone]);
+  }, [items, activeItemId, zone, activeLeftView, activeRightTab]);
 
   if (!activeItem) {
     return (

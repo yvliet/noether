@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { LeftNavView, SidebarTab, TabItem, MainViewMode, RecentVaultItem, DocumentItem } from '@/types';
 import { useDocumentStore } from './documentStore';
 import { useSettingsStore } from './settingsStore';
+import { useSidebarDockStore, DockItem, DockZone } from './sidebarDockStore';
 import { dbAdapter } from '@/lib/db/adapter';
 import { platform } from '@/lib/platform/platformAdapter';
 import { bindFlintStores, appInstance } from '@/core/app/FlintApp';
@@ -55,6 +56,11 @@ export interface PersistedTabsState {
   activeRightTab?: SidebarTab;
   leftSidebarWidth?: number;
   rightSidebarWidth?: number;
+  // Dock state integration
+  dockItems?: DockItem[];
+  dockActiveItemByZone?: Record<DockZone, string | null>;
+  dockSplitRatioLeft?: number;
+  dockSplitRatioRight?: number;
 }
 
 export interface NavigationHistoryItem {
@@ -78,6 +84,7 @@ export function saveTabsSession(vaultPath?: string) {
   }
 
   const state = useWorkspaceStore.getState();
+  const dockState = useSidebarDockStore.getState();
   if (!state.tabs || state.tabs.length === 0) return;
 
   const data: PersistedTabsState = {
@@ -115,6 +122,11 @@ export function saveTabsSession(vaultPath?: string) {
     activeRightTab: state.activeRightTab,
     leftSidebarWidth: state.leftSidebarWidth,
     rightSidebarWidth: state.rightSidebarWidth,
+    // Dock state integration
+    dockItems: dockState.items,
+    dockActiveItemByZone: dockState.activeItemByZone,
+    dockSplitRatioLeft: dockState.splitRatioLeft,
+    dockSplitRatioRight: dockState.splitRatioRight,
   };
 
   try {
@@ -427,6 +439,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeLeftView: 'files',
   setActiveLeftView: (view) => {
     set({ activeLeftView: view, isLeftSidebarOpen: true });
+    try {
+      useSidebarDockStore.getState().setActiveItemInZone('left-top', view);
+    } catch {}
     saveTabsSession(get().vaultPath);
   },
   isLeftSidebarOpen: true,
@@ -450,6 +465,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   activeRightTab: 'outline',
   setActiveRightTab: (tab) => {
     set({ activeRightTab: tab, isRightSidebarOpen: true });
+    try {
+      useSidebarDockStore.getState().setActiveItemInZone('right-top', tab);
+    } catch {}
     saveTabsSession(get().vaultPath);
   },
   isRightSidebarOpen: true,
@@ -660,35 +678,37 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!saved || !saved.tabs || saved.tabs.length === 0) return false;
 
     const docMap = new Map(docs.map((d) => [d.id, d]));
-    const validTabs: TabItem[] = [];
 
-    for (const tab of saved.tabs) {
-      if (tab.document_id && !tab.document_id.startsWith('__')) {
+    const validateTab = (tab: any): TabItem | null => {
+      if (!tab || !tab.id) return null;
+      const isRealDoc = tab.document_id && !tab.document_id.startsWith('__');
+      if (isRealDoc) {
         const doc = docMap.get(tab.document_id);
         if (doc) {
-          validTabs.push({
+          return {
             id: tab.id,
             document_id: tab.document_id,
-            title: doc.title || tab.title,
+            title: doc.title || tab.title || 'Untitled',
             view_mode: (tab.view_mode as any) || (doc.doc_type === 'canvas' ? 'canvas' : 'document'),
             view_type: tab.view_type || (doc.doc_type === 'canvas' ? 'canvas' : 'document'),
             icon: tab.icon,
             metadata: tab.metadata,
-          });
+          };
         }
-      } else if (tab.document_id && tab.document_id.startsWith('__')) {
-        validTabs.push({
-          id: tab.id,
-          document_id: tab.document_id,
-          title: tab.title || 'Untitled',
-          view_mode: tab.view_mode as any,
-          view_type: tab.view_type,
-          icon: tab.icon,
-          metadata: tab.metadata,
-        });
+        return null;
       }
-    }
+      return {
+        id: tab.id,
+        document_id: tab.document_id || '',
+        title: tab.title || 'Untitled',
+        view_mode: tab.view_mode as any,
+        view_type: tab.view_type,
+        icon: tab.icon,
+        metadata: tab.metadata,
+      };
+    };
 
+    const validTabs = (saved.tabs || []).map(validateTab).filter((t): t is TabItem => t !== null);
     if (validTabs.length === 0) return false;
 
     let nextActiveTabId = saved.activeTabId;
@@ -698,32 +718,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     let validSplitTabs: TabItem[] = [];
     if (saved.isSplitView && saved.splitTabs && saved.splitTabs.length > 0) {
-      for (const tab of saved.splitTabs) {
-        if (tab.document_id && !tab.document_id.startsWith('__')) {
-          const doc = docMap.get(tab.document_id);
-          if (doc) {
-            validSplitTabs.push({
-              id: tab.id,
-              document_id: tab.document_id,
-              title: doc.title || tab.title,
-              view_mode: (tab.view_mode as any) || (doc.doc_type === 'canvas' ? 'canvas' : 'document'),
-              view_type: tab.view_type || (doc.doc_type === 'canvas' ? 'canvas' : 'document'),
-              icon: tab.icon,
-              metadata: tab.metadata,
-            });
-          }
-        } else {
-          validSplitTabs.push({
-            id: tab.id,
-            document_id: tab.document_id || '',
-            title: tab.title || 'Untitled',
-            view_mode: tab.view_mode as any,
-            view_type: tab.view_type,
-            icon: tab.icon,
-            metadata: tab.metadata,
-          });
-        }
-      }
+      validSplitTabs = saved.splitTabs.map(validateTab).filter((t): t is TabItem => t !== null);
     }
 
     const isSplit = validSplitTabs.length > 0 && !!saved.isSplitView;
@@ -755,15 +750,34 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       }
     }
 
-    const initialPanes: Record<PaneId, PaneModel> = saved.panes || {
-      main: {
+    let initialPanes: Record<PaneId, PaneModel> = {};
+    if (saved.panes && Object.keys(saved.panes).length > 0) {
+      for (const [pId, pModel] of Object.entries(saved.panes)) {
+        const cleanedTabs = (pModel.tabs || []).map(validateTab).filter((t): t is TabItem => t !== null);
+        if (cleanedTabs.length > 0) {
+          let activeId = pModel.activeTabId;
+          if (!activeId || !cleanedTabs.some((t) => t.id === activeId)) {
+            activeId = cleanedTabs[cleanedTabs.length - 1].id;
+          }
+          const activeTabItem = cleanedTabs.find((t) => t.id === activeId);
+          initialPanes[pId] = {
+            id: pId,
+            tabs: cleanedTabs,
+            activeTabId: activeId,
+            activeDocumentId: activeTabItem?.document_id || null,
+          };
+        }
+      }
+    }
+    if (!initialPanes['main']) {
+      initialPanes['main'] = {
         id: 'main',
         tabs: validTabs,
         activeTabId: nextActiveTabId,
         activeDocumentId: activeTab?.document_id || null,
-      },
-    };
-    if (isSplit && !saved.panes) {
+      };
+    }
+    if (isSplit && !initialPanes['split'] && validSplitTabs.length > 0) {
       initialPanes['split'] = {
         id: 'split',
         tabs: validSplitTabs,
@@ -771,6 +785,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         activeDocumentId: validSplitTabs.find((t) => t.id === nextSplitActiveTabId)?.document_id || null,
       };
     }
+
     const initialTree: LayoutNode =
       saved.layoutTree ||
       (isSplit
@@ -784,6 +799,34 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             ],
           }
         : createInitialLayoutTree('main'));
+
+    // Restore sidebar dock session
+    try {
+      useSidebarDockStore.getState().loadSession(activePath, {
+        items: saved.dockItems,
+        activeItemByZone: saved.dockActiveItemByZone,
+        splitRatioLeft: saved.dockSplitRatioLeft,
+        splitRatioRight: saved.dockSplitRatioRight,
+      });
+
+      // Synchronize activeLeftView with left-top dock zone
+      const effectiveLeftView = saved.activeLeftView || saved.dockActiveItemByZone?.['left-top'] || 'files';
+      useSidebarDockStore.getState().setActiveItemInZone('left-top', effectiveLeftView);
+
+      // Synchronize activeRightTab with right-top dock zone
+      const effectiveRightTab = saved.activeRightTab || saved.dockActiveItemByZone?.['right-top'] || 'outline';
+      useSidebarDockStore.getState().setActiveItemInZone('right-top', effectiveRightTab);
+
+      // Restore left-bottom and right-bottom active items
+      if (saved.dockActiveItemByZone?.['left-bottom']) {
+        useSidebarDockStore.getState().setActiveItemInZone('left-bottom', saved.dockActiveItemByZone['left-bottom']);
+      }
+      if (saved.dockActiveItemByZone?.['right-bottom']) {
+        useSidebarDockStore.getState().setActiveItemInZone('right-bottom', saved.dockActiveItemByZone['right-bottom']);
+      }
+    } catch (dockErr) {
+      console.error('[workspaceStore] Error restoring dock session:', dockErr);
+    }
 
     set({
       tabs: validTabs,
@@ -800,8 +843,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       focusedPaneId: saved.focusedPaneId || (saved.activePane === 'split' ? 'split' : 'main'),
       ...(saved.isLeftSidebarOpen !== undefined ? { isLeftSidebarOpen: saved.isLeftSidebarOpen } : {}),
       ...(saved.isRightSidebarOpen !== undefined ? { isRightSidebarOpen: saved.isRightSidebarOpen } : {}),
-      ...(saved.activeLeftView !== undefined ? { activeLeftView: saved.activeLeftView } : {}),
-      ...(saved.activeRightTab !== undefined ? { activeRightTab: saved.activeRightTab } : {}),
+      activeLeftView: saved.activeLeftView || saved.dockActiveItemByZone?.['left-top'] || 'files',
+      activeRightTab: saved.activeRightTab || saved.dockActiveItemByZone?.['right-top'] || 'outline',
       ...(typeof saved.leftSidebarWidth === 'number' ? { leftSidebarWidth: saved.leftSidebarWidth } : {}),
       ...(typeof saved.rightSidebarWidth === 'number' ? { rightSidebarWidth: saved.rightSidebarWidth } : {}),
     });
@@ -2054,10 +2097,23 @@ if (typeof window !== 'undefined') {
       state.splitTabs !== prevState.splitTabs ||
       state.splitActiveTabId !== prevState.splitActiveTabId ||
       state.splitActiveDocumentId !== prevState.splitActiveDocumentId ||
-      state.activePane !== prevState.activePane
+      state.activePane !== prevState.activePane ||
+      state.panes !== prevState.panes ||
+      state.focusedPaneId !== prevState.focusedPaneId ||
+      state.layoutTree !== prevState.layoutTree ||
+      state.activeLeftView !== prevState.activeLeftView ||
+      state.activeRightTab !== prevState.activeRightTab ||
+      state.isLeftSidebarOpen !== prevState.isLeftSidebarOpen ||
+      state.isRightSidebarOpen !== prevState.isRightSidebarOpen ||
+      state.leftSidebarWidth !== prevState.leftSidebarWidth ||
+      state.rightSidebarWidth !== prevState.rightSidebarWidth
     ) {
       saveTabsSession(state.vaultPath);
     }
+  });
+
+  useSidebarDockStore.subscribe(() => {
+    saveTabsSession();
   });
 
   window.addEventListener('beforeunload', () => {

@@ -31,7 +31,12 @@ export const RightSidebar: React.FC = React.memo(() => {
       (typeof activeRightTab === 'string' && activeRightTab.startsWith('doc:')) ||
       dockItems.some(
         (it) =>
-          (it.id === activeRightTab || it.viewType === activeRightTab) &&
+          (it.id === activeRightTab ||
+            it.viewType === activeRightTab ||
+            it.extensionId === activeRightTab ||
+            it.documentId === activeRightTab ||
+            `doc:${it.documentId}` === activeRightTab ||
+            it.id.endsWith(`:${activeRightTab}`)) &&
           it.zone === 'right-top' &&
           it.enabled
       )

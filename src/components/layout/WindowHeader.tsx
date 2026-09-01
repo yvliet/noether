@@ -990,7 +990,10 @@ export const WindowHeader: React.FC = React.memo(() => {
               (item.id === 'files' && activeLeftView === 'files') ||
               (item.id === 'search' && activeLeftView === 'search') ||
               activeLeftView === item.id ||
-              activeLeftView === item.viewType;
+              activeLeftView === item.viewType ||
+              activeLeftView === item.extensionId ||
+              activeLeftView === item.documentId ||
+              activeLeftView === `doc:${item.documentId}`;
             const itemTitle = getDockItemTitle(item);
 
             return (
@@ -1100,6 +1103,10 @@ export const WindowHeader: React.FC = React.memo(() => {
               const isActive =
                 activeRightTab === item.id ||
                 activeRightTab === tabKey ||
+                activeRightTab === item.viewType ||
+                activeRightTab === item.extensionId ||
+                activeRightTab === item.documentId ||
+                activeRightTab === `doc:${item.documentId}` ||
                 (extTab && (activeRightTab === extTab.id || extTab.id.endsWith(`:${activeRightTab}`)));
               const itemTitle = getDockItemTitle(item);
 

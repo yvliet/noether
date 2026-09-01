@@ -25,6 +25,15 @@ export interface SidebarDockState {
   splitRatioRight: number;
 
   // Actions
+  loadSession: (
+    vaultPath?: string,
+    sessionData?: Partial<{
+      items: DockItem[];
+      activeItemByZone: Record<DockZone, string | null>;
+      splitRatioLeft: number;
+      splitRatioRight: number;
+    }>
+  ) => void;
   dockTab: (tab: TabItem, zone: DockZone, insertIndex?: number) => void;
   undockItem: (itemId: string) => void;
   toggleItemEnabled: (itemId: string, enabled?: boolean) => void;
@@ -36,47 +45,61 @@ export interface SidebarDockState {
   syncExtensionTabs: (tabs: Array<{ id: string; title: string; side: 'left' | 'right'; order?: number }>) => void;
 }
 
-const STORAGE_KEY = 'flint_sidebar_dock_state_v1';
+const GLOBAL_STORAGE_KEY = 'flint_sidebar_dock_state_v1';
 
-function loadPersistedState(): {
+export function getDockStorageKey(vaultPath?: string): string {
+  const vp = (vaultPath || '').trim();
+  if (!vp || vp === 'default') return GLOBAL_STORAGE_KEY;
+  return `${GLOBAL_STORAGE_KEY}:${vp}`;
+}
+
+export function cleanDockItems(items: any[]): DockItem[] {
+  if (!Array.isArray(items)) return [];
+  return items.filter((it: any) => {
+    if (!it || !it.id) return false;
+    // Transient or blank new tabs
+    if (it.title === 'New tab' && (!it.documentId || it.documentId === '')) {
+      return false;
+    }
+    if (it.id.startsWith('tab-') && (!it.viewType || it.viewType === 'document') && (!it.documentId || it.documentId.startsWith('__'))) {
+      return false;
+    }
+    // Documents must only remain if enabled and have valid documentId
+    const isDoc =
+      (it.type === 'document' || it.id.startsWith('doc:')) &&
+      it.documentId &&
+      !it.documentId.startsWith('__');
+    if (isDoc) {
+      return it.enabled !== false;
+    }
+    return true;
+  });
+}
+
+function loadPersistedState(vaultPath?: string): {
   items: DockItem[];
   activeItemByZone: Record<DockZone, string | null>;
   splitRatioLeft: number;
   splitRatioRight: number;
 } {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const key = getDockStorageKey(vaultPath);
+    let raw = localStorage.getItem(key);
+    if (!raw && key !== GLOBAL_STORAGE_KEY) {
+      raw = localStorage.getItem(GLOBAL_STORAGE_KEY);
+    }
+
     if (raw) {
       const parsed = JSON.parse(raw);
-      const cleanedItems: DockItem[] = Array.isArray(parsed.items)
-        ? parsed.items.filter((it: any) => {
-            if (!it || !it.id) return false;
-            // Transient or blank new tabs
-            if (it.title === 'New tab') {
-              return false;
-            }
-            if (it.id.startsWith('tab-') && (!it.viewType || it.viewType === 'document') && (!it.documentId || it.documentId.startsWith('__'))) {
-              return false;
-            }
-            // Documents must only remain if enabled and have valid documentId
-            const isDoc =
-              (it.type === 'document' || it.id.startsWith('doc:')) &&
-              it.documentId &&
-              !it.documentId.startsWith('__');
-            if (isDoc) {
-              return it.enabled !== false;
-            }
-            return true;
-          })
-        : [];
+      const cleanedItems = cleanDockItems(parsed.items);
 
       return {
         items: cleanedItems,
-        activeItemByZone: parsed.activeItemByZone || {
-          'left-top': null,
-          'left-bottom': null,
-          'right-top': null,
-          'right-bottom': null,
+        activeItemByZone: {
+          'left-top': parsed.activeItemByZone?.['left-top'] ?? null,
+          'left-bottom': parsed.activeItemByZone?.['left-bottom'] ?? null,
+          'right-top': parsed.activeItemByZone?.['right-top'] ?? null,
+          'right-bottom': parsed.activeItemByZone?.['right-bottom'] ?? null,
         },
         splitRatioLeft: typeof parsed.splitRatioLeft === 'number' ? parsed.splitRatioLeft : 0.5,
         splitRatioRight: typeof parsed.splitRatioRight === 'number' ? parsed.splitRatioRight : 0.5,
@@ -99,22 +122,27 @@ function loadPersistedState(): {
   };
 }
 
-function saveState(state: {
-  items: DockItem[];
-  activeItemByZone: Record<DockZone, string | null>;
-  splitRatioLeft: number;
-  splitRatioRight: number;
-}) {
+function saveState(
+  state: {
+    items: DockItem[];
+    activeItemByZone: Record<DockZone, string | null>;
+    splitRatioLeft: number;
+    splitRatioRight: number;
+  },
+  vaultPath?: string
+) {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        items: state.items,
-        activeItemByZone: state.activeItemByZone,
-        splitRatioLeft: state.splitRatioLeft,
-        splitRatioRight: state.splitRatioRight,
-      })
-    );
+    const payload = JSON.stringify({
+      items: state.items,
+      activeItemByZone: state.activeItemByZone,
+      splitRatioLeft: state.splitRatioLeft,
+      splitRatioRight: state.splitRatioRight,
+    });
+    const key = getDockStorageKey(vaultPath);
+    localStorage.setItem(key, payload);
+    if (key !== GLOBAL_STORAGE_KEY) {
+      localStorage.setItem(GLOBAL_STORAGE_KEY, payload);
+    }
   } catch (err) {
     console.error('[SidebarDockStore] Failed to save state:', err);
   }
@@ -127,6 +155,35 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
   activeItemByZone: initialPersisted.activeItemByZone,
   splitRatioLeft: initialPersisted.splitRatioLeft,
   splitRatioRight: initialPersisted.splitRatioRight,
+
+  loadSession: (vaultPath, sessionData) => {
+    let nextState: {
+      items: DockItem[];
+      activeItemByZone: Record<DockZone, string | null>;
+      splitRatioLeft: number;
+      splitRatioRight: number;
+    };
+
+    if (sessionData && sessionData.items && Array.isArray(sessionData.items)) {
+      const cleaned = cleanDockItems(sessionData.items);
+      nextState = {
+        items: cleaned,
+        activeItemByZone: {
+          'left-top': sessionData.activeItemByZone?.['left-top'] ?? null,
+          'left-bottom': sessionData.activeItemByZone?.['left-bottom'] ?? null,
+          'right-top': sessionData.activeItemByZone?.['right-top'] ?? null,
+          'right-bottom': sessionData.activeItemByZone?.['right-bottom'] ?? null,
+        },
+        splitRatioLeft: typeof sessionData.splitRatioLeft === 'number' ? sessionData.splitRatioLeft : 0.5,
+        splitRatioRight: typeof sessionData.splitRatioRight === 'number' ? sessionData.splitRatioRight : 0.5,
+      };
+    } else {
+      nextState = loadPersistedState(vaultPath);
+    }
+
+    set(nextState);
+    saveState(nextState, vaultPath);
+  },
 
   dockTab: (tab, zone, insertIndex) => {
     const { items, activeItemByZone } = get();

@@ -45,7 +45,11 @@ export class GraphExtension extends Extension {
       icon: <NeuralNetworkIcon size={14} />,
       render: (props) => (
         <React.Suspense fallback={<div className="w-full h-full bg-transparent" />}>
-          <LazyGraphView isSidebar={(props as any)?.isSidebar} />
+          <LazyGraphView
+            tabId={(props as any)?.tabId}
+            documentId={(props as any)?.documentId}
+            isSidebar={(props as any)?.isSidebar}
+          />
         </React.Suspense>
       ),
     });
