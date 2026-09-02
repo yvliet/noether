@@ -248,7 +248,21 @@ export class ExtensionManager {
   }
 
   public getExtensionManifest(id: string): ExtensionManifest | undefined {
-    return this.manifests.get(id);
+    if (!id) return undefined;
+    if (this.manifests.has(id)) return this.manifests.get(id);
+    if (id.startsWith('flint-') && this.manifests.has(id.slice(6))) {
+      return this.manifests.get(id.slice(6));
+    }
+    if (!id.startsWith('flint-') && this.manifests.has(`flint-${id}`)) {
+      return this.manifests.get(`flint-${id}`);
+    }
+    const lower = id.toLowerCase();
+    for (const [mId, manifest] of this.manifests.entries()) {
+      if (mId.toLowerCase() === lower || manifest.name.toLowerCase() === lower) {
+        return manifest;
+      }
+    }
+    return undefined;
   }
 
   public getPluginManifest(id: string): ExtensionManifest | undefined {

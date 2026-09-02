@@ -1562,12 +1562,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!currentPane) return;
 
     const targetDocId = options.documentId || `__${options.viewType}__`;
+    const isDocViewer = options.viewType === 'extension-doc' || options.viewType === 'plugin-doc';
     const existing = currentPane.tabs.find(
       (t) =>
         (options.id && t.id === options.id) ||
-        t.view_type === options.viewType ||
-        t.view_mode === options.viewType ||
-        t.document_id === targetDocId
+        t.document_id === targetDocId ||
+        (!isDocViewer && (t.view_type === options.viewType || t.view_mode === options.viewType))
     );
 
     if (existing) {

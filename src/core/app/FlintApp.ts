@@ -109,22 +109,22 @@ export class FlintApp {
       type: 'extension-doc',
       title: 'Extension Documentation',
       icon: React.createElement(BookOpen01Icon, { size: 14 }),
-      render: () =>
+      render: (props) =>
         React.createElement(
           React.Suspense,
           { fallback: null },
-          React.createElement(LazyExtensionDocViewer)
+          React.createElement(LazyExtensionDocViewer, props)
         ),
     });
     this.views.registerView({
       type: 'plugin-doc',
       title: 'Extension Documentation',
       icon: React.createElement(BookOpen01Icon, { size: 14 }),
-      render: () =>
+      render: (props) =>
         React.createElement(
           React.Suspense,
           { fallback: null },
-          React.createElement(LazyExtensionDocViewer)
+          React.createElement(LazyExtensionDocViewer, props)
         ),
     });
   }

@@ -19,6 +19,9 @@ import { highlightCode } from './syntaxHighlighter';
 export interface ExtensionDocViewerProps {
   extensionId?: string;
   pluginId?: string;
+  tabId?: string;
+  documentId?: string;
+  app?: any;
 }
 
 // Resilient, pure Markdown renderer conforming 100% to Flint document styling and list rules
@@ -390,26 +393,87 @@ function renderInlineMarkdown(text: string): string {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-accent)] hover:underline inline-flex items-center gap-0.5">$1</a>');
 }
 
-export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(({ extensionId: explicitExtensionId, pluginId: explicitPluginId }) => {
+export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(({
+  extensionId: explicitExtensionId,
+  pluginId: explicitPluginId,
+  tabId: propTabId,
+  documentId: propDocId,
+}) => {
   const app = useFlintApp();
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
+  const panes = useWorkspaceStore((s) => s.panes);
+  const focusedPaneId = useWorkspaceStore((s) => s.focusedPaneId || 'main');
   const showToast = useWorkspaceStore((s) => s.showToast);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
 
-  const currentTab = useMemo(() => tabs.find((t) => t.id === activeTabId), [tabs, activeTabId]);
+  const currentTab = useMemo(() => {
+    if (propTabId) {
+      for (const p of Object.values(panes)) {
+        const found = p.tabs.find((t) => t.id === propTabId);
+        if (found) return found;
+      }
+      const foundInRoot = tabs.find((t) => t.id === propTabId);
+      if (foundInRoot) return foundInRoot;
+    }
+
+    const focusedPane = panes[focusedPaneId] || panes['main'];
+    if (focusedPane) {
+      const found = focusedPane.tabs.find((t) => t.id === focusedPane.activeTabId);
+      if (found) return found;
+    }
+
+    return tabs.find((t) => t.id === activeTabId);
+  }, [propTabId, panes, focusedPaneId, tabs, activeTabId]);
 
   const targetExtensionId = useMemo(() => {
     if (explicitExtensionId) return explicitExtensionId;
     if (explicitPluginId) return explicitPluginId;
+
+    if (propDocId) {
+      if (propDocId.startsWith('__extension_doc:')) {
+        return propDocId.replace(/^__extension_doc:/, '').replace(/__$/, '');
+      }
+      if (propDocId.startsWith('__plugin_doc:')) {
+        return propDocId.replace(/^__plugin_doc:/, '').replace(/__$/, '');
+      }
+      if (!propDocId.startsWith('__')) {
+        return propDocId;
+      }
+    }
+
+    if (currentTab?.document_id?.startsWith('__extension_doc:')) {
+      return currentTab.document_id.replace(/^__extension_doc:/, '').replace(/__$/, '');
+    }
     if (currentTab?.document_id?.startsWith('__plugin_doc:')) {
       return currentTab.document_id.replace(/^__plugin_doc:/, '').replace(/__$/, '');
     }
-    if (currentTab?.id?.startsWith('plugin-doc:')) return currentTab.id.replace('plugin-doc:', '');
-    if (currentTab?.id?.startsWith('extension-doc:')) return currentTab.id.replace('extension-doc:', '');
-    if (currentTab?.document_id && !currentTab.document_id.startsWith('__')) return currentTab.document_id;
-    return 'note-properties';
-  }, [explicitExtensionId, explicitPluginId, currentTab]);
+
+    if (propTabId?.startsWith('extension-doc:')) {
+      return propTabId.replace(/^extension-doc:/, '');
+    }
+    if (propTabId?.startsWith('plugin-doc:')) {
+      return propTabId.replace(/^plugin-doc:/, '');
+    }
+
+    if (currentTab?.id?.startsWith('extension-doc:')) {
+      return currentTab.id.replace(/^extension-doc:/, '');
+    }
+    if (currentTab?.id?.startsWith('plugin-doc:')) {
+      return currentTab.id.replace(/^plugin-doc:/, '');
+    }
+
+    if (currentTab?.document_id && !currentTab.document_id.startsWith('__')) {
+      return currentTab.document_id;
+    }
+
+    if (currentTab?.title) {
+      const match = app.extensions.getExtensionManifest(currentTab.title);
+      if (match) return match.id;
+    }
+
+    return 'flint-cascade';
+  }, [explicitExtensionId, explicitPluginId, propDocId, propTabId, currentTab, app]);
 
   const manifest = useMemo(() => {
     return app.extensions.getExtensionManifest(targetExtensionId);
