@@ -377,12 +377,12 @@ export const MarketplaceView: React.FC = () => {
           {/* Search, Filter Categories & Sort Controls Toolbar */}
           <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-5">
             {/* Category Tags Pills */}
-            <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+            <div className="flex items-center gap-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1 md:pb-0">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-[5px] text-xs font-medium whitespace-nowrap transition-all cursor-pointer border ${
+                  className={`px-3 py-1 rounded-[5px] text-xs font-medium whitespace-nowrap cursor-pointer border ${
                     selectedCategory === cat
                       ? 'bg-[#2a2a2a] text-white border-[#444] shadow-xs'
                       : 'bg-[#1e1e1e] text-[#888] hover:text-[#ccc] border-[#2a2a2a] hover:bg-[#252525]'

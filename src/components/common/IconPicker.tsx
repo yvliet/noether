@@ -374,7 +374,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar pb-0.5 pt-0.5">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-0.5 pt-0.5">
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat;
             return (

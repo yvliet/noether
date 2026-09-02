@@ -561,6 +561,19 @@ textarea::selection {
   display: none !important;
 }
 
+.no-scrollbar,
+.scrollbar-none {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Electron Window Drag Regions */
 .drag-region {
   -webkit-app-region: drag;
