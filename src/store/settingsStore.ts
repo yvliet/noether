@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { themeRegistry, ThemeDefinition } from '@/core/themes';
 import { platform } from '@/lib/platform/platformAdapter';
-import { bindFlintStores } from '@/core/app/FlintApp';
+import { bindFlintStores } from '@/core/app/storeBridge';
 
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type ThemePalette = string;

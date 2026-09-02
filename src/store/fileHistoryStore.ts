@@ -5,7 +5,7 @@ import { updateDocumentTitle, updateInternalLinksAcrossDocuments, moveDocument a
 import { useDocumentStore } from './documentStore';
 import { useWorkspaceStore } from './workspaceStore';
 import { useSettingsStore } from './settingsStore';
-import { bindFlintStores } from '@/core/app/FlintApp';
+import { bindFlintStores } from '@/core/app/storeBridge';
 
 export interface CreateFileAction {
   type: 'create';

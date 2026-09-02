@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import React from 'react';
-import { bindFlintStores } from '@/core/app/FlintApp';
+import { bindFlintStores } from '@/core/app/storeBridge';
 
 
 export type ContextMenuItemType = 'item' | 'separator' | 'header';

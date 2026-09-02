@@ -5,7 +5,7 @@ import { useSettingsStore } from './settingsStore';
 import { useSidebarDockStore, DockItem, DockZone } from './sidebarDockStore';
 import { dbAdapter } from '@/lib/db/adapter';
 import { platform } from '@/lib/platform/platformAdapter';
-import { bindFlintStores, appInstance } from '@/core/app/FlintApp';
+import { bindFlintStores, emitBridgeAppEvent } from '@/core/app/storeBridge';
 import type { OpenTabOptions } from '@/core/extensions/types';
 
 
@@ -1243,9 +1243,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.getState().setActiveDocumentById(activeDocId, { preserveViewMode: true });
     }
 
-    try {
-      appInstance.events.emit('tab:changed', { activeTabId: newTab.id });
-    } catch {}
+    emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
     saveTabsSession(get().vaultPath);
   },
 
@@ -1508,9 +1506,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
     }
 
-    try {
-      appInstance.events.emit('tab:changed', { activeTabId: nextTabId });
-    } catch {}
+    emitBridgeAppEvent('tab:changed', { activeTabId: nextTabId });
     saveTabsSession(get().vaultPath);
   },
 
@@ -1550,9 +1546,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         : {}),
     });
 
-    try {
-      appInstance.events.emit('tab:changed', { activeTabId: newTab.id });
-    } catch {}
+    emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
     saveTabsSession(get().vaultPath);
   },
 
@@ -1783,10 +1777,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.getState().setActiveDocumentById(tabToMove.document_id, { preserveViewMode: true });
     }
 
-    try {
-      appInstance.events.emit('tab:changed', { activeTabId: tabToMove.id });
-    } catch {}
-
+    emitBridgeAppEvent('tab:changed', { activeTabId: tabToMove.id });
     saveTabsSession(get().vaultPath);
   },
 
@@ -1820,9 +1811,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
     }
 
-    try {
-      appInstance.events.emit('tab:changed', { activeTabId: tabId });
-    } catch {}
+    emitBridgeAppEvent('tab:changed', { activeTabId: tabId });
     saveTabsSession(get().vaultPath);
   },
 

@@ -26,7 +26,7 @@ import { ToolRegistry } from '../registries/ToolRegistry';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
-import { storeRefs, bindFlintStores } from './storeBridge';
+import { storeRefs, bindFlintStores, setAppInstanceBridge } from './storeBridge';
 import type {
   WorkspaceAPI,
   HearthAPI,
@@ -100,6 +100,7 @@ export class FlintApp {
     this.tools = new ToolRegistry(this);
     this.events = new EventBus();
     this.extensions = new ExtensionManager(this);
+    setAppInstanceBridge(this);
 
     // Register Native Vault-Level MCP Tools
     registerNativeTools(this);
