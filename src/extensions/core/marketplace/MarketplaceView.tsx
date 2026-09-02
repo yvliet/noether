@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { useFlintApp, usePluginList } from '@/core/app/AppContext';
-import { Extension as Plugin } from '@/core/extensions/Extension';
+import { useFlintApp, useExtensionList } from '@/core/app/AppContext';
+import { Extension } from '@/core/extensions/Extension';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -18,11 +18,11 @@ import {
 } from '@/components/common/Icons';
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
-import { renderPropertyIcon } from '@/plugins/core/properties/propertyIcons';
-import { usePropertiesSettings } from '@/plugins/core/properties/propertiesSettings';
-import { CascadeIcon } from '@/plugins/core/cascade/cascadeIcons';
+import { renderPropertyIcon } from '@/extensions/core/properties/propertyIcons';
+import { usePropertiesSettings } from '@/extensions/core/properties/propertiesSettings';
+import { CascadeIcon } from '@/extensions/core/cascade/cascadeIcons';
 
-export interface MarketplacePluginItem {
+export interface MarketplaceExtensionItem {
   id: string;
   name: string;
   version: string;
@@ -38,7 +38,10 @@ export interface MarketplacePluginItem {
   bannerImage?: string;
 }
 
-export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplacePluginItem[] = [
+// Backwards compatibility alias
+export type MarketplacePluginItem = MarketplaceExtensionItem;
+
+export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
   {
     id: 'flint-cascade',
     name: 'Cascade',
@@ -55,7 +58,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplacePluginItem[] = [
 
 export const MarketplaceView: React.FC = () => {
   const app = useFlintApp();
-  const pluginList = usePluginList();
+  const extensionList = useExtensionList();
   const {
     canGoBack,
     canGoForward,
@@ -83,7 +86,9 @@ export const MarketplaceView: React.FC = () => {
   const [installingIds, setInstallingIds] = useState<Set<string>>(new Set());
   const [localInstalledIds, setLocalInstalledIds] = useState<Set<string>>(() => {
     try {
-      const saved = localStorage.getItem('flint_installed_community_plugins');
+      const saved =
+        localStorage.getItem('flint_installed_community_extensions') ||
+        localStorage.getItem('flint_installed_community_plugins');
       return saved ? new Set(JSON.parse(saved)) : new Set();
     } catch {
       return new Set();
@@ -117,47 +122,49 @@ export const MarketplaceView: React.FC = () => {
     }
   }, [isFindOpen]);
 
-  const isPluginInstalled = (id: string) => {
+  const isExtensionInstalled = (id: string) => {
     return (
       localInstalledIds.has(id) ||
       app.extensions.isExtensionEnabled(id)
     );
   };
 
-  const handleInstallPlugin = (plugin: MarketplacePluginItem) => {
-    setInstallingIds((prev) => new Set(prev).add(plugin.id));
+  const handleInstallExtension = (ext: MarketplaceExtensionItem) => {
+    setInstallingIds((prev) => new Set(prev).add(ext.id));
 
     setTimeout(async () => {
       // Register in local installed state
       setLocalInstalledIds((prev) => {
-        const next = new Set(prev).add(plugin.id);
-        localStorage.setItem('flint_installed_community_plugins', JSON.stringify(Array.from(next)));
+        const next = new Set(prev).add(ext.id);
+        const json = JSON.stringify(Array.from(next));
+        localStorage.setItem('flint_installed_community_extensions', json);
+        localStorage.setItem('flint_installed_community_plugins', json);
         return next;
       });
 
       // Register or enable in extension manager
       try {
-        if (app.extensions.getExtensionManifest(plugin.id)) {
-          await app.extensions.enableExtension(plugin.id);
+        if (app.extensions.getExtensionManifest(ext.id)) {
+          await app.extensions.enableExtension(ext.id);
         } else {
-          class CommunityExtensionStub extends Plugin {
+          class CommunityExtensionStub extends Extension {
             onload() {
-              console.log(`[Community Extension] Loaded ${plugin.name}`);
+              console.log(`[Community Extension] Loaded ${ext.name}`);
             }
           }
 
-          app.plugins.registerPlugin(
+          app.extensions.registerExtension(
             {
-              id: plugin.id,
-              name: plugin.name,
-              version: plugin.version,
-              description: plugin.description,
-              author: plugin.author,
+              id: ext.id,
+              name: ext.name,
+              version: ext.version,
+              description: ext.description,
+              author: ext.author,
               isCore: false,
             },
             CommunityExtensionStub
           );
-          await app.extensions.enableExtension(plugin.id);
+          await app.extensions.enableExtension(ext.id);
         }
       } catch (err) {
         console.warn('Registered in runtime manager:', err);
@@ -165,38 +172,40 @@ export const MarketplaceView: React.FC = () => {
 
       setInstallingIds((prev) => {
         const next = new Set(prev);
-        next.delete(plugin.id);
+        next.delete(ext.id);
         return next;
       });
 
-      showToast(`Installed "${plugin.name}"`, 'success');
+      showToast(`Installed "${ext.name}"`, 'success');
     }, 600);
   };
 
-  const handleUninstallPlugin = async (plugin: MarketplacePluginItem) => {
+  const handleUninstallExtension = async (ext: MarketplaceExtensionItem) => {
     setLocalInstalledIds((prev) => {
       const next = new Set(prev);
-      next.delete(plugin.id);
-      localStorage.setItem('flint_installed_community_plugins', JSON.stringify(Array.from(next)));
+      next.delete(ext.id);
+      const json = JSON.stringify(Array.from(next));
+      localStorage.setItem('flint_installed_community_extensions', json);
+      localStorage.setItem('flint_installed_community_plugins', json);
       return next;
     });
 
-    if (app.extensions.getExtensionManifest(plugin.id)) {
-      await app.extensions.disableExtension(plugin.id);
+    if (app.extensions.getExtensionManifest(ext.id)) {
+      await app.extensions.disableExtension(ext.id);
     } else {
-      await app.plugins.disablePlugin(plugin.id);
+      await app.extensions.disableExtension(ext.id);
     }
-    showToast(`Uninstalled "${plugin.name}"`, 'info');
+    showToast(`Uninstalled "${ext.name}"`, 'info');
   };
 
-  const filteredPlugins = useMemo(() => {
+  const filteredExtensions = useMemo(() => {
     let list = [...COMMUNITY_MARKETPLACE_CATALOGUE];
 
     // Category filter
     if (selectedCategory === 'Featured') {
       list = list.filter((p) => p.featured);
     } else if (selectedCategory === 'Installed') {
-      list = list.filter((p) => isPluginInstalled(p.id));
+      list = list.filter((p) => isExtensionInstalled(p.id));
     } else if (selectedCategory !== 'All') {
       list = list.filter((p) => p.category === selectedCategory);
     }
@@ -232,7 +241,7 @@ export const MarketplaceView: React.FC = () => {
     }
 
     return list;
-  }, [searchQuery, selectedCategory, sortBy, sortOrder, localInstalledIds, pluginList]);
+  }, [searchQuery, selectedCategory, sortBy, sortOrder, localInstalledIds, extensionList]);
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#181818] text-[var(--flint-text-primary)] select-none">
@@ -262,7 +271,7 @@ export const MarketplaceView: React.FC = () => {
               />
               {searchQuery && (
                 <span className="text-[10px] text-[#777] font-mono shrink-0">
-                  {filteredPlugins.length} found
+                  {filteredExtensions.length} found
                 </span>
               )}
               <button
@@ -298,96 +307,84 @@ export const MarketplaceView: React.FC = () => {
                     isPropertiesFolded ? 'opacity-100 text-[#aaa]' : 'opacity-0 group-hover/title:opacity-100'
                   }`}
                 >
-                  {isPropertiesFolded ? <ChevronRightIcon size={18} /> : <ChevronDownIcon size={18} />}
+                  <ChevronDownIcon
+                    size={18}
+                    className={`transition-transform duration-150 ${isPropertiesFolded ? '-rotate-90' : 'rotate-0'}`}
+                  />
                 </button>
               )}
 
               <h1
-                style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
-                className="w-full font-bold text-[var(--flint-text-primary)] pb-2 font-sans tracking-tight leading-tight select-text"
+                style={{ fontSize: `calc(${fontSize || 12}px * 2.3)` }}
+                className="w-full font-bold text-[#e5e7eb] pb-2 font-text tracking-tight leading-tight select-text"
               >
                 Community Extensions
               </h1>
             </div>
 
-            {/* In-Document Frontmatter Properties Header (100% parity with standard note properties) */}
-            {showPropsInDoc && propertiesInDoc !== 'Hidden' && !isPropertiesFolded && (
-              <div className="mb-3 text-xs">
-                <div className="flex flex-col gap-1.5">
-                  {/* Property: Tags */}
-                  <div className="flex items-center gap-2 flex-wrap min-h-[28px]">
-                    <div className="relative flex items-center shrink-0 w-24">
-                      <span className="p-1 -ml-1 text-[var(--flint-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none">
-                        {renderPropertyIcon('tags', propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)] shrink-0' })}
-                      </span>
-                      <span className="text-[11px] font-medium text-[var(--flint-text-muted)] cursor-default truncate flex-1 min-w-0 leading-tight">
-                        Tags
-                      </span>
+            {/* Frontmatter Properties */}
+            {showPropsInDoc && propertiesInDoc !== 'Hidden' && (
+              <div
+                className={`transition-all duration-150 ease-in-out ${
+                  isPropertiesFolded ? 'hidden' : 'block'
+                }`}
+              >
+                <div className="flex flex-col gap-1 text-xs mb-3">
+                  {/* Category */}
+                  <div className="flex items-center gap-2 group/prop hover:bg-[#202020]/40 rounded px-1.5 py-0.5 -mx-1.5">
+                    <div className="w-24 text-[11px] text-[#777] flex items-center gap-1.5 shrink-0">
+                      {renderPropertyIcon('category', propertyIcons)}
+                      <span>Category</span>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap flex-1">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--flint-bg-card)] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-secondary)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] shadow-xs transition-all font-medium text-xs">
-                        #marketplace
-                      </span>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--flint-bg-card)] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-secondary)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] shadow-xs transition-all font-medium text-xs">
-                        #extensions
-                      </span>
+                    <div className="text-xs text-[#b0b0b0]">
+                      {selectedCategory}
                     </div>
                   </div>
 
-                  {/* Property: Description */}
-                  <div className="flex items-center gap-2 min-h-[28px]">
-                    <div className="relative flex items-center shrink-0 w-24">
-                      <span className="p-1 -ml-1 text-[var(--flint-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none">
-                        {renderPropertyIcon('description', propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)] shrink-0' })}
-                      </span>
-                      <span className="text-[11px] font-medium text-[var(--flint-text-muted)] cursor-default truncate flex-1 min-w-0 leading-tight">
-                        Description
-                      </span>
+                  {/* Filter Count */}
+                  <div className="flex items-center gap-2 group/prop hover:bg-[#202020]/40 rounded px-1.5 py-0.5 -mx-1.5">
+                    <div className="w-24 text-[11px] text-[#777] flex items-center gap-1.5 shrink-0">
+                      {renderPropertyIcon('count', propertyIcons)}
+                      <span>Extensions</span>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <span className="text-[11px] text-[var(--flint-text-secondary)] font-normal leading-tight font-sans select-text">
-                        Discover, install, and extend your Flint vault with community extensions.
-                      </span>
+                    <div className="text-xs text-[#b0b0b0]">
+                      {filteredExtensions.length} of {COMMUNITY_MARKETPLACE_CATALOGUE.length}
                     </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Divider Line under Document Header */}
-            <div className="border-b border-[var(--flint-border-subtle)] mb-5" />
+            {/* Subtle Divider under Properties Header */}
+            <div className="border-b border-[#282828] mb-4" />
           </div>
 
-          {/* Category Chips & Sort Controls */}
-          <div className="flex items-center justify-between gap-3 mb-5 pb-3 border-b border-[#222222] flex-wrap">
-            {/* Category Chips */}
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {categories.map((cat) => {
-                const isSelected = selectedCategory === cat;
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1 rounded-[5px] text-xs transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
-                      isSelected
-                        ? 'bg-[var(--flint-accent)] hover:bg-[var(--flint-accent-hover)] active:bg-[var(--flint-accent-active)] text-white font-semibold border border-black/20'
-                        : 'bg-[#252525] hover:bg-[#2f2f2f] active:bg-[#202020] text-[#999] hover:text-white border border-[#383838] hover:border-[#484848] font-medium'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                );
-              })}
+          {/* Search, Filter Categories & Sort Controls Toolbar */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 mb-5">
+            {/* Category Tags Pills */}
+            <div className="flex items-center gap-1 overflow-x-auto custom-scrollbar pb-1 md:pb-0">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1 rounded-[5px] text-xs font-medium whitespace-nowrap transition-all cursor-pointer border ${
+                    selectedCategory === cat
+                      ? 'bg-[#2a2a2a] text-white border-[#444] shadow-xs'
+                      : 'bg-[#1e1e1e] text-[#888] hover:text-[#ccc] border-[#2a2a2a] hover:bg-[#252525]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
             </div>
 
-            {/* Sort Select & Direction Toggle */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-[#666]">Sort:</span>
+            {/* Sort & Order Dropdowns */}
+            <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
               <CustomSelect
                 value={sortBy}
-                onChange={(val) => setSortBy(val as any)}
+                onChange={(val) => setSortBy(val as 'popular' | 'rating' | 'name')}
                 options={[
-                  { value: 'popular', label: 'Most Popular' },
+                  { value: 'popular', label: 'Most Downloads' },
                   { value: 'rating', label: 'Top Rated' },
                   { value: 'name', label: 'Name' },
                 ]}
@@ -404,8 +401,8 @@ export const MarketplaceView: React.FC = () => {
             </div>
           </div>
 
-          {/* 2-Column Plugin Cards Grid matching page width */}
-          {filteredPlugins.length === 0 ? (
+          {/* 2-Column Extension Cards Grid matching page width */}
+          {filteredExtensions.length === 0 ? (
             <div className="text-center py-16 flex flex-col items-center justify-center">
               <p className="text-xs text-[#777] mb-3">
                 No community extensions match your filter.
@@ -422,26 +419,26 @@ export const MarketplaceView: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-              {filteredPlugins.map((plugin) => {
-                const isInstalled = isPluginInstalled(plugin.id);
-                const isInstalling = installingIds.has(plugin.id);
+              {filteredExtensions.map((ext) => {
+                const isInstalled = isExtensionInstalled(ext.id);
+                const isInstalling = installingIds.has(ext.id);
 
                 return (
                   <div
-                    key={plugin.id}
+                    key={ext.id}
                     className="p-3.5 rounded-xl bg-[#1b1b1b] hover:bg-[#1f1f1f] border border-[#262626] hover:border-[#333333] transition-all flex flex-col justify-between gap-2.5 group relative shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
                   >
                     {/* Optional Card Banner Image */}
-                    {plugin.bannerImage && (
+                    {ext.bannerImage && (
                       <div className="w-full h-24 mb-1 rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#161616]">
-                        <img src={plugin.bannerImage} alt={plugin.name} className="w-full h-full object-cover" />
+                        <img src={ext.bannerImage} alt={ext.name} className="w-full h-full object-cover" />
                       </div>
                     )}
 
                     {/* Top Row: Icon + Title + Version + Category */}
                     <div className="flex items-start gap-2.5">
                       <div className="w-9 h-9 rounded-lg bg-[#222222] border border-[#2c2c2c] flex items-center justify-center shrink-0">
-                        {plugin.icon}
+                        {ext.icon}
                       </div>
 
                       <div className="flex-1 min-w-0">
@@ -449,25 +446,25 @@ export const MarketplaceView: React.FC = () => {
                           <div className="flex items-baseline gap-1.5 truncate">
                             <button
                               type="button"
-                              onClick={() => useWorkspaceStore.getState().openPluginDocTab(plugin.id, plugin.name)}
+                              onClick={() => useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name)}
                               className="text-xs font-medium text-white hover:text-[var(--flint-accent)] transition-colors truncate text-left cursor-pointer"
                             >
-                              {plugin.name}
+                              {ext.name}
                             </button>
-                            <span className="text-[11px] text-[#777] font-normal">v{plugin.version}</span>
+                            <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
                           </div>
 
                           <span className="text-[10px] px-2 py-0.5 rounded-[5px] bg-[#222222] text-[#999] border border-[#333333] shadow-[0_1px_2px_rgba(0,0,0,0.25)] shrink-0 font-medium">
-                            {plugin.category}
+                            {ext.category}
                           </span>
                         </div>
 
                         <div className="text-[10px] text-[#666] mt-0.5 flex items-center gap-1.5">
-                          <span>by {plugin.author}</span>
+                          <span>by {ext.author}</span>
                           <span>•</span>
                           <span className="flex items-center gap-0.5">
                             <Download01Icon size={10} className="text-[#555]" />
-                            {plugin.downloads}
+                            {ext.downloads}
                           </span>
                         </div>
                       </div>
@@ -475,22 +472,22 @@ export const MarketplaceView: React.FC = () => {
 
                     {/* Description */}
                     <p className="text-[11px] text-[#999] leading-relaxed line-clamp-2 min-h-[32px]">
-                      {plugin.description}
+                      {ext.description}
                     </p>
 
                     {/* Bottom Row: Rating & Action */}
                     <div className="flex items-center justify-between pt-2 border-t border-[#242424] mt-auto">
                       <div className="flex items-center gap-1 text-[#f59e0b] text-[10px]">
-                        <span>{'★'.repeat(plugin.stars)}</span>
-                        <span className="text-[#666] text-[10px] ml-0.5">{plugin.stars.toFixed(1)}</span>
+                        <span>{'★'.repeat(ext.stars)}</span>
+                        <span className="text-[#666] text-[10px] ml-0.5">{ext.stars.toFixed(1)}</span>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {plugin.readme && (
+                        {ext.readme && (
                           <button
                             type="button"
-                            onClick={() => useWorkspaceStore.getState().openPluginDocTab(plugin.id, plugin.name)}
-                            title={`View ${plugin.name} documentation`}
+                            onClick={() => useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name)}
+                            title={`View ${ext.name} documentation`}
                             className="w-7 h-7 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-all cursor-pointer flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
                           >
                             <BookOpen01Icon size={13} />
@@ -500,7 +497,7 @@ export const MarketplaceView: React.FC = () => {
                         {isInstalled ? (
                           <button
                             type="button"
-                            onClick={() => handleUninstallPlugin(plugin)}
+                            onClick={() => handleUninstallExtension(ext)}
                             className="group/btn px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-[#f85153] hover:border-[#f85153]/40 rounded-[5px] border border-[#383838] text-[11px] font-medium transition-none cursor-pointer flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] min-w-[78px]"
                           >
                             <span className="flex items-center gap-1 group-hover/btn:hidden">
@@ -515,7 +512,7 @@ export const MarketplaceView: React.FC = () => {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => handleInstallPlugin(plugin)}
+                            onClick={() => handleInstallExtension(ext)}
                             disabled={isInstalling}
                             className="px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] text-[11px] font-medium transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] min-w-[78px] disabled:opacity-50"
                           >

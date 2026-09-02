@@ -182,8 +182,11 @@ export class FlintApp {
           icon,
         });
       },
+      openExtensionDocTab: (extensionId: string, title?: string): void => {
+        storeRefs.workspace?.getState()?.openExtensionDocTab(extensionId, title);
+      },
       openPluginDocTab: (pluginId: string, title?: string): void => {
-        storeRefs.workspace?.getState()?.openPluginDocTab(pluginId, title);
+        storeRefs.workspace?.getState()?.openExtensionDocTab(pluginId, title);
       },
 
       // ── Sidebars ──

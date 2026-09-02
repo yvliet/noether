@@ -250,6 +250,7 @@ interface WorkspaceState {
   openGraphTab: () => void;
   openCanvasTab: () => void;
   openTasksTab: () => void;
+  openExtensionDocTab: (extensionId: string, title?: string) => void;
   openPluginDocTab: (pluginId: string, title?: string) => void;
   openCustomTab: (options: OpenCustomTabOptions) => void;
   openEmptyTab: () => void;
@@ -527,14 +528,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     get().recordNavigation({ viewType: options?.viewType || 'document', documentId, title: title || 'Untitled' });
   },
 
-  openPluginDocTab: (pluginId: string, title?: string) => {
-    const tabId = `plugin-doc:${pluginId}`;
+  openExtensionDocTab: (extensionId: string, title?: string) => {
+    const tabId = `extension-doc:${extensionId}`;
     get().openCustomTab({
       id: tabId,
-      viewType: 'plugin-doc',
-      title: title || pluginId,
-      documentId: `__plugin_doc:${pluginId}__`,
+      viewType: 'extension-doc',
+      title: title || extensionId,
+      documentId: `__extension_doc:${extensionId}__`,
     });
+  },
+
+  openPluginDocTab: (pluginId: string, title?: string) => {
+    get().openExtensionDocTab(pluginId, title);
   },
 
   openCustomTab: (options: OpenCustomTabOptions) => {
@@ -1037,11 +1042,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         } else {
           get().openTasksTab();
         }
-      } else if (entry.viewType === 'plugin-doc' && entry.documentId) {
-        const pluginId = entry.documentId.startsWith('__plugin_doc:')
-          ? entry.documentId.replace(/^__plugin_doc:/, '').replace(/__$/, '')
-          : entry.documentId;
-        get().openPluginDocTab(pluginId, entry.title);
+      } else if ((entry.viewType === 'extension-doc' || entry.viewType === 'plugin-doc') && entry.documentId) {
+        const extensionId = entry.documentId.replace(/^__(extension_doc|plugin_doc):/, '').replace(/__$/, '');
+        get().openExtensionDocTab(extensionId, entry.title);
       } else if (entry.viewType && entry.viewType !== 'document') {
         get().openCustomTab({
           viewType: entry.viewType,

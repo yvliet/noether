@@ -31,7 +31,17 @@ export interface WorkspaceEvents {
   /** Emitted when the main view mode changes (e.g., 'document' -> 'graph'). */
   'view:mode-changed': { mode: string };
 
-  // ── Plugin Lifecycle ──
+  // ── Extension Lifecycle ──
+  /** Emitted when an extension instance has loaded. */
+  'extension:loaded': { extensionId: string };
+  /** Emitted when an extension instance has unloaded. */
+  'extension:unloaded': { extensionId: string };
+  /** Emitted when an extension is enabled. */
+  'extension:enabled': { extensionId: string };
+  /** Emitted when an extension is disabled. */
+  'extension:disabled': { extensionId: string };
+
+  // ── Legacy Plugin Lifecycle (Backwards Compatibility) ──
   /** Emitted when a plugin instance has loaded. */
   'plugin:loaded': { pluginId: string };
   /** Emitted when a plugin instance has unloaded. */

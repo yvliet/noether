@@ -112,7 +112,7 @@ export const useStatusBarItems = (alignment?: 'left' | 'right'): StatusBarItem[]
   );
 };
 
-export const useSettingTabs = (): PluginSettingTab[] => {
+export const useSettingTabs = (): ExtensionSettingTab[] => {
   const app = useFlintApp();
   return useSyncExternalStore(
     (onStoreChange) => {

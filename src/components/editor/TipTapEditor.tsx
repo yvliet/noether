@@ -34,7 +34,7 @@ import { MathKeyboard } from './MathKeyboard';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useFlintApp, usePluginList, usePlaceholderHints } from '@/core/app/AppContext';
+import { useFlintApp, useExtensionList, usePlaceholderHints } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { ColorPicker, InlineColorPicker } from '@/components/common/ColorPicker';
 import {
@@ -358,7 +358,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   onEditorReady,
 }) => {
   const app = useFlintApp();
-  const pluginList = usePluginList();
+  const extensionList = useExtensionList();
   const placeholderHints = usePlaceholderHints();
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
@@ -387,17 +387,17 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const { showContextMenu } = useAppContextMenu();
   const showToast = useWorkspaceStore((s) => s.showToast);
 
-  // Merge plugin slash commands
-  const pluginSlashCommands = useMemo(() => app.editor.getSlashCommands(), [app.editor, pluginList]);
+  // Merge extension slash commands
+  const extensionSlashCommands = useMemo(() => app.editor.getSlashCommands(), [app.editor, extensionList]);
   const slashItems: SlashItem[] = useMemo(() => [
     ...baseSlashItems,
-    ...pluginSlashCommands.map((p: any) => ({
+    ...extensionSlashCommands.map((p: any) => ({
       title: p.title,
       description: p.description,
       icon: typeof p.icon === 'string' ? (p.icon as any) : 'card',
       command: p.command,
     })),
-  ], [pluginSlashCommands]);
+  ], [extensionSlashCommands]);
 
   const handleNavigateToWikiLink = useCallback(
     (rawTarget: string, isSplit: boolean = false) => {

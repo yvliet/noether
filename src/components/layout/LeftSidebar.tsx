@@ -20,7 +20,7 @@ import {
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useFlintApp, usePluginList, useFileTreeActions, useFileTreeSections, useSidebarTabs } from '@/core/app/AppContext';
+import { useFlintApp, useExtensionList, useFileTreeActions, useFileTreeSections, useSidebarTabs } from '@/core/app/AppContext';
 import { FileTreeNode, getVisibleTreeItemIds } from '@/components/file-tree/FileTreeNode';
 
 import { DocumentItem } from '@/types';
@@ -73,7 +73,7 @@ export function sortDocuments(docs: DocumentItem[], sortOrder: FileSortOrder): D
 
 export const LeftSidebar: React.FC = React.memo(() => {
   const app = useFlintApp();
-  const pluginList = usePluginList();
+  const extensionList = useExtensionList();
   const fileTreeActions = useFileTreeActions();
   const fileTreeSections = useFileTreeSections();
   const sidebarTabs = useSidebarTabs('left');

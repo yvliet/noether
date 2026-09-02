@@ -37,19 +37,19 @@ this.app.ribbon.registerRibbonAction({
 });
 \`\`\`
 
-### 2. Dynamic Plugin Loading Pipeline
+### 2. Dynamic Extension Loading Pipeline
 When a user clicks **Install**:
 1. Manifest and bundled JS are fetched from the registry repository.
-2. Code is evaluated into a sandboxed \`Plugin\` instance.
-3. \`app.plugins.loadPlugin(manifest)\` registers commands, views, and settings.
-4. \`app.plugins.enablePlugin(id)\` invokes the plugin's \`onload()\` lifecycle hook.
+2. Code is evaluated into a sandboxed \`Extension\` instance.
+3. \`app.extensions.loadExtension(manifest)\` registers commands, views, and settings.
+4. \`app.extensions.enableExtension(id)\` invokes the extension's \`onload()\` lifecycle hook.
 
 ---
 
 ## Developer Guide: Publishing to Flint Marketplace
 
-To publish your plugin to the Flint community marketplace:
+To publish your extension to the Flint community marketplace:
 1. Create a repository with \`manifest.json\` containing \`id\`, \`name\`, \`version\`, \`author\`, \`description\`, and \`readme\`.
 2. Bundle your entry point with Vite/esbuild into \`main.js\`.
-3. Submit a pull request to Flint's community plugin registry.
+3. Submit a pull request to Flint's community extension registry.
 `;

@@ -19,10 +19,10 @@ export class ViewRegistry {
   private cachedViews: ViewDefinition[] = [];
 
   /**
-   * Dynamic mapping from view type string to owning plugin metadata.
-   * Populated automatically when plugins register views — no hardcoded entries.
+   * Dynamic mapping from view type string to owning extension metadata.
+   * Populated automatically when extensions register views — no hardcoded entries.
    */
-  private viewTypeToPlugin: Map<string, { pluginId: string; title?: string }> = new Map();
+  private viewTypeToExtension: Map<string, { extensionId: string; pluginId: string; title?: string }> = new Map();
 
   /**
    * Registers a new custom view definition.
@@ -33,8 +33,9 @@ export class ViewRegistry {
    */
   public registerView(view: ViewDefinition): Disposable {
     this.views.set(view.type, view);
-    if (view.pluginId) {
-      this.viewTypeToPlugin.set(view.type, { pluginId: view.pluginId, title: view.title });
+    const extId = view.extensionId || view.pluginId;
+    if (extId) {
+      this.viewTypeToExtension.set(view.type, { extensionId: extId, pluginId: extId, title: view.title });
     }
     this.recomputeCache();
     this.notify();
@@ -60,25 +61,41 @@ export class ViewRegistry {
   }
 
   /**
-   * Retrieves ownership information for a view type (for disabled plugin placeholders).
+   * Retrieves ownership information for a view type (for disabled extension placeholders).
    *
    * @param type - View type key.
-   * @since 0.1.0
+   * @since 0.2.0
    */
-  public getViewPluginInfo(type: string): { pluginId: string; title?: string } | undefined {
-    return this.viewTypeToPlugin.get(type);
+  public getViewExtensionInfo(type: string): { extensionId: string; pluginId: string; title?: string } | undefined {
+    return this.viewTypeToExtension.get(type);
   }
 
   /**
-   * Explicitly associates a view type with a plugin identifier.
+   * Backwards-compatibility alias for getViewExtensionInfo.
+   * @since 0.1.0
+   */
+  public getViewPluginInfo(type: string): { extensionId: string; pluginId: string; title?: string } | undefined {
+    return this.getViewExtensionInfo(type);
+  }
+
+  /**
+   * Explicitly associates a view type with an extension identifier.
    *
    * @param type - View type key.
-   * @param pluginId - Owning plugin ID.
+   * @param extensionId - Owning extension ID.
    * @param title - Display title for placeholder states.
+   * @since 0.2.0
+   */
+  public registerViewExtensionMapping(type: string, extensionId: string, title?: string): void {
+    this.viewTypeToExtension.set(type, { extensionId, pluginId: extensionId, title });
+  }
+
+  /**
+   * Backwards-compatibility alias for registerViewExtensionMapping.
    * @since 0.1.0
    */
   public registerViewPluginMapping(type: string, pluginId: string, title?: string): void {
-    this.viewTypeToPlugin.set(type, { pluginId, title });
+    this.registerViewExtensionMapping(type, pluginId, title);
   }
 
   /**

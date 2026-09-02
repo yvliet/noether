@@ -17,16 +17,16 @@ export const MarketplaceSettingsTab: React.FC = () => {
     showToast('Opened Marketplace', 'info');
   };
 
-  const handleOpenPluginsFolder = () => {
+  const handleOpenExtensionsFolder = () => {
     if (platform.isDesktop()) {
-      platform.openPluginsFolder();
+      platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .flint/plugins/ inside Hearth', 'info');
+      showToast('Extensions folder: .flint/extensions/ inside Hearth', 'info');
     }
   };
 
-  const handleReloadPlugins = async () => {
-    await app.plugins.refreshCommunityPlugins();
+  const handleReloadExtensions = async () => {
+    await app.extensions.refreshCommunityExtensions();
     showToast('Reloaded extensions from disk', 'success');
   };
 
@@ -58,17 +58,17 @@ export const MarketplaceSettingsTab: React.FC = () => {
           </button>
         </div>
 
-        {/* Reload Plugins Action */}
+        {/* Reload Extensions Action */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
             <span className="text-[13px] font-normal text-[#dcddde]">Reload installed extensions</span>
             <span className="text-[11px] text-[#777] mt-0.5">
-              Scan the `.flint/plugins/` directory and refresh all active extensions.
+              Scan the `.flint/extensions/` directory and refresh all active extensions.
             </span>
           </div>
           <button
             type="button"
-            onClick={handleReloadPlugins}
+            onClick={handleReloadExtensions}
             className="px-3.5 py-1.5 bg-[#282828] hover:bg-[#333] active:bg-[#222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
@@ -86,7 +86,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={handleOpenPluginsFolder}
+            onClick={handleOpenExtensionsFolder}
             className="px-3.5 py-1.5 bg-[#282828] hover:bg-[#333] active:bg-[#222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
           >
             <FolderOpenIcon size={12} />

@@ -55,8 +55,8 @@ import {
   LinkFormat,
 } from '@/store/settingsStore';
 import { appInstance } from '@/core/app/FlintApp';
-import { AppProvider, useFlintApp, usePluginList, useSettingTabs, useCommands } from '@/core/app/AppContext';
-import { PluginSettingTab } from '@/core/extensions/types';
+import { AppProvider, useFlintApp, useExtensionList, useSettingTabs, useCommands } from '@/core/app/AppContext';
+import { ExtensionSettingTab } from '@/core/extensions/types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { dbAdapter } from '@/lib/db/adapter';
 
@@ -712,11 +712,11 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
     fontSize !== DEFAULT_SETTINGS.fontSize ||
     quickFontSize !== DEFAULT_SETTINGS.quickFontSize;
 
-  const handleOpenPluginsFolder = useCallback(() => {
+  const handleOpenExtensionsFolder = useCallback(() => {
     if (platform.isDesktop()) {
-      platform.openPluginsFolder();
+      platform.openExtensionsFolder();
     } else {
-      showToast('Plugins folder: .flint/plugins/ inside Hearth', 'info');
+      showToast('Extensions folder: .flint/extensions/ inside Hearth', 'info');
     }
   }, [showToast]);
 
@@ -1060,7 +1060,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
       {/* Section 3: CSS Snippets */}
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         <div
-          onClick={handleOpenPluginsFolder}
+          onClick={handleOpenExtensionsFolder}
           className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
         >
           <div className="flex flex-col pr-4">
@@ -2559,16 +2559,17 @@ const HotkeysTab: React.FC = React.memo(() => {
   );
 });
 
-// Helper: match tab ID flexibly by exact ID, pluginId, subId, or prefix
-export function isTabMatch(tab: { id: string; pluginId?: string }, targetTabId: string): boolean {
+// Helper: match tab ID flexibly by exact ID, extensionId, pluginId, subId, or prefix
+export function isTabMatch(tab: { id: string; extensionId?: string; pluginId?: string }, targetTabId: string): boolean {
   if (!targetTabId || !tab) return false;
   if (tab.id === targetTabId) return true;
-  if (tab.pluginId && tab.pluginId === targetTabId) return true;
+  const targetId = tab.extensionId || tab.pluginId;
+  if (targetId && targetId === targetTabId) return true;
   const parts = tab.id.split(':');
-  const pluginId = parts[0];
+  const extId = parts[0];
   const subId = parts.length > 1 ? parts.slice(1).join(':') : parts[0];
   return (
-    pluginId === targetTabId ||
+    extId === targetTabId ||
     subId === targetTabId ||
     tab.id.startsWith(`${targetTabId}:`) ||
     tab.id.endsWith(`:${targetTabId}`)
@@ -2576,32 +2577,32 @@ export function isTabMatch(tab: { id: string; pluginId?: string }, targetTabId: 
 }
 
 // ==========================================
-// TAB: CORE PLUGINS
+// TAB: CORE EXTENSIONS
 // ==========================================
-interface CorePluginsTabProps {
+interface CoreExtensionsTabProps {
   onNavigateTab: (tabId: string) => void;
   onClose?: () => void;
 }
 
-const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTab, onClose }) => {
+const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavigateTab, onClose }) => {
   const app = useFlintApp();
-  const pluginList = usePluginList();
+  const extensionList = useExtensionList();
   const allSettingTabs = useSettingTabs();
 
-  const corePluginTabs = useMemo(() => {
+  const coreExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
-      const pluginId = tab.pluginId || tab.id.split(':')[0];
-      const manifest = app.plugins.getPluginManifest(pluginId);
+      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const manifest = app.extensions.getExtensionManifest(extId);
       return manifest?.isCore === true;
     });
   }, [allSettingTabs, app]);
 
-  const handleTogglePlugin = useCallback(async (pluginId: string) => {
-    const isEnabled = app.plugins.isPluginEnabled(pluginId);
+  const handleToggleExtension = useCallback(async (extensionId: string) => {
+    const isEnabled = app.extensions.isExtensionEnabled(extensionId);
     if (isEnabled) {
-      await app.plugins.disablePlugin(pluginId);
+      await app.extensions.disableExtension(extensionId);
     } else {
-      await app.plugins.enablePlugin(pluginId);
+      await app.extensions.enableExtension(extensionId);
     }
   }, [app]);
 
@@ -2615,29 +2616,29 @@ const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTa
       </div>
 
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
-        {pluginList.core.map((plugin) => {
-          const isEnabled = app.plugins.isPluginEnabled(plugin.id);
-          const settingsTab = corePluginTabs.find((tab) => isTabMatch(tab, plugin.id));
+        {extensionList.core.map((ext) => {
+          const isEnabled = app.extensions.isExtensionEnabled(ext.id);
+          const settingsTab = coreExtensionTabs.find((tab) => isTabMatch(tab, ext.id));
           return (
             <div
-              key={plugin.id}
+              key={ext.id}
               className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
             >
               <div className="flex-1 pr-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[13px] font-normal text-white">{plugin.name}</span>
-                  <span className="text-[11px] text-[#777] font-normal">v{plugin.version}</span>
+                  <span className="text-[13px] font-normal text-white">{ext.name}</span>
+                  <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
                 </div>
-                <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">{plugin.description}</p>
+                <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">{ext.description}</p>
               </div>
 
               <div className="flex items-center gap-2">
-                {plugin.readme && (
+                {ext.readme && (
                   <button
                     type="button"
                     onClick={() => {
-                      localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: plugin.id, title: plugin.name, timestamp: Date.now() }));
-                      useWorkspaceStore.getState().openPluginDocTab(plugin.id, plugin.name);
+                      localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: ext.id, title: ext.name, timestamp: Date.now() }));
+                      useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name);
                       if (onClose) {
                         onClose();
                       } else {
@@ -2647,7 +2648,7 @@ const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTa
                         }
                       }
                     }}
-                    title={`View ${plugin.name} README`}
+                    title={`View ${ext.name} README`}
                     className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
                   >
                     <BookOpen01Icon size={14} />
@@ -2656,7 +2657,7 @@ const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTa
                 {isEnabled && settingsTab && (
                   <button
                     onClick={() => onNavigateTab(settingsTab.id)}
-                    title={`${plugin.name} options`}
+                    title={`${ext.name} options`}
                     className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
                   >
                     <Settings02Icon size={15} />
@@ -2664,7 +2665,7 @@ const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTa
                 )}
                 <ToggleSwitch
                   checked={isEnabled}
-                  onChange={() => handleTogglePlugin(plugin.id)}
+                  onChange={() => handleToggleExtension(ext.id)}
                 />
               </div>
             </div>
@@ -2675,47 +2676,50 @@ const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTa
   );
 });
 
+// Backwards-compatibility alias
+const CorePluginsTab = CoreExtensionsTab;
+
 // ==========================================
 // TAB: COMMUNITY EXTENSIONS
 // ==========================================
-interface CommunityPluginsTabProps {
+interface CommunityExtensionsTabProps {
   onNavigateTab: (tabId: string) => void;
   onClose?: () => void;
 }
 
-const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ onNavigateTab, onClose }) => {
+const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo(({ onNavigateTab, onClose }) => {
   const app = useFlintApp();
-  const pluginList = usePluginList();
+  const extensionList = useExtensionList();
   const allSettingTabs = useSettingTabs();
   const showToast = useWorkspaceStore((s) => s.showToast);
 
-  const communityPluginTabs = useMemo(() => {
+  const communityExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
-      const pluginId = tab.pluginId || tab.id.split(':')[0];
-      const manifest = app.plugins.getPluginManifest(pluginId);
+      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const manifest = app.extensions.getExtensionManifest(extId);
       return !manifest || manifest.isCore !== true;
     });
   }, [allSettingTabs, app]);
 
-  const handleTogglePlugin = useCallback(async (pluginId: string) => {
-    const isEnabled = app.plugins.isPluginEnabled(pluginId);
+  const handleToggleExtension = useCallback(async (extensionId: string) => {
+    const isEnabled = app.extensions.isExtensionEnabled(extensionId);
     if (isEnabled) {
-      await app.plugins.disablePlugin(pluginId);
+      await app.extensions.disableExtension(extensionId);
     } else {
-      await app.plugins.enablePlugin(pluginId);
+      await app.extensions.enableExtension(extensionId);
     }
   }, [app]);
 
-  const handleOpenPluginsFolder = useCallback(() => {
+  const handleOpenExtensionsFolder = useCallback(() => {
     if (platform.isDesktop()) {
-      platform.openPluginsFolder();
+      platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .flint/plugins/ inside Hearth', 'info');
+      showToast('Extensions folder: .flint/extensions/ inside Hearth', 'info');
     }
   }, [showToast]);
 
-  const handleReloadPlugins = useCallback(async () => {
-    await app.plugins.refreshCommunityPlugins();
+  const handleReloadExtensions = useCallback(async () => {
+    await app.extensions.refreshCommunityExtensions();
     showToast('Reloaded extensions from disk', 'success');
   }, [app, showToast]);
 
@@ -2730,14 +2734,14 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={handleReloadPlugins}
+            onClick={handleReloadExtensions}
             className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Reload</span>
           </button>
           <button
-            onClick={handleOpenPluginsFolder}
+            onClick={handleOpenExtensionsFolder}
             className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer flex items-center gap-1.5"
           >
             <FolderOpenIcon size={12} />
@@ -2746,34 +2750,34 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
         </div>
       </div>
 
-      {pluginList.community.length > 0 ? (
+      {extensionList.community.length > 0 ? (
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
-          {pluginList.community.map((plugin) => {
-            const isEnabled = app.plugins.isPluginEnabled(plugin.id);
-            const communityTab = communityPluginTabs.find((t) => isTabMatch(t, plugin.id));
+          {extensionList.community.map((ext) => {
+            const isEnabled = app.extensions.isExtensionEnabled(ext.id);
+            const communityTab = communityExtensionTabs.find((t) => isTabMatch(t, ext.id));
             return (
               <div
-                key={plugin.id}
+                key={ext.id}
                 className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
               >
                 <div className="flex-1 pr-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[13px] font-normal text-white">{plugin.name}</span>
-                    <span className="text-[11px] text-[#777] font-normal">v{plugin.version}</span>
-                    {plugin.author && (
-                      <span className="text-[10px] text-[#777]">by {plugin.author}</span>
+                    <span className="text-[13px] font-normal text-white">{ext.name}</span>
+                    <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
+                    {ext.author && (
+                      <span className="text-[10px] text-[#777]">by {ext.author}</span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">{plugin.description}</p>
+                  <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">{ext.description}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {plugin.readme && (
+                  {ext.readme && (
                     <button
                       type="button"
                       onClick={() => {
-                        localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: plugin.id, title: plugin.name, timestamp: Date.now() }));
-                        useWorkspaceStore.getState().openPluginDocTab(plugin.id, plugin.name);
+                        localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: ext.id, title: ext.name, timestamp: Date.now() }));
+                        useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name);
                         if (onClose) {
                           onClose();
                         } else {
@@ -2783,7 +2787,7 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
                           }
                         }
                       }}
-                      title={`View ${plugin.name} README`}
+                      title={`View ${ext.name} README`}
                       className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
                     >
                       <BookOpen01Icon size={14} />
@@ -2792,7 +2796,7 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
                   {isEnabled && communityTab && (
                     <button
                       onClick={() => onNavigateTab(communityTab.id)}
-                      title={`${plugin.name} options`}
+                      title={`${ext.name} options`}
                       className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
                     >
                       <Settings02Icon size={15} />
@@ -2800,7 +2804,7 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
                   )}
                   <ToggleSwitch
                     checked={isEnabled}
-                    onChange={() => handleTogglePlugin(plugin.id)}
+                    onChange={() => handleToggleExtension(ext.id)}
                   />
                 </div>
               </div>
@@ -2835,7 +2839,7 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
               <span>Browse Extension Marketplace</span>
             </button>
             <button
-              onClick={handleOpenPluginsFolder}
+              onClick={handleOpenExtensionsFolder}
               className="px-3.5 py-2 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[6px] border border-[#383838] hover:border-[#484848] transition-all cursor-pointer text-xs font-medium"
             >
               Open extensions folder
@@ -2846,6 +2850,9 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
     </div>
   );
 });
+
+// Backwards-compatibility alias
+const CommunityPluginsTab = CommunityExtensionsTab;
 
 export interface SettingsWindowContentProps {
   onClose?: () => void;
@@ -2882,7 +2889,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         setHearthName(data.name);
       }
     });
-    app.plugins.init();
+    app.extensions.init();
     dbAdapter.init().then(() => {
       useDocumentStore.getState().loadTrash();
     });
@@ -2938,28 +2945,29 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     { id: 'editor', label: 'Editor', icon: <Edit02Icon size={14} />, keywords: ['editor', 'line', 'preview', 'indent', 'heading', 'pairing', 'properties', 'reading'] },
     { id: 'files', label: 'Files and links', icon: <Folder01Icon size={14} />, keywords: ['files and links', 'files', 'links', 'trash', 'deleted', 'delete', 'hearth', 'vault', 'wikilink'] },
     { id: 'hotkeys', label: 'Hotkeys', icon: <KeyIcon size={14} />, keywords: ['hotkeys', 'shortcuts', 'keys', 'commands'] },
-    { id: 'core-plugins', label: 'Built-in extensions', icon: <PackageIcon size={14} />, keywords: ['built-in extensions', 'core plugins', 'plugins', 'modules', 'extensions'] },
-    { id: 'community-plugins', label: 'Community extensions', icon: <GlobeIcon size={14} />, keywords: ['community extensions', 'community plugins', 'plugins', 'marketplace', 'extensions'] },
+    { id: 'core-extensions', label: 'Built-in extensions', icon: <PackageIcon size={14} />, keywords: ['built-in extensions', 'core extensions', 'core plugins', 'plugins', 'modules', 'extensions'] },
+    { id: 'community-extensions', label: 'Community extensions', icon: <GlobeIcon size={14} />, keywords: ['community extensions', 'community plugins', 'plugins', 'marketplace', 'extensions'] },
   ], []);
 
-  const pluginList = usePluginList();
+  const extensionList = useExtensionList();
 
-  // Dynamic Core & Community Plugins Setting Tabs from Registries + Enabled Plugins Fallback
-  const corePluginTabs = useMemo(() => {
+  // Dynamic Core & Community Extensions Setting Tabs from Registries + Enabled Extensions Fallback
+  const coreExtensionTabs = useMemo(() => {
     const registered = allSettingTabs.filter((tab) => {
-      const pluginId = tab.pluginId || tab.id.split(':')[0];
-      const manifest = app.plugins.getPluginManifest(pluginId);
+      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const manifest = app.extensions.getExtensionManifest(extId);
       return manifest?.isCore === true;
     });
 
-    const result: PluginSettingTab[] = [...registered];
-    const enabledCoreManifests = pluginList.core.filter((m) => app.plugins.isPluginEnabled(m.id));
+    const result: ExtensionSettingTab[] = [...registered];
+    const enabledCoreManifests = extensionList.core.filter((m) => app.extensions.isExtensionEnabled(m.id));
 
     for (const manifest of enabledCoreManifests) {
       if (!result.some((t) => isTabMatch(t, manifest.id))) {
         result.push({
           id: `${manifest.id}:${manifest.id}-settings`,
           name: manifest.name,
+          extensionId: manifest.id,
           pluginId: manifest.id,
           icon: <PackageIcon size={14} />,
           render: () => (
@@ -2975,23 +2983,24 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     }
 
     return result;
-  }, [allSettingTabs, app, pluginList.core]);
+  }, [allSettingTabs, app, extensionList.core]);
 
-  const communityPluginTabs = useMemo(() => {
+  const communityExtensionTabs = useMemo(() => {
     const registered = allSettingTabs.filter((tab) => {
-      const pluginId = tab.pluginId || tab.id.split(':')[0];
-      const manifest = app.plugins.getPluginManifest(pluginId);
+      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const manifest = app.extensions.getExtensionManifest(extId);
       return !manifest || manifest.isCore !== true;
     });
 
-    const result: PluginSettingTab[] = [...registered];
-    const enabledCommunityManifests = pluginList.community.filter((m) => app.plugins.isPluginEnabled(m.id));
+    const result: ExtensionSettingTab[] = [...registered];
+    const enabledCommunityManifests = extensionList.community.filter((m) => app.extensions.isExtensionEnabled(m.id));
 
     for (const manifest of enabledCommunityManifests) {
       if (!result.some((t) => isTabMatch(t, manifest.id))) {
         result.push({
           id: `${manifest.id}:${manifest.id}-settings`,
           name: manifest.name,
+          extensionId: manifest.id,
           pluginId: manifest.id,
           icon: <GlobeIcon size={14} />,
           render: () => (
@@ -3007,7 +3016,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     }
 
     return result;
-  }, [allSettingTabs, app, pluginList.community]);
+  }, [allSettingTabs, app, extensionList.community]);
 
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return optionsItems;
@@ -3017,12 +3026,12 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     );
   }, [searchQuery, optionsItems]);
 
-  const filteredCorePlugins = useMemo(() => {
-    return corePluginTabs.filter((item) => {
+  const filteredCoreExtensions = useMemo(() => {
+    return coreExtensionTabs.filter((item) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const pluginId = item.pluginId || item.id.split(':')[0];
-        const manifest = app.plugins.getPluginManifest(pluginId);
+        const extId = item.extensionId || item.pluginId || item.id.split(':')[0];
+        const manifest = app.extensions.getExtensionManifest(extId);
         const nameMatch = item.name.toLowerCase().includes(q);
         const manifestMatch =
           manifest?.name.toLowerCase().includes(q) ||
@@ -3031,14 +3040,14 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
       }
       return true;
     });
-  }, [corePluginTabs, searchQuery, app]);
+  }, [coreExtensionTabs, searchQuery, app]);
 
-  const filteredCommunityPlugins = useMemo(() => {
-    return communityPluginTabs.filter((item) => {
+  const filteredCommunityExtensions = useMemo(() => {
+    return communityExtensionTabs.filter((item) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const pluginId = item.pluginId || item.id.split(':')[0];
-        const manifest = app.plugins.getPluginManifest(pluginId);
+        const extId = item.extensionId || item.pluginId || item.id.split(':')[0];
+        const manifest = app.extensions.getExtensionManifest(extId);
         const nameMatch = item.name.toLowerCase().includes(q);
         const manifestMatch =
           manifest?.name.toLowerCase().includes(q) ||
@@ -3047,7 +3056,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
       }
       return true;
     });
-  }, [communityPluginTabs, searchQuery, app]);
+  }, [communityExtensionTabs, searchQuery, app]);
 
   const handleNavigateTab = useCallback((tabId: string) => {
     setFontPickerMode(null);
@@ -3190,10 +3199,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             )}
 
             {/* Section 2: Built-in Extensions */}
-            {filteredCorePlugins.length > 0 && (
+            {filteredCoreExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
                 <div className="text-[11px] font-medium text-[var(--flint-text-muted,#666)] px-2.5 py-1">Built-in extensions</div>
-                {filteredCorePlugins.map((item) => {
+                {filteredCoreExtensions.map((item) => {
                   const isActive = isTabMatch(item, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
                     <button
@@ -3218,10 +3227,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             )}
 
             {/* Section 3: Community Extensions Settings */}
-            {filteredCommunityPlugins.length > 0 && (
+            {filteredCommunityExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
                 <div className="text-[11px] font-medium text-[var(--flint-text-muted,#666)] px-2.5 py-1">Community extensions</div>
-                {filteredCommunityPlugins.map((tab) => {
+                {filteredCommunityExtensions.map((tab) => {
                   const isActive = isTabMatch(tab, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
                     <button
@@ -3262,19 +3271,9 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           </div>
         </aside>
 
-        {/* RIGHT COLUMN: Settings Content View */}
-        <main className="flex-1 bg-[var(--flint-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-8">
-          <div className="max-w-2xl mx-auto flex flex-col gap-6">
-            {/* SUB-VIEW: FONT PICKER (Matching Image 3) */}
-            {fontPickerMode && (
-              <FontPickerView mode={fontPickerMode} onClose={() => setFontPickerMode(null)} />
-            )}
-
-            {/* SUB-VIEW: TRASH VIEWER */}
-            {!fontPickerMode && isTrashViewOpen && (
-              <TrashView onClose={() => setIsTrashViewOpen(false)} />
-            )}
-
+        {/* RIGHT COLUMN: Tab Content */}
+        <main className="flex-1 bg-[var(--flint-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6">
+          <div className="max-w-2xl mx-auto">
             {/* TAB: GENERAL */}
             {!fontPickerMode && !isTrashViewOpen && activeTab === 'general' && (
               <GeneralTab />
@@ -3305,29 +3304,29 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               <HotkeysTab />
             )}
 
-            {/* TAB: CORE PLUGINS */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'core-plugins' && (
-              <CorePluginsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+            {/* TAB: CORE EXTENSIONS */}
+            {!fontPickerMode && !isTrashViewOpen && (activeTab === 'core-extensions' || activeTab === 'core-plugins') && (
+              <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
             )}
 
-            {/* TAB: COMMUNITY PLUGINS */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'community-plugins' && (
-              <CommunityPluginsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+            {/* TAB: COMMUNITY EXTENSIONS */}
+            {!fontPickerMode && !isTrashViewOpen && (activeTab === 'community-extensions' || activeTab === 'community-plugins') && (
+              <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
             )}
 
-            {/* DYNAMIC PLUGIN SETTING TAB RENDER (CORE & COMMUNITY) */}
+            {/* DYNAMIC EXTENSION SETTING TAB RENDER (CORE & COMMUNITY) */}
             {!fontPickerMode && !isTrashViewOpen && allSettingTabs.some((t) => isTabMatch(t, activeTab)) && (
               <div className="flex flex-col gap-4 animate-in fade-in duration-100">
                 {(() => {
                   const currentTab = allSettingTabs.find((t) => isTabMatch(t, activeTab));
                   if (!currentTab) return null;
-                  const pluginId = currentTab.pluginId || currentTab.id.split(':')[0];
-                  const manifest = app.plugins.getPluginManifest(pluginId);
-                  const isEnabled = app.plugins.isPluginEnabled(pluginId);
+                  const extId = currentTab.extensionId || currentTab.pluginId || currentTab.id.split(':')[0];
+                  const manifest = app.extensions.getExtensionManifest(extId);
+                  const isEnabled = app.extensions.isExtensionEnabled(extId);
 
                   return (
                     <>
-                      {/* Top Plugin Header with Enabled Toggle matching CorePlugins row design */}
+                      {/* Top Extension Header with Enabled Toggle matching CoreExtensions row design */}
                       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
                         <div className="flex-1 pr-4">
                           <div className="flex items-baseline gap-2">
@@ -3352,8 +3351,8 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                             <button
                               type="button"
                               onClick={() => {
-                                localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId, title: manifest?.name || currentTab.name, timestamp: Date.now() }));
-                                useWorkspaceStore.getState().openPluginDocTab(pluginId, manifest?.name || currentTab.name);
+                                localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: extId, title: manifest?.name || currentTab.name, timestamp: Date.now() }));
+                                useWorkspaceStore.getState().openExtensionDocTab(extId, manifest?.name || currentTab.name);
                                 handleClose();
                               }}
                               title={`View ${manifest?.name || currentTab.name} documentation`}
@@ -3366,18 +3365,18 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                             checked={isEnabled}
                             onChange={async (val) => {
                               if (val) {
-                                await app.plugins.enablePlugin(pluginId);
-                                showToast(`Enabled ${manifest?.name || 'plugin'}`, 'success');
+                                await app.extensions.enableExtension(extId);
+                                showToast(`Enabled ${manifest?.name || 'extension'}`, 'success');
                               } else {
-                                await app.plugins.disablePlugin(pluginId);
-                                showToast(`Disabled ${manifest?.name || 'plugin'}`, 'info');
+                                await app.extensions.disableExtension(extId);
+                                showToast(`Disabled ${manifest?.name || 'extension'}`, 'info');
                               }
                             }}
                           />
                         </div>
                       </div>
 
-                      {/* Plugin Setting Content */}
+                      {/* Extension Setting Content */}
                       {isEnabled ? (
                         <div className="flex flex-col gap-4">
                           {currentTab.render()}
@@ -3385,17 +3384,17 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       ) : (
                         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
                           <span className="text-xs text-[#888]">
-                            {manifest?.name || 'This plugin'} is currently disabled.
+                            {manifest?.name || 'This extension'} is currently disabled.
                           </span>
                           <button
                             type="button"
                             onClick={async () => {
-                              await app.plugins.enablePlugin(pluginId);
-                              showToast(`Enabled ${manifest?.name || 'plugin'}`, 'success');
+                              await app.extensions.enableExtension(extId);
+                              showToast(`Enabled ${manifest?.name || 'extension'}`, 'success');
                             }}
                             className="px-3.5 py-1.5 text-xs bg-[var(--flint-accent)] hover:bg-[var(--flint-accent-hover)] text-white rounded-lg font-medium transition-colors cursor-pointer"
                           >
-                            Enable {manifest?.name || 'Plugin'}
+                            Enable {manifest?.name || 'Extension'}
                           </button>
                         </div>
                       )}

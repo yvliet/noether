@@ -515,7 +515,7 @@ export const WindowHeader: React.FC = React.memo(() => {
     platform.close();
   }, []);
 
-  // Automatically delete tabs whose plugin has been deleted from disk/system
+  // Automatically delete tabs whose extension has been deleted from disk/system
   useEffect(() => {
     for (const [paneId, model] of Object.entries(panes)) {
       for (const tab of model.tabs) {
@@ -530,14 +530,14 @@ export const WindowHeader: React.FC = React.memo(() => {
             ? 'tasks'
             : '');
         if (viewType && viewType !== 'document') {
-          const state = app.plugins.getViewPluginState(viewType);
+          const state = app.extensions.getViewExtensionState(viewType);
           if (state.state === 'deleted') {
             closeTabInPane(paneId, tab.id);
           }
         }
       }
     }
-  }, [panes, app.plugins, closeTabInPane]);
+  }, [panes, app.extensions, closeTabInPane]);
 
   const dockItems = useSidebarDockStore((s) => s.items);
   const syncExtensionTabs = useSidebarDockStore((s) => s.syncExtensionTabs);
@@ -780,14 +780,14 @@ export const WindowHeader: React.FC = React.memo(() => {
           : '');
 
       if (viewType && viewType !== 'document') {
-        const pluginState = app.plugins.getViewPluginState(viewType);
-        if (pluginState.state === 'disabled') {
+        const extState = app.extensions.getViewExtensionState(viewType);
+        if (extState.state === 'disabled') {
           return <Alert02Icon size={13} className="shrink-0 text-amber-400" />;
         }
-        if (pluginState.state === 'deleted') {
+        if (extState.state === 'deleted') {
           return null;
         }
-        const regView = pluginState.state === 'active' ? pluginState.view : app.views.getView(viewType);
+        const regView = extState.state === 'active' ? extState.view : app.views.getView(viewType);
         if (regView?.icon) {
           if (React.isValidElement(regView.icon)) {
             return React.cloneElement(regView.icon as React.ReactElement<any>, {
@@ -820,7 +820,7 @@ export const WindowHeader: React.FC = React.memo(() => {
 
       return null;
     },
-    [tabDecorators, documents, app.views, app.plugins]
+    [tabDecorators, documents, app.views, app.extensions]
   );
 
   const getTabDisplayTitle = useCallback(
@@ -909,10 +909,9 @@ export const WindowHeader: React.FC = React.memo(() => {
         (t) =>
           t.id === item.id ||
           t.id === item.viewType ||
-          t.id.endsWith(`:${item.id}`) ||
-          (item.id.includes(':') && t.id === item.id.split(':')[1])
+          (item.viewType && t.id.includes(item.viewType))
       );
-      if (extTab?.icon) {
+      if (extTab && extTab.icon) {
         if (React.isValidElement(extTab.icon)) {
           return React.cloneElement(extTab.icon as React.ReactElement<any>, {
             size: 14,
@@ -927,8 +926,8 @@ export const WindowHeader: React.FC = React.memo(() => {
         (item.id.startsWith('view:') ? item.id.slice(5) : item.id);
 
       if (viewType && viewType !== 'document') {
-        const pluginState = app.plugins.getViewPluginState(viewType);
-        const regView = pluginState.state === 'active' ? pluginState.view : app.views.getView(viewType);
+        const extState = app.extensions.getViewExtensionState(viewType);
+        const regView = extState.state === 'active' ? extState.view : app.views.getView(viewType);
         if (regView?.icon) {
           if (React.isValidElement(regView.icon)) {
             return React.cloneElement(regView.icon as React.ReactElement<any>, {
@@ -943,7 +942,7 @@ export const WindowHeader: React.FC = React.memo(() => {
 
       return <Folder01Icon size={14} />;
     },
-    [leftTabs, rightTabs, app.views, app.plugins]
+    [leftTabs, rightTabs, app.views, app.extensions]
   );
 
   const getDockItemTitle = useCallback(

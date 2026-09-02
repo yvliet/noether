@@ -136,6 +136,8 @@ export class ExtensionManager {
       const instance = new Constructor(this.app, manifest);
       await instance.onload();
       this.instances.set(extensionId, instance);
+      this.app.events.emit('extension:loaded', { extensionId });
+      this.app.events.emit('plugin:loaded', { pluginId: extensionId });
 
       if (manifest.isCore) {
         this.disabledCoreExtensionIds.delete(extensionId);
@@ -144,6 +146,7 @@ export class ExtensionManager {
       }
 
       this.saveConfig();
+      this.app.events.emit('extension:enabled', { extensionId });
       this.app.events.emit('plugin:enabled', { pluginId: extensionId });
       this.recomputeSnapshot();
       this.notify();
@@ -178,6 +181,8 @@ export class ExtensionManager {
       instance.unload();
       this.instances.delete(extensionId);
       this.externalLoader.removeExtensionStyle(extensionId);
+      this.app.events.emit('extension:unloaded', { extensionId });
+      this.app.events.emit('plugin:unloaded', { pluginId: extensionId });
 
       if (manifest?.isCore) {
         this.disabledCoreExtensionIds.add(extensionId);
@@ -186,6 +191,7 @@ export class ExtensionManager {
       }
 
       this.saveConfig();
+      this.app.events.emit('extension:disabled', { extensionId });
       this.app.events.emit('plugin:disabled', { pluginId: extensionId });
       this.recomputeSnapshot();
       this.notify();

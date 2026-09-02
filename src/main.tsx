@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { appInstance, bindFlintStores } from '@/core/app/FlintApp';
-import { registerAllCoreExtensions } from '@/plugins/core';
+import { registerAllCoreExtensions } from '@/extensions/core';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useContextMenuStore } from '@/store/contextMenuStore';

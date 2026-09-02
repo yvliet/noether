@@ -90,8 +90,8 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
       (item.id.startsWith('view:') ? item.id.slice(5) : item.id);
 
     if (viewType && viewType !== 'document') {
-      const pluginState = app.plugins.getViewPluginState(viewType);
-      const regView = pluginState.state === 'active' ? pluginState.view : app.views.getView(viewType);
+      const extState = app.extensions.getViewExtensionState(viewType);
+      const regView = extState.state === 'active' ? extState.view : app.views.getView(viewType);
       if (regView?.icon) {
         if (React.isValidElement(regView.icon)) {
           return React.cloneElement(regView.icon as React.ReactElement<any>, {

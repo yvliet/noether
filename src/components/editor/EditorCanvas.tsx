@@ -8,7 +8,7 @@ import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
-import { useFlintApp, usePluginList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders } from '@/core/app/AppContext';
+import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders } from '@/core/app/AppContext';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked } from '@/lib/db/documents';
 import { DocumentProperties } from '@/types';
 import {
@@ -82,7 +82,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
 
   const app = useFlintApp();
-  usePluginList(); // Subscribe to reactive plugin state changes
+  useExtensionList(); // Subscribe to reactive extension state changes
   const documentHeaders = useDocumentHeaders();
   const documentFooters = useDocumentFooters();
   const hasActiveHeaders = documentHeaders.length > 0;

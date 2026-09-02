@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useFlintApp, useSidebarTabs, useViews, usePluginList } from '@/core/app/AppContext';
+import { useFlintApp, useSidebarTabs, useViews, useExtensionList } from '@/core/app/AppContext';
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 
 const LazyDisabledExtensionView = React.lazy(() =>
@@ -15,7 +15,7 @@ interface SidebarDockPaneProps {
 export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zone }) => {
   const app = useFlintApp();
   useViews(); // Reactive updates on view registrations
-  usePluginList(); // Reactive updates on plugin state changes
+  useExtensionList(); // Reactive updates on extension state changes
   const items = useSidebarDockStore((s) => s.items);
   const activeItemId = useSidebarDockStore((s) => s.activeItemByZone[zone]);
   const activeLeftView = useWorkspaceStore((s) => s.activeLeftView);
@@ -127,11 +127,11 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
     (activeItem.id.startsWith('view:') ? activeItem.id.slice(5) : activeItem.id);
 
   if (viewType && viewType !== 'document') {
-    const pluginState = app.plugins.getViewPluginState(viewType);
-    if (pluginState.state === 'active') {
+    const extState = app.extensions.getViewExtensionState(viewType);
+    if (extState.state === 'active') {
       return (
         <div data-sidebar-dock-pane="true" className="flex-1 flex flex-col h-full overflow-hidden relative">
-          {pluginState.view.render({
+          {extState.view.render({
             tabId: activeItem.id,
             documentId: activeItem.documentId || `__${viewType}__`,
             app,
@@ -140,14 +140,14 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
         </div>
       );
     }
-    if (pluginState.state === 'disabled') {
+    if (extState.state === 'disabled') {
       return (
         <div data-sidebar-dock-pane="true" className="flex-1 flex flex-col h-full overflow-hidden relative">
           <React.Suspense fallback={null}>
             <LazyDisabledExtensionView
-              extensionId={pluginState.pluginId}
-              extensionName={pluginState.manifest.name}
-              viewTitle={pluginState.viewTitle}
+              extensionId={extState.extensionId || extState.pluginId}
+              extensionName={extState.manifest.name}
+              viewTitle={extState.viewTitle}
               tabId={activeItem.id}
             />
           </React.Suspense>

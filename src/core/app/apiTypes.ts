@@ -180,11 +180,17 @@ export interface WorkspaceAPI {
   openViewTab(viewType: string, title?: string, icon?: React.ReactNode): void;
 
   /**
-   * Opens the plugin documentation viewer for a specific plugin.
+   * Opens the extension documentation viewer for a specific extension.
    *
-   * @param pluginId - The plugin's unique identifier.
+   * @param extensionId - The extension's unique identifier.
    * @param title - Optional display title for the tab.
    * @since 0.2.0
+   */
+  openExtensionDocTab(extensionId: string, title?: string): void;
+
+  /**
+   * Backwards-compatibility alias for `openExtensionDocTab`.
+   * @deprecated Use `openExtensionDocTab` instead.
    */
   openPluginDocTab(pluginId: string, title?: string): void;
 

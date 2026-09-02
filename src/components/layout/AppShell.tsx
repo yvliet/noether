@@ -25,7 +25,7 @@ import { FlintLogoIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { appInstance } from '@/core/app/FlintApp';
-import { AppProvider, useFlintApp, useViews, useModals, usePluginList } from '@/core/app/AppContext';
+import { AppProvider, useFlintApp, useViews, useModals, useExtensionList } from '@/core/app/AppContext';
 import { platform } from '@/lib/platform/platformAdapter';
 
 const LazyDisabledExtensionView = React.lazy(() =>
@@ -57,29 +57,29 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
 
   const currentTab = useMemo(() => tabs.find((t) => t.id === activeTabId), [tabs, activeTabId]);
   const currentViewType = currentTab?.view_type || currentTab?.view_mode || (paneId === 'main' ? mainViewMode : 'document');
-  const pluginState = currentViewType && currentViewType !== 'document'
-    ? app.plugins.getViewPluginState(currentViewType)
+  const extensionState = currentViewType && currentViewType !== 'document'
+    ? app.extensions.getViewExtensionState(currentViewType)
     : { state: 'not_plugin' as const };
 
-  // If the plugin has been completely deleted from files, automatically delete the tab
+  // If the extension has been completely deleted from files, automatically delete the tab
   useEffect(() => {
-    if (pluginState.state === 'deleted' && currentTab) {
+    if (extensionState.state === 'deleted' && currentTab) {
       closeTabInPane(paneId, currentTab.id);
     }
-  }, [pluginState.state, currentTab, closeTabInPane, paneId]);
+  }, [extensionState.state, currentTab, closeTabInPane, paneId]);
 
-  if (pluginState.state === 'active') {
+  if (extensionState.state === 'active') {
     return (
       <div
         className="flex-1 h-full flex flex-col min-w-0 overflow-hidden"
         onClick={() => setFocusedPane(paneId)}
       >
-        {pluginState.view.render({ tabId: currentTab?.id, documentId: currentTab?.document_id, app })}
+        {extensionState.view.render({ tabId: currentTab?.id, documentId: currentTab?.document_id, app })}
       </div>
     );
   }
 
-  if (pluginState.state === 'disabled') {
+  if (extensionState.state === 'disabled') {
     return (
       <div
         className="flex-1 h-full flex flex-col min-w-0 overflow-hidden"
@@ -87,9 +87,9 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
       >
         <React.Suspense fallback={null}>
           <LazyDisabledExtensionView
-            extensionId={pluginState.pluginId}
-            extensionName={pluginState.manifest.name}
-            viewTitle={pluginState.viewTitle}
+            extensionId={extensionState.extensionId || extensionState.pluginId}
+            extensionName={extensionState.manifest.name}
+            viewTitle={extensionState.viewTitle}
             tabId={currentTab?.id}
           />
         </React.Suspense>
@@ -152,7 +152,7 @@ const TilingLayoutRenderer: React.FC<TilingLayoutRendererProps> = React.memo(({ 
 
 const MainViewport: React.FC = React.memo(() => {
   useViews(); // Ensure reactive update when views are registered
-  usePluginList(); // Ensure reactive update when plugins are enabled/disabled
+  useExtensionList(); // Ensure reactive update when extensions are enabled/disabled
   const layoutTree = useWorkspaceStore((s) => s.layoutTree);
   const isRightSidebarOpen = useWorkspaceStore((s) => s.isRightSidebarOpen);
   const mainRef = React.useRef<HTMLElement>(null);

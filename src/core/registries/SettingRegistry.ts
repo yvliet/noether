@@ -1,11 +1,11 @@
-import { PluginSettingTab, Disposable } from '../extensions/types';
+import { ExtensionSettingTab, Disposable } from '../extensions/types';
 
 export class SettingRegistry {
-  private tabs: Map<string, PluginSettingTab> = new Map();
+  private tabs: Map<string, ExtensionSettingTab> = new Map();
   private listeners: Set<() => void> = new Set();
-  private cachedTabs: PluginSettingTab[] = [];
+  private cachedTabs: ExtensionSettingTab[] = [];
 
-  public registerSettingTab(tab: PluginSettingTab): Disposable {
+  public registerSettingTab(tab: ExtensionSettingTab): Disposable {
     this.tabs.set(tab.id, tab);
     this.recomputeCache();
     this.notify();
@@ -24,11 +24,11 @@ export class SettingRegistry {
     }
   }
 
-  public getTabs(): PluginSettingTab[] {
+  public getTabs(): ExtensionSettingTab[] {
     return this.cachedTabs;
   }
 
-  public getTab(id: string): PluginSettingTab | undefined {
+  public getTab(id: string): ExtensionSettingTab | undefined {
     return this.tabs.get(id);
   }
 

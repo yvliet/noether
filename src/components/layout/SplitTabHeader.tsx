@@ -99,14 +99,14 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           : '');
 
       if (viewType && viewType !== 'document') {
-        const pluginState = app.plugins.getViewPluginState(viewType);
-        if (pluginState.state === 'disabled') {
+        const extState = app.extensions.getViewExtensionState(viewType);
+        if (extState.state === 'disabled') {
           return <Alert02Icon size={13} className="shrink-0 text-amber-400" />;
         }
-        if (pluginState.state === 'deleted') {
+        if (extState.state === 'deleted') {
           return null;
         }
-        const regView = pluginState.state === 'active' ? pluginState.view : app.views.getView(viewType);
+        const regView = extState.state === 'active' ? extState.view : app.views.getView(viewType);
         if (regView?.icon) {
           if (React.isValidElement(regView.icon)) {
             return React.cloneElement(regView.icon as React.ReactElement<any>, {
@@ -139,7 +139,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
       return null;
     },
-    [tabDecorators, documents, app.views, app.plugins]
+    [tabDecorators, documents, app.views, app.extensions]
   );
 
   const getTabDisplayTitle = useCallback(
