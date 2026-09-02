@@ -744,37 +744,79 @@ kbd,
   margin: 1.75rem 0;
 }
 
-/* Task lists */
+/* Task lists
+ * WHY THIS, NOT THAT:
+ * TipTap renders task items as <li data-type="taskItem"><label><input type="checkbox">...</label><div><p>...</p></div></li>.
+ * When ProseMirror paragraphs have default vertical margins (0.5rem) and the label has uncoordinated top margins,
+ * the text and checkbox become vertically misaligned (the text hangs noticeably lower than the checkbox).
+ * To achieve exact Y-axis centering between the checkbox and the first line of text across all editor font sizes:
+ * 1) We zero out the margin on the task item's first paragraph (<p> inside <div>).
+ * 2) We give the <label> container an explicit height matching the editor's line-height (1.75em for main ProseMirror,
+ *    1.6em for quicknotes) and use flex centering (align-items: center).
+ * 3) We retain align-items: flex-start on the <li> so that multi-line wrapped tasks keep the checkbox anchored
+ *    to the first line of text rather than drifting to the vertical middle of the entire paragraph.
+ */
 ul[data-type="taskList"] {
   list-style: none;
   padding: 0;
   margin: 0.5rem 0;
 }
 
-ul[data-type="taskList"] li {
+ul[data-type="taskList"] li,
+li[data-type="taskItem"] {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   margin-bottom: 0.35rem;
 }
 
-ul[data-type="taskList"] li > label {
+ul[data-type="taskList"] li > label,
+li[data-type="taskItem"] > label {
   user-select: none;
-  margin-top: 0.25rem;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.75em;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-ul[data-type="taskList"] li > label input[type="checkbox"] {
+ul[data-type="taskList"] li > label input[type="checkbox"],
+li[data-type="taskItem"] > label input[type="checkbox"] {
   cursor: pointer;
   accent-color: #e5e7eb;
   width: 14px;
   height: 14px;
+  margin: 0;
+  padding: 0;
+  display: block;
 }
 
-ul[data-type="taskList"] li > div {
+ul[data-type="taskList"] li > label > span,
+li[data-type="taskItem"] > label > span {
+  display: none;
+}
+
+ul[data-type="taskList"] li > div,
+li[data-type="taskItem"] > div {
   flex: 1;
+  min-width: 0;
 }
 
-ul[data-type="taskList"] li[data-checked="true"] > div {
+ul[data-type="taskList"] li > div > p,
+li[data-type="taskItem"] > div > p {
+  margin: 0;
+}
+
+ul[data-type="taskList"] li > div > p + p,
+li[data-type="taskItem"] > div > p + p {
+  margin-top: 0.35rem;
+}
+
+ul[data-type="taskList"] li[data-checked="true"] > div,
+li[data-type="taskItem"][data-checked="true"] > div {
   text-decoration: line-through;
   color: #666666;
 }
@@ -823,16 +865,57 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   margin: 0.3rem 0;
 }
 
-.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li {
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li,
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
   margin: 0.25rem 0;
 }
 
-.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > label {
-  margin-top: 0.2rem;
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > label,
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] > label {
   user-select: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1.6em;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"],
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] > label input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: #e5e7eb;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  padding: 0;
+  display: block;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > label > span,
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] > label > span {
+  display: none;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > div,
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > div > p,
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] > div > p {
+  margin: 0;
+}
+
+.quicknote-prosemirror.ProseMirror ul[data-type="taskList"] li > div > p + p,
+.quicknote-prosemirror.ProseMirror li[data-type="taskItem"] > div > p + p {
+  margin-top: 0.25rem;
 }
 
 /* Obsidian Live Preview: Heading and Blockquote indicators */

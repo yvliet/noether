@@ -324,7 +324,7 @@ function renderTipTapNodesToHtml(nodes: any[]): string {
       for (const item of node.content || []) {
         const checked = Boolean(item.attrs?.checked);
         const itemText = (item.content || []).map((c: any) => (c.content || []).map((t: any) => t.text || '').join('')).join('');
-        html += `<li class="flex items-start gap-1.5"><input type="checkbox" ${checked ? 'checked' : ''} disabled class="mt-0.5 accent-[var(--flint-accent)] rounded shrink-0" /><span class="${checked ? 'line-through text-[#666]' : ''}">${renderInlineFormatting(itemText)}</span></li>`;
+        html += `<li class="flex items-start gap-1.5"><span class="flex items-center justify-center h-4 shrink-0"><input type="checkbox" ${checked ? 'checked' : ''} disabled class="accent-[var(--flint-accent)] rounded m-0" /></span><span class="${checked ? 'line-through text-[#666]' : ''}">${renderInlineFormatting(itemText)}</span></li>`;
       }
       html += '</ul>';
     } else if (node.type === 'table') {

@@ -66,12 +66,14 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
               if (item.type === 'task') {
                 return (
                   <li key={idx} style={indentPadding} className="flex items-start gap-2 list-none">
-                    <input
-                      type="checkbox"
-                      checked={item.checked}
-                      readOnly
-                      className="mt-0.5 cursor-default accent-[var(--flint-accent)] rounded shrink-0"
-                    />
+                    <span className="flex items-center justify-center h-[1.6em] shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={item.checked}
+                        readOnly
+                        className="m-0 cursor-default accent-[var(--flint-accent)] rounded"
+                      />
+                    </span>
                     <span
                       className={`flex-1 ${item.checked ? 'line-through text-[#666666]' : ''}`}
                       dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }}

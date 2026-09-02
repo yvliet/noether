@@ -656,7 +656,12 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       SearchAndReplace,
       StarterKit.configure({
         heading: { levels: [1, 2, 3] },
-        hardBreak: false,
+        // WHY THIS, NOT THAT:
+        // Enable hardBreak so that Shift-Enter inserts inline <br> breaks with normal line-height
+        // instead of splitting blocks into new paragraphs (which have 0.5rem paragraph margins).
+        hardBreak: {
+          keepMarks: true,
+        },
         bold: false,
         italic: false,
         strike: false,

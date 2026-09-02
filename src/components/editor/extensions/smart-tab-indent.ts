@@ -12,6 +12,13 @@ export function getIndentSize(): number {
 }
 
 /**
+ * Returns the text of a parent textblock preserving newlines (\n) across hardBreak nodes.
+ */
+export function getBlockText(parent: any): string {
+  return parent.textBetween ? parent.textBetween(0, parent.content.size, '\n', '\n') : (parent.textContent || '');
+}
+
+/**
  * Calculates absolute document position from parent textblock start and string character offset,
  * accounting for inline child nodes (text with marks, hard breaks, etc.).
  */
@@ -110,7 +117,7 @@ export function indentRange(editor: any, from: number, to: number, indentSize: n
     if (parent && parent.isTextblock) {
       const blockStart = $firstLine.start();
       const parentOffset = firstLineStart - blockStart;
-      const blockText = parent.textContent;
+      const blockText = getBlockText(parent);
       const nextNewline = blockText.indexOf('\n', parentOffset);
       const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
       const lineText = blockText.slice(parentOffset, lineEndOffset);
@@ -219,7 +226,7 @@ export function outdentRange(editor: any, from: number, to: number, indentSize: 
       if (parent && parent.isTextblock) {
         const blockStart = $firstLine.start();
         const parentOffset = mappedFirstLineStart - blockStart;
-        const blockText = parent.textContent;
+        const blockText = getBlockText(parent);
         const nextNewline = blockText.indexOf('\n', parentOffset);
         const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
         const lineText = blockText.slice(parentOffset, lineEndOffset);
@@ -265,7 +272,7 @@ export function handleSmartHome(editor: any, isShift: boolean): boolean {
   const parent = $head.parent;
   const parentOffset = $head.parentOffset;
   const blockStart = $head.start();
-  const blockText = parent.textContent;
+  const blockText = getBlockText(parent);
 
   // Find line boundaries within the textblock
   const lineStartOffset = parentOffset === 0 ? 0 : blockText.lastIndexOf('\n', parentOffset - 1) + 1;
@@ -277,6 +284,14 @@ export function handleSmartHome(editor: any, isShift: boolean): boolean {
   const indentMatch = lineText.match(/^[ \t]+/);
   const indentLen = indentMatch ? indentMatch[0].length : 0;
 
+  // WHY THIS, NOT THAT:
+  // If this line has NO indentation, delegate to native browser Home / Shift+Home.
+  // The browser natively navigates visual line boxes (handling both wrapped text and hard breaks <br>)
+  // without jumping to or selecting the preceding lines in the paragraph.
+  if (indentLen === 0) {
+    return false;
+  }
+
   const trueLineStartOffset = lineStartOffset;
   const firstNonWsOffset = lineStartOffset + indentLen;
 
@@ -287,22 +302,17 @@ export function handleSmartHome(editor: any, isShift: boolean): boolean {
 
   let targetPos: number;
 
-  if (indentLen === 0) {
-    // No indent on this line -> always jump to start of line
-    targetPos = trueLineStartPos;
+  // There is an indent:
+  // If not currently at firstNonWsPos, go to firstNonWsPos (after tabs/indents)
+  // If already at firstNonWsPos, go to trueLineStartPos (true start of line)
+  if (currentPos !== firstNonWsPos) {
+    targetPos = firstNonWsPos;
   } else {
-    // There is an indent:
-    // If not currently at firstNonWsPos, go to firstNonWsPos (after tabs/indents)
-    // If already at firstNonWsPos, go to trueLineStartPos (true start of line)
-    if (currentPos !== firstNonWsPos) {
-      targetPos = firstNonWsPos;
-    } else {
-      targetPos = trueLineStartPos;
-    }
+    targetPos = trueLineStartPos;
   }
 
   // If already at targetPos and line has indent, toggle to the other position
-  if (currentPos === targetPos && indentLen > 0) {
+  if (currentPos === targetPos) {
     if (targetPos === trueLineStartPos) {
       targetPos = firstNonWsPos;
     } else {
@@ -338,7 +348,7 @@ function handleSmartBackspace(editor: any): boolean {
   const parentOffset = $from.parentOffset;
   if (parentOffset === 0) return false;
 
-  const blockText = parent.textContent;
+  const blockText = getBlockText(parent);
   const lineStartOffset = blockText.lastIndexOf('\n', parentOffset - 1) + 1;
   const textBeforeOnLine = blockText.slice(lineStartOffset, parentOffset);
 
@@ -400,7 +410,7 @@ function handleSmartDelete(editor: any): boolean {
 
   const parent = $from.parent;
   const parentOffset = $from.parentOffset;
-  const blockText = parent.textContent;
+  const blockText = getBlockText(parent);
 
   const nextNewline = blockText.indexOf('\n', parentOffset);
   const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
@@ -466,7 +476,7 @@ export const SmartTabIndent = Extension.create({
         // 4. In textblock with collapsed cursor: calculate spaces to next tab stop
         if ($from.parent.isTextblock) {
           const parentOffset = $from.parentOffset;
-          const blockText = $from.parent.textContent;
+          const blockText = $from.parent.textBetween ? $from.parent.textBetween(0, $from.parent.content.size, '\n', '\n') : $from.parent.textContent;
           const lineStartOffset = parentOffset === 0 ? 0 : blockText.lastIndexOf('\n', parentOffset - 1) + 1;
           const nextNewline = blockText.indexOf('\n', parentOffset);
           const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
@@ -499,7 +509,7 @@ export const SmartTabIndent = Extension.create({
 
         if (empty && $from.parent.isTextblock) {
           const parentOffset = $from.parentOffset;
-          const blockText = $from.parent.textContent;
+          const blockText = getBlockText($from.parent);
           const lineStartOffset = parentOffset === 0 ? 0 : blockText.lastIndexOf('\n', parentOffset - 1) + 1;
           const nextNewline = blockText.indexOf('\n', parentOffset);
           const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;

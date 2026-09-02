@@ -521,6 +521,10 @@ export function jsonToMarkdown(
         return text;
       }
 
+      if (node.type === 'hardBreak') {
+        return '\n';
+      }
+
       if (node.type === 'mathChip') {
         const latex = node.attrs?.latex || '';
         return node.attrs?.display === 'block' ? `\n$$\n${latex}\n$$\n` : `$${latex}$`;

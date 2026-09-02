@@ -121,7 +121,7 @@ export const NumberedListBehavior = Extension.create({
         if (parent.type.name !== 'paragraph') return false;
 
         const blockStart = $from.start();
-        const blockText = parent.textContent;
+        const blockText = parent.textBetween ? parent.textBetween(0, parent.content.size, '\n', '\n') : parent.textContent;
         const parentOffset = $from.parentOffset;
 
         const lineStartOffset = parentOffset === 0 ? 0 : blockText.lastIndexOf('\n', parentOffset - 1) + 1;
@@ -246,7 +246,7 @@ export const NumberedListBehavior = Extension.create({
 
         const blockStart = $from.start();
         const blockEnd = $from.end();
-        const blockText = parent.textContent;
+        const blockText = parent.textBetween ? parent.textBetween(0, parent.content.size, '\n', '\n') : parent.textContent;
         const parentOffset = $from.parentOffset;
 
         // Line boundaries inside the paragraph
@@ -451,102 +451,52 @@ export const NumberedListBehavior = Extension.create({
           return false;
         }
 
-        const blockStart = $from.start();
-        const blockText = parent.textContent;
+        const blockText = parent.textBetween ? parent.textBetween(0, parent.content.size, '\n', '\n') : parent.textContent;
         const parentOffset = $from.parentOffset;
 
         const lineStartOffset = parentOffset === 0 ? 0 : blockText.lastIndexOf('\n', parentOffset - 1) + 1;
         const nextNewline = blockText.indexOf('\n', parentOffset);
         const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
         const lineText = blockText.slice(lineStartOffset, lineEndOffset);
-        const col = parentOffset - lineStartOffset;
+
+        const hardBreakType = state.schema.nodes.hardBreak;
 
         // 2. Shift-Enter on a List item (Number, Letter a./aa., or Bullet/Dash):
+        // WHY THIS, NOT THAT:
+        // Use an inline hardBreak node (<br>) plus indent spaces rather than creating a new paragraph block.
+        // Creating a new paragraph introduces full paragraph margins (0.5rem top/bottom).
+        // Using hardBreak gives the exact line-height spacing ("usual space when text overflows normally").
         const listMatch = lineText.match(/^([ \t]*)(\d+\.|[a-zA-Z]{1,2}\.|[-*+])( *)(.*)$/);
-        if (listMatch) {
+        if (listMatch && hardBreakType) {
           const leadingIndent = listMatch[1];
           const marker = listMatch[2];
           // Total width in spaces: leading spaces + marker length + 1 space
           const spaceWidth = leadingIndent.length + marker.length + 1;
           const indentSpaces = ' '.repeat(spaceWidth);
-          const textAfterCursor = lineText.slice(col);
 
-          if (col === lineEndOffset) {
-            const insertPos = $from.after();
-            const nextContent = `${indentSpaces}${textAfterCursor}`;
-            const newParagraph = state.schema.nodes.paragraph.create(
-              null,
-              state.schema.text(nextContent)
-            );
-            let tr = state.tr.insert(insertPos, newParagraph);
-            const cursorTarget = insertPos + 1 + indentSpaces.length;
-            tr = tr.setSelection(TextSelection.create(tr.doc, cursorTarget)).scrollIntoView();
-            dispatch(tr);
-            return true;
-          } else {
-            const linePosEnd = blockStart + lineEndOffset;
-            let tr = state.tr.delete($from.pos, linePosEnd);
-            const afterPos = tr.mapping.map($from.after());
-            const nextContent = `${indentSpaces}${textAfterCursor}`;
-            const newParagraph = state.schema.nodes.paragraph.create(
-              null,
-              state.schema.text(nextContent)
-            );
-            tr = tr.insert(afterPos, newParagraph);
-            const cursorTarget = afterPos + 1 + indentSpaces.length;
-            tr = tr.setSelection(TextSelection.create(tr.doc, cursorTarget)).scrollIntoView();
-            dispatch(tr);
-            return true;
+          let tr = state.tr.replaceSelectionWith(hardBreakType.create());
+          if (indentSpaces.length > 0) {
+            tr = tr.insertText(indentSpaces);
           }
+          dispatch(tr.scrollIntoView());
+          return true;
         }
 
         // 3. Shift-Enter on an already indented continuation line:
         const indentMatch = lineText.match(/^([ \t]+)(.*)$/);
-        if (indentMatch) {
+        if (indentMatch && hardBreakType) {
           const indentSpaces = indentMatch[1];
-          const textAfterCursor = lineText.slice(col);
-
-          if (col === lineEndOffset) {
-            const insertPos = $from.after();
-            const nextContent = `${indentSpaces}${textAfterCursor}`;
-            const newParagraph = state.schema.nodes.paragraph.create(
-              null,
-              state.schema.text(nextContent)
-            );
-            let tr = state.tr.insert(insertPos, newParagraph);
-            const cursorTarget = insertPos + 1 + indentSpaces.length;
-            tr = tr.setSelection(TextSelection.create(tr.doc, cursorTarget)).scrollIntoView();
-            dispatch(tr);
-            return true;
-          } else {
-            const linePosEnd = blockStart + lineEndOffset;
-            let tr = state.tr.delete($from.pos, linePosEnd);
-            const afterPos = tr.mapping.map($from.after());
-            const nextContent = `${indentSpaces}${textAfterCursor}`;
-            const newParagraph = state.schema.nodes.paragraph.create(
-              null,
-              state.schema.text(nextContent)
-            );
-            tr = tr.insert(afterPos, newParagraph);
-            const cursorTarget = afterPos + 1 + indentSpaces.length;
-            tr = tr.setSelection(TextSelection.create(tr.doc, cursorTarget)).scrollIntoView();
-            dispatch(tr);
-            return true;
+          let tr = state.tr.replaceSelectionWith(hardBreakType.create());
+          if (indentSpaces.length > 0) {
+            tr = tr.insertText(indentSpaces);
           }
-        }
-
-        // 4. Default plain paragraph Shift-Enter -> new paragraph
-        const insertPos = $from.after();
-        const newParagraph = state.schema.nodes.paragraph.createAndFill();
-        if (newParagraph) {
-          let tr = state.tr.insert(insertPos, newParagraph);
-          const cursorTarget = insertPos + 1;
-          tr = tr.setSelection(TextSelection.create(tr.doc, cursorTarget)).scrollIntoView();
-          dispatch(tr);
+          dispatch(tr.scrollIntoView());
           return true;
         }
 
-        return false;
+        // 4. Default plain paragraph / task list item / blockquote Shift-Enter -> standard hard break:
+        // Produces the exact single-block line-height spacing without paragraph margins.
+        return this.editor.commands.setHardBreak();
       },
     };
   },

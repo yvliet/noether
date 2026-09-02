@@ -197,12 +197,14 @@ export const TasksView: React.FC = React.memo(() => {
                   className="group flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-[#1f1f1f]/80 transition-colors border border-transparent hover:border-[#282828]"
                 >
                   {/* Task Checkbox */}
-                  <input
-                    type="checkbox"
-                    checked={t.completed}
-                    onChange={() => handleToggle(t.document_id, t.text, t.completed)}
-                    className="mt-1 w-4 h-4 rounded cursor-pointer accent-[#e5e7eb] shrink-0"
-                  />
+                  <div className="flex items-center justify-center h-[21px] shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={t.completed}
+                      onChange={() => handleToggle(t.document_id, t.text, t.completed)}
+                      className="w-4 h-4 rounded cursor-pointer accent-[#e5e7eb] m-0"
+                    />
+                  </div>
 
                   {/* Task Content and Backlink Badge */}
                   <div className="flex-1 min-w-0 flex flex-col sm:flex-row sm:items-baseline justify-between gap-1.5">
