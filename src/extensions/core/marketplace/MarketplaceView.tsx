@@ -15,12 +15,14 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
   Store01Icon,
+  Folder01Icon,
 } from '@/components/common/Icons';
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { renderPropertyIcon } from '@/extensions/core/properties/propertyIcons';
 import { usePropertiesSettings } from '@/extensions/core/properties/propertiesSettings';
 import { CascadeIcon } from '@/extensions/core/cascade/cascadeIcons';
+import { folderIconsReadme } from '@/extensions/core/folder-icons/readme';
 
 export interface MarketplaceExtensionItem {
   id: string;
@@ -53,6 +55,19 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     category: 'Productivity',
     featured: true,
     icon: <CascadeIcon size={18} className="text-[#dcddde]" />,
+  },
+  {
+    id: 'flint-folder-icons',
+    name: 'Folder Icons',
+    version: '1.0.0',
+    author: 'Yuliet Li',
+    description: 'Customize folder icons next to chevrons in the file tree with a rich HugeIcons selector, smooth hover transformations, and SQLite persistence.',
+    downloads: '38.4k',
+    stars: 5,
+    category: 'Visualization',
+    featured: true,
+    icon: <Folder01Icon size={18} className="text-[var(--flint-accent,#ea580c)]" />,
+    readme: folderIconsReadme,
   },
 ];
 
