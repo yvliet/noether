@@ -227,7 +227,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   });
 
   const isCanvas = item.doc_type === 'canvas' || item.title.toLowerCase().endsWith('.canvas');
-  const typeBadge = isCanvas ? 'CANVAS' : null;
+  const fileExtMatch = !isFolder && !isCanvas ? item.title.match(/\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a|canvas)$/i) : null;
+  const typeBadge = isCanvas
+    ? 'CANVAS'
+    : (fileExtMatch ? fileExtMatch[1].toUpperCase() : (item.doc_type && item.doc_type !== 'base' ? item.doc_type.toUpperCase() : null));
 
   const sortedChildren = useMemo(() => {
     const children = allDocs.filter((d) => d.parent_id === item.id);

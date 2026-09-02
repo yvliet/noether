@@ -140,37 +140,13 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
           {/* Optional Suffix */}
           {suffix}
 
-          {/* Optional Type Badge (e.g. CANVAS) */}
+          {/* Optional Type Badge (e.g. CANVAS, PNG) */}
           {typeBadge && !isEditing && (
-            <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-neutral-800 text-neutral-400 border border-neutral-700 tracking-wider shrink-0">
+            <span className="text-[10px] font-mono text-[var(--flint-text-muted,#777777)] uppercase tracking-wider shrink-0 ml-1.5 select-none">
               {typeBadge}
             </span>
           )}
         </div>
-
-        {/* Hover Action Buttons on Right */}
-        {!isEditing && !isDisabled && actions.length > 0 && (
-          <div className="hidden group-hover:flex items-center gap-0.5 shrink-0 ml-1.5">
-            {actions.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                title={action.title}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  action.onClick(e);
-                }}
-                className={`p-0.5 rounded hover:bg-[var(--flint-bg-card-hover,#333333)] ${
-                  action.isDanger
-                    ? 'text-[var(--flint-text-muted,#777777)] hover:text-rose-400'
-                    : 'text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)]'
-                } ${action.className || ''}`}
-              >
-                {action.icon}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Expanded Children Container with Guideline */}

@@ -2065,4 +2065,83 @@ math-field::part(content) {
   transform: scale(0.96);
 }
 
+/* ==========================================================================
+   Flint Embeds & Transclusions (Notes, Images, Audio, Video, PDF, YouTube)
+   Zero micro-interaction transition latency (Snappy native desktop feel)
+   ========================================================================== */
 
+.flint-embed-wrapper {
+  display: block;
+  width: 100%;
+  clear: both;
+}
+
+.flint-embed-card {
+  transition: none !important;
+}
+
+.flint-embed-header {
+  transition: none !important;
+}
+
+.flint-embed-body {
+  transition: none !important;
+}
+
+.theme-light .flint-embed-card {
+  background-color: #f6f6f7 !important;
+  border-color: #e2e2e4 !important;
+}
+
+.theme-light .flint-embed-header {
+  background-color: #eaecef !important;
+  border-color: #e2e2e4 !important;
+  color: #222222 !important;
+}
+
+.theme-light .flint-embed-body {
+  color: #333333 !important;
+}
+
+.theme-light .flint-embed-action {
+  background-color: #e4e4e7 !important;
+  color: #3f3f46 !important;
+}
+
+.theme-light .flint-embed-action:hover {
+  background-color: #d4d4d8 !important;
+  color: #18181b !important;
+}
+
+.flint-media-image {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  cursor: zoom-in;
+}
+
+.flint-embed-media.flint-image-embed {
+  display: inline-block;
+  line-height: 0;
+  vertical-align: top;
+}
+
+.flint-embed-media.flint-image-embed img {
+  display: block;
+  margin: 0;
+  cursor: zoom-in;
+}
+
+/* Eliminate phantom line box and excess margins in ProseMirror paragraphs hosting embeds */
+.ProseMirror p:has(.flint-embed-wrapper) {
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.25rem !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+}
+
+.ProseMirror p:has(.flint-embed-wrapper) > .ProseMirror-trailingBreak,
+.flint-embed-wrapper ~ .ProseMirror-trailingBreak,
+.flint-embed-wrapper + .ProseMirror-trailingBreak {
+  display: none !important;
+}

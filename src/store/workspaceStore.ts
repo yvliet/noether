@@ -214,6 +214,12 @@ export interface FolderPickerConfig {
   onCancel?: () => void;
 }
 
+export interface ImageLightboxConfig {
+  isOpen: boolean;
+  src: string;
+  alt?: string;
+}
+
 export interface OpenCustomTabOptions {
   id?: string;
   viewType: string;
@@ -353,6 +359,10 @@ interface WorkspaceState {
   folderPickerPrompt: FolderPickerConfig | null;
   promptFolderSelection: (config: Omit<FolderPickerConfig, 'isOpen'>) => void;
   cancelFolderSelection: () => void;
+
+  imageLightbox: ImageLightboxConfig | null;
+  openImageLightbox: (src: string, alt?: string) => void;
+  closeImageLightbox: () => void;
 
   // Collapse all
   collapseAllCount: number;
@@ -1972,6 +1982,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ folderPickerPrompt: null });
     current?.onCancel?.();
   },
+
+  imageLightbox: null,
+  openImageLightbox: (src, alt = '') => set({ imageLightbox: { isOpen: true, src, alt } }),
+  closeImageLightbox: () => set({ imageLightbox: null }),
 
   collapseAllCount: 0,
   folderOpenState: loadPersistedFolderOpenState(),

@@ -64,6 +64,7 @@ export interface SettingsState {
   newNoteLocation: NewNoteLocation;
   linkFormat: LinkFormat;
   autoUpdateLinks: boolean;
+  attachmentFolder: string;
 
   // Hotkeys
   customHotkeys: Record<string, string>;
@@ -110,6 +111,7 @@ export interface SettingsState {
   setNewNoteLocation: (val: NewNoteLocation) => void;
   setLinkFormat: (val: LinkFormat) => void;
   setAutoUpdateLinks: (val: boolean) => void;
+  setAttachmentFolder: (folder: string) => void;
   setCustomHotkey: (commandId: string, hotkey: string) => void;
   resetCustomHotkey: (commandId: string) => void;
   resetAllHotkeys: () => void;
@@ -164,6 +166,7 @@ export const DEFAULT_SETTINGS = {
   newNoteLocation: 'root' as NewNoteLocation,
   linkFormat: 'shortest' as LinkFormat,
   autoUpdateLinks: true,
+  attachmentFolder: '',
 
   customHotkeys: {} as Record<string, string>,
 };
@@ -448,6 +451,7 @@ export const useSettingsStore = create<SettingsState>()(
       setNewNoteLocation: (newNoteLocation) => set({ newNoteLocation }),
       setLinkFormat: (linkFormat) => set({ linkFormat }),
       setAutoUpdateLinks: (autoUpdateLinks) => set({ autoUpdateLinks }),
+      setAttachmentFolder: (attachmentFolder) => set({ attachmentFolder }),
 
       setCustomHotkey: (commandId, hotkey) =>
         set((state) => ({

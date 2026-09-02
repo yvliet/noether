@@ -5,6 +5,8 @@ import katex from 'katex';
 import { setupMathLive } from './mathlive-setup';
 import { findMathRangeAtPos } from './mathlive-wysiwyg';
 import { getIndentSize } from './smart-tab-indent';
+import { renderEmbedWidget } from '../embed-renderer';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 export const LivePreviewSyntaxPluginKey = new PluginKey('livePreviewSyntax');
 
@@ -15,7 +17,9 @@ const CODE_REGEX = /`([^`\n]+)`/g;
 const STRIKE_REGEX = /~~([^~\n]+)~~/g;
 const HIGHLIGHT_REGEX = /==([^=\n]+)==/g;
 const WIKI_REGEX = /\[\[([^\]\n]+)\]\]/g;
+const WIKI_EMBED_REGEX = /!\[\[([^\]\n]+)\]\]/g;
 const MD_LINK_REGEX = /\[([^\]\n]+)\]\(([^)\n]+)\)/g;
+const MD_EMBED_REGEX = /!\[([^\]\n]*)\]\(([^)\n]+)\)/g;
 const TAG_REGEX = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_\-\/]*)/g;
 const HEX_COLOR_REGEX = /^[0-9a-fA-F]{3,6}$/;
 const BLOCK_MATH_REGEX = /\$\$([\s\S]*?)\$\$/g;
@@ -408,6 +412,9 @@ function scanBlockDecorations(
     WIKI_REGEX.lastIndex = 0;
     let wikiMatch: RegExpExecArray | null;
     while ((wikiMatch = WIKI_REGEX.exec(text)) !== null) {
+      if (wikiMatch.index > 0 && text[wikiMatch.index - 1] === '!') {
+        continue;
+      }
       const matchStart = blockStart + wikiMatch.index;
       const matchEnd = matchStart + wikiMatch[0].length;
       const fullTarget = wikiMatch[1];
@@ -422,10 +429,49 @@ function scanBlockDecorations(
       }
 
       if (isMatchFocused) {
+        // Dim opening brackets [[
         decorations.push(
-          Decoration.inline(matchStart, matchEnd, {
-            class: 'md-syntax-dimmed md-wikilink',
-            'data-wikilink-target': target,
+          Decoration.inline(matchStart, matchStart + 2, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+
+        if (fullTarget.includes('|')) {
+          const pipeOffset = fullTarget.indexOf('|');
+          // Target before pipe
+          decorations.push(
+            Decoration.inline(matchStart + 2, matchStart + 2 + pipeOffset, {
+              class: 'md-wikilink is-focused',
+              'data-wikilink-target': target,
+            })
+          );
+          // Dim the pipe |
+          decorations.push(
+            Decoration.inline(matchStart + 2 + pipeOffset, matchStart + 2 + pipeOffset + 1, {
+              class: 'md-syntax-dimmed',
+            })
+          );
+          // Display text after pipe
+          decorations.push(
+            Decoration.inline(matchStart + 2 + pipeOffset + 1, matchEnd - 2, {
+              class: 'md-wikilink is-focused',
+              'data-wikilink-target': target,
+            })
+          );
+        } else {
+          // Wikilink target text
+          decorations.push(
+            Decoration.inline(matchStart + 2, matchEnd - 2, {
+              class: 'md-wikilink is-focused',
+              'data-wikilink-target': target,
+            })
+          );
+        }
+
+        // Dim closing brackets ]]
+        decorations.push(
+          Decoration.inline(matchEnd - 2, matchEnd, {
+            class: 'md-syntax-dimmed',
           })
         );
       } else {
@@ -510,6 +556,97 @@ function scanBlockDecorations(
         decorations.push(
           Decoration.inline(matchStart + 1 + linkText.length, matchEnd, {
             class: 'md-syntax-hidden',
+          })
+        );
+      }
+    }
+
+    // F3. Wikilink Embeds: ![[target|display/size]]
+    WIKI_EMBED_REGEX.lastIndex = 0;
+    let wikiEmbedMatch: RegExpExecArray | null;
+    while ((wikiEmbedMatch = WIKI_EMBED_REGEX.exec(text)) !== null) {
+      const matchStart = blockStart + wikiEmbedMatch.index;
+      const matchEnd = matchStart + wikiEmbedMatch[0].length;
+      const rawTarget = wikiEmbedMatch[1];
+      const contentStart = matchStart + 3; // after '![['
+      const contentEnd = matchEnd - 2;   // before ']]'
+      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
+
+      if (isMatchFocused) {
+        decorations.push(
+          Decoration.inline(matchStart, contentStart, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+        decorations.push(
+          Decoration.inline(contentEnd, matchEnd, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+      } else {
+        decorations.push(
+          Decoration.inline(matchStart, matchEnd, {
+            class: 'md-syntax-hidden',
+          })
+        );
+        const dom = renderEmbedWidget(rawTarget, 'wikilink');
+        decorations.push(
+          Decoration.widget(matchStart, dom, {
+            side: -1,
+            stopEvent: (event) => {
+              const target = event.target as HTMLElement;
+              return !!target.closest('img, button, a, audio, video, iframe, input, select, [data-embed-action]');
+            },
+          })
+        );
+      }
+    }
+
+    // F4. Markdown Embeds: ![alt](url)
+    MD_EMBED_REGEX.lastIndex = 0;
+    let mdEmbedMatch: RegExpExecArray | null;
+    while ((mdEmbedMatch = MD_EMBED_REGEX.exec(text)) !== null) {
+      const matchStart = blockStart + mdEmbedMatch.index;
+      const matchEnd = matchStart + mdEmbedMatch[0].length;
+      const altText = mdEmbedMatch[1];
+      const url = mdEmbedMatch[2];
+      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
+
+      if (isMatchFocused) {
+        const altStart = matchStart + 2; // after '!['
+        const altEnd = altStart + altText.length;
+        const urlStart = altEnd + 2; // after ']('
+        const urlEnd = matchEnd - 1; // before ')'
+
+        decorations.push(
+          Decoration.inline(matchStart, altStart, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+        decorations.push(
+          Decoration.inline(altEnd, urlStart, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+        decorations.push(
+          Decoration.inline(urlEnd, matchEnd, {
+            class: 'md-syntax-dimmed',
+          })
+        );
+      } else {
+        decorations.push(
+          Decoration.inline(matchStart, matchEnd, {
+            class: 'md-syntax-hidden',
+          })
+        );
+        const dom = renderEmbedWidget(url, 'markdown', null, altText);
+        decorations.push(
+          Decoration.widget(matchStart, dom, {
+            side: -1,
+            stopEvent: (event) => {
+              const target = event.target as HTMLElement;
+              return !!target.closest('img, button, a, audio, video, iframe, input, select, [data-embed-action]');
+            },
           })
         );
       }
@@ -1092,6 +1229,49 @@ export const LivePreviewSyntax = Extension.create({
           },
           handleClick(view, pos, event) {
             const target = event.target as HTMLElement;
+
+            // 0. Direct Image click action: Open Image Lightbox
+            const imgEl = target.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+            if (imgEl && imgEl.src) {
+              useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+              return true;
+            }
+
+            // 1. Zoom button action: Open Image Lightbox
+            const zoomBtn = target.closest('[data-embed-action="zoom"]') as HTMLElement | null;
+            if (zoomBtn) {
+              const wrapper = zoomBtn.closest('.flint-embed-wrapper, .flint-embed-media, .flint-image-embed') as HTMLElement | null;
+              const img = wrapper?.querySelector('img') as HTMLImageElement | null;
+              if (img && img.src) {
+                useWorkspaceStore.getState().openImageLightbox(img.src, img.alt || '');
+                return true;
+              }
+            }
+
+            // 2. Code button action: Reveal embed wikilink syntax for editing
+            const codeBtn = target.closest('[data-embed-action="code"]') as HTMLElement | null;
+            if (codeBtn) {
+              view.focus();
+              const tr = view.state.tr.setSelection(
+                (view.state.selection.constructor as any).near(view.state.doc.resolve(pos))
+              );
+              view.dispatch(tr);
+              return true;
+            }
+
+            const actionEl = target.closest('.flint-embed-action, audio, video, iframe, button, a, input, select') as HTMLElement | null;
+            if (actionEl) {
+              return true;
+            }
+            const embedEl = target.closest('.flint-embed-wrapper, .flint-embed-card, .flint-embed-media') as HTMLElement | null;
+            if (embedEl) {
+              view.focus();
+              const tr = view.state.tr.setSelection(
+                (view.state.selection.constructor as any).near(view.state.doc.resolve(pos))
+              );
+              view.dispatch(tr);
+              return true;
+            }
             const mathEl = target.closest('.md-math-render') as HTMLElement | null;
             if (mathEl) {
               view.focus();
@@ -1115,11 +1295,48 @@ export const LivePreviewSyntax = Extension.create({
             },
           },
         },
-        view() {
+        view(editorView) {
+          const handleFocusEmbedCode = (e: Event) => {
+            const customEvt = e as CustomEvent<{ target: string; cleanTarget?: string }>;
+            const rawTarget = customEvt.detail?.target;
+            const cleanTarget = customEvt.detail?.cleanTarget;
+            if (!rawTarget && !cleanTarget) return;
+
+            const { doc } = editorView.state;
+            let foundPos: number | null = null;
+            doc.descendants((node, pos) => {
+              if (foundPos !== null) return false;
+              if (node.isText && node.text) {
+                if (rawTarget && node.text.includes(rawTarget)) {
+                  foundPos = pos + node.text.indexOf(rawTarget);
+                  return false;
+                }
+                if (cleanTarget && node.text.includes(cleanTarget)) {
+                  foundPos = pos + node.text.indexOf(cleanTarget);
+                  return false;
+                }
+              }
+              return true;
+            });
+
+            if (foundPos !== null) {
+              editorView.focus();
+              const tr = editorView.state.tr.setSelection(
+                (editorView.state.selection.constructor as any).near(editorView.state.doc.resolve(foundPos + 1))
+              );
+              editorView.dispatch(tr);
+            }
+          };
+
+          document.addEventListener('flint:focus-embed-code', handleFocusEmbedCode);
+
           return {
             update(view) {
               if (view.composing) return;
               normalizeDOMSelection(view);
+            },
+            destroy() {
+              document.removeEventListener('flint:focus-embed-code', handleFocusEmbedCode);
             },
           };
         },

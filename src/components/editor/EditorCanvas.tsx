@@ -205,7 +205,47 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     return isDocumentLocked(currentDoc);
   }, [currentDoc]);
 
-  const effectiveReadingMode = isReadingMode || isLocked;
+  const isImageDoc = useMemo(() => {
+    if (!currentDoc) return false;
+    if (currentDoc.doc_type === 'image') return true;
+    return /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(currentDoc.title);
+  }, [currentDoc]);
+
+  const isAudioDoc = useMemo(() => {
+    if (!currentDoc) return false;
+    if (currentDoc.doc_type === 'audio') return true;
+    return /\.(mp3|wav|ogg|m4a|aac|flac|opus|wma)$/i.test(currentDoc.title);
+  }, [currentDoc]);
+
+  const isVideoDoc = useMemo(() => {
+    if (!currentDoc) return false;
+    if (currentDoc.doc_type === 'video') return true;
+    return /\.(mp4|webm|ogv|mov|mkv|avi)$/i.test(currentDoc.title);
+  }, [currentDoc]);
+
+  const isPdfDoc = useMemo(() => {
+    if (!currentDoc) return false;
+    if (currentDoc.doc_type === 'pdf') return true;
+    return /\.pdf$/i.test(currentDoc.title);
+  }, [currentDoc]);
+
+  const isMediaDoc = isImageDoc || isAudioDoc || isVideoDoc || isPdfDoc;
+
+  const mediaSrc = useMemo(() => {
+    if (!currentDoc) return '';
+    if (currentDoc.content_json) {
+      try {
+        const parsed = JSON.parse(currentDoc.content_json);
+        const text = parsed.content?.[0]?.content?.[0]?.text;
+        if (text && (text.startsWith('data:') || text.startsWith('http') || text.startsWith('blob:') || text.startsWith('file:'))) {
+          return text;
+        }
+      } catch {}
+    }
+    return currentDoc.title;
+  }, [currentDoc]);
+
+  const effectiveReadingMode = isReadingMode || isLocked || isMediaDoc;
   const isEditable = !effectiveReadingMode;
   const isSourceMode = !effectiveReadingMode && defaultEditingMode === 'Source mode';
 
@@ -900,7 +940,42 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
               }`}
             >
-              {isSourceMode ? (
+              {isImageDoc ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-4 select-none my-auto">
+                  <div className="max-w-full flex items-center justify-center rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#141414] shadow-md p-2">
+                    <img
+                      src={mediaSrc}
+                      alt={currentDoc.title}
+                      onClick={() => useWorkspaceStore.getState().openImageLightbox(mediaSrc, currentDoc.title)}
+                      className="max-w-full max-h-[calc(100vh-140px)] object-contain rounded cursor-zoom-in"
+                    />
+                  </div>
+                </div>
+              ) : isAudioDoc ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-8 my-auto">
+                  <div className="w-full max-w-lg p-5 rounded-lg border border-[#2a2a2a] bg-[#161616]">
+                    <audio controls src={mediaSrc} className="w-full" />
+                  </div>
+                </div>
+              ) : isVideoDoc ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-4 my-auto">
+                  <div className="max-w-3xl w-full rounded-lg overflow-hidden border border-[#2a2a2a] bg-black">
+                    <video controls src={mediaSrc} className="w-full max-h-[calc(100vh-140px)]" />
+                  </div>
+                </div>
+              ) : isPdfDoc ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-8 my-auto">
+                  <div className="p-8 rounded-lg border border-[#2a2a2a] bg-[#161616] flex flex-col items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => window.open(mediaSrc, '_blank')}
+                      className="px-3.5 py-1.5 bg-[#252525] hover:bg-[#303030] text-xs text-white rounded cursor-pointer transition-none"
+                    >
+                      Open PDF
+                    </button>
+                  </div>
+                </div>
+              ) : isSourceMode ? (
                 <SourceModeEditor
                   key={`source-${currentDoc.id}`}
                   documentId={currentDoc.id}

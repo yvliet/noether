@@ -19,6 +19,7 @@ const CommandPalette = React.lazy(() => import('@/components/search/CommandPalet
 const HelpModal = React.lazy(() => import('@/components/modals/HelpModal').then(m => ({ default: m.HelpModal })));
 const ConfirmModal = React.lazy(() => import('@/components/modals/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
 const PromptModal = React.lazy(() => import('@/components/modals/PromptModal').then(m => ({ default: m.PromptModal })));
+const ImageLightboxModal = React.lazy(() => import('@/components/modals/ImageLightboxModal').then(m => ({ default: m.ImageLightboxModal })));
 import { dragTooltipManager, FOLDER_SVG } from '@/lib/dragTooltip';
 
 import { FlintLogoIcon } from '@/components/common/Icons';
@@ -451,6 +452,7 @@ export const AppShell: React.FC = React.memo(() => {
           <HelpModal />
           <ConfirmModal />
           <PromptModal />
+          <ImageLightboxModal />
         </React.Suspense>
 
         <ToastNotification />

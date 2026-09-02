@@ -2108,11 +2108,14 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const setCloseTabsOnDelete = useSettingsStore((s) => s.setCloseTabsOnDelete);
   const newNoteLocation = useSettingsStore((s) => s.newNoteLocation);
   const setNewNoteLocation = useSettingsStore((s) => s.setNewNoteLocation);
+  const attachmentFolder = useSettingsStore((s) => s.attachmentFolder);
+  const setAttachmentFolder = useSettingsStore((s) => s.setAttachmentFolder);
   const linkFormat = useSettingsStore((s) => s.linkFormat);
   const setLinkFormat = useSettingsStore((s) => s.setLinkFormat);
   const autoUpdateLinks = useSettingsStore((s) => s.autoUpdateLinks);
   const setAutoUpdateLinks = useSettingsStore((s) => s.setAutoUpdateLinks);
   const promptFolderSelection = useWorkspaceStore((s) => s.promptFolderSelection);
+  const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
 
   const [tempHearthName, setTempHearthName] = useState(hearthName);
@@ -2131,11 +2134,27 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
     }
   }, [tempHearthName, hearthPath, renameHearth]);
 
+  const handlePickAttachmentFolder = useCallback(() => {
+    promptFolderSelection({
+      title: 'Click on a folder for attachments',
+      allowRoot: true,
+      onSelect: (folderPath) => {
+        setAttachmentFolder(folderPath);
+        setIsSettingsOpen(true, 'files');
+        showToast(folderPath ? `Attachment location set to "${folderPath}"` : 'Attachment location set to Hearth root', 'success');
+      },
+      onCancel: () => {
+        setIsSettingsOpen(true, 'files');
+      },
+    });
+  }, [promptFolderSelection, setAttachmentFolder, setIsSettingsOpen, showToast]);
+
   const isFilesModified =
     skipDeleteConfirmation !== DEFAULT_SETTINGS.skipDeleteConfirmation ||
     skipRenameConfirmation !== DEFAULT_SETTINGS.skipRenameConfirmation ||
     closeTabsOnDelete !== DEFAULT_SETTINGS.closeTabsOnDelete ||
     newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation ||
+    attachmentFolder !== DEFAULT_SETTINGS.attachmentFolder ||
     linkFormat !== DEFAULT_SETTINGS.linkFormat ||
     autoUpdateLinks !== DEFAULT_SETTINGS.autoUpdateLinks;
 
@@ -2294,6 +2313,37 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                   { value: 'same', label: 'Same folder as current file' },
                 ]}
               />
+            </div>
+          </div>
+
+          {/* New attachment location */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Default location for new attachments</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Folder where pasted images and media attachments are placed (leave blank for Hearth root).
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={attachmentFolder !== DEFAULT_SETTINGS.attachmentFolder}
+                onReset={() => setAttachmentFolder(DEFAULT_SETTINGS.attachmentFolder)}
+                title="Restore default (Hearth root)"
+              />
+              <button
+                type="button"
+                onClick={handlePickAttachmentFolder}
+                className="flex items-center gap-2 bg-[#181818] hover:bg-[#222222] active:bg-[#151515] border border-[#383838] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors cursor-pointer group"
+                title="Click to select folder in File Explorer"
+              >
+                <Folder01Icon size={13} className="text-[#888] group-hover:text-white transition-colors" />
+                <span className="max-w-[130px] truncate text-[#dcddde]">
+                  {attachmentFolder ? attachmentFolder : 'Hearth root ( / )'}
+                </span>
+                <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[#282828] px-1.5 py-0.5 rounded border border-[#383838]">
+                  Set
+                </span>
+              </button>
             </div>
           </div>
 

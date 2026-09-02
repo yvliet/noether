@@ -1272,6 +1272,20 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     const removedPaths: string[] = [];
     for (const doc of existingDocs) {
       if (doc.is_folder) continue;
+
+      // Preserve media attachments (images, audio, video, pdf, canvas) stored in SQLite
+      const isMediaOrAttachment =
+        doc.doc_type === 'image' ||
+        doc.doc_type === 'audio' ||
+        doc.doc_type === 'video' ||
+        doc.doc_type === 'pdf' ||
+        doc.doc_type === 'canvas' ||
+        /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a|canvas)$/i.test(doc.title);
+
+      if (isMediaOrAttachment) {
+        continue;
+      }
+
       const docPath = getDocumentPath(doc, existingDocs).toLowerCase();
       const docTitle = (doc.title || '').toLowerCase();
       const docTitleMd = `${docTitle}.md`;

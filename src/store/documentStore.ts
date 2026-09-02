@@ -91,6 +91,11 @@ interface DocumentState {
   ) => Promise<DocumentItem>;
   createNewCanvas: (title?: string, parentId?: string | null) => Promise<DocumentItem>;
   createNewFolder: (name?: string, parentId?: string | null) => Promise<DocumentItem>;
+  saveAttachmentDocument: (
+    filename: string,
+    dataUrlOrContent: string,
+    parentId?: string | null
+  ) => Promise<DocumentItem>;
   renameDocument: (id: string, newTitle: string, recordHistory?: boolean) => Promise<void>;
   updateDocumentTitleInMemory: (id: string, newTitle: string) => void;
   toggleBookmark: (id: string) => Promise<void>;
@@ -533,6 +538,86 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new folder:', err);
+      }
+    })();
+
+    return doc;
+  },
+
+  saveAttachmentDocument: async (
+    filename: string,
+    dataUrlOrContent: string,
+    parentId: string | null = null
+  ) => {
+    const docs = get().documents;
+    let finalTitle = filename;
+    const existingTitles = new Set(
+      docs
+        .filter((d) => !d.is_folder && (d.parent_id || null) === (parentId || null))
+        .map((d) => d.title.toLowerCase())
+    );
+
+    if (existingTitles.has(finalTitle.toLowerCase())) {
+      const dotIdx = finalTitle.lastIndexOf('.');
+      const baseName = dotIdx !== -1 ? finalTitle.slice(0, dotIdx) : finalTitle;
+      const ext = dotIdx !== -1 ? finalTitle.slice(dotIdx) : '';
+      let counter = 1;
+      while (existingTitles.has(`${baseName} (${counter})${ext}`.toLowerCase())) {
+        counter++;
+      }
+      finalTitle = `${baseName} (${counter})${ext}`;
+    }
+
+    const id = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+    const now = Date.now();
+    const content = JSON.stringify({
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [
+            {
+              type: 'text',
+              text: dataUrlOrContent,
+            },
+          ],
+        },
+      ],
+    });
+
+    const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(finalTitle);
+    const isAud = /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(finalTitle);
+    const isVid = /\.(mp4|webm|mov|mkv)$/i.test(finalTitle);
+    const isPdf = /\.pdf$/i.test(finalTitle);
+    const detectedDocType = isImg ? 'image' : isAud ? 'audio' : isVid ? 'video' : isPdf ? 'pdf' : 'base';
+
+    const doc: DocumentItem = {
+      id,
+      parent_id: parentId,
+      title: finalTitle,
+      content_json: content,
+      is_daily_note: 0,
+      is_folder: 0,
+      is_bookmarked: 0,
+      doc_type: detectedDocType,
+      created_at: now,
+      updated_at: now,
+    };
+
+    set((state) => ({
+      documents: [doc, ...state.documents],
+    }));
+
+    (async () => {
+      try {
+        await dbAdapter.execute(
+          `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
+           VALUES (?, ?, ?, ?, 0, 0, 0, ?, '{}', ?, ?)`,
+          [id, parentId, finalTitle, content, detectedDocType, now, now]
+        );
+        await dbAdapter.persist();
+      } catch (err) {
+        console.error('[DocumentStore] Failed to persist attachment document:', err);
       }
     })();
 

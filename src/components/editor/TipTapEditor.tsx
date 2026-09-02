@@ -195,6 +195,22 @@ const baseSlashItems: SlashItem[] = [
       editor.chain().focus().deleteRange(range).insertContent('[[]]').setTextSelection(range.from + 2).run();
     },
   },
+  {
+    title: 'Embed Note',
+    description: 'Embed another note ![[title]]',
+    icon: 'quote',
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).insertContent('![[]]').setTextSelection(range.from + 3).run();
+    },
+  },
+  {
+    title: 'Embed Image / Media',
+    description: 'Embed image, audio, or video ![alt](url)',
+    icon: 'link',
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).insertContent('![]()').setTextSelection(range.from + 2).run();
+    },
+  },
 ];
 
 function extractLinkTargetFromEvent(
@@ -207,6 +223,11 @@ function extractLinkTargetFromEvent(
       ? (rawTarget as HTMLElement)
       : (rawTarget?.parentElement as HTMLElement | null)
   );
+
+  // 0. Ignore clicks inside embeds
+  if (targetElem?.closest('.flint-embed-wrapper, .flint-embed-media, .flint-image-embed, [data-embed-action]')) {
+    return null;
+  }
 
   // 1. Direct DOM check for .md-wikilink
   const linkElem =
@@ -261,6 +282,7 @@ function extractLinkTargetFromEvent(
   }
 
   // 4. Fallback: ProseMirror posAtCoords directly from mouse screen coordinates
+  // Only triggered when clicking directly on link text in reading view or with direct cursor hit
   if (editor && editor.view && typeof editor.view.posAtCoords === 'function') {
     try {
       const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
@@ -272,13 +294,16 @@ function extractLinkTargetFromEvent(
           const text = parent.textContent;
           const offset = coords.pos - blockStart;
 
-          // WikiLinks
+          // WikiLinks (excluding embeds ![[...]])
           const wikiRegex = /\[\[([^\]\n]+)\]\]/g;
           let match: RegExpExecArray | null;
           while ((match = wikiRegex.exec(text)) !== null) {
+            if (match.index > 0 && text[match.index - 1] === '!') {
+              continue; // Skip embeds
+            }
             const matchStart = match.index;
             const matchEnd = matchStart + match[0].length;
-            if (offset >= matchStart && offset <= matchEnd) {
+            if (offset >= matchStart && offset < matchEnd) {
               let raw = match[1];
               if (raw.includes('|')) {
                 raw = raw.split('|')[0];
@@ -290,13 +315,16 @@ function extractLinkTargetFromEvent(
             }
           }
 
-          // Markdown links: [Text](url)
+          // Markdown links: [Text](url) (excluding embeds ![...](...))
           const mdLinkRegex = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
           let mdMatch: RegExpExecArray | null;
           while ((mdMatch = mdLinkRegex.exec(text)) !== null) {
+            if (mdMatch.index > 0 && text[mdMatch.index - 1] === '!') {
+              continue; // Skip image embeds
+            }
             const mStart = mdMatch.index;
             const mEnd = mStart + mdMatch[0].length;
-            if (offset >= mStart && offset <= mEnd) {
+            if (offset >= mStart && offset < mEnd) {
               const url = mdMatch[2].trim();
               if (url) {
                 return { type: 'url', target: url };
@@ -709,6 +737,17 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         mousedown: (view, event) => {
           const me = event as MouseEvent;
           if (me.button !== 0 && me.button !== 1) return false;
+
+          // Open image lightbox immediately on single click
+          const target = me.target as HTMLElement | null;
+          const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+          if (imgEl && imgEl.src && me.button === 0) {
+            me.preventDefault();
+            me.stopPropagation();
+            useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+            return true;
+          }
+
           const info = extractLinkTargetFromEvent(editor, me);
           if (info) {
             me.preventDefault();
@@ -726,6 +765,68 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         },
       },
       handlePaste: (view, event) => {
+        // 1. Check for image files in clipboard
+        const clipboardItems = event.clipboardData?.items;
+        if (clipboardItems) {
+          for (let i = 0; i < clipboardItems.length; i++) {
+            const item = clipboardItems[i];
+            if (item.type.indexOf('image') !== -1) {
+              const file = item.getAsFile();
+              if (file) {
+                event.preventDefault();
+
+                const reader = new FileReader();
+                reader.onload = async () => {
+                  const dataUrl = reader.result as string;
+                  const ds = useDocumentStore.getState();
+                  const ss = useSettingsStore.getState();
+                  const ws = useWorkspaceStore.getState();
+
+                  const pad = (n: number) => n.toString().padStart(2, '0');
+                  const now = new Date();
+                  const dateStr = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+                  const ext = file.type === 'image/jpeg' ? 'jpg' : file.type === 'image/gif' ? 'gif' : file.type === 'image/webp' ? 'webp' : 'png';
+                  const filename = `Pasted image ${dateStr}.${ext}`;
+
+                  // Determine target folder
+                  let targetParentId: string | null = null;
+                  const configuredFolder = ss.attachmentFolder?.trim();
+                  if (configuredFolder) {
+                    const docs = ds.documents;
+                    const existingFolder = docs.find(
+                      (d) => d.is_folder && (d.title.toLowerCase() === configuredFolder.toLowerCase() || d.id === configuredFolder)
+                    );
+                    if (existingFolder) {
+                      targetParentId = existingFolder.id;
+                    } else {
+                      const newFolder = await ds.createNewFolder(configuredFolder);
+                      if (newFolder) targetParentId = newFolder.id;
+                    }
+                  }
+
+                  // Save attachment file document
+                  const savedDoc = await ds.saveAttachmentDocument(filename, dataUrl, targetParentId);
+
+                  // Insert embed syntax into editor
+                  const { state } = view;
+                  const { selection } = state;
+                  const embedSyntax = `![[${savedDoc.title}]]`;
+                  const tr = state.tr.replaceWith(
+                    selection.from,
+                    selection.to,
+                    state.schema.text(embedSyntax)
+                  );
+                  view.dispatch(tr);
+                  ws.showToast(`Pasted ${savedDoc.title}`, 'success');
+                };
+                reader.readAsDataURL(file);
+                return true;
+              }
+            }
+          }
+        }
+
+        // 2. Text URL auto-link handling
         const text = event.clipboardData?.getData('text/plain')?.trim();
         if (text && (text.startsWith('http://') || text.startsWith('https://') || text.startsWith('mailto:'))) {
           const { state } = view;

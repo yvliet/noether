@@ -370,7 +370,7 @@ function formatHeadingTitle(title: string): React.ReactNode {
   return title;
 }
 
-// Helper for inline markdown bold, italic, code, kbd, links, wikilinks
+// Helper for inline markdown bold, italic, code, kbd, links, wikilinks, and embeds
 function renderInlineMarkdown(text: string): string {
   if (!text) return '';
   return text
@@ -384,13 +384,26 @@ function renderInlineMarkdown(text: string): string {
     .replace(/\*([^*]+)\*/g, '<em class="italic text-[#ddd]">$1</em>')
     // Strikethrough: ~~text~~
     .replace(/~~([^~]+)~~/g, '<del class="line-through text-[#888]">$1</del>')
-    // Wikilinks: [[Target|Alias]] or [[Target]]
-    .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
+    // Markdown Embeds: ![alt](url)
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, url) => {
+      return `<img src="${url}" alt="${alt || ''}" class="flint-media-image rounded-md border border-[#2a2a2a] max-w-full my-2 block" loading="lazy" />`;
+    })
+    // Wikilink Embeds: ![[target|alias/size]]
+    .replace(/!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
+      const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(target.trim());
+      if (isImg) {
+        return `<img src="${target.trim()}" alt="${alias || target.trim()}" class="flint-media-image rounded-md border border-[#2a2a2a] max-w-full my-2 block" loading="lazy" />`;
+      }
+      const label = alias || target;
+      return `<div class="flint-embed-card flint-note-embed rounded-lg border border-[#2e2e2e] bg-[#161616]/90 p-3 my-2 text-xs text-[#cccccc]"><div class="flex items-center gap-1.5 text-xs font-semibold text-[var(--flint-accent)] mb-1"><span>📄 Embedded: ${target}</span></div><div class="italic text-[#888888]">${label}</div></div>`;
+    })
+    // Standard Wikilinks: [[Target|Alias]] or [[Target]] (only when not preceded by !)
+    .replace(/(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const label = alias || target;
       return `<span class="md-wikilink text-[var(--flint-accent)] hover:underline cursor-pointer select-text">${label}</span>`;
     })
-    // Markdown links: [text](url)
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-accent)] hover:underline inline-flex items-center gap-0.5">$1</a>');
+    // Standard Markdown links: [text](url) (only when not preceded by !)
+    .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-accent)] hover:underline inline-flex items-center gap-0.5">$1</a>');
 }
 
 export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(({
