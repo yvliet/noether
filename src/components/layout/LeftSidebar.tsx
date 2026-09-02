@@ -502,7 +502,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             height: '46%',
             background: 'rgba(128, 128, 128, 0.42)',
           }}
-          className="absolute inset-x-2 rounded-xl pointer-events-none z-50 transition-all duration-150"
+          className="absolute inset-x-2 rounded-xl pointer-events-none z-50"
         />
       )}
 
@@ -514,7 +514,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
         className="absolute top-0 -right-1 w-2 h-full cursor-col-resize z-40 flex justify-center group"
       >
         <div
-          className={`w-[2px] h-full transition-colors duration-150 ${
+          className={`w-[2px] h-full ${
             isResizing ? 'bg-white' : 'bg-transparent group-hover:bg-white/50'
           }`}
         />
@@ -711,7 +711,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               border: '1px solid var(--flint-border-base)',
               boxShadow: 'var(--flint-shadow-2)',
             }}
-            className="w-[185px] rounded-lg p-1 text-xs text-[var(--flint-text-secondary)] select-none z-[99999] backdrop-blur-md animate-fadeIn flex flex-col gap-[1px]"
+            className="w-[185px] rounded-lg p-1 text-xs text-[var(--flint-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
           >
             {SORT_OPTIONS.map((opt, i) => (
               <React.Fragment key={opt.id}>
@@ -751,7 +751,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             className="w-full h-1 cursor-row-resize z-30 group flex items-center justify-center -my-0.5"
           >
             <div
-              className={`w-full h-[1px] transition-colors duration-150 ${
+              className={`w-full h-[1px] ${
                 isVerticalSplitResizing ? 'bg-white' : 'bg-[var(--flint-border-base)] group-hover:bg-white/50'
               }`}
             />

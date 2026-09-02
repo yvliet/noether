@@ -105,7 +105,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 bg-[#161616] border-t border-[#2a2a2a] shadow-[0_-8px_32px_rgba(0,0,0,0.55)] select-none animate-in slide-in-from-bottom duration-150"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[#161616] border-t border-[#2a2a2a] shadow-[0_-8px_32px_rgba(0,0,0,0.55)] select-none"
       onMouseDown={(e) => e.preventDefault()}
     >
       {/* Top Bar with Tabs and Controls */}

@@ -131,7 +131,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
         tabIndex={0}
         onClick={handleClick}
         onMouseDown={(e) => e.preventDefault()}
-        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs transition-colors flex items-center justify-between gap-3 cursor-pointer group outline-none select-none ${
+        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-3 cursor-pointer group outline-none select-none ${
           item.disabled
             ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted,#777)]'
             : item.isDanger

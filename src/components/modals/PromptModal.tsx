@@ -37,7 +37,7 @@ export const PromptModal: React.FC = React.memo(() => {
   return (
     <div
       onClick={closeInputDialog}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 select-none animate-in fade-in duration-100"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 select-none"
     >
       <form
         data-card="true"

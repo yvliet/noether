@@ -200,7 +200,7 @@ export const CascadeStatusBarItem: React.FC = React.memo(() => {
             bottom: `${popoverPos.bottom}px`,
             right: `${popoverPos.right}px`,
           }}
-          className="z-50 w-80 bg-[var(--flint-bg-card,#1e1e1e)] border border-[var(--flint-border-base,#333)] rounded-xl shadow-2xl p-3 text-xs text-[var(--flint-text-primary,#dcddde)] animate-in fade-in zoom-in-95 duration-100 font-sans"
+          className="z-50 w-80 bg-[var(--flint-bg-card,#1e1e1e)] border border-[var(--flint-border-base,#333)] rounded-xl shadow-2xl p-3 text-xs text-[var(--flint-text-primary,#dcddde)] font-sans"
         >
           {/* Quick Page Navigation if cascaded */}
           {cascadeInfo.isCascaded && (

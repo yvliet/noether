@@ -139,7 +139,7 @@ export const HearthModal: React.FC = React.memo(() => {
   return (
     <div
       onClick={() => setIsHearthModalOpen(false)}
-      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 select-none animate-in fade-in duration-100 font-sans"
+      className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 select-none font-sans"
     >
       <div
         data-card="true"
@@ -266,7 +266,7 @@ export const HearthModal: React.FC = React.memo(() => {
 
               {/* Expanded Create Form */}
               {isCreating && (
-                <div className="mt-4 pt-3 border-t border-[var(--flint-border-subtle,#2d2d2d)] flex flex-col gap-2.5 animate-in fade-in duration-100">
+                <div className="mt-4 pt-3 border-t border-[var(--flint-border-subtle,#2d2d2d)] flex flex-col gap-2.5">
                   <div className="flex flex-col gap-1">
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-[var(--flint-text-muted,#888)]">
                       Hearth Name

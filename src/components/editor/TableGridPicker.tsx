@@ -90,7 +90,7 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-xl shadow-[var(--flint-shadow-2,0_4px_16px_rgba(0,0,0,0.4))] p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50 animate-in fade-in zoom-in-95 duration-100"
+      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-xl shadow-[var(--flint-shadow-2,0_4px_16px_rgba(0,0,0,0.4))] p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
     >
       {/* Header */}
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--flint-text-primary,#fff)] px-1">
@@ -117,7 +117,7 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
                 type="button"
                 onMouseEnter={() => setHovered({ cols: c, rows: r })}
                 onClick={() => handleCellClick(c, r)}
-                className={`w-[18px] h-[18px] rounded-[3px] transition-colors duration-75 cursor-pointer border ${
+                className={`w-[18px] h-[18px] rounded-[3px] cursor-pointer border ${
                   isHighlighted
                     ? 'bg-white/15 border-white shadow-[0_0_2px_rgba(255,255,255,0.4)]'
                     : 'bg-white/[0.04] border-white/10 hover:border-white/20'

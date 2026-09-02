@@ -139,15 +139,15 @@ function CustomSelectInner<T extends string | number>({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`group obsidian-btn min-w-[130px] flex items-center justify-between gap-2.5 cursor-pointer select-none transition-all outline-none focus-visible:border-[var(--flint-accent,#ea580c)] disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
+        className={`group obsidian-btn min-w-[130px] flex items-center justify-between gap-2.5 cursor-pointer select-none outline-none focus-visible:border-[var(--flint-accent,#ea580c)] disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
       >
-        <span className="truncate text-left text-xs font-normal text-[var(--flint-text-secondary)] group-hover:text-[var(--flint-text-primary)] transition-colors">
+        <span className="truncate text-left text-xs font-normal text-[var(--flint-text-secondary)] group-hover:text-[var(--flint-text-primary)]">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <span className="shrink-0 flex items-center justify-center text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] transition-colors">
+        <span className="shrink-0 flex items-center justify-center text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)]">
           <ChevronsUpDownIcon
             size={13}
-            className={`transition-colors ${isOpen ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted)]'}`}
+            className={isOpen ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted)]'}
           />
         </span>
       </button>
@@ -180,7 +180,7 @@ function CustomSelectInner<T extends string | number>({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[5px] flex items-center justify-between gap-3 cursor-pointer transition-colors ${
+                  className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[5px] flex items-center justify-between gap-3 cursor-pointer ${
                     isSelected
                       ? 'bg-[var(--flint-bg-sidebar-active,var(--flint-bg-card-hover))] text-[var(--flint-text-primary)] font-medium'
                       : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'

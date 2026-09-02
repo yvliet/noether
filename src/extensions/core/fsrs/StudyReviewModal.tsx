@@ -231,7 +231,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
           setIsReviewModalOpen(false);
         }
       }}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 select-none animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-4 sm:p-6 select-none"
     >
       <style>{FLASHCARD_STYLES}</style>
 
@@ -341,7 +341,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
 
         <div className="w-full h-12 flex items-center justify-center shrink-0">
           {!isFinished && currentCard && !isLoading && isRevealed && (
-            <div className="grid grid-cols-4 gap-2 w-full h-10 animate-in fade-in duration-150">
+            <div className="grid grid-cols-4 gap-2 w-full h-10">
               {schedulingOptions.map((opt, idx) => {
                 const hotkey = idx + 1;
                 return (

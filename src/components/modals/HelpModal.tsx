@@ -24,7 +24,7 @@ export const HelpModal: React.FC = React.memo(() => {
   return (
     <div
       onClick={() => setIsHelpModalOpen(false)}
-      className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 select-none animate-in fade-in duration-100"
+      className="fixed inset-0 z-50 bg-black/75 flex items-center justify-center p-4 select-none"
     >
       <div
         data-card="true"

@@ -328,7 +328,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           ? `absolute top-full mt-1.5 ${align === 'right' ? 'right-0' : 'left-0'} w-72`
           : variant === 'submenu'
           ? 'w-72 max-w-xs'
-          : 'w-full max-w-sm animate-in zoom-in-95 duration-150'
+          : 'w-full max-w-sm'
       } ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
@@ -344,7 +344,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 rounded text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer transition-colors"
+            className="p-1 rounded text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer"
             title="Close (Esc)"
           >
             <Cancel01Icon size={12} />
@@ -352,7 +352,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         </div>
 
         {/* Search input */}
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-[#141414] border border-[#2b2b2b] focus-within:border-[#444] rounded-md transition-colors">
+        <div className="flex items-center gap-1.5 px-2 py-1 bg-[#141414] border border-[#2b2b2b] focus-within:border-[#444] rounded-md">
           <Search01Icon size={12} className="text-[#666] shrink-0" />
           <input
             ref={searchInputRef}
@@ -382,7 +382,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap transition-all cursor-pointer ${
+                className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
                   isSelected
                     ? 'bg-[var(--flint-accent,#ea580c)] text-white font-medium shadow-[0_1px_2px_rgba(0,0,0,0.3)]'
                     : 'bg-[#222222] hover:bg-[#2a2a2a] text-[#888] hover:text-[#ccc] border border-[#2b2b2b]'
@@ -423,7 +423,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                   onMouseEnter={() => setHoveredIcon(icon)}
                   onMouseLeave={() => setHoveredIcon(null)}
                   title={icon.name}
-                  className={`h-8 rounded-lg flex items-center justify-center transition-all cursor-pointer relative group ${
+                  className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
                     isSelected
                       ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] text-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
                       : 'bg-[#202020] hover:bg-[#282828] text-[#999] hover:text-white border border-[#282828] hover:border-[#3a3a3a]'
@@ -459,7 +459,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
               onResetToDefault();
               onClose();
             }}
-            className="text-[10px] text-[#777] hover:text-[#bbb] hover:underline flex items-center gap-1 cursor-pointer shrink-0 transition-colors"
+            className="text-[10px] text-[#777] hover:text-[#bbb] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
           >
             <RotateCcwIcon size={10} />
             <span>{resetLabel}</span>
@@ -475,7 +475,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
       onClick={onClose}
     >
       {content}

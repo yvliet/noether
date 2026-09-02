@@ -206,7 +206,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
                     )}
                   </div>
                 ) : (
-                  <div className="text-[11px] text-[var(--flint-text-secondary)] leading-relaxed bg-[var(--flint-bg-input)] p-2 rounded border border-[var(--flint-border-base)] animate-in fade-in duration-150">
+                  <div className="text-[11px] text-[var(--flint-text-secondary)] leading-relaxed bg-[var(--flint-bg-input)] p-2 rounded border border-[var(--flint-border-base)]">
                     <div className="text-[9px] uppercase tracking-wider text-[var(--flint-accent)] font-semibold mb-0.5">
                       Answer
                     </div>

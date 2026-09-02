@@ -73,7 +73,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
     <div
       data-tree-item-id={id}
       data-is-folder={isFolder ? 'true' : 'false'}
-      className={`select-none text-xs w-full transition-colors duration-75 rounded-md ${
+      className={`select-none text-xs w-full rounded-md ${
         isDropTarget ? 'bg-[#202020]' : ''
       } ${className}`}
       {...dataAttributes}
@@ -88,7 +88,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onPointerEnter={isDisabled ? undefined : onPointerEnter}
         onPointerLeave={isDisabled ? undefined : onPointerLeave}
         style={{ paddingLeft: `${8 + level * 16}px` }}
-        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md transition-colors duration-150 w-full overflow-visible ${
+        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md w-full overflow-visible ${
           isDisabled
             ? 'cursor-not-allowed opacity-35 text-[var(--flint-text-muted,#888888)] hover:bg-transparent'
             : isFolderPickerTarget
@@ -146,7 +146,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
                   e.stopPropagation();
                   action.onClick(e);
                 }}
-                className={`p-0.5 rounded hover:bg-[var(--flint-bg-card-hover,#333333)] transition-colors ${
+                className={`p-0.5 rounded hover:bg-[var(--flint-bg-card-hover,#333333)] ${
                   action.isDanger
                     ? 'text-[var(--flint-text-muted,#777777)] hover:text-rose-400'
                     : 'text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)]'

@@ -528,7 +528,6 @@ textarea::selection {
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.16);
   border-radius: 9999px;
-  transition: background-color 0.15s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -920,7 +919,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   font-weight: 400;
   font-style: normal;
   text-decoration: none;
-  transition: color 0.12s ease;
 }
 
 .theme-light .flint-numbered-prefix,
@@ -1068,7 +1066,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   text-underline-offset: 3px;
   cursor: pointer !important;
   pointer-events: auto !important;
-  transition: text-decoration-color 0.12s ease;
 }
 
 .md-wikilink:hover,
@@ -1148,7 +1145,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   user-select: none;
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent !important;
-  transition: opacity 0.15s ease, color 0.15s ease;
   z-index: 5;
 }
 
@@ -1255,7 +1251,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   user-select: none;
   -webkit-user-select: none;
   vertical-align: baseline;
-  transition: opacity 0.15s ease, color 0.15s ease;
 }
 
 .flint-fold-placeholder:hover,
@@ -1415,7 +1410,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   padding: 5px 12px;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
   outline: none;
 }
 
@@ -1469,7 +1463,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   padding: 5px 14px;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
   outline: none;
 }
 
@@ -1503,7 +1496,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   padding: 5px 14px;
   cursor: pointer;
   user-select: none;
-  transition: background-color 0.12s ease, border-color 0.12s ease;
   outline: none;
 }
 
@@ -1581,7 +1573,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   font-size: 12px;
   font-weight: 500;
   line-height: 1.4;
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
   user-select: none;
   cursor: pointer !important;
   pointer-events: auto !important;
@@ -1606,7 +1597,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   cursor: pointer;
   user-select: none;
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
-  transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
   outline: none;
 }
 
@@ -1799,7 +1789,6 @@ ul[data-type="taskList"] li[data-checked="true"] > div {
   vertical-align: baseline;
   user-select: text;
   color: var(--flint-text-primary, #ffffff);
-  transition: opacity 0.1s ease;
 }
 
 .md-math-render:hover {
@@ -1947,7 +1936,6 @@ math-field::part(content) {
 .wce-chip {
   cursor: pointer;
   border-radius: 0.25rem;
-  transition: background-color 0.12s ease;
   user-select: text;
 }
 
@@ -2024,7 +2012,6 @@ math-field::part(content) {
   border: 1px solid #333333 !important;
   border-radius: 6px !important;
   font-size: 1.1rem !important;
-  transition: all 0.1s ease !important;
 }
 
 .flint-math-key:hover {
@@ -2052,7 +2039,6 @@ math-field::part(content) {
   font-size: 0.95rem;
   cursor: pointer;
   user-select: none;
-  transition: all 0.1s ease;
 }
 
 .flint-key:hover {

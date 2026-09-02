@@ -172,7 +172,7 @@ export const SlashMenu = React.memo(
 
           {/* Table Grid Picker Flyout */}
           {activeSubmenu === 'table' && isTableItem && (
-            <div className="animate-in fade-in slide-in-from-left-2 duration-100">
+            <div>
               <TableGridPicker
                 ref={gridPickerRef}
                 onSelect={(dimensions) => {

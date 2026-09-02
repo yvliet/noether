@@ -436,7 +436,7 @@ export const TooltipProvider: React.FC = React.memo(() => {
         color: 'var(--flint-tooltip-text, var(--flint-text-primary, #ffffff))',
         borderColor: 'var(--flint-tooltip-border, var(--flint-border-base, #333333))',
       }}
-      className="fixed z-[99999] pointer-events-none px-2.5 py-1.5 text-[11.5px] font-medium leading-relaxed rounded-[5px] shadow-2xl w-max max-w-[340px] whitespace-pre-line select-none border transition-opacity duration-75"
+      className="fixed z-[99999] pointer-events-none px-2.5 py-1.5 text-[11.5px] font-medium leading-relaxed rounded-[5px] shadow-2xl w-max max-w-[340px] whitespace-pre-line select-none border"
     >
       {/* Dynamic Arrow Element */}
       {pos.ready && (

@@ -261,7 +261,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
   }, [trashItems, trashSearchQuery]);
 
   return (
-    <div className="flex flex-col gap-4 animate-in fade-in duration-100">
+    <div className="flex flex-col gap-4">
       <div className="px-4 flex items-center justify-between">
         <button
           onClick={onClose}
@@ -1079,7 +1079,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
       {/* Modal: Create Custom Theme */}
       {isCreatingTheme && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-lg bg-[#1c1c1c] border border-[#333] rounded-xl shadow-2xl p-5 flex flex-col gap-4 text-xs text-[#dcddde]">
             <div className="flex items-center justify-between pb-2 border-b border-[#282828]">
               <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">
@@ -1290,7 +1290,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
       {/* Modal: Import Theme JSON */}
       {isImportingTheme && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="w-full max-w-md bg-[#1c1c1c] border border-[#333] rounded-xl shadow-2xl p-5 flex flex-col gap-4 text-xs text-[#dcddde]">
             <div className="flex items-center justify-between pb-2 border-b border-[#282828]">
               <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">
@@ -3316,7 +3316,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
             {/* DYNAMIC EXTENSION SETTING TAB RENDER (CORE & COMMUNITY) */}
             {!fontPickerMode && !isTrashViewOpen && allSettingTabs.some((t) => isTabMatch(t, activeTab)) && (
-              <div className="flex flex-col gap-4 animate-in fade-in duration-100">
+              <div className="flex flex-col gap-4">
                 {(() => {
                   const currentTab = allSettingTabs.find((t) => isTabMatch(t, activeTab));
                   if (!currentTab) return null;

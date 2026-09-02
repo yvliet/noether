@@ -111,7 +111,7 @@ export const CommandPalette: React.FC = React.memo(() => {
   return (
     <div
       onClick={() => setIsCommandPaletteOpen(false)}
-      className="fixed inset-0 z-50 bg-black/75 flex items-start justify-center pt-24 animate-in fade-in duration-100"
+      className="fixed inset-0 z-50 bg-black/75 flex items-start justify-center pt-24"
     >
       <div
         onClick={(e) => e.stopPropagation()}
