@@ -323,11 +323,7 @@ export function useKeyboardShortcuts() {
       // New Tab: Ctrl + T
       if (isMatch('workspace:new-tab', ['Ctrl+T'])) {
         e.preventDefault();
-        if (ws.isSplitView && ws.activePane === 'split') {
-          ws.openEmptySplitTab();
-        } else {
-          ws.openEmptyTab();
-        }
+        ws.openEmptyTab();
         return;
       }
 

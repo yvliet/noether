@@ -30,16 +30,10 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
   // Compute initial raw markdown text from properties + content
   const initialRawMarkdown = useMemo(() => {
     const frontmatter = formatFrontmatter(properties);
-    let bodyMd = jsonToMarkdown(contentJson, '', '');
-    
-    // If the body doesn't start with a level 1 heading, and a title exists, prepend `# ${title}\n\n`
-    if (!bodyMd.trim().startsWith('# ') && title) {
-      bodyMd = `# ${title}\n\n${bodyMd}`.trim();
-    }
-
+    const bodyMd = jsonToMarkdown(contentJson, '', '');
     const prefix = frontmatter ? (frontmatter.endsWith('\n') ? frontmatter : frontmatter + '\n') : '';
     return prefix + bodyMd;
-  }, [contentJson, title, properties]);
+  }, [contentJson, properties]);
 
   const [text, setText] = useState<string>(initialRawMarkdown);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -109,14 +103,10 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
     // Parse YAML frontmatter and markdown body
     const { properties: parsedProps, bodyText } = parseFrontmatter(newText);
 
-    // Extract title from first H1 heading if present
-    const headingMatch = bodyText.match(/^#\s+([^\n]+)/);
-    const extractedTitle = headingMatch && headingMatch[1].trim() ? headingMatch[1].trim() : undefined;
-
     // Convert body text to TipTap JSON AST
     const newContentJson = markdownToTipTapJson(bodyText);
 
-    onChange(newContentJson, extractedTitle, parsedProps);
+    onChange(newContentJson, undefined, parsedProps);
   }, [onChange]);
 
   // Keyboard enhancements: Tab/Shift-Tab, Smart Auto-Indent, Auto-Pairing, Ctrl+S

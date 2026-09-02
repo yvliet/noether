@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { emitBridgeAppEvent } from '@/core/app/storeBridge';
 import {
   DocumentItem,
   TrashItem,
@@ -152,6 +153,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       ]);
 
       set({ documents: docs, trashItems: trash, globalTasks, vaultTags: tags, isLoading: false });
+      emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
 
       const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
       const isRestored = shouldRestoreTabs
@@ -244,6 +246,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           lastSelectedDocId: state.selectedDocIds.length <= 1 ? cachedDoc.id : state.lastSelectedDocId,
           documentProperties: cachedProps,
         }));
+
+        emitBridgeAppEvent('document:opened', { id, title: cachedDoc.title });
 
         const shouldPreserve = options?.preserveViewMode === true;
         if (!shouldPreserve) {
@@ -395,11 +399,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const defaultContent = JSON.stringify({
       type: 'doc',
       content: [
-        {
-          type: 'heading',
-          attrs: { level: 1 },
-          content: [{ type: 'text', text: finalTitle }]
-        },
         {
           type: 'paragraph',
           content: []
@@ -558,6 +557,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       documents: state.documents.map((d) => (d.id === id ? { ...d, title: newTitle } : d)),
       activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: newTitle } : state.activeDocument,
     }));
+
+    emitBridgeAppEvent('document:renamed', { id, oldTitle: prevTitle, newTitle });
 
     useWorkspaceStore.getState().updateTabTitle(id, newTitle);
   },
@@ -819,6 +820,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       if (recordHistory && deletedItems && deletedItems.length > 0) {
         useFileHistoryStore.getState().recordDelete(deletedItems, activeIdBefore);
       }
+      deletedIds.forEach((deletedId) => {
+        emitBridgeAppEvent('document:deleted', { id: deletedId });
+      });
       const trash = await getTrashItems(true);
       set({ trashItems: trash });
     } catch (err) {
@@ -871,6 +875,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       set({ documents: updatedDocs });
     }
 
+    emitBridgeAppEvent('document:saved', { id: docId, title: currentTitle });
+
     if (title && title !== active.title) {
       useWorkspaceStore.getState().updateTabTitle(docId, title);
     }
@@ -884,9 +890,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     );
     const currentActive = get().activeDocument;
     const isStillActive = currentActive && currentActive.id === id;
+    const currentTitle = title || currentActive?.title || '';
 
     if (isStillActive) {
-      const currentTitle = title || currentActive.title;
       const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
         getBacklinksForDocument(id),
         getOutgoingLinksWithDetails(id),
@@ -915,6 +921,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         ),
       }));
     }
+
+    emitBridgeAppEvent('document:saved', { id, title: currentTitle });
 
     if (title) {
       useWorkspaceStore.getState().updateTabTitle(id, title);

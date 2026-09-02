@@ -9,7 +9,6 @@ use tauri::{AppHandle, Emitter, Manager};
 use walkdir::WalkDir;
 
 static LAST_INTERNAL_WRITE: AtomicU64 = AtomicU64::new(0);
-static LAST_USER_INTERACTION: AtomicU64 = AtomicU64::new(0);
 
 pub fn mark_internal_write() {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
@@ -22,23 +21,8 @@ pub fn is_recent_internal_write() -> bool {
     now.saturating_sub(last) < 2500
 }
 
-pub fn mark_user_activity() {
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    LAST_USER_INTERACTION.store(now, Ordering::Relaxed);
-}
-
-pub fn get_user_idle_seconds() -> u64 {
-    let last = LAST_USER_INTERACTION.load(Ordering::Relaxed);
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0);
-    if last == 0 {
-        return 0;
-    }
-    now.saturating_sub(last)
-}
-
 #[tauri::command]
 pub fn notify_user_activity() -> Value {
-    mark_user_activity();
     json!({ "success": true })
 }
 

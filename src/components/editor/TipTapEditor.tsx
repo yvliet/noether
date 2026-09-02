@@ -387,17 +387,23 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const { showContextMenu } = useAppContextMenu();
   const showToast = useWorkspaceStore((s) => s.showToast);
 
-  // Merge extension slash commands
+  // Merge extension slash commands with base items, deduplicating by lowercase title
   const extensionSlashCommands = useMemo(() => app.editor.getSlashCommands(), [app.editor, extensionList]);
-  const slashItems: SlashItem[] = useMemo(() => [
-    ...baseSlashItems,
-    ...extensionSlashCommands.map((p: any) => ({
-      title: p.title,
-      description: p.description,
-      icon: typeof p.icon === 'string' ? (p.icon as any) : 'card',
-      command: p.command,
-    })),
-  ], [extensionSlashCommands]);
+  const slashItems: SlashItem[] = useMemo(() => {
+    const map = new Map<string, SlashItem>();
+    for (const item of baseSlashItems) {
+      map.set(item.title.toLowerCase(), item);
+    }
+    for (const p of extensionSlashCommands) {
+      map.set(p.title.toLowerCase(), {
+        title: p.title,
+        description: p.description,
+        icon: typeof p.icon === 'string' ? (p.icon as any) : p.icon,
+        command: p.command,
+      });
+    }
+    return Array.from(map.values());
+  }, [extensionSlashCommands]);
 
   const handleNavigateToWikiLink = useCallback(
     (rawTarget: string, isSplit: boolean = false) => {
@@ -484,61 +490,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     editable,
     extensions: [
       ...app.editor.getExtensions(),
-      MarkdownShortcuts,
-      AutoPairing,
-      SmartTabIndent,
-      NumberedListBehavior,
-      Fold.configure({ documentId }),
-      LivePreviewSyntax,
-      MathChip,
-      SmartMathNavigation,
-      SearchAndReplace,
-      StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
-        hardBreak: false,
-        bold: false,
-        italic: false,
-        strike: false,
-        code: false,
-        orderedList: false,
-        bulletList: false,
-      }),
-      Placeholder.configure({
-        placeholder: ({ node }) => {
-          if (node.type.name === 'heading') {
-            return `Heading ${node.attrs.level || 1}`;
-          }
-          const baseHints = ["type '/' for commands", "'[[' to link"];
-          const dynamicHints = placeholderHints.map((h) => h.hint);
-          const allHints = [...baseHints, ...dynamicHints];
-          if (allHints.length === 0) return 'Write thoughts...';
-          if (allHints.length === 1) return `Write thoughts, or ${allHints[0]}...`;
-          const last = allHints[allHints.length - 1];
-          const lead = allHints.slice(0, -1).join(', ');
-          return `Write thoughts, ${lead}, or ${last}...`;
-        },
-        emptyEditorClass: 'is-editor-empty',
-      }),
-      Typography,
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
-      Table.configure({
-        resizable: true,
-        HTMLAttributes: {
-          class: 'flint-table',
-        },
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      TableExitBehavior,
-      Highlight.configure({ multicolor: true }),
-      Link.configure({
-        openOnClick: true,
-        autolink: true,
-      }),
       SlashCommands.configure({
         suggestion: {
           items: ({ query }) => {
@@ -579,9 +530,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                 if (props.event.key === 'Escape') {
                   setSlashMenuProps(null);
                   return true;
-                }
-                if (!props.items || props.items.length === 0) {
-                  return false;
                 }
                 return slashMenuRef.current?.onKeyDown(props) || false;
               },
@@ -660,9 +608,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   setWikiProps(null);
                   return true;
                 }
-                if (!props.items || props.items.length === 0) {
-                  return false;
-                }
                 return wikiPopupRef.current?.onKeyDown(props) || false;
               },
               onExit: () => {
@@ -671,6 +616,61 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             };
           },
         },
+      }),
+      MarkdownShortcuts,
+      AutoPairing,
+      SmartTabIndent,
+      NumberedListBehavior,
+      Fold.configure({ documentId }),
+      LivePreviewSyntax,
+      MathChip,
+      SmartMathNavigation,
+      SearchAndReplace,
+      StarterKit.configure({
+        heading: { levels: [1, 2, 3] },
+        hardBreak: false,
+        bold: false,
+        italic: false,
+        strike: false,
+        code: false,
+        orderedList: false,
+        bulletList: false,
+      }),
+      Placeholder.configure({
+        placeholder: ({ node }) => {
+          if (node.type.name === 'heading') {
+            return `Heading ${node.attrs.level || 1}`;
+          }
+          const baseHints = ["type '/' for commands", "'[[' to link"];
+          const dynamicHints = placeholderHints.map((h) => h.hint);
+          const allHints = [...baseHints, ...dynamicHints];
+          if (allHints.length === 0) return 'Write thoughts...';
+          if (allHints.length === 1) return `Write thoughts, or ${allHints[0]}...`;
+          const last = allHints[allHints.length - 1];
+          const lead = allHints.slice(0, -1).join(', ');
+          return `Write thoughts, ${lead}, or ${last}...`;
+        },
+        emptyEditorClass: 'is-editor-empty',
+      }),
+      Typography,
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'flint-table',
+        },
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
+      TableExitBehavior,
+      Highlight.configure({ multicolor: true }),
+      Link.configure({
+        openOnClick: true,
+        autolink: true,
       }),
     ],
     content: (() => {

@@ -5,7 +5,7 @@ import { PluginKey } from '@tiptap/pm/state';
 export interface SlashItem {
   title: string;
   description: string;
-  icon: string;
+  icon: string | React.ReactNode;
   command: (props: { editor: any; range: any; [key: string]: any }) => void;
 }
 

@@ -100,6 +100,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
 
     // Persist new FSRS state
     await updateCardState(option.nextCard);
+    window.dispatchEvent(new CustomEvent('flint:fsrs-updated'));
 
     if (currentIndex + 1 < dueCards.length) {
       setCurrentIndex((prev) => prev + 1);
@@ -112,7 +113,6 @@ export const StudyReviewModal: React.FC = React.memo(() => {
         spread: 70,
         origin: { y: 0.6 },
       });
-      window.dispatchEvent(new CustomEvent('flint:fsrs-updated'));
     }
   }, [currentCard, currentIndex, dueCards.length]);
 
@@ -169,11 +169,11 @@ export const StudyReviewModal: React.FC = React.memo(() => {
   // Cloze Formatting Helpers
   const renderFrontCardContent = (card: FSRSCardRecord) => {
     if (card.card_type === 'cloze') {
-      const parts = card.front_text.split(/(\{.+?\})/g);
+      const parts = card.front_text.split(/(\{[^{}]+\}|==[^=\n]+==)/g);
       return (
         <span>
           {parts.map((part, i) => {
-            if (part.startsWith('{') && part.endsWith('}')) {
+            if ((part.startsWith('{') && part.endsWith('}')) || (part.startsWith('==') && part.endsWith('=='))) {
               return (
                 <span
                   key={i}
@@ -193,13 +193,24 @@ export const StudyReviewModal: React.FC = React.memo(() => {
 
   const renderBackCardContent = (card: FSRSCardRecord) => {
     if (card.card_type === 'cloze') {
-      const parts = card.front_text.split(/(\{.+?\})/g);
+      const parts = card.front_text.split(/(\{[^{}]+\}|==[^=\n]+==)/g);
       return (
         <div className="space-y-3">
           <div>
             {parts.map((part, i) => {
               if (part.startsWith('{') && part.endsWith('}')) {
                 const inner = part.slice(1, -1);
+                return (
+                  <span
+                    key={i}
+                    className="inline-block px-2 py-0.5 mx-1 rounded bg-[var(--flint-accent-subtle)] text-[var(--flint-accent)] font-semibold border border-[var(--flint-accent)]"
+                  >
+                    {inner}
+                  </span>
+                );
+              }
+              if (part.startsWith('==') && part.endsWith('==')) {
+                const inner = part.slice(2, -2);
                 return (
                   <span
                     key={i}
@@ -251,7 +262,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
               <button
                 onClick={handleJumpToNote}
                 title="Jump to original note"
-                className="flex items-center gap-1 hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+                className="flex items-center gap-1 hover:text-[var(--flint-text-primary)] cursor-pointer"
               >
                 <LinkSquare02Icon size={13} />
                 <span>Jump to note</span>
@@ -259,7 +270,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
             )}
             <button
               onClick={() => setIsReviewModalOpen(false)}
-              className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+              className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
               title="Close (Esc)"
             >
               <Cancel01Icon size={15} />

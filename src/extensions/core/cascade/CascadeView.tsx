@@ -231,23 +231,10 @@ export const CascadeView: React.FC = React.memo(() => {
       {/* Main Cascade Tree Content Area */}
       <div className="flex-1 min-h-0 overflow-y-auto px-2 py-1 custom-scrollbar flex flex-col gap-0.5">
         {allCascades.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-56 text-center text-xs gap-2.5 px-4 select-none">
-            <div className="w-10 h-10 rounded-full bg-[var(--flint-bg-card-hover)] flex items-center justify-center text-[var(--flint-text-muted)]">
-              <CascadeIcon size={20} className="opacity-60" />
-            </div>
-            <div className="flex flex-col gap-1">
-              <span className="font-medium text-[var(--flint-text-primary)]">No Cascades Yet</span>
-              <span className="text-[11px] text-[var(--flint-text-muted)] max-w-[200px] leading-relaxed">
-                Organize notes into sequential books or chapters with page numbers.
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleCreateNewCascade}
-              className="mt-1 px-3 py-1.5 rounded-md bg-[var(--flint-bg-card-hover)] hover:bg-[var(--flint-border-base)] text-[var(--flint-text-primary)] text-xs font-medium transition-colors cursor-pointer border border-[var(--flint-border-base)] shadow-xs"
-            >
-              + Create Cascade
-            </button>
+          <div className="flex flex-col items-center justify-center h-48 text-[#666] text-xs gap-2 select-none text-center">
+            <CascadeIcon size={24} className="opacity-40" />
+            <span>No cascades yet</span>
+            <span className="text-[11px] text-[#555]">Organize notes into sequential books</span>
           </div>
         ) : filteredCascades.length === 0 ? (
           <div className="px-2 py-4 text-xs text-[var(--flint-text-muted)] select-none text-center">

@@ -142,9 +142,16 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       const tabDocId = activeTab.document_id;
       if (tabDocId && !tabDocId.startsWith('__')) {
         targetDocId = tabDocId;
+      } else {
+        // Tab exists (e.g. empty tab or special non-document tab), but has no document ID
+        return null;
       }
-    } else if (paneModel?.activeDocumentId && !paneModel.activeDocumentId.startsWith('__')) {
-      targetDocId = paneModel.activeDocumentId;
+    } else if (paneModel) {
+      if (paneModel.activeDocumentId && !paneModel.activeDocumentId.startsWith('__')) {
+        targetDocId = paneModel.activeDocumentId;
+      } else {
+        return null;
+      }
     }
 
     if (targetDocId) {
@@ -153,8 +160,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       }
       return documents.find((d) => d.id === targetDocId) || null;
     }
-    return activeDocument;
-  }, [documentId, activeTab, paneModel?.activeDocumentId, documents, activeDocument]);
+    return null;
+  }, [documentId, activeTab, paneModel, documents, activeDocument]);
 
 
   const matchedBreadcrumbProvider = useMemo(() => {
@@ -390,11 +397,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             : JSON.stringify({
                 type: 'doc',
                 content: [
-                  {
-                    type: 'heading',
-                    attrs: { level: 1 },
-                    content: [{ type: 'text', text: currentDoc.title || 'Untitled' }],
-                  },
                   {
                     type: 'paragraph',
                     content: [],

@@ -13,9 +13,11 @@ export const WikiLinkPopup = React.memo(
       const [selectedIndex, setSelectedIndex] = useState(0);
       const selectedIndexRef = useRef(selectedIndex);
       selectedIndexRef.current = selectedIndex;
+      const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
       useEffect(() => {
         setSelectedIndex(0);
+        selectedIndexRef.current = 0;
       }, [items]);
 
       useImperativeHandle(
@@ -26,16 +28,23 @@ export const WikiLinkPopup = React.memo(
               return false;
             }
             if (event.key === 'ArrowUp') {
-              setSelectedIndex((prev) => (prev + items.length - 1) % items.length);
+              const nextIndex = (selectedIndexRef.current + items.length - 1) % items.length;
+              selectedIndexRef.current = nextIndex;
+              setSelectedIndex(nextIndex);
+              itemRefs.current[nextIndex]?.scrollIntoView({ block: 'nearest' });
               return true;
             }
             if (event.key === 'ArrowDown') {
-              setSelectedIndex((prev) => (prev + 1) % items.length);
+              const nextIndex = (selectedIndexRef.current + 1) % items.length;
+              selectedIndexRef.current = nextIndex;
+              setSelectedIndex(nextIndex);
+              itemRefs.current[nextIndex]?.scrollIntoView({ block: 'nearest' });
               return true;
             }
             if (event.key === 'Enter' || event.key === 'Tab') {
-              if (items[selectedIndexRef.current]) {
-                command(items[selectedIndexRef.current]);
+              const currentItem = items[selectedIndexRef.current];
+              if (currentItem) {
+                command(currentItem);
                 return true;
               }
             }
@@ -50,7 +59,7 @@ export const WikiLinkPopup = React.memo(
       }
 
       return (
-        <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs">
+        <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs select-none">
           <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
             Link to Note
           </div>
@@ -59,10 +68,16 @@ export const WikiLinkPopup = React.memo(
             return (
               <button
                 key={item.id}
+                ref={(el) => {
+                  itemRefs.current[index] = el;
+                }}
                 type="button"
                 onClick={() => command(item)}
-                onMouseEnter={() => setSelectedIndex(index)}
-                className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors cursor-pointer ${
+                onMouseEnter={() => {
+                  selectedIndexRef.current = index;
+                  setSelectedIndex(index);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer ${
                   isSelected ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)]'
                 }`}
               >
@@ -87,4 +102,5 @@ export const WikiLinkPopup = React.memo(
     }
   )
 );
+WikiLinkPopup.displayName = 'WikiLinkPopup';
 

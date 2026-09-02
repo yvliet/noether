@@ -25,6 +25,8 @@ import {
   getCardsForDocument,
   updateCardState,
   deleteCardsForDocument,
+  syncDocumentCards,
+  syncAllVaultCards,
 } from './fsrsDb';
 import { getSchedulingOptions } from './engine';
 
@@ -60,10 +62,14 @@ const FsrsDueBadgeItem: React.FC<{ app: FlintApp }> = ({ app }) => {
       });
     };
     updateCount();
-    const interval = setInterval(updateCount, 30000);
+    const interval = setInterval(updateCount, 15000);
+    const handleUpdateEvent = () => updateCount();
+    window.addEventListener('flint:fsrs-updated', handleUpdateEvent);
+
     return () => {
       isMounted = false;
       clearInterval(interval);
+      window.removeEventListener('flint:fsrs-updated', handleUpdateEvent);
     };
   }, []);
 
@@ -75,7 +81,7 @@ const FsrsDueBadgeItem: React.FC<{ app: FlintApp }> = ({ app }) => {
         app.events.emit('editor:action', { action: 'open-fsrs-review' });
         window.dispatchEvent(new CustomEvent('flint:open-fsrs-review'));
       }}
-      className="flex items-center gap-1 text-[#aaaaaa] hover:text-white transition-colors cursor-pointer"
+      className="flex items-center gap-1 text-[#aaaaaa] hover:text-white cursor-pointer"
       title={`${dueCount} cards due for FSRS review`}
     >
       <Brain02Icon size={12} />
@@ -90,12 +96,30 @@ export class FsrsExtension extends Extension {
   }
 
   public async onload(): Promise<void> {
-    // Initialize FSRS tables on load
+    // Initialize FSRS tables on load and perform initial vault synchronization
     await initFsrsTables();
+    await syncAllVaultCards();
 
     // Clean up cards when a document is deleted
     this.onEvent('document:deleted', ({ id }) => {
       deleteCardsForDocument(id);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('flint:fsrs-updated'));
+      }
+    });
+
+    // Synchronize cards whenever a document is saved
+    this.onEvent('document:saved', ({ id }) => {
+      syncDocumentCards(id);
+    });
+
+    // Synchronize all cards whenever a vault is loaded or switched
+    this.onEvent('vault:loaded', () => {
+      syncAllVaultCards();
+    });
+
+    this.onEvent('vault:changed', () => {
+      syncAllVaultCards();
     });
 
     // 0. Register Study Review Modal dynamically into the global app modal host

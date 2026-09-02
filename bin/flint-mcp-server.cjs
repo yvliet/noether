@@ -638,29 +638,89 @@ const TOOLS = [
   // 12. fsrs_get_due_cards
   {
     name: 'fsrs-spaced-repetition_get_due_cards',
-    description: 'Scan and extract flashcards (Concept :: Descriptor, Term ;; Definition, {cloze}) from notes in the active Hearth.',
-    parameters: { type: 'object', properties: {} },
-    handler: async () => {
+    description: 'Scan and extract flashcards (Concept :: Descriptor, Term ;; Definition, {cloze}, ==cloze==) from notes in the active Hearth.',
+    parameters: {
+      type: 'object',
+      properties: {
+        documentId: { type: 'string', description: 'Optional document or note title filter' },
+      },
+    },
+    handler: async (args) => {
       const activePath = getActiveHearthPath();
       const files = scanMarkdownFiles(activePath);
       const cards = [];
+      const filterTitle = args?.documentId ? String(args.documentId).toLowerCase() : null;
+
+      const stripPrefix = (str) =>
+        str
+          .replace(/^(\s*[-*+]\s*\[[ xX]\]\s*)/, '')
+          .replace(/^(\s*[-*+]\s+)/, '')
+          .replace(/^(\s*\d+[\.\)]\s+)/, '')
+          .replace(/^(\s*>\s*)/, '')
+          .trim();
 
       for (const file of files) {
         if (file.isFolder) continue;
+        if (filterTitle && !file.title.toLowerCase().includes(filterTitle) && !file.relativePath.toLowerCase().includes(filterTitle)) {
+          continue;
+        }
+
         const note = readNoteFile(file.fullPath);
         if (!note) continue;
 
         const lines = note.body.split('\n');
-        for (const line of lines) {
-          if (line.includes('::')) {
-            const [front, back] = line.split('::').map((s) => s.trim());
-            if (front && back) {
-              cards.push({ noteTitle: file.title, type: 'concept_descriptor', front, back });
+        for (const rawLine of lines) {
+          const rawTrimmed = rawLine.trim();
+          if (!rawTrimmed || rawTrimmed.startsWith('```') || rawTrimmed.startsWith('~~~')) continue;
+
+          const line = stripPrefix(rawTrimmed);
+          if (!line) continue;
+
+          // 1. Two-way card (;;)
+          if (line.includes(';;')) {
+            const parts = line.split(';;').map((s) => s.trim());
+            if (parts.length >= 2 && parts[0] && parts[1]) {
+              const front = parts[0];
+              const back = parts.slice(1).join(';;').trim();
+              cards.push({ noteTitle: file.title, type: 'two_way', front, back });
+              cards.push({ noteTitle: file.title, type: 'two_way', front: back, back: front });
+              continue;
             }
-          } else if (line.includes(';;')) {
-            const [term, def] = line.split(';;').map((s) => s.trim());
-            if (term && def) {
-              cards.push({ noteTitle: file.title, type: 'two_way', front: term, back: def });
+          }
+
+          // 2. Concept card (::)
+          if (line.includes('::')) {
+            const parts = line.split('::').map((s) => s.trim());
+            if (parts.length >= 2 && parts[0] && parts[1]) {
+              const front = parts[0];
+              const back = parts.slice(1).join('::').trim();
+              cards.push({ noteTitle: file.title, type: 'concept_descriptor', front, back });
+              continue;
+            }
+          }
+
+          // 3. Cloze deletion ({cloze} or ==cloze==)
+          const clozeCurly = /\{+([^\{\}]+)\}+/g;
+          const clozeEqual = /==([^=\n]+)==/g;
+          let match;
+          let foundCloze = false;
+
+          while ((match = clozeCurly.exec(line)) !== null) {
+            let answer = match[1].trim();
+            if (/^c\d+::/i.test(answer)) answer = answer.replace(/^c\d+::/i, '').trim();
+            if (answer.includes('::')) answer = answer.split('::')[0].trim();
+            if (answer) {
+              cards.push({ noteTitle: file.title, type: 'cloze', front: line, back: answer });
+              foundCloze = true;
+            }
+          }
+
+          if (!foundCloze) {
+            while ((match = clozeEqual.exec(line)) !== null) {
+              const answer = match[1].trim();
+              if (answer) {
+                cards.push({ noteTitle: file.title, type: 'cloze', front: line, back: answer });
+              }
             }
           }
         }

@@ -150,11 +150,6 @@ export async function createDocument(
         type: 'doc',
         content: [
           {
-            type: 'heading',
-            attrs: { level: 1 },
-            content: [{ type: 'text', text: title }]
-          },
-          {
             type: 'paragraph',
             content: []
           }
@@ -500,14 +495,14 @@ export function parseFrontmatter(rawText: string): { properties: DocumentPropert
  */
 export function jsonToMarkdown(
   contentJson?: string,
-  title?: string,
+  _title?: string,
   properties?: DocumentProperties | string
 ): string {
   try {
     const frontmatter = formatFrontmatter(properties);
-    if (!contentJson) return frontmatter + (title ? `# ${title}\n\n` : '');
+    if (!contentJson) return frontmatter;
     const parsed = typeof contentJson === 'string' ? JSON.parse(contentJson) : contentJson;
-    let md = title ? `# ${title}\n\n` : '';
+    let md = '';
 
     const processNode = (node: any): string => {
       if (!node) return '';
@@ -535,20 +530,24 @@ export function jsonToMarkdown(
         const level = node.attrs?.level || 1;
         const prefix = '#'.repeat(level);
         const inner = (node.content || []).map(processNode).join('');
-        return `${prefix} ${inner}\n\n`;
+        const trimmed = inner.trim();
+        if (trimmed.startsWith('#')) {
+          return `${trimmed}\n`;
+        }
+        return `${prefix} ${inner}\n`;
       }
 
       if (node.type === 'paragraph') {
         const inner = (node.content || []).map(processNode).join('');
-        return `${inner}\n\n`;
+        return `${inner}\n`;
       }
 
       if (node.type === 'bulletList') {
-        return (node.content || []).map((li: any) => `- ${(li.content || []).map(processNode).join('').trim()}\n`).join('') + '\n';
+        return (node.content || []).map((li: any) => `- ${(li.content || []).map(processNode).join('').trim()}\n`).join('');
       }
 
       if (node.type === 'orderedList') {
-        return (node.content || []).map((li: any, i: number) => `${i + 1}. ${(li.content || []).map(processNode).join('').trim()}\n`).join('') + '\n';
+        return (node.content || []).map((li: any, i: number) => `${i + 1}. ${(li.content || []).map(processNode).join('').trim()}\n`).join('');
       }
 
       if (node.type === 'taskList') {
@@ -556,18 +555,22 @@ export function jsonToMarkdown(
           const checked = ti.attrs?.checked ? 'x' : ' ';
           const text = (ti.content || []).map(processNode).join('').trim();
           return `- [${checked}] ${text}\n`;
-        }).join('') + '\n';
+        }).join('');
       }
 
       if (node.type === 'blockquote') {
         const inner = (node.content || []).map(processNode).join('').trim();
-        return `> ${inner}\n\n`;
+        return `> ${inner}\n`;
       }
 
       if (node.type === 'codeBlock') {
         const lang = node.attrs?.language || '';
         const inner = (node.content || []).map((c: any) => c.text || '').join('');
-        return `\`\`\`${lang}\n${inner}\n\`\`\`\n\n`;
+        return `\`\`\`${lang}\n${inner}\n\`\`\`\n`;
+      }
+
+      if (node.type === 'horizontalRule') {
+        return `---\n`;
       }
 
       if (node.type === 'table') {
@@ -602,7 +605,7 @@ export function jsonToMarkdown(
         for (let i = 1; i < tableData.length; i++) {
           tableMd += `| ${tableData[i].join(' | ')} |\n`;
         }
-        return tableMd + '\n';
+        return tableMd;
       }
 
       if (node.content) {
@@ -612,11 +615,11 @@ export function jsonToMarkdown(
       return '';
     };
 
-    if (parsed.content) {
+    if (parsed.content && Array.isArray(parsed.content)) {
       md += parsed.content.map(processNode).join('');
     }
 
-    return md.trim();
+    return frontmatter + md;
   } catch (e) {
     return '';
   }
@@ -656,7 +659,10 @@ export function markdownToTipTapJson(md: string): string {
     });
   }
 
-  const lines = md.replace(/\r\n/g, '\n').split('\n');
+  const cleanMd = md.replace(/\r\n/g, '\n');
+  // Strip trailing newline to prevent multiplying trailing empty lines on round-trip
+  const normalized = cleanMd.endsWith('\n') ? cleanMd.slice(0, -1) : cleanMd;
+  const lines = normalized.split('\n');
   const content: any[] = [];
 
   for (let i = 0; i < lines.length; i++) {

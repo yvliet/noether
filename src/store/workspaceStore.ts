@@ -1169,6 +1169,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (docId && !docId.startsWith('__')) {
       useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
+    } else {
+      useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
   },
 
@@ -1338,6 +1340,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (paneId === focusedPaneId && nextTab && nextTab.document_id && !nextTab.document_id.startsWith('__')) {
       useDocumentStore.getState().setActiveDocumentById(nextTab.document_id, { preserveViewMode: true });
+    } else if (paneId === focusedPaneId) {
+      useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 
     saveTabsSession(get().vaultPath);
@@ -1545,6 +1549,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         ? { splitTabs: updatedPane.tabs, splitActiveTabId: newTab.id, splitActiveDocumentId: null }
         : {}),
     });
+
+    if (isMain || paneId === get().focusedPaneId) {
+      useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
+    }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
     saveTabsSession(get().vaultPath);
@@ -1775,6 +1783,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (tabToMove.document_id && !tabToMove.document_id.startsWith('__')) {
       useDocumentStore.getState().setActiveDocumentById(tabToMove.document_id, { preserveViewMode: true });
+    } else {
+      useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: tabToMove.id });
@@ -1809,6 +1819,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (docId && !docId.startsWith('__')) {
       useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
+    } else if (!docId && (isMain || paneId === get().focusedPaneId)) {
+      useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: tabId });

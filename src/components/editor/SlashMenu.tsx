@@ -11,6 +11,7 @@ import {
   MinusSignIcon,
   Brain02Icon,
   TableIcon,
+  Link01Icon,
   ChevronRightIcon,
 } from '@/components/common/Icons';
 import { SlashItem } from './extensions/slash-command';
@@ -32,10 +33,13 @@ export const SlashMenu = React.memo(
       activeSubmenuRef.current = activeSubmenu;
 
       const gridPickerRef = useRef<TableGridPickerHandle>(null);
+      const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
       useEffect(() => {
         setSelectedIndex(0);
+        selectedIndexRef.current = 0;
         setActiveSubmenu(null);
+        activeSubmenuRef.current = null;
       }, [items]);
 
       useImperativeHandle(
@@ -45,9 +49,12 @@ export const SlashMenu = React.memo(
             if (!items || items.length === 0) {
               return false;
             }
+
+            // Submenu active: table picker navigation
             if (activeSubmenuRef.current === 'table') {
               if (event.key === 'Escape' || event.key === 'ArrowLeft') {
                 setActiveSubmenu(null);
+                activeSubmenuRef.current = null;
                 return true;
               }
               const handled = gridPickerRef.current?.onKeyDown(event);
@@ -55,28 +62,41 @@ export const SlashMenu = React.memo(
             }
 
             if (event.key === 'ArrowUp') {
-              setSelectedIndex((prev) => (prev + items.length - 1) % items.length);
+              const nextIndex = (selectedIndexRef.current + items.length - 1) % items.length;
+              selectedIndexRef.current = nextIndex;
+              setSelectedIndex(nextIndex);
               setActiveSubmenu(null);
+              activeSubmenuRef.current = null;
+              itemRefs.current[nextIndex]?.scrollIntoView({ block: 'nearest' });
               return true;
             }
+
             if (event.key === 'ArrowDown') {
-              setSelectedIndex((prev) => (prev + 1) % items.length);
+              const nextIndex = (selectedIndexRef.current + 1) % items.length;
+              selectedIndexRef.current = nextIndex;
+              setSelectedIndex(nextIndex);
               setActiveSubmenu(null);
+              activeSubmenuRef.current = null;
+              itemRefs.current[nextIndex]?.scrollIntoView({ block: 'nearest' });
               return true;
             }
+
             if (event.key === 'ArrowRight') {
               const currentItem = items[selectedIndexRef.current];
               if (currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table')) {
                 setActiveSubmenu('table');
+                activeSubmenuRef.current = 'table';
                 return true;
               }
             }
-            if (event.key === 'Enter') {
+
+            if (event.key === 'Enter' || event.key === 'Tab') {
               const currentItem = items[selectedIndexRef.current];
               if (currentItem) {
                 if (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table') {
                   if (activeSubmenuRef.current !== 'table') {
                     setActiveSubmenu('table');
+                    activeSubmenuRef.current = 'table';
                     return true;
                   }
                 } else {
@@ -85,6 +105,7 @@ export const SlashMenu = React.memo(
                 }
               }
             }
+
             return false;
           },
         }),
@@ -93,7 +114,7 @@ export const SlashMenu = React.memo(
 
       if (!items.length) {
         return (
-          <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] p-2 text-xs text-[var(--flint-text-muted)] w-64">
+          <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none">
             No matching block commands
           </div>
         );
@@ -104,7 +125,7 @@ export const SlashMenu = React.memo(
 
       return (
         <div className="relative flex items-start gap-2">
-          <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs">
+          <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none">
             <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
               Insert Block
             </div>
@@ -115,23 +136,31 @@ export const SlashMenu = React.memo(
               return (
                 <button
                   key={item.title}
+                  ref={(el) => {
+                    itemRefs.current[index] = el;
+                  }}
                   type="button"
                   onClick={() => {
                     if (isTable) {
-                      setActiveSubmenu((prev) => (prev === 'table' ? null : 'table'));
+                      const nextSub = activeSubmenu === 'table' ? null : 'table';
+                      setActiveSubmenu(nextSub);
+                      activeSubmenuRef.current = nextSub;
                     } else {
                       command(item);
                     }
                   }}
                   onMouseEnter={() => {
+                    selectedIndexRef.current = index;
                     setSelectedIndex(index);
                     if (isTable) {
                       setActiveSubmenu('table');
+                      activeSubmenuRef.current = 'table';
                     } else {
                       setActiveSubmenu(null);
+                      activeSubmenuRef.current = null;
                     }
                   }}
-                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left transition-colors cursor-pointer ${
+                  className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left cursor-pointer ${
                     isSelected
                       ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)]'
                       : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)]'
@@ -180,7 +209,10 @@ export const SlashMenu = React.memo(
                     command(currentItem, dimensions);
                   }
                 }}
-                onClose={() => setActiveSubmenu(null)}
+                onClose={() => {
+                  setActiveSubmenu(null);
+                  activeSubmenuRef.current = null;
+                }}
               />
             </div>
           )}
@@ -191,7 +223,13 @@ export const SlashMenu = React.memo(
 );
 SlashMenu.displayName = 'SlashMenu';
 
-function renderIcon(name: string) {
+function renderIcon(name: string | React.ReactNode) {
+  if (React.isValidElement(name)) {
+    return name;
+  }
+  if (typeof name !== 'string') {
+    return <QuoteDownIcon size={16} />;
+  }
   switch (name) {
     case 'h1':
       return <Heading101Icon size={16} />;
@@ -215,6 +253,8 @@ function renderIcon(name: string) {
       return <Brain02Icon size={16} />;
     case 'table':
       return <TableIcon size={16} />;
+    case 'link':
+      return <Link01Icon size={16} />;
     default:
       return <QuoteDownIcon size={16} />;
   }

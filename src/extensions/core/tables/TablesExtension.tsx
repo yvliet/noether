@@ -63,15 +63,17 @@ export class TablesExtension extends Extension {
     // 3. Register Slash Command
     this.registerSlashCommand({
       title: 'Table',
-      description: 'Insert a customizable table',
+      description: 'Insert an interactive table grid',
       icon: 'table',
-      command: ({ editor, range }: any) => {
+      command: ({ editor, range, rows, cols }: any) => {
         const { defaultRows, defaultCols } = useTablesSettings.getState();
+        const r = rows || defaultRows || 3;
+        const c = cols || defaultCols || 3;
         editor
           .chain()
           .focus()
           .deleteRange(range)
-          .insertTable({ rows: defaultRows || 3, cols: defaultCols || 3, withHeaderRow: false })
+          .insertTable({ rows: r, cols: c, withHeaderRow: true })
           .run();
       },
     });

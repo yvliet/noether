@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { Brain02Icon, Search01Icon, HelpCircleIcon, RotateCcwIcon, SparklesIcon } from '@/components/common/Icons';
-import { getCardsForDocument, getDueCardCount } from './fsrsDb';
+import { getCardsForDocument, getDueCardCount, syncDocumentCards } from './fsrsDb';
 import { FSRSCardRecord } from './types';
 
 export const FlashcardsView: React.FC = React.memo(() => {
@@ -12,13 +12,37 @@ export const FlashcardsView: React.FC = React.memo(() => {
   const [dueCardCount, setDueCardCount] = useState<number>(0);
 
   useEffect(() => {
-    if (activeDocument?.id) {
-      getCardsForDocument(activeDocument.id).then(setCardsInNote);
-    } else {
-      setCardsInNote([]);
-    }
-    getDueCardCount().then(setDueCardCount);
-  }, [activeDocument?.id, activeDocument?.updated_at]);
+    let isMounted = true;
+    const refresh = async () => {
+      if (activeDocument?.id && !activeDocument.is_folder) {
+        const cards = await syncDocumentCards(activeDocument.id, activeDocument.content_json);
+        if (isMounted) setCardsInNote(cards);
+      } else {
+        if (isMounted) setCardsInNote([]);
+      }
+      const dueCount = await getDueCardCount();
+      if (isMounted) setDueCardCount(dueCount);
+    };
+
+    refresh();
+
+    const handleFsrsUpdated = () => {
+      if (activeDocument?.id && !activeDocument.is_folder) {
+        getCardsForDocument(activeDocument.id).then((cards) => {
+          if (isMounted) setCardsInNote(cards);
+        });
+      }
+      getDueCardCount().then((count) => {
+        if (isMounted) setDueCardCount(count);
+      });
+    };
+
+    window.addEventListener('flint:fsrs-updated', handleFsrsUpdated);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('flint:fsrs-updated', handleFsrsUpdated);
+    };
+  }, [activeDocument?.id, activeDocument?.updated_at, activeDocument?.content_json]);
 
   const [filterType, setFilterType] = useState<'all' | 'concept_descriptor' | 'two_way' | 'cloze'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -69,7 +93,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
               if (isSearchOpen) setSearchQuery('');
             }}
             title={isSearchOpen ? 'Close search' : 'Search flashcards'}
-            className={`p-1 rounded hover:bg-[var(--flint-bg-card-hover)] transition-colors ${
+            className={`p-1 rounded hover:bg-[var(--flint-bg-card-hover)] ${
               isSearchOpen ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]' : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)]'
             }`}
           >
@@ -83,7 +107,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
         <div className="p-2.5 pb-1.5">
           <button
             onClick={() => setIsReviewModalOpen(true)}
-            className="w-full py-2 px-3 rounded-lg border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] bg-[var(--flint-bg-card)] hover:bg-[var(--flint-bg-card-hover)] flex items-center justify-between text-left transition-all cursor-pointer"
+            className="w-full py-2 px-3 rounded-lg border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] bg-[var(--flint-bg-card)] hover:bg-[var(--flint-bg-card-hover)] flex items-center justify-between text-left cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <SparklesIcon size={14} className="text-[var(--flint-accent)]" />
@@ -135,7 +159,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
               <button
                 key={f.id}
                 onClick={() => setFilterType(f.id as any)}
-                className={`px-2.5 py-0.5 rounded-[5px] text-[11px] transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
+                className={`px-2.5 py-0.5 rounded-[5px] text-[11px] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
                   isSelected
                     ? 'bg-[var(--flint-accent)] text-white font-semibold border border-black/20'
                     : 'bg-[#252525] hover:bg-[#2e2e2e] text-[#999] hover:text-white border border-[#383838] hover:border-[#484848] font-medium'
@@ -157,7 +181,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
               <span className="text-[12px]">No flashcards found in note.</span>
               <span
                 data-tooltip="Create cards in note:&#10;• Concept :: Explanation&#10;• Term ;; Definition&#10;• Sentence with {cloze}"
-                className="inline-flex items-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-help transition-colors"
+                className="inline-flex items-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-help"
               >
                 <HelpCircleIcon size={13} />
               </span>
@@ -172,7 +196,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
               <div
                 key={card.id}
                 onClick={() => toggleCardFlip(card.id)}
-                className="p-2.5 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] transition-all flex flex-col gap-1.5 cursor-pointer group"
+                className="p-2.5 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] flex flex-col gap-1.5 cursor-pointer group"
               >
                 <div className="flex items-center justify-between text-[10px]">
                   <span className="font-semibold uppercase tracking-wider text-[var(--flint-text-muted)] flex items-center gap-1">
@@ -180,7 +204,7 @@ export const FlashcardsView: React.FC = React.memo(() => {
                     {card.card_type.replace(/_/g, ' ')}
                   </span>
 
-                  <span className="text-[10px] text-[var(--flint-text-faint)] flex items-center gap-1 group-hover:text-[var(--flint-text-muted)] transition-colors">
+                  <span className="text-[10px] text-[var(--flint-text-faint)] flex items-center gap-1 group-hover:text-[var(--flint-text-muted)]">
                     <RotateCcwIcon size={10} />
                     {isFlipped ? 'Click to show answer' : 'Showing answer'}
                   </span>
@@ -189,8 +213,8 @@ export const FlashcardsView: React.FC = React.memo(() => {
                 {isFlipped ? (
                   <div className="text-[12px] text-[var(--flint-text-primary)] font-normal leading-snug">
                     {isCloze ? (
-                      card.front_text.split(/(\{.+?\})/g).map((part, i) =>
-                        part.startsWith('{') && part.endsWith('}') ? (
+                      card.front_text.split(/(\{[^{}]+\}|==[^=\n]+==)/g).map((part, i) =>
+                        (part.startsWith('{') && part.endsWith('}')) || (part.startsWith('==') && part.endsWith('==')) ? (
                           <span
                             key={i}
                             className="inline-block px-1.5 py-0.5 mx-0.5 rounded-[5px] bg-[#222222] border border-[#383838] shadow-[0_1px_2px_rgba(0,0,0,0.35)] text-[var(--flint-accent)] font-mono text-[10px]"

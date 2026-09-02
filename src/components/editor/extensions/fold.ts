@@ -753,29 +753,11 @@ export const Fold = Extension.create<FoldOptions>({
               saveFoldState(tr.doc, nextFoldedHeadings, nextFoldedIndents, documentId);
             }
 
-            // High-performance optimization: If plain text edit without fold toggles or reload,
-            // map existing fold decorations forward in O(1) to avoid re-extracting all blocks on 100k+ docs
-            let decorations: DecorationSet;
-            if (!isFoldAction && !reloadFoldState && oldState.decorations && tr.docChanged) {
-              // Check if block structure changed (e.g. line breaks / node insertion / deletion)
-              const hasStructuralChange = tr.steps.some((step: any) => {
-                const slice = step.slice;
-                if (!slice || !slice.content) return false;
-                let hasBlock = false;
-                slice.content.forEach((n: any) => {
-                  if (n.isBlock || n.type.name === 'heading') hasBlock = true;
-                });
-                return hasBlock;
-              });
-
-              if (!hasStructuralChange) {
-                decorations = oldState.decorations.map(tr.mapping, tr.doc);
-              } else {
-                decorations = buildFoldDecorations(tr.doc, nextFoldedHeadings, nextFoldedIndents);
-              }
-            } else {
-              decorations = buildFoldDecorations(tr.doc, nextFoldedHeadings, nextFoldedIndents);
-            }
+            const decorations = buildFoldDecorations(
+              tr.doc,
+              nextFoldedHeadings,
+              nextFoldedIndents
+            );
 
             return {
               foldedHeadings: nextFoldedHeadings,
