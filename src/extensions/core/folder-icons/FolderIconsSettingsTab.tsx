@@ -15,15 +15,17 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { getFolderIconDef } from './folderIconsCatalog';
 import { HugeIconRenderer } from '@/components/common/IconPicker';
+import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import {
   Delete02Icon,
   RotateCcwIcon,
   Folder01Icon,
-  SparklesIcon,
 } from '@/components/common/Icons';
 
 export const FolderIconsSettingsTab: React.FC = () => {
   const icons = useFolderIconsStore((s) => s.icons);
+  const showDefaultIcons = useFolderIconsStore((s) => s.showDefaultIcons);
+  const setShowDefaultIcons = useFolderIconsStore((s) => s.setShowDefaultIcons);
   const removeFolderIcon = useFolderIconsStore((s) => s.removeFolderIcon);
   const clearAllIcons = useFolderIconsStore((s) => s.clearAllIcons);
   const openPicker = useFolderIconsStore((s) => s.openPicker);
@@ -45,10 +47,12 @@ export const FolderIconsSettingsTab: React.FC = () => {
     });
   }, [icons, documents]);
 
+  const isModified = !showDefaultIcons || customFolderEntries.length > 0;
+
   const handleClearAll = () => {
     openConfirmDialog({
       title: 'Reset All Folder Icons',
-      message: 'Are you sure you want to reset all custom folder icons back to their default chevrons?',
+      message: 'Are you sure you want to reset all custom folder icons back to their defaults?',
       confirmText: 'Reset all',
       isDanger: true,
       onConfirm: async () => {
@@ -57,96 +61,133 @@ export const FolderIconsSettingsTab: React.FC = () => {
     });
   };
 
+  const handleRestoreDefaults = () => {
+    setShowDefaultIcons(true);
+    if (customFolderEntries.length > 0) {
+      handleClearAll();
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-6 text-xs text-[#dcddde] max-w-2xl">
-      {/* Header section */}
-      <div className="flex flex-col gap-1 pb-4 border-b border-[#2d2d2d]">
-        <div className="flex items-center gap-2">
-          <SparklesIcon size={16} className="text-[var(--flint-accent,#ea580c)]" />
-          <h3 className="text-sm font-semibold text-white">Folder Icons</h3>
+    <div className="flex flex-col gap-5">
+      {/* Header section matching other settings */}
+      <div className="flex items-center justify-between px-4">
+        <div>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Folder Icons</h3>
+          <p className="text-[11px] text-[#777]">
+            Configure folder icon appearance and manage custom folder assignments.
+          </p>
         </div>
-        <p className="text-[11px] text-[#888888]">
-          Right-click any folder in the file tree to assign custom HugeIcons with smooth hover animations.
-        </p>
+        {isModified && (
+          <button
+            type="button"
+            onClick={handleRestoreDefaults}
+            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5"
+          >
+            <RotateCcwIcon size={12} />
+            <span>Restore defaults</span>
+          </button>
+        )}
       </div>
 
-      {/* Active custom folder icons list */}
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[12px] font-medium text-white">
-            Customized Folders ({customFolderEntries.length})
-          </span>
+      {/* General Configuration Card */}
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* Show default folder icons */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Show default folder icons</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Display closed and open folder icons next to chevrons when no custom icon is set.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {!showDefaultIcons && (
+              <button
+                type="button"
+                onClick={() => setShowDefaultIcons(true)}
+                title="Restore default (Enabled)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <ToggleSwitch checked={showDefaultIcons} onChange={setShowDefaultIcons} />
+          </div>
+        </div>
+
+        {/* Customized Folders count / actions */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Customized Folders</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              You currently have {customFolderEntries.length} folder{customFolderEntries.length === 1 ? '' : 's'} with custom icons assigned.
+            </span>
+          </div>
           {customFolderEntries.length > 0 && (
             <button
               type="button"
               onClick={handleClearAll}
-              className="px-2.5 py-1 text-[11px] bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-md transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 py-1 text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-[5px] cursor-pointer flex items-center gap-1.5"
             >
-              <RotateCcwIcon size={11} />
+              <RotateCcwIcon size={12} />
               <span>Reset all</span>
             </button>
           )}
         </div>
+      </div>
 
-        {customFolderEntries.length === 0 ? (
-          <div className="p-6 rounded-lg border border-[#282828] bg-[#1a1a1a]/50 text-center text-[#777] flex flex-col items-center gap-2">
-            <Folder01Icon size={24} className="text-[#555]" />
-            <p className="text-[11px]">No custom folder icons configured yet.</p>
-            <p className="text-[10px] text-[#666]">
-              Right-click any folder in your Hearth sidebar to choose an icon.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            {customFolderEntries.map((item) => {
-              return (
-                <div
-                  key={item.folderId}
-                  className="flex items-center justify-between p-2.5 rounded-lg border border-[#282828] bg-[#1a1a1a] hover:border-[#383838] transition-colors"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-6 h-6 rounded bg-[#242424] flex items-center justify-center text-[var(--flint-accent,#ea580c)] shrink-0">
-                      {item.iconDef ? (
-                        <HugeIconRenderer iconDef={item.iconDef.iconDef} size={14} />
-                      ) : (
-                        <Folder01Icon size={14} />
-                      )}
-                    </div>
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-[11px] font-medium text-white truncate">
-                        {item.folderTitle}
-                      </span>
-                      <span className="text-[10px] text-[#777]">
-                        Icon: {item.iconName}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1">
-                    {item.folderDoc && (
-                      <button
-                        type="button"
-                        onClick={() => openPicker(item.folderDoc!)}
-                        className="px-2 py-1 text-[10px] text-[#999] hover:text-white hover:bg-[#282828] rounded transition-colors cursor-pointer"
-                      >
-                        Change
-                      </button>
+      {/* Active custom folder icons list (if any) */}
+      {customFolderEntries.length > 0 && (
+        <div className="flex flex-col gap-2 px-1">
+          <span className="text-xs font-medium text-[#aaa] px-3">Folder icon assignments</span>
+          <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+            {customFolderEntries.map((item) => (
+              <div
+                key={item.folderId}
+                className="flex items-center justify-between p-3 hover:bg-[#242424]"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-6 h-6 rounded bg-[#282828] flex items-center justify-center text-[var(--flint-accent,#ea580c)] shrink-0">
+                    {item.iconDef ? (
+                      <HugeIconRenderer iconDef={item.iconDef.iconDef} size={14} />
+                    ) : (
+                      <Folder01Icon size={14} />
                     )}
-                    <button
-                      type="button"
-                      onClick={() => removeFolderIcon(item.folderId)}
-                      className="p-1 text-[#777] hover:text-rose-400 hover:bg-rose-500/10 rounded transition-colors cursor-pointer"
-                      title="Remove custom icon"
-                    >
-                      <Delete02Icon size={12} />
-                    </button>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[13px] font-normal text-white truncate">
+                      {item.folderTitle}
+                    </span>
+                    <span className="text-[11px] text-[#777]">
+                      Icon: {item.iconName}
+                    </span>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="flex items-center gap-1.5">
+                  {item.folderDoc && (
+                    <button
+                      type="button"
+                      onClick={() => openPicker(item.folderDoc!)}
+                      className="px-2.5 py-1 text-xs text-[#aaa] hover:text-white hover:bg-[#2e2e2e] rounded-[5px] border border-[#333] cursor-pointer"
+                    >
+                      Change
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeFolderIcon(item.folderId)}
+                    className="p-1.5 text-[#777] hover:text-rose-400 hover:bg-rose-500/10 rounded-[5px] cursor-pointer"
+                    title="Remove custom icon"
+                  >
+                    <Delete02Icon size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

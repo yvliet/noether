@@ -123,15 +123,15 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const decorators = useFileTreeDecorators();
   const isHighlightSuppressed = useMemo(() => {
     if (decorators.length === 0) return false;
-    const ctx = { doc: item, activeTab, app };
+    const ctx = { doc: item, activeTab, app, isOpen };
     return decorators.some((d) => d.suppressHighlight?.(item, ctx));
-  }, [decorators, item, activeTab, app]);
+  }, [decorators, item, activeTab, app, isOpen]);
 
   const isEditingSuppressed = useMemo(() => {
     if (decorators.length === 0) return false;
-    const ctx = { doc: item, activeTab, app };
+    const ctx = { doc: item, activeTab, app, isOpen };
     return decorators.some((d) => d.suppressEditing?.(item, ctx));
-  }, [decorators, item, activeTab, app]);
+  }, [decorators, item, activeTab, app, isOpen]);
 
   const defaultIcon = useMemo(() => {
     if (!isFolder) return <div className="w-4 h-4 shrink-0" />;
@@ -142,7 +142,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 transition-colors"
+        className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0"
       >
         {isOpen ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
       </button>
@@ -167,6 +167,48 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     }
     return defaultIcon;
   }, [decorators, item, activeTab, app, isOpen, defaultIcon, setIsOpen]);
+
+  const treeNodePrefix = useMemo(() => {
+    if (decorators.length === 0) return null;
+    const ctx = {
+      doc: item,
+      activeTab,
+      app,
+      isOpen,
+    };
+    const prefixes: React.ReactNode[] = [];
+    for (const d of decorators) {
+      if (d.renderPrefix) {
+        const res = d.renderPrefix(item, ctx);
+        if (res !== undefined && res !== null) {
+          prefixes.push(<React.Fragment key={d.id}>{res}</React.Fragment>);
+        }
+      }
+    }
+    if (prefixes.length === 0) return null;
+    return prefixes.length === 1 ? prefixes[0] : <>{prefixes}</>;
+  }, [decorators, item, activeTab, app, isOpen]);
+
+  const treeNodeSuffix = useMemo(() => {
+    if (decorators.length === 0) return null;
+    const ctx = {
+      doc: item,
+      activeTab,
+      app,
+      isOpen,
+    };
+    const suffixes: React.ReactNode[] = [];
+    for (const d of decorators) {
+      if (d.renderSuffix) {
+        const res = d.renderSuffix(item, ctx);
+        if (res !== undefined && res !== null) {
+          suffixes.push(<React.Fragment key={d.id}>{res}</React.Fragment>);
+        }
+      }
+    }
+    if (suffixes.length === 0) return null;
+    return suffixes.length === 1 ? suffixes[0] : <>{suffixes}</>;
+  }, [decorators, item, activeTab, app, isOpen]);
 
   const isEditing = (!isEditingSuppressed && isStoreEditing) || localIsEditing;
 
@@ -828,6 +870,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       title={item.title}
       typeBadge={typeBadge}
       icon={treeNodeIcon}
+      prefix={treeNodePrefix}
+      suffix={treeNodeSuffix}
       renameInput={
         <TreeNodeRenameInput
           value={editTitle}

@@ -35,7 +35,7 @@ export const FOLDER_ICONS_MANIFEST: ExtensionManifest = {
   id: 'flint-folder-icons',
   name: 'Folder Icons',
   version: '1.0.0',
-  description: 'Customize folder icons in the file tree with a rich HugeIcons selector and smooth hover animations.',
+  description: 'Customize folder icons next to chevrons in the file tree with a rich HugeIcons selector and SQLite persistence.',
   author: 'Yuliet Li',
   isCore: false,
   tags: ['folder', 'icons', 'customization', 'file-tree', 'ui'],
@@ -67,17 +67,15 @@ export class FolderIconsExtension extends Extension {
       }
     });
 
-    // 3. Register FileTreeDecorator for rendering custom folder icons
+    // 4. Register FileTreeDecorator for rendering folder icons next to the chevron
     this.registerFileTreeDecorator({
       id: 'folder-icons-decorator',
-      renderIcon: (doc, context) => {
+      renderPrefix: (doc, context) => {
         if (!doc.is_folder) return undefined;
         return (
           <FolderIconSlot
             folderId={doc.id}
-            isOpen={context.isOpen}
-            toggleOpen={context.toggleOpen}
-            defaultIcon={context.defaultIcon}
+            isOpen={context?.isOpen}
           />
         );
       },
@@ -156,6 +154,17 @@ export class FolderIconsExtension extends Extension {
     });
 
     // 8. Register Commands
+    this.addCommand({
+      id: 'folder-icons:toggle-default-icons',
+      title: 'Folder Icons: Toggle default folder icons',
+      section: 'Settings',
+      icon: <Folder01Icon size={16} />,
+      action: () => {
+        const current = useFolderIconsStore.getState().showDefaultIcons;
+        useFolderIconsStore.getState().setShowDefaultIcons(!current);
+      },
+    });
+
     this.addCommand({
       id: 'folder-icons:reset-all',
       title: 'Folder Icons: Reset all custom folder icons',

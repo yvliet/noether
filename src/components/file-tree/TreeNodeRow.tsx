@@ -14,7 +14,9 @@ export interface TreeNodeRowProps {
   id: string;
   level?: number;
   icon?: React.ReactNode;
+  prefix?: React.ReactNode;
   title?: React.ReactNode;
+  suffix?: React.ReactNode;
   typeBadge?: string | null;
   isFolder?: boolean;
   isOpen?: boolean;
@@ -44,7 +46,9 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   id,
   level = 0,
   icon,
+  prefix,
   title,
+  suffix,
   typeBadge,
   isFolder = false,
   isOpen = false,
@@ -105,13 +109,20 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-visible">
-          {/* Left Icon (Chevron or File/Plugin Icon) */}
+          {/* Left Icon (Chevron or Spacer) */}
           {icon ? (
             <div className="w-4 h-4 flex items-center justify-center shrink-0">
               {icon}
             </div>
           ) : (
             <div className="w-4 h-4 shrink-0" />
+          )}
+
+          {/* Optional Prefix (e.g. Folder/File Icon, Decorator Badges) */}
+          {prefix && (
+            <div className="flex items-center justify-center shrink-0">
+              {prefix}
+            </div>
           )}
 
           {/* Title or Rename Input */}
@@ -125,6 +136,9 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
               {title}
             </span>
           )}
+
+          {/* Optional Suffix */}
+          {suffix}
 
           {/* Optional Type Badge (e.g. CANVAS) */}
           {typeBadge && !isEditing && (

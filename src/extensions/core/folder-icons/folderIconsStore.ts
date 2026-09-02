@@ -15,6 +15,8 @@ import { dbAdapter } from '@/lib/db/adapter';
 import {
   loadFolderIconsFromLocalStorage,
   saveFolderIconsToLocalStorage,
+  loadFolderIconsSettingsFromLocalStorage,
+  saveFolderIconsSettingsToLocalStorage,
   initFolderIconsDb,
   getAllFolderIconsFromDb,
   setFolderIconInDb,
@@ -34,7 +36,11 @@ export interface FolderIconsState {
   pickerFolder: DocumentItem | null;
   /** Whether the store has completed initial DB hydration */
   isLoaded: boolean;
+  /** Whether to show default folder open/close icons when no custom icon is set */
+  showDefaultIcons: boolean;
 
+  /** Set showDefaultIcons toggle */
+  setShowDefaultIcons: (show: boolean) => void;
   /** Initialize store by loading existing icons from SQLite */
   loadIcons: () => Promise<void>;
   /** Open icon picker for a specific folder */
@@ -54,6 +60,12 @@ export const useFolderIconsStore = create<FolderIconsState>((set, get) => ({
   icons: loadFolderIconsFromLocalStorage(),
   pickerFolder: null,
   isLoaded: false,
+  showDefaultIcons: loadFolderIconsSettingsFromLocalStorage().showDefaultIcons,
+
+  setShowDefaultIcons: (show: boolean) => {
+    set({ showDefaultIcons: show });
+    saveFolderIconsSettingsToLocalStorage({ showDefaultIcons: show });
+  },
 
   loadIcons: async () => {
     if (!dbAdapter.isReady()) {

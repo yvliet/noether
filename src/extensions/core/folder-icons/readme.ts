@@ -2,7 +2,7 @@ export const folderIconsReadme = `# Folder Icons Plugin
 **Author**: Yuliet Li  
 **Version**: 1.0.0
 
-**Folder Icons** allows you to assign distinctive HugeIcons to any folder in your Hearth file tree with smooth hover transitions, real-time search filtering, and persistent SQLite storage.
+**Folder Icons** allows you to assign distinctive HugeIcons to any folder in your Hearth file tree alongside the expand/collapse chevron, with real-time search filtering and persistent SQLite storage.
 
 ---
 
@@ -13,9 +13,8 @@ export const folderIconsReadme = `# Folder Icons Plugin
    - Directly choose from an extensive library of curated HugeIcons.
    - Quickly remove or reset custom icons whenever needed.
 
-2. **Cascade-Style Hover Transformation**:
-   - Folders display your custom icon by default for immediate visual identification.
-   - Hovering the folder row smoothly animates the custom icon away and reveals the standard chevron expand/collapse indicator.
+2. **Dedicated Folder Icon Beside Chevron**:
+   - Folders display an icon directly next to the expand/collapse chevron arrow, before the folder name.
    - Preserves 100% of native folder toggling, drag-and-drop, and sub-folder navigation behavior.
 
 3. **Curated Icon Selector**:

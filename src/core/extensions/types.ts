@@ -437,6 +437,8 @@ export interface FileTreeDecoratorContext {
   activeTab?: TabItem | null;
   /** Host application instance. */
   app: FlintApp;
+  /** Whether the folder node is currently open/expanded. */
+  isOpen?: boolean;
 }
 
 /**

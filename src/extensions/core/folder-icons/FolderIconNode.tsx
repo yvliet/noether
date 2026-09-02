@@ -1,58 +1,58 @@
 /**
  * @file FolderIconNode.tsx
  * @description
- * Tree node icon component for custom folder icons.
- * Features an instant hover swap between the custom icon and the chevron arrow,
- * matching Cascade's visual mechanics with zero animation delays or jank.
+ * Tree node icon component for custom and default folder icons in the Hearth file tree.
+ * Rendered next to the expand/collapse chevron arrow, before the folder name.
  *
  * @author Yuliet Li
  * @since 1.0.0
  */
 
 import React from 'react';
-import { ChevronDownIcon, ChevronRightIcon } from '@/components/common/Icons';
+import { Folder01Icon, FolderOpenIcon } from '@/components/common/Icons';
 import { getFolderIconDef } from './folderIconsCatalog';
 import { HugeIconRenderer } from '@/components/common/IconPicker';
 import { useFolderIconsStore } from './folderIconsStore';
 
 export interface FolderIconNodeProps {
   folderId: string;
-  iconId: string;
+  iconId?: string;
   color?: string;
-  isOpen: boolean;
-  toggleOpen: () => void;
+  isOpen?: boolean;
+  showDefaultIcon?: boolean;
 }
 
 export const FolderIconNode: React.FC<FolderIconNodeProps> = React.memo(({
   iconId,
   color,
-  isOpen,
-  toggleOpen,
+  isOpen = false,
+  showDefaultIcon = true,
 }) => {
-  const iconDef = getFolderIconDef(iconId);
+  const iconDef = iconId ? getFolderIconDef(iconId) : null;
+
+  if (iconDef) {
+    return (
+      <span
+        className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+        style={color ? { color } : undefined}
+        title={iconDef.name}
+      >
+        <HugeIconRenderer iconDef={iconDef.iconDef} size={14} color={color || 'currentColor'} />
+      </span>
+    );
+  }
+
+  if (!showDefaultIcon) {
+    return null;
+  }
 
   return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        toggleOpen();
-      }}
-      className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 relative cursor-pointer"
-      title={iconDef?.name || 'Folder Icon'}
+    <span
+      className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+      title="Folder"
     >
-      <span
-        className="flex items-center justify-center group-hover:hidden text-[#888888]"
-        style={color ? { color } : undefined}
-      >
-        {iconDef ? (
-          <HugeIconRenderer iconDef={iconDef.iconDef} size={12} color={color || 'currentColor'} />
-        ) : null}
-      </span>
-      <span className="hidden group-hover:flex items-center justify-center text-[#dcddde]">
-        {isOpen ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
-      </span>
-    </button>
+      {isOpen ? <FolderOpenIcon size={14} /> : <Folder01Icon size={14} />}
+    </span>
   );
 });
 
@@ -60,9 +60,7 @@ FolderIconNode.displayName = 'FolderIconNode';
 
 export interface FolderIconSlotProps {
   folderId: string;
-  isOpen: boolean;
-  toggleOpen: () => void;
-  defaultIcon: React.ReactNode;
+  isOpen?: boolean;
 }
 
 /**
@@ -71,20 +69,22 @@ export interface FolderIconSlotProps {
  */
 export const FolderIconSlot: React.FC<FolderIconSlotProps> = ({
   folderId,
-  isOpen,
-  toggleOpen,
-  defaultIcon,
+  isOpen = false,
 }) => {
   const entry = useFolderIconsStore((s) => s.icons[folderId]);
-  if (!entry) return <>{defaultIcon}</>;
+  const showDefaultIcons = useFolderIconsStore((s) => s.showDefaultIcons);
+
+  if (!entry && !showDefaultIcons) {
+    return null;
+  }
 
   return (
     <FolderIconNode
       folderId={folderId}
-      iconId={entry.iconId}
-      color={entry.color}
+      iconId={entry?.iconId}
+      color={entry?.color}
       isOpen={isOpen}
-      toggleOpen={toggleOpen}
+      showDefaultIcon={showDefaultIcons}
     />
   );
 };

@@ -22,6 +22,45 @@ function getLocalStorageKey(): string {
   return 'flint_folder_icons_cache_v1';
 }
 
+function getSettingsLocalStorageKey(): string {
+  return 'flint_folder_icons_settings_v1';
+}
+
+export interface FolderIconsSettings {
+  showDefaultIcons: boolean;
+}
+
+export const DEFAULT_FOLDER_ICONS_SETTINGS: FolderIconsSettings = {
+  showDefaultIcons: true,
+};
+
+/**
+ * Loads folder icons settings from localStorage.
+ */
+export function loadFolderIconsSettingsFromLocalStorage(): FolderIconsSettings {
+  if (typeof window === 'undefined') return DEFAULT_FOLDER_ICONS_SETTINGS;
+  try {
+    const raw = localStorage.getItem(getSettingsLocalStorageKey());
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        showDefaultIcons: parsed.showDefaultIcons !== undefined ? Boolean(parsed.showDefaultIcons) : true,
+      };
+    }
+  } catch {}
+  return DEFAULT_FOLDER_ICONS_SETTINGS;
+}
+
+/**
+ * Saves folder icons settings to localStorage.
+ */
+export function saveFolderIconsSettingsToLocalStorage(settings: FolderIconsSettings): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(getSettingsLocalStorageKey(), JSON.stringify(settings));
+  } catch {}
+}
+
 /**
  * Loads folder icon assignments synchronously from localStorage.
  * Ensures 0ms instant display upon page load/refresh before WASM SQLite initializes.
