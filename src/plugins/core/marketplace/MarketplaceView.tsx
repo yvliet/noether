@@ -8,22 +8,8 @@ import {
   Search01Icon,
   Download01Icon,
   CheckIcon,
-  SparklesIcon,
   Cancel01Icon,
-  LayersIcon,
-  Database01Icon,
-  Calendar01Icon,
-  GitForkIcon,
-  NeuralNetworkIcon,
-  Edit02Icon,
-  Tag01Icon,
-  SourceCodeIcon,
-  TextFontIcon,
-  Layout01Icon,
   BookOpen01Icon,
-  Bookmark01Icon,
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
   ArrowUp01Icon,
   ArrowDown01Icon,
   ChevronDownIcon,
@@ -64,143 +50,6 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplacePluginItem[] = [
     category: 'Productivity',
     featured: true,
     icon: <CascadeIcon size={18} className="text-[#dcddde]" />,
-  },
-  {
-    id: 'flint-dataview',
-    name: 'Dataview & Query Engine',
-    version: '1.4.2',
-    author: 'Blacksmith Labs',
-    description: 'Dynamic SQL and DQL database query engine to construct live tables and lists across note metadata.',
-    downloads: '48.2k',
-    stars: 5,
-    category: 'Productivity',
-    featured: true,
-    icon: <Database01Icon size={18} className="text-[#38bdf8]" />,
-  },
-  {
-    id: 'flint-calendar',
-    name: 'Calendar & Journal Timeline',
-    version: '2.1.0',
-    author: 'Liam C.',
-    description: 'Interactive monthly calendar view with dots indicating note frequency, mood trackers, and daily logs.',
-    downloads: '39.8k',
-    stars: 5,
-    category: 'Productivity',
-    featured: true,
-    icon: <Calendar01Icon size={18} className="text-[#f59e0b]" />,
-  },
-  {
-    id: 'flint-excalidraw',
-    name: 'Excalidraw Whiteboard',
-    version: '1.9.5',
-    author: 'Zsolt V.',
-    description: 'Infinite hand-drawn whiteboard canvas to sketch diagrams, wireframes, and embed interactive drawings into notes.',
-    downloads: '35.1k',
-    stars: 5,
-    category: 'Visualization',
-    featured: true,
-    icon: <Layout01Icon size={18} className="text-[#ec4899]" />,
-  },
-  {
-    id: 'flint-mermaid-pro',
-    name: 'Mermaid Diagrams Pro',
-    version: '1.2.0',
-    author: 'Chartist',
-    description: 'Extended interactive preview for Mermaid flowcharts, sequence diagrams, mindmaps, and Gantt charts.',
-    downloads: '26.4k',
-    stars: 4.9,
-    category: 'Visualization',
-    icon: <NeuralNetworkIcon size={18} className="text-[#a855f7]" />,
-  },
-  {
-    id: 'flint-git-sync',
-    name: 'Git Automated Sync',
-    version: '1.3.1',
-    author: 'Denis O.',
-    description: 'Automated background Git backup, periodic auto-commit, push to GitHub/GitLab, and version history.',
-    downloads: '31.7k',
-    stars: 4.8,
-    category: 'Integration',
-    featured: true,
-    icon: <SourceCodeIcon size={18} className="text-[#10b981]" />,
-  },
-  {
-    id: 'flint-readwise',
-    name: 'Readwise & Kindle Sync',
-    version: '2.0.1',
-    author: 'Readwise Team',
-    description: 'Sync your book highlights, Kindle notes, Twitter bookmarks, and web articles seamlessly into your vault.',
-    downloads: '22.8k',
-    stars: 4.9,
-    category: 'Integration',
-    icon: <Bookmark01Icon size={18} className="text-[#6366f1]" />,
-  },
-  {
-    id: 'flint-advanced-tables',
-    name: 'Advanced Markdown Tables',
-    version: '1.5.0',
-    author: 'Tony G.',
-    description: 'Obsidian-grade table editing with tab/enter navigation, formula calculations, sorting, and markdown alignment.',
-    downloads: '42.9k',
-    stars: 5,
-    category: 'Formatting',
-    featured: true,
-    icon: <LayersIcon size={18} className="text-[#3b82f6]" />,
-  },
-  {
-    id: 'flint-paste-url',
-    name: 'Paste URL as Link Title',
-    version: '1.1.2',
-    author: 'Oliver K.',
-    description: 'Automatically fetches webpage titles when pasting URLs to create clean formatted markdown hyperlinks.',
-    downloads: '18.6k',
-    stars: 4.8,
-    category: 'Productivity',
-    icon: <Edit02Icon size={18} className="text-[#14b8a6]" />,
-  },
-  {
-    id: 'flint-linter',
-    name: 'Markdown Linter & Formatter',
-    version: '1.8.3',
-    author: 'Victor B.',
-    description: 'Automatic formatting rules for spacing, list indentation, YAML frontmatter consistency, and heading structure.',
-    downloads: '29.3k',
-    stars: 4.9,
-    category: 'Formatting',
-    icon: <TextFontIcon size={18} className="text-[#8b5cf6]" />,
-  },
-  {
-    id: 'flint-omnisearch',
-    name: 'Omnisearch AI & OCR',
-    version: '1.6.0',
-    author: 'Scry Team',
-    description: 'Deep semantic search engine that indexes handwritten notes, PDFs, images, and full-text documents.',
-    downloads: '24.7k',
-    stars: 4.9,
-    category: 'Productivity',
-    icon: <Search01Icon size={18} className="text-[#06b6d4]" />,
-  },
-  {
-    id: 'flint-bionic-reading',
-    name: 'Bionic Reading Mode',
-    version: '1.0.4',
-    author: 'Focus Lab',
-    description: 'Emphasizes initial letters of words in Reading view to guide fixation points and maximize reading speed.',
-    downloads: '14.1k',
-    stars: 4.7,
-    category: 'Productivity',
-    icon: <SparklesIcon size={18} className="text-[#eab308]" />,
-  },
-  {
-    id: 'flint-tag-wrangler',
-    name: 'Tag Wrangler & Renamer',
-    version: '1.2.5',
-    author: 'P. Johnson',
-    description: 'Bulk rename, merge, alias, and manage hierarchies of tags throughout all vault documents.',
-    downloads: '19.8k',
-    stars: 4.8,
-    category: 'Formatting',
-    icon: <Tag01Icon size={18} className="text-[#f43f5e]" />,
   },
 ];
 
@@ -271,15 +120,14 @@ export const MarketplaceView: React.FC = () => {
   const isPluginInstalled = (id: string) => {
     return (
       localInstalledIds.has(id) ||
-      pluginList.community.some((p) => p.id === id) ||
-      pluginList.core.some((p) => p.id === id)
+      app.extensions.isExtensionEnabled(id)
     );
   };
 
   const handleInstallPlugin = (plugin: MarketplacePluginItem) => {
     setInstallingIds((prev) => new Set(prev).add(plugin.id));
 
-    setTimeout(() => {
+    setTimeout(async () => {
       // Register in local installed state
       setLocalInstalledIds((prev) => {
         const next = new Set(prev).add(plugin.id);
@@ -287,25 +135,30 @@ export const MarketplaceView: React.FC = () => {
         return next;
       });
 
-      // Register into runtime plugin manager
+      // Register or enable in extension manager
       try {
-        class CommunityPluginStub extends Plugin {
-          onload() {
-            console.log(`[Community Plugin] Loaded ${plugin.name}`);
+        if (app.extensions.getExtensionManifest(plugin.id)) {
+          await app.extensions.enableExtension(plugin.id);
+        } else {
+          class CommunityExtensionStub extends Plugin {
+            onload() {
+              console.log(`[Community Extension] Loaded ${plugin.name}`);
+            }
           }
-        }
 
-        app.plugins.registerPlugin(
-          {
-            id: plugin.id,
-            name: plugin.name,
-            version: plugin.version,
-            description: plugin.description,
-            author: plugin.author,
-            isCore: false,
-          },
-          CommunityPluginStub
-        );
+          app.plugins.registerPlugin(
+            {
+              id: plugin.id,
+              name: plugin.name,
+              version: plugin.version,
+              description: plugin.description,
+              author: plugin.author,
+              isCore: false,
+            },
+            CommunityExtensionStub
+          );
+          await app.extensions.enableExtension(plugin.id);
+        }
       } catch (err) {
         console.warn('Registered in runtime manager:', err);
       }
@@ -320,7 +173,7 @@ export const MarketplaceView: React.FC = () => {
     }, 600);
   };
 
-  const handleUninstallPlugin = (plugin: MarketplacePluginItem) => {
+  const handleUninstallPlugin = async (plugin: MarketplacePluginItem) => {
     setLocalInstalledIds((prev) => {
       const next = new Set(prev);
       next.delete(plugin.id);
@@ -328,7 +181,11 @@ export const MarketplaceView: React.FC = () => {
       return next;
     });
 
-    app.plugins.disablePlugin(plugin.id);
+    if (app.extensions.getExtensionManifest(plugin.id)) {
+      await app.extensions.disableExtension(plugin.id);
+    } else {
+      await app.plugins.disablePlugin(plugin.id);
+    }
     showToast(`Uninstalled "${plugin.name}"`, 'info');
   };
 
@@ -400,7 +257,7 @@ export const MarketplaceView: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Find in community plugins..."
+                placeholder="Find in community extensions..."
                 className="bg-transparent outline-none flex-1 text-xs text-white placeholder-[#555]"
               />
               {searchQuery && (
@@ -449,7 +306,7 @@ export const MarketplaceView: React.FC = () => {
                 style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
                 className="w-full font-bold text-[var(--flint-text-primary)] pb-2 font-sans tracking-tight leading-tight select-text"
               >
-                Community Plugins
+                Community Extensions
               </h1>
             </div>
 
@@ -489,7 +346,7 @@ export const MarketplaceView: React.FC = () => {
                     </div>
                     <div className="flex items-center gap-1.5 flex-1 min-w-0">
                       <span className="text-[11px] text-[var(--flint-text-secondary)] font-normal leading-tight font-sans select-text">
-                        Discover, install, and extend your Flint vault with community plugins.
+                        Discover, install, and extend your Flint vault with community extensions.
                       </span>
                     </div>
                   </div>
@@ -551,7 +408,7 @@ export const MarketplaceView: React.FC = () => {
           {filteredPlugins.length === 0 ? (
             <div className="text-center py-16 flex flex-col items-center justify-center">
               <p className="text-xs text-[#777] mb-3">
-                No community plugins match your filter.
+                No community extensions match your filter.
               </p>
               <button
                 onClick={() => {
@@ -589,7 +446,7 @@ export const MarketplaceView: React.FC = () => {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">
-                          <div className="flex items-center gap-1.5 truncate">
+                          <div className="flex items-baseline gap-1.5 truncate">
                             <button
                               type="button"
                               onClick={() => useWorkspaceStore.getState().openPluginDocTab(plugin.id, plugin.name)}
@@ -597,7 +454,7 @@ export const MarketplaceView: React.FC = () => {
                             >
                               {plugin.name}
                             </button>
-                            <span className="text-[10px] text-[#666] font-mono">v{plugin.version}</span>
+                            <span className="text-[11px] text-[#777] font-normal">v{plugin.version}</span>
                           </div>
 
                           <span className="text-[10px] px-2 py-0.5 rounded-[5px] bg-[#222222] text-[#999] border border-[#333333] shadow-[0_1px_2px_rgba(0,0,0,0.25)] shrink-0 font-medium">
@@ -641,25 +498,26 @@ export const MarketplaceView: React.FC = () => {
                         )}
 
                         {isInstalled ? (
-                          <div className="flex items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 text-[10px] text-[#10b981] font-medium px-2 py-0.5 rounded-[5px] bg-[#10b981]/10 border border-[#10b981]/25 shadow-[0_1px_2px_rgba(0,0,0,0.25)]">
-                              <CheckIcon size={11} /> Installed
+                          <button
+                            type="button"
+                            onClick={() => handleUninstallPlugin(plugin)}
+                            className="group/btn px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-[#f85153] hover:border-[#f85153]/40 rounded-[5px] border border-[#383838] text-[11px] font-medium transition-none cursor-pointer flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] min-w-[78px]"
+                          >
+                            <span className="flex items-center gap-1 group-hover/btn:hidden">
+                              <CheckIcon size={11} />
+                              <span>Installed</span>
                             </span>
-
-                            <button
-                              type="button"
-                              onClick={() => handleUninstallPlugin(plugin)}
-                              className="text-[10px] text-[#777] hover:text-[#f85153] px-1.5 py-0.5 rounded hover:bg-[#252525] transition-colors cursor-pointer"
-                            >
-                              Uninstall
-                            </button>
-                          </div>
+                            <span className="hidden group-hover/btn:flex items-center gap-1 text-[#f85153]">
+                              <Cancel01Icon size={11} />
+                              <span>Uninstall</span>
+                            </span>
+                          </button>
                         ) : (
                           <button
                             type="button"
                             onClick={() => handleInstallPlugin(plugin)}
                             disabled={isInstalling}
-                            className="px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] disabled:opacity-50"
+                            className="px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] text-[11px] font-medium transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] min-w-[78px] disabled:opacity-50"
                           >
                             <Download01Icon size={11} className={isInstalling ? 'animate-bounce' : ''} />
                             <span>{isInstalling ? 'Installing...' : 'Install'}</span>

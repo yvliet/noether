@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import { BookOpen01Icon } from '@/components/common/Icons';
 import { CommandRegistry } from '../registries/CommandRegistry';
 import { ViewRegistry } from '../registries/ViewRegistry';
 import { ActionRailRegistry } from '../registries/ActionRailRegistry';
@@ -107,6 +108,7 @@ export class FlintApp {
     this.views.registerView({
       type: 'extension-doc',
       title: 'Extension Documentation',
+      icon: React.createElement(BookOpen01Icon, { size: 14 }),
       render: () =>
         React.createElement(
           React.Suspense,
@@ -117,6 +119,7 @@ export class FlintApp {
     this.views.registerView({
       type: 'plugin-doc',
       title: 'Extension Documentation',
+      icon: React.createElement(BookOpen01Icon, { size: 14 }),
       render: () =>
         React.createElement(
           React.Suspense,

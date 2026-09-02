@@ -402,9 +402,12 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
   const targetExtensionId = useMemo(() => {
     if (explicitExtensionId) return explicitExtensionId;
     if (explicitPluginId) return explicitPluginId;
-    if (currentTab?.document_id) return currentTab.document_id;
+    if (currentTab?.document_id?.startsWith('__plugin_doc:')) {
+      return currentTab.document_id.replace(/^__plugin_doc:/, '').replace(/__$/, '');
+    }
     if (currentTab?.id?.startsWith('plugin-doc:')) return currentTab.id.replace('plugin-doc:', '');
     if (currentTab?.id?.startsWith('extension-doc:')) return currentTab.id.replace('extension-doc:', '');
+    if (currentTab?.document_id && !currentTab.document_id.startsWith('__')) return currentTab.document_id;
     return 'note-properties';
   }, [explicitExtensionId, explicitPluginId, currentTab]);
 

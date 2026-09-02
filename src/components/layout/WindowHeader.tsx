@@ -16,6 +16,7 @@ import {
   Copy01Icon,
   Alert02Icon,
   StickyNote02Icon,
+  BookOpen01Icon,
   WindowMinimizeIcon,
   WindowMaximizeIcon,
   WindowRestoreIcon,
@@ -89,7 +90,10 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
         e.preventDefault();
         e.stopPropagation();
 
-        const isDoc = tab.document_id && !tab.document_id.startsWith('__');
+        const isDoc =
+          (!tab.view_type || tab.view_type === 'document') &&
+          (!tab.view_mode || tab.view_mode === 'document') &&
+          Boolean(tab.document_id && !tab.document_id.startsWith('__'));
         const doc = isDoc ? documents.find((d) => d.id === tab.document_id) : null;
 
         const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
@@ -742,7 +746,10 @@ export const WindowHeader: React.FC = React.memo(() => {
 
   const renderTabIcon = useCallback(
     (tab: TabItem, isActive: boolean, isDimmed = false) => {
-      const isDoc = tab.document_id && !tab.document_id.startsWith('__');
+      const isDoc =
+        (!tab.view_type || tab.view_type === 'document') &&
+        (!tab.view_mode || tab.view_mode === 'document') &&
+        Boolean(tab.document_id && !tab.document_id.startsWith('__'));
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
 
       if (isDoc && !doc) {
@@ -796,6 +803,9 @@ export const WindowHeader: React.FC = React.memo(() => {
         if (viewType === 'canvas') {
           return <Layout01Icon size={13} className={`shrink-0 ${iconColor}`} />;
         }
+        if (viewType === 'plugin-doc' || viewType === 'extension-doc') {
+          return <BookOpen01Icon size={13} className={`shrink-0 ${iconColor}`} />;
+        }
       }
 
       if (tab.icon) {
@@ -815,7 +825,10 @@ export const WindowHeader: React.FC = React.memo(() => {
 
   const getTabDisplayTitle = useCallback(
     (tab: TabItem) => {
-      const isDoc = tab.document_id && !tab.document_id.startsWith('__');
+      const isDoc =
+        (!tab.view_type || tab.view_type === 'document') &&
+        (!tab.view_mode || tab.view_mode === 'document') &&
+        Boolean(tab.document_id && !tab.document_id.startsWith('__'));
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
 
       for (const dec of tabDecorators) {
@@ -848,7 +861,10 @@ export const WindowHeader: React.FC = React.memo(() => {
 
   const getTabTooltip = useCallback(
     (tab: TabItem) => {
-      const isDoc = tab.document_id && !tab.document_id.startsWith('__');
+      const isDoc =
+        (!tab.view_type || tab.view_type === 'document') &&
+        (!tab.view_mode || tab.view_mode === 'document') &&
+        Boolean(tab.document_id && !tab.document_id.startsWith('__'));
       const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
 
       if (isDoc && !doc) {

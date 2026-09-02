@@ -533,7 +533,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       id: tabId,
       viewType: 'plugin-doc',
       title: title || pluginId,
-      documentId: pluginId,
+      documentId: `__plugin_doc:${pluginId}__`,
     });
   },
 
@@ -1038,7 +1038,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           get().openTasksTab();
         }
       } else if (entry.viewType === 'plugin-doc' && entry.documentId) {
-        get().openPluginDocTab(entry.documentId, entry.title);
+        const pluginId = entry.documentId.startsWith('__plugin_doc:')
+          ? entry.documentId.replace(/^__plugin_doc:/, '').replace(/__$/, '')
+          : entry.documentId;
+        get().openPluginDocTab(pluginId, entry.title);
       } else if (entry.viewType && entry.viewType !== 'document') {
         get().openCustomTab({
           viewType: entry.viewType,

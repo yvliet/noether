@@ -2624,7 +2624,7 @@ const CorePluginsTab: React.FC<CorePluginsTabProps> = React.memo(({ onNavigateTa
               className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
             >
               <div className="flex-1 pr-4">
-                <div className="flex items-center gap-2">
+                <div className="flex items-baseline gap-2">
                   <span className="text-[13px] font-normal text-white">{plugin.name}</span>
                   <span className="text-[11px] text-[#777] font-normal">v{plugin.version}</span>
                 </div>
@@ -2757,7 +2757,7 @@ const CommunityPluginsTab: React.FC<CommunityPluginsTabProps> = React.memo(({ on
                 className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
               >
                 <div className="flex-1 pr-4">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-baseline gap-2">
                     <span className="text-[13px] font-normal text-white">{plugin.name}</span>
                     <span className="text-[11px] text-[#777] font-normal">v{plugin.version}</span>
                     {plugin.author && (
@@ -3330,7 +3330,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       {/* Top Plugin Header with Enabled Toggle matching CorePlugins row design */}
                       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
                         <div className="flex-1 pr-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-baseline gap-2">
                             <span className="text-[13px] font-normal text-white">
                               {manifest?.name || currentTab.name}
                             </span>
