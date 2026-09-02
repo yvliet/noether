@@ -626,41 +626,62 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
               {(() => {
                 const parts = breadcrumbItems;
                 const hasFolders = parts.length > 1;
+                const folderParts = parts.slice(0, -1);
+                const topFolder = folderParts.length > 0 ? folderParts[0] : null;
+                const middleFolders = folderParts.length > 1 ? folderParts.slice(1) : [];
+                const middleFoldersTooltip = middleFolders.map((f: any) => f.title).join(' / ');
+                const immediateParentFolder = folderParts.length > 0 ? folderParts[folderParts.length - 1] : null;
+
+                const handleFolderClick = (targetId: string, customOnClick?: (app: any, e: any) => void) => (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (customOnClick) {
+                    customOnClick(app, e);
+                    return;
+                  }
+                  const { isLeftSidebarOpen, toggleLeftSidebar, setActiveLeftView } =
+                    useWorkspaceStore.getState();
+                  if (!isLeftSidebarOpen) {
+                    toggleLeftSidebar();
+                  }
+                  setActiveLeftView('files');
+                  window.dispatchEvent(
+                    new CustomEvent('flint:reveal-tree-item', {
+                      detail: { id: targetId },
+                    })
+                  );
+                };
 
                 return (
                   <>
-                    {hasFolders &&
-                      parts.slice(0, -1).map((folderPart: any) => (
-                        <React.Fragment key={folderPart.id}>
-                          <span
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (folderPart.onClick) {
-                                folderPart.onClick(app, e);
-                                return;
-                              }
-                              const { isLeftSidebarOpen, toggleLeftSidebar, setActiveLeftView } =
-                                useWorkspaceStore.getState();
-                              if (!isLeftSidebarOpen) {
-                                toggleLeftSidebar();
-                              }
-                              setActiveLeftView('files');
-                              window.dispatchEvent(
-                                new CustomEvent('flint:reveal-tree-item', {
-                                  detail: { id: folderPart.id },
-                                })
-                              );
-                            }}
-                            className={`text-[#666] hover:text-[#999] cursor-pointer transition-colors inline-flex items-center gap-1 ${
-                              folderPart.className || ''
-                            }`}
-                          >
-                            {folderPart.icon}
-                            {folderPart.title}
-                          </span>
-                          <span className="text-[#444] select-none mx-1">/</span>
-                        </React.Fragment>
-                      ))}
+                    {/* Topmost Folder */}
+                    {topFolder && (
+                      <React.Fragment key={topFolder.id}>
+                        <span
+                          onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
+                          className={`text-[#666] hover:text-[#999] cursor-pointer transition-colors inline-flex items-center gap-1 ${
+                            (topFolder as any).className || ''
+                          }`}
+                        >
+                          {(topFolder as any).icon}
+                          {topFolder.title}
+                        </span>
+                        <span className="text-[#444] select-none mx-1">/</span>
+                      </React.Fragment>
+                    )}
+
+                    {/* Intermediate Folders Ellipsis (when 2 or more parent folders exist) */}
+                    {middleFolders.length > 0 && immediateParentFolder && (
+                      <React.Fragment key="breadcrumb-middle-ellipsis">
+                        <span
+                          onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
+                          title={middleFoldersTooltip || undefined}
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer transition-colors font-medium select-none"
+                        >
+                          ...
+                        </span>
+                        <span className="text-[#444] select-none mx-1">/</span>
+                      </React.Fragment>
+                    )}
 
                     {/* Active File Title with in-place Inline Rename */}
                     {isEditingSubheader ? (
