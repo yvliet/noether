@@ -6,6 +6,7 @@ import {
   FolderAddIcon,
   Sorting01Icon,
   ArrowShrink02Icon,
+  ArrowExpand01Icon,
   Search01Icon,
   HelpCircleIcon,
   Settings02Icon,
@@ -87,6 +88,9 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);
   const triggerCollapseAll = useWorkspaceStore((s) => s.triggerCollapseAll);
+  const collapseAllFolders = useWorkspaceStore((s) => s.collapseAllFolders);
+  const expandAllFolders = useWorkspaceStore((s) => s.expandAllFolders);
+  const folderOpenState = useWorkspaceStore((s) => s.folderOpenState);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
@@ -94,6 +98,12 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const cancelFolderSelection = useWorkspaceStore((s) => s.cancelFolderSelection);
 
   const documents = useDocumentStore((s) => s.documents);
+
+  const folders = useMemo(() => documents.filter((d) => d.is_folder), [documents]);
+  const areAllFoldersCollapsed = useMemo(() => {
+    if (folders.length === 0) return false;
+    return folders.every((f) => folderOpenState[f.id] === false);
+  }, [folders, folderOpenState]);
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const createNewFolder = useDocumentStore((s) => s.createNewFolder);
   const searchQuery = useDocumentStore((s) => s.searchQuery);
@@ -464,14 +474,14 @@ export const LeftSidebar: React.FC = React.memo(() => {
       { type: 'separator' },
       {
         id: 'root-collapse-all',
-        title: 'Collapse all folders',
-        icon: <ArrowShrink02Icon size={14} />,
-        onClick: triggerCollapseAll,
+        title: areAllFoldersCollapsed ? 'Expand all folders' : 'Collapse all folders',
+        icon: areAllFoldersCollapsed ? <ArrowExpand01Icon size={14} /> : <ArrowShrink02Icon size={14} />,
+        onClick: areAllFoldersCollapsed ? expandAllFolders : collapseAllFolders,
       },
     ];
 
     showContextMenu(e, items, { scope: 'file-tree-root' });
-  }, [handleCreateNote, handleCreateFolder, triggerCollapseAll, showContextMenu, clearSelection]);
+  }, [handleCreateNote, handleCreateFolder, areAllFoldersCollapsed, expandAllFolders, collapseAllFolders, showContextMenu, clearSelection]);
 
   const activeDrag = useActiveTabDrag();
 
@@ -561,11 +571,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
           </div>
 
           <button
-            onClick={triggerCollapseAll}
-            title="Collapse all folders"
+            onClick={areAllFoldersCollapsed ? expandAllFolders : collapseAllFolders}
+            title={areAllFoldersCollapsed ? 'Expand all folders' : 'Collapse all folders'}
             className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
           >
-            <ArrowShrink02Icon size={14} />
+            {areAllFoldersCollapsed ? <ArrowExpand01Icon size={14} /> : <ArrowShrink02Icon size={14} />}
           </button>
         </div>
       )}

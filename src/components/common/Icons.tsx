@@ -130,7 +130,7 @@ import {
   TableIcon as HugeTableIcon,
   ChevronDownIcon as HugeChevronDownIcon,
   ChevronRightIcon as HugeChevronRightIcon,
-  ArrowExpandIcon as HugeArrowExpandIcon,
+  ArrowExpand01Icon as HugeArrowExpand01Icon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -345,7 +345,9 @@ export const TextFootnoteIcon = createIcon(HugeTextFootnoteIcon);
 export const TextSelectionIcon = createIcon(HugeTextSelectionIcon);
 export const TextClearIcon = createIcon(HugeTextClearIcon);
 export const TableIcon = createIcon(HugeTableIcon);
-export const ArrowExpandIcon = createIcon(HugeArrowExpandIcon);
+export const ArrowExpand01Icon = createIcon(HugeArrowExpand01Icon);
+export const ArrowExpandIcon = ArrowExpand01Icon;
+export const ArrowExpand02Icon = ArrowExpand01Icon;
 
 /**
  * Custom dual-stacked chevrons indicator.

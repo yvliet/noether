@@ -17,6 +17,7 @@ import {
   PlusSignIcon,
   Search01Icon,
   ArrowShrink02Icon,
+  ArrowExpand01Icon,
   FileAddIcon,
   FolderAddIcon,
   CancelCircleIcon,
@@ -40,10 +41,40 @@ export const CascadeView: React.FC = React.memo(() => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [collapseKey, setCollapseKey] = useState(0);
+
+  // Set of collapsed cascade names. If a name is NOT in the set, the cascade book is open (default open).
+  const [collapsedCascadeNames, setCollapsedCascadeNames] = useState<Set<string>>(new Set());
 
   // Extract all cascades from the documents list
   const allCascades = useMemo(() => getAllCascades(documents), [documents]);
+
+  // Check if all cascade books are currently collapsed
+  const areAllCollapsed = useMemo(() => {
+    if (allCascades.length === 0) return false;
+    return allCascades.every((c) => collapsedCascadeNames.has(c.name));
+  }, [allCascades, collapsedCascadeNames]);
+
+  const handleToggleCollapseExpandAll = useCallback(() => {
+    if (areAllCollapsed) {
+      // Expand all: clear all collapsed names
+      setCollapsedCascadeNames(new Set());
+    } else {
+      // Collapse all: add every cascade name to collapsed set
+      setCollapsedCascadeNames(new Set(allCascades.map((c) => c.name)));
+    }
+  }, [areAllCollapsed, allCascades]);
+
+  const handleToggleCascade = useCallback((cascadeName: string, nextOpen: boolean) => {
+    setCollapsedCascadeNames((prev) => {
+      const next = new Set(prev);
+      if (nextOpen) {
+        next.delete(cascadeName);
+      } else {
+        next.add(cascadeName);
+      }
+      return next;
+    });
+  }, []);
 
   // Filter cascades according to search query
   const filteredCascades = useMemo(() => {
@@ -114,16 +145,16 @@ export const CascadeView: React.FC = React.memo(() => {
         },
         { type: 'separator' },
         {
-          id: 'collapse-all',
-          title: 'Collapse all books',
-          icon: <ArrowShrink02Icon size={14} />,
-          onClick: () => setCollapseKey((prev) => prev + 1),
+          id: 'collapse-expand-all',
+          title: areAllCollapsed ? 'Expand all books' : 'Collapse all books',
+          icon: areAllCollapsed ? <ArrowExpand01Icon size={14} /> : <ArrowShrink02Icon size={14} />,
+          onClick: handleToggleCollapseExpandAll,
         },
       ];
 
       showContextMenu(e, items, { scope: 'cascade-view' });
     },
-    [handleCreateNewCascade, showContextMenu]
+    [handleCreateNewCascade, areAllCollapsed, handleToggleCollapseExpandAll, showContextMenu]
   );
 
   return (
@@ -161,11 +192,11 @@ export const CascadeView: React.FC = React.memo(() => {
 
         <button
           type="button"
-          onClick={() => setCollapseKey((prev) => prev + 1)}
-          title="Collapse all books"
+          onClick={handleToggleCollapseExpandAll}
+          title={areAllCollapsed ? 'Expand all books' : 'Collapse all books'}
           className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
         >
-          <ArrowShrink02Icon size={14} />
+          {areAllCollapsed ? <ArrowExpand01Icon size={14} /> : <ArrowShrink02Icon size={14} />}
         </button>
       </div>
 
@@ -223,11 +254,13 @@ export const CascadeView: React.FC = React.memo(() => {
             No matching cascade books found.
           </div>
         ) : (
-          <div key={`cascade-list-${collapseKey}`} className="flex flex-col gap-0.5 flex-1">
+          <div className="flex flex-col gap-0.5 flex-1">
             {filteredCascades.map((cascade) => (
               <CascadeFolderNode
                 key={`cascade-tree-${cascade.name}`}
                 cascade={cascade}
+                isOpen={!collapsedCascadeNames.has(cascade.name)}
+                onToggleOpen={(open) => handleToggleCascade(cascade.name, open)}
               />
             ))}
           </div>

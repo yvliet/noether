@@ -289,10 +289,27 @@ export interface CascadeFolderNodeProps {
     notes: Array<{ doc: DocumentItem; page: number }>;
   };
   level?: number;
+  isOpen?: boolean;
+  onToggleOpen?: (isOpen: boolean) => void;
 }
 
-export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({ cascade, level = 0 }) => {
-  const [isOpen, setIsOpen] = useState(true);
+export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
+  cascade,
+  level = 0,
+  isOpen: propsIsOpen,
+  onToggleOpen,
+}) => {
+  const [localIsOpen, setLocalIsOpen] = useState(true);
+  const isOpen = propsIsOpen !== undefined ? propsIsOpen : localIsOpen;
+
+  const handleToggleOpen = useCallback(() => {
+    if (onToggleOpen) {
+      onToggleOpen(!isOpen);
+    } else {
+      setLocalIsOpen(!isOpen);
+    }
+  }, [isOpen, onToggleOpen]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(cascade.name);
   const prevIsEditingRef = useRef(false);
@@ -453,11 +470,12 @@ export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
   useEffect(() => {
     if (isDropTarget && !isOpen) {
       const timer = setTimeout(() => {
-        setIsOpen(true);
+        if (onToggleOpen) onToggleOpen(true);
+        else setLocalIsOpen(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isDropTarget, isOpen]);
+  }, [isDropTarget, isOpen, onToggleOpen]);
 
   // Listen for custom drops onto this Cascade Folder
   useEffect(() => {
@@ -497,7 +515,8 @@ export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
         title: 'New note in Cascade',
         icon: <FileAddIcon size={12} />,
         onClick: () => {
-          setIsOpen(true);
+          if (onToggleOpen) onToggleOpen(true);
+          else setLocalIsOpen(true);
           handleCreateNewPageInCascade();
         },
       },
@@ -515,7 +534,7 @@ export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
         onClick: handleDeleteCascade,
       },
     ],
-    [handleCreateNewPageInCascade, handleDeleteCascade]
+    [handleCreateNewPageInCascade, handleDeleteCascade, onToggleOpen]
   );
 
   return (
@@ -532,7 +551,7 @@ export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
           type="button"
           onClick={(e) => {
             e.stopPropagation();
-            setIsOpen(!isOpen);
+            handleToggleOpen();
           }}
           className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 transition-colors relative"
         >
@@ -566,7 +585,7 @@ export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
       }
       actions={actions}
       onSelect={() => {
-        if (!isEditing) setIsOpen(!isOpen);
+        if (!isEditing) handleToggleOpen();
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();

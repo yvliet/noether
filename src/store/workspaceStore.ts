@@ -362,6 +362,8 @@ interface WorkspaceState {
   setFolderOpen: (folderId: string, isOpen: boolean) => void;
   toggleFolderOpen: (folderId: string) => void;
   collapseAllFolders: () => void;
+  expandAllFolders: () => void;
+  toggleCollapseExpandAll: () => void;
 
   // Hearth Management
   hearthName: string;
@@ -1986,8 +1988,29 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     savePersistedFolderOpenState(nextState, get().hearthPath || get().vaultPath);
     set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
   },
+  expandAllFolders: () => {
+    const docs = useDocumentStore.getState().documents;
+    const nextState: Record<string, boolean> = { ...get().folderOpenState };
+    docs.filter((d) => d.is_folder).forEach((f) => {
+      nextState[f.id] = true;
+    });
+    savePersistedFolderOpenState(nextState, get().hearthPath || get().vaultPath);
+    set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
+  },
+  toggleCollapseExpandAll: () => {
+    const docs = useDocumentStore.getState().documents;
+    const folders = docs.filter((d) => d.is_folder);
+    if (folders.length === 0) return;
+    const openState = get().folderOpenState;
+    const areAllCollapsed = folders.every((f) => openState[f.id] === false);
+    if (areAllCollapsed) {
+      get().expandAllFolders();
+    } else {
+      get().collapseAllFolders();
+    }
+  },
   triggerCollapseAll: () => {
-    get().collapseAllFolders();
+    get().toggleCollapseExpandAll();
   },
 
   // Hearth & Vault state

@@ -89,7 +89,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
   const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
-  const collapseAllCount = useWorkspaceStore((s) => s.collapseAllCount);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
   const openTab = useWorkspaceStore((s) => s.openTab);
   const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
@@ -182,13 +181,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     }
     prevIsEditingRef.current = isEditing;
   }, [isEditing, item.title]);
-
-  // Collapse all trigger
-  useEffect(() => {
-    if (collapseAllCount > 0 && isFolder) {
-      setIsOpen(false);
-    }
-  }, [collapseAllCount, isFolder]);
 
   // Expand on external event
   useEffect(() => {
