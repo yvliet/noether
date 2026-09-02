@@ -17,6 +17,7 @@ class DragTooltipManager {
   private titleEl: HTMLElement | null = null;
   private subtitleEl: HTMLElement | null = null;
   private iconEl: HTMLElement | null = null;
+  private currentSvg: string | null = null;
 
   init() {
     if (this.el || typeof document === 'undefined') return;
@@ -92,9 +93,13 @@ class DragTooltipManager {
     this.init();
     if (!this.el || !this.titleEl || !this.subtitleEl || !this.iconEl) return;
 
-    this.titleEl.textContent = title;
+    if (this.titleEl.textContent !== title) {
+      this.titleEl.textContent = title;
+    }
     if (subtitle) {
-      this.subtitleEl.textContent = subtitle;
+      if (this.subtitleEl.textContent !== subtitle) {
+        this.subtitleEl.textContent = subtitle;
+      }
       this.subtitleEl.style.display = 'block';
     } else {
       this.subtitleEl.textContent = '';
@@ -103,7 +108,10 @@ class DragTooltipManager {
     const svgContent = typeof iconSvgOrDef === 'string'
       ? iconSvgOrDef
       : renderHugeIconSvg(iconSvgOrDef, { size: 15, color: '#dcdcdc', style: 'flex-shrink:0;' });
-    this.iconEl.innerHTML = svgContent;
+    if (this.currentSvg !== svgContent) {
+      this.iconEl.innerHTML = svgContent;
+      this.currentSvg = svgContent;
+    }
     this.el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     this.el.style.display = 'flex';
   }
@@ -112,6 +120,13 @@ class DragTooltipManager {
     if (!this.el || this.el.style.display === 'none') return;
     if (x === 0 && y === 0) return;
     this.el.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+  }
+
+  updateTitle(title: string) {
+    if (!this.titleEl) return;
+    if (this.titleEl.textContent !== title) {
+      this.titleEl.textContent = title;
+    }
   }
 
   updateSubtitle(subtitle: string | null) {

@@ -354,11 +354,18 @@ export const AppShell: React.FC = React.memo(() => {
       return;
     }
 
-    const title = folderPickerPrompt.title || 'Click on a folder';
+    const defaultTitle = folderPickerPrompt.title || 'Click on a folder';
     const subtitle = 'Right-click to cancel';
 
     const handlePointerMove = (e: PointerEvent | MouseEvent) => {
-      dragTooltipManager.show(title, subtitle, FOLDER_SVG, e.clientX + 12, e.clientY + 12);
+      // Dynamic folder picker title: when hovering over a selectable folder, show its name
+      // otherwise fall back to prompt default title (e.g. 'Click on a folder for attachments')
+      const targetEl = e.target instanceof Element ? e.target : (e.target as Node | null)?.parentElement;
+      const folderEl = targetEl?.closest?.('[data-folder-picker-target="true"]') as HTMLElement | null;
+      const hoveredFolderName = folderEl?.getAttribute('data-folder-name') || null;
+      const currentTitle = hoveredFolderName || defaultTitle;
+
+      dragTooltipManager.show(currentTitle, subtitle, FOLDER_SVG, e.clientX + 12, e.clientY + 12);
     };
 
     const handleCancel = (e: Event) => {

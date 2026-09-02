@@ -870,6 +870,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       isEditing={isEditing}
       isDisabled={isPickingFolder && !isFolder}
       isFolderPickerTarget={isPickingFolder && isFolder}
+      folderName={isFolder ? item.title : undefined}
       title={item.title}
       typeBadge={typeBadge}
       icon={treeNodeIcon}

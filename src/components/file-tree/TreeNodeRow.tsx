@@ -29,6 +29,7 @@ export interface TreeNodeRowProps {
   isEditing?: boolean;
   isDisabled?: boolean;
   isFolderPickerTarget?: boolean;
+  folderName?: string;
   renameInput?: React.ReactNode;
   actions?: TreeNodeAction[];
   onSelect?: (e: React.MouseEvent) => void;
@@ -61,6 +62,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   isEditing = false,
   isDisabled = false,
   isFolderPickerTarget = false,
+  folderName,
   renameInput,
   actions = [],
   onSelect,
@@ -85,6 +87,12 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
       {/* Node Row */}
       <div
         id={`flint-tree-item-${id}`}
+        data-folder-picker-target={isFolderPickerTarget ? 'true' : undefined}
+        data-folder-name={
+          isFolderPickerTarget
+            ? folderName || (typeof title === 'string' ? title : undefined)
+            : undefined
+        }
         onPointerDown={isDisabled ? undefined : onPointerDown}
         onClick={isDisabled ? undefined : onSelect}
         onDoubleClick={isDisabled ? undefined : onDoubleClick}
