@@ -511,6 +511,12 @@ export function useAppContextMenu() {
               checked: typeof sub.checked === 'function' ? sub.checked(app, data) : Boolean(sub.checked),
               onClick: sub.onClick ? () => sub.onClick?.(app, data) : undefined,
               submenu: convertSubmenu(sub.submenu),
+              customSubmenu: sub.customSubmenu
+                ? ({ onClose }) =>
+                    typeof sub.customSubmenu === 'function'
+                      ? (sub.customSubmenu as any)({ app, data, onClose })
+                      : sub.customSubmenu
+                : undefined,
             }));
           };
 
@@ -524,6 +530,12 @@ export function useAppContextMenu() {
             checked: isChecked,
             onClick: def.onClick ? () => def.onClick?.(app, data) : undefined,
             submenu: convertSubmenu(def.submenu),
+            customSubmenu: def.customSubmenu
+              ? ({ onClose }) =>
+                  typeof def.customSubmenu === 'function'
+                    ? (def.customSubmenu as any)({ app, data, onClose })
+                    : def.customSubmenu
+              : undefined,
           };
         });
       }

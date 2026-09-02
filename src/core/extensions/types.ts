@@ -335,6 +335,10 @@ export interface ContextMenuItemDefinition {
   isVisible?: (app: FlintApp, data?: unknown) => boolean;
   /** Handler function invoked when clicked. */
   onClick?: (app: FlintApp, data?: unknown) => void | Promise<void>;
+  /** Custom interactive submenu component rendered next to the menu item. */
+  customSubmenu?:
+    | React.ReactNode
+    | ((context: { app: FlintApp; data?: unknown; onClose: () => void }) => React.ReactNode);
 }
 
 /**
@@ -450,6 +454,15 @@ export interface FileTreeItemDecorator {
   renderPrefix?: (doc: DocumentItem, context?: FileTreeDecoratorContext) => React.ReactNode;
   /** Injects suffix elements after the document name. */
   renderSuffix?: (doc: DocumentItem, context?: FileTreeDecoratorContext) => React.ReactNode;
+  /** Custom icon element or renderer for document or folder nodes in the file tree. */
+  renderIcon?: (
+    doc: DocumentItem,
+    context: FileTreeDecoratorContext & {
+      isOpen: boolean;
+      defaultIcon: React.ReactNode;
+      toggleOpen: () => void;
+    }
+  ) => React.ReactNode | null | undefined;
 }
 
 /**

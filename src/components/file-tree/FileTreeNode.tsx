@@ -133,6 +133,41 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     return decorators.some((d) => d.suppressEditing?.(item, ctx));
   }, [decorators, item, activeTab, app]);
 
+  const defaultIcon = useMemo(() => {
+    if (!isFolder) return <div className="w-4 h-4 shrink-0" />;
+    return (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 transition-colors"
+      >
+        {isOpen ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
+      </button>
+    );
+  }, [isFolder, isOpen, setIsOpen]);
+
+  const treeNodeIcon = useMemo(() => {
+    if (decorators.length === 0) return defaultIcon;
+    const ctx = {
+      doc: item,
+      activeTab,
+      app,
+      isOpen,
+      defaultIcon,
+      toggleOpen: () => setIsOpen(!isOpen),
+    };
+    for (const d of decorators) {
+      if (d.renderIcon) {
+        const res = d.renderIcon(item, ctx);
+        if (res !== undefined && res !== null) return res;
+      }
+    }
+    return defaultIcon;
+  }, [decorators, item, activeTab, app, isOpen, defaultIcon, setIsOpen]);
+
   const isEditing = (!isEditingSuppressed && isStoreEditing) || localIsEditing;
 
   const isActive = useWorkspaceStore((s) => {
@@ -792,22 +827,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       isFolderPickerTarget={isPickingFolder && isFolder}
       title={item.title}
       typeBadge={typeBadge}
-      icon={
-        isFolder ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsOpen(!isOpen);
-            }}
-            className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 transition-colors"
-          >
-            {isOpen ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
-          </button>
-        ) : (
-          <div className="w-4 h-4 shrink-0" />
-        )
-      }
+      icon={treeNodeIcon}
       renameInput={
         <TreeNodeRenameInput
           value={editTitle}

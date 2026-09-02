@@ -553,25 +553,14 @@ export const CascadeFolderNode: React.FC<CascadeFolderNodeProps> = React.memo(({
             e.stopPropagation();
             handleToggleOpen();
           }}
-          className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 transition-colors relative"
+          className="w-4 h-4 flex items-center justify-center text-[#777777] group-hover:text-[#dcddde] hover:text-white shrink-0 relative cursor-pointer"
         >
-          <div className="relative flex items-center justify-center w-3.5 h-3.5 overflow-hidden">
-            <Motion01Icon
-              size={12}
-              className="absolute inset-0 m-auto transition-all duration-200 transform opacity-100 scale-100 rotate-0 group-hover:opacity-0 group-hover:scale-50 group-hover:rotate-90 group-hover:pointer-events-none text-[#777777] group-hover:text-[#dcddde]"
-            />
-            {isOpen ? (
-              <ChevronDownIcon
-                size={12}
-                className="absolute inset-0 m-auto transition-all duration-200 transform opacity-0 scale-50 -rotate-90 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-0 text-[#dcddde]"
-              />
-            ) : (
-              <ChevronRightIcon
-                size={12}
-                className="absolute inset-0 m-auto transition-all duration-200 transform opacity-0 scale-50 -rotate-90 pointer-events-none group-hover:opacity-100 group-hover:scale-100 group-hover:rotate-0 text-[#dcddde]"
-              />
-            )}
-          </div>
+          <span className="flex items-center justify-center group-hover:hidden text-[#777777]">
+            <Motion01Icon size={12} />
+          </span>
+          <span className="hidden group-hover:flex items-center justify-center text-[#dcddde]">
+            {isOpen ? <ChevronDownIcon size={12} /> : <ChevronRightIcon size={12} />}
+          </span>
         </button>
       }
       renameInput={

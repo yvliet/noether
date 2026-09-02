@@ -38,6 +38,19 @@ export { registerNativeTools } from '../core/mcp/NativeMcpTools';
 export { EventBus } from '../core/events/EventBus';
 export { renderHugeIconSvg } from '../components/common/Icons';
 export type { IconProps, RenderHugeIconSvgOptions } from '../components/common/Icons';
+export {
+  IconPicker,
+  UNIFIED_ICONS_CATALOG,
+  UNIFIED_ICON_MAP,
+  getUnifiedIconDef,
+  renderUnifiedIcon,
+} from '../components/common/IconPicker';
+export type {
+  IconCategory,
+  CatalogIconDefinition,
+  IconPickerProps,
+  IconPickerVariant,
+} from '../components/common/IconPicker';
 
 // ── Public API Contracts ──
 export type {
