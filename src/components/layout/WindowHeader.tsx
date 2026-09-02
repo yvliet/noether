@@ -862,7 +862,7 @@ export const WindowHeader: React.FC = React.memo(() => {
       }
 
       if (doc) {
-        return getDocumentPath(doc, documents);
+        return doc.title || getTabDisplayTitle(tab);
       }
       return getTabDisplayTitle(tab);
     },
