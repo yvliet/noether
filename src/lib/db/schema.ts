@@ -11,8 +11,9 @@
  *    or spaced-repetition cards) are initialized dynamically by the owning extension
  *    upon load. This prevents schema pollution and allows extensions to manage their
  *    own table schemas, migrations, and indexing lifecycle independently.
- * 3. FTS4 Virtual Tables: Enables sub-millisecond full-text search across thousands
- *    of atomic blocks with zero external search index dependencies.
+ * 3. FTS5 Virtual Tables: Enables sub-millisecond full-text search with BM25
+ *    relevance ranking and unicode61 tokenization, with dynamic fallback to FTS4
+ *    if running on legacy WASM builds.
  *
  * @since 0.1.0
  */
@@ -40,11 +41,6 @@ export const SQL_SCHEMA_STATEMENTS = [
     order_index REAL NOT NULL,
     is_task INTEGER NOT NULL DEFAULT 0,
     task_completed INTEGER NOT NULL DEFAULT 0
-  );`,
-  `CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts USING fts4(
-    block_id,
-    document_id,
-    content_text
   );`,
   `CREATE TABLE IF NOT EXISTS document_links (
     source_document_id TEXT NOT NULL,
@@ -88,6 +84,19 @@ export const SQL_SCHEMA_STATEMENTS = [
   `CREATE INDEX IF NOT EXISTS idx_doc_tags_tag ON document_tags(tag);`,
   `CREATE INDEX IF NOT EXISTS idx_manifest_mtime ON file_manifest(mtime);`
 ];
+
+export const FTS5_BLOCKS_STATEMENT = `CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts USING fts5(
+  block_id UNINDEXED,
+  document_id UNINDEXED,
+  content_text,
+  tokenize = 'unicode61 remove_diacritics 1'
+);`;
+
+export const FTS4_BLOCKS_STATEMENT = `CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts USING fts4(
+  block_id,
+  document_id,
+  content_text
+);`;
 
 export const INITIAL_WELCOME_DOC_ID = 'welcome-to-flint';
 

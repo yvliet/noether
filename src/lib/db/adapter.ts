@@ -17,7 +17,7 @@
  * @since 0.1.0
  */
 
-import { SQL_SCHEMA_STATEMENTS, INITIAL_DOCUMENTS_SEED } from './schema';
+import { SQL_SCHEMA_STATEMENTS, INITIAL_DOCUMENTS_SEED, FTS5_BLOCKS_STATEMENT, FTS4_BLOCKS_STATEMENT } from './schema';
 import { platform } from '@/lib/platform/platformAdapter';
 
 export interface QueryResult<T = any> {
@@ -36,6 +36,15 @@ class UniversalDatabase {
   private idbKey = 'database_bytes';
   private statusListeners: Set<(isActive: boolean) => void> = new Set();
   private statementCache: Map<string, any> = new Map();
+  private ftsVersion: 'fts5' | 'fts4' = 'fts4';
+
+  public getFtsVersion(): 'fts5' | 'fts4' {
+    return this.ftsVersion;
+  }
+
+  public supportsFts5(): boolean {
+    return this.ftsVersion === 'fts5';
+  }
 
   public setSwitchingHearth(switching: boolean) {
     this.isSwitchingHearth = switching;
@@ -179,12 +188,57 @@ class UniversalDatabase {
   private executeSchema() {
     if (!this.db) return;
     try {
+      // 1. Probe SQLite WASM capabilities for FTS5 support
+      let supportsFts5 = false;
+      try {
+        this.db.run('CREATE VIRTUAL TABLE IF NOT EXISTS _flint_fts_probe USING fts5(test_col);');
+        this.db.run('DROP TABLE IF EXISTS _flint_fts_probe;');
+        supportsFts5 = true;
+      } catch (probeErr) {
+        supportsFts5 = false;
+      }
+
+      this.ftsVersion = supportsFts5 ? 'fts5' : 'fts4';
+      console.log(`[Flint DB] Full-Text Search Engine initialized using ${this.ftsVersion.toUpperCase()}`);
+
+      // 2. Execute standard relational schema statements
       for (const statement of SQL_SCHEMA_STATEMENTS) {
         try {
           this.db.run(statement);
         } catch (err) {
           console.warn('[Flint DB] Schema statement warning:', statement, err);
         }
+      }
+
+      // 3. Initialize or Migrate blocks_fts virtual table
+      try {
+        // Inspect existing blocks_fts definition if present
+        const masterRes = this.db.exec("SELECT sql FROM sqlite_master WHERE type='table' AND name='blocks_fts';");
+        const existingSql = masterRes[0]?.values[0]?.[0] as string | undefined;
+
+        if (supportsFts5) {
+          if (existingSql && existingSql.toLowerCase().includes('fts4')) {
+            // Seamlessly migrate legacy FTS4 table to FTS5 with unicode61 tokenizer & BM25 support
+            console.log('[Flint DB] Migrating blocks_fts from FTS4 to FTS5...');
+            this.db.run('DROP TABLE IF EXISTS blocks_fts;');
+            this.db.run(FTS5_BLOCKS_STATEMENT);
+            this.db.run('INSERT INTO blocks_fts (block_id, document_id, content_text) SELECT id, document_id, content_text FROM blocks;');
+            console.log('[Flint DB] Successfully migrated blocks_fts to FTS5 with BM25 ranking.');
+          } else if (!existingSql) {
+            this.db.run(FTS5_BLOCKS_STATEMENT);
+          }
+        } else {
+          // FTS4 fallback for environments without compiled FTS5 in WASM
+          if (!existingSql) {
+            this.db.run(FTS4_BLOCKS_STATEMENT);
+          }
+        }
+      } catch (ftsInitErr) {
+        console.warn('[Flint DB] Error initializing FTS virtual table, falling back to FTS4:', ftsInitErr);
+        try {
+          this.ftsVersion = 'fts4';
+          this.db.run(FTS4_BLOCKS_STATEMENT);
+        } catch (e) {}
       }
 
       // Migrations for existing databases
