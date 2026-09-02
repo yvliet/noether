@@ -146,7 +146,7 @@ export class CascadeExtension extends Extension {
         const page = tab.metadata?.page;
         const pageDisplay = page !== undefined ? formatCascadePageDisplay(page) : '';
         const baseTitle = doc?.title || tab.title || 'Untitled';
-        return `${baseTitle} [${pageDisplay}] — Cascade: ${cascadeName}`;
+        return `${baseTitle} [${pageDisplay}] · Cascade: ${cascadeName}`;
       },
     });
 
