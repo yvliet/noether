@@ -1103,7 +1103,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
 
                         {titlePrefixNodes.length > 0 ? (
-                          <div className="flex items-center gap-2.5 w-full pb-2">
+                          <div className="flex items-center gap-1.5 w-full pb-2">
                             <div className="shrink-0 flex items-center">{titlePrefixNodes}</div>
                             {effectiveReadingMode ? (
                               <h1

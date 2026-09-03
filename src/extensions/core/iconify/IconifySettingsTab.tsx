@@ -211,11 +211,11 @@ export const IconifySettingsTab: React.FC = () => {
               <span className="text-[13px] font-normal text-[#dcddde]">Emoji Style</span>
               {/* Live preview */}
               <div className="flex items-center gap-1 px-1.5 py-0.5 bg-[#181818] border border-[#2b2b2b] rounded">
-                <EmojiRenderer emoji="🔥" size={12} style={emojiStyle} />
-                <EmojiRenderer emoji="🚀" size={12} style={emojiStyle} />
-                <EmojiRenderer emoji="✨" size={12} style={emojiStyle} />
-                <EmojiRenderer emoji="💡" size={12} style={emojiStyle} />
-                <EmojiRenderer emoji="🎉" size={12} style={emojiStyle} />
+                <EmojiRenderer emoji="🔥" size={14} style={emojiStyle} />
+                <EmojiRenderer emoji="🚀" size={14} style={emojiStyle} />
+                <EmojiRenderer emoji="✨" size={14} style={emojiStyle} />
+                <EmojiRenderer emoji="💡" size={14} style={emojiStyle} />
+                <EmojiRenderer emoji="🎉" size={14} style={emojiStyle} />
               </div>
             </div>
             <span className="text-[11px] text-[#777] mt-0.5">
@@ -338,7 +338,7 @@ export const IconifySettingsTab: React.FC = () => {
                       style={item.color ? { color: item.color } : undefined}
                     >
                       {item.iconId.startsWith('emoji:') ? (
-                        <EmojiRenderer emoji={item.iconId.slice(6)} size={16} style={emojiStyle} />
+                        <EmojiRenderer emoji={item.iconId.slice(6)} size={14} style={emojiStyle} />
                       ) : item.iconDef ? (
                         <HugeIconRenderer iconDef={item.iconDef.iconDef} size={14} color={item.color || 'currentColor'} />
                       ) : item.isFolder ? (

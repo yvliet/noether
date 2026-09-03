@@ -587,7 +587,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                         : 'bg-[#202020] hover:bg-[#282828] border border-[#282828] hover:border-[#3a3a3a]'
                     }`}
                   >
-                    <EmojiRenderer emoji={emoji.char} size={18} style={emojiStyle} />
+                    <EmojiRenderer emoji={emoji.char} size={16} style={emojiStyle} />
                     {isSelected && (
                       <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-accent,#ea580c)] text-white rounded-full flex items-center justify-center text-[7px] shadow-xs">
                         <CheckIcon size={7} />

@@ -11,8 +11,8 @@ export interface IconifyEditorTitleIconProps {
 
 /**
  * Clickable icon rendered immediately to the left of the note title in the editor.
- * If no custom icon is assigned, or if the setting is disabled, returns null
- * to keep uncustomized notes visually natural and undisturbed.
+ * Matched to the exact height and line-box of the document title heading.
+ * If no custom icon is assigned, or if the setting is disabled, returns null.
  */
 export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
   docId,
@@ -24,7 +24,7 @@ export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
   const openPicker = useIconifyStore((s) => s.openPicker);
 
   // If user disabled showing icon in editor title, or no icon assigned:
-  // Render null (preserves 100% natural undisturbed note title layout without intrusive placeholders)
+  // Render null (preserves 100% natural undisturbed note title layout)
   if (!showEditorTitleIcon || !entry) {
     return null;
   }
@@ -38,6 +38,11 @@ export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
     });
   };
 
+  // Title heading style in EditorCanvas is calc(var(--editor-font-size, 12px) * 2.3) with leading-tight (1.25).
+  // We match the button to the exact title line-box height and the icon to the optical title height.
+  const titleHeight = 'calc(var(--editor-font-size, 12px) * 2.3 * 1.25)';
+  const iconPixelSize = 26;
+
   // 1. Emoji icon
   if (entry.iconId.startsWith('emoji:')) {
     const char = entry.iconId.slice(6);
@@ -46,9 +51,13 @@ export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
         type="button"
         onClick={handleClick}
         title={`Change icon for “${title}”`}
-        className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-[#282828] cursor-pointer shrink-0 select-none p-0.5"
+        style={{
+          height: titleHeight,
+          width: titleHeight,
+        }}
+        className="rounded-lg flex items-center justify-center hover:bg-[#282828] cursor-pointer shrink-0 select-none"
       >
-        <EmojiRenderer emoji={char} size={22} style={emojiStyle} />
+        <EmojiRenderer emoji={char} size={iconPixelSize} style={emojiStyle} />
       </button>
     );
   }
@@ -61,10 +70,18 @@ export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
         type="button"
         onClick={handleClick}
         title={`Change icon for “${title}”`}
-        style={entry.color ? { color: entry.color } : undefined}
-        className="w-7 h-7 rounded-md flex items-center justify-center hover:bg-[#282828] cursor-pointer shrink-0 select-none p-0.5"
+        style={{
+          height: titleHeight,
+          width: titleHeight,
+          color: entry.color || 'currentColor',
+        }}
+        className="rounded-lg flex items-center justify-center hover:bg-[#282828] cursor-pointer shrink-0 select-none"
       >
-        <HugeIconRenderer iconDef={iconDef.iconDef} size={22} color={entry.color || 'currentColor'} />
+        <HugeIconRenderer
+          iconDef={iconDef.iconDef}
+          size={iconPixelSize}
+          color={entry.color || 'currentColor'}
+        />
       </button>
     );
   }

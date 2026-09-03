@@ -27,7 +27,7 @@ import { initIconifyDb, IconItemType } from './iconifyDb';
 import { useIconifyStore } from './iconifyStore';
 import { IconPicker, HugeIconRenderer } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
-import { IconifySlot, IconifyBreadcrumbIcon } from './IconifyNode';
+import { IconifySlot, IconifyBreadcrumbIcon, IconifyTabIcon } from './IconifyNode';
 import { IconifyEditorTitleIcon } from './IconifyEditorTitleIcon';
 import { IconifyPickerModal } from './IconifyPickerModal';
 import { IconifySettingsTab } from './IconifySettingsTab';
@@ -70,7 +70,13 @@ export class IconifyExtension extends Extension {
       }
     });
 
-    // 4. Register FileTreeDecorator for rendering custom/default icons in the file tree prefix
+    // 4. Synchronize tab decorators on any Iconify store mutation (instant atomic update across all tabs)
+    const unsubStore = useIconifyStore.subscribe(() => {
+      this.app.tabDecorators.notify();
+    });
+    this.registerDisposable({ dispose: unsubStore });
+
+    // 5. Register FileTreeDecorator for rendering custom/default icons in the file tree prefix
     this.registerFileTreeDecorator({
       id: 'iconify-tree-decorator',
       renderPrefix: (doc, context) => {
@@ -83,35 +89,16 @@ export class IconifyExtension extends Extension {
       },
     });
 
-    // 5. Register TabDecorator to display custom icons in tab headers
+    // 6. Register TabDecorator to display custom icons in tab headers
     this.registerTabDecorator({
       id: 'iconify-tab-decorator',
       matches: (_tab, doc) => {
-        if (!doc) return false;
+        if (!doc?.id) return false;
         return Boolean(useIconifyStore.getState().icons[doc.id]);
       },
       getIcon: (_tab, doc) => {
-        if (!doc) return undefined;
-        const entry = useIconifyStore.getState().icons[doc.id];
-        if (!entry) return undefined;
-        if (entry.iconId.startsWith('emoji:')) {
-          const char = entry.iconId.slice(6);
-          const emojiStyle = useIconifyStore.getState().emojiStyle;
-          return (
-            <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0 select-none pointer-events-none">
-              <EmojiRenderer emoji={char} size={12} style={emojiStyle} />
-            </span>
-          );
-        }
-        const iconDef = getIconifyIconDef(entry.iconId);
-        if (!iconDef) return undefined;
-        return (
-          <HugeIconRenderer
-            iconDef={iconDef.iconDef}
-            size={13}
-            color={entry.color || 'currentColor'}
-          />
-        );
+        if (!doc?.id) return undefined;
+        return <IconifyTabIcon docId={doc.id} />;
       },
     });
 

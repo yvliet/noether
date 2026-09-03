@@ -1,4 +1,4 @@
-﻿import { TabDecoratorDefinition, Disposable } from '../extensions/types';
+import { TabDecoratorDefinition, Disposable } from '../extensions/types';
 
 export class TabDecoratorRegistry {
   private decorators: Map<string, TabDecoratorDefinition> = new Map();
@@ -36,7 +36,7 @@ export class TabDecoratorRegistry {
     );
   }
 
-  private notify(): void {
+  public notify(): void {
     this.listeners.forEach((fn) => {
       try {
         fn();

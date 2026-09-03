@@ -208,3 +208,45 @@ export const IconifyBreadcrumbIcon: React.FC<IconifyBreadcrumbIconProps> = ({
     </span>
   );
 };
+
+export interface IconifyTabIconProps {
+  docId: string;
+}
+
+/**
+ * Reactive tab icon component subscribed to `useIconifyStore`.
+ * Guarantees that tab icons atomically re-render on the exact frame
+ * whenever an icon or emojiStyle is changed in settings or picker.
+ */
+export const IconifyTabIcon: React.FC<IconifyTabIconProps> = ({ docId }) => {
+  const entry = useIconifyStore((s) => s.icons[docId]);
+  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+
+  if (!entry) return null;
+
+  if (entry.iconId.startsWith('emoji:')) {
+    const char = entry.iconId.slice(6);
+    return (
+      <span className="w-3.5 h-3.5 flex items-center justify-center shrink-0 select-none pointer-events-none">
+        <EmojiRenderer emoji={char} size={13} style={emojiStyle} />
+      </span>
+    );
+  }
+
+  const iconDef = getIconifyIconDef(entry.iconId);
+  if (!iconDef) return null;
+
+  return (
+    <span
+      className="w-3.5 h-3.5 flex items-center justify-center shrink-0 select-none pointer-events-none"
+      style={entry.color ? { color: entry.color } : undefined}
+      title={iconDef.name}
+    >
+      <HugeIconRenderer
+        iconDef={iconDef.iconDef}
+        size={13}
+        color={entry.color || 'currentColor'}
+      />
+    </span>
+  );
+};

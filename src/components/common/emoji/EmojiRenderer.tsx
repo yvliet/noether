@@ -21,7 +21,8 @@ export const EMOJI_STYLE_LABELS: Record<EmojiStyle, string> = {
 /**
  * High-performance Emoji renderer supporting Native OS rendering by default,
  * and CDN-based crisp vector/image rendering for Twemoji, Apple Emoji, Google Noto, and WhatsApp Emoji.
- * Automatically falls back to Native OS text rendering if an image fails to load.
+ *
+ * Ensures consistent optical sizing across styles without clipping native glyphs.
  */
 export const EmojiRenderer = React.memo<EmojiRendererProps>(({
   emoji,
@@ -40,10 +41,17 @@ export const EmojiRenderer = React.memo<EmojiRendererProps>(({
 
   // 1. Native OS (System Default) or Fallback on Error:
   if (style === 'native' || hasError) {
+    const nativeFontSize = Math.round(size * 0.88);
+
     return (
       <span
-        className={`select-none inline-flex items-center justify-center leading-none font-["Apple_Color_Emoji","Segoe_UI_Emoji","Segoe_UI_Symbol","Noto_Color_Emoji",sans-serif] ${className}`}
-        style={{ fontSize: `${size}px`, width: `${size}px`, height: `${size}px` }}
+        className={`inline-flex items-center justify-center shrink-0 select-none leading-none text-center font-["Apple_Color_Emoji","Segoe_UI_Emoji","Segoe_UI_Symbol","Noto_Color_Emoji",sans-serif] ${className}`}
+        style={{
+          width: `${size}px`,
+          height: `${size}px`,
+          fontSize: `${nativeFontSize}px`,
+          lineHeight: 1,
+        }}
         aria-label={emoji}
       >
         {emoji}
@@ -73,23 +81,29 @@ export const EmojiRenderer = React.memo<EmojiRendererProps>(({
 
   const handleError = () => {
     if (!useAlternativeHex && strippedHex !== rawHex) {
-      // Try alternative hex code format (with/without variation selector-16)
       setUseAlternativeHex(true);
     } else {
-      // Fallback gracefully to native system text
       setHasError(true);
     }
   };
 
   return (
-    <img
-      src={src}
-      alt={emoji}
-      draggable={false}
-      loading="lazy"
-      onError={handleError}
-      className={`select-none inline-block object-contain shrink-0 ${className}`}
-      style={{ width: `${size}px`, height: `${size}px` }}
-    />
+    <span
+      className={`inline-flex items-center justify-center shrink-0 select-none ${className}`}
+      style={{
+        width: `${size}px`,
+        height: `${size}px`,
+      }}
+      aria-label={emoji}
+    >
+      <img
+        src={src}
+        alt={emoji}
+        draggable={false}
+        decoding="async"
+        onError={handleError}
+        className="w-full h-full object-contain block select-none pointer-events-none"
+      />
+    </span>
   );
 });
