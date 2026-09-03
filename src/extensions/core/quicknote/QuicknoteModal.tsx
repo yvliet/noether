@@ -296,10 +296,9 @@ export const QuicknoteModal: React.FC = React.memo(() => {
         const doc = await createDocument(noteTitle, folderId, false, 'base');
         await saveDocumentAndSynchronize(doc.id, contentJson, noteTitle);
 
-        const docStore = useDocumentStore.getState();
-        if (docStore?.loadInitialData) {
-          docStore.loadInitialData({ showLoading: false });
-        }
+        const allDocs = await getAllDocuments();
+        useDocumentStore.setState({ documents: allDocs });
+        useDocumentStore.getState().recomputeBrokenEmbeds();
 
         app.workspace.showToast(`Saved note: "${noteTitle}"`, 'success');
         if (shouldClose) {

@@ -225,6 +225,7 @@ export interface InputDialogConfig {
   placeholder?: string;
   defaultValue?: string;
   confirmText?: string;
+  allowEmpty?: boolean;
   onConfirm: (val: string) => void;
 }
 

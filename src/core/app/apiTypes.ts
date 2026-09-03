@@ -49,6 +49,8 @@ export interface InputDialogConfig {
   placeholder?: string;
   /** Text label for the confirmation button (defaults to 'Save' or 'OK'). */
   confirmText?: string;
+  /** Whether an empty or whitespace-only input is allowed upon confirmation. */
+  allowEmpty?: boolean;
   /** Callback invoked with the trimmed input value upon confirmation. */
   onConfirm: (value: string) => void | Promise<void>;
   /** Optional callback invoked when the user cancels the dialog. */
@@ -482,7 +484,7 @@ export interface HearthAPI {
    * @param docId - The document's unique identifier.
    * @since 0.1.0
    */
-  openDocument(docId: string): void;
+  openDocument(docId: string): Promise<void>;
 
   /**
    * Persists document content to the database.
@@ -492,7 +494,7 @@ export interface HearthAPI {
    * @param title - Optional updated title.
    * @since 0.1.0
    */
-  saveDocument(docId: string, contentJson: string, title?: string): void;
+  saveDocument(docId: string, contentJson: string, title?: string): Promise<void>;
 
   /**
    * Permanently deletes a document from the Hearth.
@@ -500,7 +502,7 @@ export interface HearthAPI {
    * @param docId - The document's unique identifier.
    * @since 0.1.0
    */
-  deleteDocument(docId: string): void;
+  deleteDocument(docId: string): Promise<void>;
 
   /**
    * Renames a document.
@@ -509,7 +511,7 @@ export interface HearthAPI {
    * @param newTitle - The new title string.
    * @since 0.1.0
    */
-  renameDocument(docId: string, newTitle: string): void;
+  renameDocument(docId: string, newTitle: string): Promise<void>;
 
   /**
    * Toggles the bookmark status of a document.

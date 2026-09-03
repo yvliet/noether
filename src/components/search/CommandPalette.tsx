@@ -26,6 +26,7 @@ export const CommandPalette: React.FC = React.memo(() => {
   const isCommandPaletteOpen = useWorkspaceStore((s) => s.isCommandPaletteOpen);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
   const setMainViewMode = useWorkspaceStore((s) => s.setMainViewMode);
+  const openTab = useWorkspaceStore((s) => s.openTab);
 
   const documents = useDocumentStore((s) => s.documents);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
@@ -72,8 +73,9 @@ export const CommandPalette: React.FC = React.memo(() => {
     );
   }, [query, registeredCommands]);
 
+  const totalItems = query.trim() ? results.length + filteredCommands.length : registeredCommands.length;
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const totalItems = query.trim() ? results.length + filteredCommands.length : registeredCommands.length;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
       setSelectedIndex((prev) => (prev + 1) % Math.max(1, totalItems));
@@ -85,9 +87,12 @@ export const CommandPalette: React.FC = React.memo(() => {
       if (query.trim()) {
         if (selectedIndex < results.length) {
           const item = results[selectedIndex];
+          const doc = documents.find((d) => d.id === item.document_id);
+          const docTitle = doc?.title || item.document_title || 'Untitled';
           setIsCommandPaletteOpen(false);
-          setMainViewMode('document');
+          openTab(item.document_id, docTitle);
           setActiveDocumentById(item.document_id);
+          setMainViewMode('document');
         } else {
           const cmdIndex = selectedIndex - results.length;
           const cmd = filteredCommands[cmdIndex];
@@ -104,7 +109,7 @@ export const CommandPalette: React.FC = React.memo(() => {
       e.preventDefault();
       setIsCommandPaletteOpen(false);
     }
-  }, [query, results, filteredCommands, registeredCommands, selectedIndex, setIsCommandPaletteOpen, setMainViewMode, setActiveDocumentById, app]);
+  }, [query, results, filteredCommands, registeredCommands, selectedIndex, documents, openTab, setIsCommandPaletteOpen, setMainViewMode, setActiveDocumentById, app, totalItems]);
 
   if (!isCommandPaletteOpen) return null;
 
@@ -155,12 +160,14 @@ export const CommandPalette: React.FC = React.memo(() => {
                         <div
                           key={res.block_id || index}
                           onClick={() => {
+                            const docTitle = doc?.title || res.document_title || 'Untitled';
                             setIsCommandPaletteOpen(false);
-                            setMainViewMode('document');
+                            openTab(res.document_id, docTitle);
                             setActiveDocumentById(res.document_id);
+                            setMainViewMode('document');
                           }}
                           onMouseEnter={() => setSelectedIndex(index)}
-                          className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                          className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer ${
                             isSelected ? 'bg-[#2a2a2a] text-white' : 'text-[#dcddde] hover:bg-[#222]'
                           }`}
                         >
@@ -195,7 +202,7 @@ export const CommandPalette: React.FC = React.memo(() => {
                             cmd.action(app);
                           }}
                           onMouseEnter={() => setSelectedIndex(overallIndex)}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer ${
                             isSelected ? 'bg-[#2a2a2a] text-white' : 'text-[#dcddde] hover:bg-[#222]'
                           }`}
                         >
@@ -234,7 +241,7 @@ export const CommandPalette: React.FC = React.memo(() => {
                       cmd.action(app);
                     }}
                     onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer ${
                       isSelected ? 'bg-[#2a2a2a] text-white' : 'text-[#dcddde] hover:bg-[#222]'
                     }`}
                   >

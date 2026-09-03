@@ -355,6 +355,10 @@ function renderTipTapNodesToHtml(nodes: any[]): string {
  * Handles navigation to a note from inside an embed card
  */
 export function navigateToNote(title: string, isSplit: boolean = false) {
+  if (!title || !title.trim()) {
+    return;
+  }
+
   const ws = useWorkspaceStore.getState();
   const ds = useDocumentStore.getState();
   const allDocs = ds.documents;
@@ -385,7 +389,7 @@ export function navigateToNote(title: string, isSplit: boolean = false) {
     }
     ws.setMainViewMode('document');
   } else {
-    ds.createNewNote(title).then((newDoc) => {
+    ds.createNewNote(title, null, 'base', false).then((newDoc) => {
       if (newDoc) {
         if (shouldSplit) {
           ws.openSplitTab(newDoc.id, newDoc.title);

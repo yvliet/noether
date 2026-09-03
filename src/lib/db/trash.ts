@@ -1,6 +1,6 @@
 import { dbAdapter } from './adapter';
 import { DocumentItem, TrashItem } from '@/types';
-import { jsonToMarkdown, getDocumentPath } from './documents';
+import { jsonToMarkdown, getDocumentPath, saveDocumentAndSynchronize } from './documents';
 import { platform } from '@/lib/platform/platformAdapter';
 import { appInstance } from '@/core/app/FlintApp';
 
@@ -13,8 +13,8 @@ export const TRASH_RETENTION_MS = 48 * 60 * 60 * 1000;
 export async function cleanExpiredTrash(): Promise<number> {
   const cutoff = Date.now() - TRASH_RETENTION_MS;
   try {
-    const expired = await dbAdapter.query<{ id: string; title: string; original_path: string }>(
-      `SELECT id, title, original_path FROM trash_items WHERE deleted_at < ?`,
+    const expired = await dbAdapter.query<{ id: string; original_id: string; title: string; original_path: string }>(
+      `SELECT id, original_id, title, original_path FROM trash_items WHERE deleted_at < ?`,
       [cutoff]
     );
     if (expired.length > 0) {
@@ -27,6 +27,13 @@ export async function cleanExpiredTrash(): Promise<number> {
       }
       await dbAdapter.execute(`DELETE FROM trash_items WHERE deleted_at < ?`, [cutoff]);
       await dbAdapter.persist();
+      for (const item of expired) {
+        if (item.original_id) {
+          try {
+            appInstance?.events?.emit('document:deleted', { id: item.original_id });
+          } catch (e) {}
+        }
+      }
       console.log(`[Flint Trash] Cleaned up ${expired.length} expired items from trash.`);
     }
     return expired.length;
@@ -139,12 +146,21 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
       sql: `DELETE FROM document_tags WHERE document_id = ?`,
       params: [item.id],
     });
+
+    const path = getDocumentPath(item, allDocs);
+    const norm = (path || item.title).replace(/\\/g, '/').toLowerCase();
+    const key = norm.endsWith('.md') ? norm : `${norm}.md`;
+    queries.push({
+      sql: `DELETE FROM file_manifest WHERE relative_path = ?`,
+      params: [key],
+    });
   }
 
   try {
     await dbAdapter.transaction(queries);
   } catch (err) {
     console.error('[Flint Trash] Failed to move items to trash in transaction:', err);
+    throw err;
   }
 
   // Move physical files to .trash folder and clean from vault folder in parallel
@@ -297,20 +313,21 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
   // Execute all SQL statements in a single fast WASM transaction
   await dbAdapter.transaction(queries);
 
-  // Background non-blocking disk writes on Desktop
-  if (platform.isDesktop()) {
-    (async () => {
-      for (const item of itemsToRestore) {
-        if (!item.is_folder && item.content_json) {
-          try {
-            const md = jsonToMarkdown(item.content_json, item.title);
-            await platform.saveMarkdownFile(item.title, md, item.original_path || item.title);
+  // Background non-blocking disk writes and full index synchronization
+  (async () => {
+    for (const item of itemsToRestore) {
+      if (!item.is_folder && item.content_json) {
+        try {
+          await saveDocumentAndSynchronize(item.original_id, item.content_json, item.title);
+          if (platform.isDesktop()) {
             await platform.deleteTrashFile(item.original_path || item.title);
-          } catch (e) {}
+          }
+        } catch (e) {
+          console.error('[Flint Trash] Error synchronizing restored document:', e);
         }
       }
-    })();
-  }
+    }
+  })();
 
   return restoredDocs;
 }

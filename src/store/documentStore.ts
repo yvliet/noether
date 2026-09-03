@@ -29,6 +29,7 @@ import {
   moveDocument as dbMoveDocument,
   getUniqueTitleForMove,
   getDocumentPath,
+  computeFastHash,
   isDescendant,
   syncVaultDiskToSQLite,
 } from '@/lib/db/documents';
@@ -134,6 +135,15 @@ interface DocumentState {
   recomputeBrokenEmbeds: () => void;
 }
 
+/** Tracks in-flight background creation and disk persistence promises to prevent race conditions during immediate renames */
+const pendingCreationPromises = new Map<string, Promise<void>>();
+
+/** Guards against yanking user tabs/workspace during runtime watcher reloads */
+let hasRestoredInitialTabsSession = false;
+export function resetTabsRestoreFlag(): void {
+  hasRestoredInitialTabsSession = false;
+}
+
 export const useDocumentStore = create<DocumentState>((set, get) => ({
   documents: [],
   trashItems: [],
@@ -176,30 +186,33 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         get().recomputeBrokenEmbeds();
         emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
 
-        // Restore tabs immediately from cached documents
+        // Restore tabs immediately on initial cold boot only
         const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
-        const isRestored = shouldRestoreTabs
-          ? useWorkspaceStore.getState().restoreTabsSession(initialDocs)
-          : false;
+        if (!hasRestoredInitialTabsSession) {
+          hasRestoredInitialTabsSession = true;
+          const isRestored = shouldRestoreTabs
+            ? useWorkspaceStore.getState().restoreTabsSession(initialDocs)
+            : false;
 
-        if (isRestored) {
-          const { tabs, activeTabId } = useWorkspaceStore.getState();
-          const activeTab = tabs.find((t) => t.id === activeTabId);
-          if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
-            const docExists = initialDocs.some((d) => d.id === activeTab.document_id);
-            if (docExists) {
-              await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
-            }
-          }
-        } else {
-          if (initialDocs.length > 0) {
-            const welcomeDoc = initialDocs.find((d) => d.id === 'welcome-to-flint') || initialDocs.find((d) => !d.is_folder) || initialDocs[0];
-            if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
-              await get().setActiveDocumentById(welcomeDoc.id);
+          if (isRestored) {
+            const { tabs, activeTabId } = useWorkspaceStore.getState();
+            const activeTab = tabs.find((t) => t.id === activeTabId);
+            if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
+              const docExists = initialDocs.some((d) => d.id === activeTab.document_id);
+              if (docExists) {
+                await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+              }
             }
           } else {
-            if (useWorkspaceStore.getState().tabs.length === 0) {
-              useWorkspaceStore.getState().openEmptyTab();
+            if (initialDocs.length > 0) {
+              const welcomeDoc = initialDocs.find((d) => d.id === 'welcome-to-flint') || initialDocs.find((d) => !d.is_folder) || initialDocs[0];
+              if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
+                await get().setActiveDocumentById(welcomeDoc.id);
+              }
+            } else {
+              if (useWorkspaceStore.getState().tabs.length === 0) {
+                useWorkspaceStore.getState().openEmptyTab();
+              }
             }
           }
         }
@@ -231,35 +244,38 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         }
 
         const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
-        const isRestored = shouldRestoreTabs
-          ? useWorkspaceStore.getState().restoreTabsSession(docs)
-          : false;
+        if (!hasRestoredInitialTabsSession) {
+          hasRestoredInitialTabsSession = true;
+          const isRestored = shouldRestoreTabs
+            ? useWorkspaceStore.getState().restoreTabsSession(docs)
+            : false;
 
-        if (isRestored) {
-          const { tabs, activeTabId } = useWorkspaceStore.getState();
-          const activeTab = tabs.find((t) => t.id === activeTabId);
-          if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
-            const docExists = docs.some((d) => d.id === activeTab.document_id);
-            if (docExists) {
-              await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+          if (isRestored) {
+            const { tabs, activeTabId } = useWorkspaceStore.getState();
+            const activeTab = tabs.find((t) => t.id === activeTabId);
+            if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
+              const docExists = docs.some((d) => d.id === activeTab.document_id);
+              if (docExists) {
+                await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+              } else {
+                set({ activeDocument: null });
+              }
+            } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
+              useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
+              set({ activeDocument: null });
             } else {
               set({ activeDocument: null });
             }
-          } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
-            useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
-            set({ activeDocument: null });
           } else {
-            set({ activeDocument: null });
-          }
-        } else {
-          if (docs.length > 0) {
-            const welcomeDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder) || docs[0];
-            if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
-              await get().setActiveDocumentById(welcomeDoc.id);
-            }
-          } else {
-            if (useWorkspaceStore.getState().tabs.length === 0) {
-              useWorkspaceStore.getState().openEmptyTab();
+            if (docs.length > 0) {
+              const welcomeDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder) || docs[0];
+              if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
+                await get().setActiveDocumentById(welcomeDoc.id);
+              }
+            } else {
+              if (useWorkspaceStore.getState().tabs.length === 0) {
+                useWorkspaceStore.getState().openEmptyTab();
+              }
             }
           }
         }
@@ -525,7 +541,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     // Persist in background without blocking UI thread
-    (async () => {
+    const persistPromise = (async () => {
       try {
         await dbAdapter.execute(
           `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
@@ -533,13 +549,30 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           [id, targetParentId, finalTitle, defaultContent, docType, now, now]
         );
         if (platform.isDesktop()) {
+          const allDocs = get().documents;
+          const relPath = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, allDocs);
           const md = jsonToMarkdown(defaultContent, finalTitle);
-          await platform.saveMarkdownFile(finalTitle, md);
+          await platform.saveMarkdownFile(finalTitle, md, relPath);
+
+          const normRel = (relPath || finalTitle).replace(/\\/g, '/').toLowerCase();
+          const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+          const contentHash = computeFastHash(md);
+          try {
+            await dbAdapter.execute(
+              `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+              [manifestKey, now, md.length, contentHash, now]
+            );
+          } catch (mErr) {}
         }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new note:', err);
       }
     })();
+
+    pendingCreationPromises.set(id, persistPromise);
+    persistPromise.finally(() => {
+      pendingCreationPromises.delete(id);
+    });
 
     return doc;
   },
@@ -705,6 +738,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   renameDocument: async (id: string, newTitle: string, recordHistory = true) => {
+    const pendingCreation = pendingCreationPromises.get(id);
+    if (pendingCreation) {
+      await pendingCreation;
+    }
+
     const doc = get().documents.find((d) => d.id === id);
     const { oldTitle } = await updateDocumentTitle(id, newTitle);
     const prevTitle = oldTitle || (doc ? doc.title : '');
@@ -786,6 +824,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   moveDocument: async (id: string, targetParentId: string | null, recordHistory = true) => {
+    const pendingCreation = pendingCreationPromises.get(id);
+    if (pendingCreation) {
+      await pendingCreation;
+    }
+
     const docs = get().documents;
     const docToMove = docs.find((d) => d.id === id);
     if (!docToMove) return { success: false, error: 'Item not found' };
@@ -825,6 +868,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         try {
           if (oldRel !== newRel || wasRenamed) {
             await platform.renameMarkdownFile(oldTitle, finalTitle, oldRel, newRel);
+
+            const oldNorm = (oldRel || oldTitle).replace(/\\/g, '/').toLowerCase();
+            const oldKey = oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`;
+            const newNorm = (newRel || finalTitle).replace(/\\/g, '/').toLowerCase();
+            const newKey = newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`;
+            try {
+              await dbAdapter.execute(
+                `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
+                [newKey, oldKey]
+              );
+            } catch (mErr) {}
           }
         } catch (e) {
           console.error('[DocumentStore] Failed to move file on disk:', e);
@@ -926,6 +980,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   removeDocuments: async (ids: string[], recordHistory = true) => {
     if (!ids || ids.length === 0) return;
+
+    // Await any in-flight background creations so delete does not race with creation write
+    await Promise.all(
+      ids.map(async (id) => {
+        const pending = pendingCreationPromises.get(id);
+        if (pending) await pending;
+      })
+    );
+
     const { documents: prevDocs, activeDocument: active, selectedDocIds } = get();
     const activeIdBefore = active?.id || null;
 
@@ -1053,27 +1116,34 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 
   saveDocumentById: async (id: string, contentJson: string, title?: string) => {
+    const pendingCreation = pendingCreationPromises.get(id);
+    if (pendingCreation) {
+      await pendingCreation;
+    }
+
     const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
       id,
       contentJson,
       title
     );
     const currentActive = get().activeDocument;
-    const isStillActive = currentActive && currentActive.id === id;
     const currentTitle = title || currentActive?.title || '';
 
-    if (isStillActive) {
-      const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
-        getBacklinksForDocument(id),
-        getOutgoingLinksWithDetails(id),
-        getUnlinkedMentionsForDocument(id, currentTitle),
-      ]);
-      const updatedDocs = get().documents.map((d) =>
-        d.id === id ? { ...d, title: currentTitle, content_json: contentJson } : d
-      );
+    const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
+      getBacklinksForDocument(id),
+      getOutgoingLinksWithDetails(id),
+      getUnlinkedMentionsForDocument(id, currentTitle),
+    ]);
+
+    const updatedDocs = get().documents.map((d) =>
+      d.id === id ? { ...d, title: currentTitle, content_json: contentJson } : d
+    );
+
+    const activeNow = get().activeDocument;
+    if (activeNow && activeNow.id === id) {
       set({
         documents: updatedDocs,
-        activeDocument: { ...currentActive, title: currentTitle, content_json: contentJson },
+        activeDocument: { ...activeNow, title: currentTitle, content_json: contentJson },
         headings,
         backlinks,
         outgoingLinks,
@@ -1085,11 +1155,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         backlinkCount: backlinks.length,
       });
     } else {
-      set((state) => ({
-        documents: state.documents.map((d) =>
-          d.id === id ? { ...d, ...(title ? { title } : {}), content_json: contentJson } : d
-        ),
-      }));
+      set({ documents: updatedDocs });
     }
 
     emitBridgeAppEvent('document:saved', { id, title: currentTitle });

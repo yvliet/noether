@@ -10,6 +10,7 @@ import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
 import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked } from '@/lib/db/documents';
+import { dbAdapter } from '@/lib/db/adapter';
 import { DocumentProperties } from '@/types';
 import {
   FileAddIcon,
@@ -443,6 +444,40 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const activeDocIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<any>(null);
   const pendingContentRef = useRef<string | null>(null);
+  const titleRef = useRef<string>(title);
+  titleRef.current = title;
+  const isEditingTitleRef = useRef(false);
+
+  const commitTitleRename = useCallback(async (newVal: string) => {
+    isEditingTitleRef.current = false;
+    if (!currentDoc || isLocked) return;
+    const trimmed = newVal.trim();
+    if (!trimmed || trimmed === currentDoc.title) {
+      setTitle(currentDoc.title);
+      titleRef.current = currentDoc.title;
+      return;
+    }
+    const hasCollision = documents.some(
+      (d) =>
+        d.id !== currentDoc.id &&
+        !d.is_folder &&
+        (d.parent_id || null) === (currentDoc.parent_id || null) &&
+        d.title.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (hasCollision) {
+      setTitle(currentDoc.title);
+      titleRef.current = currentDoc.title;
+      return;
+    }
+    await renameDocument(currentDoc.id, trimmed);
+    if (isSidebarMode) {
+      useSidebarDockStore.setState((s) => ({
+        items: s.items.map((it) =>
+          it.documentId === currentDoc.id ? { ...it, title: trimmed } : it
+        ),
+      }));
+    }
+  }, [currentDoc, isLocked, documents, renameDocument, isSidebarMode]);
 
   // Helper to flush any pending save immediately
   const flushPendingSave = useCallback(() => {
@@ -453,10 +488,22 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     const docId = activeDocIdRef.current;
     const contentToSave = pendingContentRef.current;
 
+    const shouldCommitTitle = isEditingTitleRef.current;
+    const pendingTitle = shouldCommitTitle ? titleRef.current?.trim() : undefined;
+    if (shouldCommitTitle && currentDoc && pendingTitle && pendingTitle !== currentDoc.title) {
+      commitTitleRename(pendingTitle);
+    }
+
     if (docId && contentToSave !== null) {
       pendingContentRef.current = null;
 
       const currentContent = contentToSave;
+
+      // Synchronously execute into in-memory WASM SQLite table so beforeunload exports the latest content
+      dbAdapter.executeSync(
+        `UPDATE documents SET content_json = ?, updated_at = ? WHERE id = ?`,
+        [currentContent, Date.now(), docId]
+      );
 
       useDocumentStore.setState((s) => ({
         documents: s.documents.map((d) =>
@@ -468,9 +515,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             : s.activeDocument,
       }));
 
-      saveDocumentById(docId, currentContent);
+      saveDocumentById(docId, currentContent, pendingTitle);
     }
-  }, [saveDocumentById]);
+  }, [saveDocumentById, currentDoc, commitTitleRename]);
 
   // Sync state when active document changes
   useEffect(() => {
@@ -481,8 +528,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         // 1. Immediately flush pending save for the OLD document before loading the new one!
         flushPendingSave();
 
+        isEditingTitleRef.current = false;
         activeDocIdRef.current = currentDoc.id;
         setTitle(currentDoc.title);
+        titleRef.current = currentDoc.title;
         const safeContent =
           currentDoc.content_json && currentDoc.content_json !== '{}'
             ? currentDoc.content_json
@@ -501,6 +550,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         // Same document updated (e.g. from background auto-save or edit from another pane)
         if (!isEditingSubheader && !isMainTitleFocused) {
           setTitle(currentDoc.title);
+          titleRef.current = currentDoc.title;
         }
         if (pendingContentRef.current === null && currentDoc.content_json) {
           setContent(currentDoc.content_json);
@@ -508,8 +558,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       }
     } else {
       flushPendingSave();
+      isEditingTitleRef.current = false;
       activeDocIdRef.current = null;
       setTitle('');
+      titleRef.current = '';
       setContent('');
       setIsEditingSubheader(false);
     }
@@ -548,34 +600,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }
   }, [isEditingSubheader]);
 
-  const commitTitleRename = useCallback(async (newVal: string) => {
-    if (!currentDoc || isLocked) return;
-    const trimmed = newVal.trim();
-    if (!trimmed || trimmed === currentDoc.title) {
-      setTitle(currentDoc.title);
-      return;
-    }
-    const hasCollision = documents.some(
-      (d) =>
-        d.id !== currentDoc.id &&
-        !d.is_folder &&
-        (d.parent_id || null) === (currentDoc.parent_id || null) &&
-        d.title.trim().toLowerCase() === trimmed.toLowerCase()
-    );
-    if (hasCollision) {
-      setTitle(currentDoc.title);
-      return;
-    }
-    await renameDocument(currentDoc.id, trimmed);
-    if (isSidebarMode) {
-      useSidebarDockStore.setState((s) => ({
-        items: s.items.map((it) =>
-          it.documentId === currentDoc.id ? { ...it, title: trimmed } : it
-        ),
-      }));
-    }
-  }, [currentDoc, isLocked, documents, renameDocument, isSidebarMode]);
-
   const scheduleDebouncedSave = useCallback((newContent?: string) => {
     if (newContent !== undefined) pendingContentRef.current = newContent;
 
@@ -588,6 +612,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const handleTitleChange = useCallback((val: string) => {
     if (isLocked) return;
     setTitle(val);
+    titleRef.current = val;
+    isEditingTitleRef.current = true;
     if (currentDoc) {
       const trimmed = val.trim();
       if (trimmed) {

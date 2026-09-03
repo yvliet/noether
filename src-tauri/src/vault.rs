@@ -613,6 +613,11 @@ pub fn rename_markdown_file(
 
     if old_path.exists() {
         let _ = fs::rename(&old_path, &new_path);
+    } else if let Some(file_name) = old_path.file_name() {
+        let old_root = target_vault.join(file_name);
+        if old_root.exists() && is_safe_vault_path(&target_vault, &old_root) {
+            let _ = fs::rename(&old_root, &new_path);
+        }
     }
 
     json!({ "success": true })

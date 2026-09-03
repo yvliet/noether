@@ -86,6 +86,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openVaultInExplorer: (vaultPath) => ipcRenderer.invoke('open-hearth-in-explorer', vaultPath),
   scanHearthFiles: (customHearthPath) => ipcRenderer.invoke('scan-hearth-files', customHearthPath),
   scanVaultFiles: (customVaultPath) => ipcRenderer.invoke('scan-hearth-files', customVaultPath),
+  saveDatabase: (bytes, customVaultPath) => ipcRenderer.invoke('save-database', { bytes, vaultPath: customVaultPath }),
+  loadDatabase: (customVaultPath) => ipcRenderer.invoke('load-database', customVaultPath),
   saveMarkdownFile: (filename, content, relativePath, vaultPath) =>
     ipcRenderer.invoke('save-markdown-file', { filename, content, relativePath, vaultPath }),
   deleteMarkdownFile: (filenameOrPath, vaultPath) =>

@@ -47,6 +47,23 @@ function getVaultDbPath(vaultPath) {
   return path.join(flintDir, 'flint.sqlite');
 }
 
+function isSafeVaultSubPath(vaultRoot, targetPath) {
+  if (!targetPath || !vaultRoot) return false;
+  const resolvedVault = path.resolve(vaultRoot);
+  const resolvedTarget = path.resolve(targetPath);
+  return resolvedTarget.startsWith(resolvedVault + path.sep) && resolvedTarget !== resolvedVault;
+}
+
+function sanitizeVaultPathSegments(relPath) {
+  if (!relPath || typeof relPath !== 'string') return '';
+  return relPath
+    .replace(/\\/g, '/')
+    .split('/')
+    .map((seg) => seg.replace(/[/\\?%*:|"<>]/g, '_').trim())
+    .filter(Boolean)
+    .join('/');
+}
+
 // Ensure current vault directory exists
 if (!fs.existsSync(appConfig.currentVaultPath)) {
   try {
@@ -864,19 +881,28 @@ function registerIpc() {
       }
       let filePath;
       if (relativePath) {
-        const cleanRel = relativePath.replace(/\\/g, '/');
+        const cleanRel = sanitizeVaultPathSegments(relativePath);
+        if (!cleanRel) {
+          return { success: false, error: 'Invalid relative path' };
+        }
         const fileWithExt = cleanRel.toLowerCase().endsWith('.md') ? cleanRel : cleanRel + '.md';
         filePath = path.join(targetVault, fileWithExt);
-        const parentDir = path.dirname(filePath);
-        if (!fs.existsSync(parentDir)) {
-          fs.mkdirSync(parentDir, { recursive: true });
-        }
       } else {
         const safeFilename = (filename || 'Untitled').replace(/[/\\?%*:|"<>]/g, '_') + '.md';
         filePath = path.join(targetVault, safeFilename);
       }
-      const tempPath = path.join(path.dirname(filePath), `.__flint_write_tmp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
-      fs.writeFileSync(tempPath, content, 'utf8');
+
+      if (!isSafeVaultSubPath(targetVault, filePath)) {
+        return { success: false, error: 'Security: path escapes vault boundary' };
+      }
+
+      const parentDir = path.dirname(filePath);
+      if (!fs.existsSync(parentDir)) {
+        fs.mkdirSync(parentDir, { recursive: true });
+      }
+
+      const tempPath = path.join(parentDir, `.__flint_write_tmp_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`);
+      fs.writeFileSync(tempPath, content || '', 'utf8');
       fs.renameSync(tempPath, filePath);
       return { success: true, path: filePath };
     } catch (err) {
@@ -890,23 +916,37 @@ function registerIpc() {
       const filenameOrPath = typeof payload === 'string' ? payload : payload?.filenameOrPath;
       const vaultPath = typeof payload === 'object' ? payload?.vaultPath : null;
       const targetVault = vaultPath || appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
-      const cleanRel = (filenameOrPath || 'Untitled').replace(/\\/g, '/');
+
+      if (!filenameOrPath || typeof filenameOrPath !== 'string' || !filenameOrPath.trim()) {
+        return { success: false, error: 'Invalid or empty path to delete' };
+      }
+
+      const cleanRel = sanitizeVaultPathSegments(filenameOrPath);
+      if (!cleanRel || cleanRel === '.' || cleanRel === '..') {
+        return { success: false, error: 'Security: cannot delete vault root or traversal path' };
+      }
+
       const fileWithExt = cleanRel.toLowerCase().endsWith('.md') ? cleanRel : cleanRel + '.md';
       const filePath = path.join(targetVault, fileWithExt);
+      const directPath = path.join(targetVault, cleanRel);
+
       if (fs.existsSync(filePath)) {
+        if (!isSafeVaultSubPath(targetVault, filePath)) {
+          return { success: false, error: 'Security: path escapes vault directory' };
+        }
         if (fs.statSync(filePath).isDirectory()) {
           fs.rmSync(filePath, { recursive: true, force: true });
         } else {
           fs.unlinkSync(filePath);
         }
-      } else {
-        const directPath = path.join(targetVault, cleanRel);
-        if (fs.existsSync(directPath)) {
-          if (fs.statSync(directPath).isDirectory()) {
-            fs.rmSync(directPath, { recursive: true, force: true });
-          } else {
-            fs.unlinkSync(directPath);
-          }
+      } else if (fs.existsSync(directPath)) {
+        if (!isSafeVaultSubPath(targetVault, directPath)) {
+          return { success: false, error: 'Security: path escapes vault directory' };
+        }
+        if (fs.statSync(directPath).isDirectory()) {
+          fs.rmSync(directPath, { recursive: true, force: true });
+        } else {
+          fs.unlinkSync(directPath);
         }
       }
       return { success: true };
@@ -939,18 +979,24 @@ function registerIpc() {
       }
       let filePath;
       if (relativePath) {
-        const cleanRel = relativePath.replace(/\\/g, '/');
+        const cleanRel = sanitizeVaultPathSegments(relativePath);
         const fileWithExt = cleanRel.toLowerCase().endsWith('.md') ? cleanRel : cleanRel + '.md';
         filePath = path.join(trashDir, fileWithExt);
-        const parentDir = path.dirname(filePath);
-        if (!fs.existsSync(parentDir)) {
-          fs.mkdirSync(parentDir, { recursive: true });
-        }
       } else {
         const safeFilename = (filename || 'Untitled').replace(/[/\\?%*:|"<>]/g, '_') + '.md';
         filePath = path.join(trashDir, safeFilename);
       }
-      fs.writeFileSync(filePath, content, 'utf8');
+
+      if (!isSafeVaultSubPath(trashDir, filePath)) {
+        return { success: false, error: 'Security: trash path escapes .trash boundary' };
+      }
+
+      const parentDir = path.dirname(filePath);
+      if (!fs.existsSync(parentDir)) {
+        fs.mkdirSync(parentDir, { recursive: true });
+      }
+
+      fs.writeFileSync(filePath, content || '', 'utf8');
       return { success: true, path: filePath };
     } catch (err) {
       console.error('[Flint Hearth] Error saving trash file:', err);
@@ -962,23 +1008,36 @@ function registerIpc() {
     try {
       const targetVault = appConfig.currentVaultPath || path.join(app.getPath('documents'), 'Flint Hearth');
       const trashDir = path.join(targetVault, '.trash');
-      const cleanRel = (filenameOrPath || 'Untitled').replace(/\\/g, '/');
+      if (!filenameOrPath || typeof filenameOrPath !== 'string' || !filenameOrPath.trim()) {
+        return { success: false, error: 'Invalid path to delete' };
+      }
+
+      const cleanRel = sanitizeVaultPathSegments(filenameOrPath);
+      if (!cleanRel || cleanRel === '.' || cleanRel === '..') {
+        return { success: false, error: 'Security: cannot delete .trash root' };
+      }
+
       const fileWithExt = cleanRel.toLowerCase().endsWith('.md') ? cleanRel : cleanRel + '.md';
       const filePath = path.join(trashDir, fileWithExt);
+      const directPath = path.join(trashDir, cleanRel);
+
       if (fs.existsSync(filePath)) {
+        if (!isSafeVaultSubPath(trashDir, filePath)) {
+          return { success: false, error: 'Security: path escapes .trash directory' };
+        }
         if (fs.statSync(filePath).isDirectory()) {
           fs.rmSync(filePath, { recursive: true, force: true });
         } else {
           fs.unlinkSync(filePath);
         }
-      } else {
-        const directPath = path.join(trashDir, cleanRel);
-        if (fs.existsSync(directPath)) {
-          if (fs.statSync(directPath).isDirectory()) {
-            fs.rmSync(directPath, { recursive: true, force: true });
-          } else {
-            fs.unlinkSync(directPath);
-          }
+      } else if (fs.existsSync(directPath)) {
+        if (!isSafeVaultSubPath(trashDir, directPath)) {
+          return { success: false, error: 'Security: path escapes .trash directory' };
+        }
+        if (fs.statSync(directPath).isDirectory()) {
+          fs.rmSync(directPath, { recursive: true, force: true });
+        } else {
+          fs.unlinkSync(directPath);
         }
       }
       return { success: true };
@@ -1007,10 +1066,17 @@ function registerIpc() {
       let oldPath, newPath;
 
       if (oldRelativePath && newRelativePath) {
-        const oldClean = oldRelativePath.replace(/\\/g, '/');
-        const newClean = newRelativePath.replace(/\\/g, '/');
-        oldPath = path.join(targetVault, oldClean.toLowerCase().endsWith('.md') ? oldClean : oldClean + '.md');
-        newPath = path.join(targetVault, newClean.toLowerCase().endsWith('.md') ? newClean : newClean + '.md');
+        const oldClean = sanitizeVaultPathSegments(oldRelativePath);
+        const newClean = sanitizeVaultPathSegments(newRelativePath);
+
+        const oldDirCandidate = path.join(targetVault, oldClean);
+        if (fs.existsSync(oldDirCandidate) && fs.statSync(oldDirCandidate).isDirectory()) {
+          oldPath = oldDirCandidate;
+          newPath = path.join(targetVault, newClean);
+        } else {
+          oldPath = path.join(targetVault, oldClean.toLowerCase().endsWith('.md') ? oldClean : oldClean + '.md');
+          newPath = path.join(targetVault, newClean.toLowerCase().endsWith('.md') ? newClean : newClean + '.md');
+        }
       } else {
         const oldSafe = (oldFilename || 'Untitled').replace(/[/\\?%*:|"<>]/g, '_') + '.md';
         const newSafe = (newFilename || 'Untitled').replace(/[/\\?%*:|"<>]/g, '_') + '.md';
@@ -1018,14 +1084,40 @@ function registerIpc() {
         newPath = path.join(targetVault, newSafe);
       }
 
+      if (!isSafeVaultSubPath(targetVault, newPath)) {
+        return { success: false, error: 'Security: rename destination escapes vault directory' };
+      }
+
       const parentDir = path.dirname(newPath);
       if (!fs.existsSync(parentDir)) {
         fs.mkdirSync(parentDir, { recursive: true });
       }
 
-      if (fs.existsSync(oldPath)) {
-        fs.renameSync(oldPath, newPath);
+      let sourcePath = oldPath;
+      if (!fs.existsSync(sourcePath)) {
+        const oldRootPath = path.join(targetVault, path.basename(oldPath));
+        if (fs.existsSync(oldRootPath) && isSafeVaultSubPath(targetVault, oldRootPath)) {
+          sourcePath = oldRootPath;
+        } else {
+          return { success: false, error: 'Source file or folder not found on disk' };
+        }
       }
+
+      // If destination file already exists and is not the same file (case-insensitive on Windows)
+      const isSamePathNormalized = path.resolve(sourcePath).toLowerCase() === path.resolve(newPath).toLowerCase();
+      if (fs.existsSync(newPath) && !isSamePathNormalized) {
+        return { success: false, error: 'A file or folder with that name already exists' };
+      }
+
+      // Handle Windows case-only rename
+      if (isSamePathNormalized && sourcePath !== newPath) {
+        const tempPath = newPath + `.__flint_rename_tmp_${Date.now()}`;
+        fs.renameSync(sourcePath, tempPath);
+        fs.renameSync(tempPath, newPath);
+      } else {
+        fs.renameSync(sourcePath, newPath);
+      }
+
       return { success: true };
     } catch (err) {
       return { success: false, error: err.message };

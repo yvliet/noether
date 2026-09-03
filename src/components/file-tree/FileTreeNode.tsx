@@ -867,6 +867,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
                 title: `Move "${item.title}" to folder:`,
                 placeholder: 'Folder path or name (leave empty for root)',
                 confirmText: 'Move',
+                allowEmpty: true,
                 onConfirm: async (folderPath) => {
                   let targetParentId: string | null = null;
                   if (folderPath.trim()) {

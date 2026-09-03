@@ -119,6 +119,16 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
         const mdContent = jsonToMarkdown(doc.content_json, doc.title, propertiesJson);
         await platform.saveMarkdownFile(doc.title, mdContent, relPath);
 
+        const normRel = (relPath || doc.title).replace(/\\/g, '/').toLowerCase();
+        const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+        const contentHash = computeFastHash(mdContent);
+        try {
+          await dbAdapter.execute(
+            `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+            [manifestKey, now, mdContent.length, contentHash, now]
+          );
+        } catch (mErr) {}
+
         const isLocked = isDocumentLocked(propertiesJson);
         await platform.setFileAttributes(relPath || doc.title, { readonly: isLocked, mtime: now });
       }
@@ -194,6 +204,16 @@ export async function createDocument(
       const relPath = getDocumentPath({ id, title, parent_id: parentId }, allDocs);
       const md = jsonToMarkdown(defaultContent, title);
       await platform.saveMarkdownFile(title, md, relPath);
+
+      const normRel = (relPath || title).replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+      const contentHash = computeFastHash(md);
+      try {
+        await dbAdapter.execute(
+          `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+          [manifestKey, now, md.length, contentHash, now]
+        );
+      } catch (mErr) {}
     } catch (e) {}
   }
 
@@ -224,6 +244,7 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
     );
     let updatedCount = 0;
     const queries: { sql: string; params?: any[] }[] = [];
+    const changedDocs: { doc: (typeof affectedDocs)[0]; contentStr: string }[] = [];
 
     for (const doc of affectedDocs) {
       if (!doc.content_json) continue;
@@ -232,7 +253,6 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
       let hasChanged = false;
 
       // Replace [[oldTitle]] with [[newTitle]] and [[oldTitle| with [[newTitle|
-      // Note: in JSON string, quotes/brackets might be standard
       const directMatch = `[[${oldTitle}]]`;
       const pipeMatch = `[[${oldTitle}|`;
 
@@ -251,12 +271,34 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
           sql: `UPDATE documents SET content_json = ?, updated_at = ? WHERE id = ?`,
           params: [contentStr, Date.now(), doc.id],
         });
+        changedDocs.push({ doc, contentStr });
         updatedCount++;
       }
     }
 
     if (queries.length > 0) {
       await dbAdapter.transaction(queries);
+
+      if (platform.isDesktop()) {
+        const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+        for (const item of changedDocs) {
+          try {
+            const relPath = getDocumentPath(item.doc as DocumentItem, allDocs);
+            const mdContent = jsonToMarkdown(item.contentStr, item.doc.title);
+            await platform.saveMarkdownFile(item.doc.title, mdContent, relPath);
+
+            const normRel = (relPath || item.doc.title).replace(/\\/g, '/').toLowerCase();
+            const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+            const contentHash = computeFastHash(mdContent);
+            await dbAdapter.execute(
+              `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+              [manifestKey, Date.now(), mdContent.length, contentHash, Date.now()]
+            );
+          } catch (e) {
+            console.error('[Flint Links] Error saving updated link to disk:', e);
+          }
+        }
+      }
     }
     return updatedCount;
   } catch (err) {
@@ -279,6 +321,17 @@ export async function updateDocumentTitle(id: string, newTitle: string): Promise
       const oldRelPath = getDocumentPath({ id, title: oldTitle, parent_id: doc.parent_id }, allDocs);
       const newRelPath = getDocumentPath({ id, title: newTitle, parent_id: doc.parent_id }, allDocs);
       await platform.renameMarkdownFile(oldTitle, newTitle, oldRelPath, newRelPath);
+
+      const oldNorm = (oldRelPath || oldTitle).replace(/\\/g, '/').toLowerCase();
+      const oldKey = oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`;
+      const newNorm = (newRelPath || newTitle).replace(/\\/g, '/').toLowerCase();
+      const newKey = newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`;
+      try {
+        await dbAdapter.execute(
+          `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
+          [newKey, oldKey]
+        );
+      } catch (mErr) {}
     } catch (e) {}
   }
   return { oldTitle };
@@ -320,8 +373,20 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
 
   if (platform.isDesktop() && doc.content_json) {
     try {
-      const md = jsonToMarkdown(doc.content_json);
-      await platform.saveMarkdownFile(newTitle, md);
+      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const relPath = getDocumentPath({ id: newId, title: newTitle, parent_id: doc.parent_id }, allDocs);
+      const md = jsonToMarkdown(doc.content_json, newTitle, doc.properties);
+      await platform.saveMarkdownFile(newTitle, md, relPath);
+
+      const normRel = (relPath || newTitle).replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+      const contentHash = computeFastHash(md);
+      try {
+        await dbAdapter.execute(
+          `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+          [manifestKey, now, md.length, contentHash, now]
+        );
+      } catch (mErr) {}
     } catch (e) {}
   }
 
@@ -699,7 +764,8 @@ export function markdownToTipTapJson(md: string): string {
 export async function saveDocumentAndSynchronize(
   documentId: string,
   contentJson: string,
-  title?: string
+  title?: string,
+  options?: { skipDiskExport?: boolean }
 ): Promise<{ headings: HeadingItem[]; wordCount: number; charCount: number }> {
   const now = Date.now();
 
@@ -911,7 +977,7 @@ export async function saveDocumentAndSynchronize(
     const docTitle = title || docRecord?.title || 'Untitled';
     const docProps = docRecord?.properties || '{}';
     const mdContent = jsonToMarkdown(contentJson, docTitle, docProps);
-    if (platform.isDesktop() && docRecord) {
+    if (platform.isDesktop() && docRecord && !options?.skipDiskExport) {
       const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
       const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
       await platform.saveMarkdownFile(docTitle, mdContent, relPath);
@@ -1268,8 +1334,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     for (const f of diskFiles) {
       const relPath = f.relativePath.replace(/\\/g, '/').toLowerCase();
       diskPathSet.add(relPath);
-      if (f.name) diskPathSet.add(f.name.toLowerCase());
-      if (f.name) diskPathSet.add(`${f.name.toLowerCase()}.md`);
+      diskPathSet.add(relPath.endsWith('.md') ? relPath : `${relPath}.md`);
     }
 
     const removedDocIds: string[] = [];
@@ -1290,23 +1355,20 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         continue;
       }
 
-      const docPath = getDocumentPath(doc, existingDocs).toLowerCase();
-      const docTitle = (doc.title || '').toLowerCase();
-      const docTitleMd = `${docTitle}.md`;
+      const docPath = getDocumentPath(doc, existingDocs).replace(/\\/g, '/').toLowerCase();
+      const docPathMd = docPath.endsWith('.md') ? docPath : `${docPath}.md`;
 
-      const existsOnDisk =
-        diskPathSet.has(docPath) ||
-        diskPathSet.has(docTitle) ||
-        diskPathSet.has(docTitleMd) ||
-        diskPathSet.has(`${docPath}.md`);
+      const existsOnDisk = diskPathSet.has(docPath) || diskPathSet.has(docPathMd);
+      const isTrashed = trashSet.has(docPath) || trashSet.has(docPathMd);
 
-      if (!existsOnDisk && !trashSet.has(docPath) && !trashSet.has(docTitle)) {
+      if (!existsOnDisk && !isTrashed) {
         removedDocIds.push(doc.id);
         removedPaths.push(docPath);
       }
     }
 
     if (removedDocIds.length > 0) {
+      syncedCount += removedDocIds.length;
       for (let i = 0; i < removedDocIds.length; i++) {
         const rId = removedDocIds[i];
         const rPath = removedPaths[i];
@@ -1329,7 +1391,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       for (const id of modifiedOrAddedDocIds) {
         const doc = allUpdated.find((d) => d.id === id);
         if (doc && doc.content_json) {
-          await saveDocumentAndSynchronize(doc.id, doc.content_json, doc.title);
+          await saveDocumentAndSynchronize(doc.id, doc.content_json, doc.title, { skipDiskExport: true });
         }
       }
     }

@@ -232,40 +232,18 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
       } else if (action.type === 'move') {
         const titleToRestore = action.oldTitle || action.title;
         if (action.oldTitle && action.newTitle && action.oldTitle !== action.newTitle) {
-          await updateDocumentTitle(action.id, action.oldTitle);
-          const { autoUpdateLinks } = useSettingsStore.getState();
-          if (autoUpdateLinks) {
-            await updateInternalLinksAcrossDocuments(action.newTitle, action.oldTitle);
-          }
+          await useDocumentStore.getState().renameDocument(action.id, action.oldTitle, false);
         }
-        await dbMoveDocument(action.id, action.oldParentId);
-        const docs = await getAllDocuments();
-        const active = useDocumentStore.getState().activeDocument;
-        useDocumentStore.setState({
-          documents: docs,
-          activeDocument: active && active.id === action.id ? { ...active, parent_id: action.oldParentId, title: titleToRestore } : active,
-        });
-        if (action.oldTitle && action.newTitle && action.oldTitle !== action.newTitle) {
-          useWorkspaceStore.getState().updateTabTitle(action.id, action.oldTitle);
-        }
+        await useDocumentStore.getState().moveDocument(action.id, action.oldParentId, false);
         useWorkspaceStore.getState().showToast(`Restored position of "${titleToRestore}"`, 'success');
       } else if (action.type === 'batch_move') {
-        const { autoUpdateLinks } = useSettingsStore.getState();
         for (const m of action.moves) {
           const titleToRestore = m.oldTitle || m.title;
           if (m.oldTitle && m.newTitle && m.oldTitle !== m.newTitle) {
-            await updateDocumentTitle(m.id, m.oldTitle);
-            if (autoUpdateLinks) {
-              await updateInternalLinksAcrossDocuments(m.newTitle, m.oldTitle);
-            }
+            await useDocumentStore.getState().renameDocument(m.id, m.oldTitle, false);
           }
-          await dbMoveDocument(m.id, m.oldParentId);
-          if (m.oldTitle && m.newTitle && m.oldTitle !== m.newTitle) {
-            useWorkspaceStore.getState().updateTabTitle(m.id, m.oldTitle);
-          }
+          await useDocumentStore.getState().moveDocument(m.id, m.oldParentId, false);
         }
-        const docs = await getAllDocuments();
-        useDocumentStore.setState({ documents: docs });
         useWorkspaceStore.getState().showToast(`Restored positions of ${action.moves.length} items`, 'success');
       }
 
@@ -349,40 +327,18 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
       } else if (action.type === 'move') {
         const titleToApply = action.newTitle || action.title;
         if (action.oldTitle && action.newTitle && action.oldTitle !== action.newTitle) {
-          await updateDocumentTitle(action.id, action.newTitle);
-          const { autoUpdateLinks } = useSettingsStore.getState();
-          if (autoUpdateLinks) {
-            await updateInternalLinksAcrossDocuments(action.oldTitle, action.newTitle);
-          }
+          await useDocumentStore.getState().renameDocument(action.id, action.newTitle, false);
         }
-        await dbMoveDocument(action.id, action.newParentId);
-        const docs = await getAllDocuments();
-        const active = useDocumentStore.getState().activeDocument;
-        useDocumentStore.setState({
-          documents: docs,
-          activeDocument: active && active.id === action.id ? { ...active, parent_id: action.newParentId, title: titleToApply } : active,
-        });
-        if (action.oldTitle && action.newTitle && action.oldTitle !== action.newTitle) {
-          useWorkspaceStore.getState().updateTabTitle(action.id, action.newTitle);
-        }
+        await useDocumentStore.getState().moveDocument(action.id, action.newParentId, false);
         useWorkspaceStore.getState().showToast(`Moved "${titleToApply}"`, 'success');
       } else if (action.type === 'batch_move') {
-        const { autoUpdateLinks } = useSettingsStore.getState();
         for (const m of action.moves) {
           const titleToApply = m.newTitle || m.title;
           if (m.oldTitle && m.newTitle && m.oldTitle !== m.newTitle) {
-            await updateDocumentTitle(m.id, m.newTitle);
-            if (autoUpdateLinks) {
-              await updateInternalLinksAcrossDocuments(m.oldTitle, m.newTitle);
-            }
+            await useDocumentStore.getState().renameDocument(m.id, m.newTitle, false);
           }
-          await dbMoveDocument(m.id, m.newParentId);
-          if (m.oldTitle && m.newTitle && m.oldTitle !== m.newTitle) {
-            useWorkspaceStore.getState().updateTabTitle(m.id, m.newTitle);
-          }
+          await useDocumentStore.getState().moveDocument(m.id, m.newParentId, false);
         }
-        const docs = await getAllDocuments();
-        useDocumentStore.setState({ documents: docs });
         useWorkspaceStore.getState().showToast(`Moved ${action.moves.length} items`, 'success');
       }
 

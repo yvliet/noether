@@ -500,7 +500,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         }
         ws.setMainViewMode('document');
       } else {
-        ds.createNewNote(notePart).then((newDoc) => {
+        ds.createNewNote(notePart, null, 'base', false).then((newDoc) => {
           if (newDoc) {
             if (shouldSplit) {
               ws.openSplitTab(newDoc.id, newDoc.title);
@@ -614,7 +614,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   command: async (item: WikiLinkItem) => {
                     if (item.isNew) {
                       if (!item.title || !item.title.trim()) return;
-                      const newDoc = await createNewNote(item.title.trim());
+                      const newDoc = await createNewNote(item.title.trim(), null, 'base', false);
                       if (newDoc) {
                         props.command({ title: newDoc.title, id: newDoc.id });
                       }

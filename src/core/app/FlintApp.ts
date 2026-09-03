@@ -332,17 +332,17 @@ export class FlintApp {
       createNewCanvas: async (): Promise<DocumentItem | undefined> => {
         return storeRefs.document?.getState()?.createNewCanvas();
       },
-      openDocument: (id: string): void => {
-        storeRefs.document?.getState()?.setActiveDocumentById(id);
+      openDocument: async (id: string): Promise<void> => {
+        await storeRefs.document?.getState()?.setActiveDocumentById(id);
       },
-      saveDocument: (id: string, contentJson: string, title?: string): void => {
-        storeRefs.document?.getState()?.saveDocumentById(id, contentJson, title);
+      saveDocument: async (id: string, contentJson: string, title?: string): Promise<void> => {
+        await storeRefs.document?.getState()?.saveDocumentById(id, contentJson, title);
       },
-      deleteDocument: (id: string): void => {
-        storeRefs.document?.getState()?.removeDocument(id);
+      deleteDocument: async (id: string): Promise<void> => {
+        await storeRefs.document?.getState()?.removeDocument(id);
       },
-      renameDocument: (id: string, newTitle: string): void => {
-        storeRefs.document?.getState()?.renameDocument(id, newTitle);
+      renameDocument: async (id: string, newTitle: string): Promise<void> => {
+        await storeRefs.document?.getState()?.renameDocument(id, newTitle);
       },
       toggleBookmark: async (docId: string): Promise<boolean> => {
         await storeRefs.document?.getState()?.toggleBookmark(docId);

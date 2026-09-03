@@ -331,6 +331,16 @@ class UniversalDatabase {
     }
   }
 
+  public executeSync(sql: string, params: any[] = []): void {
+    if (!this.db) return;
+    try {
+      const cleanParams = params.map((p) => (p === undefined ? null : p));
+      this.db.run(sql, cleanParams);
+    } catch (err) {
+      console.error('[Flint DB] ExecuteSync error:', sql, params, err);
+    }
+  }
+
   public async execute(sql: string, params: any[] = []): Promise<void> {
     await this.ensureReady();
     if (!this.db) return;

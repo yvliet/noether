@@ -20,9 +20,11 @@ export const PromptModal: React.FC = React.memo(() => {
 
   if (!inputDialog?.isOpen) return null;
 
+  const isValid = Boolean(inputDialog.allowEmpty) || Boolean(value.trim());
+
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (value.trim()) {
+    if (isValid) {
       inputDialog.onConfirm(value.trim());
       closeInputDialog();
     }
@@ -83,7 +85,7 @@ export const PromptModal: React.FC = React.memo(() => {
           </button>
           <button
             type="submit"
-            disabled={!value.trim()}
+            disabled={!isValid}
             style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
             className="px-4 py-1.5 rounded-[5px] hover:brightness-110 active:brightness-90 disabled:opacity-40 text-white text-xs font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 transition-all cursor-pointer"
           >

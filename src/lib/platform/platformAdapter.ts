@@ -678,7 +678,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
-    this.recordInternalWrite();
+    this.recordInternalWrite(relativePath || filename);
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
       return await tauriCore?.invoke('save_markdown_file', { filename, content, relativePath: relativePath || null, vaultPath: vaultPath || null });
@@ -705,7 +705,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
-    this.recordInternalWrite();
+    this.recordInternalWrite(filenameOrPath);
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
       return await tauriCore?.invoke('delete_markdown_file', { filenameOrPath, vaultPath: vaultPath || null });
@@ -717,7 +717,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
-    this.recordInternalWrite();
+    this.recordInternalWrite(newRelativePath || oldRelativePath || newFilename);
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
       return await tauriCore?.invoke('rename_markdown_file', {
@@ -746,7 +746,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async saveTrashFile(filename: string, content: string, relativePath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
-    this.recordInternalWrite();
+    this.recordInternalWrite(relativePath || filename);
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
       return await tauriCore?.invoke('save_trash_file', { filename, content, relativePath: relativePath || null });
@@ -758,7 +758,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async deleteTrashFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }> {
-    this.recordInternalWrite();
+    this.recordInternalWrite(filenameOrPath);
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
       return await tauriCore?.invoke('delete_trash_file', { filenameOrPath });
@@ -770,7 +770,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async emptyTrashFolder(): Promise<{ success: boolean; error?: string }> {
-    this.recordInternalWrite();
+    this.recordInternalWrite('.trash');
     if (this.isTauri()) {
       const { tauriCore } = await getTauriModules();
       return await tauriCore?.invoke('empty_trash_folder');
