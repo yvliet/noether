@@ -80,6 +80,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
   const updateDocumentTitleInMemory = useDocumentStore((s) => s.updateDocumentTitleInMemory);
   const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
+  const renameDocument = useDocumentStore((s) => s.renameDocument);
 
   const app = useFlintApp();
   useExtensionList(); // Subscribe to reactive extension state changes
@@ -442,7 +443,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const activeDocIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<any>(null);
   const pendingContentRef = useRef<string | null>(null);
-  const pendingTitleRef = useRef<string | null>(null);
 
   // Helper to flush any pending save immediately
   const flushPendingSave = useCallback(() => {
@@ -452,32 +452,25 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }
     const docId = activeDocIdRef.current;
     const contentToSave = pendingContentRef.current;
-    const titleToSave = pendingTitleRef.current;
 
-    if (docId && (contentToSave !== null || titleToSave !== null)) {
+    if (docId && contentToSave !== null) {
       pendingContentRef.current = null;
-      pendingTitleRef.current = null;
 
-      const currentContent = contentToSave !== null ? contentToSave : (currentDoc?.content_json || '{}');
-      const currentTitle = titleToSave !== null ? titleToSave : (currentDoc?.title || undefined);
+      const currentContent = contentToSave;
 
       useDocumentStore.setState((s) => ({
         documents: s.documents.map((d) =>
-          d.id === docId ? { ...d, content_json: currentContent, ...(currentTitle ? { title: currentTitle } : {}) } : d
+          d.id === docId ? { ...d, content_json: currentContent } : d
         ),
         activeDocument:
           s.activeDocument && s.activeDocument.id === docId
-            ? { ...s.activeDocument, content_json: currentContent, ...(currentTitle ? { title: currentTitle } : {}) }
+            ? { ...s.activeDocument, content_json: currentContent }
             : s.activeDocument,
       }));
 
-      saveDocumentById(
-        docId,
-        currentContent,
-        currentTitle
-      );
+      saveDocumentById(docId, currentContent);
     }
-  }, [currentDoc?.content_json, currentDoc?.title, saveDocumentById]);
+  }, [saveDocumentById]);
 
   // Sync state when active document changes
   useEffect(() => {
@@ -486,18 +479,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
       if (docChanged) {
         // 1. Immediately flush pending save for the OLD document before loading the new one!
-        if (activeDocIdRef.current && (pendingContentRef.current !== null || pendingTitleRef.current !== null)) {
-          const oldDocId = activeDocIdRef.current;
-          const oldContent = pendingContentRef.current;
-          const oldTitle = pendingTitleRef.current;
-          pendingContentRef.current = null;
-          pendingTitleRef.current = null;
-          if (saveTimerRef.current) {
-            clearTimeout(saveTimerRef.current);
-            saveTimerRef.current = null;
-          }
-          saveDocumentById(oldDocId, oldContent !== null ? oldContent : '{}', oldTitle || undefined);
-        }
+        flushPendingSave();
 
         activeDocIdRef.current = currentDoc.id;
         setTitle(currentDoc.title);
@@ -525,18 +507,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         }
       }
     } else {
-      if (activeDocIdRef.current && (pendingContentRef.current !== null || pendingTitleRef.current !== null)) {
-        const oldDocId = activeDocIdRef.current;
-        const oldContent = pendingContentRef.current;
-        const oldTitle = pendingTitleRef.current;
-        pendingContentRef.current = null;
-        pendingTitleRef.current = null;
-        if (saveTimerRef.current) {
-          clearTimeout(saveTimerRef.current);
-          saveTimerRef.current = null;
-        }
-        saveDocumentById(oldDocId, oldContent !== null ? oldContent : '{}', oldTitle || undefined);
-      }
+      flushPendingSave();
       activeDocIdRef.current = null;
       setTitle('');
       setContent('');
@@ -577,9 +548,36 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }
   }, [isEditingSubheader]);
 
-  const scheduleDebouncedSave = useCallback((newContent?: string, newTitle?: string) => {
+  const commitTitleRename = useCallback(async (newVal: string) => {
+    if (!currentDoc || isLocked) return;
+    const trimmed = newVal.trim();
+    if (!trimmed || trimmed === currentDoc.title) {
+      setTitle(currentDoc.title);
+      return;
+    }
+    const hasCollision = documents.some(
+      (d) =>
+        d.id !== currentDoc.id &&
+        !d.is_folder &&
+        (d.parent_id || null) === (currentDoc.parent_id || null) &&
+        d.title.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    if (hasCollision) {
+      setTitle(currentDoc.title);
+      return;
+    }
+    await renameDocument(currentDoc.id, trimmed);
+    if (isSidebarMode) {
+      useSidebarDockStore.setState((s) => ({
+        items: s.items.map((it) =>
+          it.documentId === currentDoc.id ? { ...it, title: trimmed } : it
+        ),
+      }));
+    }
+  }, [currentDoc, isLocked, documents, renameDocument, isSidebarMode]);
+
+  const scheduleDebouncedSave = useCallback((newContent?: string) => {
     if (newContent !== undefined) pendingContentRef.current = newContent;
-    if (newTitle !== undefined) pendingTitleRef.current = newTitle;
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
@@ -591,46 +589,25 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     if (isLocked) return;
     setTitle(val);
     if (currentDoc) {
-      const trimmed = val.trim().toLowerCase();
-      const hasCollision = documents.some(
-        (d) =>
-          d.id !== currentDoc.id &&
-          !d.is_folder &&
-          d.title.trim().toLowerCase() === trimmed
-      );
-      if (!hasCollision && trimmed) {
-        updateDocumentTitleInMemory(currentDoc.id, val);
-        updateTabTitle(currentDoc.id, val);
-        if (isSidebarMode) {
-          useSidebarDockStore.setState((s) => ({
-            items: s.items.map((it) =>
-              it.documentId === currentDoc.id ? { ...it, title: val } : it
-            ),
-          }));
-        }
-        scheduleDebouncedSave(undefined, val);
+      const trimmed = val.trim();
+      if (trimmed) {
+        updateTabTitle(currentDoc.id, trimmed);
       }
     }
-  }, [currentDoc, documents, updateDocumentTitleInMemory, updateTabTitle, scheduleDebouncedSave, isLocked, isSidebarMode]);
-
+  }, [isLocked, currentDoc, updateTabTitle]);
 
   const handleContentChange = useCallback((newJson: string) => {
     if (isLocked) return;
     pendingContentRef.current = newJson;
-    scheduleDebouncedSave(newJson, undefined);
+    scheduleDebouncedSave(newJson);
   }, [scheduleDebouncedSave, isLocked]);
 
   const handleSourceModeChange = useCallback(
     (newContentJson: string, newTitle?: string, newProps?: DocumentProperties) => {
       if (isLocked) return;
       pendingContentRef.current = newContentJson;
-      if (newTitle && newTitle !== title) {
-        setTitle(newTitle);
-        if (currentDoc) {
-          updateDocumentTitleInMemory(currentDoc.id, newTitle);
-          updateTabTitle(currentDoc.id, newTitle);
-          pendingTitleRef.current = newTitle;
-        }
+      if (newTitle && newTitle !== title && currentDoc) {
+        commitTitleRename(newTitle);
       }
       if (newProps && currentDoc) {
         useDocumentStore.setState((s) => ({
@@ -644,9 +621,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
               : s.activeDocument,
         }));
       }
-      scheduleDebouncedSave(newContentJson, newTitle);
+      scheduleDebouncedSave(newContentJson);
     },
-    [isLocked, title, currentDoc, updateDocumentTitleInMemory, updateTabTitle, scheduleDebouncedSave]
+    [isLocked, title, currentDoc, commitTitleRename, scheduleDebouncedSave]
   );
 
   const handleBack = useCallback(async () => {
@@ -734,15 +711,16 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         {/* Center: Truly Absolute Centered Document Breadcrumb Title (Click to rename live in-place) */}
         <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-20">
           {currentDoc ? (
-            <div className="pointer-events-auto text-[12px] max-w-2xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0">
+            <div className="pointer-events-auto text-[12px] max-w-2xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden">
               {(() => {
                 const parts = breadcrumbItems;
                 const hasFolders = parts.length > 1;
                 const folderParts = parts.slice(0, -1);
-                const topFolder = folderParts.length > 0 ? folderParts[0] : null;
-                const middleFolders = folderParts.length > 1 ? folderParts.slice(1) : [];
-                const middleFoldersTooltip = middleFolders.map((f: any) => f.title).join(' / ');
-                const immediateParentFolder = folderParts.length > 0 ? folderParts[folderParts.length - 1] : null;
+                const isDeepHierarchy = folderParts.length >= 3;
+                const rootFolder = folderParts.length > 0 ? folderParts[0] : null;
+                const intermediateFolders = isDeepHierarchy ? folderParts.slice(1, -1) : [];
+                const immediateParentFolder = folderParts.length > 1 ? folderParts[folderParts.length - 1] : null;
+                const intermediateTooltip = intermediateFolders.map((f: any) => f.title).join(' / ');
 
                 const handleFolderClick = (targetId: string, customOnClick?: (app: any, e: any) => void) => (e: React.MouseEvent) => {
                   e.stopPropagation();
@@ -789,28 +767,28 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
                 return (
                   <>
-                    {/* Topmost Folder */}
-                    {topFolder && (
-                      <React.Fragment key={topFolder.id}>
+                    {/* Root/Topmost Folder */}
+                    {rootFolder && (
+                      <React.Fragment key={rootFolder.id}>
                         <span
-                          onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[140px] ${
-                            (topFolder as any).className || ''
+                          onClick={handleFolderClick(rootFolder.id, (rootFolder as any).onClick)}
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[130px] ${
+                            (rootFolder as any).className || ''
                           }`}
                         >
-                          {renderBreadcrumbIcon(topFolder, 0)}
-                          <span className="truncate">{topFolder.title}</span>
+                          {renderBreadcrumbIcon(rootFolder, 0)}
+                          <span className="truncate">{rootFolder.title}</span>
                         </span>
                         <span className="text-[#444] select-none mx-1.5 shrink-0">/</span>
                       </React.Fragment>
                     )}
 
-                    {/* Intermediate Folders Ellipsis (when 2 or more parent folders exist) */}
-                    {middleFolders.length > 0 && immediateParentFolder && (
+                    {/* Intermediate Folders Ellipsis (ONLY when 3 or more parent folders exist: Root / ... / Parent) */}
+                    {isDeepHierarchy && intermediateFolders.length > 0 && (
                       <React.Fragment key="breadcrumb-middle-ellipsis">
                         <span
-                          onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
-                          title={middleFoldersTooltip || undefined}
+                          onClick={handleFolderClick(intermediateFolders[intermediateFolders.length - 1].id, (intermediateFolders[intermediateFolders.length - 1] as any).onClick)}
+                          title={intermediateTooltip || undefined}
                           className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
                         >
                           ...
@@ -819,14 +797,30 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                       </React.Fragment>
                     )}
 
+                    {/* Immediate Parent Folder (when 2 or more folders exist) */}
+                    {immediateParentFolder && (
+                      <React.Fragment key={immediateParentFolder.id}>
+                        <span
+                          onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[130px] ${
+                            (immediateParentFolder as any).className || ''
+                          }`}
+                        >
+                          {renderBreadcrumbIcon(immediateParentFolder, folderParts.length - 1)}
+                          <span className="truncate">{immediateParentFolder.title}</span>
+                        </span>
+                        <span className="text-[#444] select-none mx-1.5 shrink-0">/</span>
+                      </React.Fragment>
+                    )}
+
                     {/* Active File Title with in-place Inline Rename */}
                     {isEditingSubheader ? (
-                      <div className="text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-[480px]">
+                      <div className="text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-[340px] shrink">
                         {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
-                        <div className="relative inline-flex items-center min-w-[30px] max-w-[450px]">
+                        <div className="relative inline-flex items-center min-w-[30px] max-w-[300px]">
                           {/* Invisible sizer text with exact matching typography */}
                           <span
-                            className="invisible whitespace-pre font-normal text-[12px] font-sans pointer-events-none select-none"
+                            className="invisible whitespace-pre font-normal text-[12px] font-sans pointer-events-none select-none max-w-[300px] truncate"
                             aria-hidden="true"
                           >
                             {title || 'Untitled'}
@@ -838,25 +832,23 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                             value={title}
                             onChange={(e) => handleTitleChange(e.target.value)}
                             onBlur={() => {
-                              if (isDuplicateTitle && currentDoc) {
-                                setTitle(currentDoc.title);
-                              }
                               setIsEditingSubheader(false);
+                              commitTitleRename(title);
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') {
-                                if (isDuplicateTitle && currentDoc) {
-                                  setTitle(currentDoc.title);
-                                }
+                                e.preventDefault();
                                 setIsEditingSubheader(false);
+                                commitTitleRename(title);
                               } else if (e.key === 'Escape') {
+                                e.preventDefault();
                                 if (currentDoc) {
                                   setTitle(currentDoc.title);
                                 }
                                 setIsEditingSubheader(false);
                               }
                             }}
-                            className="absolute inset-0 w-full h-full bg-transparent border-none outline-none p-0 m-0 text-left text-[12px] text-[#dcddde] font-normal caret-[#888] selection:bg-[#505560] selection:text-white font-sans"
+                            className="absolute inset-0 w-full h-full bg-transparent border-none outline-none p-0 m-0 text-left text-[12px] text-[#dcddde] font-normal caret-[#888] selection:bg-[#505560] selection:text-white font-sans truncate"
                           />
 
                           {/* Duplicate Name Warning Tooltip */}
@@ -880,7 +872,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                           setIsEditingSubheader(true);
                         }}
                         title={isLocked ? 'Note is locked (Read-only)' : 'Click to rename'}
-                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full ${
+                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}
                       >
@@ -1124,8 +1116,19 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                   onChange={(e) => handleTitleChange(e.target.value)}
                                   onBlur={() => {
                                     setIsMainTitleFocused(false);
-                                    if (isDuplicateTitle && currentDoc) {
-                                      setTitle(currentDoc.title);
+                                    commitTitleRename(title);
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      setIsMainTitleFocused(false);
+                                      commitTitleRename(title);
+                                      (e.target as HTMLInputElement).blur();
+                                    } else if (e.key === 'Escape') {
+                                      e.preventDefault();
+                                      if (currentDoc) setTitle(currentDoc.title);
+                                      setIsMainTitleFocused(false);
+                                      (e.target as HTMLInputElement).blur();
                                     }
                                   }}
                                   placeholder="Untitled"
@@ -1161,8 +1164,19 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                               onChange={(e) => handleTitleChange(e.target.value)}
                               onBlur={() => {
                                 setIsMainTitleFocused(false);
-                                if (isDuplicateTitle && currentDoc) {
-                                  setTitle(currentDoc.title);
+                                commitTitleRename(title);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  setIsMainTitleFocused(false);
+                                  commitTitleRename(title);
+                                  (e.target as HTMLInputElement).blur();
+                                } else if (e.key === 'Escape') {
+                                  e.preventDefault();
+                                  if (currentDoc) setTitle(currentDoc.title);
+                                  setIsMainTitleFocused(false);
+                                  (e.target as HTMLInputElement).blur();
                                 }
                               }}
                               placeholder="Untitled"
