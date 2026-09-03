@@ -77,7 +77,10 @@ interface DocumentState {
   restoreFromTrash: (id: string) => Promise<void>;
   deletePermanently: (id: string) => Promise<void>;
   emptyAllTrash: () => Promise<void>;
-  setActiveDocumentById: (id: string, options?: { preserveViewMode?: boolean }) => Promise<void>;
+  setActiveDocumentById: (
+    id: string,
+    options?: { preserveViewMode?: boolean; replaceCurrentTab?: boolean; newTab?: boolean }
+  ) => Promise<void>;
   createNewNote: (
     title?: string,
     parentId?: string | null,
@@ -244,7 +247,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     useWorkspaceStore.getState().showToast('Trash emptied', 'info');
   },
 
-  setActiveDocumentById: async (id: string, options?: { preserveViewMode?: boolean }) => {
+  setActiveDocumentById: async (
+    id: string,
+    options?: { preserveViewMode?: boolean; replaceCurrentTab?: boolean; newTab?: boolean }
+  ) => {
     try {
       // 1. Instantaneous 0ms optimistic update from in-memory state.documents cache
       const cachedDoc = get().documents.find((d) => d.id === id);
@@ -269,7 +275,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         if (!shouldPreserve) {
           const targetMode = (cachedDoc.doc_type && cachedDoc.doc_type !== 'base') ? cachedDoc.doc_type : 'document';
           useWorkspaceStore.getState().setMainViewMode(targetMode);
-          useWorkspaceStore.getState().openTab(cachedDoc.id, cachedDoc.title, { viewType: targetMode });
+          useWorkspaceStore.getState().openTab(cachedDoc.id, cachedDoc.title, {
+            viewType: targetMode,
+            replaceCurrentTab: options?.replaceCurrentTab ?? true,
+            newTab: options?.newTab ?? false,
+          });
         }
       }
 
@@ -452,7 +462,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     if (autoOpenInMain) {
       ws.setMainViewMode('document');
-      ws.openTab(doc.id, doc.title);
+      ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false });
     }
 
     // Persist in background without blocking UI thread

@@ -612,6 +612,16 @@ export interface OpenTabOptions {
   metadata?: Record<string, unknown>;
   /** Whether to replace the currently active tab if it is an empty new tab. Defaults to true. */
   replaceCurrentEmpty?: boolean;
+  /**
+   * Whether to replace the page in the currently active tab instead of creating a new tab.
+   * Defaults to true for standard in-app navigation (such as clicking notes in the nav sidebar).
+   */
+  replaceCurrentTab?: boolean;
+  /**
+   * Explicitly force creating a new tab even if replaceCurrentTab would otherwise apply.
+   * Used for actions like "Open in new tab", middle-clicks, or tab bar "+" clicks.
+   */
+  newTab?: boolean;
 }
 
 /**

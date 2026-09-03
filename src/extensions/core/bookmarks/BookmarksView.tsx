@@ -65,8 +65,8 @@ export const BookmarksView: React.FC = React.memo(() => {
           if (isSplitView && activePane === 'split') {
             openSplitTab(doc.id, doc.title);
           } else {
-            openTab(doc.id, doc.title);
-            setActiveDocumentById(doc.id);
+            openTab(doc.id, doc.title, { replaceCurrentTab: true });
+            setActiveDocumentById(doc.id, { preserveViewMode: true });
           }
         },
       },
@@ -138,8 +138,8 @@ export const BookmarksView: React.FC = React.memo(() => {
                 if (isSplitView && activePane === 'split') {
                   openSplitTab(doc.id, doc.title);
                 } else {
-                  openTab(doc.id, doc.title);
-                  setActiveDocumentById(doc.id);
+                  openTab(doc.id, doc.title, { replaceCurrentTab: true });
+                  setActiveDocumentById(doc.id, { preserveViewMode: true });
                 }
               }}
               onContextMenu={(e) => handleBookmarkContextMenu(e, doc)}

@@ -1546,7 +1546,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const explicitTabId = options?.id;
     const metadata = options?.metadata;
 
-    const currentTab = currentPane.tabs.find((t) => t.id === currentPane.activeTabId);
+    const currentTab = currentPane.tabs.find((t) => t.id === currentPane.activeTabId) || currentPane.tabs[0];
     let newTabs = [...currentPane.tabs];
     let nextTabId = currentPane.activeTabId;
 
@@ -1556,6 +1556,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       (!currentTab.document_id || currentTab.document_id === '' || currentTab.document_id.startsWith('__empty__')) &&
       (!currentTab.view_type || currentTab.view_type === 'document') &&
       !currentTab.metadata;
+
+    /**
+     * Decision Rationale:
+     * When opening notes via navigation sidebar, links, or file explorer, we mutate the
+     * current active tab's target document rather than continuously appending new tabs.
+     * New tabs are only created when explicitly requested (e.g. options.newTab, tab bar "+",
+     * middle click, or context menu "Open in new tab") or when the active tab is pinned.
+     */
+    const shouldReplaceCurrent =
+      options?.newTab !== true &&
+      (options?.replaceCurrentTab ?? true) &&
+      Boolean(currentTab) &&
+      !currentTab?.is_pinned;
 
     if (isCurrentTabEmpty) {
       nextTabId = explicitTabId || currentTab.id;
@@ -1601,6 +1614,29 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
               : t
           );
         }
+      } else if (shouldReplaceCurrent && currentTab) {
+        // Change the page in the current tab without creating a new tab
+        const isCustomOrEmptyTab =
+          currentTab.id.startsWith('tab-empty') ||
+          currentTab.id.startsWith('custom-') ||
+          (currentTab.view_type && currentTab.view_type !== 'document' && currentTab.view_type !== options?.viewType);
+
+        nextTabId = explicitTabId || (isCustomOrEmptyTab ? `tab-${docId}-${Date.now()}` : currentTab.id);
+
+        newTabs = currentPane.tabs.map((t) =>
+          t.id === currentTab.id
+            ? {
+                ...t,
+                id: nextTabId!,
+                document_id: docId,
+                title: title || 'Untitled',
+                view_mode: (options?.viewMode as any) || 'document',
+                view_type: options?.viewType || 'document',
+                icon: options?.icon,
+                metadata,
+              }
+            : t
+        );
       } else {
         const newTab: TabItem = {
           id: explicitTabId || `tab-${docId}-${Date.now()}`,
@@ -1633,7 +1669,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       panes: newPanes,
       focusedPaneId: paneId,
       activePane: isMain ? 'main' : 'split',
-      ...(isMain ? { tabs: newTabs, activeTabId: nextTabId } : {}),
+      ...(isMain ? { tabs: newTabs, activeTabId: nextTabId, mainViewMode: (options?.viewType as any) || 'document' } : {}),
       ...(paneId === get().focusedPaneId && !isMain
         ? { splitTabs: newTabs, splitActiveTabId: nextTabId, splitActiveDocumentId: docId }
         : {}),

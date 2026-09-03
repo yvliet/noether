@@ -306,7 +306,7 @@ function renderTipTapNodesToHtml(nodes: any[]): string {
       const inner = (node.content || []).map((c: any) => (c.content || []).map((t: any) => t.text || '').join('')).join(' ');
       html += `<div class="my-2 pl-3 py-1 border-l-2 border-[var(--flint-accent)] bg-[var(--flint-accent)]/5 text-xs text-[#cccccc] rounded-r">${renderInlineFormatting(inner)}</div>`;
     } else if (node.type === 'bulletList') {
-      html += '<ul class="my-1.5 space-y-1 text-xs text-[#cccccc] pl-4 list-disc">';
+      html += '<ul class="my-1.5 space-y-1 text-xs text-[#cccccc] pl-4" style="list-style-type: \'•  \'">';
       for (const item of node.content || []) {
         const itemText = (item.content || []).map((c: any) => (c.content || []).map((t: any) => t.text || '').join('')).join('');
         html += `<li>${renderInlineFormatting(itemText)}</li>`;

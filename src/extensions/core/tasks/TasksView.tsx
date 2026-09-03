@@ -76,8 +76,8 @@ export const TasksView: React.FC = React.memo(() => {
   const handleOpenDoc = useCallback((docId: string) => {
     const doc = documents.find((d) => d.id === docId);
     const title = doc?.title || 'Untitled';
-    openTab(docId, title);
-    setActiveDocumentById(docId);
+    openTab(docId, title, { replaceCurrentTab: true });
+    setActiveDocumentById(docId, { preserveViewMode: true });
   }, [documents, openTab, setActiveDocumentById]);
 
   const totalCount = useMemo(() => globalTasks.length, [globalTasks]);

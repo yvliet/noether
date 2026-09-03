@@ -293,7 +293,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             selectSingleDoc(nextId);
             const doc = documents.find((d) => d.id === nextId);
             if (doc && !doc.is_folder) {
-              setActiveDocumentById(doc.id);
+              setActiveDocumentById(doc.id, { replaceCurrentTab: true });
             }
           }
 

@@ -684,7 +684,7 @@ kbd,
 }
 
 .ProseMirror ul {
-  list-style-type: disc;
+  list-style-type: '•  ';
   padding-left: 1.5rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
@@ -1017,6 +1017,19 @@ li[data-type="taskItem"][data-checked="true"] > div {
   text-decoration: none;
 }
 
+/**
+ * Visually replace bullet markers (-, *, +) with a centered dot (·).
+ * Why font-size: 0 + ::after instead of text-replace: the underlying text stays as '-'
+ * for markdown compatibility and cursor navigation — this is purely cosmetic.
+ */
+.flint-bullet-marker {
+  font-size: 0;
+}
+.flint-bullet-marker::after {
+  content: '•';
+  font-size: 1rem;
+}
+
 .theme-light .flint-numbered-prefix,
 .theme-light .flint-list-prefix {
   color: #94a3b8 !important;
@@ -1029,6 +1042,13 @@ li[data-type="taskItem"][data-checked="true"] > div {
   line-height: inherit !important;
   letter-spacing: normal !important;
   display: inline !important;
+}
+/* Preserve bullet → centered dot visual replacement in reading view */
+.tiptap-reading-view .flint-bullet-marker {
+  font-size: 0 !important;
+}
+.tiptap-reading-view .flint-bullet-marker::after {
+  font-size: 1rem !important;
 }
 
 .theme-light .tiptap-reading-view .flint-numbered-prefix,

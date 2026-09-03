@@ -34,6 +34,7 @@ export interface TreeNodeRowProps {
   actions?: TreeNodeAction[];
   onSelect?: (e: React.MouseEvent) => void;
   onDoubleClick?: (e: React.MouseEvent) => void;
+  onAuxClick?: (e: React.MouseEvent) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
   onPointerDown?: (e: React.PointerEvent) => void;
   onPointerEnter?: () => void;
@@ -67,6 +68,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   actions = [],
   onSelect,
   onDoubleClick,
+  onAuxClick,
   onContextMenu,
   onPointerDown,
   onPointerEnter,
@@ -96,6 +98,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onPointerDown={isDisabled ? undefined : onPointerDown}
         onClick={isDisabled ? undefined : onSelect}
         onDoubleClick={isDisabled ? undefined : onDoubleClick}
+        onAuxClick={isDisabled ? undefined : onAuxClick}
         onContextMenu={isDisabled ? undefined : onContextMenu}
         onPointerEnter={isDisabled ? undefined : onPointerEnter}
         onPointerLeave={isDisabled ? undefined : onPointerLeave}

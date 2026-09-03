@@ -99,7 +99,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
               return (
                 <li key={idx} style={indentPadding} className="flex items-start gap-2 list-none">
                   <span className="flint-list-prefix text-[#666666] font-normal select-none shrink-0 text-center w-3">
-                    •
+                    ·
                   </span>
                   <span
                     className="flex-1"

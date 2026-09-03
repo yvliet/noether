@@ -410,10 +410,24 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         }
       } else {
         selectSingleDoc(item.id);
-        openTab(item.id, item.title);
+        openTab(item.id, item.title, { replaceCurrentTab: true });
       }
     },
     [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen]
+  );
+
+  const handleAuxClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (isPickingFolder || isFolder) return;
+      if (e.button === 1) {
+        // Middle-click: open explicitly in a new tab
+        e.preventDefault();
+        e.stopPropagation();
+        openTab(item.id, item.title, { newTab: true, replaceCurrentTab: false });
+        setActiveDocumentById(item.id, { preserveViewMode: true });
+      }
+    },
+    [isPickingFolder, isFolder, item.id, item.title, openTab, setActiveDocumentById]
   );
 
   const handleSaveRename = useCallback(async () => {
@@ -610,8 +624,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             setIsOpen(true);
             const newDoc = await createNewNote('Untitled', item.id);
             if (newDoc) {
-              openTab(newDoc.id, newDoc.title);
-              setActiveDocumentById(newDoc.id);
+              openTab(newDoc.id, newDoc.title, { newTab: true, replaceCurrentTab: false });
+              setActiveDocumentById(newDoc.id, { preserveViewMode: true });
               setEditingDocId(newDoc.id);
             }
           },
@@ -736,8 +750,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
               setIsOpen(true);
               const newDoc = await createNewNote('Untitled', item.id);
               if (newDoc) {
-                openTab(newDoc.id, newDoc.title);
-                setActiveDocumentById(newDoc.id);
+                openTab(newDoc.id, newDoc.title, { newTab: true, replaceCurrentTab: false });
+                setActiveDocumentById(newDoc.id, { preserveViewMode: true });
                 setEditingDocId(newDoc.id);
               }
             },
@@ -792,12 +806,21 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       } else {
         const items: ContextMenuItem[] = [
           {
+            id: 'open',
+            title: 'Open',
+            icon: <File01Icon size={14} />,
+            onClick: () => {
+              openTab(item.id, item.title, { replaceCurrentTab: true });
+              setActiveDocumentById(item.id, { preserveViewMode: true });
+            },
+          },
+          {
             id: 'open-tab',
             title: 'Open in new tab',
             icon: <ExternalLinkIcon size={14} />,
             onClick: () => {
-              openTab(item.id, item.title);
-              setActiveDocumentById(item.id);
+              openTab(item.id, item.title, { newTab: true, replaceCurrentTab: false });
+              setActiveDocumentById(item.id, { preserveViewMode: true });
             },
           },
           {
@@ -930,6 +953,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         e.stopPropagation();
         setLocalIsEditing(true);
       }}
+      onAuxClick={isPickingFolder ? undefined : handleAuxClick}
       onContextMenu={isPickingFolder ? undefined : handleContextMenu}
       onPointerDown={isPickingFolder ? undefined : handlePointerDown}
       onPointerEnter={handlePointerEnter}

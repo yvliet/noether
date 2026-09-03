@@ -255,9 +255,11 @@ function scanBlockDecorations(
         const markerLen = listMatch[2].length;
         const markerStart = blockStart + lineOffset + indentLen;
         const markerEnd = markerStart + markerLen;
+        // Bullet markers (-, *, +) get an extra class so CSS can visually replace them with a centered dot
+        const isBullet = /^[-*+]$/.test(listMatch[2]);
         decorations.push(
           Decoration.inline(markerStart, markerEnd, {
-            class: 'flint-numbered-prefix flint-list-prefix',
+            class: `flint-numbered-prefix flint-list-prefix${isBullet ? ' flint-bullet-marker' : ''}`,
           })
         );
       }

@@ -340,7 +340,7 @@ export function useTreeDragDrop({
                 : [item as DocumentItem];
 
               for (const doc of docsToOpen) {
-                useWorkspaceStore.getState().openTabInPane(targetPaneId, doc.id, doc.title);
+                useWorkspaceStore.getState().openTabInPane(targetPaneId, doc.id, doc.title, { newTab: true });
               }
               useWorkspaceStore.getState().setFocusedPane(targetPaneId);
               resetDragState();
