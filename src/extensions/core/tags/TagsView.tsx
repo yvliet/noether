@@ -193,14 +193,14 @@ export const TagsView: React.FC = () => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[#777] shrink-0">
+      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--flint-text-muted)] shrink-0">
         <button
           onClick={() => setSortMode(sortMode === 'count' ? 'alpha' : 'count')}
           title={`Sort order: ${sortMode === 'count' ? 'Frequency (9-1)' : 'Alphabetical (A-Z)'}`}
-          className={`p-1.5 rounded-[5px] transition-all cursor-pointer ${
+          className={`p-1.5 rounded-[5px] cursor-pointer ${
             sortMode === 'count'
-              ? 'bg-[#252525] text-white border border-[#383838] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
-              : 'text-[#777] hover:text-[#dcddde] hover:bg-[#202020] border border-transparent'
+              ? 'bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-primary)] border border-[var(--flint-border-strong)] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
+              : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] border border-transparent'
           }`}
         >
           {sortMode === 'count' ? <ArrowDown10Icon size={14} /> : <ArrowDownAZIcon size={14} />}
@@ -209,7 +209,7 @@ export const TagsView: React.FC = () => {
         <button
           onClick={() => setViewMode(viewMode === 'tree' ? 'flat' : 'tree')}
           title={`View mode: ${viewMode === 'tree' ? 'Hierarchical Tree' : 'Flat List'}`}
-          className="p-1.5 rounded-[5px] hover:bg-[#202020] text-[#777] hover:text-[#dcddde] transition-all cursor-pointer"
+          className="p-1.5 rounded-[5px] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
         >
           {viewMode === 'tree' ? <FolderTreeIcon size={14} /> : <HashIcon size={14} />}
         </button>
@@ -218,7 +218,7 @@ export const TagsView: React.FC = () => {
           <button
             onClick={handleCollapseAll}
             title={expandedTags.size > 0 ? 'Collapse all' : 'Expand all'}
-            className="p-1.5 rounded-[5px] hover:bg-[#202020] text-[#777] hover:text-[#dcddde] transition-all cursor-pointer"
+            className="p-1.5 rounded-[5px] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
           >
             <ArrowShrink02Icon size={14} />
           </button>
@@ -230,10 +230,10 @@ export const TagsView: React.FC = () => {
             if (isSearchOpen) setSearchQuery('');
           }}
           title={isSearchOpen ? 'Close search' : 'Search tags'}
-          className={`p-1.5 rounded-[5px] transition-all cursor-pointer ${
+          className={`p-1.5 rounded-[5px] cursor-pointer ${
             isSearchOpen
-              ? 'text-white bg-[#252525] border border-[#383838] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
-              : 'text-[#777] hover:text-[#dcddde] hover:bg-[#202020] border border-transparent'
+              ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] border border-[var(--flint-border-strong)] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
+              : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] border border-transparent'
           }`}
         >
           <Search01Icon size={14} />
@@ -242,15 +242,15 @@ export const TagsView: React.FC = () => {
 
       {isSearchOpen && (
         <div className="px-2.5 py-1.5">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[#1c1c1c] text-xs text-[#dcddde]">
-            <Search01Icon size={13} className="text-[#666]" />
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] text-xs text-[var(--flint-text-secondary)]">
+            <Search01Icon size={13} className="text-[var(--flint-text-muted)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter tags..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[#dcddde] placeholder-[#555]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--flint-text-secondary)] placeholder-[var(--flint-text-muted)]"
             />
           </div>
         </div>

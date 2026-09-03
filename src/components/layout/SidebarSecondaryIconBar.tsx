@@ -284,11 +284,11 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
       data-dock-zone={zone}
       onContextMenu={handleBarContextMenu}
       style={{
-        background: '#151515',
+        background: 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar, #151515))',
         borderTop: '1px solid var(--flint-border-base)',
         borderBottom: '1px solid var(--flint-border-base)',
       }}
-      className="h-[38px] px-2 flex items-center justify-between shrink-0 select-none z-10 relative"
+      className="flint-secondary-icon-bar h-[38px] px-2 flex items-center justify-between shrink-0 select-none z-10 relative"
     >
       <div
         ref={dockReorder.containerRef}

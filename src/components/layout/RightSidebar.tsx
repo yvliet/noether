@@ -118,7 +118,7 @@ export const RightSidebar: React.FC = React.memo(() => {
         width: `${rightSidebarWidth}px`,
         background: 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar))',
       }}
-      className="flex flex-col h-full select-none shrink-0 text-xs relative"
+      className="flint-sidebar-right flex flex-col h-full select-none shrink-0 text-xs relative"
     >
       {activeDrag?.targetDockZone === 'right-bottom' && (
         <div

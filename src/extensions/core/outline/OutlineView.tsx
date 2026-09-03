@@ -218,11 +218,11 @@ export const OutlineView: React.FC = () => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header (Matching Left Sidebar) */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[#777] shrink-0">
+      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--flint-text-muted)] shrink-0">
         <button
           onClick={handleCollapseAll}
           title={collapsedIds.size > 0 ? 'Expand all' : 'Collapse all'}
-          className="p-1.5 rounded hover:bg-[#202020] text-[#777] hover:text-[#dcddde] transition-colors"
+          className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
         >
           <ArrowShrink02Icon size={14} />
         </button>
@@ -233,8 +233,8 @@ export const OutlineView: React.FC = () => {
             if (isSearchOpen) setSearchQuery('');
           }}
           title={isSearchOpen ? 'Close search' : 'Search headings'}
-          className={`p-1.5 rounded hover:bg-[#202020] transition-colors ${
-            isSearchOpen ? 'text-white bg-[#202020]' : 'text-[#777] hover:text-[#dcddde]'
+          className={`p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer ${
+            isSearchOpen ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]' : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)]'
           }`}
         >
           <Search01Icon size={14} />
@@ -244,15 +244,15 @@ export const OutlineView: React.FC = () => {
       {/* Optional Search Input */}
       {isSearchOpen && (
         <div className="px-2.5 py-1.5">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[#1c1c1c] text-xs text-[#dcddde]">
-            <Search01Icon size={13} className="text-[#666]" />
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] text-xs text-[var(--flint-text-secondary)]">
+            <Search01Icon size={13} className="text-[var(--flint-text-muted)] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter headings..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[#dcddde] placeholder-[#555]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--flint-text-secondary)] placeholder-[var(--flint-text-muted)]"
             />
           </div>
         </div>
@@ -261,11 +261,11 @@ export const OutlineView: React.FC = () => {
       {/* Main Outline Content */}
       <div className="flex-1 overflow-y-auto px-2 py-1 custom-scrollbar">
         {headings.length === 0 ? (
-          <div className="text-center py-12 flex items-center justify-center gap-1.5 select-none text-[#555]">
+          <div className="text-center py-12 flex items-center justify-center gap-1.5 select-none text-[var(--flint-text-muted)]">
             <span className="text-[13px]">No headings found.</span>
             <span
               data-tooltip="Type # Heading 1 or ## Heading 2&#10;in your note to generate an outline"
-              className="inline-flex items-center text-[#555] hover:text-[#bbb] cursor-help transition-colors"
+              className="inline-flex items-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-help transition-colors"
             >
               <HelpCircleIcon size={13} />
             </span>

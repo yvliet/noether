@@ -3,7 +3,7 @@ import { useBookmarksSettings, DEFAULT_BOOKMARKS_SETTINGS } from './bookmarksSet
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { Bookmark01Icon, RotateCcwIcon } from '@/components/common/Icons';
-import { ToggleSwitch } from '@/components/common/ToggleSwitch';
+import { SettingCard, SettingItem, Button, Toggle } from '@/sdk';
 
 export const BookmarksSettingsTab: React.FC = () => {
   const documents = useDocumentStore((s) => s.documents);
@@ -36,79 +36,67 @@ export const BookmarksSettingsTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Bookmarks</h3>
-          <p className="text-[11px] text-[#777]">Manage bookmarked notes and quick access shortcuts.</p>
-        </div>
-        {isModified && (
-          <button
-            onClick={() => {
-              restoreDefaults();
-              showToast('Restored Bookmarks defaults', 'info');
-            }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <SettingCard
+        title="Bookmarks"
+        description="Manage bookmarked notes and quick access shortcuts."
+        action={
+          isModified ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<RotateCcwIcon size={12} />}
+              onClick={() => {
+                restoreDefaults();
+                showToast('Restored Bookmarks defaults', 'info');
+              }}
+              className="border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+            >
+              Restore defaults
+            </Button>
+          ) : undefined
+        }
+      >
         {/* Bookmarks Count & Quick View */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Active Bookmarks</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              You currently have {bookmarkedDocs.length} bookmarked {bookmarkedDocs.length === 1 ? 'note' : 'notes'} in this vault.
-            </span>
-          </div>
-          <button
-            type="button"
+        <SettingItem
+          name="Active Bookmarks"
+          description={`You currently have ${bookmarkedDocs.length} bookmarked ${bookmarkedDocs.length === 1 ? 'note' : 'notes'} in this vault.`}
+        >
+          <Button
             onClick={handleOpenBookmarks}
-            className="px-3.5 py-1.5 bg-[#282828] hover:bg-[#333] active:bg-[#222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
+            icon={<Bookmark01Icon size={13} />}
           >
-            <Bookmark01Icon size={13} />
-            <span>Open in Sidebar</span>
-          </button>
-        </div>
+            Open in Sidebar
+          </Button>
+        </SettingItem>
 
         {/* Auto-sort bookmarks */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Sort bookmarks alphabetically</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Automatically order bookmarked items alphabetically from A to Z.
-            </span>
-          </div>
-          <ToggleSwitch checked={autoSortBookmarks} onChange={setAutoSortBookmarks} />
-        </div>
+        <SettingItem
+          name="Sort bookmarks alphabetically"
+          description="Automatically order bookmarked items alphabetically from A to Z."
+        >
+          <Toggle checked={autoSortBookmarks} onChange={setAutoSortBookmarks} />
+        </SettingItem>
 
         {/* Show folder path */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show folder path badge</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Display note parent folder directory path in bookmark entries.
-            </span>
-          </div>
-          <ToggleSwitch checked={showBookmarkPath} onChange={setShowBookmarkPath} />
-        </div>
+        <SettingItem
+          name="Show folder path badge"
+          description="Display note parent folder directory path in bookmark entries."
+        >
+          <Toggle checked={showBookmarkPath} onChange={setShowBookmarkPath} />
+        </SettingItem>
 
         {/* Keyboard Shortcut Info */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Toggle bookmark shortcut</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Press the keyboard shortcut to bookmark or unbookmark the active note.
-            </span>
-          </div>
-          <kbd className="px-2.5 py-1 bg-[#161616] border border-[#333] rounded text-xs text-[#aaa] font-mono">
+        <SettingItem
+          name="Toggle shortcut"
+          description="Quickly bookmark or unbookmark the active note while editing."
+        >
+          <kbd className="px-2 py-1 bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-strong,#383838)] rounded text-[11px] font-mono text-[var(--flint-text-muted,#888)]">
             Ctrl+Shift+B
           </kbd>
-        </div>
-      </div>
+        </SettingItem>
+      </SettingCard>
     </div>
   );
 };
+
+export default BookmarksSettingsTab;

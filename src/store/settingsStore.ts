@@ -195,16 +195,26 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
 
   // 1. Get Theme definition
   const rawThemeId = current.activeTheme || 'default';
-  const themeDef = themeRegistry.getTheme(rawThemeId);
+  const baseThemeDef = themeRegistry.getTheme(rawThemeId);
 
-  // 2. Theme mode (dark / light / system)
-  let isDark = themeDef.type === 'dark';
+  // 2. Determine Dark vs Light mode:
+  // If user selected an explicit light theme (e.g. 'flint-light'), prioritize light.
+  // Otherwise, respect explicit themeMode ('light', 'dark', 'system').
+  let isDark = baseThemeDef.type === 'dark';
   if (current.themeMode === 'light') {
     isDark = false;
   } else if (current.themeMode === 'dark') {
-    isDark = true;
+    isDark = baseThemeDef.type === 'light' ? false : true;
   } else if (current.themeMode === 'system') {
-    isDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? isDark;
+    isDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? (baseThemeDef.type === 'dark');
+  }
+
+  // 3. Resolve effective Theme definition
+  let themeDef = baseThemeDef;
+  if (!isDark && baseThemeDef.type === 'dark') {
+    themeDef = themeRegistry.getTheme('flint-light');
+  } else if (isDark && baseThemeDef.type === 'light') {
+    themeDef = themeRegistry.getTheme('default');
   }
 
   const themeModeKey = `${current.themeMode}_${isDark}`;
@@ -221,8 +231,8 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     }
   }
 
-  // 3. Generate & Apply All Theme CSS Variables (only when theme or accent changed)
-  const themeKey = `${themeDef.id}_${current.accentColor}`;
+  // 4. Generate & Apply All Theme CSS Variables (only when theme, mode, or accent changed)
+  const themeKey = `${themeDef.id}_${isDark ? 'dark' : 'light'}_${current.accentColor}`;
   if (appliedAppearanceCache.themeId !== themeKey) {
     appliedAppearanceCache.themeId = themeKey;
     const cssVars = themeRegistry.generateCssVariables(themeDef.variables, current.accentColor);
@@ -354,8 +364,18 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       setThemeMode: (themeMode) => {
-        set({ themeMode });
-        applyAppearanceDOM({ ...get(), themeMode });
+        let activeTheme = get().activeTheme;
+        if (themeMode === 'light') {
+          if (!activeTheme || activeTheme === 'default' || themeRegistry.getTheme(activeTheme).type === 'dark') {
+            activeTheme = 'flint-light';
+          }
+        } else if (themeMode === 'dark') {
+          if (activeTheme === 'flint-light' || themeRegistry.getTheme(activeTheme).type === 'light') {
+            activeTheme = 'default';
+          }
+        }
+        set({ themeMode, activeTheme });
+        applyAppearanceDOM({ ...get(), themeMode, activeTheme });
       },
       setAccentColor: (accentColor) => {
         set({ accentColor });
@@ -372,8 +392,10 @@ export const useSettingsStore = create<SettingsState>()(
         set({ colorHistory: next });
       },
       setActiveTheme: (activeTheme) => {
-        set({ activeTheme });
-        applyAppearanceDOM({ ...get(), activeTheme });
+        const themeDef = themeRegistry.getTheme(activeTheme);
+        const nextMode: ThemeMode = themeDef.type === 'light' ? 'light' : 'dark';
+        set({ activeTheme, themeMode: nextMode });
+        applyAppearanceDOM({ ...get(), activeTheme, themeMode: nextMode });
       },
       setInterfaceFont: (interfaceFont) => {
         set({ interfaceFont });

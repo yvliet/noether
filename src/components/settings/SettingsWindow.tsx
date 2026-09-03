@@ -638,8 +638,6 @@ interface AppearanceTabProps {
 }
 
 const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPicker }) => {
-  const themeMode = useSettingsStore((s) => s.themeMode);
-  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const accentColor = useSettingsStore((s) => s.accentColor);
   const setAccentColor = useSettingsStore((s) => s.setAccentColor);
   const activeTheme = useSettingsStore((s) => s.activeTheme);
@@ -703,7 +701,6 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
   }, [allThemes, themeFilter, themeSearchQuery]);
 
   const isAppearanceModified =
-    themeMode !== DEFAULT_SETTINGS.themeMode ||
     accentColor !== DEFAULT_SETTINGS.accentColor ||
     activeTheme !== DEFAULT_SETTINGS.activeTheme ||
     interfaceFont !== DEFAULT_SETTINGS.interfaceFont ||
@@ -742,34 +739,8 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
         )}
       </div>
 
-      {/* Section 1: Color Scheme & Accent */}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-        {/* Base color scheme */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Base color scheme</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Choose Flint's default color mode.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <FieldResetButton
-              isModified={themeMode !== DEFAULT_SETTINGS.themeMode}
-              onReset={() => setThemeMode(DEFAULT_SETTINGS.themeMode)}
-              title="Restore default color scheme (Dark)"
-            />
-            <CustomSelect
-              value={themeMode}
-              onChange={(val) => setThemeMode(val as any)}
-              options={[
-                { value: 'dark', label: 'Dark' },
-                { value: 'light', label: 'Light' },
-                { value: 'system', label: 'Adapt to system' },
-              ]}
-            />
-          </div>
-        </div>
-
+      {/* Section 1: Accent Color */}
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden">
         {/* Accent color */}
         <div className="flex items-start justify-between p-4">
           <div className="flex flex-col pr-4">
@@ -880,10 +851,11 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { id: 'all', label: `All (${allThemes.length})` },
-              { id: 'dark', label: `Dark (${allThemes.filter((t) => t.type === 'dark' && !t.hasGradient).length})` },
+              { id: 'dark', label: `Dark (${allThemes.filter((t) => t.type === 'dark').length})` },
               { id: 'light', label: `Light (${allThemes.filter((t) => t.type === 'light').length})` },
-              { id: 'gradient', label: `Gradients (${allThemes.filter((t) => t.hasGradient).length})` },
-              { id: 'custom', label: `Custom (${allThemes.filter((t) => !t.isBuiltIn && !t.isPreinstalled && !t.isCore).length})` },
+              ...(allThemes.some((t) => !t.isBuiltIn && !t.isPreinstalled && !t.isCore)
+                ? [{ id: 'custom', label: `Custom (${allThemes.filter((t) => !t.isBuiltIn && !t.isPreinstalled && !t.isCore).length})` }]
+                : []),
             ].map((tab) => {
               const isSelected = themeFilter === tab.id;
               return (
@@ -975,7 +947,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                       />
                       <div
                         className="w-2.5 h-2.5 rounded-full shadow-xs"
-                        style={{ background: v.accent || '#ea580c' }}
+                        style={{ background: accentColor || v.accent || '#ea580c' }}
                       />
                     </div>
                   </div>

@@ -146,7 +146,7 @@ export const Slider: React.FC<SliderProps> = React.memo(({
     >
       {/* Background unfilled track */}
       <div
-        className={`w-full h-[6px] bg-[#333333] border border-[#404040] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] rounded-full overflow-hidden relative ${trackClassName}`}
+        className={`w-full h-[6px] bg-[var(--flint-border-strong,#333333)] border border-[var(--flint-border-base,#404040)] shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] rounded-full overflow-hidden relative ${trackClassName}`}
       >
         {/* Filled progress track */}
         <div

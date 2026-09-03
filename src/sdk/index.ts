@@ -52,6 +52,31 @@ export type {
   IconPickerVariant,
 } from '../components/common/IconPicker';
 
+// ── UI Builder & Form Controls ──
+export {
+  Button,
+  SettingCard,
+  SettingItem,
+  TextInput,
+  SettingBuilder,
+  Toggle,
+  Select,
+  Slider,
+} from '../components/ui';
+export type {
+  ButtonProps,
+  ButtonVariant,
+  ButtonSize,
+  SettingCardProps,
+  SettingItemProps,
+  TextInputProps,
+  ToggleProps,
+  SelectProps,
+  SelectOption,
+  SliderProps,
+} from '../components/ui';
+
+
 // ── Public API Contracts ──
 export type {
   WorkspaceAPI,

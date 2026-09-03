@@ -39,7 +39,7 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = React.memo(({
       className={`relative inline-flex ${trackWidth} ${trackHeight} shrink-0 cursor-pointer rounded-full p-[2px] outline-none shadow-[0_1px_2px_rgba(0,0,0,0.35)] focus-visible:ring-1 focus-visible:ring-[var(--flint-accent,#ea580c)] disabled:opacity-40 disabled:cursor-not-allowed ${
         checked
           ? 'bg-[var(--flint-accent,#ea580c)] border border-transparent hover:brightness-105'
-          : 'bg-[#333333] border border-[#404040] hover:bg-[#3a3a3a] hover:border-[#4c4c4c]'
+          : 'bg-[var(--flint-border-strong,#333333)] border border-[var(--flint-border-base,#404040)] hover:brightness-110'
       } ${className}`}
     >
       <span

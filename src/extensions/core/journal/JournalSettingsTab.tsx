@@ -2,7 +2,7 @@ import React from 'react';
 import { useJournalSettings, DEFAULT_JOURNAL_SETTINGS } from './journalSettings';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { RotateCcwIcon, Folder01Icon } from '@/components/common/Icons';
-import { ToggleSwitch } from '@/components/common/ToggleSwitch';
+import { SettingCard, SettingItem, TextInput, Toggle, Button } from '@/sdk';
 
 export const JournalSettingsTab: React.FC = () => {
   const {
@@ -42,121 +42,90 @@ export const JournalSettingsTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Journal</h3>
-          <p className="text-[11px] text-[#777]">Configure formatting, automation, and storage for daily journal entries.</p>
-        </div>
-        {isModified && (
-          <button
-            onClick={() => {
-              restoreDefaults();
-              showToast('Restored Journal defaults', 'info');
-            }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <SettingCard
+        title="Journal"
+        description="Configure formatting, automation, and storage for daily journal entries."
+        action={
+          isModified ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={<RotateCcwIcon size={12} />}
+              onClick={() => {
+                restoreDefaults();
+                showToast('Restored Journal defaults', 'info');
+              }}
+              className="border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+            >
+              Restore defaults
+            </Button>
+          ) : undefined
+        }
+      >
         {/* Date Format */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Date format</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Moment.js formatting tokens (e.g. YYYY-MM-DD, dddd, MMMM Do YYYY).
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {dailyFormat !== DEFAULT_JOURNAL_SETTINGS.dailyFormat && (
-              <button
-                type="button"
-                onClick={() => setDailyFormat(DEFAULT_JOURNAL_SETTINGS.dailyFormat)}
-                title="Restore default date format (YYYY-MM-DD)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
-              >
-                <RotateCcwIcon size={13} />
-              </button>
-            )}
-            <input
-              type="text"
-              value={dailyFormat}
-              onChange={(e) => setDailyFormat(e.target.value)}
-              className="w-40 bg-[#181818] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors"
-            />
-          </div>
-        </div>
+        <SettingItem
+          name="Date format"
+          description="Moment.js formatting tokens (e.g. YYYY-MM-DD, dddd, MMMM Do YYYY)."
+          isModified={dailyFormat !== DEFAULT_JOURNAL_SETTINGS.dailyFormat}
+          onReset={() => setDailyFormat(DEFAULT_JOURNAL_SETTINGS.dailyFormat)}
+          resetTitle="Restore default date format (YYYY-MM-DD)"
+        >
+          <TextInput
+            isMono
+            value={dailyFormat}
+            onChange={(e) => setDailyFormat(e.target.value)}
+            className="w-40"
+          />
+        </SettingItem>
 
         {/* New file location */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">New entry location</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Folder where new journal entries will be created (leave blank for root).
+        <SettingItem
+          name="New entry location"
+          description="Folder where new journal entries will be created (leave blank for root)."
+          isModified={dailyFolder !== DEFAULT_JOURNAL_SETTINGS.dailyFolder}
+          onReset={() => setDailyFolder(DEFAULT_JOURNAL_SETTINGS.dailyFolder)}
+          resetTitle="Restore default folder (Root)"
+        >
+          <button
+            type="button"
+            onClick={handlePickFolder}
+            className="flex items-center gap-2 bg-[var(--flint-bg-input,#181818)] hover:bg-[var(--flint-bg-card-hover,#222222)] active:bg-[#151515] border border-[var(--flint-border-strong,#383838)] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer group"
+            title="Click to select folder in File Explorer"
+          >
+            <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
+            <span className="max-w-[130px] truncate text-[var(--flint-text-secondary,#dcddde)]">
+              {dailyFolder ? dailyFolder : 'Hearth root ( / )'}
             </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {dailyFolder !== DEFAULT_JOURNAL_SETTINGS.dailyFolder && (
-              <button
-                type="button"
-                onClick={() => setDailyFolder(DEFAULT_JOURNAL_SETTINGS.dailyFolder)}
-                title="Restore default folder (Root)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
-              >
-                <RotateCcwIcon size={13} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={handlePickFolder}
-              className="flex items-center gap-2 bg-[#181818] hover:bg-[#222222] active:bg-[#151515] border border-[#383838] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors cursor-pointer group"
-              title="Click to select folder in File Explorer"
-            >
-              <Folder01Icon size={13} className="text-[#888] group-hover:text-white transition-colors" />
-              <span className="max-w-[130px] truncate text-[#dcddde]">
-                {dailyFolder ? dailyFolder : 'Hearth root ( / )'}
-              </span>
-              <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[#282828] px-1.5 py-0.5 rounded border border-[#383838]">
-                Set
-              </span>
-            </button>
-          </div>
-        </div>
+            <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[var(--flint-bg-card-hover,#282828)] px-1.5 py-0.5 rounded border border-[var(--flint-border-strong,#383838)]">
+              Set
+            </span>
+          </button>
+        </SettingItem>
 
         {/* Open on startup */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Open on startup</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Automatically open or create today's journal entry when Flint launches.
-            </span>
-          </div>
-          <ToggleSwitch
+        <SettingItem
+          name="Open on startup"
+          description="Automatically open or create today's journal entry when Flint launches."
+        >
+          <Toggle
             checked={openOnStartup}
             onChange={setOpenOnStartup}
           />
-        </div>
+        </SettingItem>
 
         {/* Note heading format */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Default entry heading</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Optional Markdown heading prepended to newly created journal entries.
-            </span>
-          </div>
-          <input
-            type="text"
+        <SettingItem
+          name="Default entry heading"
+          description="Optional Markdown heading prepended to newly created journal entries."
+        >
+          <TextInput
             value={headingFormat}
             onChange={(e) => setHeadingFormat(e.target.value)}
             placeholder="e.g. # Journal"
-            className="w-40 bg-[#181818] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors"
+            className="w-40"
           />
-        </div>
-      </div>
+        </SettingItem>
+      </SettingCard>
     </div>
   );
 };

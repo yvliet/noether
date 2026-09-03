@@ -982,10 +982,10 @@ export const WindowHeader: React.FC = React.memo(() => {
     <header
       data-flint-header="true"
       style={{
-        background: '#111111',
+        background: 'var(--flint-bg-topbar-gradient, var(--flint-bg-topbar, #111111))',
         WebkitAppRegion: 'drag',
       } as React.CSSProperties}
-      className="h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
+      className="flint-header h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
     >
       {/* 1. Ribbon Column Header (w-11) */}
       <div

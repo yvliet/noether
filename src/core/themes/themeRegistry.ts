@@ -70,15 +70,15 @@ class ThemeRegistry {
       return this.customThemes.get(cleanId)!;
     }
 
-    // Alias matches for older stored settings ('Minimal', 'Nord', 'Catppuccin', 'Default')
+    // Alias matches for standard and legacy theme IDs
     const aliasMap: Record<string, string> = {
       default: 'default',
-      minimal: 'minimal',
-      nord: 'nord',
-      catppuccin: 'catppuccin',
-      light: 'flint-light',
-      'flint light': 'flint-light',
+      dark: 'default',
+      'flint-dark': 'default',
       'flint dark': 'default',
+      light: 'flint-light',
+      'flint-light': 'flint-light',
+      'flint light': 'flint-light',
     };
 
     const mapped = aliasMap[cleanId];

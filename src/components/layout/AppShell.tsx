@@ -182,8 +182,9 @@ const MainViewport: React.FC = React.memo(() => {
   return (
     <main
       ref={mainRef}
+      data-flint-viewport="true"
       style={{ background: 'var(--flint-bg-main-gradient, var(--flint-bg-main))' }}
-      className={`flex-1 flex min-w-0 h-full overflow-hidden rounded-tl-[8px] border-l border-t ${
+      className={`flint-main-viewport flex-1 flex min-w-0 h-full overflow-hidden rounded-tl-[8px] border-l border-t ${
         isRightSidebarOpen ? 'rounded-tr-[8px] border-r' : ''
       } border-[var(--flint-border-base)]`}
     >
@@ -420,7 +421,7 @@ export const AppShell: React.FC = React.memo(() => {
     <AppProvider app={appInstance}>
       <div
         style={{ background: 'var(--flint-bg-app)', color: 'var(--flint-text-secondary)' }}
-        className="w-full h-full flex flex-col select-none overflow-hidden font-sans"
+        className="flint-app-shell w-full h-full flex flex-col select-none overflow-hidden font-sans"
       >
         {/* Top Window Bar */}
         <WindowHeader />
@@ -432,7 +433,7 @@ export const AppShell: React.FC = React.memo(() => {
               ? 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar))'
               : 'var(--flint-bg-ribbon, var(--flint-bg-sidebar))',
           }}
-          className="flex-1 flex min-h-0 overflow-hidden relative"
+          className="flint-workspace-layout flex-1 flex min-h-0 overflow-hidden relative"
         >
           {/* Left Action Rail (Slim) */}
           {showActionRail && <ActionRail />}

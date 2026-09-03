@@ -40,7 +40,7 @@ export const ActionRail: React.FC = React.memo(() => {
       data-ribbon="true"
       aria-label="Action Rail"
       style={{ background: 'var(--flint-bg-ribbon, var(--flint-bg-sidebar))' }}
-      className="relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0"
+      className="flint-action-rail flint-ribbon relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0"
     >
       {/* Subtle Divider Line with Smooth Top Fade */}
       <div

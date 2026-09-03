@@ -1636,6 +1636,58 @@ li[data-type="taskItem"][data-checked="true"] > div {
   background-color: var(--flint-border-strong) !important;
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   FLINT MODULAR DESKTOP LAYOUT ARCHITECTURE
+   Enables themes to rearrange layout zones via semantic classes & CSS order/grid
+   ══════════════════════════════════════════════════════════════════════════ */
+.flint-app-shell {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+}
+
+.flint-header {
+  order: var(--flint-order-header, 0);
+}
+
+.flint-workspace-layout {
+  display: flex;
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.flint-ribbon,
+.flint-action-rail {
+  order: var(--flint-order-ribbon, 1);
+}
+
+.flint-sidebar-left {
+  order: var(--flint-order-sidebar-left, 2);
+}
+
+.flint-main-viewport {
+  order: var(--flint-order-viewport, 3);
+}
+
+.flint-sidebar-right {
+  order: var(--flint-order-sidebar-right, 4);
+}
+
+.flint-status-bar {
+  order: var(--flint-order-statusbar, 5);
+  position: var(--flint-statusbar-position, absolute);
+  bottom: var(--flint-statusbar-bottom, 0);
+  right: var(--flint-statusbar-right, 0);
+  top: var(--flint-statusbar-top, auto);
+  left: var(--flint-statusbar-left, auto);
+  z-index: 20;
+}
+
 /* In-Editor Find & Replace Match Highlights */
 .flint-find-match {
   background-color: rgba(234, 179, 8, 0.35);
