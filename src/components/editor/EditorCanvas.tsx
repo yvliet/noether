@@ -732,9 +732,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         </div>
 
         {/* Center: Truly Absolute Centered Document Breadcrumb Title (Click to rename live in-place) */}
-        <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-28">
+        <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-20">
           {currentDoc ? (
-            <div className="pointer-events-auto text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center">
+            <div className="pointer-events-auto text-[12px] max-w-2xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0">
               {(() => {
                 const parts = breadcrumbItems;
                 const hasFolders = parts.length > 1;
@@ -794,14 +794,14 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                       <React.Fragment key={topFolder.id}>
                         <span
                           onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 ${
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[140px] ${
                             (topFolder as any).className || ''
                           }`}
                         >
                           {renderBreadcrumbIcon(topFolder, 0)}
-                          <span>{topFolder.title}</span>
+                          <span className="truncate">{topFolder.title}</span>
                         </span>
-                        <span className="text-[#444] select-none mx-1">/</span>
+                        <span className="text-[#444] select-none mx-1.5 shrink-0">/</span>
                       </React.Fragment>
                     )}
 
@@ -811,62 +811,64 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
                           title={middleFoldersTooltip || undefined}
-                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer font-medium select-none"
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
                         >
                           ...
                         </span>
-                        <span className="text-[#444] select-none mx-1">/</span>
+                        <span className="text-[#444] select-none mx-1.5 shrink-0">/</span>
                       </React.Fragment>
                     )}
 
                     {/* Active File Title with in-place Inline Rename */}
                     {isEditingSubheader ? (
-                      <div className="relative inline-flex items-center gap-1.5 min-w-[30px] max-w-[280px]">
+                      <div className="text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-[480px]">
                         {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
-                        {/* Invisible sizer text with exact matching typography and padding */}
-                        <span
-                          className="invisible px-1.5 py-0.5 whitespace-pre font-normal text-[12px] font-sans pointer-events-none select-none"
-                          aria-hidden="true"
-                        >
-                          {title || 'Untitled'}
-                        </span>
+                        <div className="relative inline-flex items-center min-w-[30px] max-w-[450px]">
+                          {/* Invisible sizer text with exact matching typography */}
+                          <span
+                            className="invisible whitespace-pre font-normal text-[12px] font-sans pointer-events-none select-none"
+                            aria-hidden="true"
+                          >
+                            {title || 'Untitled'}
+                          </span>
 
-                        <input
-                          ref={subheaderInputRef}
-                          type="text"
-                          value={title}
-                          onChange={(e) => handleTitleChange(e.target.value)}
-                          onBlur={() => {
-                            if (isDuplicateTitle && currentDoc) {
-                              setTitle(currentDoc.title);
-                            }
-                            setIsEditingSubheader(false);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                          <input
+                            ref={subheaderInputRef}
+                            type="text"
+                            value={title}
+                            onChange={(e) => handleTitleChange(e.target.value)}
+                            onBlur={() => {
                               if (isDuplicateTitle && currentDoc) {
                                 setTitle(currentDoc.title);
                               }
                               setIsEditingSubheader(false);
-                            } else if (e.key === 'Escape') {
-                              if (currentDoc) {
-                                setTitle(currentDoc.title);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (isDuplicateTitle && currentDoc) {
+                                  setTitle(currentDoc.title);
+                                }
+                                setIsEditingSubheader(false);
+                              } else if (e.key === 'Escape') {
+                                if (currentDoc) {
+                                  setTitle(currentDoc.title);
+                                }
+                                setIsEditingSubheader(false);
                               }
-                              setIsEditingSubheader(false);
-                            }
-                          }}
-                          className="absolute inset-0 w-full h-full bg-transparent border-none outline-none p-0 m-0 px-1.5 py-0.5 text-left text-[12px] text-[#dcddde] font-normal caret-[#888] selection:bg-[#505560] selection:text-white font-sans"
-                        />
+                            }}
+                            className="absolute inset-0 w-full h-full bg-transparent border-none outline-none p-0 m-0 text-left text-[12px] text-[#dcddde] font-normal caret-[#888] selection:bg-[#505560] selection:text-white font-sans"
+                          />
 
-                        {/* Duplicate Name Warning Tooltip */}
-                        {isDuplicateTitle && (
-                          <div className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center select-none shadow-2xl">
-                            <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[5px] border-l-transparent border-r-transparent border-b-[#f85153]" />
-                            <div className="bg-[#f85153] text-[#111111] text-[11px] font-medium leading-tight px-3 py-1.5 rounded-[6px] shadow-lg whitespace-nowrap">
-                              There's already a file with the same name
+                          {/* Duplicate Name Warning Tooltip */}
+                          {isDuplicateTitle && (
+                            <div className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col items-center select-none shadow-2xl">
+                              <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[5px] border-l-transparent border-r-transparent border-b-[#f85153]" />
+                              <div className="bg-[#f85153] text-[#111111] text-[11px] font-medium leading-tight px-3 py-1.5 rounded-[6px] shadow-lg whitespace-nowrap">
+                                There's already a file with the same name
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <span
@@ -878,12 +880,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                           setIsEditingSubheader(true);
                         }}
                         title={isLocked ? 'Note is locked (Read-only)' : 'Click to rename'}
-                        className={`text-[#dcddde] font-normal px-1.5 py-0.5 inline-flex items-center gap-1.5 ${
+                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}
                       >
                         {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
-                        <span>{breadcrumbTitleOverride || title || (hasFolders ? parts[parts.length - 1].title : 'Untitled')}</span>
+                        <span className="truncate">{breadcrumbTitleOverride || title || (hasFolders ? parts[parts.length - 1].title : 'Untitled')}</span>
                       </span>
                     )}
                   </>
