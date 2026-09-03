@@ -37,6 +37,21 @@ export function emojiToHex(emoji: string): string {
   return codePoints.join('-');
 }
 
+/**
+ * Converts a Unicode emoji string into a raw hyphenated hex code point string,
+ * preserving variation selector-16 (fe0f) for compatibility with Apple and WhatsApp CDNs.
+ */
+export function emojiToRawHex(emoji: string): string {
+  const codePoints: string[] = [];
+  for (const codePoint of emoji) {
+    const cp = codePoint.codePointAt(0);
+    if (cp) {
+      codePoints.push(cp.toString(16).toLowerCase());
+    }
+  }
+  return codePoints.join('-');
+}
+
 export const EMOJI_CATEGORIES: EmojiCategory[] = [
   'Smileys & Emotion',
   'People & Body',
