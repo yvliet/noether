@@ -711,16 +711,16 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         {/* Center: Truly Absolute Centered Document Breadcrumb Title (Click to rename live in-place) */}
         <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-20">
           {currentDoc ? (
-            <div className="pointer-events-auto text-[12px] max-w-2xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden">
+            <div className="pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden">
               {(() => {
                 const parts = breadcrumbItems;
                 const hasFolders = parts.length > 1;
                 const folderParts = parts.slice(0, -1);
-                const isDeepHierarchy = folderParts.length >= 3;
-                const rootFolder = folderParts.length > 0 ? folderParts[0] : null;
-                const intermediateFolders = isDeepHierarchy ? folderParts.slice(1, -1) : [];
-                const immediateParentFolder = folderParts.length > 1 ? folderParts[folderParts.length - 1] : null;
-                const intermediateTooltip = intermediateFolders.map((f: any) => f.title).join(' / ');
+                const isDeepHierarchy = folderParts.length > 1;
+                const topFolder = folderParts.length > 0 ? folderParts[0] : null;
+                const collapsedFolders = isDeepHierarchy ? folderParts.slice(1) : [];
+                const collapsedTooltip = collapsedFolders.map((f: any) => f.title).join(' / ');
+                const immediateParentFolder = isDeepHierarchy ? collapsedFolders[collapsedFolders.length - 1] : null;
 
                 const handleFolderClick = (targetId: string, customOnClick?: (app: any, e: any) => void) => (e: React.MouseEvent) => {
                   e.stopPropagation();
@@ -767,29 +767,30 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
                 return (
                   <>
-                    {/* Root/Topmost Folder */}
-                    {rootFolder && (
-                      <React.Fragment key={rootFolder.id}>
+                    {/* Topmost / Root Folder (a) */}
+                    {topFolder && (
+                      <React.Fragment key={topFolder.id}>
                         <span
-                          onClick={handleFolderClick(rootFolder.id, (rootFolder as any).onClick)}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[130px] ${
-                            (rootFolder as any).className || ''
+                          onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
+                          title={topFolder.title}
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[260px] overflow-hidden ${
+                            (topFolder as any).className || ''
                           }`}
                         >
-                          {renderBreadcrumbIcon(rootFolder, 0)}
-                          <span className="truncate">{rootFolder.title}</span>
+                          {renderBreadcrumbIcon(topFolder, 0)}
+                          <span className="truncate block min-w-0">{topFolder.title}</span>
                         </span>
                         <span className="text-[#444] select-none mx-1.5 shrink-0">/</span>
                       </React.Fragment>
                     )}
 
-                    {/* Intermediate Folders Ellipsis (ONLY when 3 or more parent folders exist: Root / ... / Parent) */}
-                    {isDeepHierarchy && intermediateFolders.length > 0 && (
+                    {/* Intermediate Folders Ellipsis (...) when 2 or more folders exist: a / ... / b */}
+                    {isDeepHierarchy && immediateParentFolder && (
                       <React.Fragment key="breadcrumb-middle-ellipsis">
                         <span
-                          onClick={handleFolderClick(intermediateFolders[intermediateFolders.length - 1].id, (intermediateFolders[intermediateFolders.length - 1] as any).onClick)}
-                          title={intermediateTooltip || undefined}
-                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
+                          onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
+                          title={collapsedTooltip || undefined}
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
                         >
                           ...
                         </span>
@@ -797,25 +798,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                       </React.Fragment>
                     )}
 
-                    {/* Immediate Parent Folder (when 2 or more folders exist) */}
-                    {immediateParentFolder && (
-                      <React.Fragment key={immediateParentFolder.id}>
-                        <span
-                          onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[130px] ${
-                            (immediateParentFolder as any).className || ''
-                          }`}
-                        >
-                          {renderBreadcrumbIcon(immediateParentFolder, folderParts.length - 1)}
-                          <span className="truncate">{immediateParentFolder.title}</span>
-                        </span>
-                        <span className="text-[#444] select-none mx-1.5 shrink-0">/</span>
-                      </React.Fragment>
-                    )}
-
-                    {/* Active File Title with in-place Inline Rename */}
+                    {/* Active File Title (b) with in-place Inline Rename */}
                     {isEditingSubheader ? (
-                      <div className="text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-[340px] shrink">
+                      <div className="text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-[340px] shrink overflow-hidden">
                         {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
                         <div className="relative inline-flex items-center min-w-[30px] max-w-[300px]">
                           {/* Invisible sizer text with exact matching typography */}
@@ -872,12 +857,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                           setIsEditingSubheader(true);
                         }}
                         title={isLocked ? 'Note is locked (Read-only)' : 'Click to rename'}
-                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink ${
+                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink overflow-hidden ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}
                       >
                         {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
-                        <span className="truncate">{breadcrumbTitleOverride || title || (hasFolders ? parts[parts.length - 1].title : 'Untitled')}</span>
+                        <span className="truncate block min-w-0">{breadcrumbTitleOverride || title || (hasFolders ? parts[parts.length - 1].title : 'Untitled')}</span>
                       </span>
                     )}
                   </>
