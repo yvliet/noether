@@ -266,7 +266,7 @@ class ThemeRegistry {
       '--flint-code-text': tokens.codeText || tokens.textSecondary,
 
       // Tooltips
-      '--flint-tooltip-bg': tokens.tooltipBg || (tokens.bgCardHover ? tokens.bgCardHover : '#1a1a1a'),
+      '--flint-tooltip-bg': tokens.tooltipBg || '#0d0d0d',
       '--flint-tooltip-text': tokens.tooltipText || tokens.textPrimary || '#ffffff',
       '--flint-tooltip-muted': tokens.tooltipMuted || tokens.textMuted || '#888888',
       '--flint-tooltip-border': tokens.tooltipBorder || tokens.borderBase || '#333333',

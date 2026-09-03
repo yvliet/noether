@@ -2082,6 +2082,8 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const setNewNoteLocation = useSettingsStore((s) => s.setNewNoteLocation);
   const attachmentFolder = useSettingsStore((s) => s.attachmentFolder);
   const setAttachmentFolder = useSettingsStore((s) => s.setAttachmentFolder);
+  const showBrokenEmbedIndicators = useSettingsStore((s) => s.showBrokenEmbedIndicators);
+  const setShowBrokenEmbedIndicators = useSettingsStore((s) => s.setShowBrokenEmbedIndicators);
   const linkFormat = useSettingsStore((s) => s.linkFormat);
   const setLinkFormat = useSettingsStore((s) => s.setLinkFormat);
   const autoUpdateLinks = useSettingsStore((s) => s.autoUpdateLinks);
@@ -2127,6 +2129,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
     closeTabsOnDelete !== DEFAULT_SETTINGS.closeTabsOnDelete ||
     newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation ||
     attachmentFolder !== DEFAULT_SETTINGS.attachmentFolder ||
+    showBrokenEmbedIndicators !== DEFAULT_SETTINGS.showBrokenEmbedIndicators ||
     linkFormat !== DEFAULT_SETTINGS.linkFormat ||
     autoUpdateLinks !== DEFAULT_SETTINGS.autoUpdateLinks;
 
@@ -2316,6 +2319,27 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                   Set
                 </span>
               </button>
+            </div>
+          </div>
+
+          {/* Missing attachment indicators */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Missing attachment indicators</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Display a yellow dot on files and containing folders in the navigation bar when an embedded image or file is missing.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={showBrokenEmbedIndicators !== DEFAULT_SETTINGS.showBrokenEmbedIndicators}
+                onReset={() => setShowBrokenEmbedIndicators(DEFAULT_SETTINGS.showBrokenEmbedIndicators)}
+                title="Restore default (Enabled)"
+              />
+              <ToggleSwitch
+                checked={showBrokenEmbedIndicators}
+                onChange={setShowBrokenEmbedIndicators}
+              />
             </div>
           </div>
 

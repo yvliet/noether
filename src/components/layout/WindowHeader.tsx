@@ -27,6 +27,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useSidebarTabs, useFlintApp, useViews, useTabDecorators } from '@/core/app/AppContext';
 import { useSidebarDockStore, DockItem, DockZone } from '@/store/sidebarDockStore';
+import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
 
 
 import { useIsMaximized } from '@/hooks/useIsMaximized';
@@ -423,6 +424,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   >
                     {displayTitle}
                   </span>
+                  <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" className="ml-1" />
                 </div>
 
                 {canCloseTab && (

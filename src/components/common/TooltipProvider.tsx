@@ -150,7 +150,21 @@ export const TooltipProvider: React.FC = React.memo(() => {
       const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
       if (lines.length >= 2) {
         text = lines[0];
-        shortcuts = lines.slice(1).map((s) => formatShortcutStr(s)).filter(Boolean);
+        shortcuts = lines.slice(1).map((s) => {
+          if (/(Ctrl|Cmd|Alt|Shift|Option|\+|F\d+|\bEsc\b|\bTab\b|\bSpace\b|\bEnter\b)/i.test(s) && s.length < 30) {
+            return formatShortcutStr(s);
+          }
+          return s;
+        }).filter(Boolean);
+      }
+    }
+
+    if (shortcuts.length === 0) {
+      // Automatically detect and extract inline hints like "You can disable..." into dimmer secondary subtext
+      const hintMatch = text.match(/^(.*?[\.\!\?]?)\s+(You can disable\b.*)$/i);
+      if (hintMatch) {
+        text = hintMatch[1].trim();
+        shortcuts = [hintMatch[2].trim()];
       }
     }
 
@@ -263,7 +277,8 @@ export const TooltipProvider: React.FC = React.memo(() => {
     const el = tooltipRef.current;
     const tw = el.offsetWidth || 120;
     const th = el.offsetHeight || 32;
-    const { targetRect, placement } = tooltip;
+    const { targetRect } = tooltip;
+    let placement = tooltip.placement;
     const winWidth = window.innerWidth;
     const winHeight = window.innerHeight;
     const gap = 7;
@@ -276,27 +291,41 @@ export const TooltipProvider: React.FC = React.memo(() => {
     const targetCenterX = targetRect.left + targetRect.width / 2;
     const targetCenterY = targetRect.top + targetRect.height / 2;
 
-    if (placement === 'bottom') {
-      y = targetRect.bottom + gap;
+    // Smart auto-flip if requested placement overflows the viewport
+    if (placement === 'bottom' && targetRect.bottom + gap + th > winHeight - margin) {
+      if (targetRect.top - gap - th >= margin) {
+        placement = 'top';
+      }
+    } else if (placement === 'top' && targetRect.top - gap - th < margin) {
+      if (targetRect.bottom + gap + th <= winHeight - margin) {
+        placement = 'bottom';
+      }
+    } else if (placement === 'right' && targetRect.right + gap + tw > winWidth - margin) {
+      if (targetRect.left - gap - tw >= margin) {
+        placement = 'left';
+      }
+    } else if (placement === 'left' && targetRect.left - gap - tw < margin) {
+      if (targetRect.right + gap + tw <= winWidth - margin) {
+        placement = 'right';
+      }
+    }
+
+    const isVertical = placement === 'bottom' || placement === 'top';
+    if (isVertical) {
+      y = placement === 'bottom' ? targetRect.bottom + gap : targetRect.top - gap - th;
       const idealLeft = targetCenterX - tw / 2;
       x = Math.max(margin, Math.min(winWidth - tw - margin, idealLeft));
       arrowOffset = Math.max(10, Math.min(tw - 10, targetCenterX - x));
-    } else if (placement === 'top') {
-      y = targetRect.top - gap - th;
-      const idealLeft = targetCenterX - tw / 2;
-      x = Math.max(margin, Math.min(winWidth - tw - margin, idealLeft));
-      arrowOffset = Math.max(10, Math.min(tw - 10, targetCenterX - x));
-    } else if (placement === 'right') {
-      x = targetRect.right + gap;
-      const idealTop = targetCenterY - th / 2;
-      y = Math.max(margin, Math.min(winHeight - th - margin, idealTop));
-      arrowOffset = Math.max(10, Math.min(th - 10, targetCenterY - y));
-    } else if (placement === 'left') {
-      x = targetRect.left - gap - tw;
+    } else {
+      x = placement === 'right' ? targetRect.right + gap : targetRect.left - gap - tw;
       const idealTop = targetCenterY - th / 2;
       y = Math.max(margin, Math.min(winHeight - th - margin, idealTop));
       arrowOffset = Math.max(10, Math.min(th - 10, targetCenterY - y));
     }
+
+    // Comprehensive viewport clamping safeguard: ensure tooltip is NEVER offscreen
+    x = Math.max(margin, Math.min(winWidth - tw - margin, x));
+    y = Math.max(margin, Math.min(winHeight - th - margin, y));
 
     setPos({ x, y, arrowOffset, placement, ready: true });
   }, [tooltip]);
@@ -432,57 +461,38 @@ export const TooltipProvider: React.FC = React.memo(() => {
         top: `${pos.y}px`,
         opacity: pos.ready ? 1 : 0,
         visibility: pos.ready ? 'visible' : 'hidden',
-        backgroundColor: 'var(--flint-tooltip-bg, var(--flint-bg-card, #111111))',
+        backgroundColor: 'var(--flint-tooltip-bg, #0d0d0d)',
         color: 'var(--flint-tooltip-text, var(--flint-text-primary, #ffffff))',
-        borderColor: 'var(--flint-tooltip-border, var(--flint-border-base, #333333))',
       }}
-      className="fixed z-[99999] pointer-events-none px-2.5 py-1.5 text-[11.5px] font-medium leading-relaxed rounded-[5px] shadow-2xl w-max max-w-[340px] whitespace-pre-line select-none border"
+      className="fixed z-[99999] pointer-events-none px-2.5 py-1.5 text-[11.5px] font-medium leading-relaxed rounded-[5px] shadow-2xl w-max max-w-[min(340px,calc(100vw-24px))] select-none border-0 outline-none"
     >
       {/* Dynamic Arrow Element */}
       {pos.ready && (
-        <>
-          {pos.placement === 'bottom' && (
-            <span
-              style={{
-                left: `${pos.arrowOffset}px`,
-                borderBottomColor: 'var(--flint-tooltip-bg, var(--flint-bg-card, #111111))',
-              }}
-              className="absolute -top-[4px] -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-b-4 pointer-events-none"
-            />
-          )}
-          {pos.placement === 'top' && (
-            <span
-              style={{
-                left: `${pos.arrowOffset}px`,
-                borderTopColor: 'var(--flint-tooltip-bg, var(--flint-bg-card, #111111))',
-              }}
-              className="absolute -bottom-[4px] -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 pointer-events-none"
-            />
-          )}
-          {pos.placement === 'right' && (
-            <span
-              style={{
-                top: `${pos.arrowOffset}px`,
-                borderRightColor: 'var(--flint-tooltip-bg, var(--flint-bg-card, #111111))',
-              }}
-              className="absolute -left-[4px] -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-r-4 pointer-events-none"
-            />
-          )}
-          {pos.placement === 'left' && (
-            <span
-              style={{
-                top: `${pos.arrowOffset}px`,
-                borderLeftColor: 'var(--flint-tooltip-bg, var(--flint-bg-card, #111111))',
-              }}
-              className="absolute -right-[4px] -translate-y-1/2 w-0 h-0 border-y-4 border-y-transparent border-l-4 pointer-events-none"
-            />
-          )}
-        </>
+        <span
+          style={{
+            ...(pos.placement === 'bottom'
+              ? { left: `${pos.arrowOffset}px`, borderBottomColor: 'var(--flint-tooltip-bg, #0d0d0d)' }
+              : pos.placement === 'top'
+              ? { left: `${pos.arrowOffset}px`, borderTopColor: 'var(--flint-tooltip-bg, #0d0d0d)' }
+              : pos.placement === 'right'
+              ? { top: `${pos.arrowOffset}px`, borderRightColor: 'var(--flint-tooltip-bg, #0d0d0d)' }
+              : { top: `${pos.arrowOffset}px`, borderLeftColor: 'var(--flint-tooltip-bg, #0d0d0d)' }),
+          }}
+          className={`absolute pointer-events-none w-0 h-0 ${
+            pos.placement === 'bottom'
+              ? '-top-[4px] -translate-x-1/2 border-x-4 border-x-transparent border-b-4'
+              : pos.placement === 'top'
+              ? '-bottom-[4px] -translate-x-1/2 border-x-4 border-x-transparent border-t-4'
+              : pos.placement === 'right'
+              ? '-left-[4px] -translate-y-1/2 border-y-4 border-y-transparent border-r-4'
+              : '-right-[4px] -translate-y-1/2 border-y-4 border-y-transparent border-l-4'
+          }`}
+        />
       )}
 
       <div
         style={{ color: 'var(--flint-tooltip-text, var(--flint-text-primary, #ffffff))' }}
-        className="whitespace-nowrap leading-tight font-medium"
+        className="leading-snug font-medium break-words"
       >
         {tooltip.text}
       </div>
@@ -492,15 +502,15 @@ export const TooltipProvider: React.FC = React.memo(() => {
             <div
               key={idx}
               style={{ color: 'var(--flint-tooltip-muted, var(--flint-text-muted, #888888))' }}
-              className="flex items-center gap-1.5 whitespace-nowrap leading-tight text-[11px] font-normal"
+              className="flex items-start gap-1.5 leading-snug text-[11px] font-normal break-words"
             >
               {tooltip.shortcuts!.length > 1 && (
                 <span
                   style={{ backgroundColor: 'var(--flint-border-strong, #666666)' }}
-                  className="w-1 h-1 rounded-full shrink-0"
+                  className="w-1 h-1 rounded-full shrink-0 mt-1"
                 />
               )}
-              <span>{sc}</span>
+              <span className="break-words">{sc}</span>
             </div>
           ))}
         </div>

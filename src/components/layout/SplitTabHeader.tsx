@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
 import { useFlintApp, useTabDecorators } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { useTabReorder } from '@/hooks/useTabReorder';
@@ -453,6 +454,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 >
                   {displayTitle}
                 </span>
+                <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" className="ml-1" />
               </div>
 
               {canCloseTab && (

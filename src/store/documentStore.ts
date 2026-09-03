@@ -122,6 +122,13 @@ interface DocumentState {
   selectDocRange: (targetId: string, visibleIds: string[], preserveExisting?: boolean) => void;
   clearSelection: () => void;
   selectAll: (visibleIds: string[]) => void;
+
+  /** Set of document IDs that contain unresolved `![[...]]` embed references. */
+  brokenEmbedDocIds: Set<string>;
+  /** Map of document ID to count of unresolved embed references in that document. */
+  brokenEmbedCounts: Record<string, number>;
+  /** Scans all documents for broken embed references and updates brokenEmbedDocIds and brokenEmbedCounts. */
+  recomputeBrokenEmbeds: () => void;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -140,6 +147,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   editingDocId: null,
   selectedDocIds: [],
   lastSelectedDocId: null,
+  brokenEmbedDocIds: new Set<string>(),
+  brokenEmbedCounts: {},
 
   loadInitialData: async (options?: { showLoading?: boolean }) => {
     const shouldShowLoading = options?.showLoading ?? (get().documents.length === 0);
@@ -159,6 +168,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       ]);
 
       set({ documents: docs, trashItems: trash, globalTasks, vaultTags: tags, isLoading: false });
+      get().recomputeBrokenEmbeds();
       emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
 
       const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
@@ -914,6 +924,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       });
       const trash = await getTrashItems(true);
       set({ trashItems: trash });
+      get().recomputeBrokenEmbeds();
     } catch (err) {
       console.error('[DocumentStore] Error moving documents to trash in background:', err);
     }
@@ -965,6 +976,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     emitBridgeAppEvent('document:saved', { id: docId, title: currentTitle });
+    get().recomputeBrokenEmbeds();
 
     if (title && title !== active.title) {
       useWorkspaceStore.getState().updateTabTitle(docId, title);
@@ -1012,6 +1024,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     emitBridgeAppEvent('document:saved', { id, title: currentTitle });
+    get().recomputeBrokenEmbeds();
 
     if (title) {
       useWorkspaceStore.getState().updateTabTitle(id, title);
@@ -1134,6 +1147,67 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   clearSelection: () => set({ selectedDocIds: [], lastSelectedDocId: null }),
   selectAll: (visibleIds: string[]) =>
     set({ selectedDocIds: visibleIds, lastSelectedDocId: visibleIds[0] || null }),
+
+  /**
+   * Scans all non-folder documents for unresolved `![[target]]` embed references.
+   * Builds a Set of document IDs whose content references targets not matching
+   * any existing document title (case-insensitive). Called after document loads,
+   * saves, and deletions to keep the indicator state fresh.
+   *
+   * Why regex on content_json: TipTap stores text nodes containing the raw
+   * `![[...]]` syntax. Extracting targets via regex is cheaper than parsing
+   * the full JSON tree and matches the same syntax the editor renders.
+   */
+  recomputeBrokenEmbeds: () => {
+    const docs = get().documents;
+    const knownTitles = new Set<string>();
+    const knownIds = new Set<string>();
+    for (const d of docs) {
+      if (d.is_folder) continue;
+      const lower = d.title.toLowerCase();
+      knownTitles.add(lower);
+      knownTitles.add(lower.replace(/\.[a-zA-Z0-9]+$/, ''));
+      knownIds.add(d.id);
+    }
+
+    const embedRegex = /!\[\[([^\]|#]+)/g;
+    const broken = new Set<string>();
+    const counts: Record<string, number> = {};
+
+    for (const doc of docs) {
+      if (doc.is_folder || !doc.content_json) continue;
+      let match: RegExpExecArray | null;
+      embedRegex.lastIndex = 0;
+      const content = doc.content_json;
+      let docBrokenCount = 0;
+      while ((match = embedRegex.exec(content)) !== null) {
+        const rawTarget = match[1].trim();
+        if (!rawTarget) continue;
+        if (/^(https?:\/\/|data:|blob:|file:\/\/)/i.test(rawTarget)) continue;
+
+        const targetClean = rawTarget.toLowerCase();
+        const targetWithoutExt = targetClean.replace(/\.[a-zA-Z0-9]+$/, '');
+        if (!knownTitles.has(targetClean) && !knownTitles.has(targetWithoutExt) && !knownIds.has(rawTarget)) {
+          docBrokenCount++;
+        }
+      }
+      if (docBrokenCount > 0) {
+        counts[doc.id] = docBrokenCount;
+        broken.add(doc.id);
+      }
+    }
+
+    const prevCounts = get().brokenEmbedCounts;
+    const prevKeys = Object.keys(prevCounts);
+    const nextKeys = Object.keys(counts);
+    const countsChanged =
+      prevKeys.length !== nextKeys.length ||
+      nextKeys.some((k) => prevCounts[k] !== counts[k]);
+
+    if (countsChanged) {
+      set({ brokenEmbedCounts: counts, brokenEmbedDocIds: broken });
+    }
+  },
 }));
 
 bindFlintStores({ document: useDocumentStore });

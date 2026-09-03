@@ -34,6 +34,7 @@ import { MathKeyboard } from './MathKeyboard';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { getDocumentPath } from '@/lib/db/documents';
 import { useFlintApp, useExtensionList, usePlaceholderHints } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { ColorPicker, InlineColorPicker } from '@/components/common/ColorPicker';
@@ -809,19 +810,26 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   const ext = file.type === 'image/jpeg' ? 'jpg' : file.type === 'image/gif' ? 'gif' : file.type === 'image/webp' ? 'webp' : 'png';
                   const filename = `Pasted image ${dateStr}.${ext}`;
 
-                  // Determine target folder
+                  // Determine target folder by matching the configured path
+                  // against each folder's computed document path (title chain).
+                  // Why path match: promptFolderSelection stores the full path
+                  // (e.g. "Parent/Attachments") via getDocumentPath(), not just
+                  // the folder title. Matching only by title fails for nested
+                  // folders and the fallback would create a new folder with the
+                  // literal path string as its name.
                   let targetParentId: string | null = null;
-                  const configuredFolder = ss.attachmentFolder?.trim();
+                  const configuredFolder = ss.attachmentFolder?.trim().toLowerCase();
                   if (configuredFolder) {
                     const docs = ds.documents;
                     const existingFolder = docs.find(
-                      (d) => d.is_folder && (d.title.toLowerCase() === configuredFolder.toLowerCase() || d.id === configuredFolder)
+                      (d) =>
+                        d.is_folder &&
+                        (d.title.toLowerCase() === configuredFolder ||
+                          getDocumentPath(d, docs).toLowerCase() === configuredFolder ||
+                          d.id === configuredFolder)
                     );
                     if (existingFolder) {
                       targetParentId = existingFolder.id;
-                    } else {
-                      const newFolder = await ds.createNewFolder(configuredFolder);
-                      if (newFolder) targetParentId = newFolder.id;
                     }
                   }
 

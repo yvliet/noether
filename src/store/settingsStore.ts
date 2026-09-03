@@ -65,6 +65,7 @@ export interface SettingsState {
   linkFormat: LinkFormat;
   autoUpdateLinks: boolean;
   attachmentFolder: string;
+  showBrokenEmbedIndicators: boolean;
 
   // Hotkeys
   customHotkeys: Record<string, string>;
@@ -112,6 +113,7 @@ export interface SettingsState {
   setLinkFormat: (val: LinkFormat) => void;
   setAutoUpdateLinks: (val: boolean) => void;
   setAttachmentFolder: (folder: string) => void;
+  setShowBrokenEmbedIndicators: (val: boolean) => void;
   setCustomHotkey: (commandId: string, hotkey: string) => void;
   resetCustomHotkey: (commandId: string) => void;
   resetAllHotkeys: () => void;
@@ -167,6 +169,7 @@ export const DEFAULT_SETTINGS = {
   linkFormat: 'shortest' as LinkFormat,
   autoUpdateLinks: true,
   attachmentFolder: '',
+  showBrokenEmbedIndicators: true,
 
   customHotkeys: {} as Record<string, string>,
 };
@@ -474,6 +477,7 @@ export const useSettingsStore = create<SettingsState>()(
       setLinkFormat: (linkFormat) => set({ linkFormat }),
       setAutoUpdateLinks: (autoUpdateLinks) => set({ autoUpdateLinks }),
       setAttachmentFolder: (attachmentFolder) => set({ attachmentFolder }),
+      setShowBrokenEmbedIndicators: (showBrokenEmbedIndicators) => set({ showBrokenEmbedIndicators }),
 
       setCustomHotkey: (commandId, hotkey) =>
         set((state) => ({
@@ -558,6 +562,7 @@ export const useSettingsStore = create<SettingsState>()(
             newNoteLocation: DEFAULT_SETTINGS.newNoteLocation,
             linkFormat: DEFAULT_SETTINGS.linkFormat,
             autoUpdateLinks: DEFAULT_SETTINGS.autoUpdateLinks,
+            showBrokenEmbedIndicators: DEFAULT_SETTINGS.showBrokenEmbedIndicators,
           });
         } else if (tabId === 'hotkeys') {
           set({ customHotkeys: {} });
