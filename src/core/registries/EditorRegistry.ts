@@ -8,6 +8,8 @@ import {
   DocMenuActionDefinition,
   EditorPlaceholderHint,
   BreadcrumbProviderDefinition,
+  BreadcrumbDecoratorDefinition,
+  DocumentTitleDecoratorDefinition,
 } from '../extensions/types';
 
 export interface CodeBlockRendererDefinition {
@@ -26,6 +28,8 @@ export class EditorRegistry {
   private docMenuActions: Map<string, DocMenuActionDefinition> = new Map();
   private placeholderHints: Map<string, EditorPlaceholderHint> = new Map();
   private breadcrumbProviders: Map<string, BreadcrumbProviderDefinition> = new Map();
+  private breadcrumbDecorators: Map<string, BreadcrumbDecoratorDefinition> = new Map();
+  private documentTitleDecorators: Map<string, DocumentTitleDecoratorDefinition> = new Map();
   private listeners: Set<() => void> = new Set();
 
   private cachedHeaders: DocumentHeaderDefinition[] = [];
@@ -34,6 +38,8 @@ export class EditorRegistry {
   private cachedDocMenuActions: DocMenuActionDefinition[] = [];
   private cachedPlaceholderHints: EditorPlaceholderHint[] = [];
   private cachedBreadcrumbProviders: BreadcrumbProviderDefinition[] = [];
+  private cachedBreadcrumbDecorators: BreadcrumbDecoratorDefinition[] = [];
+  private cachedDocumentTitleDecorators: DocumentTitleDecoratorDefinition[] = [];
 
   public registerExtension(factory: TiptapExtensionFactory): Disposable {
     this.extensionFactories.add(factory);
@@ -188,6 +194,54 @@ export class EditorRegistry {
 
   public getBreadcrumbProviders(): BreadcrumbProviderDefinition[] {
     return this.cachedBreadcrumbProviders;
+  }
+
+  public registerBreadcrumbDecorator(decorator: BreadcrumbDecoratorDefinition): Disposable {
+    this.breadcrumbDecorators.set(decorator.id, decorator);
+    this.recomputeBreadcrumbDecorators();
+    this.notify();
+
+    return {
+      dispose: () => {
+        this.breadcrumbDecorators.delete(decorator.id);
+        this.recomputeBreadcrumbDecorators();
+        this.notify();
+      },
+    };
+  }
+
+  public getBreadcrumbDecorators(): BreadcrumbDecoratorDefinition[] {
+    return this.cachedBreadcrumbDecorators;
+  }
+
+  public registerDocumentTitleDecorator(decorator: DocumentTitleDecoratorDefinition): Disposable {
+    this.documentTitleDecorators.set(decorator.id, decorator);
+    this.recomputeDocumentTitleDecorators();
+    this.notify();
+
+    return {
+      dispose: () => {
+        this.documentTitleDecorators.delete(decorator.id);
+        this.recomputeDocumentTitleDecorators();
+        this.notify();
+      },
+    };
+  }
+
+  public getDocumentTitleDecorators(): DocumentTitleDecoratorDefinition[] {
+    return this.cachedDocumentTitleDecorators;
+  }
+
+  private recomputeDocumentTitleDecorators(): void {
+    this.cachedDocumentTitleDecorators = Array.from(this.documentTitleDecorators.values()).sort(
+      (a, b) => (b.order ?? 0) - (a.order ?? 0)
+    );
+  }
+
+  private recomputeBreadcrumbDecorators(): void {
+    this.cachedBreadcrumbDecorators = Array.from(this.breadcrumbDecorators.values()).sort(
+      (a, b) => (b.order ?? 0) - (a.order ?? 0)
+    );
   }
 
   public subscribe(listener: () => void): Disposable {

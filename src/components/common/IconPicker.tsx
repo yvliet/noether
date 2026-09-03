@@ -18,7 +18,10 @@ import {
   Cancel01Icon,
   RotateCcwIcon,
   CheckIcon,
+  SparklesIcon,
 } from '@/components/common/Icons';
+import { EMOJI_CATALOG, EMOJI_CATEGORIES, EmojiDefinition, EmojiCategory } from './emoji/emojiCatalog';
+import { EmojiRenderer, EmojiStyle } from './emoji/EmojiRenderer';
 
 export type IconCategory =
   | 'All'
@@ -53,6 +56,7 @@ export interface IconPickerProps {
   onResetToDefault?: () => void;
   resetLabel?: string;
   className?: string;
+  emojiStyle?: EmojiStyle;
 }
 
 // ── Smart Category Classifier ──
@@ -175,8 +179,19 @@ HugeIconRenderer.displayName = 'HugeIconRenderer';
 
 export function renderUnifiedIcon(
   iconId: string,
-  options: { size?: number; className?: string; color?: string } = {}
+  options: { size?: number; className?: string; color?: string; emojiStyle?: EmojiStyle } = {}
 ): React.ReactNode {
+  if (iconId.startsWith('emoji:')) {
+    const char = iconId.slice(6);
+    return (
+      <EmojiRenderer
+        emoji={char}
+        size={options.size ?? 14}
+        style={options.emojiStyle ?? 'native'}
+        className={options.className}
+      />
+    );
+  }
   const def = getUnifiedIconDef(iconId);
   if (!def) return null;
   return (
@@ -216,15 +231,28 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   onResetToDefault,
   resetLabel = 'Reset default',
   className = '',
+  emojiStyle = 'native',
 }) => {
+  const [pickerMode, setPickerMode] = useState<'icons' | 'emojis'>(() => {
+    return currentIconId?.startsWith('emoji:') ? 'emojis' : 'icons';
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<IconCategory>('All');
+  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('All');
   const [hoveredIcon, setHoveredIcon] = useState<CatalogIconDefinition | null>(null);
+  const [hoveredEmoji, setHoveredEmoji] = useState<EmojiDefinition | null>(null);
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_RENDER_COUNT);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gridScrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync mode if currentIconId changes externally
+  useEffect(() => {
+    if (currentIconId?.startsWith('emoji:')) {
+      setPickerMode('emojis');
+    }
+  }, [currentIconId]);
 
   // Filter icons
   const filteredIcons = useMemo(() => {
@@ -247,30 +275,56 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     return list;
   }, [searchQuery, selectedCategory]);
 
+  // Filter emojis
+  const filteredEmojis = useMemo(() => {
+    let list = EMOJI_CATALOG;
+
+    if (selectedEmojiCategory !== 'All') {
+      list = list.filter((e) => e.category === selectedEmojiCategory);
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (e) =>
+          e.name.toLowerCase().includes(q) ||
+          e.char.includes(q) ||
+          e.keywords.some((k) => k.includes(q))
+      );
+    }
+
+    return list;
+  }, [searchQuery, selectedEmojiCategory]);
+
   // Reset pagination on search or category switch
   useEffect(() => {
     setVisibleLimit(INITIAL_RENDER_COUNT);
     if (gridScrollRef.current) {
       gridScrollRef.current.scrollTop = 0;
     }
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, selectedEmojiCategory, pickerMode]);
 
-  // Visible sliced icons for performance
+  // Visible sliced icons/emojis for performance
   const displayedIcons = useMemo(() => {
     return filteredIcons.slice(0, visibleLimit);
   }, [filteredIcons, visibleLimit]);
+
+  const displayedEmojis = useMemo(() => {
+    return filteredEmojis.slice(0, visibleLimit);
+  }, [filteredEmojis, visibleLimit]);
 
   // Infinite scroll handler
   const handleGridScroll = useCallback(() => {
     const el = gridScrollRef.current;
     if (!el) return;
+    const totalCount = pickerMode === 'icons' ? filteredIcons.length : filteredEmojis.length;
     if (el.scrollHeight - el.scrollTop - el.clientHeight < 120) {
       setVisibleLimit((prev) => {
-        if (prev >= filteredIcons.length) return prev;
+        if (prev >= totalCount) return prev;
         return prev + CHUNK_RENDER_COUNT;
       });
     }
-  }, [filteredIcons.length]);
+  }, [pickerMode, filteredIcons.length, filteredEmojis.length]);
 
   // Focus search input on open
   useEffect(() => {
@@ -282,7 +336,9 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     } else {
       setSearchQuery('');
       setSelectedCategory('All');
+      setSelectedEmojiCategory('All');
       setHoveredIcon(null);
+      setHoveredEmoji(null);
       setVisibleLimit(INITIAL_RENDER_COUNT);
     }
   }, [isOpen]);
@@ -325,14 +381,14 @@ export const IconPicker: React.FC<IconPickerProps> = ({
       style={{ zIndex: 100 }}
       className={`bg-[#1c1c1c] border border-[#303030] rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex flex-col text-xs text-[#dcddde] select-none overflow-hidden ${
         variant === 'popover'
-          ? `absolute top-full mt-1.5 ${align === 'right' ? 'right-0' : 'left-0'} w-72`
+          ? `absolute top-full mt-1.5 ${align === 'right' ? 'right-0' : 'left-0'} w-76`
           : variant === 'submenu'
-          ? 'w-72 max-w-xs'
+          ? 'w-76 max-w-xs'
           : 'w-full max-w-sm'
       } ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header with Title & Close Button */}
+      {/* Header with Title, Mode Switcher & Close Button */}
       <div className="p-2.5 border-b border-[#262626] flex flex-col gap-2 bg-[#1e1e1e]/80">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 min-w-0">
@@ -351,6 +407,42 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           </button>
         </div>
 
+        {/* Mode Switcher: Icons vs Emojis */}
+        <div className="grid grid-cols-2 p-0.5 bg-[#141414] rounded-lg border border-[#2b2b2b]">
+          <button
+            type="button"
+            onClick={() => {
+              setPickerMode('icons');
+              setSelectedCategory('All');
+              setSearchQuery('');
+            }}
+            className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
+              pickerMode === 'icons'
+                ? 'bg-[#262626] text-white shadow-xs'
+                : 'text-[#888] hover:text-[#bbb]'
+            }`}
+          >
+            <SparklesIcon size={12} />
+            <span>Icons</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setPickerMode('emojis');
+              setSelectedEmojiCategory('All');
+              setSearchQuery('');
+            }}
+            className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
+              pickerMode === 'emojis'
+                ? 'bg-[#262626] text-white shadow-xs'
+                : 'text-[#888] hover:text-[#bbb]'
+            }`}
+          >
+            <span className="text-xs leading-none">😀</span>
+            <span>Emojis</span>
+          </button>
+        </div>
+
         {/* Search input */}
         <div className="flex items-center gap-1.5 px-2 py-1 bg-[#141414] border border-[#2b2b2b] focus-within:border-[#444] rounded-md">
           <Search01Icon size={12} className="text-[#666] shrink-0" />
@@ -359,7 +451,11 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search ${UNIFIED_ICONS_CATALOG.length}+ icons...`}
+            placeholder={
+              pickerMode === 'icons'
+                ? `Search ${UNIFIED_ICONS_CATALOG.length}+ icons...`
+                : `Search ${EMOJI_CATALOG.length}+ emojis...`
+            }
             className="bg-transparent border-none outline-none flex-1 text-[11px] text-white placeholder-[#555]"
           />
           {searchQuery && (
@@ -374,67 +470,42 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         </div>
 
         {/* Category Filter Pills */}
-        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-0.5 pt-0.5">
-          {CATEGORIES.map((cat) => {
-            const isSelected = selectedCategory === cat;
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
-                  isSelected
-                    ? 'bg-[var(--flint-accent,#ea580c)] text-white font-medium shadow-[0_1px_2px_rgba(0,0,0,0.3)]'
-                    : 'bg-[#222222] hover:bg-[#2a2a2a] text-[#888] hover:text-[#ccc] border border-[#2b2b2b]'
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Icon Grid with Virtualized Infinite Chunk Scroll */}
-      <div
-        ref={gridScrollRef}
-        onScroll={handleGridScroll}
-        className={`p-2 overflow-y-auto custom-scrollbar ${
-          variant === 'submenu' ? 'max-h-56' : variant === 'popover' ? 'max-h-52' : 'max-h-64'
-        }`}
-      >
-        {filteredIcons.length === 0 ? (
-          <div className="text-center py-8 text-[11px] text-[#666]">
-            No icons found matching &ldquo;{searchQuery}&rdquo;
-          </div>
-        ) : (
-          <div className="grid grid-cols-6 gap-1.5">
-            {displayedIcons.map((icon) => {
-              const isSelected = currentIconId === icon.id;
-
+        {pickerMode === 'icons' ? (
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-0.5 pt-0.5">
+            {CATEGORIES.map((cat) => {
+              const isSelected = selectedCategory === cat;
               return (
                 <button
-                  key={icon.id}
+                  key={cat}
                   type="button"
-                  onClick={() => {
-                    onSelectIcon(icon.id);
-                    onClose();
-                  }}
-                  onMouseEnter={() => setHoveredIcon(icon)}
-                  onMouseLeave={() => setHoveredIcon(null)}
-                  title={icon.name}
-                  className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
                     isSelected
-                      ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] text-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
-                      : 'bg-[#202020] hover:bg-[#282828] text-[#999] hover:text-white border border-[#282828] hover:border-[#3a3a3a]'
+                      ? 'bg-[var(--flint-accent,#ea580c)] text-white font-medium shadow-[0_1px_2px_rgba(0,0,0,0.3)]'
+                      : 'bg-[#222222] hover:bg-[#2a2a2a] text-[#888] hover:text-[#ccc] border border-[#2b2b2b]'
                   }`}
                 >
-                  <HugeIconRenderer iconDef={icon.iconDef} size={15} />
-                  {isSelected && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-accent,#ea580c)] text-white rounded-full flex items-center justify-center text-[7px] shadow-xs">
-                      <CheckIcon size={7} />
-                    </span>
-                  )}
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 overflow-x-auto no-scrollbar [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-0.5 pt-0.5">
+            {['All', ...EMOJI_CATEGORIES].map((cat) => {
+              const isSelected = selectedEmojiCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedEmojiCategory(cat)}
+                  className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
+                    isSelected
+                      ? 'bg-[var(--flint-accent,#ea580c)] text-white font-medium shadow-[0_1px_2px_rgba(0,0,0,0.3)]'
+                      : 'bg-[#222222] hover:bg-[#2a2a2a] text-[#888] hover:text-[#ccc] border border-[#2b2b2b]'
+                  }`}
+                >
+                  {cat === 'Smileys & Emotion' ? 'Smileys' : cat === 'Animals & Nature' ? 'Animals' : cat === 'Food & Drink' ? 'Food' : cat === 'Travel & Places' ? 'Travel' : cat}
                 </button>
               );
             })}
@@ -442,13 +513,112 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         )}
       </div>
 
+      {/* Grid with Virtualized Infinite Chunk Scroll */}
+      <div
+        ref={gridScrollRef}
+        onScroll={handleGridScroll}
+        className={`p-2 overflow-y-auto custom-scrollbar ${
+          variant === 'submenu' ? 'max-h-56' : variant === 'popover' ? 'max-h-52' : 'max-h-64'
+        }`}
+      >
+        {pickerMode === 'icons' ? (
+          filteredIcons.length === 0 ? (
+            <div className="text-center py-8 text-[11px] text-[#666]">
+              No icons found matching &ldquo;{searchQuery}&rdquo;
+            </div>
+          ) : (
+            <div className="grid grid-cols-6 gap-1.5">
+              {displayedIcons.map((icon) => {
+                const isSelected = currentIconId === icon.id;
+
+                return (
+                  <button
+                    key={icon.id}
+                    type="button"
+                    onClick={() => {
+                      onSelectIcon(icon.id);
+                      onClose();
+                    }}
+                    onMouseEnter={() => setHoveredIcon(icon)}
+                    onMouseLeave={() => setHoveredIcon(null)}
+                    title={icon.name}
+                    className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
+                      isSelected
+                        ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] text-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
+                        : 'bg-[#202020] hover:bg-[#282828] text-[#999] hover:text-white border border-[#282828] hover:border-[#3a3a3a]'
+                    }`}
+                  >
+                    <HugeIconRenderer iconDef={icon.iconDef} size={15} />
+                    {isSelected && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-accent,#ea580c)] text-white rounded-full flex items-center justify-center text-[7px] shadow-xs">
+                        <CheckIcon size={7} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )
+        ) : (
+          filteredEmojis.length === 0 ? (
+            <div className="text-center py-8 text-[11px] text-[#666]">
+              No emojis found matching &ldquo;{searchQuery}&rdquo;
+            </div>
+          ) : (
+            <div className="grid grid-cols-6 gap-1.5">
+              {displayedEmojis.map((emoji) => {
+                const emojiIconId = `emoji:${emoji.char}`;
+                const isSelected = currentIconId === emojiIconId;
+
+                return (
+                  <button
+                    key={emoji.char}
+                    type="button"
+                    onClick={() => {
+                      onSelectIcon(emojiIconId);
+                      onClose();
+                    }}
+                    onMouseEnter={() => setHoveredEmoji(emoji)}
+                    onMouseLeave={() => setHoveredEmoji(null)}
+                    title={emoji.name}
+                    className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
+                      isSelected
+                        ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
+                        : 'bg-[#202020] hover:bg-[#282828] border border-[#282828] hover:border-[#3a3a3a]'
+                    }`}
+                  >
+                    <EmojiRenderer emoji={emoji.char} size={18} style={emojiStyle} />
+                    {isSelected && (
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-accent,#ea580c)] text-white rounded-full flex items-center justify-center text-[7px] shadow-xs">
+                        <CheckIcon size={7} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          )
+        )}
+      </div>
+
       {/* Footer: Hovered info / Reset defaults */}
       <div className="px-2.5 py-1.5 border-t border-[#252525] bg-[#161616] flex items-center justify-between text-[10px] text-[#777]">
         <div className="truncate min-w-0 flex-1 pr-2">
-          {hoveredIcon ? (
-            <span className="text-[#ccc] font-medium">{hoveredIcon.name}</span>
+          {pickerMode === 'icons' ? (
+            hoveredIcon ? (
+              <span className="text-[#ccc] font-medium">{hoveredIcon.name}</span>
+            ) : (
+              <span>{filteredIcons.length} icons</span>
+            )
           ) : (
-            <span>{filteredIcons.length} icons</span>
+            hoveredEmoji ? (
+              <span className="text-[#ccc] font-medium flex items-center gap-1">
+                <span>{hoveredEmoji.char}</span>
+                <span>{hoveredEmoji.name}</span>
+              </span>
+            ) : (
+              <span>{filteredEmojis.length} emojis</span>
+            )
           )}
         </div>
 

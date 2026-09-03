@@ -534,6 +534,66 @@ export interface BreadcrumbProviderDefinition {
 }
 
 /**
+ * Context provided when evaluating breadcrumb item decorators.
+ * @since 0.3.0
+ */
+export interface BreadcrumbDecoratorContext {
+  tab?: TabItem;
+  doc: DocumentItem;
+  item: BreadcrumbItem;
+  index: number;
+  total: number;
+  app: FlintApp;
+}
+
+/**
+ * Decorator customizing individual breadcrumb items in the document subheader.
+ * @since 0.3.0
+ */
+export interface BreadcrumbDecoratorDefinition {
+  /** Unique decorator identifier. */
+  id: string;
+  /** Sorting order priority (higher orders execute first). */
+  order?: number;
+  /** Predicate determining if this decorator applies to the segment. */
+  matches?: (item: BreadcrumbItem, context: BreadcrumbDecoratorContext) => boolean;
+  /** Optional icon rendered immediately before the breadcrumb item text. */
+  renderIcon?: (item: BreadcrumbItem, context: BreadcrumbDecoratorContext) => React.ReactNode | undefined;
+  /** Optional prefix rendered before the item. */
+  renderPrefix?: (item: BreadcrumbItem, context: BreadcrumbDecoratorContext) => React.ReactNode | undefined;
+  /** Optional suffix rendered after the item. */
+  renderSuffix?: (item: BreadcrumbItem, context: BreadcrumbDecoratorContext) => React.ReactNode | undefined;
+}
+
+/**
+ * Context provided when evaluating document title decorators.
+ * @since 0.3.0
+ */
+export interface DocumentTitleDecoratorContext {
+  doc: DocumentItem;
+  tab?: TabItem;
+  app: FlintApp;
+  isReadingMode: boolean;
+}
+
+/**
+ * Decorator customizing the document title header in the editor.
+ * @since 0.3.0
+ */
+export interface DocumentTitleDecoratorDefinition {
+  /** Unique decorator identifier. */
+  id: string;
+  /** Sorting order priority (higher orders execute first). */
+  order?: number;
+  /** Predicate determining if this decorator applies to the current document/context. */
+  matches?: (context: DocumentTitleDecoratorContext) => boolean;
+  /** Content rendered immediately to the left of the title (e.g. note icon). */
+  renderPrefix?: (context: DocumentTitleDecoratorContext) => React.ReactNode | undefined;
+  /** Content rendered immediately to the right of the title. */
+  renderSuffix?: (context: DocumentTitleDecoratorContext) => React.ReactNode | undefined;
+}
+
+/**
  * Options passed when opening a workspace tab.
  * @since 0.2.0
  */

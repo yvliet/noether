@@ -53,6 +53,8 @@ import {
   FileTreeItemDecorator,
   TabDecoratorDefinition,
   BreadcrumbProviderDefinition,
+  BreadcrumbDecoratorDefinition,
+  DocumentTitleDecoratorDefinition,
   McpToolDefinition,
   McpPromptDefinition,
 } from './types';
@@ -511,6 +513,36 @@ export abstract class Extension {
     const d = this.app.editor.registerBreadcrumbProvider({
       ...provider,
       id: `${this.manifest.id}:${provider.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a breadcrumb decorator customizing subheader navigation items.
+   *
+   * @param decorator - Breadcrumb decorator configuration.
+   * @returns A Disposable to unregister the decorator.
+   * @since 0.3.0
+   */
+  public registerBreadcrumbDecorator(decorator: BreadcrumbDecoratorDefinition): Disposable {
+    const d = this.app.editor.registerBreadcrumbDecorator({
+      ...decorator,
+      id: `${this.manifest.id}:${decorator.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a document title decorator customizing the editor title header.
+   *
+   * @param decorator - Document title decorator configuration.
+   * @returns A Disposable to unregister the decorator.
+   * @since 0.3.0
+   */
+  public registerDocumentTitleDecorator(decorator: DocumentTitleDecoratorDefinition): Disposable {
+    const d = this.app.editor.registerDocumentTitleDecorator({
+      ...decorator,
+      id: `${this.manifest.id}:${decorator.id}`,
     });
     return this.registerDisposable(d);
   }

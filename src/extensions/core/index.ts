@@ -13,7 +13,7 @@ import { TablesExtension, TABLES_MANIFEST } from './tables/TablesExtension';
 import { BookmarksExtension, BOOKMARKS_MANIFEST } from './bookmarks/BookmarksExtension';
 import { MarketplaceExtension, MARKETPLACE_MANIFEST } from './marketplace/MarketplaceExtension';
 import { CascadeExtension, CASCADE_MANIFEST } from './cascade/CascadeExtension';
-import { FolderIconsExtension, FOLDER_ICONS_MANIFEST } from './folder-icons/FolderIconsExtension';
+import { IconifyExtension, ICONIFY_MANIFEST } from './iconify/IconifyExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
 import { DefaultStatusBarExtension, DEFAULT_STATUS_BAR_MANIFEST } from './defaults/DefaultStatusBarExtension';
 
@@ -36,7 +36,7 @@ export function registerAllCoreExtensions(app: FlintApp): void {
 
   // Bundled community extensions (isCore: false)
   app.extensions.registerExtension(CASCADE_MANIFEST, CascadeExtension);
-  app.extensions.registerExtension(FOLDER_ICONS_MANIFEST, FolderIconsExtension);
+  app.extensions.registerExtension(ICONIFY_MANIFEST, IconifyExtension);
 }
 
 // Backwards-compat alias

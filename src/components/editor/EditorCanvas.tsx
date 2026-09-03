@@ -8,7 +8,7 @@ import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
-import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders } from '@/core/app/AppContext';
+import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked } from '@/lib/db/documents';
 import { DocumentProperties } from '@/types';
 import {
@@ -122,6 +122,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const panes = useWorkspaceStore((s) => s.panes);
   const paneModel = panes[currentPaneId];
   const breadcrumbProviders = useBreadcrumbProviders();
+  const breadcrumbDecorators = useBreadcrumbDecorators();
+  const documentTitleDecorators = useDocumentTitleDecorators();
 
   const activeTab = useMemo(() => {
     if (paneModel) {
@@ -248,6 +250,25 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const effectiveReadingMode = isReadingMode || isLocked || isMediaDoc;
   const isEditable = !effectiveReadingMode;
   const isSourceMode = !effectiveReadingMode && defaultEditingMode === 'Source mode';
+
+  const titlePrefixNodes = useMemo(() => {
+    if (!currentDoc || documentTitleDecorators.length === 0) return [];
+    const ctx = {
+      doc: currentDoc,
+      tab: activeTab || undefined,
+      app,
+      isReadingMode: Boolean(effectiveReadingMode),
+    };
+    const nodes: React.ReactNode[] = [];
+    for (const d of documentTitleDecorators) {
+      if (d.matches && !d.matches(ctx)) continue;
+      const res = d.renderPrefix?.(ctx);
+      if (res !== undefined && res !== null) {
+        nodes.push(res);
+      }
+    }
+    return nodes;
+  }, [currentDoc, documentTitleDecorators, activeTab, app, effectiveReadingMode]);
 
   const [isEditingSubheader, setIsEditingSubheader] = useState(false);
   const [isMainTitleFocused, setIsMainTitleFocused] = useState(false);
@@ -742,6 +763,30 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   );
                 };
 
+                const renderBreadcrumbIcon = (item: any, index: number) => {
+                  if (item?.icon) {
+                    return <span className="shrink-0 inline-flex items-center">{item.icon}</span>;
+                  }
+                  if (breadcrumbDecorators.length > 0 && currentDoc) {
+                    const ctx = {
+                      tab: activeTab || undefined,
+                      doc: currentDoc,
+                      item,
+                      index,
+                      total: parts.length,
+                      app,
+                    };
+                    for (const d of breadcrumbDecorators) {
+                      if (d.matches && !d.matches(item, ctx)) continue;
+                      const res = d.renderIcon?.(item, ctx);
+                      if (res !== undefined && res !== null) {
+                        return <span className="shrink-0 inline-flex items-center">{res}</span>;
+                      }
+                    }
+                  }
+                  return null;
+                };
+
                 return (
                   <>
                     {/* Topmost Folder */}
@@ -749,12 +794,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                       <React.Fragment key={topFolder.id}>
                         <span
                           onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer transition-colors inline-flex items-center gap-1 ${
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 ${
                             (topFolder as any).className || ''
                           }`}
                         >
-                          {(topFolder as any).icon}
-                          {topFolder.title}
+                          {renderBreadcrumbIcon(topFolder, 0)}
+                          <span>{topFolder.title}</span>
                         </span>
                         <span className="text-[#444] select-none mx-1">/</span>
                       </React.Fragment>
@@ -766,7 +811,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
                           title={middleFoldersTooltip || undefined}
-                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer transition-colors font-medium select-none"
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded cursor-pointer font-medium select-none"
                         >
                           ...
                         </span>
@@ -776,7 +821,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
                     {/* Active File Title with in-place Inline Rename */}
                     {isEditingSubheader ? (
-                      <div className="relative inline-flex items-center min-w-[30px] max-w-[280px]">
+                      <div className="relative inline-flex items-center gap-1.5 min-w-[30px] max-w-[280px]">
+                        {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
                         {/* Invisible sizer text with exact matching typography and padding */}
                         <span
                           className="invisible px-1.5 py-0.5 whitespace-pre font-normal text-[12px] font-sans pointer-events-none select-none"
@@ -832,12 +878,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                           setIsEditingSubheader(true);
                         }}
                         title={isLocked ? 'Note is locked (Read-only)' : 'Click to rename'}
-                        className={`text-[#dcddde] font-normal px-1.5 py-0.5 inline-flex items-center gap-1 ${
+                        className={`text-[#dcddde] font-normal px-1.5 py-0.5 inline-flex items-center gap-1.5 ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}
                       >
-                        {(parts[parts.length - 1] as any)?.icon}
-                        {breadcrumbTitleOverride || title || (hasFolders ? parts[parts.length - 1].title : 'Untitled')}
+                        {renderBreadcrumbIcon(parts[parts.length - 1], parts.length - 1)}
+                        <span>{breadcrumbTitleOverride || title || (hasFolders ? parts[parts.length - 1].title : 'Untitled')}</span>
                       </span>
                     )}
                   </>
@@ -1056,7 +1102,47 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         )}
 
 
-                        {effectiveReadingMode ? (
+                        {titlePrefixNodes.length > 0 ? (
+                          <div className="flex items-center gap-2.5 w-full pb-2">
+                            <div className="shrink-0 flex items-center">{titlePrefixNodes}</div>
+                            {effectiveReadingMode ? (
+                              <h1
+                                style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
+                                className="w-full font-bold text-[var(--flint-text-primary)] font-text tracking-tight leading-tight cursor-default select-text"
+                              >
+                                {breadcrumbTitleOverride || title || 'Untitled'}
+                              </h1>
+                            ) : (
+                              <div className="relative w-full">
+                                <input
+                                  type="text"
+                                  value={isMainTitleFocused ? title : (breadcrumbTitleOverride || title)}
+                                  style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
+                                  onFocus={() => setIsMainTitleFocused(true)}
+                                  onChange={(e) => handleTitleChange(e.target.value)}
+                                  onBlur={() => {
+                                    setIsMainTitleFocused(false);
+                                    if (isDuplicateTitle && currentDoc) {
+                                      setTitle(currentDoc.title);
+                                    }
+                                  }}
+                                  placeholder="Untitled"
+                                  className="w-full font-bold bg-transparent text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] placeholder:opacity-40 outline-none font-text tracking-tight leading-tight"
+                                />
+
+                                {/* Duplicate Name Warning Tooltip */}
+                                {isDuplicateTitle && (
+                                  <div className="absolute top-[calc(100%+4px)] left-0 z-50 pointer-events-none flex flex-col items-start select-none shadow-2xl">
+                                    <div className="w-0 h-0 border-l-[5px] border-r-[5px] border-b-[5px] border-l-transparent border-r-transparent border-b-[#f85153] ml-4" />
+                                    <div className="bg-[#f85153] text-[#111111] text-[11px] font-medium leading-tight px-3 py-1.5 rounded-[6px] shadow-lg whitespace-nowrap">
+                                      There's already a file with the same name
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        ) : effectiveReadingMode ? (
                           <h1
                             style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
                             className="w-full font-bold text-[var(--flint-text-primary)] pb-2 font-text tracking-tight leading-tight cursor-default select-text"
@@ -1078,7 +1164,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                 }
                               }}
                               placeholder="Untitled"
-                              className="w-full font-bold bg-transparent text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] placeholder:opacity-40 outline-none pb-2 transition-all font-text tracking-tight leading-tight"
+                              className="w-full font-bold bg-transparent text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] placeholder:opacity-40 outline-none pb-2 font-text tracking-tight leading-tight"
                             />
 
                             {/* Duplicate Name Warning Tooltip */}

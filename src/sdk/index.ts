@@ -116,6 +116,12 @@ export type {
   PropertyIconDefinition,
   FileTreeSectionDefinition,
   FileTreeItemDecorator,
+  BreadcrumbItem,
+  BreadcrumbProviderDefinition,
+  BreadcrumbDecoratorDefinition,
+  BreadcrumbDecoratorContext,
+  DocumentTitleDecoratorDefinition,
+  DocumentTitleDecoratorContext,
 } from '../core/extensions/types';
 
 // ── MCP Tool & Prompt Types ──

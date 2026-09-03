@@ -22,6 +22,8 @@ import {
   FileTreeItemDecorator,
   TabDecoratorDefinition,
   BreadcrumbProviderDefinition,
+  BreadcrumbDecoratorDefinition,
+  DocumentTitleDecoratorDefinition,
 } from '../extensions/types';
 
 import { ExtensionListSnapshot, PluginListSnapshot } from '../extensions/ExtensionManager';
@@ -280,6 +282,28 @@ export const useBreadcrumbProviders = (): BreadcrumbProviderDefinition[] => {
       return () => d.dispose();
     },
     () => app.editor.getBreadcrumbProviders()
+  );
+};
+
+export const useBreadcrumbDecorators = (): BreadcrumbDecoratorDefinition[] => {
+  const app = useFlintApp();
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const d = app.editor.subscribe(onStoreChange);
+      return () => d.dispose();
+    },
+    () => app.editor.getBreadcrumbDecorators()
+  );
+};
+
+export const useDocumentTitleDecorators = (): DocumentTitleDecoratorDefinition[] => {
+  const app = useFlintApp();
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const d = app.editor.subscribe(onStoreChange);
+      return () => d.dispose();
+    },
+    () => app.editor.getDocumentTitleDecorators()
   );
 };
 

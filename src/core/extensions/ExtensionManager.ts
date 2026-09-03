@@ -351,12 +351,18 @@ export class ExtensionManager {
           [];
         this.disabledCoreExtensionIds = new Set(Array.isArray(disabledCore) ? disabledCore : []);
         const enabled = config.enabledExtensions || config.enabledPlugins;
-        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : ['flint-cascade']);
+        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : ['flint-cascade', 'iconify']);
         if (Array.isArray(enabled) && !enabled.includes('flint-cascade') && !this.disabledCoreExtensionIds.has('flint-cascade')) {
           this.enabledExtensionIds.add('flint-cascade');
         }
+        if (Array.isArray(enabled) && !enabled.includes('iconify') && !this.disabledCoreExtensionIds.has('iconify')) {
+          this.enabledExtensionIds.add('iconify');
+        }
+        if (this.enabledExtensionIds.has('flint-folder-icons')) {
+          this.enabledExtensionIds.delete('flint-folder-icons');
+        }
       } else {
-        this.enabledExtensionIds = new Set(['flint-cascade']);
+        this.enabledExtensionIds = new Set(['flint-cascade', 'iconify']);
       }
     } catch (e) {
       console.warn('[ExtensionManager] Error loading extension config:', e);
