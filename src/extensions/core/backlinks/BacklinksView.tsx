@@ -8,10 +8,11 @@ import {
   Search01Icon,
   PlusSignIcon,
   CheckIcon,
-  ArrowShrink02Icon,
-  ArrowUpNarrowWideIcon,
   HelpCircleIcon,
 } from '@/components/common/Icons';
+import { CollapseAllButton } from '@/components/common/CollapseAllButton';
+import { SortDropdown } from '@/components/common/SortDropdown';
+import { FileSortOrder, FILE_SORT_OPTIONS } from '@/lib/sort';
 
 export const BacklinksView: React.FC = React.memo(() => {
   const activeDocument = useDocumentStore((s) => s.activeDocument);
@@ -28,7 +29,7 @@ export const BacklinksView: React.FC = React.memo(() => {
   const [isOutgoingOpen, setIsOutgoingOpen] = useState(true);
   const [isUnlinkedOpen, setIsUnlinkedOpen] = useState(true);
   const [linkingDocId, setLinkingDocId] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'alpha' | 'recent'>('alpha');
+  const [sortOrder, setSortOrder] = useState<FileSortOrder>('alphabetical');
 
   const filteredBacklinks = useMemo(() => {
     let list = backlinks;
@@ -41,10 +42,22 @@ export const BacklinksView: React.FC = React.memo(() => {
       );
     }
     return [...list].sort((a, b) => {
-      if (sortOrder === 'alpha') {
-        return a.source_document_title.localeCompare(b.source_document_title);
+      switch (sortOrder) {
+        case 'alphabetical':
+          return a.source_document_title.localeCompare(b.source_document_title);
+        case 'alphabetical-reverse':
+          return b.source_document_title.localeCompare(a.source_document_title);
+        case 'byModifiedTime':
+          return (b.updated_at || 0) - (a.updated_at || 0);
+        case 'byModifiedTimeReverse':
+          return (a.updated_at || 0) - (b.updated_at || 0);
+        case 'byCreatedTime':
+          return ((b as any).created_at || b.updated_at || 0) - ((a as any).created_at || a.updated_at || 0);
+        case 'byCreatedTimeReverse':
+          return ((a as any).created_at || a.updated_at || 0) - ((b as any).created_at || b.updated_at || 0);
+        default:
+          return a.source_document_title.localeCompare(b.source_document_title);
       }
-      return (b.updated_at || 0) - (a.updated_at || 0);
     });
   }, [backlinks, searchQuery, sortOrder]);
 
@@ -59,10 +72,22 @@ export const BacklinksView: React.FC = React.memo(() => {
       );
     }
     return [...list].sort((a, b) => {
-      if (sortOrder === 'alpha') {
-        return a.source_document_title.localeCompare(b.source_document_title);
+      switch (sortOrder) {
+        case 'alphabetical':
+          return a.source_document_title.localeCompare(b.source_document_title);
+        case 'alphabetical-reverse':
+          return b.source_document_title.localeCompare(a.source_document_title);
+        case 'byModifiedTime':
+          return (b.updated_at || 0) - (a.updated_at || 0);
+        case 'byModifiedTimeReverse':
+          return (a.updated_at || 0) - (b.updated_at || 0);
+        case 'byCreatedTime':
+          return ((b as any).created_at || b.updated_at || 0) - ((a as any).created_at || a.updated_at || 0);
+        case 'byCreatedTimeReverse':
+          return ((a as any).created_at || a.updated_at || 0) - ((b as any).created_at || b.updated_at || 0);
+        default:
+          return a.source_document_title.localeCompare(b.source_document_title);
       }
-      return (b.updated_at || 0) - (a.updated_at || 0);
     });
   }, [unlinkedMentions, searchQuery, sortOrder]);
 
@@ -85,19 +110,20 @@ export const BacklinksView: React.FC = React.memo(() => {
     await createNewNote(title);
   }, [createNewNote]);
 
+  const areAllCollapsed = !isLinkedOpen && !isOutgoingOpen && !isUnlinkedOpen;
+  const totalLinksCount = backlinks.length + unlinkedMentions.length + outgoingLinks.length;
+
   const handleToggleCollapseAll = useCallback(() => {
-    setIsLinkedOpen((prevLinked) => {
-      setIsOutgoingOpen((prevOutgoing) => {
-        setIsUnlinkedOpen((prevUnlinked) => {
-          const shouldCollapse = prevLinked || prevOutgoing || prevUnlinked;
-          return !shouldCollapse;
-        });
-        const shouldCollapse = prevLinked || prevOutgoing;
-        return !shouldCollapse;
-      });
-      return !prevLinked;
-    });
-  }, []);
+    if (areAllCollapsed) {
+      setIsLinkedOpen(true);
+      setIsOutgoingOpen(true);
+      setIsUnlinkedOpen(true);
+    } else {
+      setIsLinkedOpen(false);
+      setIsOutgoingOpen(false);
+      setIsUnlinkedOpen(false);
+    }
+  }, [areAllCollapsed]);
 
   if (!activeDocument) {
     return (
@@ -111,21 +137,21 @@ export const BacklinksView: React.FC = React.memo(() => {
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header */}
       <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[#777] shrink-0">
-        <button
-          onClick={handleToggleCollapseAll}
-          title={isLinkedOpen || isOutgoingOpen || isUnlinkedOpen ? 'Collapse all sections' : 'Expand all sections'}
-          className="p-1.5 rounded hover:bg-[#202020] text-[#777] hover:text-[#dcddde] transition-colors"
-        >
-          <ArrowShrink02Icon size={14} />
-        </button>
+        <CollapseAllButton
+          isCollapsed={areAllCollapsed}
+          onToggle={handleToggleCollapseAll}
+          disabled={totalLinksCount === 0}
+          collapsedTitle="Expand all sections"
+          expandedTitle="Collapse all sections"
+          disabledTitle="No backlinks or mentions to collapse"
+        />
 
-        <button
-          onClick={() => setSortOrder((prev) => (prev === 'alpha' ? 'recent' : 'alpha'))}
-          title={`Sort order: ${sortOrder === 'alpha' ? 'Alphabetical (A to Z)' : 'Recent first'}`}
-          className="p-1.5 rounded hover:bg-[#202020] text-[#777] hover:text-[#dcddde] transition-colors"
-        >
-          <ArrowUpNarrowWideIcon size={14} />
-        </button>
+        <SortDropdown
+          value={sortOrder}
+          onChange={setSortOrder}
+          options={FILE_SORT_OPTIONS}
+          disabled={totalLinksCount === 0}
+        />
 
         <button
           onClick={() => {

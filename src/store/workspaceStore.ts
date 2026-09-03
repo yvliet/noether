@@ -73,6 +73,8 @@ export interface NavigationHistoryItem {
   timestamp: number;
 }
 
+import { FileSortOrder } from '@/lib/sort';
+
 function getFolderOpenStateKey(vaultPath?: string): string {
   const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.hearthPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
   return `flint_folder_open_state_v1:${vPath || 'default'}`;
@@ -91,6 +93,29 @@ export function savePersistedFolderOpenState(state: Record<string, boolean>, vau
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(getFolderOpenStateKey(vaultPath), JSON.stringify(state));
+  } catch {}
+}
+
+function getFileSortOrderKey(vaultPath?: string): string {
+  const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.hearthPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
+  return `flint_file_sort_order_v1:${vPath || 'default'}`;
+}
+
+export function loadPersistedFileSortOrder(vaultPath?: string): FileSortOrder {
+  if (typeof window === 'undefined') return 'alphabetical';
+  try {
+    const raw = localStorage.getItem(getFileSortOrderKey(vaultPath));
+    if (raw && ['alphabetical', 'alphabetical-reverse', 'byModifiedTime', 'byModifiedTimeReverse', 'byCreatedTime', 'byCreatedTimeReverse'].includes(raw)) {
+      return raw as FileSortOrder;
+    }
+  } catch {}
+  return 'alphabetical';
+}
+
+export function savePersistedFileSortOrder(sortOrder: FileSortOrder, vaultPath?: string) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(getFileSortOrderKey(vaultPath), sortOrder);
   } catch {}
 }
 
@@ -383,6 +408,10 @@ interface WorkspaceState {
   collapseAllFolders: () => void;
   expandAllFolders: () => void;
   toggleCollapseExpandAll: () => void;
+
+  // File sorting in file tree
+  fileSortOrder: FileSortOrder;
+  setFileSortOrder: (sortOrder: FileSortOrder) => void;
 
   // Hearth Management
   hearthName: string;
@@ -2128,6 +2157,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     get().toggleCollapseExpandAll();
   },
 
+  fileSortOrder: loadPersistedFileSortOrder(),
+  setFileSortOrder: (sortOrder) => {
+    savePersistedFileSortOrder(sortOrder, get().hearthPath || get().vaultPath);
+    set({ fileSortOrder: sortOrder });
+  },
+
   // Hearth & Vault state
   hearthName: 'Flint Hearth',
   hearthPath: '',
@@ -2138,12 +2173,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setHearthName: (name) => set({ hearthName: name, vaultName: name }),
   setHearthPath: (path) => {
     const persisted = loadPersistedFolderOpenState(path);
-    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted });
+    const persistedSort = loadPersistedFileSortOrder(path);
+    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
   },
   setVaultName: (name) => set({ hearthName: name, vaultName: name }),
   setVaultPath: (path) => {
     const persisted = loadPersistedFolderOpenState(path);
-    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted });
+    const persistedSort = loadPersistedFileSortOrder(path);
+    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
   },
 
   initHearthInfo: async () => {
@@ -2152,6 +2189,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       if (hearth && hearth.path) {
         const recentList = (hearth as any).recentHearths || (hearth as any).recentVaults || [];
         const persisted = loadPersistedFolderOpenState(hearth.path);
+        const persistedSort = loadPersistedFileSortOrder(hearth.path);
         set({
           hearthPath: hearth.path,
           hearthName: hearth.name || 'Flint Hearth',
@@ -2160,6 +2198,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           vaultName: hearth.name || 'Flint Hearth',
           recentVaults: recentList,
           folderOpenState: persisted,
+          fileSortOrder: persistedSort,
         });
         dbAdapter.setActiveHearthPath(hearth.path);
       }

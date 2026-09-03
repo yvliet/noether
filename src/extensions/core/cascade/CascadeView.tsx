@@ -22,6 +22,7 @@ import {
   FolderAddIcon,
   CancelCircleIcon,
 } from '@/components/common/Icons';
+import { CollapseAllButton } from '@/components/common/CollapseAllButton';
 import { CascadeFolderNode } from './CascadeFolderNode';
 import {
   getAllCascades,
@@ -190,14 +191,14 @@ export const CascadeView: React.FC = React.memo(() => {
           <Search01Icon size={14} />
         </button>
 
-        <button
-          type="button"
-          onClick={handleToggleCollapseExpandAll}
-          title={areAllCollapsed ? 'Expand all books' : 'Collapse all books'}
-          className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
-        >
-          {areAllCollapsed ? <ArrowExpand01Icon size={14} /> : <ArrowShrink02Icon size={14} />}
-        </button>
+        <CollapseAllButton
+          isCollapsed={areAllCollapsed}
+          onToggle={handleToggleCollapseExpandAll}
+          disabled={allCascades.length === 0}
+          collapsedTitle="Expand all books"
+          expandedTitle="Collapse all books"
+          disabledTitle="No books to collapse or expand"
+        />
       </div>
 
       {/* Search Input Row (Toggled) */}

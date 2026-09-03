@@ -6,19 +6,18 @@ import {
   Search01Icon,
   ChevronDownIcon,
   ChevronRightIcon,
-  ArrowUpNarrowWideIcon,
-  ArrowUpDownIcon,
   LeftToRightListBulletIcon,
   Link2Icon,
   CheckIcon,
 } from '@/components/common/Icons';
+import { CollapseAllButton } from '@/components/common/CollapseAllButton';
+import { SortDropdown } from '@/components/common/SortDropdown';
+import { FileSortOrder, FILE_SORT_OPTIONS } from '@/lib/sort';
 
 export interface DocumentBacklinksProps {
   documentId: string;
   documentTitle: string;
 }
-
-type SortOrder = 'file-az' | 'file-za' | 'newest' | 'oldest';
 
 interface BacklinkGroup {
   docId: string;
@@ -55,7 +54,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [showMoreContext, setShowMoreContext] = useState(true);
-  const [sortOrder, setSortOrder] = useState<SortOrder>('file-az');
+  const [sortOrder, setSortOrder] = useState<FileSortOrder>('alphabetical');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [isUnlinkedOpen, setIsUnlinkedOpen] = useState(false);
   const [linkingDocId, setLinkingDocId] = useState<string | null>(null);
@@ -94,15 +93,33 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
 
     // Sort groups
     groups.sort((a, b) => {
-      if (sortOrder === 'file-az') return a.docTitle.localeCompare(b.docTitle);
-      if (sortOrder === 'file-za') return b.docTitle.localeCompare(a.docTitle);
-      if (sortOrder === 'newest') return b.updatedAt - a.updatedAt;
-      if (sortOrder === 'oldest') return a.updatedAt - b.updatedAt;
-      return 0;
+      switch (sortOrder) {
+        case 'alphabetical':
+          return a.docTitle.localeCompare(b.docTitle);
+        case 'alphabetical-reverse':
+          return b.docTitle.localeCompare(a.docTitle);
+        case 'byModifiedTime':
+          return b.updatedAt - a.updatedAt;
+        case 'byModifiedTimeReverse':
+          return a.updatedAt - b.updatedAt;
+        case 'byCreatedTime':
+          return b.updatedAt - a.updatedAt;
+        case 'byCreatedTimeReverse':
+          return a.updatedAt - b.updatedAt;
+        default:
+          return a.docTitle.localeCompare(b.docTitle);
+      }
     });
 
     return groups;
   }, [backlinks, searchQuery, sortOrder]);
+
+  const areAllCollapsed = useMemo(() => {
+    if (groupedBacklinks.length === 0) return false;
+    return groupedBacklinks.every((g) => {
+      return collapsedGroups[g.docId] !== undefined ? collapsedGroups[g.docId] : collapseBacklinksByDefault;
+    });
+  }, [groupedBacklinks, collapsedGroups, collapseBacklinksByDefault]);
 
   const totalBacklinkCount = useMemo(() => {
     return groupedBacklinks.reduce((acc, g) => acc + g.items.length, 0);
@@ -141,45 +158,19 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   }, [collapseBacklinksByDefault, groupedBacklinks]);
 
   const handleToggleCollapseAll = useCallback(() => {
-    setCollapsedGroups((prev) => {
-      const allCollapsed = groupedBacklinks.every((g) => {
-        return prev[g.docId] !== undefined ? prev[g.docId] : collapseBacklinksByDefault;
-      });
-      const nextCollapsed = !allCollapsed;
-      const next: Record<string, boolean> = {};
-      groupedBacklinks.forEach((g) => {
-        next[g.docId] = nextCollapsed;
-      });
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('flint:backlinks-toggled', { detail: { isOpen: !nextCollapsed } })
-        );
-      }
-      return next;
+    const nextCollapsed = !areAllCollapsed;
+    const next: Record<string, boolean> = {};
+    groupedBacklinks.forEach((g) => {
+      next[g.docId] = nextCollapsed;
     });
-  }, [collapseBacklinksByDefault, groupedBacklinks]);
+    setCollapsedGroups(next);
 
-  const handleCycleSort = useCallback(() => {
-    setSortOrder((prevOrder) => {
-      const modes: SortOrder[] = ['file-az', 'file-za', 'newest', 'oldest'];
-      const nextIdx = (modes.indexOf(prevOrder) + 1) % modes.length;
-      return modes[nextIdx];
-    });
-  }, []);
-
-  const getSortTooltip = useCallback(() => {
-    switch (sortOrder) {
-      case 'file-az':
-        return 'Change sort order (File name: A to Z)';
-      case 'file-za':
-        return 'Change sort order (File name: Z to A)';
-      case 'newest':
-        return 'Change sort order (Modified time: new to old)';
-      case 'oldest':
-        return 'Change sort order (Modified time: old to new)';
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('flint:backlinks-toggled', { detail: { isOpen: !nextCollapsed } })
+      );
     }
-  }, [sortOrder]);
+  }, [areAllCollapsed, groupedBacklinks]);
 
   const handleConvertLink = useCallback(async (sourceDocId: string, title: string) => {
     setLinkingDocId(sourceDocId);
@@ -238,21 +229,21 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
             <LeftToRightListBulletIcon size={14} />
           </button>
 
-          <button
-            onClick={handleToggleCollapseAll}
-            title="Collapse all"
-            className="p-1.5 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-none cursor-pointer"
-          >
-            <ArrowUpDownIcon size={14} />
-          </button>
+          <CollapseAllButton
+            isCollapsed={areAllCollapsed}
+            onToggle={handleToggleCollapseAll}
+            disabled={groupedBacklinks.length === 0}
+            collapsedTitle="Expand all"
+            expandedTitle="Collapse all"
+            disabledTitle="No backlinks to collapse"
+          />
 
-          <button
-            onClick={handleCycleSort}
-            title={getSortTooltip()}
-            className="p-1.5 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-none cursor-pointer"
-          >
-            <ArrowUpNarrowWideIcon size={14} />
-          </button>
+          <SortDropdown
+            value={sortOrder}
+            onChange={setSortOrder}
+            options={FILE_SORT_OPTIONS}
+            disabled={groupedBacklinks.length === 0}
+          />
 
           <button
             onClick={() => {

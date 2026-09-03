@@ -6,9 +6,9 @@ import {
   ChevronRightIcon,
   ChevronDownIcon,
   Search01Icon,
-  ArrowShrink02Icon,
   HelpCircleIcon,
 } from '@/components/common/Icons';
+import { CollapseAllButton } from '@/components/common/CollapseAllButton';
 
 interface OutlineNode {
   heading: HeadingItem;
@@ -202,6 +202,20 @@ export const OutlineView: React.FC = () => {
     }
   };
 
+  const collapsibleCount = useMemo(() => {
+    let count = 0;
+    const countCollapsible = (nodes: OutlineNode[]) => {
+      nodes.forEach((n) => {
+        if (n.children.length > 0) {
+          count++;
+          countCollapsible(n.children);
+        }
+      });
+    };
+    countCollapsible(tree);
+    return count;
+  }, [tree]);
+
   const handleSelect = (node: OutlineNode) => {
     setActiveId(node.heading.id || `node-${node.index}`);
 
@@ -219,13 +233,14 @@ export const OutlineView: React.FC = () => {
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header (Matching Left Sidebar) */}
       <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--flint-text-muted)] shrink-0">
-        <button
-          onClick={handleCollapseAll}
-          title={collapsedIds.size > 0 ? 'Expand all' : 'Collapse all'}
-          className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
-        >
-          <ArrowShrink02Icon size={14} />
-        </button>
+        <CollapseAllButton
+          isCollapsed={collapsedIds.size > 0}
+          onToggle={handleCollapseAll}
+          disabled={collapsibleCount === 0}
+          collapsedTitle="Expand all headings"
+          expandedTitle="Collapse all headings"
+          disabledTitle="No collapsible headings"
+        />
 
         <button
           onClick={() => {

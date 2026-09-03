@@ -1,22 +1,18 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import {
   FileAddIcon,
   Layout01Icon,
   FolderAddIcon,
-  Sorting01Icon,
   ArrowShrink02Icon,
   ArrowExpand01Icon,
   Search01Icon,
   HelpCircleIcon,
   Settings02Icon,
   ArrowUpDownIcon,
-  CheckIcon,
   Edit02Icon,
   FolderOpenIcon,
   CancelCircleIcon,
   Cancel01Icon,
-  ChevronsUpDownIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -31,46 +27,17 @@ import { useSidebarDockStore } from '@/store/sidebarDockStore';
 import { SidebarDockPane } from './SidebarDockPane';
 import { SidebarSecondaryIconBar } from './SidebarSecondaryIconBar';
 import { useActiveTabDrag } from '@/hooks/useTabReorder';
+import {
+  FileSortOrder,
+  FILE_SORT_OPTIONS,
+  FILE_SORT_OPTIONS as SORT_OPTIONS,
+  sortDocuments,
+} from '@/lib/sort';
+import { CollapseAllButton } from '@/components/common/CollapseAllButton';
+import { SortDropdown } from '@/components/common/SortDropdown';
 
-
-export type FileSortOrder =
-  | 'alphabetical'
-  | 'alphabetical-reverse'
-  | 'byModifiedTime'
-  | 'byModifiedTimeReverse'
-  | 'byCreatedTime'
-  | 'byCreatedTimeReverse';
-
-export const SORT_OPTIONS: { id: FileSortOrder; label: string; group: number }[] = [
-  { id: 'alphabetical', label: 'File name (A to Z)', group: 1 },
-  { id: 'alphabetical-reverse', label: 'File name (Z to A)', group: 1 },
-  { id: 'byModifiedTime', label: 'Modified time (new to old)', group: 2 },
-  { id: 'byModifiedTimeReverse', label: 'Modified time (old to new)', group: 2 },
-  { id: 'byCreatedTime', label: 'Created time (new to old)', group: 3 },
-  { id: 'byCreatedTimeReverse', label: 'Created time (old to new)', group: 3 },
-];
-
-export function sortDocuments(docs: DocumentItem[], sortOrder: FileSortOrder): DocumentItem[] {
-  return [...docs].sort((a, b) => {
-    if (a.is_folder !== b.is_folder) return b.is_folder - a.is_folder;
-    switch (sortOrder) {
-      case 'alphabetical':
-        return a.title.localeCompare(b.title);
-      case 'alphabetical-reverse':
-        return b.title.localeCompare(a.title);
-      case 'byModifiedTime':
-        return (b.updated_at || 0) - (a.updated_at || 0);
-      case 'byModifiedTimeReverse':
-        return (a.updated_at || 0) - (b.updated_at || 0);
-      case 'byCreatedTime':
-        return (b.created_at || 0) - (a.created_at || 0);
-      case 'byCreatedTimeReverse':
-        return (a.created_at || 0) - (b.created_at || 0);
-      default:
-        return a.title.localeCompare(b.title);
-    }
-  });
-}
+export type { FileSortOrder };
+export { SORT_OPTIONS, sortDocuments };
 
 export const LeftSidebar: React.FC = React.memo(() => {
   const app = useFlintApp();
@@ -116,12 +83,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const selectDocRange = useDocumentStore((s) => s.selectDocRange);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
 
-  const [sortOrder, setSortOrder] = useState<FileSortOrder>('alphabetical');
-  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
+  const sortOrder = useWorkspaceStore((s) => s.fileSortOrder);
+  const setSortOrder = useWorkspaceStore((s) => s.setFileSortOrder);
   const [isCaseSensitive, setIsCaseSensitive] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [isVerticalSplitResizing, setIsVerticalSplitResizing] = useState(false);
-  const sortMenuRef = useRef<HTMLButtonElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -229,64 +195,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
     window.addEventListener('mouseup', handleMouseUp);
   }, [leftSidebarWidth, setLeftSidebarWidth]);
 
-  const [sortMenuPos, setSortMenuPos] = useState<{ top?: number; left?: number; right?: number; bottom?: number }>({});
-
-  const updateSortMenuPos = useCallback(() => {
-    if (!sortMenuRef.current) return;
-    const rect = sortMenuRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const menuWidth = 185;
-    const vw = window.innerWidth;
-
-    let top: number | undefined = undefined;
-    let bottom: number | undefined = undefined;
-    let left: number | undefined = undefined;
-    let right: number | undefined = undefined;
-
-    if (spaceBelow < 280 && rect.top > 280) {
-      bottom = window.innerHeight - rect.top + 4;
-    } else {
-      top = rect.bottom + 4;
-    }
-
-    if (rect.left + menuWidth > vw - 8) {
-      right = Math.max(8, vw - rect.right);
-    } else {
-      left = Math.max(8, rect.left);
-    }
-
-    setSortMenuPos({
-      top,
-      bottom,
-      left,
-      right,
-    });
-  }, []);
-
-  // Close sort menu on click outside
-  useEffect(() => {
-    if (!isSortMenuOpen) return;
-
-    updateSortMenuPos();
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (sortMenuRef.current && !sortMenuRef.current.contains(e.target as Node)) {
-        setIsSortMenuOpen(false);
-      }
-    };
-
-    const handleScrollOrResize = () => updateSortMenuPos();
-
-    window.addEventListener('resize', handleScrollOrResize);
-    window.addEventListener('scroll', handleScrollOrResize, true);
-    document.addEventListener('mousedown', handleOutsideClick);
-
-    return () => {
-      window.removeEventListener('resize', handleScrollOrResize);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [isSortMenuOpen, updateSortMenuPos]);
 
   // Keyboard shortcut listener for file tree selection
   useEffect(() => {
@@ -561,33 +469,23 @@ export const LeftSidebar: React.FC = React.memo(() => {
             </button>
           ))}
 
-          {/* Sort Menu Button */}
-          <div className="relative">
-            <button
-              ref={sortMenuRef}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isSortMenuOpen) updateSortMenuPos();
-                setIsSortMenuOpen((prev) => !prev);
-              }}
-              title="Change sort order"
-              className={`p-1.5 rounded transition-colors cursor-pointer ${
-                isSortMenuOpen
-                  ? 'bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-primary)]'
-                  : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
-              }`}
-            >
-              <Sorting01Icon size={14} />
-            </button>
-          </div>
+          {/* Sort Menu Dropdown */}
+          <SortDropdown
+            value={sortOrder}
+            onChange={setSortOrder}
+            options={SORT_OPTIONS}
+            disabled={documents.length === 0}
+          />
 
-          <button
-            onClick={areAllFoldersCollapsed ? expandAllFolders : collapseAllFolders}
-            title={areAllFoldersCollapsed ? 'Expand all folders' : 'Collapse all folders'}
-            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
-          >
-            {areAllFoldersCollapsed ? <ArrowExpand01Icon size={14} /> : <ArrowShrink02Icon size={14} />}
-          </button>
+          {/* Collapse / Expand All Folders */}
+          <CollapseAllButton
+            isCollapsed={areAllFoldersCollapsed}
+            onToggle={areAllFoldersCollapsed ? expandAllFolders : collapseAllFolders}
+            disabled={folders.length === 0}
+            collapsedTitle="Expand all folders"
+            expandedTitle="Collapse all folders"
+            disabledTitle="No folders to collapse or expand"
+          />
         </div>
       )}
 
@@ -636,21 +534,13 @@ export const LeftSidebar: React.FC = React.memo(() => {
             <span className="text-[11px]">
               {searchFilteredDocs.length} {searchFilteredDocs.length === 1 ? 'result' : 'results'}
             </span>
-            <button
-              ref={sortMenuRef}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (!isSortMenuOpen) updateSortMenuPos();
-                setIsSortMenuOpen((prev) => !prev);
-              }}
-              title="Change sort order"
-              className="flex items-center gap-1 text-[11px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer hover:bg-[var(--flint-bg-card-hover)] px-1.5 py-0.5 rounded transition-colors"
-            >
-              <span className="truncate max-w-[130px]">
-                {SORT_OPTIONS.find((o) => o.id === sortOrder)?.label || 'File name (A to Z)'}
-              </span>
-              <ChevronsUpDownIcon size={12} className="shrink-0 opacity-70" />
-            </button>
+            <SortDropdown
+              variant="text"
+              value={sortOrder}
+              onChange={setSortOrder}
+              options={SORT_OPTIONS}
+              disabled={searchFilteredDocs.length === 0}
+            />
           </div>
 
           {/* Subtle separator line */}
@@ -717,48 +607,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
         )}
       </div>
 
-      {/* Sort Menu Dropdown - Portal to body so it never clips inside sidebar */}
-      {isSortMenuOpen &&
-        createPortal(
-          <div
-            data-sort-menu="true"
-            style={{
-              position: 'fixed',
-              top: sortMenuPos.top != null ? `${sortMenuPos.top}px` : undefined,
-              left: sortMenuPos.left != null ? `${sortMenuPos.left}px` : undefined,
-              right: sortMenuPos.right != null ? `${sortMenuPos.right}px` : undefined,
-              bottom: sortMenuPos.bottom != null ? `${sortMenuPos.bottom}px` : undefined,
-              background: 'var(--flint-bg-popover, var(--flint-bg-card))',
-              border: '1px solid var(--flint-border-base)',
-              boxShadow: 'var(--flint-shadow-2)',
-            }}
-            className="w-[185px] rounded-lg p-1 text-xs text-[var(--flint-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
-          >
-            {SORT_OPTIONS.map((opt, i) => (
-              <React.Fragment key={opt.id}>
-                {i > 0 && SORT_OPTIONS[i - 1].group !== opt.group && (
-                  <div className="h-[1px] bg-[var(--flint-border-base)] my-1 mx-1" />
-                )}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortOrder(opt.id);
-                    setIsSortMenuOpen(false);
-                  }}
-                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs transition-colors cursor-pointer ${
-                    sortOrder === opt.id
-                      ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] font-medium'
-                      : 'hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
-                  }`}
-                >
-                  <span className="truncate">{opt.label}</span>
-                  {sortOrder === opt.id && <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1.5" />}
-                </button>
-              </React.Fragment>
-            ))}
-          </div>,
-          document.body
-        )}
 
       {/* Bottom Split (if any docked items in left-bottom) */}
       {hasBottomSplit && (

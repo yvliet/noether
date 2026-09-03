@@ -12,10 +12,10 @@ import {
   HashIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  ArrowShrink02Icon,
   File01Icon,
   HelpCircleIcon,
 } from '@/components/common/Icons';
+import { CollapseAllButton } from '@/components/common/CollapseAllButton';
 
 interface TagTreeRowProps {
   node: TagTreeNode;
@@ -186,6 +186,11 @@ export const TagsView: React.FC = () => {
     }
   };
 
+  const hasCollapsibleTags = useMemo(() => {
+    const check = (nodes: TagTreeNode[]): boolean => nodes.some((n) => n.children.length > 0 || check(n.children));
+    return check(treeNodes);
+  }, [treeNodes]);
+
   const handleSelectDoc = (id: string) => {
     setActiveDocumentById(id);
   };
@@ -215,13 +220,14 @@ export const TagsView: React.FC = () => {
         </button>
 
         {viewMode === 'tree' && (
-          <button
-            onClick={handleCollapseAll}
-            title={expandedTags.size > 0 ? 'Collapse all' : 'Expand all'}
-            className="p-1.5 rounded-[5px] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
-          >
-            <ArrowShrink02Icon size={14} />
-          </button>
+          <CollapseAllButton
+            isCollapsed={expandedTags.size === 0}
+            onToggle={handleCollapseAll}
+            disabled={!hasCollapsibleTags || processedTags.length === 0}
+            collapsedTitle="Expand all tags"
+            expandedTitle="Collapse all tags"
+            disabledTitle="No collapsible tags"
+          />
         )}
 
         <button
