@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react';
-import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
+import React, { useMemo, useCallback } from 'react';
+import { useSidebarDockStore, DockZone, DockItem } from '@/store/sidebarDockStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useDocumentStore } from '@/store/documentStore';
 import { useFlintApp, useSidebarTabs, useViews, useExtensionList } from '@/core/app/AppContext';
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 import { Cancel01Icon } from '@/components/common/Icons';
@@ -12,6 +13,87 @@ const LazyDisabledExtensionView = React.lazy(() =>
 interface SidebarDockPaneProps {
   zone: DockZone;
 }
+
+interface DockEmptyViewProps {
+  zone: DockZone;
+  activeItemId: string;
+}
+
+const DockEmptyView: React.FC<DockEmptyViewProps> = React.memo(({ zone, activeItemId }) => {
+  const createNewNote = useDocumentStore((s) => s.createNewNote);
+  const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
+  const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
+  const undockItem = useSidebarDockStore((s) => s.undockItem);
+
+  const handleCreateNewNote = useCallback(async () => {
+    const newDoc = await createNewNote('Untitled', null, 'base', false);
+    if (newDoc) {
+      useSidebarDockStore.setState((s) => ({
+        items: s.items.map((it) =>
+          it.id === activeItemId
+            ? {
+                ...it,
+                id: `doc:${newDoc.id}`,
+                documentId: newDoc.id,
+                title: newDoc.title,
+                type: 'document' as const,
+              }
+            : it
+        ),
+        activeItemByZone: {
+          ...s.activeItemByZone,
+          [zone]: `doc:${newDoc.id}`,
+        },
+      }));
+      if (zone === 'left-top') {
+        useWorkspaceStore.setState({ activeLeftView: `doc:${newDoc.id}` as any });
+      } else if (zone === 'right-top') {
+        useWorkspaceStore.setState({ activeRightTab: `doc:${newDoc.id}` as any });
+      }
+    }
+  }, [createNewNote, activeItemId, zone]);
+
+  const handleClose = useCallback(() => {
+    undockItem(activeItemId);
+    if (zone === 'left-top') {
+      useWorkspaceStore.setState({ activeLeftView: 'files' });
+    } else if (zone === 'right-top') {
+      useWorkspaceStore.setState({ activeRightTab: undefined });
+    }
+  }, [undockItem, activeItemId, zone]);
+
+  return (
+    <div className="flex-1 flex flex-col items-center justify-center select-none p-6 gap-3 bg-transparent">
+      <button
+        onClick={handleCreateNewNote}
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+      >
+        Create new note <span className="text-[#555] ml-1">Ctrl + N</span>
+      </button>
+
+      <button
+        onClick={() => setIsCommandPaletteOpen(true)}
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+      >
+        Go to file <span className="text-[#555] ml-1">Ctrl + O</span>
+      </button>
+
+      <button
+        onClick={() => setIsHelpModalOpen(true)}
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+      >
+        Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>
+      </button>
+
+      <button
+        onClick={handleClose}
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+      >
+        Close
+      </button>
+    </div>
+  );
+});
 
 export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zone }) => {
   const app = useFlintApp();
@@ -104,6 +186,18 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
     );
   }
 
+  // If it's a new or empty document tab in the dock, render the empty tab state
+  const isDocLike =
+    activeItem.type === 'document' ||
+    activeItem.id.startsWith('doc:') ||
+    activeItem.id.startsWith('tab-') ||
+    !activeItem.viewType ||
+    activeItem.viewType === 'document';
+
+  if (isDocLike && (!activeItem.documentId || activeItem.documentId.startsWith('__'))) {
+    return <DockEmptyView zone={zone} activeItemId={activeItem.id} />;
+  }
+
   // 2. If it is a registered sidebar tab extension (Outline, Bookmarks, Backlinks, etc.)
   const allSidebarTabs = [...leftTabs, ...rightTabs];
   const extTab = allSidebarTabs.find(
@@ -171,9 +265,6 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
     }
   }
 
-  return (
-    <div className="flex-1 flex items-center justify-center text-xs text-[var(--flint-text-muted)] select-none">
-      Panel content unavailable
-    </div>
-  );
+  // Fallback: render the clean empty tab state rather than "Panel content unavailable"
+  return <DockEmptyView zone={zone} activeItemId={activeItem.id} />;
 });

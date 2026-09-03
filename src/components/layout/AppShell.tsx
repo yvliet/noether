@@ -184,8 +184,8 @@ const MainViewport: React.FC = React.memo(() => {
       ref={mainRef}
       data-flint-viewport="true"
       style={{ background: 'var(--flint-bg-main-gradient, var(--flint-bg-main))' }}
-      className={`flint-main-viewport flex-1 flex min-w-0 h-full overflow-hidden rounded-tl-[8px] border-l border-t ${
-        isRightSidebarOpen ? 'rounded-tr-[8px] border-r' : ''
+      className={`flint-main-viewport flex-1 flex min-w-0 h-full overflow-hidden ${
+        isRightSidebarOpen ? 'border-r' : ''
       } border-[var(--flint-border-base)]`}
     >
       <TilingLayoutRenderer node={layoutTree} />

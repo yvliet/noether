@@ -355,10 +355,10 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                     : 'var(--flint-text-muted)',
                   ...tabReorderStyle,
                 } as React.CSSProperties}
-                className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[36px] shrink border-t border-l border-r border-b-0 ${
+                className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[36px] shrink border-0 ${
                   isTabActive
-                    ? 'rounded-t-[7px] border-[var(--flint-border-base)] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs'
-                    : 'border-transparent bg-transparent font-normal hover:z-30'
+                    ? 'rounded-t-[7px] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs'
+                    : 'bg-transparent font-normal hover:z-30'
                 }`}
               >
                 {!isTabActive && (
@@ -386,12 +386,6 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                           fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
                         }}
                       />
-                      <path
-                        d="M 0 8 A 8 8 0 0 0 8 0"
-                        fill="none"
-                        stroke="var(--flint-border-base)"
-                        strokeWidth="1"
-                      />
                     </svg>
 
                     <svg
@@ -404,12 +398,6 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                         style={{
                           fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
                         }}
-                      />
-                      <path
-                        d="M 0 0 A 8 8 0 0 0 8 8"
-                        fill="none"
-                        stroke="var(--flint-border-base)"
-                        strokeWidth="1"
                       />
                     </svg>
 
@@ -895,11 +883,11 @@ export const WindowHeader: React.FC = React.memo(() => {
       }
 
       const isDoc =
-        (item.type === 'document' || item.id.startsWith('doc:')) &&
-        item.documentId &&
-        !item.documentId.startsWith('__');
+        (item.type === 'document' || item.id.startsWith('doc:')) ||
+        item.id.startsWith('tab-') ||
+        (!item.viewType || item.viewType === 'document');
 
-      if (isDoc) {
+      if (isDoc && item.id !== 'files' && item.id !== 'search') {
         return <StickyNote02Icon size={14} />;
       }
 

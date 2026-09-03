@@ -58,11 +58,11 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
     }
 
     const isDoc =
-      (item.type === 'document' || item.id.startsWith('doc:')) &&
-      item.documentId &&
-      !item.documentId.startsWith('__');
+      (item.type === 'document' || item.id.startsWith('doc:')) ||
+      item.id.startsWith('tab-') ||
+      (!item.viewType || item.viewType === 'document');
 
-    if (isDoc) {
+    if (isDoc && item.id !== 'files' && item.id !== 'search') {
       return <StickyNote02Icon size={14} />;
     }
 

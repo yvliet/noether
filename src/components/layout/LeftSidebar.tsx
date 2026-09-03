@@ -504,7 +504,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
         width: `${leftSidebarWidth}px`,
         background: 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar))',
       }}
-      className="flint-sidebar-left flex flex-col h-full select-none shrink-0 relative"
+      className="flint-sidebar-left flex flex-col h-full select-none shrink-0 relative border-r border-[var(--flint-border-base)]"
     >
       {activeDrag?.targetDockZone === 'left-bottom' && (
         <div

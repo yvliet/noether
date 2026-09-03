@@ -382,10 +382,10 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                   : 'var(--flint-text-muted)',
                 ...tabReorderStyle,
               } as React.CSSProperties}
-              className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[34px] shrink border-t border-l border-r border-b-0 ${
+              className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[34px] shrink border-0 ${
                 isTabActive
-                  ? 'rounded-t-[7px] border-[var(--flint-border-base)] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs'
-                  : 'border-transparent bg-transparent font-normal hover:z-30'
+                  ? 'rounded-t-[7px] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs'
+                  : 'bg-transparent font-normal hover:z-30'
               }`}
             >
               {/* Inactive Tab Hover */}
@@ -415,12 +415,6 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                         fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
                       }}
                     />
-                    <path
-                      d="M 0 8 A 8 8 0 0 0 8 0"
-                      fill="none"
-                      stroke="var(--flint-border-base)"
-                      strokeWidth="1"
-                    />
                   </svg>
 
                   <svg
@@ -433,12 +427,6 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                       style={{
                         fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
                       }}
-                    />
-                    <path
-                      d="M 0 0 A 8 8 0 0 0 8 8"
-                      fill="none"
-                      stroke="var(--flint-border-base)"
-                      strokeWidth="1"
                     />
                   </svg>
 

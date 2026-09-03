@@ -40,15 +40,8 @@ export const ActionRail: React.FC = React.memo(() => {
       data-ribbon="true"
       aria-label="Action Rail"
       style={{ background: 'var(--flint-bg-ribbon, var(--flint-bg-sidebar))' }}
-      className="flint-action-rail flint-ribbon relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0"
+      className="flint-action-rail flint-ribbon relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0 border-r border-[var(--flint-border-base)]"
     >
-      {/* Subtle Divider Line with Smooth Top Fade */}
-      <div
-        className="absolute top-0 right-0 w-[1px] h-full pointer-events-none"
-        style={{
-          background: 'linear-gradient(to bottom, transparent 0%, var(--flint-border-subtle) 28px, var(--flint-border-subtle) 100%)',
-        }}
-      />
       {/* Top Action Icons */}
       <div className="flex flex-col items-center gap-1 w-full">
         {/* Flint Blaze Logo */}

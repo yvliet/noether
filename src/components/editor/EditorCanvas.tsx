@@ -936,38 +936,34 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             Create new note <span className="text-[#555] ml-1">Ctrl + N</span>
           </button>
 
-          {!isSidebarMode && (
-            <>
-              <button
-                onClick={() => setIsCommandPaletteOpen(true)}
-                className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
-              >
-                Go to file <span className="text-[#555] ml-1">Ctrl + O</span>
-              </button>
+          <button
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+          >
+            Go to file <span className="text-[#555] ml-1">Ctrl + O</span>
+          </button>
 
-              <button
-                onClick={() => setIsHelpModalOpen(true)}
-                className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
-              >
-                Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>
-              </button>
+          <button
+            onClick={() => setIsHelpModalOpen(true)}
+            className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+          >
+            Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>
+          </button>
 
-              <button
-                onClick={() => {
-                  if (activeTab) {
-                    closeTabInPane(currentPaneId, activeTab.id);
-                  } else if (pane === 'split' && splitActiveTabId) {
-                    closeSplitTab(splitActiveTabId);
-                  } else if (activeTabId) {
-                    closeTab(activeTabId);
-                  }
-                }}
-                className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
-              >
-                Close
-              </button>
-            </>
-          )}
+          <button
+            onClick={() => {
+              if (activeTab) {
+                closeTabInPane(currentPaneId, activeTab.id);
+              } else if (pane === 'split' && splitActiveTabId) {
+                closeSplitTab(splitActiveTabId);
+              } else if (activeTabId) {
+                closeTab(activeTabId);
+              }
+            }}
+            className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+          >
+            Close
+          </button>
         </div>
       ) : (
         <div className="flex-1 overflow-hidden relative flex flex-col min-w-0">
