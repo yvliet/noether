@@ -1,16 +1,16 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useDocumentStore } from '@/store/documentStore';
+import { useBacklinksSettings } from './backlinksSettings';
 import { BacklinkItem, UnlinkedMentionItem } from '@/types';
 import {
   Search01Icon,
   ChevronDownIcon,
   ChevronRightIcon,
   ArrowUpNarrowWideIcon,
-  ArrowShrink02Icon,
+  ArrowUpDownIcon,
   LeftToRightListBulletIcon,
   Link2Icon,
   CheckIcon,
-  File01Icon,
 } from '@/components/common/Icons';
 
 export interface DocumentBacklinksProps {
@@ -39,6 +39,18 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   const unlinkedMentions = useDocumentStore((s) => s.unlinkedMentions);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
   const convertUnlinkedMention = useDocumentStore((s) => s.convertUnlinkedMention);
+  const loadLinksAndMentions = useDocumentStore((s) => s.loadLinksAndMentions);
+
+  // Ensure backlinks & mentions are loaded for this document immediately upon mount or prop changes
+  useEffect(() => {
+    if (documentId) {
+      loadLinksAndMentions(documentId, documentTitle);
+    }
+  }, [documentId, documentTitle, loadLinksAndMentions]);
+
+  const collapseBacklinksByDefault = useBacklinksSettings(
+    (s) => s.collapseBacklinksByDefault ?? true
+  );
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -47,6 +59,11 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const [isUnlinkedOpen, setIsUnlinkedOpen] = useState(false);
   const [linkingDocId, setLinkingDocId] = useState<string | null>(null);
+
+  // Reset collapsed state when switching notes
+  useEffect(() => {
+    setCollapsedGroups({});
+  }, [documentId]);
 
   // Filter and group backlinks
   const groupedBacklinks = useMemo(() => {
@@ -103,22 +120,45 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   }, [unlinkedMentions, searchQuery]);
 
   const handleToggleGroup = useCallback((docId: string) => {
-    setCollapsedGroups((prev) => ({
-      ...prev,
-      [docId]: !prev[docId],
-    }));
-  }, []);
+    setCollapsedGroups((prev) => {
+      const isCurrentlyCollapsed =
+        prev[docId] !== undefined ? prev[docId] : collapseBacklinksByDefault;
+      const nextCollapsed = !isCurrentlyCollapsed;
+      const next = { ...prev, [docId]: nextCollapsed };
+
+      const isAnyExpanded = groupedBacklinks.some((g) => {
+        const c = next[g.docId] !== undefined ? next[g.docId] : collapseBacklinksByDefault;
+        return !c;
+      });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('flint:backlinks-toggled', { detail: { isOpen: isAnyExpanded } })
+        );
+      }
+      return next;
+    });
+  }, [collapseBacklinksByDefault, groupedBacklinks]);
 
   const handleToggleCollapseAll = useCallback(() => {
     setCollapsedGroups((prev) => {
-      const allCollapsed = groupedBacklinks.every((g) => prev[g.docId]);
+      const allCollapsed = groupedBacklinks.every((g) => {
+        return prev[g.docId] !== undefined ? prev[g.docId] : collapseBacklinksByDefault;
+      });
+      const nextCollapsed = !allCollapsed;
       const next: Record<string, boolean> = {};
       groupedBacklinks.forEach((g) => {
-        next[g.docId] = !allCollapsed;
+        next[g.docId] = nextCollapsed;
       });
+
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('flint:backlinks-toggled', { detail: { isOpen: !nextCollapsed } })
+        );
+      }
       return next;
     });
-  }, [groupedBacklinks]);
+  }, [collapseBacklinksByDefault, groupedBacklinks]);
 
   const handleCycleSort = useCallback(() => {
     setSortOrder((prevOrder) => {
@@ -152,13 +192,17 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
 
   const highlightSnippet = useCallback((snippet: string, term: string) => {
     if (!term || !snippet) return snippet;
-    const parts = snippet.split(new RegExp(`(${escapeRegex(term)})`, 'gi'));
+    // Highlight [[term]] or term with warm amber/gold matching Image 2
+    const regex = new RegExp(`(\\[\\[${escapeRegex(term)}\\]\\]|${escapeRegex(term)})`, 'gi');
+    const parts = snippet.split(regex);
     return parts.map((part, idx) => {
-      if (part.toLowerCase() === term.toLowerCase()) {
+      const lower = part.toLowerCase();
+      const termLower = term.toLowerCase();
+      if (lower === termLower || lower === `[[${termLower}]]`) {
         return (
           <span
             key={idx}
-            className="text-[#38bdf8] font-semibold bg-[#38bdf8]/10 px-0.5 rounded"
+            className="text-white font-normal bg-[#82691b] px-1 py-0.5 rounded-[4px]"
           >
             {part}
           </span>
@@ -172,9 +216,9 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
     <div className="mt-8 pt-6 border-t border-[#262626] select-none font-sans text-xs">
       {/* 1. Linked Mentions Header Bar */}
       <div className="flex items-center justify-between py-1 text-[#dcddde]">
-        {/* Left: Title & Count */}
-        <div className="flex items-center gap-2">
-          <span className="font-semibold text-[#dcddde] text-[13px]">
+        {/* Left: Title & Count (Clean plain title, matching Image 2) */}
+        <div className="flex items-center gap-1.5 select-none">
+          <span className="font-semibold text-[13px] text-white">
             Linked mentions
           </span>
           <span className="text-[#666] text-xs font-normal">
@@ -187,7 +231,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
           <button
             onClick={() => setShowMoreContext(!showMoreContext)}
             title={showMoreContext ? 'Collapse results' : 'Show more context'}
-            className={`p-1.5 rounded hover:bg-[#222] transition-colors cursor-pointer ${
+            className={`p-1.5 rounded hover:bg-[#222] transition-none cursor-pointer ${
               showMoreContext ? 'text-white' : 'text-[#777] hover:text-[#dcddde]'
             }`}
           >
@@ -195,19 +239,19 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
           </button>
 
           <button
-            onClick={handleCycleSort}
-            title={getSortTooltip()}
-            className="p-1.5 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer"
+            onClick={handleToggleCollapseAll}
+            title="Collapse all"
+            className="p-1.5 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-none cursor-pointer"
           >
-            <ArrowUpNarrowWideIcon size={14} />
+            <ArrowUpDownIcon size={14} />
           </button>
 
           <button
-            onClick={handleToggleCollapseAll}
-            title="Collapse all"
-            className="p-1.5 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer"
+            onClick={handleCycleSort}
+            title={getSortTooltip()}
+            className="p-1.5 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-none cursor-pointer"
           >
-            <ArrowShrink02Icon size={14} />
+            <ArrowUpNarrowWideIcon size={14} />
           </button>
 
           <button
@@ -216,7 +260,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
               if (isSearchOpen) setSearchQuery('');
             }}
             title={isSearchOpen ? 'Close search' : 'Show search filter'}
-            className={`p-1.5 rounded hover:bg-[#222] transition-colors cursor-pointer ${
+            className={`p-1.5 rounded hover:bg-[#222] transition-none cursor-pointer ${
               isSearchOpen ? 'text-white bg-[#222]' : 'text-[#777] hover:text-[#dcddde]'
             }`}
           >
@@ -257,52 +301,53 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
             No backlinks found.
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {groupedBacklinks.map((group) => {
-              const isCollapsed = !!collapsedGroups[group.docId];
+              const isCollapsed =
+                collapsedGroups[group.docId] !== undefined
+                  ? collapsedGroups[group.docId]
+                  : collapseBacklinksByDefault;
+
               return (
-                <div
-                  key={group.docId}
-                  className="rounded-lg bg-[#1c1c1c]/50 border border-[#262626] overflow-hidden"
-                >
-                  <div className="flex items-center justify-between px-2.5 py-1.5 bg-[#181818] hover:bg-[#202020] transition-colors">
-                    <div
-                      onClick={() => handleToggleGroup(group.docId)}
-                      className="flex items-center gap-1.5 cursor-pointer flex-1 min-w-0"
-                    >
+                <div key={group.docId} className="flex flex-col">
+                  {/* Clean group row: NO card container, NO border, NO file icon */}
+                  <div
+                    onClick={() => handleToggleGroup(group.docId)}
+                    className="flex items-center justify-between py-1 cursor-pointer select-none text-[#dcddde] hover:text-white group"
+                  >
+                    <div className="flex items-center gap-1.5 min-w-0">
                       {isCollapsed ? (
-                        <ChevronRightIcon size={13} className="text-[#777] shrink-0" />
+                        <ChevronRightIcon size={12} className="text-[#777] group-hover:text-white shrink-0" />
                       ) : (
-                        <ChevronDownIcon size={13} className="text-[#777] shrink-0" />
+                        <ChevronDownIcon size={12} className="text-[#777] group-hover:text-white shrink-0" />
                       )}
-                      <File01Icon size={12} className="text-[#666] shrink-0" />
                       <span
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveDocumentById(group.docId);
                         }}
-                        className="font-medium text-[#dcddde] hover:text-white hover:underline truncate cursor-pointer text-xs"
+                        className="font-normal text-xs text-[#dcddde] hover:text-white hover:underline truncate"
                       >
                         {group.docTitle}
                       </span>
                     </div>
 
-                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#242424] text-[#888] font-mono shrink-0 ml-2">
+                    {/* Plain count on right: NO badge pill */}
+                    <span className="text-xs text-[#666] font-normal shrink-0 ml-2">
                       {group.items.length}
                     </span>
                   </div>
 
+                  {/* Snippet box */}
                   {!isCollapsed && showMoreContext && (
-                    <div className="p-2 flex flex-col gap-1.5 bg-[#141414]/40 divide-y divide-[#222]/60">
+                    <div className="mt-1 flex flex-col gap-1.5">
                       {group.items.map((item, idx) => (
                         <div
                           key={idx}
                           onClick={() => setActiveDocumentById(item.source_document_id)}
-                          className="pt-1.5 first:pt-0 cursor-pointer group"
+                          className="p-2.5 rounded-md bg-[#161616] hover:bg-[#1a1a1a] border border-[#262626] hover:border-[#333] transition-none cursor-pointer text-[#a0a0a0] hover:text-[#ccc] text-[12px] leading-relaxed select-text"
                         >
-                          <div className="p-2 rounded bg-[#161616] group-hover:bg-[#1f1f1f] border border-[#222] group-hover:border-[#333] transition-all text-[#999] group-hover:text-[#ccc] text-[11.5px] leading-relaxed">
-                            {highlightSnippet(item.snippet, documentTitle)}
-                          </div>
+                          {highlightSnippet(item.snippet, documentTitle)}
                         </div>
                       ))}
                     </div>
@@ -315,23 +360,16 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
       </div>
 
       {/* 4. Unlinked Mentions Section */}
-      <div className="mt-5 pt-3">
-        <button
+      <div className="mt-6 pt-2">
+        <div
           onClick={() => setIsUnlinkedOpen(!isUnlinkedOpen)}
-          className="flex items-center gap-2 py-1 text-left text-[#888] hover:text-[#dcddde] transition-colors cursor-pointer group"
+          className="py-1 cursor-pointer select-none text-[#777] hover:text-[#bbb] font-semibold text-xs transition-none flex items-center gap-2"
         >
-          {isUnlinkedOpen ? (
-            <ChevronDownIcon size={13} className="text-[#777] group-hover:text-white" />
-          ) : (
-            <ChevronRightIcon size={13} className="text-[#777] group-hover:text-white" />
+          <span>Unlinked mentions</span>
+          {filteredUnlinked.length > 0 && (
+            <span className="text-[#555] font-normal">{filteredUnlinked.length}</span>
           )}
-          <span className="font-semibold text-xs text-[#888] group-hover:text-[#dcddde]">
-            Unlinked mentions
-          </span>
-          <span className="text-[#666] text-xs font-normal">
-            {filteredUnlinked.length}
-          </span>
-        </button>
+        </div>
 
         {isUnlinkedOpen && (
           <div className="mt-2 pl-2">
@@ -353,7 +391,6 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
                           className="flex items-center gap-1.5 cursor-pointer truncate flex-1 min-w-0"
                         >
-                          <File01Icon size={12} className="text-[#666] shrink-0" />
                           <span className="font-medium text-[#dcddde] hover:text-white hover:underline text-xs truncate">
                             {unlinked.source_document_title}
                           </span>
@@ -363,7 +400,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           onClick={() => handleConvertLink(unlinked.source_document_id, documentTitle)}
                           disabled={isLinking}
                           title={`Convert to [[${documentTitle}]]`}
-                          className="px-2.5 py-0.5 rounded bg-[#242424] hover:bg-[#2f2f2f] text-[#38bdf8] hover:text-[#7dd3fc] text-[11px] font-medium transition-colors shrink-0 ml-2 flex items-center gap-1 border border-[#333] cursor-pointer"
+                          className="px-2.5 py-0.5 rounded bg-[#242424] hover:bg-[#2f2f2f] text-[#38bdf8] hover:text-[#7dd3fc] text-[11px] font-medium transition-none shrink-0 ml-2 flex items-center gap-1 border border-[#333] cursor-pointer"
                         >
                           {isLinking ? (
                             <CheckIcon size={11} className="text-emerald-400" />
@@ -376,7 +413,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
 
                       <div
                         onClick={() => setActiveDocumentById(unlinked.source_document_id)}
-                        className="text-[11.5px] text-[#888] hover:text-[#bbb] leading-relaxed bg-[#141414] p-2 rounded border border-[#202020] cursor-pointer transition-colors"
+                        className="text-[11.5px] text-[#888] hover:text-[#bbb] leading-relaxed bg-[#141414] p-2 rounded border border-[#202020] cursor-pointer transition-none"
                       >
                         {highlightSnippet(unlinked.snippet, documentTitle)}
                       </div>

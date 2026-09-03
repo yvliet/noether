@@ -23,12 +23,10 @@ import {
 } from '@/lib/db/links';
 import { useBacklinksSettings } from './backlinksSettings';
 import { backlinksReadme } from './readme';
+import { DocumentBacklinks } from './DocumentBacklinks';
 
 const LazyBacklinksView = React.lazy(() =>
   import('./BacklinksView').then((m) => ({ default: m.BacklinksView }))
-);
-const LazyDocumentBacklinks = React.lazy(() =>
-  import('./DocumentBacklinks').then((m) => ({ default: m.DocumentBacklinks }))
 );
 const LazyBacklinksSettingsTab = React.lazy(() =>
   import('./BacklinksSettingsTab').then((m) => ({ default: m.BacklinksSettingsTab }))
@@ -51,6 +49,22 @@ const BacklinkCountItem: React.FC<{ app: FlintApp }> = ({ app }) => {
     <span className="text-[#777777] cursor-default select-none">
       {count} {count === 1 ? 'backlink' : 'backlinks'}
     </span>
+  );
+};
+
+const DocumentBacklinksFooter: React.FC<{
+  documentId: string;
+  documentTitle?: string;
+  document?: any;
+}> = ({ documentId, documentTitle, document }) => {
+  const showBacklinksInDoc = useBacklinksSettings((s) => s.showBacklinksInDoc);
+  if (!showBacklinksInDoc) return null;
+  if (document?.is_folder || document?.doc_type === 'canvas') return null;
+  return (
+    <DocumentBacklinks
+      documentId={documentId}
+      documentTitle={documentTitle || document?.title || 'Untitled'}
+    />
   );
 };
 
@@ -78,19 +92,7 @@ export class BacklinksExtension extends Extension {
     this.registerDocumentFooter({
       id: 'document-backlinks',
       order: 10,
-      render: ({ documentId, documentTitle, document }) => {
-        const { showBacklinksInDoc } = useBacklinksSettings.getState();
-        if (!showBacklinksInDoc) return null;
-        if (document?.is_folder || document?.doc_type === 'canvas') return null;
-        return (
-          <React.Suspense fallback={null}>
-            <LazyDocumentBacklinks
-              documentId={documentId}
-              documentTitle={documentTitle || document?.title || 'Untitled'}
-            />
-          </React.Suspense>
-        );
-      },
+      render: (props) => <DocumentBacklinksFooter {...props} />,
     });
 
     // 3. Register Status Bar backlink count

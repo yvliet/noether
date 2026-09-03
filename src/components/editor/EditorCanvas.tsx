@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSidebarDockStore } from '@/store/sidebarDockStore';
@@ -256,6 +256,55 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const [isFindOpen, setIsFindOpen] = useState(false);
   const [isReplaceOpen, setIsReplaceOpen] = useState(false);
   const editorContainerRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const editorWrapperRef = useRef<HTMLDivElement>(null);
+  const [editorMinHeight, setEditorMinHeight] = useState<number | undefined>(undefined);
+
+  // Maintain minimum height of editor canvas when there is no scrollbar
+  // so expanding footer widgets (e.g. linked mentions) expands downward and adds a scrollbar,
+  // instead of shrinking the editor above and jumping upwards.
+  useLayoutEffect(() => {
+    const scrollEl = scrollViewportRef.current;
+    const editorEl = editorWrapperRef.current;
+    if (!scrollEl || !editorEl) return;
+    if (documentFooters.length === 0) {
+      if (editorMinHeight !== undefined) setEditorMinHeight(undefined);
+      return;
+    }
+
+    // Check if there is currently NO vertical scrollbar (with a 2px subpixel threshold)
+    const hasScrollbar = scrollEl.scrollHeight > scrollEl.clientHeight + 2;
+
+    if (!hasScrollbar) {
+      const currentHeight = editorEl.offsetHeight;
+      if (currentHeight > 0 && currentHeight !== editorMinHeight) {
+        setEditorMinHeight(currentHeight);
+      }
+    }
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setEditorMinHeight(undefined);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const handleBacklinksToggle = (e: Event) => {
+      const isOpen = (e as CustomEvent).detail?.isOpen;
+      if (!isOpen) {
+        setEditorMinHeight(undefined);
+      }
+    };
+    window.addEventListener('flint:backlinks-toggled', handleBacklinksToggle);
+    return () => window.removeEventListener('flint:backlinks-toggled', handleBacklinksToggle);
+  }, []);
+
+  useEffect(() => {
+    setEditorMinHeight(undefined);
+  }, [currentDoc?.id, content, documentFooters.length]);
 
   const defaultHeaderFolded = useMemo(() => {
     return documentHeaders.some((h) =>
@@ -932,6 +981,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           />
 
           <div
+            ref={scrollViewportRef}
             style={{ touchAction: 'pan-x pan-y' }}
             className={`flex-1 overflow-y-auto custom-scrollbar ${isReadingMode ? 'cursor-default' : ''}`}
           >
@@ -1070,6 +1120,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
                   {/* TipTap Editor Prose Canvas */}
                   <div
+                    ref={editorWrapperRef}
+                    style={editorMinHeight ? { minHeight: `${editorMinHeight}px` } : undefined}
                     className={`flex-1 flex flex-col ${
                       lineNumbers ? 'flint-line-numbers' : ''
                     } ${indentationGuides ? 'flint-indent-guides' : ''} ${

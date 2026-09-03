@@ -17,14 +17,35 @@ export interface BacklinksSettingsState {
 export const DEFAULT_BACKLINKS_SETTINGS = {
   showBacklinksInDoc: false,
   showBacklinksSearch: false,
-  collapseBacklinksByDefault: false,
+  collapseBacklinksByDefault: true,
   includeUnlinkedMentions: false,
 };
+
+function getInitialBacklinksSettings() {
+  if (typeof window === 'undefined') return DEFAULT_BACKLINKS_SETTINGS;
+  try {
+    const raw = localStorage.getItem('flint_plugin_data_backlinks');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.state) {
+        return {
+          ...DEFAULT_BACKLINKS_SETTINGS,
+          ...parsed.state,
+          collapseBacklinksByDefault:
+            parsed.version >= 1
+              ? Boolean(parsed.state.collapseBacklinksByDefault)
+              : true,
+        };
+      }
+    }
+  } catch {}
+  return DEFAULT_BACKLINKS_SETTINGS;
+}
 
 export const useBacklinksSettings = create<BacklinksSettingsState>()(
   persist(
     (set) => ({
-      ...DEFAULT_BACKLINKS_SETTINGS,
+      ...getInitialBacklinksSettings(),
 
       setShowBacklinksInDoc: (showBacklinksInDoc) => set({ showBacklinksInDoc }),
       setShowBacklinksSearch: (showBacklinksSearch) => set({ showBacklinksSearch }),
@@ -35,6 +56,17 @@ export const useBacklinksSettings = create<BacklinksSettingsState>()(
     }),
     {
       name: 'flint_plugin_data_backlinks',
+      version: 1,
+      migrate: (persistedState: any, version: number) => {
+        if (!version || version < 1) {
+          return {
+            ...DEFAULT_BACKLINKS_SETTINGS,
+            ...persistedState,
+            collapseBacklinksByDefault: true,
+          };
+        }
+        return persistedState;
+      },
     }
   )
 );
