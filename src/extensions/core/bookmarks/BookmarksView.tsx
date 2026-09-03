@@ -143,7 +143,7 @@ export const BookmarksView: React.FC = React.memo(() => {
                 }
               }}
               onContextMenu={(e) => handleBookmarkContextMenu(e, doc)}
-              className={`group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-colors ${
+              className={`group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer ${
                 isActive
                   ? 'bg-[#2a2a2a] text-white font-normal'
                   : 'text-[#9ca3af] hover:bg-[#202020] hover:text-[#dcddde] font-normal'

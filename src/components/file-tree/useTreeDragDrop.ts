@@ -143,7 +143,7 @@ export function useTreeDragDrop({
           if (!item.is_folder) {
             const docItemForReorder = { ...item, type: 'document' };
             const targets = computeDragTargets(moveEvent.clientX, moveEvent.clientY, docItemForReorder);
-            // Flint Rule 2 Rationale ("Why This, Not That"):
+            // Architecture Rationale ("Why This, Not That"):
             // Prevent dragging folders/files from nav into docking zones that exist in the nav sidebar
             // ('left-top', 'left-bottom'). Tree reorganization in the nav sidebar must remain snappy
             // and never accidentally trigger nav sidebar docking. Tabs (from editor tab headers) and dock

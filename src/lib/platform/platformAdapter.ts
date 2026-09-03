@@ -39,6 +39,8 @@ export interface IPlatformAdapter {
   startDragging(): Promise<void>;
   isMaximized(): Promise<boolean>;
   onMaximizedChange(callback: (isMaximized: boolean) => void): () => void;
+  isMinimized(): Promise<boolean>;
+  onMinimizedChange(callback: (isMinimized: boolean) => void): () => void;
 
   // Multi-window
   openHearthWindow(): Promise<{ success: boolean }>;
@@ -285,6 +287,73 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     }
     if (this.isElectron()) {
       return window.electronAPI?.onMaximizedChange?.(callback) || (() => {});
+    }
+    return () => {};
+  }
+
+  public async isMinimized(): Promise<boolean> {
+    if (this.isTauri()) {
+      const { tauriCore, tauriWindow } = await getTauriModules();
+      if (tauriCore?.invoke) {
+        try {
+          return Boolean(await tauriCore.invoke('window_is_minimized'));
+        } catch (e) {}
+      }
+      const current = tauriWindow?.getCurrentWindow();
+      return (await current?.isMinimized()) || false;
+    }
+    if (this.isElectron()) {
+      return (await window.electronAPI?.isMinimized?.()) || false;
+    }
+    if (typeof document !== 'undefined') {
+      return document.hidden;
+    }
+    return false;
+  }
+
+  public onMinimizedChange(callback: (isMinimized: boolean) => void): () => void {
+    if (this.isTauri()) {
+      let unlistenResize: (() => void) | null = null;
+      let unlistenVis: (() => void) | null = null;
+      getTauriModules().then(({ tauriWindow }) => {
+        const current = tauriWindow?.getCurrentWindow();
+        current?.onResized(() => {
+          current?.isMinimized().then((min: boolean) => callback(Boolean(min)));
+        }).then((unlisten: any) => {
+          unlistenResize = unlisten;
+        });
+      });
+      const handleVis = () => {
+        callback(document.hidden);
+      };
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', handleVis);
+        unlistenVis = () => document.removeEventListener('visibilitychange', handleVis);
+      }
+      return () => {
+        if (unlistenResize) unlistenResize();
+        if (unlistenVis) unlistenVis();
+      };
+    }
+    if (this.isElectron()) {
+      const unlistenElectron = window.electronAPI?.onMinimizedChange?.(callback);
+      let unlistenVis: (() => void) | null = null;
+      const handleVis = () => {
+        callback(document.hidden);
+      };
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', handleVis);
+        unlistenVis = () => document.removeEventListener('visibilitychange', handleVis);
+      }
+      return () => {
+        if (unlistenElectron) unlistenElectron();
+        if (unlistenVis) unlistenVis();
+      };
+    }
+    if (typeof document !== 'undefined') {
+      const handleVis = () => callback(document.hidden);
+      document.addEventListener('visibilitychange', handleVis);
+      return () => document.removeEventListener('visibilitychange', handleVis);
     }
     return () => {};
   }

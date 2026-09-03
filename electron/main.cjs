@@ -335,9 +335,20 @@ function attachWindowEvents(win) {
       win.webContents.send('window-maximized-change', win.isMaximized());
     }
   };
+  const sendMinimizedState = (minimized) => {
+    if (!win.isDestroyed() && win.webContents) {
+      win.webContents.send('window-minimized-change', minimized);
+    }
+  };
   win.on('maximize', sendMaximizedState);
   win.on('unmaximize', sendMaximizedState);
-  win.on('restore', sendMaximizedState);
+  win.on('restore', () => {
+    sendMaximizedState();
+    sendMinimizedState(false);
+  });
+  win.on('minimize', () => {
+    sendMinimizedState(true);
+  });
   win.on('resized', sendMaximizedState);
 }
 
@@ -408,6 +419,11 @@ function registerIpc() {
   ipcMain.handle('is-window-maximized', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
     return win ? win.isMaximized() : false;
+  });
+
+  ipcMain.handle('is-window-minimized', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || mainWindow;
+    return win ? win.isMinimized() : false;
   });
 
   ipcMain.on('is-window-maximized-sync', (event) => {

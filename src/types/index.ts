@@ -156,6 +156,8 @@ declare global {
       isMaximized?: () => Promise<boolean>;
       isMaximizedSync?: () => boolean;
       onMaximizedChange?: (callback: (isMaximized: boolean) => void) => () => void;
+      isMinimized?: () => Promise<boolean>;
+      onMinimizedChange?: (callback: (isMinimized: boolean) => void) => () => void;
       // Hearth & Vault window controls
       openHearthWindow?: () => Promise<{ success: boolean }>;
       closeHearthWindow?: () => Promise<{ success: boolean }>;

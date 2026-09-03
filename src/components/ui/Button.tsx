@@ -13,7 +13,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 
 /**
  * Obsidian-grade native desktop button component.
- * Adheres strictly to Flint GEMINI.md Rule 6 (Zero artificial transitions/animations for instant native feel).
+ * Zero artificial transitions/animations for instant native desktop feel.
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   variant = 'default',

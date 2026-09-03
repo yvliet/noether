@@ -3,8 +3,7 @@
  * @description
  * Tree node icon component for custom and default icons in the Hearth file tree.
  * Renders custom icons for both folders and files (notes, canvases, media).
- *
- * Adheres strictly to Flint Rule 6: Zero artificial micro-interaction animations/transitions.
+ * Zero artificial micro-interaction animations/transitions.
  *
  * @author Yuliet Li
  * @since 1.0.0

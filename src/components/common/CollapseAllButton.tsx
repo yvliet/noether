@@ -42,7 +42,7 @@ export interface CollapseAllButtonProps {
 
 /**
  * Standardized Flint Collapse All / Expand All toggle button.
- * Adheres to Flint GEMINI.md Rule 6: instant hover and click with zero artificial animation delay.
+ * Standard instant hover and click with zero artificial animation delay.
  */
 export const CollapseAllButton: React.FC<CollapseAllButtonProps> = React.memo(({
   isCollapsed,

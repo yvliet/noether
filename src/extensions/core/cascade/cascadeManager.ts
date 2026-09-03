@@ -20,10 +20,32 @@ export function parseDocumentProperties(doc?: DocumentItem | null): DocumentProp
   }
 }
 
+const cascadeInfoCache = new WeakMap<DocumentItem, CascadeInfo>();
+
 export function getCascadeInfo(doc?: DocumentItem | null): CascadeInfo {
   if (!doc) {
     return { isCascaded: false, cascadeName: '', pageNumber: null, rawProperties: {} };
   }
+
+  const cached = cascadeInfoCache.get(doc);
+  if (cached) return cached;
+
+  if (!doc.properties) {
+    const res: CascadeInfo = { isCascaded: false, cascadeName: '', pageNumber: null, rawProperties: {} };
+    cascadeInfoCache.set(doc, res);
+    return res;
+  }
+
+  // Fast string pre-check: If properties is a JSON string, avoid JSON.parse and regex if it doesn't mention cascade or page
+  if (typeof doc.properties === 'string') {
+    const lower = doc.properties.toLowerCase();
+    if (!lower.includes('cascade') && !lower.includes('page')) {
+      const res: CascadeInfo = { isCascaded: false, cascadeName: '', pageNumber: null, rawProperties: {} };
+      cascadeInfoCache.set(doc, res);
+      return res;
+    }
+  }
+
   const props = parseDocumentProperties(doc);
 
   // Check for 'Cascade Page' or variants
@@ -53,12 +75,15 @@ export function getCascadeInfo(doc?: DocumentItem | null): CascadeInfo {
 
   const isCascaded = pageNum !== null;
 
-  return {
+  const result: CascadeInfo = {
     isCascaded,
     cascadeName,
     pageNumber: pageNum,
     rawProperties: props,
   };
+
+  cascadeInfoCache.set(doc, result);
+  return result;
 }
 
 /**

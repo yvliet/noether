@@ -356,7 +356,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
   return <div className="markdown-prose flex flex-col">{elements}</div>;
 });
 
-// Format heading title with dimmed number prefixes if present (Flint rules)
+// Format heading title with dimmed number prefixes if present
 function formatHeadingTitle(title: string): React.ReactNode {
   const numberedMatch = title.match(/^(\d+\.|\w+\.)\s+(.*)$/);
   if (numberedMatch) {

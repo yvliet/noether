@@ -14,10 +14,8 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { Bookmark01Icon } from '@/components/common/Icons';
 import { bookmarksReadme } from './readme';
+import { BookmarksView } from './BookmarksView';
 
-const LazyBookmarksView = React.lazy(() =>
-  import('./BookmarksView').then((m) => ({ default: m.BookmarksView }))
-);
 const LazyBookmarksSettingsTab = React.lazy(() =>
   import('./BookmarksSettingsTab').then((m) => ({ default: m.BookmarksSettingsTab }))
 );
@@ -39,18 +37,14 @@ export class BookmarksExtension extends Extension {
   }
 
   public onload(): void {
-    // 1. Register Left Sidebar Tab
+    // 1. Register Left Sidebar Tab (Synchronously rendered for instant 0ms display)
     this.registerSidebarTab({
       id: 'bookmarks',
       title: 'Bookmarks',
       icon: <Bookmark01Icon size={14} />,
       side: 'left',
       order: 20,
-      render: () => (
-        <React.Suspense fallback={null}>
-          <LazyBookmarksView />
-        </React.Suspense>
-      ),
+      render: () => <BookmarksView />,
     });
 
     // 2. Register Toggle Bookmark Command

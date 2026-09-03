@@ -354,7 +354,7 @@ export class IconifyExtension extends Extension {
       },
     });
 
-    // 14. Register MCP Tools per Flint Rule 5
+    // 14. Register MCP Tools
     // ── Tool: list ──
     this.registerTool({
       name: 'list',

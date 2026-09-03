@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('window-maximized-change', listener);
     return () => ipcRenderer.removeListener('window-maximized-change', listener);
   },
+  isMinimized: () => ipcRenderer.invoke('is-window-minimized'),
+  onMinimizedChange: (callback) => {
+    const listener = (event, isMinimized) => callback(isMinimized);
+    ipcRenderer.on('window-minimized-change', listener);
+    return () => ipcRenderer.removeListener('window-minimized-change', listener);
+  },
   // Hearth & Settings window controls
   openHearthWindow: () => ipcRenderer.invoke('open-hearth-window'),
   closeHearthWindow: () => ipcRenderer.invoke('close-hearth-window'),

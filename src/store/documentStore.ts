@@ -154,58 +154,117 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   brokenEmbedCounts: {},
 
   loadInitialData: async (options?: { showLoading?: boolean }) => {
-    const shouldShowLoading = options?.showLoading ?? (get().documents.length === 0);
-    if (shouldShowLoading) {
-      set({ isLoading: true });
-    }
     try {
-      await cleanExpiredTrash();
-      // Scan and synchronize physical vault markdown files from disk with SQLite
-      await syncVaultDiskToSQLite();
-
-      const [docs, globalTasks, tags, trash] = await Promise.all([
+      // 1. Fast path: Immediately query and hydrate from local in-memory WASM SQLite (1-2ms)
+      // This populates documents, bookmarks, cascades, and the file tree with 0 perceived latency.
+      const [initialDocs, initialTasks, initialTags, initialTrash] = await Promise.all([
         getAllDocuments(),
         getAllGlobalTasks(),
         getAllVaultTags(),
         getTrashItems(),
       ]);
 
-      set({ documents: docs, trashItems: trash, globalTasks, vaultTags: tags, isLoading: false });
-      get().recomputeBrokenEmbeds();
-      emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
+      const hasCachedDocs = initialDocs.length > 0;
+      if (hasCachedDocs) {
+        set({
+          documents: initialDocs,
+          trashItems: initialTrash,
+          globalTasks: initialTasks,
+          vaultTags: initialTags,
+          isLoading: false,
+        });
+        get().recomputeBrokenEmbeds();
+        emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
 
-      const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
-      const isRestored = shouldRestoreTabs
-        ? useWorkspaceStore.getState().restoreTabsSession(docs)
-        : false;
+        // Restore tabs immediately from cached documents
+        const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
+        const isRestored = shouldRestoreTabs
+          ? useWorkspaceStore.getState().restoreTabsSession(initialDocs)
+          : false;
 
-      if (isRestored) {
-        const { tabs, activeTabId } = useWorkspaceStore.getState();
-        const activeTab = tabs.find((t) => t.id === activeTabId);
-        if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
-          const docExists = docs.some((d) => d.id === activeTab.document_id);
-          if (docExists) {
-            await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+        if (isRestored) {
+          const { tabs, activeTabId } = useWorkspaceStore.getState();
+          const activeTab = tabs.find((t) => t.id === activeTabId);
+          if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
+            const docExists = initialDocs.some((d) => d.id === activeTab.document_id);
+            if (docExists) {
+              await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+            }
+          }
+        } else {
+          if (initialDocs.length > 0) {
+            const welcomeDoc = initialDocs.find((d) => d.id === 'welcome-to-flint') || initialDocs.find((d) => !d.is_folder) || initialDocs[0];
+            if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
+              await get().setActiveDocumentById(welcomeDoc.id);
+            }
+          } else {
+            if (useWorkspaceStore.getState().tabs.length === 0) {
+              useWorkspaceStore.getState().openEmptyTab();
+            }
+          }
+        }
+      } else {
+        const shouldShowLoading = options?.showLoading ?? true;
+        if (shouldShowLoading) {
+          set({ isLoading: true });
+        }
+      }
+
+      // 2. Background differential sync: Scan disk markdown files & clean trash
+      cleanExpiredTrash().catch(console.error);
+      const syncRes = await syncVaultDiskToSQLite();
+      const syncedCount = syncRes?.syncedCount ?? 0;
+
+      // Refresh from SQLite if disk files changed or if we had no cached docs initially
+      if (syncedCount > 0 || !hasCachedDocs) {
+        const [docs, globalTasks, tags, trash] = await Promise.all([
+          getAllDocuments(),
+          getAllGlobalTasks(),
+          getAllVaultTags(),
+          getTrashItems(),
+        ]);
+
+        set({ documents: docs, trashItems: trash, globalTasks, vaultTags: tags, isLoading: false });
+        get().recomputeBrokenEmbeds();
+        if (!hasCachedDocs) {
+          emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
+        }
+
+        const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
+        const isRestored = shouldRestoreTabs
+          ? useWorkspaceStore.getState().restoreTabsSession(docs)
+          : false;
+
+        if (isRestored) {
+          const { tabs, activeTabId } = useWorkspaceStore.getState();
+          const activeTab = tabs.find((t) => t.id === activeTabId);
+          if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
+            const docExists = docs.some((d) => d.id === activeTab.document_id);
+            if (docExists) {
+              await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
+            } else {
+              set({ activeDocument: null });
+            }
+          } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
+            useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
+            set({ activeDocument: null });
           } else {
             set({ activeDocument: null });
           }
-        } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
-          useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
-          set({ activeDocument: null });
         } else {
-          set({ activeDocument: null });
+          if (docs.length > 0) {
+            const welcomeDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder) || docs[0];
+            if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
+              await get().setActiveDocumentById(welcomeDoc.id);
+            }
+          } else {
+            if (useWorkspaceStore.getState().tabs.length === 0) {
+              useWorkspaceStore.getState().openEmptyTab();
+            }
+          }
         }
       } else {
-        if (docs.length > 0) {
-          const welcomeDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder) || docs[0];
-          if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
-            await get().setActiveDocumentById(welcomeDoc.id);
-          }
-        } else {
-          if (useWorkspaceStore.getState().tabs.length === 0) {
-            useWorkspaceStore.getState().openEmptyTab();
-          }
-        }
+        set({ isLoading: false });
       }
     } catch (e) {
       console.error('Failed to load initial data:', e);

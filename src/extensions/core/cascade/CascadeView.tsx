@@ -170,7 +170,7 @@ export const CascadeView: React.FC = React.memo(() => {
           type="button"
           onClick={handleCreateNewCascade}
           title="New Cascade book"
-          className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+          className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
         >
           <FolderAddIcon size={14} />
         </button>
@@ -182,7 +182,7 @@ export const CascadeView: React.FC = React.memo(() => {
             if (isSearchOpen) setSearchQuery('');
           }}
           title={isSearchOpen ? 'Close search' : 'Search cascade pages'}
-          className={`p-1.5 rounded transition-colors cursor-pointer ${
+          className={`p-1.5 rounded cursor-pointer ${
             isSearchOpen
               ? 'bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-primary)]'
               : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
@@ -204,7 +204,7 @@ export const CascadeView: React.FC = React.memo(() => {
       {/* Search Input Row (Toggled) */}
       {isSearchOpen && (
         <div className="pt-1 px-2 pb-1.5 flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)] transition-colors">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)]">
             <Search01Icon size={14} className="text-[var(--flint-text-muted)] shrink-0" />
             <input
               type="text"
@@ -219,7 +219,7 @@ export const CascadeView: React.FC = React.memo(() => {
                 type="button"
                 onClick={() => setSearchQuery('')}
                 title="Clear search"
-                className="p-0.5 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer transition-colors"
+                className="p-0.5 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
               >
                 <CancelCircleIcon size={13} />
               </button>

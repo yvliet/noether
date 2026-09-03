@@ -4,8 +4,7 @@
  * Settings panel for the Iconify extension.
  * Allows users to configure default icon visibility, inspect all folders and files
  * with active custom icons, filter by item type, and manage or reset icon assignments.
- *
- * Adheres strictly to Flint Rule 6: Zero artificial micro-interaction animations/transitions.
+ * Zero artificial micro-interaction animations/transitions.
  *
  * @author Yuliet Li
  * @since 1.0.0

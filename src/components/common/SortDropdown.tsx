@@ -21,7 +21,7 @@ export interface SortDropdownProps<T extends string = string> {
  * - Accurate click-outside detection without premature mousedown dismissals.
  * - Supports icon-only toolbar trigger or text label + chevron trigger.
  * - Group separator dividers and active item checkmarks.
- * - Zero artificial animation / instant responsiveness per GEMINI.md Rule 6.
+ * - Zero artificial animation / instant native desktop responsiveness.
  */
 export function SortDropdown<T extends string = string>({
   value,

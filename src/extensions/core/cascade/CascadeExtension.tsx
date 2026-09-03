@@ -30,10 +30,7 @@ import {
 } from './cascadeManager';
 import { CascadeFolderNode } from './CascadeFolderNode';
 import { useCascadeSettings } from './cascadeSettings';
-
-const LazyCascadeView = React.lazy(() =>
-  import('./CascadeView').then((m) => ({ default: m.CascadeView }))
-);
+import { CascadeView } from './CascadeView';
 
 export const CASCADE_MANIFEST: ExtensionManifest = {
   id: 'flint-cascade',
@@ -52,18 +49,14 @@ export class CascadeExtension extends Extension {
   }
 
   public onload(): void {
-    // 1. Register Left Sidebar Tab (Top-left, right next to Bookmarks)
+    // 1. Register Left Sidebar Tab (Top-left, right next to Bookmarks - Synchronously rendered for 0ms instant display)
     this.registerSidebarTab({
       id: 'cascade',
       title: 'Cascade',
       icon: <CascadeIcon size={14} />,
       side: 'left',
       order: 21,
-      render: () => (
-        <React.Suspense fallback={null}>
-          <LazyCascadeView />
-        </React.Suspense>
-      ),
+      render: () => <CascadeView />,
     });
 
     // 2. Register Status Bar Item (Right side, beside editor mode and sync icons)

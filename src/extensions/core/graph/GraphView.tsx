@@ -18,6 +18,7 @@ import {
 import { Tooltip } from '@/components/common/Tooltip';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { DocumentItem } from '@/types';
+import { platform } from '@/lib/platform/platformAdapter';
 
 function getGraphNodeTitle(doc: DocumentItem, allDocs: DocumentItem[]): string {
   return getDocumentPath(doc, allDocs) || doc.title || 'Untitled';
@@ -293,6 +294,12 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const [isFloatActive, setIsFloatActive] = useState(() => isTabFloating(resolvedTabId, vaultPath));
   const isFloatActiveRef = useRef(isFloatActive);
   const floatStartTimeRef = useRef(0);
+
+  // Window minimize & visibility suspension tracking with seamless kinematic resumption
+  const isSuspendedRef = useRef(false);
+  const pauseStartTimeRef = useRef<number | null>(null);
+  const totalPausedDurationRef = useRef(0);
+  const wasTimelapseActiveBeforeSuspendRef = useRef(false);
 
   useEffect(() => {
     isFloatActiveRef.current = isFloatActive;
@@ -1467,7 +1474,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
       // Float Mode & Timelapse Zero-Gravity Motion: Nodes gently float and move organically around themselves
       if ((isFloatActiveRef.current || isTimelapseActiveRef.current) && !isTimelapsePausedRef.current) {
-        const perfNow = performance.now();
+        const perfNow = performance.now() - totalPausedDurationRef.current;
         const floatElapsed = Math.max(0, perfNow - floatStartTimeRef.current);
         // Smoothstep acceleration curve from 0.15 (slow) to 1.0 (normal) over 1.4 seconds
         const rawT = isTimelapseActiveRef.current ? 1.0 : Math.min(1.0, floatElapsed / 1400);
@@ -1526,7 +1533,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     // Cooling curve: smooth settling and floaty sleep
     if (!dragNodeRef.current) {
       if (isFloatActiveRef.current) {
-        const perfNow = performance.now();
+        const perfNow = performance.now() - totalPausedDurationRef.current;
         const floatElapsed = Math.max(0, perfNow - floatStartTimeRef.current);
         const rawT = Math.min(1.0, floatElapsed / 1400);
         const floatRamp = rawT * rawT * (3 - 2 * rawT);
@@ -1960,6 +1967,15 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
       ctx.restore();
 
+      // Do not schedule next frame if paused or suspended (window minimized / document hidden / container offscreen)
+      if (isSuspendedRef.current) {
+        if (animFrameRef.current) {
+          cancelAnimationFrame(animFrameRef.current);
+          animFrameRef.current = null;
+        }
+        return;
+      }
+
       // Only request next frame if physics active, float mode running, dragging, timelapse running, or transform/color lerping
       if (
         (!isTimelapsePausedRef.current && (alphaRef.current > 0.002 || isFloatActiveRef.current)) ||
@@ -1977,6 +1993,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
   // Expose starter
   startAnimationRef.current = () => {
+    if (isSuspendedRef.current) return;
     if (!animFrameRef.current) {
       animFrameRef.current = requestAnimationFrame(render);
     }
@@ -2269,6 +2286,101 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     alphaRef.current = 0.35;
     startAnimation();
   }, [isTimelapseActive, clearTimelapseTimers, centerGraph, startAnimation]);
+
+  // Window minimize, tab visibility, and IntersectionObserver lifecycle suspension
+  const suspendAnimation = useCallback(() => {
+    if (isSuspendedRef.current) return;
+    isSuspendedRef.current = true;
+    pauseStartTimeRef.current = performance.now();
+
+    // Cancel animation frame immediately to release the GPU / main thread
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+
+    // If timelapse was actively running, pause it so playback doesn't run blind while minimized
+    if (isTimelapseActiveRef.current && !isTimelapsePausedRef.current) {
+      wasTimelapseActiveBeforeSuspendRef.current = true;
+      pauseTimelapse();
+    } else {
+      wasTimelapseActiveBeforeSuspendRef.current = false;
+    }
+  }, [pauseTimelapse]);
+
+  const resumeAnimation = useCallback(() => {
+    if (!isSuspendedRef.current) return;
+    isSuspendedRef.current = false;
+
+    if (pauseStartTimeRef.current !== null) {
+      const pausedDelta = performance.now() - pauseStartTimeRef.current;
+      totalPausedDurationRef.current += Math.max(0, pausedDelta);
+      pauseStartTimeRef.current = null;
+    }
+
+    if (wasTimelapseActiveBeforeSuspendRef.current) {
+      wasTimelapseActiveBeforeSuspendRef.current = false;
+      resumeTimelapse();
+    } else {
+      startAnimationRef.current();
+    }
+  }, [resumeTimelapse]);
+
+  useEffect(() => {
+    let isWindowMin = false;
+    let isDocHidden = typeof document !== 'undefined' ? document.hidden : false;
+    let isIntersecting = true;
+
+    const checkSuspension = () => {
+      const shouldSuspend = isWindowMin || isDocHidden || !isIntersecting;
+      if (shouldSuspend) {
+        suspendAnimation();
+      } else {
+        resumeAnimation();
+      }
+    };
+
+    // 1. Cross-platform window minimize detection (Electron / Tauri / Web)
+    const unlistenMin = platform.onMinimizedChange((minimized) => {
+      isWindowMin = minimized;
+      checkSuspension();
+    });
+
+    // 2. Document visibility (tab switch, window blur/hidden)
+    const handleVis = () => {
+      isDocHidden = typeof document !== 'undefined' ? document.hidden : false;
+      checkSuspension();
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', handleVis);
+    }
+
+    // 3. IntersectionObserver: suspends when canvas container is off-screen or tab hidden
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined' && containerRef.current) {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            isIntersecting = entry.isIntersecting && entry.intersectionRatio > 0;
+            checkSuspension();
+          }
+        },
+        { threshold: 0.01 }
+      );
+      observer.observe(containerRef.current);
+    }
+
+    // Initial check
+    checkSuspension();
+
+    return () => {
+      unlistenMin();
+      if (typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', handleVis);
+      }
+      if (observer) observer.disconnect();
+    };
+  }, [suspendAnimation, resumeAnimation]);
 
   // Search matches count
   const matchCount = useMemo(() => {
