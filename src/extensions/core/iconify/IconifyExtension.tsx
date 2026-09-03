@@ -27,7 +27,13 @@ import { initIconifyDb, IconItemType } from './iconifyDb';
 import { useIconifyStore } from './iconifyStore';
 import { IconPicker, HugeIconRenderer } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
-import { IconifySlot, IconifyBreadcrumbIcon, IconifyTabIcon } from './IconifyNode';
+import {
+  IconifySlot,
+  IconifyFileIconSlot,
+  IconifyFolderPrefixSlot,
+  IconifyBreadcrumbIcon,
+  IconifyTabIcon,
+} from './IconifyNode';
 import { IconifyEditorTitleIcon } from './IconifyEditorTitleIcon';
 import { IconifyPickerModal } from './IconifyPickerModal';
 import { IconifySettingsTab } from './IconifySettingsTab';
@@ -76,16 +82,30 @@ export class IconifyExtension extends Extension {
     });
     this.registerDisposable({ dispose: unsubStore });
 
-    // 5. Register FileTreeDecorator for rendering custom/default icons in the file tree prefix
+    // 5. Register FileTreeDecorator for rendering custom/default icons in the file tree
     this.registerFileTreeDecorator({
       id: 'iconify-tree-decorator',
+      renderIcon: (doc, context) => {
+        // For files: render the custom or default icon directly in the first (chevron/spacer) slot
+        // so all filenames on the same depth level start at the exact same horizontal X coordinate!
+        if (!doc.is_folder) {
+          return <IconifyFileIconSlot doc={doc} />;
+        }
+        // For folders: retain the default interactive chevron button
+        return context.defaultIcon;
+      },
       renderPrefix: (doc, context) => {
-        return (
-          <IconifySlot
-            doc={doc}
-            isOpen={context?.isOpen}
-          />
-        );
+        // For folders: render folder icon in the prefix slot (between chevron and folder title)
+        if (doc.is_folder) {
+          return (
+            <IconifyFolderPrefixSlot
+              doc={doc}
+              isOpen={context?.isOpen}
+            />
+          );
+        }
+        // For files: prefix is empty because the icon lives directly in the first slot!
+        return null;
       },
     });
 

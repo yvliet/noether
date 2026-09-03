@@ -102,6 +102,124 @@ export const IconifyNode: React.FC<IconifyNodeProps> = React.memo(({
 
 IconifyNode.displayName = 'IconifyNode';
 
+export interface IconifyFileIconSlotProps {
+  doc: DocumentItem;
+}
+
+/**
+ * Reactive file icon component for the first (chevron/spacer) slot of the tree row.
+ * If the file has a custom icon, renders it inside the 16px slot.
+ * If no icon is set, renders null, preserving the 16px empty space so all filenames
+ * on the same depth level start at the exact same horizontal X!
+ */
+export const IconifyFileIconSlot: React.FC<IconifyFileIconSlotProps> = ({ doc }) => {
+  const entry = useIconifyStore((s) => s.icons[doc.id]);
+  const showDefaultFileIcons = useIconifyStore((s) => s.showDefaultFileIcons);
+  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+
+  if (!entry && !showDefaultFileIcons) {
+    return null;
+  }
+
+  // 1. Custom assigned icon
+  if (entry) {
+    if (entry.iconId.startsWith('emoji:')) {
+      const char = entry.iconId.slice(6);
+      return (
+        <span className="w-4 h-4 flex items-center justify-center shrink-0 select-none pointer-events-none">
+          <EmojiRenderer emoji={char} size={14} style={emojiStyle} />
+        </span>
+      );
+    }
+
+    const iconDef = getIconifyIconDef(entry.iconId);
+    if (iconDef) {
+      return (
+        <span
+          className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+          style={entry.color ? { color: entry.color } : undefined}
+          title={iconDef.name}
+        >
+          <HugeIconRenderer iconDef={iconDef.iconDef} size={14} color={entry.color || 'currentColor'} />
+        </span>
+      );
+    }
+  }
+
+  // 2. Default file icon
+  if (showDefaultFileIcons) {
+    const isCanvas = doc.doc_type === 'canvas' || (doc.title && doc.title.toLowerCase().endsWith('.canvas'));
+    return (
+      <span
+        className="w-4 h-4 flex items-center justify-center shrink-0 text-[#777777] group-hover:text-[#dcddde] select-none pointer-events-none"
+        title={isCanvas ? 'Canvas' : 'Note'}
+      >
+        {isCanvas ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
+      </span>
+    );
+  }
+
+  return null;
+};
+
+export interface IconifyFolderPrefixSlotProps {
+  doc: DocumentItem;
+  isOpen?: boolean;
+}
+
+/**
+ * Reactive folder prefix component rendered in the prefix slot (between chevron and folder title).
+ */
+export const IconifyFolderPrefixSlot: React.FC<IconifyFolderPrefixSlotProps> = ({
+  doc,
+  isOpen = false,
+}) => {
+  const entry = useIconifyStore((s) => s.icons[doc.id]);
+  const showDefaultFolderIcons = useIconifyStore((s) => s.showDefaultFolderIcons);
+  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+
+  if (!entry && !showDefaultFolderIcons) {
+    return null;
+  }
+
+  if (entry) {
+    if (entry.iconId.startsWith('emoji:')) {
+      const char = entry.iconId.slice(6);
+      return (
+        <span className="w-4 h-4 flex items-center justify-center shrink-0 select-none pointer-events-none">
+          <EmojiRenderer emoji={char} size={14} style={emojiStyle} />
+        </span>
+      );
+    }
+
+    const iconDef = getIconifyIconDef(entry.iconId);
+    if (iconDef) {
+      return (
+        <span
+          className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+          style={entry.color ? { color: entry.color } : undefined}
+          title={iconDef.name}
+        >
+          <HugeIconRenderer iconDef={iconDef.iconDef} size={14} color={entry.color || 'currentColor'} />
+        </span>
+      );
+    }
+  }
+
+  if (showDefaultFolderIcons) {
+    return (
+      <span
+        className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+        title="Folder"
+      >
+        {isOpen ? <FolderOpenIcon size={14} /> : <Folder01Icon size={14} />}
+      </span>
+    );
+  }
+
+  return null;
+};
+
 export interface IconifySlotProps {
   doc: DocumentItem;
   isOpen?: boolean;
