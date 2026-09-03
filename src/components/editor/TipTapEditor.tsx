@@ -406,6 +406,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   const [isMathKeyboardOpen, setIsMathKeyboardOpen] = useState(false);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const slashMenuRef = useRef<any>(null);
   const wikiPopupRef = useRef<any>(null);
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
@@ -516,10 +517,22 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   const editor = useEditor({
     editable,
+    onBlur: ({ event }) => {
+      // Retain popup if focus moved to something inside this editor container (or popup)
+      const related = (event as FocusEvent)?.relatedTarget as Node | null;
+      if (related && containerRef.current?.contains(related)) {
+        return;
+      }
+      setWikiProps(null);
+      setSlashMenuProps(null);
+    },
     extensions: [
       ...app.editor.getExtensions(),
       SlashCommands.configure({
         suggestion: {
+          allow: ({ editor }) => {
+            return editor.isFocused || editor.view.hasFocus();
+          },
           items: ({ query }) => {
             return slashItems.filter(
               (item) =>
@@ -570,6 +583,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       }),
       WikiLinks.configure({
         suggestion: {
+          allow: ({ editor }) => {
+            return editor.isFocused || editor.view.hasFocus();
+          },
           items: ({ query }) => {
             if (query.includes(']') || query.includes('[')) return [];
             const currentDocs = useDocumentStore.getState().documents.filter((d) => !d.is_folder);
@@ -1468,6 +1484,47 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     }
   }, [editor, onEditorReady]);
 
+  // Dismiss suggestion popups whenever the active document switches
+  useEffect(() => {
+    setWikiProps(null);
+    setSlashMenuProps(null);
+  }, [documentId]);
+
+  // Immediate suggestion popup dismissal on outside clicks or scroll events.
+  // Rationale: In multi-pane or docked sidebar layouts, clicking into another file or pane
+  // shifts focus away from this editor instance without dispatching a ProseMirror selection
+  // transaction to this editor. Listening to capture-phase mousedown and outside scroll ensures
+  // floating suggestion popups (wikilink, slash menu) are immediately unmounted rather than
+  // lingering orphaned on screen.
+  useEffect(() => {
+    if (!wikiProps && !slashMenuProps) return;
+
+    const handlePointerDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (containerRef.current && target && containerRef.current.contains(target)) {
+        return;
+      }
+      setWikiProps(null);
+      setSlashMenuProps(null);
+    };
+
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest?.('[data-flint-suggestion-popup="true"]')) {
+        return;
+      }
+      setWikiProps(null);
+      setSlashMenuProps(null);
+    };
+
+    window.addEventListener('mousedown', handlePointerDown, true);
+    window.addEventListener('scroll', handleScroll, true);
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown, true);
+      window.removeEventListener('scroll', handleScroll, true);
+    };
+  }, [wikiProps, slashMenuProps]);
+
   // Sync editable state and restore caret position when returning to editing view
   useEffect(() => {
     if (!editor) return;
@@ -1732,6 +1789,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   return (
     <div
+      ref={containerRef}
       onClick={(e) => {
         if (editor && editable) {
           const target = e.target as HTMLElement;

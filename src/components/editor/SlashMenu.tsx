@@ -114,7 +114,11 @@ export const SlashMenu = React.memo(
 
       if (!items.length) {
         return (
-          <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none">
+          <div
+            data-flint-suggestion-popup="true"
+            onMouseDown={(e) => e.preventDefault()}
+            className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none"
+          >
             No matching block commands
           </div>
         );
@@ -124,7 +128,11 @@ export const SlashMenu = React.memo(
       const isTableItem = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
 
       return (
-        <div className="relative flex items-start gap-2">
+        <div
+          data-flint-suggestion-popup="true"
+          onMouseDown={(e) => e.preventDefault()}
+          className="relative flex items-start gap-2"
+        >
           <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none">
             <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
               Insert Block
