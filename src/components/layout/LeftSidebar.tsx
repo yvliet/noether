@@ -15,6 +15,7 @@ import {
   Edit02Icon,
   FolderOpenIcon,
   CancelCircleIcon,
+  Cancel01Icon,
   ChevronsUpDownIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -79,7 +80,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const sidebarTabs = useSidebarTabs('left');
 
   const activeLeftView = useWorkspaceStore((s) => s.activeLeftView);
-  const activeCustomTab = sidebarTabs.find((t) => t.id === activeLeftView);
   const leftSidebarWidth = useWorkspaceStore((s) => s.leftSidebarWidth);
   const setLeftSidebarWidth = useWorkspaceStore((s) => s.setLeftSidebarWidth);
   const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
@@ -137,6 +137,14 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const splitRatioLeft = useSidebarDockStore((s) => s.splitRatioLeft);
   const setSplitRatio = useSidebarDockStore((s) => s.setSplitRatio);
 
+  const leftTopDockItems = useMemo(
+    () => dockItems.filter((it) => it.zone === 'left-top' && it.enabled),
+    [dockItems]
+  );
+  const hasLeftTopItems = leftTopDockItems.length > 0;
+  const isFilesActive = hasLeftTopItems && activeLeftView === 'files' && leftTopDockItems.some((it) => it.id === 'files');
+  const isSearchActive = hasLeftTopItems && activeLeftView === 'search' && leftTopDockItems.some((it) => it.id === 'search');
+
   const bottomDockItems = useMemo(
     () => dockItems.filter((it) => it.zone === 'left-bottom' && it.enabled),
     [dockItems]
@@ -144,21 +152,24 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const hasBottomSplit = bottomDockItems.length > 0;
 
   const isDockedTop = useMemo(() => {
+    if (!hasLeftTopItems || !activeLeftView) return false;
     if (activeLeftView === 'files' || activeLeftView === 'search') return false;
-    return (
-      activeLeftView.startsWith('doc:') ||
-      dockItems.some(
-        (it) =>
-          (it.id === activeLeftView ||
-            it.viewType === activeLeftView ||
-            it.extensionId === activeLeftView ||
-            it.documentId === activeLeftView ||
-            `doc:${it.documentId}` === activeLeftView) &&
-          it.zone === 'left-top' &&
-          it.enabled
-      )
+    return leftTopDockItems.some(
+      (it) =>
+        it.id === activeLeftView ||
+        it.viewType === activeLeftView ||
+        it.extensionId === activeLeftView ||
+        it.documentId === activeLeftView ||
+        `doc:${it.documentId}` === activeLeftView ||
+        (activeLeftView.startsWith('doc:') && it.id === activeLeftView)
     );
-  }, [activeLeftView, dockItems]);
+  }, [hasLeftTopItems, activeLeftView, leftTopDockItems]);
+
+  const activeCustomTab = useMemo(() => {
+    if (!hasLeftTopItems || !activeLeftView) return null;
+    if (!leftTopDockItems.some((it) => it.id === activeLeftView || it.extensionId === activeLeftView)) return null;
+    return sidebarTabs.find((t) => t.id === activeLeftView) || null;
+  }, [hasLeftTopItems, activeLeftView, leftTopDockItems, sidebarTabs]);
 
   const handleVerticalSplitResizeStart = useCallback(
     (e: React.MouseEvent) => {
@@ -521,7 +532,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
       </div>
 
       {/* Top Action Header (Centered Minimal Obsidian Toolbar) - Hide if viewing docked pane or in search view */}
-      {!isDockedTop && activeLeftView !== 'search' && (
+      {isFilesActive && (
         <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--flint-text-muted)]">
           <button
             onClick={handleCreateNote}
@@ -553,7 +564,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           {/* Sort Menu Button */}
           <div className="relative">
             <button
-              ref={activeLeftView !== 'search' ? sortMenuRef : undefined}
+              ref={sortMenuRef}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!isSortMenuOpen) updateSortMenuPos();
@@ -581,7 +592,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
       )}
 
       {/* Top Search Header - Shown in search view (replaces top action toolbar) */}
-      {!isDockedTop && activeLeftView === 'search' && (
+      {isSearchActive && (
         <div className="pt-2 px-2 pb-1.5 flex flex-col gap-1.5">
           {/* Top Search Input Row */}
           <div className="flex items-center gap-1.5">
@@ -626,7 +637,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               {searchFilteredDocs.length} {searchFilteredDocs.length === 1 ? 'result' : 'results'}
             </span>
             <button
-              ref={activeLeftView === 'search' ? sortMenuRef : undefined}
+              ref={sortMenuRef}
               onClick={(e) => {
                 e.stopPropagation();
                 if (!isSortMenuOpen) updateSortMenuPos();
@@ -656,11 +667,16 @@ export const LeftSidebar: React.FC = React.memo(() => {
         onContextMenu={handleRootContextMenu}
         className="min-h-0 overflow-y-auto px-2 py-1 custom-scrollbar flex flex-col"
       >
-        {isDockedTop ? (
+        {!hasLeftTopItems || (!isFilesActive && !isSearchActive && !isDockedTop && !activeCustomTab) ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16">
+            <Cancel01Icon size={24} className="opacity-40" />
+            <span>There's nothing in here</span>
+          </div>
+        ) : isDockedTop ? (
           <SidebarDockPane zone="left-top" />
         ) : activeCustomTab ? (
           activeCustomTab.render(app)
-        ) : activeLeftView === 'search' ? (
+        ) : isSearchActive ? (
           !searchQuery.trim() ? null : searchFilteredDocs.length === 0 ? (
             <div className="px-2 py-4 text-xs text-[var(--flint-text-muted)] select-none">
               No matches found.
@@ -672,7 +688,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               ))}
             </div>
           )
-        ) : (
+        ) : isFilesActive ? (
           <div className="flex flex-col gap-0.5 flex-1">
             {/* Dynamic Plugin File Tree Sections */}
             {fileTreeSections.map((section) => (
@@ -692,6 +708,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
                 No files in Hearth. Click <span className="text-[var(--flint-text-primary)] font-medium">+</span> above to create one.
               </div>
             )}
+          </div>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16">
+            <Cancel01Icon size={24} className="opacity-40" />
+            <span>There's nothing in here</span>
           </div>
         )}
       </div>

@@ -3,6 +3,7 @@ import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useFlintApp, useSidebarTabs, useViews, useExtensionList } from '@/core/app/AppContext';
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
+import { Cancel01Icon } from '@/components/common/Icons';
 
 const LazyDisabledExtensionView = React.lazy(() =>
   import('@/components/extension-viewer/DisabledExtensionView').then((m) => ({ default: m.DisabledExtensionView }))
@@ -67,9 +68,8 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
       .sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
 
     if (zone === 'left-top') {
-      // In left-top, filter out files/search fallback since LeftSidebar handles those directly
-      const nonBuiltIn = zoneItems.filter((it) => it.id !== 'files' && it.id !== 'search');
-      return nonBuiltIn.length > 0 ? nonBuiltIn[0] : null;
+      // In left-top, do not arbitrarily fall back to bookmarks or other extensions
+      return null;
     }
 
     return zoneItems.length > 0 ? zoneItems[0] : null;
@@ -77,8 +77,9 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
 
   if (!activeItem) {
     return (
-      <div className="flex-1 flex items-center justify-center text-xs text-[var(--flint-text-muted)] select-none">
-        No active panel
+      <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16">
+        <Cancel01Icon size={24} className="opacity-40" />
+        <span>There's nothing in here</span>
       </div>
     );
   }

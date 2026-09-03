@@ -3,6 +3,8 @@ import { DocumentItem } from '@/types';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDragDropStore } from '@/store/dragDropStore';
+import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
+import { computeDragTargets, broadcastDragState } from '@/hooks/useTabReorder';
 import { isDescendant } from '@/lib/db/documents';
 import { dragTooltipManager, STICKY_NOTE_02_SVG, FOLDER_SVG } from '@/lib/dragTooltip';
 
@@ -117,6 +119,7 @@ export function useTreeDragDrop({
             const customRes = onCustomHover(hoveredEl, moveEvent);
             if (customRes) {
               setDragOverFolder(null, customRes.isValid ?? true);
+              broadcastDragState(null);
               dragTooltipManager.updateSubtitle(customRes.subtitle || null);
               return;
             }
@@ -131,11 +134,28 @@ export function useTreeDragDrop({
               customDropTarget.getAttribute('data-custom-drop-target-id') ||
               null;
             setDragOverFolder(targetId, true);
+            broadcastDragState(null);
             dragTooltipManager.updateSubtitle(dropSubtitle || null);
             return;
           }
 
-          // 3. File Tree Node & Root Check
+          // 3. Tab Bar & Sidebar Dock Zone Check - uses the exact same indicator like everything does
+          if (!item.is_folder) {
+            const docItemForReorder = { ...item, type: 'document' };
+            const targets = computeDragTargets(moveEvent.clientX, moveEvent.clientY, docItemForReorder);
+            if (targets.targetDockZone || targets.targetPaneId) {
+              broadcastDragState({
+                sourceType: 'tree',
+                ...targets,
+              });
+              setDragOverFolder(null, true);
+              dragTooltipManager.updateSubtitle(isMultiDrag ? `+${currentSelectedIds.length - 1} items` : null);
+              return;
+            }
+          }
+          broadcastDragState(null);
+
+          // 4. File Tree Node & Root Check
           const targetNode = hoveredEl?.closest('[data-tree-item-id], [data-sidebar-root]');
           if (targetNode) {
             if (targetNode.hasAttribute('data-sidebar-root') && !targetNode.hasAttribute('data-tree-item-id')) {
@@ -253,7 +273,73 @@ export function useTreeDragDrop({
           const currentSelectedIds = useDocumentStore.getState().selectedDocIds;
           const isMultiDrag = currentSelectedIds.includes(item.id) && currentSelectedIds.length > 1;
 
-          // 1. Custom Drop Handler
+          // 1. Sidebar Dock Zone & Tab Bar Drop Execution
+          if (!item.is_folder) {
+            const docItemForReorder = { ...item, type: 'document' };
+            const targets = computeDragTargets(upEvent.clientX, upEvent.clientY, docItemForReorder);
+            broadcastDragState(null);
+
+            if (targets.targetDockZone && targets.targetSlotIndex !== -1) {
+              const zone = targets.targetDockZone;
+              const slot = targets.targetSlotIndex;
+              const docsToDock = isMultiDrag
+                ? allDocs.filter((d) => currentSelectedIds.includes(d.id) && !d.is_folder)
+                : [item as DocumentItem];
+
+              for (let i = 0; i < docsToDock.length; i++) {
+                const doc = docsToDock[i];
+                useSidebarDockStore.getState().dockTab(
+                  {
+                    id: `doc:${doc.id}`,
+                    document_id: doc.id,
+                    title: doc.title,
+                    view_type: 'document',
+                    view_mode: 'document',
+                  },
+                  zone,
+                  slot + i
+                );
+              }
+
+              const lastDoc = docsToDock[docsToDock.length - 1];
+              if (lastDoc) {
+                if (zone === 'left-top') {
+                  useWorkspaceStore.getState().setActiveLeftView(`doc:${lastDoc.id}` as any);
+                  useSidebarDockStore.getState().setActiveItemInZone('left-top', `doc:${lastDoc.id}`);
+                  useWorkspaceStore.getState().setIsLeftSidebarOpen(true);
+                } else if (zone === 'right-top') {
+                  useWorkspaceStore.getState().setActiveRightTab(`doc:${lastDoc.id}` as any);
+                  useSidebarDockStore.getState().setActiveItemInZone('right-top', `doc:${lastDoc.id}`);
+                  useWorkspaceStore.getState().setIsRightSidebarOpen(true);
+                } else if (zone === 'left-bottom') {
+                  useSidebarDockStore.getState().setActiveItemInZone('left-bottom', `doc:${lastDoc.id}`);
+                  useWorkspaceStore.getState().setIsLeftSidebarOpen(true);
+                } else if (zone === 'right-bottom') {
+                  useSidebarDockStore.getState().setActiveItemInZone('right-bottom', `doc:${lastDoc.id}`);
+                  useWorkspaceStore.getState().setIsRightSidebarOpen(true);
+                }
+              }
+
+              resetDragState();
+              return;
+            } else if (targets.targetPaneId && targets.targetSlotIndex !== -1) {
+              const targetPaneId = targets.targetPaneId;
+              const docsToOpen = isMultiDrag
+                ? allDocs.filter((d) => currentSelectedIds.includes(d.id) && !d.is_folder)
+                : [item as DocumentItem];
+
+              for (const doc of docsToOpen) {
+                useWorkspaceStore.getState().openTabInPane(targetPaneId, doc.id, doc.title);
+              }
+              useWorkspaceStore.getState().setFocusedPane(targetPaneId);
+              resetDragState();
+              return;
+            }
+          }
+
+          broadcastDragState(null);
+
+          // 2. Custom Drop Handler
           if (onCustomDrop) {
             const handled = await onCustomDrop(hoveredEl, upEvent);
             if (handled) {
@@ -262,7 +348,7 @@ export function useTreeDragDrop({
             }
           }
 
-          // 2. Generic Custom Drop Event
+          // 3. Generic Custom Drop Event
           const customDropEvent = new CustomEvent('flint:custom-drop', {
             detail: {
               item,
@@ -281,7 +367,7 @@ export function useTreeDragDrop({
             return;
           }
 
-          // 3. Standard Drop Execution
+          // 4. Standard Drop Execution
           const { dragOverFolderId, isTargetValid } = useDragDropStore.getState();
           if (isTargetValid) {
             if (onStandardDrop) {
@@ -303,6 +389,8 @@ export function useTreeDragDrop({
             }
           }
           resetDragState();
+        } else {
+          broadcastDragState(null);
         }
       };
 

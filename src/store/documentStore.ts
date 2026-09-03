@@ -47,6 +47,7 @@ import {
 } from '@/lib/db/links';
 import { getAllVaultTags } from '@/lib/db/tags';
 import { useWorkspaceStore } from './workspaceStore';
+import { useSidebarDockStore } from './sidebarDockStore';
 import { useSettingsStore } from './settingsStore';
 import { useFileHistoryStore } from './fileHistoryStore';
 import { jsonToMarkdown } from '@/lib/db/documents';
@@ -870,6 +871,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (closeTabsOnDelete) {
       useWorkspaceStore.getState().closeTabsForDocuments(Array.from(deletedIds));
     }
+    deletedIds.forEach((id) => {
+      useSidebarDockStore.getState().undockItem(`doc:${id}`);
+    });
 
     // 3. Instantaneously calculate next active document if current was deleted
     let nextActiveDoc = active;

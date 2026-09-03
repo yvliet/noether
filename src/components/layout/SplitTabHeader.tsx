@@ -331,6 +331,8 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
   return (
     <div
+      data-pane-id={targetPaneId}
+      data-split-tab-header="true"
       onClick={() => setFocusedPane(targetPaneId)}
       onContextMenu={handleHeaderContextMenu}
       style={{

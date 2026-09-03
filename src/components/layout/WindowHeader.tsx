@@ -1007,11 +1007,18 @@ export const WindowHeader: React.FC = React.memo(() => {
           ref={leftTopReorder.containerRef}
           data-dock-zone="left-top"
           onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'left')}
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
           style={{
             width: `${leftSidebarWidth}px`,
             WebkitAppRegion: 'no-drag',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
           } as React.CSSProperties}
-          className="h-full flex items-center gap-0.5 px-2 shrink-0 overflow-hidden relative"
+          className="h-full flex items-center gap-0.5 px-2 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
         >
           {leftTopDockItems.map((item, index) => {
             const icon = renderDockIcon(item);
@@ -1036,10 +1043,16 @@ export const WindowHeader: React.FC = React.memo(() => {
                   useSidebarDockStore.getState().setActiveItemInZone('left-top', item.id);
                 }}
                 onContextMenu={(e) => handleDockItemContextMenu(e, item, 'left')}
+                onAuxClick={(e) => {
+                  if (e.button === 1) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    undockItem(item.id);
+                  }
+                }}
                 title={itemTitle}
                 data-dock-item-id={item.id}
-                className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-
+                className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                   isActive
                     ? 'text-[var(--flint-text-secondary)] bg-[var(--flint-bg-card-hover)]'
                     : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
@@ -1150,10 +1163,16 @@ export const WindowHeader: React.FC = React.memo(() => {
                     useSidebarDockStore.getState().setActiveItemInZone('right-top', item.id);
                   }}
                   onContextMenu={(e) => handleDockItemContextMenu(e, item, 'right')}
+                  onAuxClick={(e) => {
+                    if (e.button === 1) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      undockItem(item.id);
+                    }
+                  }}
                   title={itemTitle}
                   data-dock-item-id={item.id}
-                  className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
-
+                  className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                     isActive
                       ? 'text-[var(--flint-text-secondary)] bg-[var(--flint-bg-card-hover)]'
                       : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'

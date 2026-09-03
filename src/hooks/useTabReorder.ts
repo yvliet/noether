@@ -28,9 +28,9 @@ export interface UseDockReorderOptions<T extends { id: string }> {
 }
 
 export interface ActiveTabDrag {
-  sourceType: 'tab' | 'dock';
+  sourceType: 'tab' | 'dock' | 'tree';
   sourcePaneId?: string;
-  sourceIndex: number;
+  sourceIndex?: number;
   sourceDockZone?: DockZone;
   sourceDockItemId?: string;
   targetPaneId: string | null;
@@ -94,7 +94,7 @@ export function isItemAllowedInEditorPane(item: any): boolean {
   return true;
 }
 
-function broadcastDragState(state: ActiveTabDrag | null) {
+export function broadcastDragState(state: ActiveTabDrag | null) {
   currentGlobalDrag = state;
   dragListeners.forEach((listener) => listener(state));
 }
@@ -113,7 +113,7 @@ export function useActiveTabDrag() {
   return activeDrag;
 }
 
-function computeDragTargets(cursorX: number, cursorY: number, draggedItem?: any): {
+export function computeDragTargets(cursorX: number, cursorY: number, draggedItem?: any): {
   targetPaneId: string | null;
   targetDockZone: DockZone | null;
   targetSlotIndex: number;
@@ -356,7 +356,7 @@ function finishGlobalDrag(hasStartedDrag: boolean) {
             .moveItemToZone(drag.sourceDockItemId, drag.targetDockZone, drag.targetSlotIndex);
         }
 
-      } else if (drag.sourceType === 'tab' && drag.sourcePaneId) {
+      } else if (drag.sourceType === 'tab' && drag.sourcePaneId && typeof drag.sourceIndex === 'number') {
         // Center workspace tab -> Dock Zone
         const sourceTab = (useWorkspaceStore.getState().panes[drag.sourcePaneId]?.tabs[drag.sourceIndex]) as any;
         if (sourceTab) {
@@ -398,7 +398,7 @@ function finishGlobalDrag(hasStartedDrag: boolean) {
             }
           }
         }
-      } else if (drag.sourceType === 'tab' && drag.sourcePaneId) {
+      } else if (drag.sourceType === 'tab' && drag.sourcePaneId && typeof drag.sourceIndex === 'number') {
         if (drag.sourcePaneId === drag.targetPaneId) {
           const sIdx = drag.sourceIndex;
           const tSlot = drag.targetSlotIndex;

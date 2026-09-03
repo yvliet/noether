@@ -54,6 +54,8 @@ export interface PersistedTabsState {
   isRightSidebarOpen?: boolean;
   activeLeftView?: LeftNavView;
   activeRightTab?: SidebarTab;
+  leftSidebarHistory?: string[];
+  rightSidebarHistory?: string[];
   leftSidebarWidth?: number;
   rightSidebarWidth?: number;
   // Dock state integration
@@ -141,6 +143,8 @@ export function saveTabsSession(vaultPath?: string) {
     isRightSidebarOpen: state.isRightSidebarOpen,
     activeLeftView: state.activeLeftView,
     activeRightTab: state.activeRightTab,
+    leftSidebarHistory: state.leftSidebarHistory,
+    rightSidebarHistory: state.rightSidebarHistory,
     leftSidebarWidth: state.leftSidebarWidth,
     rightSidebarWidth: state.rightSidebarWidth,
     // Dock state integration
@@ -234,6 +238,8 @@ interface WorkspaceState {
   setMainViewMode: (mode: MainViewMode) => void;
   activeLeftView: LeftNavView;
   setActiveLeftView: (view: LeftNavView) => void;
+  leftSidebarHistory: string[];
+  getLastActiveLeftView: (excludeIds?: string[]) => string | null;
   isLeftSidebarOpen: boolean;
   setIsLeftSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   toggleLeftSidebar: () => void;
@@ -243,6 +249,8 @@ interface WorkspaceState {
   // Right Sidebar
   activeRightTab: SidebarTab;
   setActiveRightTab: (tab: SidebarTab) => void;
+  rightSidebarHistory: string[];
+  getLastActiveRightTab: (excludeIds?: string[]) => string | null;
   isRightSidebarOpen: boolean;
   setIsRightSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   toggleRightSidebar: () => void;
@@ -478,12 +486,54 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   activeLeftView: 'files',
+  leftSidebarHistory: [],
   setActiveLeftView: (view) => {
-    set({ activeLeftView: view, isLeftSidebarOpen: true });
+    const current = get().activeLeftView;
+    let nextHistory = get().leftSidebarHistory || [];
+    if (current && current !== view) {
+      nextHistory = [...nextHistory.filter((v) => v !== current), current].slice(-30);
+    }
+    set({
+      activeLeftView: view,
+      leftSidebarHistory: nextHistory,
+      isLeftSidebarOpen: true,
+    });
     try {
       useSidebarDockStore.getState().setActiveItemInZone('left-top', view);
     } catch {}
     saveTabsSession(get().vaultPath);
+  },
+  getLastActiveLeftView: (excludeIds = []) => {
+    const { leftSidebarHistory = [], activeLeftView } = get();
+    const excludes = new Set(excludeIds);
+    if (activeLeftView) excludes.add(activeLeftView);
+
+    const dockItems = useSidebarDockStore.getState().items;
+    const validDockItems = dockItems.filter(
+      (it) => it.zone === 'left-top' && it.enabled && !excludes.has(it.id)
+    );
+
+    if (validDockItems.length === 0) {
+      return null;
+    }
+
+    for (let i = leftSidebarHistory.length - 1; i >= 0; i--) {
+      const candidate = leftSidebarHistory[i];
+      if (excludes.has(candidate)) continue;
+      const matchingDock = validDockItems.find(
+        (it) =>
+          it.id === candidate ||
+          it.viewType === candidate ||
+          it.extensionId === candidate ||
+          it.documentId === candidate ||
+          `doc:${it.documentId}` === candidate
+      );
+      if (matchingDock) {
+        return matchingDock.id;
+      }
+    }
+
+    return validDockItems[0].id;
   },
   isLeftSidebarOpen: true,
   setIsLeftSidebarOpen: (open) => {
@@ -504,12 +554,54 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   activeRightTab: 'outline',
+  rightSidebarHistory: [],
   setActiveRightTab: (tab) => {
-    set({ activeRightTab: tab, isRightSidebarOpen: true });
+    const current = get().activeRightTab;
+    let nextHistory = get().rightSidebarHistory || [];
+    if (current && current !== tab) {
+      nextHistory = [...nextHistory.filter((v) => v !== current), current].slice(-30);
+    }
+    set({
+      activeRightTab: tab,
+      rightSidebarHistory: nextHistory,
+      isRightSidebarOpen: true,
+    });
     try {
       useSidebarDockStore.getState().setActiveItemInZone('right-top', tab);
     } catch {}
     saveTabsSession(get().vaultPath);
+  },
+  getLastActiveRightTab: (excludeIds = []) => {
+    const { rightSidebarHistory = [], activeRightTab } = get();
+    const excludes = new Set(excludeIds);
+    if (activeRightTab) excludes.add(activeRightTab);
+
+    const dockItems = useSidebarDockStore.getState().items;
+    const validDockItems = dockItems.filter(
+      (it) => it.zone === 'right-top' && it.enabled && !excludes.has(it.id)
+    );
+
+    if (validDockItems.length === 0) {
+      return null;
+    }
+
+    for (let i = rightSidebarHistory.length - 1; i >= 0; i--) {
+      const candidate = rightSidebarHistory[i];
+      if (excludes.has(candidate)) continue;
+      const matchingDock = validDockItems.find(
+        (it) =>
+          it.id === candidate ||
+          it.viewType === candidate ||
+          it.extensionId === candidate ||
+          it.documentId === candidate ||
+          `doc:${it.documentId}` === candidate
+      );
+      if (matchingDock) {
+        return matchingDock.id;
+      }
+    }
+
+    return validDockItems[0].id;
   },
   isRightSidebarOpen: true,
   setIsRightSidebarOpen: (open) => {
@@ -972,6 +1064,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...(saved.isRightSidebarOpen !== undefined ? { isRightSidebarOpen: saved.isRightSidebarOpen } : {}),
       activeLeftView: saved.activeLeftView || saved.dockActiveItemByZone?.['left-top'] || 'files',
       activeRightTab: saved.activeRightTab || saved.dockActiveItemByZone?.['right-top'] || 'outline',
+      leftSidebarHistory: Array.isArray(saved.leftSidebarHistory) ? saved.leftSidebarHistory : [],
+      rightSidebarHistory: Array.isArray(saved.rightSidebarHistory) ? saved.rightSidebarHistory : [],
       ...(typeof saved.leftSidebarWidth === 'number' ? { leftSidebarWidth: saved.leftSidebarWidth } : {}),
       ...(typeof saved.rightSidebarWidth === 'number' ? { rightSidebarWidth: saved.rightSidebarWidth } : {}),
     });

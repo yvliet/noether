@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { TabItem } from '@/types';
+import { useWorkspaceStore } from './workspaceStore';
 
 export type DockZone = 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom';
 
@@ -145,6 +146,58 @@ function saveState(
     }
   } catch (err) {
     console.error('[SidebarDockStore] Failed to save state:', err);
+  }
+}
+
+function handleZoneItemDeactivation(
+  target: DockItem,
+  updatedItems: DockItem[],
+  nextActiveByZone: Record<DockZone, string | null>
+) {
+  const itemId = target.id;
+  if (target.zone === 'left-top') {
+    const ws = useWorkspaceStore.getState();
+    const currentActiveLeft = ws.activeLeftView;
+    const isTargetActive =
+      nextActiveByZone['left-top'] === itemId ||
+      currentActiveLeft === itemId ||
+      (target.documentId &&
+        (currentActiveLeft === target.documentId ||
+          currentActiveLeft === `doc:${target.documentId}`));
+
+    if (isTargetActive) {
+      const excludeList = [itemId];
+      if (target.documentId) {
+        excludeList.push(target.documentId, `doc:${target.documentId}`);
+      }
+      useSidebarDockStore.setState({ items: updatedItems });
+      const nextView = ws.getLastActiveLeftView(excludeList);
+      ws.setActiveLeftView((nextView || '') as any);
+      nextActiveByZone['left-top'] = nextView || null;
+    }
+  } else if (target.zone === 'right-top') {
+    const ws = useWorkspaceStore.getState();
+    const currentActiveRight = ws.activeRightTab;
+    const isTargetActive =
+      nextActiveByZone['right-top'] === itemId ||
+      currentActiveRight === itemId ||
+      (target.documentId &&
+        (currentActiveRight === target.documentId ||
+          currentActiveRight === `doc:${target.documentId}`));
+
+    if (isTargetActive) {
+      const excludeList = [itemId];
+      if (target.documentId) {
+        excludeList.push(target.documentId, `doc:${target.documentId}`);
+      }
+      useSidebarDockStore.setState({ items: updatedItems });
+      const nextTab = ws.getLastActiveRightTab(excludeList);
+      ws.setActiveRightTab((nextTab || '') as any);
+      nextActiveByZone['right-top'] = nextTab || null;
+    }
+  } else if (nextActiveByZone[target.zone] === itemId) {
+    const remainingZoneItems = updatedItems.filter((it) => it.zone === target.zone && it.enabled);
+    nextActiveByZone[target.zone] = remainingZoneItems.length > 0 ? remainingZoneItems[0].id : null;
   }
 }
 
@@ -294,10 +347,7 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
     }
 
     const nextActiveByZone = { ...activeItemByZone };
-    if (activeItemByZone[target.zone] === itemId) {
-      const remainingZoneItems = updatedItems.filter((it) => it.zone === target.zone && it.enabled);
-      nextActiveByZone[target.zone] = remainingZoneItems.length > 0 ? remainingZoneItems[0].id : null;
-    }
+    handleZoneItemDeactivation(target, updatedItems, nextActiveByZone);
 
     set({ items: updatedItems, activeItemByZone: nextActiveByZone });
     saveState({ ...get(), items: updatedItems, activeItemByZone: nextActiveByZone });
@@ -322,11 +372,21 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
     const updatedItems = items.map((it) => (it.id === itemId ? { ...it, enabled: nextEnabled } : it));
 
     const nextActiveByZone = { ...activeItemByZone };
-    if (!nextEnabled && activeItemByZone[target.zone] === itemId) {
-      const remaining = updatedItems.filter((it) => it.zone === target.zone && it.enabled);
-      nextActiveByZone[target.zone] = remaining.length > 0 ? remaining[0].id : null;
-    } else if (nextEnabled && !activeItemByZone[target.zone]) {
-      nextActiveByZone[target.zone] = itemId;
+    if (!nextEnabled) {
+      handleZoneItemDeactivation(target, updatedItems, nextActiveByZone);
+    } else if (nextEnabled) {
+      if (
+        !activeItemByZone[target.zone] ||
+        (target.zone === 'left-top' && !useWorkspaceStore.getState().activeLeftView) ||
+        (target.zone === 'right-top' && !useWorkspaceStore.getState().activeRightTab)
+      ) {
+        nextActiveByZone[target.zone] = itemId;
+        if (target.zone === 'left-top') {
+          useWorkspaceStore.getState().setActiveLeftView(itemId as any);
+        } else if (target.zone === 'right-top') {
+          useWorkspaceStore.getState().setActiveRightTab(itemId as any);
+        }
+      }
     }
 
     set({ items: updatedItems, activeItemByZone: nextActiveByZone });

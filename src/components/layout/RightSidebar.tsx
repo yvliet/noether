@@ -5,6 +5,7 @@ import { useSidebarDockStore } from '@/store/sidebarDockStore';
 import { SidebarDockPane } from './SidebarDockPane';
 import { SidebarSecondaryIconBar } from './SidebarSecondaryIconBar';
 import { useActiveTabDrag } from '@/hooks/useTabReorder';
+import { Cancel01Icon } from '@/components/common/Icons';
 
 export const RightSidebar: React.FC = React.memo(() => {
 
@@ -154,8 +155,9 @@ export const RightSidebar: React.FC = React.memo(() => {
         ) : currentTab ? (
           currentTab.render(app)
         ) : (
-          <div className="flex-1 flex items-center justify-center text-[#666]">
-            No inspector tabs enabled
+          <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16">
+            <Cancel01Icon size={24} className="opacity-40" />
+            <span>There's nothing in here</span>
           </div>
         )}
       </div>
