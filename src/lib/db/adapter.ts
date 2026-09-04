@@ -114,7 +114,14 @@ class NativeSqliteAdapter {
     }
   }
 
+  private isTauriEnvironment(): boolean {
+    return typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window);
+  }
+
   public async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+    if (!this.isTauriEnvironment()) {
+      return [];
+    }
     await this.ensureReady();
     try {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
@@ -132,6 +139,9 @@ class NativeSqliteAdapter {
   }
 
   public async execute(sql: string, params: any[] = []): Promise<void> {
+    if (!this.isTauriEnvironment()) {
+      return;
+    }
     await this.ensureReady();
     try {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
@@ -143,6 +153,9 @@ class NativeSqliteAdapter {
   }
 
   public async transaction(queries: { sql: string; params?: any[] }[]): Promise<void> {
+    if (!this.isTauriEnvironment()) {
+      return;
+    }
     await this.ensureReady();
     try {
       const cleanQueries = queries.map((q) => ({

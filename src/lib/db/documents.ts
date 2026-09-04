@@ -159,11 +159,21 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
 }
 
 export async function getDocumentById(id: string): Promise<DocumentItem | null> {
-  const results = await dbAdapter.query<DocumentItem>(
-    `SELECT * FROM documents WHERE id = ? LIMIT 1`,
-    [id]
-  );
-  return results[0] || null;
+  try {
+    const results = await dbAdapter.query<DocumentItem>(
+      `SELECT * FROM documents WHERE id = ? LIMIT 1`,
+      [id]
+    );
+    if (results && results.length > 0) return results[0];
+  } catch (e) {}
+
+  // Cross-platform web fallback: resolve from in-memory document store
+  if (typeof window !== 'undefined' && (window as any).__flintStores?.documentStore) {
+    const memDoc = (window as any).__flintStores.documentStore.getState().documents.find((d: any) => d.id === id);
+    if (memDoc) return memDoc;
+  }
+
+  return null;
 }
 
 export async function createDocument(

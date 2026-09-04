@@ -350,6 +350,7 @@ interface WorkspaceState {
     }
   ) => void;
   closeTabInPane: (paneId: PaneId, tabId: string) => void;
+  togglePinTab: (tabId: string) => void;
   closePane: (paneId: PaneId) => void;
   openTabInPane: (paneId: PaneId, docId: string, title?: string, options?: OpenTabOptions) => void;
   openEmptyTabInPane: (paneId: PaneId) => void;
@@ -1478,6 +1479,29 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 
+    saveTabsSession(get().vaultPath);
+  },
+
+  togglePinTab: (tabId) => {
+    const { panes, tabs } = get();
+    const newPanes = { ...panes };
+    for (const [pId, model] of Object.entries(newPanes)) {
+      const tabIdx = model.tabs.findIndex((t) => t.id === tabId);
+      if (tabIdx !== -1) {
+        const t = model.tabs[tabIdx];
+        const nextPinned = !t.is_pinned;
+        newPanes[pId] = {
+          ...model,
+          tabs: [
+            ...model.tabs.slice(0, tabIdx),
+            { ...t, is_pinned: nextPinned },
+            ...model.tabs.slice(tabIdx + 1),
+          ],
+        };
+      }
+    }
+    const nextTabs = tabs.map((t) => (t.id === tabId ? { ...t, is_pinned: !t.is_pinned } : t));
+    set({ panes: newPanes, tabs: nextTabs });
     saveTabsSession(get().vaultPath);
   },
 

@@ -445,14 +445,14 @@ export const LeftSidebar: React.FC = React.memo(() => {
           <button
             onClick={handleCreateNote}
             title="New note (Ctrl+N)"
-            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
           >
             <FileAddIcon size={14} />
           </button>
           <button
             onClick={handleCreateFolder}
             title="New folder"
-            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
           >
             <FolderAddIcon size={14} />
           </button>
@@ -463,7 +463,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               key={action.id}
               onClick={() => action.onClick(app)}
               title={action.title}
-              className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+              className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
             >
               {action.icon}
             </button>
@@ -494,7 +494,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
         <div className="pt-2 px-2 pb-1.5 flex flex-col gap-1.5">
           {/* Top Search Input Row */}
           <div className="flex items-center gap-1.5">
-            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)] transition-colors">
+            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)]">
               <Search01Icon size={14} className="text-[var(--flint-text-muted)] shrink-0" />
               <input
                 ref={searchInputRef}
@@ -508,7 +508,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
                 type="button"
                 onClick={() => setIsCaseSensitive((prev) => !prev)}
                 title={isCaseSensitive ? 'Match case: ON' : 'Match case: OFF'}
-                className={`px-1 py-0.5 rounded text-[11px] font-semibold leading-none cursor-pointer transition-colors ${
+                className={`px-1 py-0.5 rounded text-[11px] font-semibold leading-none cursor-pointer ${
                   isCaseSensitive
                     ? 'bg-[var(--flint-accent)] text-white'
                     : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
@@ -521,7 +521,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
                   type="button"
                   onClick={() => setSearchQuery('')}
                   title="Clear search"
-                  className="p-0.5 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer transition-colors"
+                  className="p-0.5 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
                 >
                   <CancelCircleIcon size={13} />
                 </button>
@@ -660,17 +660,17 @@ export const LeftSidebar: React.FC = React.memo(() => {
               },
             ]);
           }}
-          className="flex-1 min-w-0 h-full pl-3 pr-2 flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer group text-left"
+          className="flex-1 min-w-0 h-full pl-3 pr-2 flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer group text-left"
           data-tooltip="Hearth switcher"
           data-tooltip-shortcut="Ctrl+Shift+O"
           data-tooltip-position="top"
           data-tooltip-anchor="[data-hearth-name]"
         >
-          <ArrowUpDownIcon size={15} className="shrink-0 text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] transition-colors" />
+          <ArrowUpDownIcon size={15} className="shrink-0 text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)]" />
           <span
             data-hearth-name
             style={{ overflowClipMargin: '4px' }}
-            className="overflow-clip text-ellipsis whitespace-nowrap font-medium text-xs text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] transition-colors leading-tight"
+            className="overflow-clip text-ellipsis whitespace-nowrap font-medium text-xs text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] leading-tight"
           >
             {hearthName || 'Flint Hearth'}
           </span>
@@ -680,7 +680,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           <button
             onClick={() => setIsHelpModalOpen(true)}
             title="Help & shortcuts (F1)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
           >
             <HelpCircleIcon size={16} />
           </button>
@@ -694,7 +694,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               }
             }}
             title="Settings (Ctrl+,)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
           >
             <Settings02Icon size={16} />
           </button>

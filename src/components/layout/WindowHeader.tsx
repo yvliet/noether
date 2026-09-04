@@ -63,6 +63,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     const reorderTabsInPane = useWorkspaceStore((s) => s.reorderTabsInPane);
     const closePane = useWorkspaceStore((s) => s.closePane);
     const splitPane = useWorkspaceStore((s) => s.splitPane);
+    const togglePinTab = useWorkspaceStore((s) => s.togglePinTab);
 
     const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
     const showToast = useWorkspaceStore((s) => s.showToast);
@@ -102,6 +103,14 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
 
         const items: ContextMenuItem[] = [
           {
+            id: 'toggle-pin',
+            title: tab.is_pinned ? 'Unpin tab' : 'Pin tab',
+            onClick: () => {
+              togglePinTab(tab.id);
+            },
+          },
+          { type: 'separator' },
+          {
             id: 'close-tab',
             title: 'Close tab',
             shortcut: 'Ctrl+W',
@@ -116,7 +125,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             disabled: tabs.length <= 1,
             onClick: () => {
               for (const other of tabs) {
-                if (other.id !== tab.id) {
+                if (other.id !== tab.id && !other.is_pinned) {
                   closeTabInPane(paneId, other.id);
                 }
               }
@@ -129,7 +138,9 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             onClick: () => {
               const toClose = tabs.slice(index + 1);
               for (const other of toClose) {
-                closeTabInPane(paneId, other.id);
+                if (!other.is_pinned) {
+                  closeTabInPane(paneId, other.id);
+                }
               }
             },
           },
@@ -225,7 +236,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
 
         showContextMenu(e, items, { scope: 'tab', data: tab });
       },
-      [tabs, paneId, isOnly, closeTabInPane, splitPane, closePane, documents, hearthPath, showToast, showContextMenu]
+      [tabs, paneId, isOnly, closeTabInPane, togglePinTab, splitPane, closePane, documents, hearthPath, showToast, showContextMenu]
     );
 
     const handleBarContextMenu = useCallback(
