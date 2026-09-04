@@ -1,7 +1,6 @@
 <div align="center">
 
-<pre>
-      ___                                   ___                 
+  <img src="docs/assets/flint-ascii.svg" alt="      ___                                   ___                 
      /  /\                    ___          /__/\          ___   
     /  /:/_                  /  /\         \  \:\        /  /\  
    /  /:/ /\  ___     ___   /  /:/          \  \:\      /  /:/  
@@ -11,17 +10,16 @@
   \  \::/      \  \:\/:/       \__\::/  \  \:\  ~~~  \__\/  \:\ 
    \  \:\       \  \::/        /__/:/    \  \:\           \  \:\
     \  \:\       \__\/         \__\/      \  \:\           \__\/
-     \__\/                                 \__\/                
-</pre>
+     \__\/                                 \__\/                " width="502"/>
 
 ### The Open-Source, High-Performance Knowledge Engine & AI-Native Obsidian Alternative
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=flat-square)](LICENSE)
-[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20%7C%20Electron%20%7C%20Web-orange?style=flat-square)](src-tauri)
-[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-61dafb?style=flat-square)](package.json)
-[![Database](https://img.shields.io/badge/Database-SQLite%20WASM%20%2B%20FTS5%20(BM25)-003B57?style=flat-square)](src/lib/db)
-[![Protocol](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol%20(MCP)-8A2BE2?style=flat-square)](bin/flint-mcp-server.cjs)
-[![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-38bdf8?style=flat-square)](tailwind.config.js)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
+[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20%7C%20Electron%20%7C%20Web-ea580c.svg?logo=tauri&logoColor=white)](src-tauri)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=61dafb)](package.json)
+[![Database](https://img.shields.io/badge/Database-SQLite%20WASM%20%2B%20FTS5%20(BM25)-003B57.svg?logo=sqlite&logoColor=white)](src/lib/db)
+[![Protocol](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol%20(MCP)-7c3aed.svg)](bin/flint-mcp-server.cjs)
+[![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-06b6d4.svg?logo=tailwindcss&logoColor=white)](tailwind.config.js)
 
 [Overview](#overview) •
 [Architecture](#architectural-overview) •
@@ -60,7 +58,7 @@ Flint provides an open, extensible architecture that combines local Markdown vau
 Flint uses a modular architecture that separates user interface components, relational query indexes, physical disk persistence, and native hardware bridges.
 
 <div align="center">
-  <img src="docs/assets/architecture-diagram.svg" alt="Flint Architecture & Subsystems Data Flow" width="100%"/>
+  <img src="docs/assets/architecture-diagram.svg" alt="Flint Architecture Flow: [1. Presentation &amp; Workspace Layer: Live Preview Editor (TipTap &amp; ProseMirror), 2D Knowledge Graph (Force-Directed Physics), Infinite 2D Canvas (Spatial Whiteboard), FSRS Review Deck (Spaced Repetition)] --Workspace Events--&gt; [2. Flint Micro-Kernel &amp; IoC: Typed EventBus (Decoupled Pub/Sub), IoC Registries (Commands, Views, Menus), Zustand Stores (Reactive State)] --IPC &amp; Queries--&gt; [3. Storage Engine &amp; Platform Bridge: WASM SQLite (In-Memory SQL &amp; FTS5), Atomic Sync (400ms Debounced Flush), Tauri v2 Core (Rust Native Backend), Electron 34 (Dual-Mode Fallback)] --Atomic File I/O--&gt; [4. Local File System Vault: Markdown Files (Universal Plain Text), .flint Storage (SQLite Cache &amp; Plugins), .trash Folder (Soft-Delete Safety)]" width="100%"/>
 </div>
 
 ### Core Architecture Rules
@@ -83,7 +81,7 @@ Flint uses a modular architecture that separates user interface components, rela
 ## Dual-Layer Storage Pipeline
 
 <div align="center">
-  <img src="docs/assets/dual-storage-model.svg" alt="Flint Dual-Layer Storage & Sync Pipeline" width="100%"/>
+  <img src="docs/assets/dual-storage-model.svg" alt="Flint Dual-Layer Storage &amp; Sync Flow: [1. In-Memory Execution: WASM SQLite (Integrity Validated) -&gt; FTS5 Search (BM25 Ranked Index) -&gt; file_manifest (O(N) Diff Indexer)] --Binary Snapshot--&gt; [2. Persistence &amp; Sync: Atomic Writes (Temp &amp; Rename I/O) -&gt; Echo Suppression (Signature Tracking) -&gt; RAM Trimmer (Idle Working Set Trim)] --Atomic File I/O--&gt; [3. Physical Disk Vault: *.md Markdown (100% Ground Truth) -&gt; flint.sqlite (Self-Healing Index) -&gt; .trash/ (Soft-Delete Safety)]" width="100%"/>
 </div>
 
 Flint provides fast search and relational graph queries while keeping your plain-text Markdown files safe:
