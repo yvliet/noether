@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { Search01Icon } from '@/components/common/Icons';
 
@@ -33,7 +33,7 @@ export const DefaultCommandsSettingsTab: React.FC = () => {
         <button
           type="button"
           onClick={handleOpenPalette}
-          className="px-3.5 py-1.5 bg-[var(--flint-accent)] hover:bg-[var(--flint-accent-hover)] text-white rounded-[5px] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5 shadow-sm"
+          className="flint-btn flint-btn-primary flex items-center gap-1.5"
         >
           <Search01Icon size={13} />
           <span>Open Command Palette</span>

@@ -36,14 +36,10 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = React.memo(({
           onChange(!checked);
         }
       }}
-      className={`relative inline-flex ${trackWidth} ${trackHeight} shrink-0 cursor-pointer rounded-full p-[2px] outline-none shadow-[0_1px_2px_rgba(0,0,0,0.35)] focus-visible:ring-1 focus-visible:ring-[var(--flint-accent,#ea580c)] disabled:opacity-40 disabled:cursor-not-allowed ${
-        checked
-          ? 'bg-[var(--flint-accent,#ea580c)] border border-transparent hover:brightness-105'
-          : 'bg-[var(--flint-border-strong,#333333)] border border-[var(--flint-border-base,#404040)] hover:brightness-110'
-      } ${className}`}
+      className={`flint-switch ${trackWidth} ${trackHeight} disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
     >
       <span
-        className={`pointer-events-none inline-block ${knobSize} rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
+        className={`flint-switch-knob ${knobSize} ${
           checked ? knobTranslate : 'translate-x-0'
         }`}
       />

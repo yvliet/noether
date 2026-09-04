@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={() => window.location.reload()}
-              className="px-4 py-1.5 bg-[#333] hover:bg-[#444] text-white text-xs rounded transition-colors"
+              className="flint-btn"
             >
               Reload Application
             </button>

@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import {
   PackageIcon,
+  PuzzleIcon,
   Settings02Icon,
   CheckIcon,
   Copy01Icon,
@@ -515,7 +516,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
       {/* 1. Shared Modular Document Sub-Header (Standard layout matching notes & graph view) */}
       <PageSubHeader
         title={manifest?.name || targetExtensionId}
-        icon={<PackageIcon size={13} />}
+        icon={manifest?.isCore ? <PackageIcon size={13} /> : <PuzzleIcon size={13} />}
         document={null}
         showReadingToggle={false}
         showBookmark={false}

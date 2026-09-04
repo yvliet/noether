@@ -12,7 +12,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 /**
- * Obsidian-grade native desktop button component.
+ * Flint native desktop button component.
  * Zero artificial transitions/animations for instant native desktop feel.
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
@@ -30,17 +30,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   let variantClasses = '';
   switch (variant) {
     case 'primary':
-      variantClasses = 'obsidian-btn obsidian-btn-primary';
+      variantClasses = 'flint-btn flint-btn-primary';
       break;
     case 'danger':
-      variantClasses = 'obsidian-btn obsidian-btn-danger';
+      variantClasses = 'flint-btn flint-btn-danger';
       break;
     case 'ghost':
       variantClasses = 'inline-flex items-center justify-center gap-1.5 rounded-[5px] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary,#fff)] hover:bg-[var(--flint-bg-card-hover,#282828)] cursor-pointer select-none outline-none disabled:opacity-40 disabled:cursor-not-allowed';
       break;
     case 'default':
     default:
-      variantClasses = 'obsidian-btn';
+      variantClasses = 'flint-btn';
       break;
   }
 

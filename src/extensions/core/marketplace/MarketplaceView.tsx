@@ -410,7 +410,7 @@ export const MarketplaceView: React.FC = () => {
                 type="button"
                 onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
                 title={sortOrder === 'asc' ? 'Ascending\nClick for descending' : 'Descending\nClick for ascending'}
-                className="p-1.5 rounded-[5px] bg-[#252525] hover:bg-[#2f2f2f] active:bg-[#202020] text-[#999] hover:text-white border border-[#383838] hover:border-[#484848] transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] flex items-center justify-center"
+                className="flint-btn !p-1.5 flex items-center justify-center"
               >
                 {sortOrder === 'asc' ? <ArrowUp01Icon size={14} /> : <ArrowDown01Icon size={14} />}
               </button>
@@ -428,7 +428,7 @@ export const MarketplaceView: React.FC = () => {
                   setSearchQuery('');
                   setSelectedCategory('All');
                 }}
-                className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] text-xs font-medium border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+                className="flint-btn"
               >
                 Clear filters
               </button>
@@ -504,7 +504,7 @@ export const MarketplaceView: React.FC = () => {
                             type="button"
                             onClick={() => useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name)}
                             title={`View ${ext.name} documentation`}
-                            className="w-7 h-7 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-all cursor-pointer flex items-center justify-center shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                            className="flint-btn w-7 h-7 !p-0 flex items-center justify-center"
                           >
                             <BookOpen01Icon size={13} />
                           </button>
@@ -514,7 +514,7 @@ export const MarketplaceView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleUninstallExtension(ext)}
-                            className="group/btn px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-[#f85153] hover:border-[#f85153]/40 rounded-[5px] border border-[#383838] text-[11px] font-medium transition-none cursor-pointer flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] min-w-[78px]"
+                            className="group/btn flint-btn text-[11px] !py-1 !px-3 min-w-[78px] hover:!text-[#f85153] hover:!border-[#f85153]/40"
                           >
                             <span className="flex items-center gap-1 group-hover/btn:hidden">
                               <CheckIcon size={11} />
@@ -530,7 +530,7 @@ export const MarketplaceView: React.FC = () => {
                             type="button"
                             onClick={() => handleInstallExtension(ext)}
                             disabled={isInstalling}
-                            className="px-3 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] text-[11px] font-medium transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[0_1px_2px_rgba(0,0,0,0.35)] min-w-[78px] disabled:opacity-50"
+                            className="flint-btn flint-btn-primary text-[11px] !py-1 !px-3 min-w-[78px] disabled:opacity-50"
                           >
                             <Download01Icon size={11} className={isInstalling ? 'animate-bounce' : ''} />
                             <span>{isInstalling ? 'Installing...' : 'Install'}</span>

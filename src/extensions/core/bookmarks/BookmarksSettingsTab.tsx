@@ -42,14 +42,12 @@ export const BookmarksSettingsTab: React.FC = () => {
         action={
           isModified ? (
             <Button
-              variant="ghost"
               size="sm"
               icon={<RotateCcwIcon size={12} />}
               onClick={() => {
                 restoreDefaults();
                 showToast('Restored Bookmarks defaults', 'info');
               }}
-              className="border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
             >
               Restore defaults
             </Button>

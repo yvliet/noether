@@ -295,7 +295,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
             </p>
             <button
               onClick={() => setIsReviewModalOpen(false)}
-              className="obsidian-btn obsidian-btn-primary"
+              className="flint-btn flint-btn-primary"
             >
               Back to Notes
             </button>
@@ -359,7 +359,7 @@ export const StudyReviewModal: React.FC = React.memo(() => {
                   <button
                     key={opt.rating}
                     onClick={() => handleRate(opt)}
-                    className="obsidian-btn h-full flex flex-col items-center justify-center py-1 px-1 text-center cursor-pointer"
+                    className="flint-btn h-full flex flex-col items-center justify-center py-1 px-1 text-center"
                   >
                     <div className="flex items-center gap-1 font-semibold text-xs text-[var(--flint-text-primary)] leading-tight">
                       <span>{opt.label}</span>

@@ -256,8 +256,7 @@ export const HearthModal: React.FC = React.memo(() => {
                 {!isCreating && (
                   <button
                     onClick={() => setIsCreating(true)}
-                    style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
-                    className="px-4 py-1.5 rounded-[5px] hover:brightness-110 active:brightness-90 text-white text-xs font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 transition-all shrink-0 cursor-pointer"
+                    className="flint-btn flint-btn-primary shrink-0"
                   >
                     Create
                   </button>
@@ -294,7 +293,7 @@ export const HearthModal: React.FC = React.memo(() => {
                       />
                       <button
                         onClick={handleBrowseParent}
-                        className="obsidian-btn shrink-0 cursor-pointer"
+                        className="flint-btn shrink-0"
                       >
                         Browse
                       </button>
@@ -304,15 +303,14 @@ export const HearthModal: React.FC = React.memo(() => {
                   <div className="flex items-center justify-end gap-2 mt-1">
                     <button
                       onClick={() => setIsCreating(false)}
-                      className="px-3.5 py-1.5 rounded-[5px] bg-transparent hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] text-xs transition-colors cursor-pointer"
+                      className="flint-btn"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleConfirmCreate}
                       disabled={!newHearthName.trim()}
-                      style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
-                      className="px-4 py-1.5 rounded-[5px] hover:brightness-110 active:brightness-90 disabled:opacity-50 text-white text-xs font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 transition-all cursor-pointer"
+                      className="flint-btn flint-btn-primary"
                     >
                       Create
                     </button>
@@ -331,7 +329,7 @@ export const HearthModal: React.FC = React.memo(() => {
               </div>
               <button
                 onClick={handleOpenFolderAsHearth}
-                className="obsidian-btn shrink-0 flex items-center gap-1.5 cursor-pointer"
+                className="flint-btn shrink-0 flex items-center gap-1.5"
               >
                 <FolderOpenIcon size={13} />
                 <span>Open</span>
@@ -349,7 +347,7 @@ export const HearthModal: React.FC = React.memo(() => {
                 </div>
                 <button
                   onClick={openHearthInExplorer}
-                  className="obsidian-btn shrink-0 cursor-pointer"
+                  className="flint-btn shrink-0"
                 >
                   Show
                 </button>

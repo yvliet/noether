@@ -1066,7 +1066,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                     <button
                       type="button"
                       onClick={() => window.open(mediaSrc, '_blank')}
-                      className="px-3.5 py-1.5 bg-[#252525] hover:bg-[#303030] text-xs text-white rounded cursor-pointer transition-none"
+                      className="flint-btn"
                     >
                       Open PDF
                     </button>

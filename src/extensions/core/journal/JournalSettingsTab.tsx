@@ -48,14 +48,12 @@ export const JournalSettingsTab: React.FC = () => {
         action={
           isModified ? (
             <Button
-              variant="ghost"
               size="sm"
               icon={<RotateCcwIcon size={12} />}
               onClick={() => {
                 restoreDefaults();
                 showToast('Restored Journal defaults', 'info');
               }}
-              className="border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
             >
               Restore defaults
             </Button>
@@ -89,7 +87,7 @@ export const JournalSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handlePickFolder}
-            className="flex items-center gap-2 bg-[var(--flint-bg-input,#181818)] hover:bg-[var(--flint-bg-card-hover,#222222)] active:bg-[#151515] border border-[var(--flint-border-strong,#383838)] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer group"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
             title="Click to select folder in File Explorer"
           >
             <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />

@@ -51,7 +51,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenMarketplace}
-            className="px-3.5 py-1.5 bg-[var(--flint-accent)] hover:bg-[var(--flint-accent-hover)] text-white rounded-[5px] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5 shadow-sm"
+            className="flint-btn flint-btn-primary flex items-center gap-1.5"
           >
             <Store01Icon size={13} />
             <span>Open Marketplace</span>
@@ -69,7 +69,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handleReloadExtensions}
-            className="px-3.5 py-1.5 bg-[#282828] hover:bg-[#333] active:bg-[#222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
+            className="flint-btn flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Reload from Disk</span>
@@ -87,7 +87,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenExtensionsFolder}
-            className="px-3.5 py-1.5 bg-[#282828] hover:bg-[#333] active:bg-[#222] text-[#dcddde] hover:text-white rounded-[5px] border border-[#383838] hover:border-[#484848] transition-colors cursor-pointer text-xs font-medium flex items-center gap-1.5"
+            className="flint-btn flex items-center gap-1.5"
           >
             <FolderOpenIcon size={12} />
             <span>Open Folder</span>

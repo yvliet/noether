@@ -96,18 +96,13 @@ export const ConfirmModal: React.FC = React.memo(() => {
           <div className="flex items-center gap-2">
             <button
               onClick={closeConfirmDialog}
-              className="obsidian-btn cursor-pointer"
+              className="flint-btn"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              style={!confirmDialog.isDanger ? { backgroundColor: 'var(--flint-accent, #ea580c)' } : undefined}
-              className={`px-4 py-1.5 rounded-[5px] text-xs font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer ${
-                confirmDialog.isDanger
-                  ? 'bg-[#e11d48] hover:bg-[#f43f5e] active:bg-[#be123c] text-white border border-black/20'
-                  : 'hover:brightness-110 active:brightness-90 text-white border border-black/20'
-              }`}
+              className={confirmDialog.isDanger ? 'flint-btn flint-btn-danger' : 'flint-btn flint-btn-primary'}
             >
               {confirmDialog.confirmText || 'Confirm'}
             </button>

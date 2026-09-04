@@ -46,7 +46,7 @@ export const QuicknoteSettingsTab: React.FC = React.memo(() => {
               restoreDefaults();
               showToast('Restored Quicknote defaults', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Restore defaults</span>
@@ -95,10 +95,10 @@ export const QuicknoteSettingsTab: React.FC = React.memo(() => {
                   },
                 });
               }}
-              className="flex items-center gap-2 bg-[#181818] hover:bg-[#222222] active:bg-[#151515] border border-[#383838] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors cursor-pointer group"
+              className="flint-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
               title="Click to select folder in File Explorer"
             >
-              <Folder01Icon size={13} className="text-[#888] group-hover:text-white transition-colors" />
+              <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
               <span className="max-w-[130px] truncate text-[#dcddde]">
                 {quicknoteFolder ? quicknoteFolder : 'Quicknotes'}
               </span>

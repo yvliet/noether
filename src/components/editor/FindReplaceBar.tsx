@@ -353,7 +353,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
                 type="button"
                 onClick={handleReplaceCurrent}
                 disabled={results.length === 0}
-                className="flex-1 py-1 rounded-[5px] bg-[var(--flint-bg-card-hover)] hover:bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-secondary)] hover:text-[var(--flint-text-primary)] text-xs border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] disabled:opacity-40 transition-all cursor-pointer text-center mr-1.5"
+                className="flint-btn flex-1 !py-1 text-xs text-center mr-1.5"
               >
                 Replace
               </button>
@@ -363,7 +363,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
                 type="button"
                 onClick={handleReplaceAll}
                 disabled={results.length === 0}
-                className="flex-1 py-1 rounded-[5px] bg-[var(--flint-bg-card-hover)] hover:bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-secondary)] hover:text-[var(--flint-text-primary)] text-xs border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] disabled:opacity-40 transition-all cursor-pointer text-center whitespace-nowrap"
+                className="flint-btn flex-1 !py-1 text-xs text-center whitespace-nowrap"
               >
                 Replace all
               </button>

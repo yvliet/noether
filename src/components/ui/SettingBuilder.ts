@@ -66,28 +66,22 @@ export class SettingBuilder {
   ): this {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className =
-      'relative inline-flex w-[34px] h-[20px] shrink-0 cursor-pointer rounded-full p-[2px] outline-none shadow-[0_1px_2px_rgba(0,0,0,0.35)] focus-visible:ring-1 focus-visible:ring-[var(--flint-accent,#ea580c)]';
+    btn.setAttribute('role', 'switch');
+    btn.className = 'flint-switch w-[34px] h-[20px]';
 
     const knob = document.createElement('span');
-    knob.className =
-      'pointer-events-none inline-block h-[14px] w-[14px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)]';
+    knob.className = 'flint-switch-knob h-[14px] w-[14px] translate-x-0';
     btn.appendChild(knob);
 
     let isChecked = false;
     let changeHandler: ((val: boolean) => void) | null = null;
 
     const renderState = () => {
+      btn.setAttribute('aria-checked', String(isChecked));
       if (isChecked) {
-        btn.className =
-          'relative inline-flex w-[34px] h-[20px] shrink-0 cursor-pointer rounded-full p-[2px] outline-none shadow-[0_1px_2px_rgba(0,0,0,0.35)] bg-[var(--flint-accent,#ea580c)] border border-transparent';
-        knob.className =
-          'pointer-events-none inline-block h-[14px] w-[14px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] translate-x-[14px]';
+        knob.className = 'flint-switch-knob h-[14px] w-[14px] translate-x-[14px]';
       } else {
-        btn.className =
-          'relative inline-flex w-[34px] h-[20px] shrink-0 cursor-pointer rounded-full p-[2px] outline-none shadow-[0_1px_2px_rgba(0,0,0,0.35)] bg-[var(--flint-border-strong,#333333)] border border-[var(--flint-border-base,#404040)]';
-        knob.className =
-          'pointer-events-none inline-block h-[14px] w-[14px] rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] translate-x-0';
+        knob.className = 'flint-switch-knob h-[14px] w-[14px] translate-x-0';
       }
     };
 
@@ -133,7 +127,7 @@ export class SettingBuilder {
   ): this {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'obsidian-btn px-3 py-1.5 text-xs cursor-pointer';
+    button.className = 'flint-btn px-3 py-1.5 text-xs cursor-pointer';
 
     this.controlEl.appendChild(button);
 
@@ -143,11 +137,11 @@ export class SettingBuilder {
         return controller;
       },
       setCta: () => {
-        button.className = 'obsidian-btn obsidian-btn-primary px-3 py-1.5 text-xs cursor-pointer';
+        button.className = 'flint-btn flint-btn-primary px-3 py-1.5 text-xs cursor-pointer';
         return controller;
       },
       setWarning: () => {
-        button.className = 'obsidian-btn obsidian-btn-danger px-3 py-1.5 text-xs cursor-pointer';
+        button.className = 'flint-btn flint-btn-danger px-3 py-1.5 text-xs cursor-pointer';
         return controller;
       },
       onClick: (cb: () => void) => {

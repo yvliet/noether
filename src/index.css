@@ -1510,61 +1510,54 @@ li[data-type="taskItem"][data-checked="true"] > div {
   padding-left: 1.25rem;
 }
 
-/* Obsidian Button & Form Controls */
-.obsidian-btn {
+/* Flint Native Desktop Button & Form Controls */
+.flint-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   background-color: var(--flint-bg-card-hover, #2a2a2a);
-  border: 1px solid var(--flint-border-base, #383838);
+  border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 5px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.28);
   color: var(--flint-text-secondary, #dcddde);
   font-size: 12px;
   font-weight: 500;
   padding: 5px 12px;
   cursor: pointer;
   user-select: none;
-  outline: none;
+  outline: none !important;
+  transition: none;
 }
 
-.obsidian-btn:hover {
-  background-color: var(--flint-bg-sidebar-active, #333333);
-  border-color: var(--flint-border-strong, #484848);
+.flint-btn:hover {
+  filter: brightness(1.12);
   color: var(--flint-text-primary, #ffffff);
+  outline: none !important;
 }
 
-.obsidian-btn:active {
-  background-color: var(--flint-bg-input, #242424);
-  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+.flint-btn:active {
+  filter: brightness(0.94);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  transform: translateY(0.5px);
+  outline: none !important;
 }
 
-.obsidian-btn:disabled {
+.flint-btn:focus,
+.flint-btn:focus-visible {
+  outline: none !important;
+}
+
+.flint-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
+  filter: none;
+  transform: none;
+  outline: none !important;
 }
 
-.theme-light .obsidian-btn {
-  background-color: #f4f4f5 !important;
-  border-color: #d4d4d8 !important;
-  color: #09090b !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
-}
-
-.theme-light .obsidian-btn:hover {
-  background-color: #e4e4e7 !important;
-  border-color: #a1a1aa !important;
-  color: #09090b !important;
-}
-
-.theme-light .obsidian-btn:active {
-  background-color: #d4d4d8 !important;
-  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.08) !important;
-}
-
-.obsidian-btn-primary {
+.flint-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1572,32 +1565,45 @@ li[data-type="taskItem"][data-checked="true"] > div {
   background-color: var(--flint-accent, #ea580c);
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 5px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   padding: 5px 14px;
   cursor: pointer;
   user-select: none;
-  outline: none;
+  outline: none !important;
+  transition: none;
 }
 
-.obsidian-btn-primary:hover {
-  background-color: #c2410c;
+.flint-btn-primary:hover {
+  filter: brightness(1.12);
+  color: #ffffff;
+  outline: none !important;
 }
 
-.obsidian-btn-primary:active {
-  background-color: #9a3412;
-  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+.flint-btn-primary:active {
+  filter: brightness(0.92);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  transform: translateY(0.5px);
+  outline: none !important;
 }
 
-.obsidian-btn-primary:disabled {
+.flint-btn-primary:focus,
+.flint-btn-primary:focus-visible {
+  outline: none !important;
+}
+
+.flint-btn-primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
+  filter: none;
+  transform: none;
+  outline: none !important;
 }
 
-.obsidian-btn-danger {
+.flint-btn-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1605,55 +1611,138 @@ li[data-type="taskItem"][data-checked="true"] > div {
   background-color: #e11d48;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 5px;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
   padding: 5px 14px;
   cursor: pointer;
   user-select: none;
-  outline: none;
+  outline: none !important;
+  transition: none;
 }
 
-.obsidian-btn-danger:hover {
-  background-color: #f43f5e;
+.flint-btn-danger:hover {
+  filter: brightness(1.12);
+  outline: none !important;
 }
 
-.obsidian-btn-danger:active {
-  background-color: #be123c;
-  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.4);
+.flint-btn-danger:active {
+  filter: brightness(0.92);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+  transform: translateY(0.5px);
+  outline: none !important;
+}
+
+.flint-btn-danger:focus,
+.flint-btn-danger:focus-visible {
+  outline: none !important;
+}
+
+.flint-btn-danger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+  outline: none !important;
+}
+
+/* Flint Native Desktop Switch & Controls */
+.flint-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+  border-radius: 9999px;
+  padding: 2px;
+  user-select: none;
+  outline: none !important;
+  transition: none;
+}
+
+.flint-switch:focus,
+.flint-switch:focus-visible {
+  outline: none !important;
+}
+
+.flint-switch:hover {
+  filter: brightness(1.12);
+  outline: none !important;
+}
+
+.flint-switch:active {
+  filter: brightness(0.94);
+  outline: none !important;
+}
+
+.flint-switch:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+  filter: none;
+  outline: none !important;
+}
+
+/* Unchecked track: matching .flint-btn dark 3D depth */
+.flint-switch[aria-checked="false"] {
+  background-color: var(--flint-bg-card-hover, #2a2a2a);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.28);
+}
+
+/* Checked track: matching .flint-btn-primary accent 3D depth */
+.flint-switch[aria-checked="true"] {
+  background-color: var(--flint-accent, #ea580c);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
+}
+
+/* 3D Tactile Knob */
+.flint-switch-knob {
+  pointer-events: none;
+  display: inline-block;
+  border-radius: 9999px;
+  background-color: #ffffff;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 2px 4px 0 rgba(0, 0, 0, 0.35);
+  transition: none;
 }
 
 /* Light Theme Overrides for Controls */
-.theme-light .obsidian-btn {
-  background-color: var(--flint-bg-card);
-  border-color: var(--flint-border-base);
-  color: var(--flint-text-secondary);
-  box-shadow: var(--flint-shadow-1);
+.theme-light .flint-btn {
+  background-color: var(--flint-bg-card, #f4f4f5);
+  border-color: var(--flint-border-base, #d4d4d8);
+  color: var(--flint-text-secondary, #09090b);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 1px 3px 0 rgba(0, 0, 0, 0.08);
 }
 
-.theme-light .obsidian-btn:hover {
-  background-color: var(--flint-bg-card-hover);
-  border-color: var(--flint-border-strong);
-  color: var(--flint-text-primary);
+.theme-light .flint-btn:hover {
+  filter: brightness(0.97);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  color: var(--flint-text-primary, #09090b);
 }
 
-.theme-light .obsidian-btn:active {
-  background-color: var(--flint-bg-sidebar-active);
-  box-shadow: inset 0 1px 2px 0 oklch(0.20 0.03 42 / 0.1);
+.theme-light .flint-btn:active {
+  filter: brightness(0.93);
+  box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.12);
+  transform: translateY(0.5px);
 }
 
-.theme-light button[role="switch"] {
-  box-shadow: var(--flint-shadow-1);
-}
-
+.theme-light .flint-switch[aria-checked="false"],
 .theme-light button[role="switch"][aria-checked="false"] {
-  background-color: var(--flint-border-base) !important;
-  border-color: var(--flint-border-subtle) !important;
+  background-color: var(--flint-border-base, #d4d4d8) !important;
+  border-color: var(--flint-border-subtle, #e4e4e7) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.5), 0 1px 2px 0 rgba(0, 0, 0, 0.08);
 }
 
+.theme-light .flint-switch[aria-checked="false"]:hover,
 .theme-light button[role="switch"][aria-checked="false"]:hover {
-  background-color: var(--flint-border-strong) !important;
+  background-color: var(--flint-border-strong, #a1a1aa) !important;
+  filter: none;
+}
+
+.theme-light .flint-switch-knob {
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 1px 3px 0 rgba(0, 0, 0, 0.15);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

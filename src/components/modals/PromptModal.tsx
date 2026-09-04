@@ -79,15 +79,14 @@ export const PromptModal: React.FC = React.memo(() => {
           <button
             type="button"
             onClick={closeInputDialog}
-            className="obsidian-btn cursor-pointer"
+            className="flint-btn"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!isValid}
-            style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
-            className="px-4 py-1.5 rounded-[5px] hover:brightness-110 active:brightness-90 disabled:opacity-40 text-white text-xs font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 transition-all cursor-pointer"
+            className="flint-btn flint-btn-primary"
           >
             {inputDialog.confirmText || 'Save'}
           </button>

@@ -75,7 +75,7 @@ function CustomSelectInner<T extends string | number>({
     let right: number | undefined = Math.max(8, viewportWidth - rect.right);
     let left: number | undefined = undefined;
 
-    const minWidth = Math.max(rect.width, 140);
+    const minWidth = Math.max(rect.width, 160);
     // Ensure doesn't clip off left edge
     if (rect.right - minWidth < 8) {
       right = undefined;
@@ -133,20 +133,20 @@ function CustomSelectInner<T extends string | number>({
 
   return (
     <div className={`relative inline-block ${className}`}>
-      {/* Trigger Button (Obsidian Styled) */}
+      {/* Trigger Button (Flint Styled) */}
       <button
         ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`group obsidian-btn min-w-[130px] flex items-center justify-between gap-2.5 cursor-pointer select-none outline-none focus-visible:border-[var(--flint-accent,#ea580c)] disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
+        className={`group flint-btn flex items-center justify-center gap-2 cursor-pointer select-none outline-none focus-visible:border-[var(--flint-accent,#ea580c)] disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
       >
-        <span className="truncate text-left text-xs font-normal text-[var(--flint-text-secondary)] group-hover:text-[var(--flint-text-primary)]">
+        <span className="truncate text-xs font-normal text-[var(--flint-text-secondary)] group-hover:text-[var(--flint-text-primary)]">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
         <span className="shrink-0 flex items-center justify-center text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)]">
           <ChevronsUpDownIcon
-            size={13}
+            size={12}
             className={isOpen ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted)]'}
           />
         </span>

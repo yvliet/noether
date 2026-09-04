@@ -387,8 +387,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                     setNewHearthLocation('');
                     setView('create');
                   }}
-                  style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
-                  className="px-4 py-1.5 rounded-[5px] hover:brightness-110 active:brightness-90 text-white text-xs font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 transition-all shrink-0 cursor-pointer"
+                  className="flint-btn flint-btn-primary shrink-0"
                 >
                   Create
                 </button>
@@ -404,7 +403,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                 </div>
                 <button
                   onClick={handleOpenFolderAsHearth}
-                  className="px-4 py-1.5 rounded-[5px] bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all shrink-0 flex items-center gap-1.5 cursor-pointer"
+                  className="flint-btn shrink-0 flex items-center gap-1.5"
                 >
                   <FolderOpenIcon size={13} />
                   <span>Open</span>
@@ -422,7 +421,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                   </div>
                   <button
                     onClick={handleOpenInExplorer}
-                    className="px-3.5 py-1.5 rounded-[5px] bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all shrink-0 cursor-pointer"
+                    className="flint-btn shrink-0"
                   >
                     Show
                   </button>
@@ -481,7 +480,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                   </div>
                   <button
                     onClick={handleBrowseLocation}
-                    className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] border border-[#383838] hover:border-[#484848] rounded-[5px] text-xs font-medium text-[#dcddde] hover:text-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all shrink-0 cursor-pointer"
+                    className="flint-btn shrink-0"
                   >
                     Browse
                   </button>
@@ -493,8 +492,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                 <button
                   onClick={handleCreateHearth}
                   disabled={!newHearthName.trim() || !newHearthLocation.trim()}
-                  style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
-                  className="px-7 py-2 hover:brightness-110 active:brightness-90 disabled:opacity-40 text-white text-xs font-semibold rounded-[5px] shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 transition-all cursor-pointer"
+                  className="flint-btn flint-btn-primary !px-7 !py-2"
                 >
                   Create
                 </button>

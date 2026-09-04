@@ -10,6 +10,7 @@ import {
   KeyIcon,
   PackageIcon,
   GlobeIcon,
+  PuzzleIcon,
   LinkSquare02Icon,
   Layout01Icon,
   Calendar01Icon,
@@ -282,7 +283,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                   showToast('Failed to open .trash folder', 'warning');
                 }
               }}
-              className="px-2.5 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] border border-[#383838] hover:border-[#484848] text-[#dcddde] hover:text-white text-xs rounded-[5px] cursor-pointer flex items-center gap-1.5 transition-all shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+              className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
               title="Open .trash folder in system file manager"
             >
               <Folder01Icon size={12} />
@@ -304,7 +305,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                   },
                 });
               }}
-              className="px-2.5 py-1 bg-[#e11d48] hover:bg-[#f43f5e] active:bg-[#be123c] text-white text-xs font-semibold rounded-[5px] border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+              className="flint-btn flint-btn-danger text-xs py-1 px-2.5 flex items-center gap-1.5"
             >
               <Delete02Icon size={12} />
               <span>Empty trash</span>
@@ -395,7 +396,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                         await restoreFromTrash(item.id);
                       }}
                       title="Restore to Hearth"
-                      className="px-2.5 py-1 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[5px] text-xs font-medium flex items-center gap-1.5 cursor-pointer transition-all border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)]"
+                      className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
                     >
                       <RotateCcwIcon size={12} />
                       <span>Restore</span>
@@ -460,7 +461,7 @@ const GeneralTab: React.FC = React.memo(() => {
               restoreTabDefaults('general');
               showToast('Restored General settings to default', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default general settings"
           >
             <RotateCcwIcon size={12} />
@@ -486,7 +487,7 @@ const GeneralTab: React.FC = React.memo(() => {
           </div>
           <button
             onClick={() => showToast('Flint is up to date (v0.1.0)', 'info')}
-            className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+            className="flint-btn"
           >
             Check for updates
           </button>
@@ -566,7 +567,7 @@ const GeneralTab: React.FC = React.memo(() => {
           </div>
           <button
             onClick={() => useWorkspaceStore.getState().setIsHelpModalOpen(true)}
-            className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+            className="flint-btn"
           >
             Open
           </button>
@@ -589,13 +590,13 @@ const GeneralTab: React.FC = React.memo(() => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => showToast('Flint is in local offline-first mode', 'info')}
-                className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+                className="flint-btn"
               >
                 Log in
               </button>
               <button
                 onClick={() => showToast('Cloud sync coming soon', 'info')}
-                className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+                className="flint-btn"
               >
                 Sign up
               </button>
@@ -612,13 +613,13 @@ const GeneralTab: React.FC = React.memo(() => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => showToast('License activated', 'success')}
-                className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+                className="flint-btn"
               >
                 Activate
               </button>
               <button
                 onClick={() => showToast('Opening purchase link', 'info')}
-                className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+                className="flint-btn"
               >
                 Purchase
               </button>
@@ -730,7 +731,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               restoreTabDefaults('appearance');
               showToast('Restored Appearance settings to default', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default appearance settings"
           >
             <RotateCcwIcon size={12} />
@@ -809,7 +810,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 showToast(`Exported "${currentDef.name}" JSON to clipboard`, 'success');
               }}
               title="Export current theme as JSON"
-              className="px-2.5 py-1.5 bg-[#252525] hover:bg-[#2e2e2e] text-[#aaa] hover:text-white text-xs font-medium rounded-md border border-[#333] transition-colors cursor-pointer flex items-center gap-1.5"
+              className="flint-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
             >
               <Copy01Icon size={13} />
               <span>Export</span>
@@ -818,7 +819,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             <button
               onClick={() => setIsImportingTheme(true)}
               title="Import theme JSON"
-              className="px-2.5 py-1.5 bg-[#252525] hover:bg-[#2e2e2e] text-[#aaa] hover:text-white text-xs font-medium rounded-md border border-[#333] transition-colors cursor-pointer flex items-center gap-1.5"
+              className="flint-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
             >
               <Download01Icon size={13} />
               <span>Import</span>
@@ -838,7 +839,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 setNewThemeCss('');
                 setIsCreatingTheme(true);
               }}
-              className="px-3 py-1.5 bg-[var(--flint-accent)] hover:opacity-90 active:scale-95 text-white text-xs font-medium rounded-md shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
+              className="flint-btn flint-btn-primary flex items-center gap-1.5"
             >
               <PlusSignIcon size={13} />
               <span>New Theme</span>
@@ -1214,7 +1215,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               <button
                 type="button"
                 onClick={() => setIsCreatingTheme(false)}
-                className="px-3 py-1.5 rounded bg-[#252525] hover:bg-[#2e2e2e] text-[#bbb] text-xs cursor-pointer"
+                className="flint-btn"
               >
                 Cancel
               </button>
@@ -1251,7 +1252,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   setIsCreatingTheme(false);
                   showToast(`Created & applied theme "${newThemeName}"`, 'success');
                 }}
-                className="px-4 py-1.5 rounded bg-[var(--flint-accent)] hover:opacity-90 active:scale-95 text-white font-medium text-xs cursor-pointer shadow-xs"
+                className="flint-btn flint-btn-primary"
               >
                 Save & Apply Theme
               </button>
@@ -1292,7 +1293,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               <button
                 type="button"
                 onClick={() => setIsImportingTheme(false)}
-                className="px-3 py-1.5 rounded bg-[#252525] hover:bg-[#2e2e2e] text-[#bbb] text-xs cursor-pointer"
+                className="flint-btn"
               >
                 Cancel
               </button>
@@ -1310,7 +1311,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                     showToast('Invalid theme JSON format', 'warning');
                   }
                 }}
-                className="px-4 py-1.5 rounded bg-[var(--flint-accent)] hover:opacity-90 active:scale-95 text-white font-medium text-xs cursor-pointer shadow-xs"
+                className="flint-btn flint-btn-primary"
               >
                 Import & Apply
               </button>
@@ -1451,7 +1452,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             </div>
             <button
               onClick={() => showToast('Custom app icon feature active', 'info')}
-              className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer"
+              className="flint-btn"
             >
               Choose
             </button>
@@ -1505,7 +1506,7 @@ const InterfaceTab: React.FC = React.memo(() => {
               restoreTabDefaults('interface');
               showToast('Restored Interface settings to default', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default interface settings"
           >
             <RotateCcwIcon size={12} />
@@ -1746,7 +1747,7 @@ const EditorTab: React.FC = React.memo(() => {
               restoreTabDefaults('editor');
               showToast('Restored Editor settings to default', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default editor settings"
           >
             <RotateCcwIcon size={12} />
@@ -2146,7 +2147,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               restoreTabDefaults('files');
               showToast('Restored Files & links settings to default', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default files & links settings"
           >
             <RotateCcwIcon size={12} />
@@ -2181,8 +2182,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               {tempHearthName !== hearthName && (
                 <button
                   onClick={handleSaveHearthName}
-                  style={{ backgroundColor: 'var(--flint-accent, #ea580c)' }}
-                  className="px-3.5 py-1.5 hover:brightness-110 active:brightness-90 text-white text-xs font-semibold rounded-[5px] shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-black/20 cursor-pointer transition-all"
+                  className="flint-btn flint-btn-primary"
                 >
                   Save
                 </button>
@@ -2308,10 +2308,10 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               <button
                 type="button"
                 onClick={handlePickAttachmentFolder}
-                className="flex items-center gap-2 bg-[#181818] hover:bg-[#222222] active:bg-[#151515] border border-[#383838] hover:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors cursor-pointer group"
+                className="flint-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
                 title="Click to select folder in File Explorer"
               >
-                <Folder01Icon size={13} className="text-[#888] group-hover:text-white transition-colors" />
+                <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
                 <span className="max-w-[130px] truncate text-[#dcddde]">
                   {attachmentFolder ? attachmentFolder : 'Hearth root ( / )'}
                 </span>
@@ -2437,7 +2437,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                   },
                 });
               }}
-              className="px-3.5 py-1.5 bg-[#e11d48] hover:bg-[#f43f5e] active:bg-[#be123c] disabled:opacity-40 disabled:hover:bg-[#e11d48] text-white text-xs font-semibold rounded-[5px] border border-black/20 shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer disabled:cursor-not-allowed flex items-center gap-1.5"
+              className="flint-btn flint-btn-danger flex items-center gap-1.5"
             >
               <Delete02Icon size={12} />
               <span>Empty Trash</span>
@@ -2515,7 +2515,7 @@ const HotkeysTab: React.FC = React.memo(() => {
               resetAllHotkeys();
               showToast('Reset all customized shortcuts to defaults', 'info');
             }}
-            className="px-2.5 py-1 text-xs text-[#888] hover:text-white hover:bg-[#282828] rounded-[5px] border border-[#333] hover:border-[#444] shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center gap-1.5 transition-all"
+            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Reset all customized shortcuts to defaults"
           >
             <RotateCcwIcon size={12} />
@@ -2532,7 +2532,7 @@ const HotkeysTab: React.FC = React.memo(() => {
           <span>Press your desired key combination (e.g. <b>Ctrl+Shift+K</b>)...</span>
           <button
             onClick={() => setRecordingCommandId(null)}
-            className="px-2.5 py-1 text-[11px] bg-[#333] hover:bg-[#444] text-[#ccc] rounded-[5px] shadow-[0_1px_2px_rgba(0,0,0,0.2)] cursor-pointer"
+            className="flint-btn text-xs !py-0.5 !px-2"
           >
             Cancel (Esc)
           </button>
@@ -2584,7 +2584,7 @@ const HotkeysTab: React.FC = React.memo(() => {
                   <button
                     onClick={() => setRecordingCommandId(cmd.id)}
                     title="Click to reassign hotkey"
-                    className="px-2.5 py-1 bg-[#141414] hover:bg-[#222] border border-[#333] hover:border-[#555] text-xs font-mono text-[#bbb] hover:text-white rounded-[5px] shadow-[0_1px_2px_rgba(0,0,0,0.2)] cursor-pointer transition-colors"
+                    className="flint-btn text-xs font-mono text-[#bbb] hover:text-white py-1 px-2.5"
                   >
                     {activeHotkey}
                   </button>
@@ -2781,14 +2781,14 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
         <div className="flex items-center gap-2">
           <button
             onClick={handleReloadExtensions}
-            className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer flex items-center gap-1.5"
+            className="flint-btn flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Reload</span>
           </button>
           <button
             onClick={handleOpenExtensionsFolder}
-            className="px-3.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white text-xs font-medium rounded-[5px] border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all cursor-pointer flex items-center gap-1.5"
+            className="flint-btn flex items-center gap-1.5"
           >
             <FolderOpenIcon size={12} />
             <span>Open extensions folder</span>
@@ -2879,14 +2879,14 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                   platform.closeSettingsWindow();
                 }
               }}
-              className="px-4 py-2 bg-[var(--flint-accent)] hover:opacity-90 active:opacity-100 text-white rounded-[6px] text-xs font-medium transition-all cursor-pointer flex items-center gap-2 shadow-xs"
+              className="flint-btn flint-btn-primary flex items-center gap-2 !py-2 !px-4"
             >
               <Store01Icon size={14} />
               <span>Browse Extension Marketplace</span>
             </button>
             <button
               onClick={handleOpenExtensionsFolder}
-              className="px-3.5 py-2 bg-[#2a2a2a] hover:bg-[#333333] active:bg-[#222222] text-[#dcddde] hover:text-white rounded-[6px] border border-[#383838] hover:border-[#484848] transition-all cursor-pointer text-xs font-medium"
+              className="flint-btn flex items-center gap-1.5 !py-2 !px-3.5"
             >
               Open extensions folder
             </button>
@@ -2992,7 +2992,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     { id: 'files', label: 'Files and links', icon: <Folder01Icon size={14} />, keywords: ['files and links', 'files', 'links', 'trash', 'deleted', 'delete', 'hearth', 'vault', 'wikilink'] },
     { id: 'hotkeys', label: 'Hotkeys', icon: <KeyIcon size={14} />, keywords: ['hotkeys', 'shortcuts', 'keys', 'commands'] },
     { id: 'core-extensions', label: 'Built-in extensions', icon: <PackageIcon size={14} />, keywords: ['built-in extensions', 'core extensions', 'core plugins', 'plugins', 'modules', 'extensions'] },
-    { id: 'community-extensions', label: 'Community extensions', icon: <GlobeIcon size={14} />, keywords: ['community extensions', 'community plugins', 'plugins', 'marketplace', 'extensions'] },
+    { id: 'community-extensions', label: 'Community extensions', icon: <PuzzleIcon size={14} />, keywords: ['community extensions', 'community plugins', 'plugins', 'marketplace', 'extensions'] },
   ], []);
 
   const extensionList = useExtensionList();
@@ -3048,7 +3048,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           name: manifest.name,
           extensionId: manifest.id,
           pluginId: manifest.id,
-          icon: <GlobeIcon size={14} />,
+          icon: <PuzzleIcon size={14} />,
           render: () => (
             <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-3">
               <div>
@@ -3292,7 +3292,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                           : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
                       }`}
                     >
-                      <span className={isActive ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted,#888)]'}>{tab.icon || <PackageIcon size={14} />}</span>
+                      <span className={isActive ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted,#888)]'}>{tab.icon || <PuzzleIcon size={14} />}</span>
                       <span>{tab.name}</span>
                     </button>
                   );
@@ -3438,7 +3438,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                               await app.extensions.enableExtension(extId);
                               showToast(`Enabled ${manifest?.name || 'extension'}`, 'success');
                             }}
-                            className="px-3.5 py-1.5 text-xs bg-[var(--flint-accent)] hover:bg-[var(--flint-accent-hover)] text-white rounded-lg font-medium transition-colors cursor-pointer"
+                            className="flint-btn flint-btn-primary"
                           >
                             Enable {manifest?.name || 'Extension'}
                           </button>
