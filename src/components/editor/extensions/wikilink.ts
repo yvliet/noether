@@ -56,6 +56,7 @@ export const WikiLinks = Extension.create<{
   suggestion: Omit<SuggestionOptions<WikiLinkItem>, 'editor'>;
 }>({
   name: 'wikiLinks',
+  priority: 200,
 
   addOptions() {
     return {
@@ -78,9 +79,10 @@ export const WikiLinks = Extension.create<{
             deleteTo += 1;
           }
 
-          // Avoid trailing space if the wikilink is placed inside markdown link parentheses e.g. [alias]([[target]])
+          // Avoid trailing space if placed inside markdown link parentheses, before punctuation, or before an existing space
           const charAfter = state.doc.textBetween(deleteTo, Math.min(deleteTo + 1, docSize));
-          const insertText = charAfter === ')' ? `[[${props.title}]]` : `[[${props.title}]] `;
+          const isPunctuationOrSpace = charAfter === ' ' || /^[):,.;!?]/.test(charAfter);
+          const insertText = isPunctuationOrSpace ? `[[${props.title}]]` : `[[${props.title}]] `;
 
           editor
             .chain()

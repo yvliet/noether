@@ -695,8 +695,8 @@ kbd,
   font-size: calc(var(--editor-font-size, 16px) * 1.85);
   font-weight: 700;
   color: var(--flint-text-primary);
-  margin-top: 1.75em;
-  margin-bottom: 0.75em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
   line-height: 1.3;
 }
 
@@ -704,8 +704,8 @@ kbd,
   font-size: calc(var(--editor-font-size, 16px) * 1.45);
   font-weight: 600;
   color: var(--flint-text-primary);
-  margin-top: 1.5em;
-  margin-bottom: 0.5em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
   line-height: 1.35;
 }
 
@@ -713,8 +713,8 @@ kbd,
   font-size: calc(var(--editor-font-size, 16px) * 1.2);
   font-weight: 600;
   color: var(--flint-text-secondary);
-  margin-top: 1.25em;
-  margin-bottom: 0.5em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
   line-height: 1.4;
 }
 
@@ -722,8 +722,8 @@ kbd,
   font-size: calc(var(--editor-font-size, 16px) * 1.08);
   font-weight: 600;
   color: var(--flint-text-secondary);
-  margin-top: 1em;
-  margin-bottom: 0.4em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.4rem;
   line-height: 1.45;
 }
 
@@ -731,16 +731,16 @@ kbd,
   font-size: calc(var(--editor-font-size, 16px) * 0.95);
   font-weight: 600;
   color: var(--flint-text-muted);
-  margin-top: 0.9em;
-  margin-bottom: 0.35em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.35rem;
 }
 
 .ProseMirror h6 {
   font-size: calc(var(--editor-font-size, 16px) * 0.88);
   font-weight: 600;
   color: var(--flint-text-muted);
-  margin-top: 0.8em;
-  margin-bottom: 0.3em;
+  margin-top: 0.5rem;
+  margin-bottom: 0.3rem;
 }
 
 .ProseMirror ul {
@@ -1062,6 +1062,13 @@ li[data-type="taskItem"][data-checked="true"] > div {
 
 .md-syntax-hidden {
   display: none !important;
+}
+
+/* Live Preview & Reading View List Item Hanging Indent (Google Docs style)
+   Aligns wrapped lines flush beneath the first character of the list item text */
+.flint-list-hanging {
+  padding-left: var(--flint-hang-indent, 0px) !important;
+  text-indent: calc(-1 * var(--flint-hang-indent, 0px)) !important;
 }
 
 /* Plain Text List Prefix Dimming (Numbers & Dashes/Bullets - Obsidian style) */

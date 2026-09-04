@@ -15,6 +15,7 @@ export const SlashCommands = Extension.create<{
   suggestion: Omit<SuggestionOptions<SlashItem>, 'editor'>;
 }>({
   name: 'slashCommands',
+  priority: 200,
 
   addOptions() {
     return {

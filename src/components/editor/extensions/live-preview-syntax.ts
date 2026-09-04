@@ -7,6 +7,7 @@ import { findMathRangeAtPos } from './mathlive-wysiwyg';
 import { getIndentSize } from './smart-tab-indent';
 import { renderEmbedWidget } from '../embed-renderer';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { isLinkVisited } from '@/lib/visitedLinks';
 
 export const LivePreviewSyntaxPluginKey = new PluginKey('livePreviewSyntax');
@@ -52,6 +53,52 @@ function getOrRenderKatex(latex: string, displayMode: boolean): { html: string; 
     const result = { html: '', isError: true };
     katexHtmlCache.set(cacheKey, result);
     return result;
+  }
+}
+
+// In-memory cache for measured list prefix widths to guarantee 0ms keystroke latency
+let measureCanvas: HTMLCanvasElement | null = null;
+let measureCtx: CanvasRenderingContext2D | null = null;
+const hangIndentCache = new Map<string, number>();
+
+/**
+ * Measures the exact pixel width of a list item prefix (leading spaces + marker + trailing space)
+ * under the active editor font metrics.
+ *
+ * WHY THIS, NOT THAT:
+ * Measuring via an in-memory 2D canvas gives 100% pixel-perfect alignment with the first
+ * character of the list item text across any font family (Segoe UI, Inter, Roboto, monospace)
+ * and font size. Caching by `${font}::${prefix}` ensures O(1) instantaneous lookups during typing.
+ */
+function measurePrefixWidth(prefix: string, editor?: any): number {
+  try {
+    if (typeof document === 'undefined') return prefix.length * 8;
+    if (!measureCtx) {
+      measureCanvas = document.createElement('canvas');
+      measureCtx = measureCanvas.getContext('2d');
+    }
+    if (!measureCtx) return prefix.length * 8;
+
+    let font = '';
+    if (editor?.view?.dom) {
+      const style = window.getComputedStyle(editor.view.dom);
+      font = `${style.fontSize} ${style.fontFamily}`;
+    } else {
+      const fs = useSettingsStore.getState().fontSize || 16;
+      font = `${fs}px var(--font-text), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+    }
+
+    const cacheKey = `${font}::${prefix}`;
+    const cached = hangIndentCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
+    measureCtx.font = font;
+    const width = Math.round(measureCtx.measureText(prefix).width * 10) / 10;
+    if (hangIndentCache.size > 500) hangIndentCache.clear();
+    hangIndentCache.set(cacheKey, width);
+    return width;
+  } catch {
+    return prefix.length * 8;
   }
 }
 
@@ -161,6 +208,40 @@ function scanBlockDecorations(
         class: 'is-active-blockquote',
       })
     );
+  }
+
+  // 2b. Live Preview Hanging Indent for List Paragraphs (Google Docs style)
+  // Ensures wrapped lines align flush beneath the start of the list item text,
+  // even when indented with Tab, preserving clean markdown without modifying document content.
+  if (node.type.name === 'paragraph' && text) {
+    const firstLine = text.includes('\n') ? text.slice(0, text.indexOf('\n')) : text;
+    const listMatch = firstLine.match(/^([ \t]*)(\d+\.|[a-zA-Z]{1,2}\.|[-*+])( +)/);
+    if (listMatch) {
+      const leadingIndent = listMatch[1];
+      const marker = listMatch[2];
+      const spaceAfter = listMatch[3];
+
+      const isBullet = /^[-*+]$/.test(marker);
+      const isMarkerFocused =
+        isFocused &&
+        selFrom <= blockStart + leadingIndent.length + marker.length &&
+        selTo >= blockStart + leadingIndent.length;
+      const showBulletGlyph = isBullet && !isMarkerFocused;
+
+      const normalizedIndent = leadingIndent.replace(/\t/g, ' '.repeat(getIndentSize()));
+      const measuredMarker = showBulletGlyph ? '•' : marker;
+      const prefixToMeasure = `${normalizedIndent}${measuredMarker}${spaceAfter}`;
+
+      const hangIndent = measurePrefixWidth(prefixToMeasure, editor);
+      if (hangIndent > 0) {
+        decorations.push(
+          Decoration.node(pos, pos + node.nodeSize, {
+            class: 'flint-list-hanging',
+            style: `--flint-hang-indent: ${hangIndent}px;`,
+          })
+        );
+      }
+    }
   }
 
   // 3. Scan plain text for Markdown syntax and Tab Indents

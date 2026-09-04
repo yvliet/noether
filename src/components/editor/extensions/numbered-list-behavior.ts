@@ -2,6 +2,7 @@ import { Extension } from '@tiptap/core';
 import { TextSelection } from '@tiptap/pm/state';
 import { FoldHeadingPluginKey } from './fold-heading';
 import { getIndentSize } from './smart-tab-indent';
+import { isSuggestionActive } from './suggestion-state';
 
 /**
  * Gets the next sequential marker for numbers, single letters, or double letters.
@@ -111,6 +112,7 @@ export const NumberedListBehavior = Extension.create({
     return {
       Tab: () => {
         const { state, view } = this.editor;
+        if (isSuggestionActive(state)) return false;
         const { selection } = state;
         const { $from, $to } = selection;
 
@@ -173,6 +175,7 @@ export const NumberedListBehavior = Extension.create({
 
       'Shift-Tab': () => {
         const { state, view } = this.editor;
+        if (isSuggestionActive(state)) return false;
         const { selection } = state;
         const { $from, $to } = selection;
 
@@ -235,6 +238,7 @@ export const NumberedListBehavior = Extension.create({
 
       Enter: () => {
         const { state, view } = this.editor;
+        if (isSuggestionActive(state)) return false;
         const { selection } = state;
         const { $from, $to } = selection;
 
@@ -463,21 +467,13 @@ export const NumberedListBehavior = Extension.create({
 
         // 2. Shift-Enter on a List item (Number, Letter a./aa., or Bullet/Dash):
         // WHY THIS, NOT THAT:
-        // Use an inline hardBreak node (<br>) plus indent spaces rather than creating a new paragraph block.
-        // Creating a new paragraph introduces full paragraph margins (0.5rem top/bottom).
-        // Using hardBreak gives the exact line-height spacing ("usual space when text overflows normally").
+        // Use an inline hardBreak node (<br>) without injecting manual spaces.
+        // Because the paragraph has visual hanging indent (.flint-list-hanging), continuation lines
+        // after <br> are already visually aligned flush beneath the list item text (Google Docs style)
+        // while preserving clean markdown and effortless single-keystroke Backspace deletion.
         const listMatch = lineText.match(/^([ \t]*)(\d+\.|[a-zA-Z]{1,2}\.|[-*+])( *)(.*)$/);
         if (listMatch && hardBreakType) {
-          const leadingIndent = listMatch[1];
-          const marker = listMatch[2];
-          // Total width in spaces: leading spaces + marker length + 1 space
-          const spaceWidth = leadingIndent.length + marker.length + 1;
-          const indentSpaces = ' '.repeat(spaceWidth);
-
           let tr = state.tr.replaceSelectionWith(hardBreakType.create());
-          if (indentSpaces.length > 0) {
-            tr = tr.insertText(indentSpaces);
-          }
           dispatch(tr.scrollIntoView());
           return true;
         }

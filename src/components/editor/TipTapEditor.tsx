@@ -857,7 +857,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                         command: async (item: WikiLinkItem) => {
                           if (item.isNew) {
                             if (!item.title || !item.title.trim()) return;
-                            const newDoc = await createNewNote(item.title.trim());
+                            const newDoc = await createNewNote(item.title.trim(), null, 'base', false);
                             if (newDoc) {
                               props.command({ title: newDoc.title, id: newDoc.id });
                             }
@@ -1110,6 +1110,15 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         return false;
       },
       handleClick: (view, pos, event) => {
+        // Suppress link navigation if there is an active text selection or dragged range
+        const domSelection = window.getSelection();
+        if (domSelection && !domSelection.isCollapsed && domSelection.toString().length > 0) {
+          return false;
+        }
+        if (editor?.state && !editor.state.selection.empty) {
+          return false;
+        }
+
         const info = extractLinkTargetFromEvent(editor, event as MouseEvent);
         if (info) {
           const rawTarget = (event.target as HTMLElement)?.closest('.md-link, .md-wikilink, a');
@@ -1892,8 +1901,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       isSplit: boolean;
     } | null = null;
 
+    let dragStartPos: { x: number; y: number; time: number } | null = null;
+    let suppressNextClick = false;
+
     const onMouseDown = (e: MouseEvent) => {
       if (e.button !== 0 && e.button !== 1) return;
+      dragStartPos = { x: e.clientX, y: e.clientY, time: Date.now() };
+
       const info = extractLinkTargetFromEvent(editor, e);
       if (info) {
         pendingTarget = {
@@ -1911,6 +1925,27 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     };
 
     const onMouseUp = (e: MouseEvent) => {
+      // Check if mouse moved noticeably from mousedown or if there is an active selection
+      const moved = dragStartPos
+        ? Math.hypot(e.clientX - dragStartPos.x, e.clientY - dragStartPos.y) > 4
+        : false;
+      dragStartPos = null;
+
+      const domSelection = window.getSelection();
+      const hasTextSelection = Boolean(
+        (domSelection && !domSelection.isCollapsed && domSelection.toString().length > 0) ||
+        (editor.state && !editor.state.selection.empty)
+      );
+
+      if (moved || hasTextSelection) {
+        suppressNextClick = true;
+        pendingTarget = null;
+        setTimeout(() => {
+          suppressNextClick = false;
+        }, 150);
+        return;
+      }
+
       if (!pendingTarget) return;
       const current = pendingTarget;
       pendingTarget = null;
@@ -1939,6 +1974,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     };
 
     const onClick = (e: MouseEvent) => {
+      if (suppressNextClick) {
+        e.preventDefault();
+        e.stopPropagation();
+        return;
+      }
+
+      const domSelection = window.getSelection();
+      if (domSelection && !domSelection.isCollapsed && domSelection.toString().length > 0) {
+        return;
+      }
+      if (editor.state && !editor.state.selection.empty) {
+        return;
+      }
+
       const info = extractLinkTargetFromEvent(editor, e);
       if (info) {
         e.preventDefault();

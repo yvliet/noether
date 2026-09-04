@@ -1,6 +1,7 @@
 import { Extension } from '@tiptap/core';
 import { TextSelection } from '@tiptap/pm/state';
 import { useSettingsStore } from '@/store/settingsStore';
+import { isSuggestionActive } from './suggestion-state';
 
 /**
  * Returns current tab indent size configured in settings (clamped between 2 and 8, default 5).
@@ -454,6 +455,7 @@ export const SmartTabIndent = Extension.create({
     return {
       Tab: () => {
         const { state } = this.editor;
+        if (isSuggestionActive(state)) return false;
         const { selection } = state;
         const { $from, from, to, empty } = selection;
 
@@ -497,6 +499,7 @@ export const SmartTabIndent = Extension.create({
       },
 
       'Shift-Tab': () => {
+        if (isSuggestionActive(this.editor.state)) return false;
         if (this.editor.can().liftListItem('listItem')) {
           return this.editor.commands.liftListItem('listItem');
         }
