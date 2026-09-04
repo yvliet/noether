@@ -673,15 +673,6 @@ kbd,
   color: var(--flint-selection-text, #ffffff);
 }
 
-/* Flint Tab Indent: Hide selection background on tabs / leading indentation */
-.flint-tab-indent::selection,
-.ProseMirror .flint-tab-indent::selection,
-.theme-dark .ProseMirror .flint-tab-indent::selection,
-.theme-light .ProseMirror .flint-tab-indent::selection {
-  background: transparent !important;
-  background-color: transparent !important;
-  color: inherit !important;
-}
 
 .ProseMirror p {
   margin-top: 0.5rem;
@@ -1595,10 +1586,10 @@ a.flint-btn::after {
   display: none !important;
 }
 
-/* Line numbers */
+/* Line numbers (Obsidian-style gutter counter) */
 .flint-line-numbers .ProseMirror {
   counter-reset: flint-lines;
-  padding-left: 2.25rem;
+  padding-left: 3.25rem;
   position: relative;
 }
 
@@ -1606,10 +1597,15 @@ a.flint-btn::after {
 .flint-line-numbers .ProseMirror > h1,
 .flint-line-numbers .ProseMirror > h2,
 .flint-line-numbers .ProseMirror > h3,
+.flint-line-numbers .ProseMirror > h4,
+.flint-line-numbers .ProseMirror > h5,
+.flint-line-numbers .ProseMirror > h6,
 .flint-line-numbers .ProseMirror > blockquote,
 .flint-line-numbers .ProseMirror > pre,
-.flint-line-numbers .ProseMirror > ul,
-.flint-line-numbers .ProseMirror > ol {
+.flint-line-numbers .ProseMirror > hr,
+.flint-line-numbers .ProseMirror > table,
+.flint-line-numbers .ProseMirror > ul > li,
+.flint-line-numbers .ProseMirror > ol > li {
   position: relative;
 }
 
@@ -1617,20 +1613,43 @@ a.flint-btn::after {
 .flint-line-numbers .ProseMirror > h1::before,
 .flint-line-numbers .ProseMirror > h2::before,
 .flint-line-numbers .ProseMirror > h3::before,
+.flint-line-numbers .ProseMirror > h4::before,
+.flint-line-numbers .ProseMirror > h5::before,
+.flint-line-numbers .ProseMirror > h6::before,
 .flint-line-numbers .ProseMirror > blockquote::before,
 .flint-line-numbers .ProseMirror > pre::before,
-.flint-line-numbers .ProseMirror > ul::before,
-.flint-line-numbers .ProseMirror > ol::before {
+.flint-line-numbers .ProseMirror > hr::before,
+.flint-line-numbers .ProseMirror > table::before {
   counter-increment: flint-lines;
   content: counter(flint-lines);
   position: absolute;
-  left: -2.25rem;
+  left: -3.25rem;
   top: 0;
-  width: 1.5rem;
+  width: 2rem;
   text-align: right;
-  color: #555555;
-  font-size: 11px;
+  color: var(--flint-text-muted, #555555);
+  font-size: calc(var(--editor-font-size, 16px) * 0.78);
   font-family: var(--font-monospace);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  pointer-events: none;
+  line-height: inherit;
+}
+
+/* List items line numbers aligned back to the primary gutter */
+.flint-line-numbers .ProseMirror > ul > li::before,
+.flint-line-numbers .ProseMirror > ol > li::before {
+  counter-increment: flint-lines;
+  content: counter(flint-lines);
+  position: absolute;
+  left: calc(-3.25rem - 1.5rem);
+  top: 0;
+  width: 2rem;
+  text-align: right;
+  color: var(--flint-text-muted, #555555);
+  font-size: calc(var(--editor-font-size, 16px) * 0.78);
+  font-family: var(--font-monospace);
+  font-variant-numeric: tabular-nums;
   user-select: none;
   pointer-events: none;
   line-height: inherit;
@@ -1638,7 +1657,7 @@ a.flint-btn::after {
 
 /* ==========================================================================
    Indentation Guides (Plain-Text Lists & Nested Blocks)
-   - Centers vertical guide line (left: 0.44em) directly beneath parent numbers and bullets.
+   - Centers vertical guide line directly beneath parent numbers (0.25em) and bullets (0.1em).
    - Highlights the active downward branch when the caret is on a parent list/numbered item.
    - Recalors to theme accent when the 'Accent number & list markers' setting is enabled.
    ========================================================================== */
@@ -1646,23 +1665,48 @@ a.flint-btn::after {
 .flint-tab-guide {
   position: relative;
   display: inline;
+  line-height: inherit;
+  caret-color: var(--flint-text-primary, #ffffff);
 }
 
 .flint-indent-guides .flint-tab-guide::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide::before {
+.tiptap-reading-view.flint-indent-guides .flint-tab-guide::before,
+.flint-tab-guide::before {
   content: '';
   position: absolute;
-  top: -0.55rem;
+  top: -0.85rem;
   bottom: -0.55rem;
-  left: 0.44em; /* Optically centered through number stems and bullet glyphs */
+  left: 0.25em; /* Default base position */
   width: 0;
   border-left: 1px solid #333333;
   pointer-events: none;
   z-index: 1;
 }
 
+/* Terminal guideline: stops cleanly at the line boundary matching the selection box height without extending downwards into the margin */
+.flint-indent-guides .flint-tab-guide.flint-tab-guide-end::before,
+.tiptap-reading-view.flint-indent-guides .flint-tab-guide.flint-tab-guide-end::before,
+.flint-tab-guide.flint-tab-guide-end::before {
+  bottom: -0.25em !important;
+}
+
+/* Number stem alignment: centered through stem of digit 1 and tabular digits */
+.flint-indent-guides .flint-tab-guide-number::before,
+.tiptap-reading-view.flint-indent-guides .flint-tab-guide-number::before,
+.flint-tab-guide-number::before {
+  left: 0.25em;
+}
+
+/* Bullet dot alignment: centered through center of bullet glyph */
+.flint-indent-guides .flint-tab-guide-bullet::before,
+.tiptap-reading-view.flint-indent-guides .flint-tab-guide-bullet::before,
+.flint-tab-guide-bullet::before {
+  left: 0.22em;
+}
+
 .theme-light .flint-indent-guides .flint-tab-guide::before,
-.theme-light .tiptap-reading-view.flint-indent-guides .flint-tab-guide::before {
+.theme-light .tiptap-reading-view.flint-indent-guides .flint-tab-guide::before,
+.theme-light .flint-tab-guide::before {
   border-left-color: #e4e4e7;
 }
 

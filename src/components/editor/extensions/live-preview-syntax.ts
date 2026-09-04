@@ -119,8 +119,11 @@ function scanBlockDecorations(
   startLineIdx: number = 0,
   activeLineGuides: Map<number, Set<number>> | null = null,
   nextBlockLeadingLen: number = 0,
-  /** Set of leading-space column indices where a guide may be drawn (must have a list-marker ancestor) */
-  listGuideColumns: Set<number> | null = null,
+  /**
+   * Set of leading-space column indices or per-line column -> marker-type maps ('bullet' | 'number')
+   * where a guide may be drawn (must have a list-marker ancestor).
+   */
+  listGuideColumns: Set<number> | Map<number, 'bullet' | 'number'>[] | null = null,
   editor: any = null
 ): Decoration[] {
 
@@ -168,6 +171,9 @@ function scanBlockDecorations(
     for (let l = 0; l < lines.length; l++) {
       const globalLineIdx = startLineIdx + l;
       const lineActiveGuides = activeLineGuides?.get(globalLineIdx) ?? null;
+      const lineGuideMap = Array.isArray(listGuideColumns)
+        ? (listGuideColumns[globalLineIdx] ?? null)
+        : null;
 
       const lineStr = lines[l];
       const leadingMatch = lineStr.match(/^[ \t]+/);
@@ -191,10 +197,16 @@ function scanBlockDecorations(
           for (let i = 0; i < leadingLen; i++) {
             if (leadingStr[i] === '\t') {
               // Only draw if this column is rooted in a list-marker ancestor
-              if (listGuideColumns !== null && !listGuideColumns.has(i)) continue;
+              if (lineGuideMap !== null && !lineGuideMap.has(i)) continue;
+              if (listGuideColumns instanceof Set && !listGuideColumns.has(i)) continue;
               const isActive = Boolean(lineActiveGuides && lineActiveGuides.has(i));
-              const isTerminal = i >= nextLineLeading;
+              const isTerminal = Array.isArray(listGuideColumns)
+                ? !listGuideColumns[globalLineIdx + 1]?.has(i)
+                : i >= nextLineLeading;
+              const guideType = lineGuideMap?.get(i);
               let guideClass = 'flint-tab-guide';
+              if (guideType === 'bullet') guideClass += ' flint-tab-guide-bullet';
+              else if (guideType === 'number') guideClass += ' flint-tab-guide-number';
               if (isActive) guideClass += ' flint-tab-guide-active';
               if (isTerminal) guideClass += ' flint-tab-guide-end';
 
@@ -215,10 +227,16 @@ function scanBlockDecorations(
             const s = i * step;
             if (s < leadingLen) {
               // Only draw if this column is rooted in a list-marker ancestor
-              if (listGuideColumns !== null && !listGuideColumns.has(s)) continue;
+              if (lineGuideMap !== null && !lineGuideMap.has(s)) continue;
+              if (listGuideColumns instanceof Set && !listGuideColumns.has(s)) continue;
               const isActive = Boolean(lineActiveGuides && lineActiveGuides.has(s));
-              const isTerminal = s >= nextLineLeading;
+              const isTerminal = Array.isArray(listGuideColumns)
+                ? !listGuideColumns[globalLineIdx + 1]?.has(s)
+                : s >= nextLineLeading;
+              const guideType = lineGuideMap?.get(s);
               let guideClass = 'flint-tab-guide';
+              if (guideType === 'bullet') guideClass += ' flint-tab-guide-bullet';
+              else if (guideType === 'number') guideClass += ' flint-tab-guide-number';
               if (isActive) guideClass += ' flint-tab-guide-active';
               if (isTerminal) guideClass += ' flint-tab-guide-end';
 
@@ -256,11 +274,15 @@ function scanBlockDecorations(
         const markerLen = listMatch[2].length;
         const markerStart = blockStart + lineOffset + indentLen;
         const markerEnd = markerStart + markerLen;
-        // Bullet markers (-, *, +) get an extra class so CSS can visually replace them with a centered dot
+        // Bullet markers (-, *, +) get an extra class so CSS can visually replace them with a centered dot.
+        // When the caret enters or touches the bullet marker, reveal the actual markdown character (e.g. '-')
+        // with full caret visibility instead of hiding it behind a 0-font-size pseudo-element dot.
         const isBullet = /^[-*+]$/.test(listMatch[2]);
+        const isMarkerFocused = isFocused && selFrom <= markerEnd && selTo >= markerStart;
+        const showBulletGlyph = isBullet && !isMarkerFocused;
         decorations.push(
           Decoration.inline(markerStart, markerEnd, {
-            class: `flint-numbered-prefix flint-list-prefix${isBullet ? ' flint-bullet-marker' : ''}`,
+            class: `flint-numbered-prefix flint-list-prefix${showBulletGlyph ? ' flint-bullet-marker' : ''}`,
           })
         );
       }
@@ -899,6 +921,7 @@ function buildAllDecorations(
     leadingLen: number;
     isTab: boolean;
     listMarkerIndent: number | null;
+    isBullet: boolean;
   }
 
   // 1. Flatten all lines across blocks to index positions and resolve caret line
@@ -929,6 +952,7 @@ function buildAllDecorations(
       const isTab = leadingMatch ? leadingMatch[0].includes('\t') : false;
       const listMatch = lineStr.match(/^([ \t]*)(\d+\.|[a-zA-Z]{1,2}\.|[-*+])(?:\s+|$)/);
       const listMarkerIndent = listMatch ? listMatch[1].length : null;
+      const isBullet = listMatch ? /^[-*+]$/.test(listMatch[2]) : false;
 
       const lineGlobalIdx = allLines.length;
       allLines.push({
@@ -940,6 +964,7 @@ function buildAllDecorations(
         leadingLen,
         isTab,
         listMarkerIndent,
+        isBullet,
       });
 
       if (isBlockActive && l === lineInBlockActive) {
@@ -978,40 +1003,45 @@ function buildAllDecorations(
     }
   }
 
-  // 3. Compute per-line valid guide columns:
+  interface ListColScope {
+    col: number;
+    isBullet: boolean;
+  }
+
+  // 3. Compute per-line valid guide columns and their parent marker types:
   //    A column `c` is valid only if a list-marker line at indent `c` was seen above
   //    and the current line's indent has not yet exited that column's scope.
   //    This prevents guide lines from appearing on arbitrary tab-indented plain text.
-  const lineGuideColumns: Set<number>[] = new Array(allLines.length);
+  const lineGuideColumns: Map<number, 'bullet' | 'number'>[] = new Array(allLines.length);
   {
-    // Stack of {col, isTab} tracking open list-marker columns
-    const openListCols: number[] = [];
+    // Stack of ListColScope tracking open list-marker columns
+    const openListCols: ListColScope[] = [];
     for (let li = 0; li < allLines.length; li++) {
       const line = allLines[li];
-      const { leadingLen, listMarkerIndent, isTab } = line;
+      const { leadingLen, listMarkerIndent, isTab, isBullet } = line;
 
       // Close any list columns that are now out of scope (indent dropped to or below their level)
-      while (openListCols.length > 0 && openListCols[openListCols.length - 1] >= leadingLen) {
+      while (openListCols.length > 0 && openListCols[openListCols.length - 1].col >= leadingLen) {
         openListCols.pop();
       }
 
       // If this line IS a list marker at some indent, register that column as opening a new list scope
       if (listMarkerIndent !== null) {
         // Evict any stale entry at exactly this depth first
-        while (openListCols.length > 0 && openListCols[openListCols.length - 1] >= listMarkerIndent) {
+        while (openListCols.length > 0 && openListCols[openListCols.length - 1].col >= listMarkerIndent) {
           openListCols.pop();
         }
-        openListCols.push(listMarkerIndent);
+        openListCols.push({ col: listMarkerIndent, isBullet });
       }
 
       // Valid guide columns for this line: all open list cols that are < leadingLen
-      const validCols = new Set<number>();
+      const validCols = new Map<number, 'bullet' | 'number'>();
       const step = isTab ? 1 : getIndentSize();
-      for (const col of openListCols) {
-        if (col < leadingLen) {
+      for (const entry of openListCols) {
+        if (entry.col < leadingLen) {
           // Map the raw column to the nearest tab-stop column used by guide rendering
-          const snappedCol = isTab ? col : Math.floor(col / step) * step;
-          validCols.add(snappedCol);
+          const snappedCol = isTab ? entry.col : Math.floor(entry.col / step) * step;
+          validCols.set(snappedCol, entry.isBullet ? 'bullet' : 'number');
         }
       }
       lineGuideColumns[li] = validCols;
@@ -1032,21 +1062,6 @@ function buildAllDecorations(
     const blockLineCount = node.textContent.split('\n').length;
     lineCursor += blockLineCount;
 
-    // Merge guide columns for all lines of this block into a single set passed to scanBlockDecorations.
-    // scanBlockDecorations will intersect per-line as needed, but since it processes line-by-line
-    // we pass the union (the inner loops still check `s < leadingLen`, so out-of-range cols are inert).
-    // For correctness, pass per-line sets by encoding them into a union covering the block's lines.
-    // Since scanBlockDecorations iterates lines internally, we pass a union and let the column
-    // range check (`s < leadingLen`) do the rest. Columns from deeper lines won't bleed shallower.
-    const blockGuideColumnsUnion = new Set<number>();
-    for (let li = startLineIdx; li < startLineIdx + blockLineCount; li++) {
-      if (lineGuideColumns[li]) {
-        for (const c of lineGuideColumns[li]) {
-          blockGuideColumnsUnion.add(c);
-        }
-      }
-    }
-
     const blockDecos = scanBlockDecorations(
       node,
       pos,
@@ -1057,7 +1072,7 @@ function buildAllDecorations(
       startLineIdx,
       activeLineGuides,
       nextBlockLeadingLen,
-      blockGuideColumnsUnion,
+      lineGuideColumns,
       editor
     );
 
@@ -1274,7 +1289,10 @@ export const LivePreviewSyntax = Extension.create({
               !oldPluginState ||
               !oldPluginState.decorations ||
               focusChanged ||
-              targetHeadingChanged
+              targetHeadingChanged ||
+              selectionChanged ||
+              tr.selectionSet ||
+              doc.nodeSize < 25000
             ) {
               return {
                 decorations: buildAllDecorations(doc, isFocused, selFrom, selTo, targetHeadingIndex, extensionThis.editor),
@@ -1283,7 +1301,7 @@ export const LivePreviewSyntax = Extension.create({
               };
             }
 
-            if (tr.docChanged || selectionChanged || tr.selectionSet) {
+            if (tr.docChanged) {
               return {
                 decorations: updateDecorationsIncrementally(
                   tr,

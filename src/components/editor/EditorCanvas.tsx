@@ -12,6 +12,7 @@ import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, 
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
 import { dbAdapter } from '@/lib/db/adapter';
 import { DocumentProperties } from '@/types';
+import { useAppContextMenu } from '@/components/common/ContextMenu';
 import {
   FileAddIcon,
   ArrowLeft01Icon,
@@ -23,6 +24,9 @@ import {
   Tag01Icon,
   ChevronDownIcon,
   ChevronRightIcon,
+  RulerIcon,
+  LeftToRightListNumberIcon,
+  TextUnderlineIcon,
 } from '@/components/common/Icons';
 
 interface DocumentHeaderItemProps {
@@ -90,16 +94,21 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const hasActiveHeaders = documentHeaders.length > 0;
 
   const inlineTitle = useSettingsStore((s) => s.inlineTitle);
+  const setInlineTitle = useSettingsStore((s) => s.setInlineTitle);
   const readableLineLength = useSettingsStore((s) => s.readableLineLength);
+  const setReadableLineLength = useSettingsStore((s) => s.setReadableLineLength);
   const defaultTabMode = useSettingsStore((s) => s.defaultTabMode);
   const defaultEditingMode = useSettingsStore((s) => s.defaultEditingMode);
   const propertiesInDoc = useSettingsStore((s) => s.propertiesInDoc);
   const foldHeading = useSettingsStore((s) => s.foldHeading);
   const lineNumbers = useSettingsStore((s) => s.lineNumbers);
+  const setLineNumbers = useSettingsStore((s) => s.setLineNumbers);
   const indentationGuides = useSettingsStore((s) => s.indentationGuides);
   const accentListPrefixes = useSettingsStore((s) => s.accentListPrefixes);
   const strictLineBreaks = useSettingsStore((s) => s.strictLineBreaks);
   const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
+
+  const { showContextMenu } = useAppContextMenu();
 
   const canGoBack = useWorkspaceStore((s) => s.canGoBack);
   const canGoForward = useWorkspaceStore((s) => s.canGoForward);
@@ -693,6 +702,49 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }
   }, [currentDoc, openSplitTab, isLocked, showToast]);
 
+  const handleDeadSpaceContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.defaultPrevented) return;
+
+      showContextMenu(
+        e,
+        [
+          {
+            id: 'deadspace-readable-line-length',
+            title: 'Readable line length',
+            icon: <RulerIcon size={14} />,
+            checked: readableLineLength,
+            onClick: () => {
+              setReadableLineLength(!readableLineLength);
+            },
+          },
+          {
+            id: 'deadspace-line-numbers',
+            title: 'Line numbers',
+            icon: <LeftToRightListNumberIcon size={14} />,
+            checked: lineNumbers,
+            onClick: () => {
+              setLineNumbers(!lineNumbers);
+            },
+          },
+          {
+            id: 'deadspace-inline-title',
+            title: 'Inline title',
+            icon: <TextUnderlineIcon size={14} />,
+            checked: inlineTitle,
+            onClick: () => {
+              setInlineTitle(!inlineTitle);
+            },
+          },
+        ],
+        {
+          scope: 'editor-deadspace',
+        }
+      );
+    },
+    [readableLineLength, lineNumbers, inlineTitle, showContextMenu, setReadableLineLength, setLineNumbers, setInlineTitle]
+  );
+
   const isDeadTab = useMemo(() => {
     if (!activeTab) return false;
     const tabDocId = activeTab.document_id;
@@ -1048,6 +1100,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           <div
             ref={scrollViewportRef}
             style={{ touchAction: 'pan-x pan-y' }}
+            onContextMenu={handleDeadSpaceContextMenu}
             className={`flex-1 overflow-y-auto custom-scrollbar ${isReadingMode ? 'cursor-default' : ''}`}
           >
             <div

@@ -1165,6 +1165,30 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     (e: MouseEvent | React.MouseEvent) => {
       if (!editor) return;
 
+      // Detect if user right-clicked in the line numbers gutter or dead space
+      const targetEl = e.target as HTMLElement | null;
+      const proseMirrorEl = containerRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
+
+      let isGutterOrDeadSpace = false;
+      if (targetEl && containerRef.current && (targetEl === containerRef.current || targetEl.classList.contains('tiptap'))) {
+        isGutterOrDeadSpace = true;
+      } else if (proseMirrorEl) {
+        const pmRect = proseMirrorEl.getBoundingClientRect();
+        const lineNumbersActive = useSettingsStore.getState().lineNumbers;
+        // Gutter area is inside ProseMirror left padding (3.25rem ~ 52px)
+        if (lineNumbersActive && 'clientX' in e && e.clientX < pmRect.left + 52) {
+          isGutterOrDeadSpace = true;
+        } else if (targetEl === proseMirrorEl) {
+          // Clicked directly on ProseMirror container in empty area below blocks
+          isGutterOrDeadSpace = true;
+        }
+      }
+
+      if (isGutterOrDeadSpace) {
+        // Return without preventing default or stopping propagation so event bubbles to EditorCanvas dead space context menu handler
+        return;
+      }
+
       const { state } = editor;
       const { from, to, empty } = state.selection;
       const selectedText = empty ? '' : state.doc.textBetween(from, to, ' ');
@@ -2004,7 +2028,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           }
         }
       }}
-      onContextMenu={(e) => handleEditorContextMenu(e.nativeEvent)}
+      onContextMenu={(e) => handleEditorContextMenu(e)}
       className={`relative w-full flex-1 flex flex-col ${editable ? 'cursor-text' : 'cursor-default tiptap-reading-view'}`}
     >
       <EditorContent editor={editor} className="flex-1 flex flex-col" />
