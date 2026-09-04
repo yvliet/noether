@@ -71,45 +71,134 @@ export function normalizeToPascalIconName(rawId: string): string {
   return parts.map((p) => p.charAt(0).toUpperCase() + p.slice(1)).join('') + 'Icon';
 }
 
-export async function loadDynamicIcon(iconId: string): Promise<any> {
-  if (!iconId) return null;
-  if (iconDefCache.has(iconId)) return iconDefCache.get(iconId);
+/**
+ * Computes all possible PascalCase loader candidate names for an icon identifier.
+ * Addresses naming differences in @hugeicons/core-free-icons/loader where:
+ * 1. Base names like "SunIcon", "AddIcon", "AlertIcon" only exist as "Sun01Icon", "Add01Icon", etc.
+ * 2. Letter case differences exist such as "AZ" / "ZA" in "ArrangeByLettersAZIcon" or "ArrowDownAZIcon".
+ * 3. Numeric prefix representations like "3d" map to "ThreeD".
+ */
+export function getIconNameCandidates(rawId: string): string[] {
+  if (!rawId) return [];
+  const clean = rawId.trim();
+  const withoutIcon = clean.endsWith('Icon') ? clean.slice(0, -4) : clean;
+  const parts = withoutIcon.split(/[-_\s]+/);
+  const pascalBase = parts
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join('');
 
-  const pascalName = normalizeToPascalIconName(iconId);
-  if (iconDefCache.has(pascalName)) {
-    const found = iconDefCache.get(pascalName);
-    iconDefCache.set(iconId, found);
-    return found;
+  const variants = new Set<string>();
+  variants.add(pascalBase);
+  variants.add(pascalBase.replace(/Az/g, 'AZ').replace(/Za/g, 'ZA'));
+  variants.add(pascalBase.replace(/3d/i, 'ThreeD'));
+
+  const candidates = new Set<string>();
+  for (const base of variants) {
+    candidates.add(`${base}Icon`);
+    // If not already ending with 2-digit variant suffix (01, 02, etc.), try with '01'
+    if (!/0[1-9]$/.test(base)) {
+      candidates.add(`${base}01Icon`);
+    }
+    // If ending with '01', also try without '01'
+    if (base.endsWith('01')) {
+      candidates.add(`${base.slice(0, -2)}Icon`);
+    }
+    candidates.add(base);
   }
 
-  if (pendingLoads.has(pascalName)) {
-    return pendingLoads.get(pascalName);
+  // Include raw input as-is and with 'Icon'
+  candidates.add(clean);
+  if (!clean.endsWith('Icon')) {
+    candidates.add(`${clean}Icon`);
+  }
+
+  return Array.from(candidates);
+}
+
+export function getCachedIconDef(iconId?: string): any {
+  if (!iconId) return null;
+  if (iconDefCache.has(iconId)) return iconDefCache.get(iconId);
+  const candidates = getIconNameCandidates(iconId);
+  for (const cand of candidates) {
+    if (iconDefCache.has(cand)) {
+      const found = iconDefCache.get(cand);
+      iconDefCache.set(iconId, found);
+      return found;
+    }
+  }
+  return null;
+}
+
+export function subscribeToIconCache(listener: () => void): () => void {
+  cacheListeners.add(listener);
+  return () => {
+    cacheListeners.delete(listener);
+  };
+}
+
+export async function loadDynamicIcon(iconId: string): Promise<any> {
+  if (!iconId) return null;
+  const cached = getCachedIconDef(iconId);
+  if (cached) return cached;
+
+  if (pendingLoads.has(iconId)) {
+    return pendingLoads.get(iconId);
   }
 
   const promise = (async () => {
     try {
-      const def = await loadIcon(pascalName as any);
-      if (def) {
-        iconDefCache.set(iconId, def);
-        iconDefCache.set(pascalName, def);
-        notifyCacheListeners();
-        return def;
+      const candidates = getIconNameCandidates(iconId);
+
+      // 1. Try dynamic loading via @hugeicons/core-free-icons/loader across all candidates
+      for (const cand of candidates) {
+        try {
+          const def = await loadIcon(cand as any);
+          if (def) {
+            iconDefCache.set(iconId, def);
+            for (const c of candidates) {
+              iconDefCache.set(c, def);
+            }
+            notifyCacheListeners();
+            return def;
+          }
+        } catch {
+          // Continue to next candidate
+        }
       }
-    } catch (e) {
+
+      // 2. Fallback: if not found in loader, try dynamically importing full catalog
+      try {
+        const { UNIFIED_ICON_MAP } = await import('./iconCatalog');
+        const match =
+          UNIFIED_ICON_MAP.get(iconId) ||
+          UNIFIED_ICON_MAP.get(iconId.toLowerCase()) ||
+          UNIFIED_ICON_MAP.get(candidates[0]);
+        if (match?.iconDef) {
+          iconDefCache.set(iconId, match.iconDef);
+          for (const c of candidates) {
+            iconDefCache.set(c, match.iconDef);
+          }
+          notifyCacheListeners();
+          return match.iconDef;
+        }
+      } catch {
+        // Fallback resolution failed
+      }
+    } catch {
       // Icon definition not found or network/fs error
     } finally {
-      pendingLoads.delete(pascalName);
+      pendingLoads.delete(iconId);
     }
     return null;
   })();
 
-  pendingLoads.set(pascalName, promise);
+  pendingLoads.set(iconId, promise);
   return promise;
 }
 
 export function getUnifiedIconDef(iconId?: string): CatalogIconDefinition | undefined {
   if (!iconId) return undefined;
-  const def = iconDefCache.get(iconId) || iconDefCache.get(normalizeToPascalIconName(iconId));
+  const def = getCachedIconDef(iconId);
   if (def) {
     return {
       id: iconId,
@@ -161,17 +250,25 @@ export const DynamicHugeIcon: React.FC<{
   className?: string;
   color?: string;
 }> = React.memo(({ iconId, size = 14, className = '', color = 'currentColor' }) => {
-  const [iconDef, setIconDef] = useState<any>(() => {
-    return iconDefCache.get(iconId) || iconDefCache.get(normalizeToPascalIconName(iconId)) || null;
-  });
+  const [iconDef, setIconDef] = useState<any>(() => getCachedIconDef(iconId));
 
   useEffect(() => {
     let isMounted = true;
-    const current = iconDefCache.get(iconId) || iconDefCache.get(normalizeToPascalIconName(iconId));
+    const current = getCachedIconDef(iconId);
     if (current) {
       setIconDef(current);
       return;
     }
+
+    // Subscribe to cache additions so if another call or catalog load caches it, we update immediately
+    const unsubscribe = subscribeToIconCache(() => {
+      if (isMounted) {
+        const found = getCachedIconDef(iconId);
+        if (found) {
+          setIconDef(found);
+        }
+      }
+    });
 
     loadDynamicIcon(iconId).then((def) => {
       if (isMounted && def) {
@@ -181,6 +278,7 @@ export const DynamicHugeIcon: React.FC<{
 
     return () => {
       isMounted = false;
+      unsubscribe();
     };
   }, [iconId]);
 
@@ -281,6 +379,7 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           for (const item of m.UNIFIED_ICONS_CATALOG) {
             iconDefCache.set(item.id, item.iconDef);
           }
+          notifyCacheListeners();
         })
         .catch((e) => {
           console.error('[IconPicker] Failed to load icon catalog dynamically:', e);
@@ -594,6 +693,10 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                     key={icon.id}
                     type="button"
                     onClick={() => {
+                      if (icon.iconDef) {
+                        iconDefCache.set(icon.id, icon.iconDef);
+                        notifyCacheListeners();
+                      }
                       onSelectIcon(icon.id);
                       onClose();
                     }}
