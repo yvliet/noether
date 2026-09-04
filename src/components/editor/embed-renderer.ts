@@ -1,5 +1,6 @@
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { getDocumentById } from '@/lib/db/documents';
 import katex from 'katex';
 
 export type EmbedKind = 'note' | 'image' | 'audio' | 'video' | 'pdf' | 'youtube' | 'web';
@@ -21,6 +22,31 @@ const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', '
 const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus', 'wma']);
 const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi']);
 const PDF_EXTS = new Set(['pdf']);
+
+let cachedDocsRef: any = null;
+let cachedDocIndex: Map<string, any> = new Map();
+
+function getDocIndex(documents: any[]): Map<string, any> {
+  if (cachedDocsRef === documents) {
+    return cachedDocIndex;
+  }
+  cachedDocsRef = documents;
+  cachedDocIndex = new Map();
+  for (let i = 0; i < documents.length; i++) {
+    const d = documents[i];
+    if (d.is_folder) continue;
+    const titleLower = d.title.toLowerCase();
+    const cleanWithoutExt = titleLower.replace(/\.[a-zA-Z0-9]+$/, '');
+    const targetBaseName = cleanWithoutExt.split('/').pop() || cleanWithoutExt;
+
+    if (!cachedDocIndex.has(titleLower)) cachedDocIndex.set(titleLower, d);
+    if (!cachedDocIndex.has(cleanWithoutExt)) cachedDocIndex.set(cleanWithoutExt, d);
+    if (!cachedDocIndex.has(targetBaseName)) cachedDocIndex.set(targetBaseName, d);
+    if (!cachedDocIndex.has(`${titleLower}.md`)) cachedDocIndex.set(`${titleLower}.md`, d);
+    if (!cachedDocIndex.has(d.id)) cachedDocIndex.set(d.id, d);
+  }
+  return cachedDocIndex;
+}
 
 /**
  * Extracts YouTube video ID from standard YouTube URL patterns
@@ -226,13 +252,29 @@ function renderInlineFormatting(text: string): string {
     .replace(/~~([^~]+)~~/g, '<del class="line-through text-[#888]">$1</del>')
     // Highlight
     .replace(/==([^=]+)==/g, '<mark class="bg-[#ffd54f]/30 text-white px-0.5 rounded">$1</mark>')
-    // Wikilinks
+    // Markdown links: [text](url) or [text]([[target]]) or [text](target)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) => {
+      const trimmed = url.trim();
+      let wikiTarget: string | null = null;
+      if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+        let inner = trimmed.slice(2, -2).trim();
+        if (inner.includes('|')) inner = inner.split('|')[0].trim();
+        if (inner) wikiTarget = inner;
+      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
+        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        if (decoded) wikiTarget = decoded;
+      }
+
+      if (wikiTarget) {
+        return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${wikiTarget}">${text}</span>`;
+      }
+      return `<a href="${trimmed}" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">${text}</a>`;
+    })
+    // Wikilinks: [[target|alias]] or [[target]]
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const label = alias || target;
       return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${target}">${label}</span>`;
-    })
-    // Markdown links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">$1</a>');
+    });
 }
 
 /**
@@ -442,13 +484,8 @@ export function renderEmbedWidget(
       const ds = useDocumentStore.getState();
       const cleanTgt = embed.target.toLowerCase();
       const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
-      const matched = ds.documents.find(
-        (d) =>
-          !d.is_folder &&
-          (d.title.toLowerCase() === cleanTgt ||
-            d.title.toLowerCase() === cleanWithoutExt ||
-            d.id === embed.target)
-      );
+      const docIndex = getDocIndex(ds.documents);
+      const matched = docIndex.get(cleanTgt) || docIndex.get(cleanWithoutExt) || docIndex.get(embed.target);
       if (matched && matched.content_json) {
         try {
           const parsed = JSON.parse(matched.content_json);
@@ -602,22 +639,17 @@ export function renderEmbedWidget(
 
   // 6. Note Transclusion / Note Embed
   const ds = useDocumentStore.getState();
-  const allDocs = ds.documents;
   const cleanTarget = embed.noteTitle.trim().toLowerCase();
   const cleanWithoutExt = cleanTarget.replace(/\.md$/, '');
   const targetBaseName = cleanWithoutExt.split('/').pop() || cleanWithoutExt;
 
-  const matchedDoc = allDocs.find((d) => {
-    if (d.is_folder) return false;
-    const titleLower = d.title.toLowerCase();
-    return (
-      titleLower === cleanTarget ||
-      titleLower === cleanWithoutExt ||
-      titleLower === targetBaseName ||
-      `${titleLower}.md` === cleanTarget ||
-      d.id === embed.noteTitle
-    );
-  });
+  const docIndex = getDocIndex(ds.documents);
+  const matchedDoc =
+    docIndex.get(cleanTarget) ||
+    docIndex.get(cleanWithoutExt) ||
+    docIndex.get(targetBaseName) ||
+    docIndex.get(`${cleanTarget}.md`) ||
+    docIndex.get(embed.noteTitle);
 
   const card = document.createElement('div');
   card.className = 'flint-embed-card flint-note-embed rounded-lg border border-[#2e2e2e] bg-[#161616]/90 my-2.5 overflow-hidden shadow-xs';
@@ -674,26 +706,35 @@ export function renderEmbedWidget(
     }
   } else {
     try {
-      let docNodes: any[] = [];
-      if (matchedDoc.content_json && matchedDoc.content_json !== '{}') {
-        const parsed = JSON.parse(matchedDoc.content_json);
-        docNodes = parsed.content || [];
-      }
-
-      if (embed.headingAnchor) {
-        docNodes = filterNodesByHeading(docNodes, embed.headingAnchor);
-      }
-
-      body.innerHTML = renderTipTapNodesToHtml(docNodes);
-
-      // Bind any wikilinks inside the transcluded body
-      body.querySelectorAll('.md-wikilink').forEach((linkEl) => {
-        linkEl.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const target = (linkEl as HTMLElement).getAttribute('data-wikilink-target');
-          if (target) navigateToNote(target);
+      const renderContent = (jsonStr: string) => {
+        let docNodes: any[] = [];
+        if (jsonStr && jsonStr !== '{}') {
+          const parsed = JSON.parse(jsonStr);
+          docNodes = parsed.content || [];
+        }
+        if (embed.headingAnchor) {
+          docNodes = filterNodesByHeading(docNodes, embed.headingAnchor);
+        }
+        body.innerHTML = renderTipTapNodesToHtml(docNodes);
+        body.querySelectorAll('.md-wikilink').forEach((linkEl) => {
+          linkEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const target = (linkEl as HTMLElement).getAttribute('data-wikilink-target');
+            if (target) navigateToNote(target);
+          });
         });
-      });
+      };
+
+      if (matchedDoc.content_json && matchedDoc.content_json !== '{}') {
+        renderContent(matchedDoc.content_json);
+      } else {
+        // Content not held in memory to preserve RAM; load on-demand from SQLite
+        getDocumentById(matchedDoc.id).then((fullDoc) => {
+          if (fullDoc && fullDoc.content_json) {
+            renderContent(fullDoc.content_json);
+          }
+        }).catch(() => {});
+      }
     } catch (e) {
       body.innerHTML = `<p class="text-xs text-rose-400 italic">Error rendering embedded note content</p>`;
     }

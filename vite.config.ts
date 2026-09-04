@@ -64,6 +64,7 @@ export default defineConfig({
           ],
           'vendor-fsrs': ['ts-fsrs'],
           'vendor-icons': ['@hugeicons/react'],
+          'vendor-math': ['katex', 'mathlive'],
         },
       },
     },

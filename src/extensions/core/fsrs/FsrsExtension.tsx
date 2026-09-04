@@ -62,16 +62,28 @@ const FsrsDueBadgeItem: React.FC<{ app: FlintApp }> = ({ app }) => {
       });
     };
     updateCount();
-    const interval = setInterval(updateCount, 15000);
+
     const handleUpdateEvent = () => updateCount();
     window.addEventListener('flint:fsrs-updated', handleUpdateEvent);
+    window.addEventListener('focus', handleUpdateEvent);
+
+    const unsubDocSaved = app.events.on('document:saved', handleUpdateEvent);
+
+    // Passive fallback interval: only check every 5 minutes and only if document is visible
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && !document.hidden) {
+        updateCount();
+      }
+    }, 300000);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
       window.removeEventListener('flint:fsrs-updated', handleUpdateEvent);
+      window.removeEventListener('focus', handleUpdateEvent);
+      unsubDocSaved.dispose();
     };
-  }, []);
+  }, [app.events]);
 
   if (dueCount <= 0) return null;
 

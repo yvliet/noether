@@ -533,7 +533,25 @@ function scanBlockDecorations(
       const linkText = mdLinkMatch[1];
       const linkUrl = mdLinkMatch[2];
       const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
-      const isVisited = isLinkVisited(linkUrl);
+
+      // Detect if linkUrl targets an internal wikilink or note title
+      let internalWikiTarget: string | null = null;
+      const trimmedUrl = linkUrl.trim();
+      const isWrappedWikilink = trimmedUrl.startsWith('[[') && trimmedUrl.endsWith(']]');
+      if (isWrappedWikilink) {
+        let raw = trimmedUrl.slice(2, -2).trim();
+        if (raw.includes('|')) raw = raw.split('|')[0].trim();
+        if (raw) internalWikiTarget = raw;
+      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmedUrl) && !trimmedUrl.startsWith('#')) {
+        const decoded = decodeURIComponent(trimmedUrl).replace(/\.md$/, '').trim();
+        if (decoded) internalWikiTarget = decoded;
+      }
+
+      const isVisited = internalWikiTarget
+        ? isLinkVisited(internalWikiTarget) || isLinkVisited(linkUrl)
+        : isLinkVisited(linkUrl);
+
+      const linkClasses = internalWikiTarget ? 'md-wikilink md-link' : 'md-link';
 
       if (isMatchFocused) {
         decorations.push(
@@ -543,16 +561,55 @@ function scanBlockDecorations(
         );
         decorations.push(
           Decoration.inline(matchStart + 1, matchStart + 1 + linkText.length, {
-            class: `md-link is-focused${isVisited ? ' is-visited' : ''}`,
+            class: `${linkClasses} is-focused${isVisited ? ' is-visited' : ''}`,
+            ...(internalWikiTarget ? { 'data-wikilink-target': internalWikiTarget } : {}),
             'data-link-url': linkUrl,
             'data-visited': isVisited ? 'true' : 'false',
           })
         );
-        decorations.push(
-          Decoration.inline(matchStart + 1 + linkText.length, matchEnd, {
-            class: 'md-syntax-dimmed',
-          })
-        );
+
+        if (isWrappedWikilink) {
+          // In [alias]([[target]]), dim '](' and ')' while letting WIKI_REGEX style '[[target]]'
+          const urlOpenStart = matchStart + 1 + linkText.length;
+          const urlOpenEnd = urlOpenStart + 2; // ']('
+          decorations.push(
+            Decoration.inline(urlOpenStart, urlOpenEnd, {
+              class: 'md-syntax-dimmed',
+            })
+          );
+          decorations.push(
+            Decoration.inline(matchEnd - 1, matchEnd, {
+              class: 'md-syntax-dimmed',
+            })
+          );
+        } else if (internalWikiTarget) {
+          // In [alias](target), dim '](' and ')', and style target as md-wikilink
+          const urlOpenStart = matchStart + 1 + linkText.length;
+          const urlOpenEnd = urlOpenStart + 2; // ']('
+          decorations.push(
+            Decoration.inline(urlOpenStart, urlOpenEnd, {
+              class: 'md-syntax-dimmed',
+            })
+          );
+          decorations.push(
+            Decoration.inline(urlOpenEnd, matchEnd - 1, {
+              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
+              'data-wikilink-target': internalWikiTarget,
+              'data-visited': isVisited ? 'true' : 'false',
+            })
+          );
+          decorations.push(
+            Decoration.inline(matchEnd - 1, matchEnd, {
+              class: 'md-syntax-dimmed',
+            })
+          );
+        } else {
+          decorations.push(
+            Decoration.inline(matchStart + 1 + linkText.length, matchEnd, {
+              class: 'md-syntax-dimmed',
+            })
+          );
+        }
       } else {
         decorations.push(
           Decoration.inline(matchStart, matchStart + 1, {
@@ -561,7 +618,8 @@ function scanBlockDecorations(
         );
         decorations.push(
           Decoration.inline(matchStart + 1, matchStart + 1 + linkText.length, {
-            class: `md-link${isVisited ? ' is-visited' : ''}`,
+            class: `${linkClasses}${isVisited ? ' is-visited' : ''}`,
+            ...(internalWikiTarget ? { 'data-wikilink-target': internalWikiTarget } : {}),
             'data-link-url': linkUrl,
             'data-visited': isVisited ? 'true' : 'false',
           })
@@ -1027,19 +1085,7 @@ function updateDecorationsIncrementally(
   const { doc, selection } = newState;
   const { from: selFrom, to: selTo } = selection;
 
-  // For small-to-moderate documents (< 200 blocks), full rebuild is instantaneous (<0.3ms)
-  // and guarantees 100% list guide and heading outline consistency.
-  let blockCount = 0;
-  doc.descendants((n: any) => {
-    if (n.isTextblock) blockCount++;
-    return blockCount < 200;
-  });
-
-  if (blockCount < 200) {
-    return buildAllDecorations(doc, isFocused, selFrom, selTo, targetHeadingIndex, editor);
-  }
-
-  // Massive documents (10k - 100k+ words): Perform incremental dirty range updates
+  // Perform incremental dirty range updates for zero keystroke latency
   let currentDecos = oldPluginState.decorations.map(tr.mapping, doc);
 
   if (tr.docChanged) {
@@ -1055,7 +1101,7 @@ function updateDecorationsIncrementally(
     });
 
     if (minNewPos > maxNewPos) {
-      return buildAllDecorations(doc, isFocused, selFrom, selTo, targetHeadingIndex, editor);
+      return currentDecos;
     }
 
     // Expand to textblock boundaries
@@ -1103,49 +1149,73 @@ function updateDecorationsIncrementally(
     return currentDecos;
   }
 
-  // 2. Selection-only changes on massive documents:
+  // 2. Selection-only changes:
   if (oldState) {
     const oldFrom = oldState.selection.from;
     const oldTo = oldState.selection.to;
 
-    const $oldPos = oldState.doc.resolve(Math.min(oldFrom, oldState.doc.content.size));
-    const $newPos = doc.resolve(Math.min(selFrom, doc.content.size));
-
-    // If caret remained within the same textblock, check if we need to update
-    const oldBlockPos = $oldPos.depth > 0 ? $oldPos.before(1) : 0;
-    const newBlockPos = $newPos.depth > 0 ? $newPos.before(1) : 0;
-
-    if (oldBlockPos === newBlockPos && oldFrom === selFrom && oldTo === selTo) {
+    if (oldFrom === selFrom && oldTo === selTo) {
       return currentDecos;
     }
 
-    // Only rescan previous active block and new active block
-    const affectedPositions = Array.from(new Set([oldBlockPos, newBlockPos]));
-    for (const bPos of affectedPositions) {
-      if (bPos >= doc.content.size) continue;
-      const $b = doc.resolve(Math.min(bPos + 1, doc.content.size));
-      const node = $b.parent;
-      const start = $b.before($b.depth);
-      const end = $b.after($b.depth);
+    const safeOldFrom = Math.max(0, Math.min(oldFrom, doc.content.size));
+    const safeOldTo = Math.max(safeOldFrom, Math.min(oldTo, doc.content.size));
+    const $oldFrom = doc.resolve(safeOldFrom);
+    const $oldTo = doc.resolve(safeOldTo);
+    const oldDirtyStart = $oldFrom.depth > 0 ? $oldFrom.before(1) : 0;
+    const oldDirtyEnd = $oldTo.depth > 0 ? $oldTo.after(1) : doc.content.size;
 
-      const oldInRange = currentDecos.find(start, end);
+    const safeNewFrom = Math.max(0, Math.min(selFrom, doc.content.size));
+    const safeNewTo = Math.max(safeNewFrom, Math.min(selTo, doc.content.size));
+    const $newFrom = doc.resolve(safeNewFrom);
+    const $newTo = doc.resolve(safeNewTo);
+    const newDirtyStart = $newFrom.depth > 0 ? $newFrom.before(1) : 0;
+    const newDirtyEnd = $newTo.depth > 0 ? $newTo.after(1) : doc.content.size;
+
+    // Merge ranges if overlapping or adjacent
+    const ranges: { start: number; end: number }[] = [];
+    if (oldDirtyStart <= newDirtyEnd && newDirtyStart <= oldDirtyEnd) {
+      ranges.push({
+        start: Math.min(oldDirtyStart, newDirtyStart),
+        end: Math.max(oldDirtyEnd, newDirtyEnd),
+      });
+    } else {
+      if (oldDirtyStart < newDirtyStart) {
+        ranges.push({ start: oldDirtyStart, end: oldDirtyEnd });
+        ranges.push({ start: newDirtyStart, end: newDirtyEnd });
+      } else {
+        ranges.push({ start: newDirtyStart, end: newDirtyEnd });
+        ranges.push({ start: oldDirtyStart, end: oldDirtyEnd });
+      }
+    }
+
+    for (const r of ranges) {
+      const oldInRange = currentDecos.find(r.start, r.end);
       currentDecos = currentDecos.remove(oldInRange);
 
-      const decos = scanBlockDecorations(
-        node,
-        start,
-        isFocused,
-        selFrom,
-        selTo,
-        false,
-        0,
-        null,
-        0,
-        null,
-        editor
-      );
-      if (decos.length > 0) {
-        currentDecos = currentDecos.add(doc, decos);
+      const newDecos: Decoration[] = [];
+      doc.nodesBetween(r.start, r.end, (node: any, pos: number) => {
+        if (!node.isTextblock) return true;
+        const decos = scanBlockDecorations(
+          node,
+          pos,
+          isFocused,
+          selFrom,
+          selTo,
+          false,
+          0,
+          null,
+          0,
+          null,
+          editor
+        );
+        for (let i = 0; i < decos.length; i++) {
+          newDecos.push(decos[i]);
+        }
+        return false;
+      });
+      if (newDecos.length > 0) {
+        currentDecos = currentDecos.add(doc, newDecos);
       }
     }
 

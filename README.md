@@ -15,9 +15,9 @@
 ### The Open-Source, High-Performance Knowledge Engine & AI-Native Obsidian Alternative
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
-[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20%7C%20Electron%20%7C%20Web-ea580c.svg?logo=tauri&logoColor=white)](src-tauri)
+[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-ea580c.svg?logo=tauri&logoColor=white)](src-tauri)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=61dafb)](package.json)
-[![Database](https://img.shields.io/badge/Database-SQLite%20WASM%20%2B%20FTS5%20(BM25)-003B57.svg?logo=sqlite&logoColor=white)](src/lib/db)
+[![Database](https://img.shields.io/badge/Database-Native%20Rust%20SQLite%20(rusqlite)%20%2B%20WAL%20%2B%20FTS5-003B57.svg?logo=sqlite&logoColor=white)](src-tauri/src/db.rs)
 [![Protocol](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol%20(MCP)-7c3aed.svg)](bin/flint-mcp-server.cjs)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-06b6d4.svg?logo=tailwindcss&logoColor=white)](tailwind.config.js)
 
@@ -43,12 +43,12 @@ Flint provides an open, extensible architecture that combines local Markdown vau
 
 - **100% Open Source**: GPLv3 codebase with zero telemetry, zero paywalled sync tiers, and no commercial license fees.
 - **Physical Ground Truth**: Plain-text `.md` files on disk are the single source of truth.
-- **Self-Healing SQLite Index (FTS5 + BM25)**: Embedded SQLite (WASM + FTS5) delivers sub-millisecond search with statistical BM25 relevance ranking and automated legacy FTS4 fallback. SQLite validates database integrity on boot (`PRAGMA integrity_check`) and rebuilds from Markdown files automatically if needed.
+- **Compiled Native SQLite Engine (rusqlite + WAL + FTS5)**: Native Rust SQLite engine running in the Tauri host with Write-Ahead Logging (WAL) and memory-mapped I/O delivers sub-millisecond search with statistical BM25 relevance ranking and zero browser memory bloat. SQLite validates database integrity on boot (`PRAGMA integrity_check`) and rebuilds from Markdown files automatically if needed.
 - **High-Performance Live Preview**: TipTap / ProseMirror editor engine with incremental dirty-range decoration mapping and KaTeX compilation memoization. Delivers consistent sub-8ms keystroke latency on massive documents (100k+ words).
 - **Atomic File Writes**: All writes to database files and Markdown notes use temporary files and atomic rename operations. This prevents data corruption during unexpected application crashes or power loss.
 - **Fast Differential Sync**: Uses a `file_manifest` table and fast content hashing to skip unchanged files during indexing.
 - **Native AI Agent Server (MCP)**: Built-in stdio Model Context Protocol server allows AI assistants (Claude, Antigravity, Gemini, Cursor) to search notes, read backlinks, and manage tasks.
-- **Cross-Platform Runtimes**: Runs on Tauri v2 (Rust binary), Electron (Node.js fallback), and standard Web browsers.
+- **Native Desktop Architecture**: Built cleanly on Tauri v2 (compiled Rust binary) with native desktop performance, minimal RAM footprint, and instant responsiveness.
 - **Micro-Kernel Plugin SDK**: Core features and community extensions use the same public SDK (`src/sdk`).
 
 ---
@@ -63,14 +63,14 @@ Flint uses a modular architecture that separates user interface components, rela
 
 ### Core Architecture Rules
 
-1. **Dual Storage Model (Markdown + SQLite)**:
+1. **Dual Storage Model (Markdown + Native SQLite)**:
    - Your local `.md` files on disk are the single source of truth. Flint does not lock your data into proprietary binary database formats.
-   - An in-memory WASM SQLite database (`sql.js`) indexes note metadata, block-level AST nodes, tags, tasks, and graph relationships for fast queries.
-   - Database snapshots (`.flint/flint.sqlite`) and Markdown files write atomically to disk, which prevents partial file corruption.
+   - A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) indexes note metadata, block-level AST nodes, tags, tasks, and graph relationships for sub-millisecond queries.
+   - Zero UI-thread serialization overhead: database transactions write directly to disk pages without blocking the frontend renderer.
 
 2. **Cross-Platform Neutrality Bridge (`IPlatformAdapter`)**:
    - React components do not call runtime-specific APIs directly. All system calls route through [`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts).
-   - Supports Tauri v2 (Rust native binary), Electron (Node.js fallback), and standard Web browsers (IndexedDB backing).
+   - Built on Tauri v2 (Rust native binary) with Web browser preview support.
 
 3. **Strict Native Core Isolation**:
    - Core directories (`src/core`, `src/lib`, `src/store`, `src/components`) do not depend on plugin code.
@@ -128,11 +128,11 @@ Add the following to your agent configuration file (e.g. `claude_desktop_config.
 | :--- | :---: | :---: |
 | **Core Source Code** | Closed Source (Proprietary) | **100% Open Source (GPLv3)** |
 | **Data Storage** | Local Markdown (`.md`) | **Local Markdown (`.md`)** (100% Ground Truth) |
-| **Relational Metadata Index** | Proprietary In-Memory Cache | **Embedded SQLite (WASM + FTS5/BM25)** (Self-Healing) |
+| **Relational Metadata Index** | Proprietary In-Memory Cache | **Compiled Native SQLite (rusqlite + WAL + FTS5/BM25)** |
 | **Data Safety & Integrity** | Proprietary Disk Writes | **Atomic Temp-and-Rename Writes** + `PRAGMA integrity_check` |
 | **Differential Vault Sync** | Full Cache Rescan | **O(N) Manifest Scan (`file_manifest`)** |
 | **AI Agent Protocol (MCP)** | ❌ Community Plugin Required | **✅ Native Built-in Stdio MCP Server** |
-| **Desktop Runtime** | Electron | **Tauri v2 (Rust Core) / Electron Dual-Mode** |
+| **Desktop Runtime** | Electron | **Tauri v2 (Rust Core + rusqlite)** |
 | **Native Working Set Trimmer** | ❌ None (Standard Chromium Footprint) | **✅ Yes (`SetProcessWorkingSetSize` on Idle)** |
 | **Live Preview Editor** | CodeMirror 6 | **ProseMirror / TipTap (Incremental Mapping) + MathLive** |
 | **Editor Focus Authority** | Standard Buffer Sync | **Active Typing Protected against External Clobbering** |
@@ -260,9 +260,10 @@ npm run dev
 # Accessible at http://127.0.0.1:5173
 ```
 
-#### Electron Desktop Application
+#### Desktop Application (Tauri v2 Dev Mode)
 ```bash
-npm run electron
+npm run app
+# or: npm run tauri:dev
 ```
 
 ### 4. Production Build

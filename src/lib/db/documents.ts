@@ -4,10 +4,14 @@ import { moveToTrash, moveDocumentsToTrash } from './trash';
 import { platform } from '@/lib/platform/platformAdapter';
 
 
-export async function getAllDocuments(): Promise<DocumentItem[]> {
+export async function getAllDocuments(options?: { includeContent?: boolean }): Promise<DocumentItem[]> {
+  const contentExpr = options?.includeContent
+    ? 'content_json'
+    : `CASE WHEN doc_type IN ('image', 'audio', 'video', 'canvas') THEN content_json ELSE '' END AS content_json`;
+
   try {
     const docs = await dbAdapter.query<DocumentItem>(
-      `SELECT id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
+      `SELECT id, parent_id, title, ${contentExpr}, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
        FROM documents 
        ORDER BY is_folder DESC, title ASC`
     );
@@ -24,13 +28,15 @@ export async function getAllDocuments(): Promise<DocumentItem[]> {
     } catch (e) {}
     try {
       const docs = await dbAdapter.query<DocumentItem>(
-        `SELECT id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
+        `SELECT id, parent_id, title, ${contentExpr}, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at 
          FROM documents 
          ORDER BY is_folder DESC, title ASC`
       );
       return docs;
     } catch (fallbackErr) {
-      const raw = await dbAdapter.query<any>(`SELECT id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at FROM documents ORDER BY is_folder DESC, title ASC`);
+      const raw = await dbAdapter.query<any>(
+        `SELECT id, parent_id, title, ${contentExpr}, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at FROM documents ORDER BY is_folder DESC, title ASC`
+      );
       return raw.map((d: any) => ({
         id: d.id,
         parent_id: d.parent_id || null,
@@ -45,6 +51,20 @@ export async function getAllDocuments(): Promise<DocumentItem[]> {
         updated_at: d.updated_at || Date.now(),
       }));
     }
+  }
+}
+
+/**
+ * Efficiently queries only non-folder documents containing embed directives (![[...]])
+ * directly from SQLite to avoid holding all document content in the Zustand store.
+ */
+export async function getDocumentsWithEmbeds(): Promise<{ id: string; content_json: string }[]> {
+  try {
+    return await dbAdapter.query<{ id: string; content_json: string }>(
+      `SELECT id, content_json FROM documents WHERE is_folder = 0 AND content_json LIKE '%![[%'`
+    );
+  } catch (err) {
+    return [];
   }
 }
 
@@ -853,7 +873,12 @@ export async function saveDocumentAndSynchronize(
         while ((mdMatch = mdLinkRegex.exec(pText)) !== null) {
           let target = mdMatch[2]?.trim();
           if (target && !target.startsWith('http://') && !target.startsWith('https://') && !target.startsWith('mailto:') && !target.startsWith('#')) {
-            target = target.replace(/\.md$/, '').trim();
+            if (target.startsWith('[[') && target.endsWith(']]')) {
+              target = target.slice(2, -2).trim();
+              if (target.includes('|')) target = target.split('|')[0].trim();
+            }
+            if (target.includes('#')) target = target.split('#')[0].trim();
+            target = decodeURIComponent(target).replace(/\.md$/, '').trim();
             if (target) {
               wikiLinks.push(target);
             }

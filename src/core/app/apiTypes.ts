@@ -448,6 +448,14 @@ export interface HearthAPI {
   getDocumentById(docId: string): DocumentItem | undefined;
 
   /**
+   * Asynchronously reads a document with full content from the database.
+   *
+   * @param docId - The document's unique identifier.
+   * @since 0.2.0
+   */
+  readDocument(docId: string): Promise<DocumentItem | undefined>;
+
+  /**
    * Creates a new note document in the Hearth.
    *
    * @param title - Initial title for the note (default: 'Untitled').

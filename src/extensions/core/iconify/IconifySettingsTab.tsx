@@ -14,16 +14,13 @@ import React, { useState, useMemo } from 'react';
 import { useIconifyStore } from './iconifyStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { getIconifyIconDef } from './iconifyCatalog';
-import { HugeIconRenderer } from '@/components/common/IconPicker';
+import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer, EmojiStyle, EMOJI_STYLE_LABELS } from '@/components/common/emoji';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import {
   Delete02Icon,
   RotateCcwIcon,
-  Folder01Icon,
-  File01Icon,
   Search01Icon,
 } from '@/components/common/Icons';
 
@@ -50,15 +47,13 @@ export const IconifySettingsTab: React.FC = () => {
     return Object.entries(icons).map(([itemId, entry]) => {
       const doc = documents.find((d) => d.id === itemId);
       const isFolder = entry.itemType === 'folder' || (doc ? Boolean(doc.is_folder) : false);
-      const iconDef = getIconifyIconDef(entry.iconId);
       return {
         itemId,
         title: doc?.title || `${isFolder ? 'Folder' : 'File'} (${itemId})`,
         isFolder,
         doc,
         iconId: entry.iconId,
-        iconName: iconDef?.name || entry.iconId,
-        iconDef,
+        iconName: entry.iconId,
         color: entry.color,
       };
     });
@@ -338,12 +333,8 @@ export const IconifySettingsTab: React.FC = () => {
                     >
                       {item.iconId.startsWith('emoji:') ? (
                         <EmojiRenderer emoji={item.iconId.slice(6)} size={14} style={emojiStyle} />
-                      ) : item.iconDef ? (
-                        <HugeIconRenderer iconDef={item.iconDef.iconDef} size={14} color={item.color || 'currentColor'} />
-                      ) : item.isFolder ? (
-                        <Folder01Icon size={14} />
                       ) : (
-                        <File01Icon size={14} />
+                        <DynamicHugeIcon iconId={item.iconId} size={14} color={item.color || 'currentColor'} />
                       )}
                     </div>
                     <div className="flex flex-col min-w-0">

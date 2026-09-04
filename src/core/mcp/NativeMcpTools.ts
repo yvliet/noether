@@ -137,7 +137,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const doc = hostApp.hearth.getDocumentById(docId);
+          const doc = (await hostApp.hearth.readDocument(docId)) || hostApp.hearth.getDocumentById(docId);
           if (!doc) {
             return {
               isError: true,

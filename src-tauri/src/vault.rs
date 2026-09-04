@@ -881,6 +881,11 @@ pub fn window_is_maximized(window: tauri::Window) -> bool {
 }
 
 #[tauri::command]
+pub fn window_is_minimized(window: tauri::Window) -> bool {
+    window.is_minimized().unwrap_or(false)
+}
+
+#[tauri::command]
 pub fn window_start_dragging(window: tauri::Window) {
     let _ = window.start_dragging();
 }

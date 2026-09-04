@@ -1,29 +1,11 @@
 import { RecentVaultItem, VaultDiskItem } from '@/types';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { markLinkVisited } from '@/lib/visitedLinks';
-
-// Dynamic import helpers for Tauri to avoid crashing in pure browser/electron contexts
-let tauriCore: any = null;
-let tauriWindow: any = null;
-let tauriDialog: any = null;
-let tauriEvent: any = null;
-
-async function getTauriModules() {
-  if (tauriCore) return { tauriCore, tauriWindow, tauriDialog, tauriEvent };
-  try {
-    if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
-      tauriCore = await import('@tauri-apps/api/core');
-      tauriWindow = await import('@tauri-apps/api/window');
-      tauriEvent = await import('@tauri-apps/api/event');
-      try {
-        tauriDialog = await import('@tauri-apps/plugin-dialog');
-      } catch (e) {}
-    }
-  } catch (e) {
-    console.warn('[PlatformAdapter] Tauri API modules not available', e);
-  }
-  return { tauriCore, tauriWindow, tauriDialog, tauriEvent };
-}
+import { invoke } from '@tauri-apps/api/core';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { open as openShell } from '@tauri-apps/plugin-shell';
 
 export interface IPlatformAdapter {
   isTauri(): boolean;
@@ -43,13 +25,20 @@ export interface IPlatformAdapter {
   isMinimized(): Promise<boolean>;
   onMinimizedChange(callback: (isMinimized: boolean) => void): () => void;
 
-  // Multi-window
+  // Multi-window / Modals
   openHearthWindow(): Promise<{ success: boolean }>;
   closeHearthWindow(): Promise<{ success: boolean }>;
   openVaultWindow(): Promise<{ success: boolean }>;
   closeVaultWindow(): Promise<{ success: boolean }>;
   openSettingsWindow(): Promise<{ success: boolean }>;
   closeSettingsWindow(): Promise<{ success: boolean }>;
+
+  // Global hotkeys and focus
+  registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean }>;
+  unregisterGlobalShortcut(id: string): Promise<{ success: boolean }>;
+  onGlobalShortcut(callback: (id: string) => void): () => void;
+  focusMainWindow(): Promise<{ success: boolean }>;
+
   // Hearth configuration & selection
   getCurrentHearth(): Promise<{ path: string; name: string; recentHearths: RecentVaultItem[] }>;
   selectHearthFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentHearths?: RecentVaultItem[] }>;
@@ -166,11 +155,11 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public isElectron(): boolean {
-    return typeof window !== 'undefined' && Boolean(window.electronAPI?.isElectron);
+    return false;
   }
 
   public isDesktop(): boolean {
-    return this.isTauri() || this.isElectron();
+    return this.isTauri();
   }
 
   public isMacOS(): boolean {
@@ -191,85 +180,54 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   // Window Controls
   public async minimize(): Promise<void> {
     if (this.isTauri()) {
-      const { tauriCore, tauriWindow } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          await tauriCore.invoke('window_minimize');
-          return;
-        } catch (e) {}
+      try {
+        await invoke('window_minimize');
+        return;
+      } catch {
+        await getCurrentWindow().minimize();
       }
-      const current = tauriWindow?.getCurrentWindow();
-      await current?.minimize();
-      return;
-    }
-    if (this.isElectron()) {
-      window.electronAPI?.minimize();
     }
   }
 
   public async maximize(): Promise<void> {
     if (this.isTauri()) {
-      const { tauriCore, tauriWindow } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          await tauriCore.invoke('window_maximize');
-          return;
-        } catch (e) {}
+      try {
+        await invoke('window_maximize');
+        return;
+      } catch {
+        await getCurrentWindow().toggleMaximize();
       }
-      const current = tauriWindow?.getCurrentWindow();
-      await current?.toggleMaximize();
-      return;
-    }
-    if (this.isElectron()) {
-      window.electronAPI?.maximize();
     }
   }
 
   public async close(): Promise<void> {
     if (this.isTauri()) {
-      const { tauriCore, tauriWindow } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          await tauriCore.invoke('window_close');
-          return;
-        } catch (e) {}
+      try {
+        await invoke('window_close');
+        return;
+      } catch {
+        await getCurrentWindow().close();
       }
-      const current = tauriWindow?.getCurrentWindow();
-      await current?.close();
-      return;
-    }
-    if (this.isElectron()) {
-      window.electronAPI?.close();
     }
   }
 
   public async startDragging(): Promise<void> {
     if (this.isTauri()) {
-      const { tauriCore, tauriWindow } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          await tauriCore.invoke('window_start_dragging');
-          return;
-        } catch (e) {}
+      try {
+        await invoke('window_start_dragging');
+      } catch {
+        await getCurrentWindow().startDragging();
       }
-      const current = tauriWindow?.getCurrentWindow();
-      await current?.startDragging();
     }
   }
 
   public async isMaximized(): Promise<boolean> {
     if (this.isTauri()) {
-      const { tauriCore, tauriWindow } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          return Boolean(await tauriCore.invoke('window_is_maximized'));
-        } catch (e) {}
+      try {
+        return Boolean(await invoke('window_is_maximized'));
+      } catch {
+        return (await getCurrentWindow().isMaximized()) || false;
       }
-      const current = tauriWindow?.getCurrentWindow();
-      return (await current?.isMaximized()) || false;
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.isMaximized?.()) || false;
     }
     return false;
   }
@@ -277,37 +235,26 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onMaximizedChange(callback: (isMaximized: boolean) => void): () => void {
     if (this.isTauri()) {
       let unlistenResize: (() => void) | null = null;
-      getTauriModules().then(({ tauriWindow }) => {
-        const current = tauriWindow?.getCurrentWindow();
-        current?.onResized(() => {
-          current?.isMaximized().then((max: boolean) => callback(Boolean(max)));
-        }).then((unlisten: any) => {
-          unlistenResize = unlisten;
-        });
+      const current = getCurrentWindow();
+      current.onResized(() => {
+        current.isMaximized().then((max) => callback(Boolean(max)));
+      }).then((unlisten) => {
+        unlistenResize = unlisten;
       });
       return () => {
         if (unlistenResize) unlistenResize();
       };
-    }
-    if (this.isElectron()) {
-      return window.electronAPI?.onMaximizedChange?.(callback) || (() => {});
     }
     return () => {};
   }
 
   public async isMinimized(): Promise<boolean> {
     if (this.isTauri()) {
-      const { tauriCore, tauriWindow } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          return Boolean(await tauriCore.invoke('window_is_minimized'));
-        } catch (e) {}
+      try {
+        return Boolean(await invoke('window_is_minimized'));
+      } catch {
+        return (await getCurrentWindow().isMinimized()) || false;
       }
-      const current = tauriWindow?.getCurrentWindow();
-      return (await current?.isMinimized()) || false;
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.isMinimized?.()) || false;
     }
     if (typeof document !== 'undefined') {
       return document.hidden;
@@ -316,65 +263,37 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public onMinimizedChange(callback: (isMinimized: boolean) => void): () => void {
+    let unlistenResize: (() => void) | null = null;
+    let unlistenVis: (() => void) | null = null;
+
     if (this.isTauri()) {
-      let unlistenResize: (() => void) | null = null;
-      let unlistenVis: (() => void) | null = null;
-      getTauriModules().then(({ tauriWindow }) => {
-        const current = tauriWindow?.getCurrentWindow();
-        current?.onResized(() => {
-          current?.isMinimized().then((min: boolean) => callback(Boolean(min)));
-        }).then((unlisten: any) => {
-          unlistenResize = unlisten;
-        });
+      const current = getCurrentWindow();
+      current.onResized(() => {
+        current.isMinimized().then((min) => callback(Boolean(min)));
+      }).then((unlisten) => {
+        unlistenResize = unlisten;
       });
-      const handleVis = () => {
-        callback(document.hidden);
-      };
-      if (typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', handleVis);
-        unlistenVis = () => document.removeEventListener('visibilitychange', handleVis);
-      }
-      return () => {
-        if (unlistenResize) unlistenResize();
-        if (unlistenVis) unlistenVis();
-      };
     }
-    if (this.isElectron()) {
-      const unlistenElectron = window.electronAPI?.onMinimizedChange?.(callback);
-      let unlistenVis: (() => void) | null = null;
-      const handleVis = () => {
-        callback(document.hidden);
-      };
-      if (typeof document !== 'undefined') {
-        document.addEventListener('visibilitychange', handleVis);
-        unlistenVis = () => document.removeEventListener('visibilitychange', handleVis);
-      }
-      return () => {
-        if (unlistenElectron) unlistenElectron();
-        if (unlistenVis) unlistenVis();
-      };
-    }
+
+    const handleVis = () => callback(document.hidden);
     if (typeof document !== 'undefined') {
-      const handleVis = () => callback(document.hidden);
       document.addEventListener('visibilitychange', handleVis);
-      return () => document.removeEventListener('visibilitychange', handleVis);
+      unlistenVis = () => document.removeEventListener('visibilitychange', handleVis);
     }
-    return () => {};
+
+    return () => {
+      if (unlistenResize) unlistenResize();
+      if (unlistenVis) unlistenVis();
+    };
   }
 
   // Multi-window / Modal management
   public async openHearthWindow(): Promise<{ success: boolean }> {
-    if (this.isElectron() && window.electronAPI?.openHearthWindow) {
-      return await window.electronAPI.openHearthWindow();
-    }
     useWorkspaceStore.getState().setIsHearthModalOpen(true);
     return { success: true };
   }
 
   public async closeHearthWindow(): Promise<{ success: boolean }> {
-    if (this.isElectron() && window.electronAPI?.closeHearthWindow) {
-      return await window.electronAPI.closeHearthWindow();
-    }
     useWorkspaceStore.getState().setIsHearthModalOpen(false);
     return { success: true };
   }
@@ -400,22 +319,14 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   // General-Purpose Global Hotkeys & Window Focus
   public async registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return (await tauriCore?.invoke('register_global_shortcut', { id, shortcut })) || { success: true };
-    }
-    if (this.isElectron() && window.electronAPI?.registerGlobalShortcut) {
-      return await window.electronAPI.registerGlobalShortcut(id, shortcut);
+      return (await invoke('register_global_shortcut', { id, shortcut })) || { success: true };
     }
     return { success: true };
   }
 
   public async unregisterGlobalShortcut(id: string): Promise<{ success: boolean }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return (await tauriCore?.invoke('unregister_global_shortcut', { id })) || { success: true };
-    }
-    if (this.isElectron() && window.electronAPI?.unregisterGlobalShortcut) {
-      return await window.electronAPI.unregisterGlobalShortcut(id);
+      return (await invoke('unregister_global_shortcut', { id })) || { success: true };
     }
     return { success: true };
   }
@@ -423,48 +334,37 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onGlobalShortcut(callback: (id: string) => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
-      getTauriModules().then(({ tauriEvent }) => {
-        tauriEvent?.listen('global-shortcut-activated', (event: any) => {
-          const id = typeof event.payload === 'string' ? event.payload : (event.payload?.id || '');
-          callback(id);
-        }).then((fn: any) => {
-          unlisten = fn;
-        });
+      listen('global-shortcut-activated', (event: any) => {
+        const id = typeof event.payload === 'string' ? event.payload : (event.payload?.id || '');
+        callback(id);
+      }).then((fn) => {
+        unlisten = fn;
       });
       return () => {
         if (unlisten) unlisten();
       };
-    }
-    if (this.isElectron() && window.electronAPI?.onGlobalShortcut) {
-      return window.electronAPI.onGlobalShortcut(callback);
     }
     return () => {};
   }
 
   public async focusMainWindow(): Promise<{ success: boolean }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return (await tauriCore?.invoke('focus_main_window')) || { success: true };
+      return (await invoke('focus_main_window')) || { success: true };
     }
-    if (this.isElectron() && window.electronAPI?.focusMainWindow) {
-      return await window.electronAPI.focusMainWindow();
+    if (typeof window !== 'undefined') {
+      window.focus();
     }
-    window.focus();
     return { success: true };
   }
 
   // Hearth Management
   public async getCurrentHearth(): Promise<{ path: string; name: string; recentHearths: RecentVaultItem[] }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('get_current_vault');
-    }
-    if (this.isElectron()) {
-      const data = (await window.electronAPI?.getCurrentHearth?.()) || (await window.electronAPI?.getCurrentVault?.()) || { path: '', name: 'Flint Hearth', recentHearths: [] };
+      const res: any = await invoke('get_current_vault');
       return {
-        path: data.path,
-        name: data.name || 'Flint Hearth',
-        recentHearths: (data as any).recentHearths || (data as any).recentVaults || [],
+        path: res?.path || '',
+        name: res?.name || 'Flint Hearth',
+        recentHearths: res?.recentHearths || res?.recentVaults || [],
       };
     }
     return { path: '', name: 'Flint Hearth', recentHearths: [] };
@@ -477,28 +377,26 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async selectHearthFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentHearths?: RecentVaultItem[] }> {
     if (this.isTauri()) {
-      const { tauriCore, tauriDialog } = await getTauriModules();
-      if (tauriDialog?.open) {
-        const selected = await tauriDialog.open({
+      try {
+        const selected = await openDialog({
           directory: true,
           multiple: false,
           title: 'Select Hearth Folder',
         });
         if (selected && typeof selected === 'string') {
-          return await tauriCore?.invoke('set_current_vault', { vaultPath: selected });
+          const res: any = await invoke('set_current_vault', { vaultPath: selected });
+          return {
+            canceled: false,
+            path: res?.path || selected,
+            name: res?.name,
+            recentHearths: res?.recentHearths || res?.recentVaults || [],
+          };
         }
         return { canceled: true };
+      } catch (e) {
+        console.warn('[PlatformAdapter] selectHearthFolder error:', e);
+        return { canceled: true };
       }
-      return await tauriCore?.invoke('select_vault_folder');
-    }
-    if (this.isElectron()) {
-      const res = (await window.electronAPI?.selectHearthFolder?.()) || (await window.electronAPI?.selectVaultFolder?.()) || { canceled: true };
-      return {
-        canceled: res.canceled,
-        path: res.path,
-        name: res.name,
-        recentHearths: (res as any).recentHearths || (res as any).recentVaults || [],
-      };
     }
     return { canceled: true };
   }
@@ -515,20 +413,8 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async createNewHearth(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      const res = await tauriCore?.invoke('create_new_vault', { name, parentPath: parentPath || null });
+      const res: any = await invoke('create_new_vault', { name, parentPath: parentPath || null });
       return { ...res, recentHearths: res?.recentVaults || [] };
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.createNewHearth || window.electronAPI?.createNewVault;
-      const res = (await fn?.(name, parentPath || '')) || { success: false, path: '', name: '', recentHearths: [], error: 'Unsupported' };
-      return {
-        success: res.success,
-        path: res.path,
-        name: res.name,
-        recentHearths: (res as any).recentHearths || (res as any).recentVaults || [],
-        error: res.error,
-      };
     }
     return { success: false, path: '', name: '', recentHearths: [], error: 'Desktop mode only' };
   }
@@ -541,35 +427,20 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async renameHearth(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
       try {
-        const { tauriCore } = await getTauriModules();
         let res: any;
         try {
-          res = await tauriCore?.invoke('rename_hearth', { targetPath, newName });
-        } catch (_) {
-          res = await tauriCore?.invoke('rename_vault', { targetPath, newName });
+          res = await invoke('rename_hearth', { targetPath, newName });
+        } catch {
+          res = await invoke('rename_vault', { targetPath, newName });
         }
-        return { success: Boolean(res?.success), path: res?.path, name: res?.name, recentHearths: res?.recentHearths || res?.recentVaults || [], error: res?.error };
+        return {
+          success: Boolean(res?.success),
+          path: res?.path,
+          name: res?.name,
+          recentHearths: res?.recentHearths || res?.recentVaults || [],
+          error: res?.error,
+        };
       } catch (e: any) {
-        return { success: false, error: e.message, recentHearths: [] };
-      }
-    }
-    if (this.isElectron()) {
-      try {
-        const fn = window.electronAPI?.renameHearth || window.electronAPI?.renameVault;
-        if (fn) {
-          const res: any = await fn(targetPath, newName);
-          if (res) {
-            return {
-              success: Boolean(res.success),
-              path: res.path || targetPath,
-              name: res.name || newName,
-              recentHearths: res.recentHearths || res.recentVaults || [],
-              error: res.error,
-            };
-          }
-        }
-      } catch (e: any) {
-        console.warn('[Platform] Electron rename error:', e);
         return { success: false, error: e?.message || 'Failed to rename Hearth', recentHearths: [] };
       }
     }
@@ -583,17 +454,8 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[] }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      const res = await tauriCore?.invoke('remove_recent_vault', { vaultPath: hearthPath });
+      const res: any = await invoke('remove_recent_vault', { vaultPath: hearthPath });
       return { success: Boolean(res?.success), recentHearths: res?.recentVaults || [] };
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.removeRecentHearth || window.electronAPI?.removeRecentVault;
-      const res = (await fn?.(hearthPath)) || { success: false, recentHearths: [] };
-      return {
-        success: res.success,
-        recentHearths: (res as any).recentHearths || (res as any).recentVaults || [],
-      };
     }
     return { success: false, recentHearths: [] };
   }
@@ -605,19 +467,8 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[] }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      const res = await tauriCore?.invoke('set_current_vault', { vaultPath: hearthPath });
+      const res: any = await invoke('set_current_vault', { vaultPath: hearthPath });
       return { ...res, recentHearths: res?.recentVaults || [] };
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.setCurrentHearth || window.electronAPI?.setCurrentVault;
-      const res = (await fn?.(hearthPath)) || { success: false, path: '', name: '', recentHearths: [] };
-      return {
-        success: res.success,
-        path: res.path,
-        name: res.name,
-        recentHearths: (res as any).recentHearths || (res as any).recentVaults || [],
-      };
     }
     return { success: false, path: '', name: '', recentHearths: [] };
   }
@@ -629,12 +480,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async openHearthInExplorer(hearthPath?: string): Promise<{ success: boolean; error?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('open_vault_in_explorer', { vaultPath: hearthPath || null });
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.openHearthInExplorer || window.electronAPI?.openVaultInExplorer;
-      return (await fn?.(hearthPath)) || { success: false };
+      return await invoke('open_vault_in_explorer', { vaultPath: hearthPath || null });
     }
     return { success: false };
   }
@@ -645,22 +491,20 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async selectParentFolder(): Promise<{ canceled: boolean; path?: string }> {
     if (this.isTauri()) {
-      const { tauriCore, tauriDialog } = await getTauriModules();
-      if (tauriDialog?.open) {
-        const selected = await tauriDialog.open({
+      try {
+        const selected = await openDialog({
           directory: true,
           multiple: false,
-          title: 'Select Folder for New Vault',
+          title: 'Select Folder for New Hearth',
         });
         if (selected && typeof selected === 'string') {
           return { canceled: false, path: selected };
         }
         return { canceled: true };
+      } catch (e) {
+        console.warn('[PlatformAdapter] selectParentFolder error:', e);
+        return { canceled: true };
       }
-      return await tauriCore?.invoke('select_parent_folder');
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.selectParentFolder?.()) || { canceled: true };
     }
     return { canceled: true };
   }
@@ -672,11 +516,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async scanVaultFiles(customVaultPath?: string): Promise<VaultDiskItem[]> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return (await tauriCore?.invoke('scan_vault_files', { customVaultPath: customVaultPath || null })) || [];
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.scanVaultFiles?.(customVaultPath)) || [];
+      return (await invoke('scan_vault_files', { customVaultPath: customVaultPath || null })) || [];
     }
     return [];
   }
@@ -684,26 +524,18 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
     this.recordInternalWrite(relativePath || filename);
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('save_markdown_file', { filename, content, relativePath: relativePath || null, vaultPath: vaultPath || null });
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.saveMarkdownFile?.(filename, content, relativePath, vaultPath)) || { success: false };
+      return await invoke('save_markdown_file', { filename, content, relativePath: relativePath || null, vaultPath: vaultPath || null });
     }
     return { success: false };
   }
 
   public async setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return (await tauriCore?.invoke('set_file_attributes', {
+      return (await invoke('set_file_attributes', {
         filenameOrPath,
         readonly: options.readonly !== undefined ? options.readonly : null,
         modifiedTime: options.mtime !== undefined ? options.mtime : null,
       })) || { success: true };
-    }
-    if (this.isElectron()) {
-      return (await (window.electronAPI as any)?.setFileAttributes?.(filenameOrPath, options)) || { success: true };
     }
     return { success: true };
   }
@@ -711,11 +543,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
     this.recordInternalWrite(filenameOrPath);
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('delete_markdown_file', { filenameOrPath, vaultPath: vaultPath || null });
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.deleteMarkdownFile?.(filenameOrPath, vaultPath)) || { success: false };
+      return await invoke('delete_markdown_file', { filenameOrPath, vaultPath: vaultPath || null });
     }
     return { success: false };
   }
@@ -723,8 +551,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
     this.recordInternalWrite(newRelativePath || oldRelativePath || newFilename);
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('rename_markdown_file', {
+      return await invoke('rename_markdown_file', {
         oldFilename: oldFilename || null,
         newFilename: newFilename || null,
         oldRelativePath: oldRelativePath || null,
@@ -732,19 +559,12 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         vaultPath: vaultPath || null,
       });
     }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.renameMarkdownFile?.(oldFilename, newFilename, oldRelativePath, newRelativePath, vaultPath)) || { success: false };
-    }
     return { success: false };
   }
 
   public async openTrashFolder(): Promise<{ success: boolean; path?: string; error?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('open_trash_folder');
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.openTrashFolder?.()) || { success: false };
+      return await invoke('open_trash_folder');
     }
     return { success: false, error: 'Desktop mode only' };
   }
@@ -752,11 +572,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async saveTrashFile(filename: string, content: string, relativePath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
     this.recordInternalWrite(relativePath || filename);
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('save_trash_file', { filename, content, relativePath: relativePath || null });
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.saveTrashFile?.(filename, content, relativePath)) || { success: false };
+      return await invoke('save_trash_file', { filename, content, relativePath: relativePath || null });
     }
     return { success: false };
   }
@@ -764,11 +580,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async deleteTrashFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }> {
     this.recordInternalWrite(filenameOrPath);
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('delete_trash_file', { filenameOrPath });
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.deleteTrashFile?.(filenameOrPath)) || { success: false };
+      return await invoke('delete_trash_file', { filenameOrPath });
     }
     return { success: false };
   }
@@ -776,11 +588,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async emptyTrashFolder(): Promise<{ success: boolean; error?: string }> {
     this.recordInternalWrite('.trash');
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('empty_trash_folder');
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.emptyTrashFolder?.()) || { success: false };
+      return await invoke('empty_trash_folder');
     }
     return { success: false };
   }
@@ -788,61 +596,39 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   // Database persistence
   public async saveDatabase(bytes: Uint8Array, customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('save_database', { bytes, vaultPath: customVaultPath || null });
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.saveDatabase?.(bytes, customVaultPath)) || { success: false };
+      return await invoke('save_database', { bytes, vaultPath: customVaultPath || null });
     }
     return { success: false };
   }
 
   public async loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      const raw: any = await tauriCore?.invoke('load_database', { vaultPath: customVaultPath || null });
+      const raw: any = await invoke('load_database', { vaultPath: customVaultPath || null });
       if (raw) {
         if (raw instanceof Uint8Array) return raw;
         if (Array.isArray(raw)) return new Uint8Array(raw);
         if (raw instanceof ArrayBuffer) return new Uint8Array(raw);
       }
-      return null;
-    }
-    if (this.isElectron()) {
-      return (await window.electronAPI?.loadDatabase?.(customVaultPath)) || null;
     }
     return null;
   }
 
   // Event Listeners
-  // Event Listeners
   public onHearthChanged(callback: (hearth: { path: string; name: string; recentHearths: RecentVaultItem[] }) => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
-      getTauriModules().then(({ tauriEvent }) => {
-        tauriEvent?.listen('vault-changed', (event: any) => {
-          callback({
-            path: event.payload?.path,
-            name: event.payload?.name || 'Flint Hearth',
-            recentHearths: event.payload?.recentHearths || event.payload?.recentVaults || [],
-          });
-        }).then((fn: any) => {
-          unlisten = fn;
+      listen('vault-changed', (event: any) => {
+        callback({
+          path: event.payload?.path,
+          name: event.payload?.name || 'Flint Hearth',
+          recentHearths: event.payload?.recentHearths || event.payload?.recentVaults || [],
         });
+      }).then((fn) => {
+        unlisten = fn;
       });
       return () => {
         if (unlisten) unlisten();
       };
-    }
-    if (this.isElectron()) {
-      const onFn = window.electronAPI?.onHearthChanged || window.electronAPI?.onVaultChanged;
-      return onFn?.((data: any) => {
-        callback({
-          path: data.path,
-          name: data.name || 'Flint Hearth',
-          recentHearths: data.recentHearths || data.recentVaults || [],
-        });
-      }) || (() => {});
     }
     return () => {};
   }
@@ -864,20 +650,14 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onVaultFilesChanged(callback: () => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
-      getTauriModules().then(({ tauriEvent }) => {
-        tauriEvent?.listen('vault-files-changed', () => {
-          callback();
-        }).then((fn: any) => {
-          unlisten = fn;
-        });
+      listen('vault-files-changed', () => {
+        callback();
+      }).then((fn) => {
+        unlisten = fn;
       });
       return () => {
         if (unlisten) unlisten();
       };
-    }
-    if (this.isElectron()) {
-      const onFn = window.electronAPI?.onHearthFilesChanged || window.electronAPI?.onVaultFilesChanged;
-      return onFn?.(callback) || (() => {});
     }
     return () => {};
   }
@@ -889,12 +669,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async openPluginsFolder(): Promise<{ success: boolean; path?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('open_plugins_folder');
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.openExtensionsFolder || window.electronAPI?.openPluginsFolder;
-      return (await fn?.()) || { success: false };
+      return await invoke('open_plugins_folder');
     }
     return { success: false };
   }
@@ -905,12 +680,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async listInstalledPlugins(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return (await tauriCore?.invoke('list_installed_plugins')) || [];
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.listInstalledExtensions || window.electronAPI?.listInstalledPlugins;
-      return (await fn?.()) || [];
+      return (await invoke('list_installed_plugins')) || [];
     }
     return [];
   }
@@ -921,21 +691,14 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async readPluginBundle(pluginFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      return await tauriCore?.invoke('read_plugin_bundle', { pluginFolder });
-    }
-    if (this.isElectron()) {
-      const fn = window.electronAPI?.readExtensionBundle || window.electronAPI?.readPluginBundle;
-      return (await fn?.(pluginFolder)) || { success: false };
+      return await invoke('read_plugin_bundle', { pluginFolder });
     }
     return { success: false };
   }
 
   // Zoom
   public setZoomFactor(factor: number): void {
-    if (this.isElectron() && window.electronAPI?.setZoomFactor) {
-      window.electronAPI.setZoomFactor(factor);
-    } else if (typeof document !== 'undefined') {
+    if (typeof document !== 'undefined') {
       if (document.body && (document.body.style as any).zoom) {
         (document.body.style as any).zoom = '';
       }
@@ -949,9 +712,6 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public getZoomFactor(): number {
-    if (this.isElectron() && window.electronAPI?.getZoomFactor) {
-      return window.electronAPI.getZoomFactor();
-    }
     if (typeof document !== 'undefined') {
       const docZoom = (document.documentElement.style as any).zoom;
       if (docZoom) return parseFloat(docZoom);
@@ -963,13 +723,10 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
   public async setAccentIcon(accentColor: string): Promise<void> {
     if (this.isTauri()) {
-      const { tauriCore } = await getTauriModules();
-      if (tauriCore?.invoke) {
-        try {
-          await tauriCore.invoke('set_accent_icon', { accentColor });
-        } catch (e) {
-          console.warn('[PlatformAdapter] Failed to set accent icon', e);
-        }
+      try {
+        await invoke('set_accent_icon', { accentColor });
+      } catch (e) {
+        console.warn('[PlatformAdapter] Failed to set accent icon', e);
       }
     }
   }
@@ -980,15 +737,12 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     }
     if (this.isTauri()) {
       try {
-        const { tauriCore, tauriWindow } = await getTauriModules();
-        if (tauriCore?.invoke) {
-          try {
-            await tauriCore.invoke('window_set_title', { title });
-          } catch (err) {
-            console.warn('[PlatformAdapter] tauri invoke window_set_title failed:', err);
-          }
+        try {
+          await invoke('window_set_title', { title });
+        } catch (err) {
+          console.warn('[PlatformAdapter] tauri invoke window_set_title failed:', err);
         }
-        const current = tauriWindow?.getCurrentWindow();
+        const current = getCurrentWindow();
         if (current?.setTitle) {
           await current.setTitle(title);
         }
@@ -996,23 +750,13 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         console.warn('[PlatformAdapter] Failed to set window title in Tauri', e);
       }
     }
-    if (this.isElectron()) {
-      try {
-        (window as any).electronAPI?.setWindowTitle?.(title);
-      } catch (e) {
-        console.warn('[PlatformAdapter] Failed to set window title in Electron', e);
-      }
-    }
   }
 
   public async notifyUserActivity(): Promise<void> {
     if (this.isTauri()) {
       try {
-        const { tauriCore } = await getTauriModules();
-        if (tauriCore?.invoke) {
-          await tauriCore.invoke('notify_user_activity');
-        }
-      } catch (e) {}
+        await invoke('notify_user_activity');
+      } catch {}
     }
   }
 
@@ -1039,18 +783,11 @@ class PlatformAdapterImpl implements IPlatformAdapter {
 
     if (this.isTauri()) {
       try {
-        const { open } = await import('@tauri-apps/plugin-shell');
-        await open(url);
+        await openShell(url);
         return { success: true };
       } catch (e: any) {
         console.warn('[PlatformAdapter] Tauri plugin-shell open failed', e);
       }
-    }
-
-    if (this.isElectron() && (window as any).electronAPI?.openUrl) {
-      try {
-        return await (window as any).electronAPI.openUrl(url);
-      } catch (e) {}
     }
 
     try {

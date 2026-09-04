@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { getDocumentPath, isDocumentLocked } from '@/lib/db/documents';
+import { getDocumentPath, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
 import { DocumentItem } from '@/types';
 import { useFlintApp, useDocMenuActions } from '@/core/app/AppContext';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -267,10 +267,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   // Open in New Window
   const handleOpenInNewWindow = () => {
     setIsOpen(false);
-    if (doc && typeof window !== 'undefined' && (window as any).electronAPI?.openNewWindow) {
-      (window as any).electronAPI.openNewWindow(doc.id);
-    } else {
-      window.open(window.location.href, '_blank');
+    if (doc) {
+      platform.openHearthWindow();
     }
   };
 
@@ -403,8 +401,19 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         );
         if (other) {
           try {
-            const curParsed = JSON.parse(doc.content_json || '{"type":"doc","content":[]}');
-            const otherParsed = JSON.parse(other.content_json || '{"type":"doc","content":[]}');
+            let curContentJson = doc.content_json;
+            if (!curContentJson) {
+              const fullCur = await getDocumentById(doc.id);
+              if (fullCur) curContentJson = fullCur.content_json;
+            }
+            let otherContentJson = other.content_json;
+            if (!otherContentJson) {
+              const fullOther = await getDocumentById(other.id);
+              if (fullOther) otherContentJson = fullOther.content_json;
+            }
+
+            const curParsed = JSON.parse(curContentJson || '{"type":"doc","content":[]}');
+            const otherParsed = JSON.parse(otherContentJson || '{"type":"doc","content":[]}');
             const curContent = Array.isArray(curParsed.content) ? curParsed.content : [];
             const otherContent = Array.isArray(otherParsed.content) ? otherParsed.content : [];
 

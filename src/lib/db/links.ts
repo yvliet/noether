@@ -74,6 +74,28 @@ export async function getOutgoingLinksWithDetails(sourceDocId: string): Promise<
             }
           }
         }
+
+        const mdRegex = /\[(.*?)\]\((.*?)\)/g;
+        while ((match = mdRegex.exec(node.text)) !== null) {
+          let linkTarget = match[2]?.trim();
+          if (linkTarget && !linkTarget.startsWith('http://') && !linkTarget.startsWith('https://') && !linkTarget.startsWith('mailto:') && !linkTarget.startsWith('#')) {
+            if (linkTarget.startsWith('[[') && linkTarget.endsWith(']]')) {
+              linkTarget = linkTarget.slice(2, -2).trim();
+              if (linkTarget.includes('|')) linkTarget = linkTarget.split('|')[0].trim();
+            }
+            if (linkTarget.includes('#')) linkTarget = linkTarget.split('#')[0].trim();
+            linkTarget = decodeURIComponent(linkTarget).replace(/\.md$/, '').trim();
+            if (linkTarget && !foundLinks.has(linkTarget.toLowerCase())) {
+              foundLinks.add(linkTarget.toLowerCase());
+              outgoingLinks.push({
+                link_text: linkTarget,
+                target_document_id: null,
+                exists: false,
+                snippet: node.text.trim(),
+              });
+            }
+          }
+        }
       }
       if (Array.isArray(node.content)) {
         node.content.forEach(traverse);

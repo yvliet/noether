@@ -753,11 +753,87 @@ export const Fold = Extension.create<FoldOptions>({
               saveFoldState(tr.doc, nextFoldedHeadings, nextFoldedIndents, documentId);
             }
 
-            const decorations = buildFoldDecorations(
-              tr.doc,
-              nextFoldedHeadings,
-              nextFoldedIndents
-            );
+            let needsRebuild =
+              isFoldAction ||
+              reloadFoldState !== undefined ||
+              !oldState?.decorations ||
+              oldState.decorations === DecorationSet.empty;
+
+            if (!needsRebuild && tr.docChanged) {
+              // Check if any step in tr changed block structure or touched headings/lists
+              for (const step of tr.steps) {
+                const s = step as any;
+                // 1. If slice contains block nodes (e.g. Enter pressed, new paragraph/list inserted)
+                if (s.slice && s.slice.content && s.slice.content.size > 0) {
+                  let hasBlock = false;
+                  s.slice.content.descendants((node: any) => {
+                    if (node.isBlock) {
+                      hasBlock = true;
+                      return false;
+                    }
+                  });
+                  if (hasBlock) {
+                    needsRebuild = true;
+                    break;
+                  }
+                }
+                // 2. If deletion spans across block boundaries (e.g. Backspace merging blocks)
+                if (s.from !== undefined && s.to !== undefined && s.from < s.to) {
+                  try {
+                    const docs = (tr as any).docs;
+                    const $from = docs ? docs[0].resolve(s.from) : null;
+                    const $to = docs ? docs[0].resolve(s.to) : null;
+                    if ($from && $to && ($from.parent !== $to.parent || $from.depth !== $to.depth)) {
+                      needsRebuild = true;
+                      break;
+                    }
+                  } catch {
+                    needsRebuild = true;
+                    break;
+                  }
+                }
+              }
+
+              // 3. If any step touched a heading, list, or taskItem
+              if (!needsRebuild) {
+                let minStart = tr.doc.content.size;
+                let maxEnd = 0;
+                tr.mapping.maps.forEach((stepMap: any) => {
+                  stepMap.forEach((_oldStart: number, _oldEnd: number, newStart: number, newEnd: number) => {
+                    minStart = Math.min(minStart, newStart);
+                    maxEnd = Math.max(maxEnd, newEnd);
+                  });
+                });
+
+                if (minStart <= maxEnd) {
+                  const safeStart = Math.max(0, Math.min(minStart, tr.doc.content.size));
+                  const safeEnd = Math.max(safeStart, Math.min(maxEnd, tr.doc.content.size));
+                  const $start = tr.doc.resolve(safeStart);
+                  const $end = tr.doc.resolve(safeEnd);
+
+                  for (let d = $start.depth; d > 0; d--) {
+                    const name = $start.node(d).type.name;
+                    if (name === 'heading' || name === 'listItem' || name === 'taskItem') {
+                      needsRebuild = true;
+                      break;
+                    }
+                  }
+                  if (!needsRebuild) {
+                    for (let d = $end.depth; d > 0; d--) {
+                      const name = $end.node(d).type.name;
+                      if (name === 'heading' || name === 'listItem' || name === 'taskItem') {
+                        needsRebuild = true;
+                        break;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+
+            const decorations = needsRebuild
+              ? buildFoldDecorations(tr.doc, nextFoldedHeadings, nextFoldedIndents)
+              : oldState.decorations.map(tr.mapping, tr.doc);
 
             return {
               foldedHeadings: nextFoldedHeadings,

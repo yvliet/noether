@@ -1,7 +1,6 @@
 import React from 'react';
 import { useIconifyStore } from './iconifyStore';
-import { getIconifyIconDef } from './iconifyCatalog';
-import { HugeIconRenderer } from '@/components/common/IconPicker';
+import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
 
 export interface IconifyEditorTitleIconProps {
@@ -63,28 +62,23 @@ export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
   }
 
   // 2. HugeIcon icon
-  const iconDef = getIconifyIconDef(entry.iconId);
-  if (iconDef) {
-    return (
-      <button
-        type="button"
-        onClick={handleClick}
-        title={`Change icon for “${title}”`}
-        style={{
-          height: titleHeight,
-          width: titleHeight,
-          color: entry.color || 'currentColor',
-        }}
-        className="rounded-lg flex items-center justify-center hover:bg-[#282828] cursor-pointer shrink-0 select-none"
-      >
-        <HugeIconRenderer
-          iconDef={iconDef.iconDef}
-          size={iconPixelSize}
-          color={entry.color || 'currentColor'}
-        />
-      </button>
-    );
-  }
-
-  return null;
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      title={`Change icon for “${title}”`}
+      style={{
+        height: titleHeight,
+        width: titleHeight,
+        color: entry.color || 'currentColor',
+      }}
+      className="rounded-lg flex items-center justify-center hover:bg-[#282828] cursor-pointer shrink-0 select-none"
+    >
+      <DynamicHugeIcon
+        iconId={entry.iconId}
+        size={iconPixelSize}
+        color={entry.color || 'currentColor'}
+      />
+    </button>
+  );
 };

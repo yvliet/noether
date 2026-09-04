@@ -400,13 +400,29 @@ function renderInlineMarkdown(text: string): string {
       const label = alias || target;
       return `<div class="flint-embed-card flint-note-embed rounded-lg border border-[#2e2e2e] bg-[#161616]/90 p-3 my-2 text-xs text-[#cccccc]"><div class="flex items-center gap-1.5 text-xs font-semibold text-[var(--flint-accent)] mb-1"><span>📄 Embedded: ${target}</span></div><div class="italic text-[#888888]">${label}</div></div>`;
     })
+    // Standard Markdown links: [text](url) or [text]([[target]]) or [text](target)
+    .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) => {
+      const trimmed = url.trim();
+      let wikiTarget: string | null = null;
+      if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+        let inner = trimmed.slice(2, -2).trim();
+        if (inner.includes('|')) inner = inner.split('|')[0].trim();
+        if (inner) wikiTarget = inner;
+      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
+        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        if (decoded) wikiTarget = decoded;
+      }
+
+      if (wikiTarget) {
+        return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${wikiTarget}">${text}</span>`;
+      }
+      return `<a href="${trimmed}" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">${text}</a>`;
+    })
     // Standard Wikilinks: [[Target|Alias]] or [[Target]] (only when not preceded by !)
     .replace(/(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const label = alias || target;
-      return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text">${label}</span>`;
-    })
-    // Standard Markdown links: [text](url) (only when not preceded by !)
-    .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">$1</a>');
+      return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${target}">${label}</span>`;
+    });
 }
 
 export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(({

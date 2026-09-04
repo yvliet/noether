@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo, useImperativeHandle } from 'react';
 import { Extension } from '@tiptap/core';
 import { TextSelection } from '@tiptap/pm/state';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
@@ -254,17 +254,43 @@ function extractLinkTargetFromEvent(
     (document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null)?.closest('.md-link');
 
   if (mdLinkElem) {
+    // If the element directly has data-wikilink-target set (e.g. from live preview syntax for [alias]([[target]])),
+    // always navigate directly without focused editing lockout.
+    const explicitWikiTarget = mdLinkElem.getAttribute('data-wikilink-target');
+    if (explicitWikiTarget) {
+      return { type: 'wikilink', target: explicitWikiTarget };
+    }
+
     const isFocused = mdLinkElem.classList.contains('is-focused');
     const isModifierClick = event.ctrlKey || event.metaKey || event.button === 1;
-    // When unfocused (rendered view), clicking directly opens the link.
-    // When focused (editing raw syntax), clicking places the cursor for editing unless modifier/middle-click.
-    if (!isFocused || isModifierClick) {
-      const targetUrl =
-        mdLinkElem.getAttribute('data-link-url') ||
-        mdLinkElem.getAttribute('href') ||
-        null;
-      if (targetUrl) {
-        return { type: 'url', target: targetUrl };
+
+    const rawUrl =
+      mdLinkElem.getAttribute('data-link-url') ||
+      mdLinkElem.getAttribute('href') ||
+      null;
+
+    if (rawUrl) {
+      const trimmed = rawUrl.trim();
+      let wikiTarget: string | null = null;
+      if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+        let inner = trimmed.slice(2, -2).trim();
+        if (inner.includes('|')) inner = inner.split('|')[0].trim();
+        if (inner) wikiTarget = inner;
+      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
+        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        if (decoded) wikiTarget = decoded;
+      }
+
+      // Internal note link: clicking anywhere on the alias text redirects to the target note immediately
+      if (wikiTarget) {
+        return { type: 'wikilink', target: wikiTarget };
+      }
+
+      // For external URLs:
+      // When unfocused (rendered view), clicking directly opens the link.
+      // When focused (editing raw syntax), clicking places the cursor for editing unless modifier/middle-click.
+      if (!isFocused || isModifierClick) {
+        return { type: 'url', target: rawUrl };
       }
     }
     return null;
@@ -340,7 +366,7 @@ function extractLinkTargetFromEvent(
           }
 
           // Markdown links: [Text](url) (excluding embeds ![...](...))
-          const mdLinkRegex = /\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+          const mdLinkRegex = /\[([^\]\n]+)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
           let mdMatch: RegExpExecArray | null;
           while ((mdMatch = mdLinkRegex.exec(text)) !== null) {
             if (mdMatch.index > 0 && text[mdMatch.index - 1] === '!') {
@@ -351,6 +377,18 @@ function extractLinkTargetFromEvent(
             if (offset >= mStart && offset < mEnd) {
               const url = mdMatch[2].trim();
               if (url) {
+                let wikiTarget: string | null = null;
+                if (url.startsWith('[[') && url.endsWith(']]')) {
+                  let inner = url.slice(2, -2).trim();
+                  if (inner.includes('|')) inner = inner.split('|')[0].trim();
+                  if (inner) wikiTarget = inner;
+                } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(url) && !url.startsWith('#')) {
+                  const decoded = decodeURIComponent(url).replace(/\.md$/, '').trim();
+                  if (decoded) wikiTarget = decoded;
+                }
+                if (wikiTarget) {
+                  return { type: 'wikilink', target: wikiTarget };
+                }
                 return { type: 'url', target: url };
               }
             }
@@ -393,6 +431,148 @@ const HighlightSubmenuContent: React.FC<{
   );
 });
 
+export interface EditorSuggestionPopupsRef {
+  setSlashMenuProps: (props: SlashMenuPropsState | null | ((prev: SlashMenuPropsState | null) => SlashMenuPropsState | null)) => void;
+  setWikiProps: (props: WikiPropsState | null | ((prev: WikiPropsState | null) => WikiPropsState | null)) => void;
+  closeAll: () => void;
+}
+
+export type SlashMenuPropsState = {
+  items: SlashItem[];
+  command: (item: SlashItem, extra?: any) => void;
+  rect: DOMRect | null;
+};
+
+export type WikiPropsState = {
+  items: WikiLinkItem[];
+  command: (item: WikiLinkItem) => void;
+  rect: DOMRect | null;
+};
+
+function getSmartFloatingStyle(rect: DOMRect | null, estimatedWidth: number, estimatedHeight: number, gap: number = 6): React.CSSProperties {
+  if (!rect) return { display: 'none' };
+  const vh = window.innerHeight;
+  const vw = window.innerWidth;
+  const margin = 12;
+
+  const spaceBelow = vh - rect.bottom - gap - margin;
+  const spaceAbove = rect.top - gap - margin;
+
+  let left = rect.left;
+  if (left + estimatedWidth > vw - margin) {
+    left = Math.max(margin, vw - estimatedWidth - margin);
+  }
+  if (left < margin) {
+    left = margin;
+  }
+
+  if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
+    const bottom = vh - rect.top + gap;
+    const maxHeight = Math.max(120, Math.min(estimatedHeight, spaceAbove));
+    return {
+      position: 'fixed',
+      left: `${left}px`,
+      bottom: `${bottom}px`,
+      maxHeight: `${maxHeight}px`,
+      zIndex: 50,
+    };
+  } else {
+    const top = rect.bottom + gap;
+    const maxHeight = Math.max(120, Math.min(estimatedHeight, spaceBelow));
+    return {
+      position: 'fixed',
+      left: `${left}px`,
+      top: `${top}px`,
+      maxHeight: `${maxHeight}px`,
+      zIndex: 50,
+    };
+  }
+}
+
+interface EditorSuggestionPopupsProps {
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  slashMenuRef: React.RefObject<any>;
+  wikiPopupRef: React.RefObject<any>;
+}
+
+const EditorSuggestionPopups = React.memo(
+  React.forwardRef<EditorSuggestionPopupsRef, EditorSuggestionPopupsProps>(
+    ({ containerRef, slashMenuRef, wikiPopupRef }, ref) => {
+      const [slashMenuProps, setSlashMenuProps] = useState<SlashMenuPropsState | null>(null);
+      const [wikiProps, setWikiProps] = useState<WikiPropsState | null>(null);
+
+      useImperativeHandle(
+        ref,
+        () => ({
+          setSlashMenuProps,
+          setWikiProps,
+          closeAll: () => {
+            setSlashMenuProps(null);
+            setWikiProps(null);
+          },
+        }),
+        []
+      );
+
+      const isAnyOpen = Boolean(slashMenuProps || wikiProps);
+
+      useEffect(() => {
+        if (!isAnyOpen) return;
+
+        const handlePointerDown = (e: MouseEvent) => {
+          const target = e.target as Node | null;
+          if (containerRef.current && target && containerRef.current.contains(target)) {
+            return;
+          }
+          setSlashMenuProps(null);
+          setWikiProps(null);
+        };
+
+        const handleScroll = (e: Event) => {
+          const target = e.target as HTMLElement | null;
+          if (target && target.closest?.('[data-flint-suggestion-popup="true"]')) {
+            return;
+          }
+          setSlashMenuProps(null);
+          setWikiProps(null);
+        };
+
+        window.addEventListener('mousedown', handlePointerDown, true);
+        window.addEventListener('scroll', handleScroll, true);
+        return () => {
+          window.removeEventListener('mousedown', handlePointerDown, true);
+          window.removeEventListener('scroll', handleScroll, true);
+        };
+      }, [isAnyOpen, containerRef]);
+
+      return (
+        <>
+          {slashMenuProps && slashMenuProps.rect && (
+            <div style={getSmartFloatingStyle(slashMenuProps.rect, 300, 340, 6)}>
+              <SlashMenu
+                ref={slashMenuRef}
+                items={slashMenuProps.items}
+                command={slashMenuProps.command}
+              />
+            </div>
+          )}
+
+          {wikiProps && wikiProps.rect && (
+            <div style={getSmartFloatingStyle(wikiProps.rect, 270, 300, 6)}>
+              <WikiLinkPopup
+                ref={wikiPopupRef}
+                items={wikiProps.items}
+                command={wikiProps.command}
+              />
+            </div>
+          )}
+        </>
+      );
+    }
+  )
+);
+EditorSuggestionPopups.displayName = 'EditorSuggestionPopups';
+
 interface TipTapEditorProps {
   documentId?: string;
   content: string;
@@ -415,18 +595,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
 
-  // Floating menu refs
-  const [slashMenuProps, setSlashMenuProps] = useState<{
-    items: SlashItem[];
-    command: (item: SlashItem) => void;
-    rect: DOMRect | null;
-  } | null>(null);
-
-  const [wikiProps, setWikiProps] = useState<{
-    items: WikiLinkItem[];
-    command: (item: WikiLinkItem) => void;
-    rect: DOMRect | null;
-  } | null>(null);
+  // Floating suggestion popups ref (avoids re-rendering TipTapEditor on suggestion keystrokes)
+  const suggestionPopupsRef = useRef<EditorSuggestionPopupsRef>(null);
 
   const [isMathKeyboardOpen, setIsMathKeyboardOpen] = useState(false);
 
@@ -435,6 +605,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const wikiPopupRef = useRef<any>(null);
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
   const lastEmittedJsonRef = useRef<string | null>(null);
+  const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInternalUpdateRef = useRef(false);
   const wasEditableRef = useRef(editable);
   const handleContextMenuRef = useRef<((e: MouseEvent) => void) | null>(null);
   const { showContextMenu } = useAppContextMenu();
@@ -542,13 +714,26 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const editor = useEditor({
     editable,
     onBlur: ({ event }) => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+        updateTimerRef.current = null;
+        if (editor && !editor.isDestroyed) {
+          try {
+            const jsonStr = JSON.stringify(editor.getJSON());
+            if (jsonStr !== lastEmittedJsonRef.current) {
+              isInternalUpdateRef.current = true;
+              lastEmittedJsonRef.current = jsonStr;
+              onChange(jsonStr);
+            }
+          } catch (e) {}
+        }
+      }
       // Retain popup if focus moved to something inside this editor container (or popup)
       const related = (event as FocusEvent)?.relatedTarget as Node | null;
       if (related && containerRef.current?.contains(related)) {
         return;
       }
-      setWikiProps(null);
-      setSlashMenuProps(null);
+      suggestionPopupsRef.current?.closeAll();
     },
     extensions: [
       ...app.editor.getExtensions(),
@@ -568,7 +753,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             return {
               onStart: (props: any) => {
                 const rect = props.clientRect?.();
-                setSlashMenuProps({
+                suggestionPopupsRef.current?.setSlashMenuProps({
                   items: props.items,
                   command: (item: SlashItem, extra?: any) => {
                     props.command({ ...item, ...extra });
@@ -577,8 +762,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                 });
               },
               onUpdate: (props: any) => {
-                const rect = props.clientRect?.();
-                setSlashMenuProps((prev) =>
+                suggestionPopupsRef.current?.setSlashMenuProps((prev) =>
                   prev
                     ? {
                         ...prev,
@@ -586,20 +770,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                         command: (item: SlashItem, extra?: any) => {
                           props.command({ ...item, ...extra });
                         },
-                        rect: rect || null,
+                        rect: prev.rect || props.clientRect?.() || null,
                       }
                     : null
                 );
               },
               onKeyDown: (props: any) => {
                 if (props.event.key === 'Escape') {
-                  setSlashMenuProps(null);
+                  suggestionPopupsRef.current?.setSlashMenuProps(null);
                   return true;
                 }
                 return slashMenuRef.current?.onKeyDown(props) || false;
               },
               onExit: () => {
-                setSlashMenuProps(null);
+                suggestionPopupsRef.current?.setSlashMenuProps(null);
               },
             };
           },
@@ -612,27 +796,43 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           },
           items: ({ query }) => {
             if (query.includes(']') || query.includes('[')) return [];
-            const currentDocs = useDocumentStore.getState().documents.filter((d) => !d.is_folder);
+            const currentDocs = useDocumentStore.getState().documents;
             const q = query.trim().toLowerCase();
-            const matches: WikiLinkItem[] = (q
-              ? currentDocs.filter((d) => d.title.toLowerCase().includes(q))
-              : currentDocs
-            ).map((d) => ({ id: d.id, title: d.title }));
+            const matches: WikiLinkItem[] = [];
 
-            if (query.trim() && !matches.some((m) => m.title.toLowerCase() === query.trim().toLowerCase())) {
-              matches.push({
+            if (!q) {
+              // When query is empty (initial [[ typing), grab top 30 documents directly with early exit
+              for (let i = 0; i < currentDocs.length && matches.length < 30; i++) {
+                const d = currentDocs[i];
+                if (!d.is_folder) {
+                  matches.push({ id: d.id, title: d.title });
+                }
+              }
+              return matches;
+            }
+
+            // When query is provided, find matching documents up to limit
+            for (let i = 0; i < currentDocs.length && matches.length < 30; i++) {
+              const d = currentDocs[i];
+              if (!d.is_folder && d.title.toLowerCase().includes(q)) {
+                matches.push({ id: d.id, title: d.title });
+              }
+            }
+
+            if (query.trim() && !matches.some((m) => m.title.toLowerCase() === q)) {
+              matches.unshift({
                 id: `new-${query.trim()}`,
                 title: query.trim(),
                 isNew: true,
               });
             }
-            return matches;
+            return matches.slice(0, 30);
           },
           render: () => {
             return {
               onStart: (props: any) => {
                 const rect = props.clientRect?.();
-                setWikiProps({
+                suggestionPopupsRef.current?.setWikiProps({
                   items: props.items,
                   command: async (item: WikiLinkItem) => {
                     if (item.isNew) {
@@ -649,8 +849,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                 });
               },
               onUpdate: (props: any) => {
-                const rect = props.clientRect?.();
-                setWikiProps((prev) =>
+                suggestionPopupsRef.current?.setWikiProps((prev) =>
                   prev
                     ? {
                         ...prev,
@@ -666,20 +865,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                             props.command(item);
                           }
                         },
-                        rect: rect || null,
+                        rect: prev.rect || props.clientRect?.() || null,
                       }
                     : null
                 );
               },
               onKeyDown: (props: any) => {
                 if (props.event.key === 'Escape') {
-                  setWikiProps(null);
+                  suggestionPopupsRef.current?.setWikiProps(null);
                   return true;
                 }
                 return wikiPopupRef.current?.onKeyDown(props) || false;
               },
               onExit: () => {
-                setWikiProps(null);
+                suggestionPopupsRef.current?.setWikiProps(null);
               },
             };
           },
@@ -701,6 +900,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         // instead of splitting blocks into new paragraphs (which have 0.5rem paragraph margins).
         hardBreak: {
           keepMarks: true,
+        },
+        history: {
+          depth: 50,
+          newGroupDelay: 500,
         },
         bold: false,
         italic: false,
@@ -944,10 +1147,17 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       }
     },
     onUpdate: ({ editor }) => {
-      isInternalUpdateRef.current = true;
-      const jsonStr = JSON.stringify(editor.getJSON());
-      lastEmittedJsonRef.current = jsonStr;
-      onChange(jsonStr);
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+      }
+      updateTimerRef.current = setTimeout(() => {
+        updateTimerRef.current = null;
+        if (!editor || editor.isDestroyed) return;
+        isInternalUpdateRef.current = true;
+        const jsonStr = JSON.stringify(editor.getJSON());
+        lastEmittedJsonRef.current = jsonStr;
+        onChange(jsonStr);
+      }, 150);
     },
   });
 
@@ -1485,7 +1695,25 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   handleContextMenuRef.current = handleEditorContextMenu;
 
-  const isInternalUpdateRef = useRef(false);
+  // Flush any pending debounced update when unmounting or switching editor
+  useEffect(() => {
+    return () => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+        updateTimerRef.current = null;
+        if (editor && !editor.isDestroyed) {
+          try {
+            const jsonStr = JSON.stringify(editor.getJSON());
+            if (jsonStr !== lastEmittedJsonRef.current) {
+              isInternalUpdateRef.current = true;
+              lastEmittedJsonRef.current = jsonStr;
+              onChange(jsonStr);
+            }
+          } catch (e) {}
+        }
+      }
+    };
+  }, [editor, onChange]);
 
   // Keep editor content in sync when active document switches or updates externally
   useEffect(() => {
@@ -1525,44 +1753,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   // Dismiss suggestion popups whenever the active document switches
   useEffect(() => {
-    setWikiProps(null);
-    setSlashMenuProps(null);
+    suggestionPopupsRef.current?.closeAll();
   }, [documentId]);
-
-  // Immediate suggestion popup dismissal on outside clicks or scroll events.
-  // Rationale: In multi-pane or docked sidebar layouts, clicking into another file or pane
-  // shifts focus away from this editor instance without dispatching a ProseMirror selection
-  // transaction to this editor. Listening to capture-phase mousedown and outside scroll ensures
-  // floating suggestion popups (wikilink, slash menu) are immediately unmounted rather than
-  // lingering orphaned on screen.
-  useEffect(() => {
-    if (!wikiProps && !slashMenuProps) return;
-
-    const handlePointerDown = (e: MouseEvent) => {
-      const target = e.target as Node | null;
-      if (containerRef.current && target && containerRef.current.contains(target)) {
-        return;
-      }
-      setWikiProps(null);
-      setSlashMenuProps(null);
-    };
-
-    const handleScroll = (e: Event) => {
-      const target = e.target as HTMLElement | null;
-      if (target && target.closest?.('[data-flint-suggestion-popup="true"]')) {
-        return;
-      }
-      setWikiProps(null);
-      setSlashMenuProps(null);
-    };
-
-    window.addEventListener('mousedown', handlePointerDown, true);
-    window.addEventListener('scroll', handleScroll, true);
-    return () => {
-      window.removeEventListener('mousedown', handlePointerDown, true);
-      window.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [wikiProps, slashMenuProps]);
 
   // Sync editable state and restore caret position when returning to editing view
   useEffect(() => {
@@ -1792,49 +1984,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     };
   }, [editor, app]);
 
-  // Smart floating popover positioning with automatic top/bottom flip and screen boundary clamping
-  const getSmartFloatingStyle = useCallback((rect: DOMRect | null, estimatedWidth: number, estimatedHeight: number, gap: number = 6): React.CSSProperties => {
-    if (!rect) return { display: 'none' };
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
-    const margin = 12;
-
-    const spaceBelow = vh - rect.bottom - gap - margin;
-    const spaceAbove = rect.top - gap - margin;
-
-    // Horizontal alignment with boundary clamping
-    let left = rect.left;
-    if (left + estimatedWidth > vw - margin) {
-      left = Math.max(margin, vw - estimatedWidth - margin);
-    }
-    if (left < margin) {
-      left = margin;
-    }
-
-    // Vertical placement: prefer below, flip to above if not enough space below AND more space above
-    if (spaceBelow < estimatedHeight && spaceAbove > spaceBelow) {
-      const bottom = vh - rect.top + gap;
-      const maxHeight = Math.max(120, Math.min(estimatedHeight, spaceAbove));
-      return {
-        position: 'fixed',
-        left: `${left}px`,
-        bottom: `${bottom}px`,
-        maxHeight: `${maxHeight}px`,
-        zIndex: 50,
-      };
-    } else {
-      const top = rect.bottom + gap;
-      const maxHeight = Math.max(120, Math.min(estimatedHeight, spaceBelow));
-      return {
-        position: 'fixed',
-        left: `${left}px`,
-        top: `${top}px`,
-        maxHeight: `${maxHeight}px`,
-        zIndex: 50,
-      };
-    }
-  }, []);
-
   return (
     <div
       ref={containerRef}
@@ -1863,27 +2012,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       {/* Minimalist Hover Edge Add-Row / Add-Column Controls */}
       {editable && <TableEdgeControls editor={editor} />}
 
-      {/* Floating Slash Command Menu with Smart Auto-Flip */}
-      {slashMenuProps && slashMenuProps.rect && (
-        <div style={getSmartFloatingStyle(slashMenuProps.rect, 300, 340, 6)}>
-          <SlashMenu
-            ref={slashMenuRef}
-            items={slashMenuProps.items}
-            command={slashMenuProps.command}
-          />
-        </div>
-      )}
-
-      {/* Floating WikiLink Popup with Smart Auto-Flip */}
-      {wikiProps && wikiProps.rect && (
-        <div style={getSmartFloatingStyle(wikiProps.rect, 270, 300, 6)}>
-          <WikiLinkPopup
-            ref={wikiPopupRef}
-            items={wikiProps.items}
-            command={wikiProps.command}
-          />
-        </div>
-      )}
+      {/* Isolated Floating Suggestion Popups (prevents TipTapEditor re-renders on suggestion keystrokes) */}
+      <EditorSuggestionPopups
+        ref={suggestionPopupsRef}
+        containerRef={containerRef}
+        slashMenuRef={slashMenuRef}
+        wikiPopupRef={wikiPopupRef}
+      />
 
       {/* Native Virtual Math Keyboard */}
       <MathKeyboard

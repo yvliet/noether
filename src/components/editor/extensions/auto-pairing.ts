@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import { getEffectiveTextRange } from './markdown-shortcuts';
 import { useSettingsStore } from '@/store/settingsStore';
 
@@ -85,28 +85,20 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
 
                   if (selText.startsWith('*') && selText.endsWith('*') && !selText.startsWith('**') && selText.length >= 2) {
                     const unwrapped = selText.slice(1, -1);
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, unwrapped)
-                      .setTextSelection({ from, to: from + unwrapped.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
+                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
+                    view.dispatch(tr);
                   } else if (beforeOne === '*' && afterOne === '*' && beforeTwo !== '**' && afterTwo !== '**') {
                     const innerLength = to - from;
-                    editor
-                      .chain()
-                      .focus()
-                      .deleteRange({ from: to, to: to + 1 })
-                      .deleteRange({ from: from - 1, to: from })
-                      .setTextSelection({ from: from - 1, to: from - 1 + innerLength })
-                      .run();
+                    const tr = state.tr;
+                    tr.delete(to, to + 1);
+                    tr.delete(from - 1, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from - 1, from - 1 + innerLength));
+                    view.dispatch(tr);
                   } else {
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, `*${selText}*`)
-                      .setTextSelection({ from: from + 1, to: from + 1 + selText.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(`*${selText}*`));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
+                    view.dispatch(tr);
                   }
                   return true;
                 }
@@ -117,28 +109,20 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
 
                   if (selText.startsWith('`') && selText.endsWith('`') && selText.length >= 2) {
                     const unwrapped = selText.slice(1, -1);
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, unwrapped)
-                      .setTextSelection({ from, to: from + unwrapped.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
+                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
+                    view.dispatch(tr);
                   } else if (beforeOne === '`' && afterOne === '`') {
                     const innerLength = to - from;
-                    editor
-                      .chain()
-                      .focus()
-                      .deleteRange({ from: to, to: to + 1 })
-                      .deleteRange({ from: from - 1, to: from })
-                      .setTextSelection({ from: from - 1, to: from - 1 + innerLength })
-                      .run();
+                    const tr = state.tr;
+                    tr.delete(to, to + 1);
+                    tr.delete(from - 1, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from - 1, from - 1 + innerLength));
+                    view.dispatch(tr);
                   } else {
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, `\`${selText}\``)
-                      .setTextSelection({ from: from + 1, to: from + 1 + selText.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(`\`${selText}\``));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
+                    view.dispatch(tr);
                   }
                   return true;
                 }
@@ -149,28 +133,20 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
 
                   if (selText.startsWith('~~') && selText.endsWith('~~') && selText.length >= 4) {
                     const unwrapped = selText.slice(2, -2);
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, unwrapped)
-                      .setTextSelection({ from, to: from + unwrapped.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
+                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
+                    view.dispatch(tr);
                   } else if (beforeTwo === '~~' && afterTwo === '~~') {
                     const innerLength = to - from;
-                    editor
-                      .chain()
-                      .focus()
-                      .deleteRange({ from: to, to: to + 2 })
-                      .deleteRange({ from: from - 2, to: from })
-                      .setTextSelection({ from: from - 2, to: from - 2 + innerLength })
-                      .run();
+                    const tr = state.tr;
+                    tr.delete(to, to + 2);
+                    tr.delete(from - 2, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from - 2, from - 2 + innerLength));
+                    view.dispatch(tr);
                   } else {
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, `~~${selText}~~`)
-                      .setTextSelection({ from: from + 2, to: from + 2 + selText.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(`~~${selText}~~`));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 2, from + 2 + selText.length));
+                    view.dispatch(tr);
                   }
                   return true;
                 }
@@ -181,28 +157,20 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
 
                   if (selText.startsWith('==') && selText.endsWith('==') && selText.length >= 4) {
                     const unwrapped = selText.slice(2, -2);
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, unwrapped)
-                      .setTextSelection({ from, to: from + unwrapped.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
+                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
+                    view.dispatch(tr);
                   } else if (beforeTwo === '==' && afterTwo === '==') {
                     const innerLength = to - from;
-                    editor
-                      .chain()
-                      .focus()
-                      .deleteRange({ from: to, to: to + 2 })
-                      .deleteRange({ from: from - 2, to: from })
-                      .setTextSelection({ from: from - 2, to: from - 2 + innerLength })
-                      .run();
+                    const tr = state.tr;
+                    tr.delete(to, to + 2);
+                    tr.delete(from - 2, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from - 2, from - 2 + innerLength));
+                    view.dispatch(tr);
                   } else {
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, `==${selText}==`)
-                      .setTextSelection({ from: from + 2, to: from + 2 + selText.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(`==${selText}==`));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 2, from + 2 + selText.length));
+                    view.dispatch(tr);
                   }
                   return true;
                 }
@@ -211,62 +179,48 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   event.preventDefault();
                   event.stopPropagation();
 
-                  // Case 1: Selection itself is [[...]] -> unwrap
+                  // Case 1: Selection itself is [[...]] -> unwrap to plain text
                   if (selText.startsWith('[[') && selText.endsWith(']]') && selText.length >= 4) {
                     const unwrapped = selText.slice(2, -2);
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, unwrapped)
-                      .setTextSelection({ from, to: from + unwrapped.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
+                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
+                    view.dispatch(tr);
                     return true;
                   }
 
                   // Case 2: Selected text is surrounded by [[ before and ]] after -> unwrap
                   if (beforeTwo === '[[' && afterTwo === ']]') {
                     const innerLength = to - from;
-                    editor
-                      .chain()
-                      .focus()
-                      .deleteRange({ from: to, to: to + 2 })
-                      .deleteRange({ from: from - 2, to: from })
-                      .setTextSelection({ from: from - 2, to: from - 2 + innerLength })
-                      .run();
+                    const tr = state.tr;
+                    tr.delete(to, to + 2);
+                    tr.delete(from - 2, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from - 2, from - 2 + innerLength));
+                    view.dispatch(tr);
                     return true;
                   }
 
                   // Case 3: Selection is single-bracketed [text] -> upgrade to [[text]]
                   if (selText.startsWith('[') && selText.endsWith(']') && selText.length >= 2) {
                     const inner = selText.slice(1, -1);
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, `[[${inner}]]`)
-                      .setTextSelection({ from: from + 2, to: from + 2 + inner.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(`[[${inner}]]`));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 2, from + 2 + inner.length));
+                    view.dispatch(tr);
                     return true;
                   }
 
                   // Case 4: Selected text is surrounded by [ before and ] after -> upgrade to [[text]]
                   if (beforeOne === '[' && afterOne === ']') {
                     const innerLength = selText.length;
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from: from - 1, to: to + 1 }, `[[${selText}]]`)
-                      .setTextSelection({ from: from + 1, to: from + 1 + innerLength })
-                      .run();
+                    const tr = state.tr.replaceWith(from - 1, to + 1, state.schema.text(`[[${selText}]]`));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + innerLength));
+                    view.dispatch(tr);
                     return true;
                   }
 
-                  // Case 5: Plain text selected -> wrap in [[...]]
-                  editor
-                    .chain()
-                    .focus()
-                    .insertContentAt({ from, to }, `[[${selText}]]`)
-                    .setTextSelection({ from: from + 2, to: from + 2 + selText.length })
-                    .run();
+                  // Case 5: Plain text selected -> wrap in [...] first (progressive wrapping)
+                  const tr = state.tr.replaceWith(from, to, state.schema.text(`[${selText}]`));
+                  tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
+                  view.dispatch(tr);
                   return true;
                 }
 
@@ -277,20 +231,15 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   const closeChar = BRACKET_PAIRS[key];
                   if (beforeOne === key && afterOne === closeChar) {
                     const innerLength = to - from;
-                    editor
-                      .chain()
-                      .focus()
-                      .deleteRange({ from: to, to: to + 1 })
-                      .deleteRange({ from: from - 1, to: from })
-                      .setTextSelection({ from: from - 1, to: from - 1 + innerLength })
-                      .run();
+                    const tr = state.tr;
+                    tr.delete(to, to + 1);
+                    tr.delete(from - 1, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from - 1, from - 1 + innerLength));
+                    view.dispatch(tr);
                   } else {
-                    editor
-                      .chain()
-                      .focus()
-                      .insertContentAt({ from, to }, `${key}${selText}${closeChar}`)
-                      .setTextSelection({ from: from + 1, to: from + 1 + selText.length })
-                      .run();
+                    const tr = state.tr.replaceWith(from, to, state.schema.text(`${key}${selText}${closeChar}`));
+                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
+                    view.dispatch(tr);
                   }
                   return true;
                 }
@@ -304,7 +253,8 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                 if (CLOSING_CHARS.has(key) && key === afterChar) {
                   event.preventDefault();
                   event.stopPropagation();
-                  editor.chain().focus().setTextSelection(from + 1).run();
+                  const tr = state.tr.setSelection(TextSelection.create(state.doc, from + 1));
+                  view.dispatch(tr);
                   return true;
                 }
 
@@ -314,11 +264,10 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   event.stopPropagation();
 
                   const beforeChar = from > 0 ? state.doc.textBetween(from - 1, from) : '';
-                  if (beforeChar === '*') {
-                    editor.chain().focus().insertContentAt({ from, to }, '***').setTextSelection(from + 1).run();
-                  } else {
-                    editor.chain().focus().insertContentAt({ from, to }, '**').setTextSelection(from + 1).run();
-                  }
+                  const insertText = beforeChar === '*' ? '***' : '**';
+                  const tr = state.tr.insertText(insertText, from);
+                  tr.setSelection(TextSelection.create(tr.doc, from + 1));
+                  view.dispatch(tr);
                   return true;
                 }
 
@@ -327,7 +276,9 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   event.preventDefault();
                   event.stopPropagation();
 
-                  editor.chain().focus().insertContentAt({ from, to }, '``').setTextSelection(from + 1).run();
+                  const tr = state.tr.insertText('``', from);
+                  tr.setSelection(TextSelection.create(tr.doc, from + 1));
+                  view.dispatch(tr);
                   return true;
                 }
 
@@ -337,7 +288,9 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   if (beforeChar === '=') {
                     event.preventDefault();
                     event.stopPropagation();
-                    editor.chain().focus().insertContentAt({ from, to }, '===').setTextSelection(from + 1).run();
+                    const tr = state.tr.insertText('===', from);
+                    tr.setSelection(TextSelection.create(tr.doc, from + 1));
+                    view.dispatch(tr);
                     return true;
                   }
                 }
@@ -348,7 +301,9 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                   event.stopPropagation();
 
                   const closeChar = BRACKET_PAIRS[key];
-                  editor.chain().focus().insertContentAt({ from, to }, `${key}${closeChar}`).setTextSelection(from + 1).run();
+                  const tr = state.tr.insertText(`${key}${closeChar}`, from);
+                  tr.setSelection(TextSelection.create(tr.doc, from + 1));
+                  view.dispatch(tr);
                   return true;
                 }
 
@@ -366,7 +321,8 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                     ) {
                       event.preventDefault();
                       event.stopPropagation();
-                      editor.chain().focus().deleteRange({ from: pos - 1, to: pos + 1 }).run();
+                      const tr = state.tr.delete(pos - 1, pos + 1);
+                      view.dispatch(tr);
                       return true;
                     }
 
@@ -382,7 +338,8 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                       ) {
                         event.preventDefault();
                         event.stopPropagation();
-                        editor.chain().focus().deleteRange({ from: pos - 2, to: pos + 2 }).run();
+                        const tr = state.tr.delete(pos - 2, pos + 2);
+                        view.dispatch(tr);
                         return true;
                       }
                     }

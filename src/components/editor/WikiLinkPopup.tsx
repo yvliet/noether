@@ -15,6 +15,8 @@ export const WikiLinkPopup = React.memo(
       selectedIndexRef.current = selectedIndex;
       const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
+      const displayItems = items.slice(0, 30);
+
       useEffect(() => {
         setSelectedIndex(0);
         selectedIndexRef.current = 0;
@@ -24,25 +26,25 @@ export const WikiLinkPopup = React.memo(
         ref,
         () => ({
           onKeyDown: ({ event }) => {
-            if (!items || items.length === 0) {
+            if (!displayItems || displayItems.length === 0) {
               return false;
             }
             if (event.key === 'ArrowUp') {
-              const nextIndex = (selectedIndexRef.current + items.length - 1) % items.length;
+              const nextIndex = (selectedIndexRef.current + displayItems.length - 1) % displayItems.length;
               selectedIndexRef.current = nextIndex;
               setSelectedIndex(nextIndex);
               itemRefs.current[nextIndex]?.scrollIntoView({ block: 'nearest' });
               return true;
             }
             if (event.key === 'ArrowDown') {
-              const nextIndex = (selectedIndexRef.current + 1) % items.length;
+              const nextIndex = (selectedIndexRef.current + 1) % displayItems.length;
               selectedIndexRef.current = nextIndex;
               setSelectedIndex(nextIndex);
               itemRefs.current[nextIndex]?.scrollIntoView({ block: 'nearest' });
               return true;
             }
             if (event.key === 'Enter' || event.key === 'Tab') {
-              const currentItem = items[selectedIndexRef.current];
+              const currentItem = displayItems[selectedIndexRef.current];
               if (currentItem) {
                 command(currentItem);
                 return true;
@@ -51,10 +53,10 @@ export const WikiLinkPopup = React.memo(
             return false;
           },
         }),
-        [items, command]
+        [displayItems, command]
       );
 
-      if (!items.length) {
+      if (!displayItems.length) {
         return null;
       }
 
@@ -67,7 +69,7 @@ export const WikiLinkPopup = React.memo(
           <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
             Link to Note
           </div>
-          {items.map((item, index) => {
+          {displayItems.map((item, index) => {
             const isSelected = index === selectedIndex;
             return (
               <button

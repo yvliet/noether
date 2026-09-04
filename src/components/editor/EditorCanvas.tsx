@@ -9,7 +9,7 @@ import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
 import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
-import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked } from '@/lib/db/documents';
+import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
 import { dbAdapter } from '@/lib/db/adapter';
 import { DocumentProperties } from '@/types';
 import {
@@ -547,14 +547,31 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
               });
         setContent(safeContent);
         setIsEditingSubheader(false);
+
+        // If content was omitted to preserve memory (e.g. split pane note), fetch on demand from SQLite
+        if (!currentDoc.is_folder && (!currentDoc.content_json || currentDoc.content_json === '{}')) {
+          getDocumentById(currentDoc.id).then((fullDoc) => {
+            if (fullDoc && fullDoc.content_json && fullDoc.content_json !== '{}' && activeDocIdRef.current === fullDoc.id) {
+              setContent(fullDoc.content_json);
+            }
+          });
+        }
       } else {
         // Same document updated (e.g. from background auto-save or edit from another pane)
         if (!isEditingSubheader && !isMainTitleFocused) {
           setTitle(currentDoc.title);
           titleRef.current = currentDoc.title;
         }
-        if (pendingContentRef.current === null && currentDoc.content_json) {
-          setContent(currentDoc.content_json);
+        if (pendingContentRef.current === null) {
+          if (currentDoc.content_json) {
+            setContent(currentDoc.content_json);
+          } else if (!currentDoc.is_folder) {
+            getDocumentById(currentDoc.id).then((fullDoc) => {
+              if (fullDoc && fullDoc.content_json && fullDoc.content_json !== '{}' && activeDocIdRef.current === fullDoc.id) {
+                setContent(fullDoc.content_json);
+              }
+            });
+          }
         }
       }
     } else {

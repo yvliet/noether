@@ -78,11 +78,15 @@ export const WikiLinks = Extension.create<{
             deleteTo += 1;
           }
 
+          // Avoid trailing space if the wikilink is placed inside markdown link parentheses e.g. [alias]([[target]])
+          const charAfter = state.doc.textBetween(deleteTo, Math.min(deleteTo + 1, docSize));
+          const insertText = charAfter === ')' ? `[[${props.title}]]` : `[[${props.title}]] `;
+
           editor
             .chain()
             .focus()
             .deleteRange({ from, to: deleteTo })
-            .insertContent(`[[${props.title}]] `)
+            .insertContent(insertText)
             .run();
         },
       },

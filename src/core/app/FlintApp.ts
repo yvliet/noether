@@ -316,6 +316,10 @@ export class FlintApp {
       getDocumentById: (docId: string): DocumentItem | undefined => {
         return storeRefs.document?.getState()?.documents.find((d: DocumentItem) => d.id === docId);
       },
+      readDocument: async (docId: string): Promise<DocumentItem | undefined> => {
+        const doc = await storeRefs.document?.getState()?.getDocumentContent(docId);
+        return doc || undefined;
+      },
       createNewNote: async (
         title?: string,
         parentId?: string | null

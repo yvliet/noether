@@ -643,7 +643,7 @@ textarea::selection {
   height: 0 !important;
 }
 
-/* Electron Window Drag Regions */
+/* Window Drag Regions */
 .drag-region {
   -webkit-app-region: drag;
 }

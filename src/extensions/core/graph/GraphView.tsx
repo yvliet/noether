@@ -684,7 +684,12 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         while ((mdMatch = mdRegex.exec(text)) !== null) {
           let raw = mdMatch[2]?.trim();
           if (raw && !raw.startsWith('http://') && !raw.startsWith('https://') && !raw.startsWith('mailto:') && !raw.startsWith('#')) {
-            const targetKey = raw.toLowerCase().replace(/\.md$/, '');
+            if (raw.startsWith('[[') && raw.endsWith(']]')) {
+              raw = raw.slice(2, -2).trim();
+              if (raw.includes('|')) raw = raw.split('|')[0].trim();
+            }
+            if (raw.includes('#')) raw = raw.split('#')[0].trim();
+            const targetKey = decodeURIComponent(raw).toLowerCase().replace(/\.md$/, '');
             const targetId = docMap.get(targetKey) || docMap.get(targetKey.split('/').pop() || targetKey);
             if (targetId && targetId !== d.id) {
               const pairKey = `${d.id}->${targetId}`;
@@ -2340,7 +2345,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       }
     };
 
-    // 1. Cross-platform window minimize detection (Electron / Tauri / Web)
+    // 1. Cross-platform window minimize detection (Tauri / Web)
     const unlistenMin = platform.onMinimizedChange((minimized) => {
       isWindowMin = minimized;
       checkSuspension();

@@ -16,8 +16,7 @@ import {
   File01Icon,
   Layout01Icon,
 } from '@/components/common/Icons';
-import { getIconifyIconDef } from './iconifyCatalog';
-import { HugeIconRenderer } from '@/components/common/IconPicker';
+import { HugeIconRenderer, DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
 import { useIconifyStore } from './iconifyStore';
 import { DocumentItem } from '@/types';
@@ -55,16 +54,14 @@ export const IconifyNode: React.FC<IconifyNodeProps> = React.memo(({
     );
   }
 
-  const iconDef = iconId ? getIconifyIconDef(iconId) : null;
-
-  if (iconDef) {
+  if (iconId) {
     return (
       <span
         className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
         style={color ? { color } : undefined}
-        title={iconDef.name}
+        title={title}
       >
-        <HugeIconRenderer iconDef={iconDef.iconDef} size={14} color={color || 'currentColor'} />
+        <DynamicHugeIcon iconId={iconId} size={14} color={color || 'currentColor'} />
       </span>
     );
   }
@@ -131,18 +128,14 @@ export const IconifyFileIconSlot: React.FC<IconifyFileIconSlotProps> = ({ doc })
       );
     }
 
-    const iconDef = getIconifyIconDef(entry.iconId);
-    if (iconDef) {
-      return (
-        <span
-          className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
-          style={entry.color ? { color: entry.color } : undefined}
-          title={iconDef.name}
-        >
-          <HugeIconRenderer iconDef={iconDef.iconDef} size={14} color={entry.color || 'currentColor'} />
-        </span>
-      );
-    }
+    return (
+      <span
+        className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+        style={entry.color ? { color: entry.color } : undefined}
+      >
+        <DynamicHugeIcon iconId={entry.iconId} size={14} color={entry.color || 'currentColor'} />
+      </span>
+    );
   }
 
   // 2. Default file icon
@@ -191,18 +184,14 @@ export const IconifyFolderPrefixSlot: React.FC<IconifyFolderPrefixSlotProps> = (
       );
     }
 
-    const iconDef = getIconifyIconDef(entry.iconId);
-    if (iconDef) {
-      return (
-        <span
-          className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
-          style={entry.color ? { color: entry.color } : undefined}
-          title={iconDef.name}
-        >
-          <HugeIconRenderer iconDef={iconDef.iconDef} size={14} color={entry.color || 'currentColor'} />
-        </span>
-      );
-    }
+    return (
+      <span
+        className="w-4 h-4 flex items-center justify-center shrink-0 text-[#888888] group-hover:text-[#dcddde] select-none pointer-events-none"
+        style={entry.color ? { color: entry.color } : undefined}
+      >
+        <DynamicHugeIcon iconId={entry.iconId} size={14} color={entry.color || 'currentColor'} />
+      </span>
+    );
   }
 
   if (showDefaultFolderIcons) {
@@ -287,18 +276,14 @@ export const IconifyBreadcrumbIcon: React.FC<IconifyBreadcrumbIconProps> = ({
       );
     }
 
-    const iconDef = getIconifyIconDef(entry.iconId);
-    if (iconDef) {
-      return (
-        <span
-          className="w-3.5 h-3.5 flex items-center justify-center shrink-0 select-none pointer-events-none"
-          style={entry.color ? { color: entry.color } : undefined}
-          title={iconDef.name}
-        >
-          <HugeIconRenderer iconDef={iconDef.iconDef} size={12} color={entry.color || 'currentColor'} />
-        </span>
-      );
-    }
+    return (
+      <span
+        className="w-3.5 h-3.5 flex items-center justify-center shrink-0 select-none pointer-events-none"
+        style={entry.color ? { color: entry.color } : undefined}
+      >
+        <DynamicHugeIcon iconId={entry.iconId} size={12} color={entry.color || 'currentColor'} />
+      </span>
+    );
   }
 
   // 2. Default folder icon
@@ -350,17 +335,13 @@ export const IconifyTabIcon: React.FC<IconifyTabIconProps> = ({ docId }) => {
     );
   }
 
-  const iconDef = getIconifyIconDef(entry.iconId);
-  if (!iconDef) return null;
-
   return (
     <span
       className="w-3.5 h-3.5 flex items-center justify-center shrink-0 select-none pointer-events-none"
       style={entry.color ? { color: entry.color } : undefined}
-      title={iconDef.name}
     >
-      <HugeIconRenderer
-        iconDef={iconDef.iconDef}
+      <DynamicHugeIcon
+        iconId={entry.iconId}
         size={13}
         color={entry.color || 'currentColor'}
       />

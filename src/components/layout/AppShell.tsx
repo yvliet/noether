@@ -244,11 +244,14 @@ export const AppShell: React.FC = React.memo(() => {
     });
 
     // 3. Initialize Hearth folder config, SQLite and load workspace
-    initHearthInfo().finally(() => {
-      dbAdapter.init().then(() => {
+    initHearthInfo()
+      .then(() => dbAdapter.init())
+      .catch((err) => {
+        console.error('[AppShell] Hearth/DB initialization error:', err);
+      })
+      .finally(() => {
         loadInitialData();
       });
-    });
 
     const onHearth = platform.onHearthChanged || platform.onVaultChanged;
     const unsubHearth = onHearth(async (data) => {

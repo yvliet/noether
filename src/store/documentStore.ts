@@ -32,6 +32,7 @@ import {
   computeFastHash,
   isDescendant,
   syncVaultDiskToSQLite,
+  getDocumentsWithEmbeds,
 } from '@/lib/db/documents';
 import {
   getTrashItems,
@@ -131,8 +132,10 @@ interface DocumentState {
   brokenEmbedDocIds: Set<string>;
   /** Map of document ID to count of unresolved embed references in that document. */
   brokenEmbedCounts: Record<string, number>;
+  /** Fetches full document record including content_json from SQLite */
+  getDocumentContent: (id: string) => Promise<DocumentItem | null>;
   /** Scans all documents for broken embed references and updates brokenEmbedDocIds and brokenEmbedCounts. */
-  recomputeBrokenEmbeds: () => void;
+  recomputeBrokenEmbeds: () => void | Promise<void>;
 }
 
 /** Tracks in-flight background creation and disk persistence promises to prevent race conditions during immediate renames */
@@ -327,41 +330,24 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     options?: { preserveViewMode?: boolean; replaceCurrentTab?: boolean; newTab?: boolean }
   ) => {
     try {
-      // 1. Instantaneous 0ms optimistic update from in-memory state.documents cache
-      const cachedDoc = get().documents.find((d) => d.id === id);
-      if (cachedDoc) {
-        let cachedProps: DocumentProperties = {};
-        if (cachedDoc.properties) {
-          try {
-            cachedProps = typeof cachedDoc.properties === 'string' ? JSON.parse(cachedDoc.properties) : cachedDoc.properties;
-          } catch (e) {}
-        }
-
-        set((state) => ({
-          activeDocument: cachedDoc,
-          selectedDocIds: state.selectedDocIds.length <= 1 ? [cachedDoc.id] : state.selectedDocIds,
-          lastSelectedDocId: state.selectedDocIds.length <= 1 ? cachedDoc.id : state.lastSelectedDocId,
-          documentProperties: cachedProps,
-        }));
-
-        emitBridgeAppEvent('document:opened', { id, title: cachedDoc.title });
-
-        const shouldPreserve = options?.preserveViewMode === true;
-        if (!shouldPreserve) {
-          const targetMode = (cachedDoc.doc_type && cachedDoc.doc_type !== 'base') ? cachedDoc.doc_type : 'document';
-          useWorkspaceStore.getState().setMainViewMode(targetMode);
-          useWorkspaceStore.getState().openTab(cachedDoc.id, cachedDoc.title, {
-            viewType: targetMode,
-            replaceCurrentTab: options?.replaceCurrentTab ?? true,
-            newTab: options?.newTab ?? false,
-          });
-        }
-      }
-
-      // 2. Fetch full document record and secondary metadata in background
-      const doc = await getDocumentById(id);
+      // 1. Fetch full document record from SQLite (sub-millisecond in-memory WASM)
+      const doc = (await getDocumentById(id)) || get().documents.find((d) => d.id === id);
       if (!doc) return;
 
+      emitBridgeAppEvent('document:opened', { id, title: doc.title });
+
+      const shouldPreserve = options?.preserveViewMode === true;
+      if (!shouldPreserve) {
+        const targetMode = (doc.doc_type && doc.doc_type !== 'base') ? doc.doc_type : 'document';
+        useWorkspaceStore.getState().setMainViewMode(targetMode);
+        useWorkspaceStore.getState().openTab(doc.id, doc.title, {
+          viewType: targetMode,
+          replaceCurrentTab: options?.replaceCurrentTab ?? true,
+          newTab: options?.newTab ?? false,
+        });
+      }
+
+      // 2. Fetch secondary metadata in background
       const shouldCheckUnlinkedMentions =
         doc.title &&
         doc.title.trim().length >= 2 &&
@@ -409,9 +395,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         charCount = clean.length;
       } catch (e) {}
 
-      const currentActive = get().activeDocument;
-      const isStillActive = currentActive?.id === doc.id;
-
       set((state) => {
         const existing = state.documents.find((d) => d.id === doc.id);
         const docsNeedUpdate =
@@ -419,45 +402,53 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           existing.title !== doc.title ||
           existing.updated_at !== doc.updated_at ||
           existing.parent_id !== doc.parent_id ||
-          existing.doc_type !== doc.doc_type ||
-          existing.content_json !== doc.content_json;
+          existing.doc_type !== doc.doc_type;
 
         return {
           ...(docsNeedUpdate
-            ? { documents: state.documents.map((d) => (d.id === doc.id ? { ...d, ...doc } : d)) }
-            : {}),
-          ...(isStillActive
             ? {
-                activeDocument: doc,
-                selectedDocIds: state.selectedDocIds.length <= 1 ? [doc.id] : state.selectedDocIds,
-                lastSelectedDocId: state.selectedDocIds.length <= 1 ? doc.id : state.lastSelectedDocId,
-                headings,
-                backlinks,
-                outgoingLinks,
-                unlinkedMentions,
-                documentProperties: parsedProps,
+                documents: state.documents.map((d) =>
+                  d.id === doc.id
+                    ? {
+                        ...d,
+                        title: doc.title,
+                        parent_id: doc.parent_id,
+                        doc_type: doc.doc_type,
+                        properties: doc.properties,
+                        updated_at: doc.updated_at,
+                        ...(doc.doc_type === 'canvas' ? { content_json: doc.content_json } : {}),
+                      }
+                    : d
+                ),
               }
             : {}),
+          activeDocument: doc,
+          selectedDocIds: state.selectedDocIds.length <= 1 ? [doc.id] : state.selectedDocIds,
+          lastSelectedDocId: state.selectedDocIds.length <= 1 ? doc.id : state.lastSelectedDocId,
+          headings,
+          backlinks,
+          outgoingLinks,
+          unlinkedMentions,
+          documentProperties: parsedProps,
         };
       });
 
-      const shouldPreserve = options?.preserveViewMode === true;
-      if (!shouldPreserve && isStillActive) {
-        const targetMode = (doc.doc_type && doc.doc_type !== 'base') ? doc.doc_type : 'document';
-        useWorkspaceStore.getState().setMainViewMode(targetMode);
-        useWorkspaceStore.getState().openTab(doc.id, doc.title, { viewType: targetMode });
-      }
-
-      if (isStillActive) {
-        useWorkspaceStore.getState().setStatusMetrics({
-          backlinkCount: backlinks.length,
-          wordCount,
-          charCount,
-        });
-      }
+      useWorkspaceStore.getState().setStatusMetrics({
+        backlinkCount: backlinks.length,
+        wordCount,
+        charCount,
+      });
     } catch (err) {
       console.error('Error switching active document:', err);
     }
+  },
+
+  getDocumentContent: async (id: string): Promise<DocumentItem | null> => {
+    const active = get().activeDocument;
+    if (active && active.id === id && active.content_json) {
+      return active;
+    }
+    return await getDocumentById(id);
   },
 
   createNewNote: async (
@@ -1085,7 +1076,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const isStillActive = currentActive && currentActive.id === docId;
 
     const updatedDocs = get().documents.map((d) =>
-      d.id === docId ? { ...d, title: currentTitle, content_json: contentJson } : d
+      d.id === docId
+        ? {
+            ...d,
+            title: currentTitle,
+            ...(d.doc_type === 'canvas' ? { content_json: contentJson } : {}),
+          }
+        : d
     );
 
     if (isStillActive) {
@@ -1136,7 +1133,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     ]);
 
     const updatedDocs = get().documents.map((d) =>
-      d.id === id ? { ...d, title: currentTitle, content_json: contentJson } : d
+      d.id === id
+        ? {
+            ...d,
+            title: currentTitle,
+            ...(d.doc_type === 'canvas' ? { content_json: contentJson } : {}),
+          }
+        : d
     );
 
     const activeNow = get().activeDocument;
@@ -1293,7 +1296,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
    * `![[...]]` syntax. Extracting targets via regex is cheaper than parsing
    * the full JSON tree and matches the same syntax the editor renders.
    */
-  recomputeBrokenEmbeds: () => {
+  recomputeBrokenEmbeds: async () => {
     const docs = get().documents;
     const knownTitles = new Set<string>();
     const knownIds = new Set<string>();
@@ -1309,8 +1312,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const broken = new Set<string>();
     const counts: Record<string, number> = {};
 
-    for (const doc of docs) {
-      if (doc.is_folder || !doc.content_json) continue;
+    const docsWithEmbeds = await getDocumentsWithEmbeds();
+
+    for (const doc of docsWithEmbeds) {
+      if (!doc.content_json) continue;
       let match: RegExpExecArray | null;
       embedRegex.lastIndex = 0;
       const content = doc.content_json;

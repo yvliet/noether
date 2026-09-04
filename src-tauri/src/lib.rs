@@ -1,5 +1,6 @@
 mod vault;
 mod icon_tint;
+mod db;
 
 use std::path::Path;
 use std::sync::Mutex;
@@ -7,6 +8,7 @@ use std::time::Duration;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::{Emitter, Manager};
 use vault::{load_config, AppState};
+
 #[tauri::command]
 fn set_accent_icon(app_handle: tauri::AppHandle, accent_color: String) -> Result<(), String> {
     let icon = icon_tint::create_accent_tauri_image(&accent_color);
@@ -27,6 +29,7 @@ pub fn run() {
         .manage(AppState {
             config: Mutex::new(initial_config),
         })
+        .manage(db::DbState::new())
         .invoke_handler(tauri::generate_handler![
             vault::get_current_vault,
             vault::set_current_vault,
@@ -57,6 +60,7 @@ pub fn run() {
             vault::window_maximize,
             vault::window_close,
             vault::window_is_maximized,
+            vault::window_is_minimized,
             vault::window_start_dragging,
             vault::window_set_title,
             vault::notify_user_activity,
@@ -64,11 +68,24 @@ pub fn run() {
             vault::register_global_shortcut,
             vault::unregister_global_shortcut,
             set_accent_icon,
+            db::flint_db_init,
+            db::flint_db_query,
+            db::flint_db_execute,
+            db::flint_db_transaction,
+            db::flint_db_supports_fts5,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
             let vault_to_watch = initial_vault.clone();
 
+            // Auto-initialize native SQLite database on cold startup
+            let _ = db::flint_db_init(app.state::<db::DbState>(), Some(initial_vault.clone()));
+
+            // Initialize sharp high-resolution window icon
+            let initial_icon = icon_tint::create_accent_tauri_image("#ea580c");
+            for (_, window) in app.webview_windows() {
+                let _ = window.set_icon(initial_icon.clone());
+            }
             // Initialize general-purpose global hotkey loop
             vault::init_global_hotkeys(handle.clone());
 
