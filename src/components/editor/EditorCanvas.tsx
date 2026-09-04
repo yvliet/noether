@@ -99,6 +99,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const indentationGuides = useSettingsStore((s) => s.indentationGuides);
   const accentListPrefixes = useSettingsStore((s) => s.accentListPrefixes);
   const strictLineBreaks = useSettingsStore((s) => s.strictLineBreaks);
+  const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
 
   const canGoBack = useWorkspaceStore((s) => s.canGoBack);
   const canGoForward = useWorkspaceStore((s) => s.canGoForward);
@@ -1236,6 +1237,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                     } ${indentationGuides ? 'flint-indent-guides' : ''} ${
                       accentListPrefixes ? 'flint-accent-lists' : ''
                     } ${strictLineBreaks ? 'flint-strict-line-breaks' : ''} ${
+                      showExternalLinkIcon ? 'flint-show-link-icon' : ''
+                    } ${
                       !isEditable ? 'tiptap-reading-view cursor-default' : ''
                     }`}
                   >

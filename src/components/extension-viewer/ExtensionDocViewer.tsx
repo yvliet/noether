@@ -403,10 +403,10 @@ function renderInlineMarkdown(text: string): string {
     // Standard Wikilinks: [[Target|Alias]] or [[Target]] (only when not preceded by !)
     .replace(/(?<!\!)\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const label = alias || target;
-      return `<span class="md-wikilink text-[var(--flint-accent)] hover:underline cursor-pointer select-text">${label}</span>`;
+      return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text">${label}</span>`;
     })
     // Standard Markdown links: [text](url) (only when not preceded by !)
-    .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-accent)] hover:underline inline-flex items-center gap-0.5">$1</a>');
+    .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">$1</a>');
 }
 
 export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(({

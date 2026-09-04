@@ -56,6 +56,12 @@ export interface SettingsState {
   accentListPrefixes: boolean;
   autoPairing: boolean;
   tabSize: TabSize;
+  showExternalLinkIcon: boolean;
+  spellcheck: boolean;
+  colorLinksWithAccent: boolean;
+  blueLinks: boolean;
+  underlineLinks: boolean;
+  matchLinkUnderlineColor: boolean;
 
   // Files and Links
   skipDeleteConfirmation: boolean;
@@ -106,6 +112,12 @@ export interface SettingsState {
   setAccentListPrefixes: (val: boolean) => void;
   setAutoPairing: (val: boolean) => void;
   setTabSize: (val: TabSize) => void;
+  setShowExternalLinkIcon: (val: boolean) => void;
+  setSpellcheck: (val: boolean) => void;
+  setColorLinksWithAccent: (val: boolean) => void;
+  setBlueLinks: (val: boolean) => void;
+  setUnderlineLinks: (val: boolean) => void;
+  setMatchLinkUnderlineColor: (val: boolean) => void;
   setSkipDeleteConfirmation: (val: boolean) => void;
   setSkipRenameConfirmation: (val: boolean) => void;
   setCloseTabsOnDelete: (val: boolean) => void;
@@ -161,6 +173,12 @@ export const DEFAULT_SETTINGS = {
   accentListPrefixes: false,
   autoPairing: true,
   tabSize: '5' as TabSize,
+  showExternalLinkIcon: false,
+  spellcheck: true,
+  colorLinksWithAccent: true,
+  blueLinks: false,
+  underlineLinks: true,
+  matchLinkUnderlineColor: false,
 
   skipDeleteConfirmation: false,
   skipRenameConfirmation: false,
@@ -187,6 +205,10 @@ interface AppearanceCache {
   fontSize?: number;
   zoomLevel?: number;
   language?: string;
+  colorLinksWithAccent?: boolean;
+  blueLinks?: boolean;
+  underlineLinks?: boolean;
+  matchLinkUnderlineColor?: boolean;
 }
 
 const appliedAppearanceCache: AppearanceCache = {};
@@ -328,6 +350,58 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     };
     root.lang = langMap[current.language] || 'en';
   }
+
+  // 10. Link Accent Coloring (default on)
+  const colorLinksWithAccent = current.colorLinksWithAccent ?? true;
+  if (appliedAppearanceCache.colorLinksWithAccent !== colorLinksWithAccent) {
+    appliedAppearanceCache.colorLinksWithAccent = colorLinksWithAccent;
+    if (colorLinksWithAccent) {
+      root.removeAttribute('data-no-link-accent');
+      root.classList.remove('flint-no-link-accent');
+    } else {
+      root.setAttribute('data-no-link-accent', 'true');
+      root.classList.add('flint-no-link-accent');
+    }
+  }
+
+  // 11. Classic Blue Links (only effective when colorLinksWithAccent is false)
+  const blueLinks = current.blueLinks ?? false;
+  if (appliedAppearanceCache.blueLinks !== blueLinks) {
+    appliedAppearanceCache.blueLinks = blueLinks;
+    if (blueLinks) {
+      root.setAttribute('data-blue-links', 'true');
+      root.classList.add('flint-blue-links');
+    } else {
+      root.removeAttribute('data-blue-links');
+      root.classList.remove('flint-blue-links');
+    }
+  }
+
+  // 12. Underline Links (default true, when false only show on hover)
+  const underlineLinks = current.underlineLinks ?? true;
+  if (appliedAppearanceCache.underlineLinks !== underlineLinks) {
+    appliedAppearanceCache.underlineLinks = underlineLinks;
+    if (underlineLinks) {
+      root.removeAttribute('data-no-link-underline');
+      root.classList.remove('flint-no-link-underline');
+    } else {
+      root.setAttribute('data-no-link-underline', 'true');
+      root.classList.add('flint-no-link-underline');
+    }
+  }
+
+  // 13. Match Underline Color to Link (default false)
+  const matchLinkUnderlineColor = current.matchLinkUnderlineColor ?? false;
+  if (appliedAppearanceCache.matchLinkUnderlineColor !== matchLinkUnderlineColor) {
+    appliedAppearanceCache.matchLinkUnderlineColor = matchLinkUnderlineColor;
+    if (matchLinkUnderlineColor) {
+      root.setAttribute('data-color-link-underline', 'true');
+      root.classList.add('flint-color-link-underline');
+    } else {
+      root.removeAttribute('data-color-link-underline');
+      root.classList.remove('flint-color-link-underline');
+    }
+  }
 }
 
 // Helper: Apply appearance settings directly to the DOM (batched with requestAnimationFrame)
@@ -459,6 +533,24 @@ export const useSettingsStore = create<SettingsState>()(
       setAccentListPrefixes: (accentListPrefixes) => set({ accentListPrefixes }),
       setAutoPairing: (autoPairing) => set({ autoPairing }),
       setTabSize: (tabSize) => set({ tabSize }),
+      setShowExternalLinkIcon: (showExternalLinkIcon) => set({ showExternalLinkIcon }),
+      setSpellcheck: (spellcheck) => set({ spellcheck }),
+      setColorLinksWithAccent: (colorLinksWithAccent) => {
+        set({ colorLinksWithAccent });
+        applyAppearanceDOM({ ...get(), colorLinksWithAccent });
+      },
+      setBlueLinks: (blueLinks) => {
+        set({ blueLinks });
+        applyAppearanceDOM({ ...get(), blueLinks });
+      },
+      setUnderlineLinks: (underlineLinks) => {
+        set({ underlineLinks });
+        applyAppearanceDOM({ ...get(), underlineLinks });
+      },
+      setMatchLinkUnderlineColor: (matchLinkUnderlineColor) => {
+        set({ matchLinkUnderlineColor });
+        applyAppearanceDOM({ ...get(), matchLinkUnderlineColor });
+      },
 
       setSkipDeleteConfirmation: (skipDeleteConfirmation) => {
         if (typeof window !== 'undefined') {
@@ -549,6 +641,19 @@ export const useSettingsStore = create<SettingsState>()(
             accentListPrefixes: DEFAULT_SETTINGS.accentListPrefixes,
             autoPairing: DEFAULT_SETTINGS.autoPairing,
             tabSize: DEFAULT_SETTINGS.tabSize,
+            showExternalLinkIcon: DEFAULT_SETTINGS.showExternalLinkIcon,
+            spellcheck: DEFAULT_SETTINGS.spellcheck,
+            colorLinksWithAccent: DEFAULT_SETTINGS.colorLinksWithAccent,
+            blueLinks: DEFAULT_SETTINGS.blueLinks,
+            underlineLinks: DEFAULT_SETTINGS.underlineLinks,
+            matchLinkUnderlineColor: DEFAULT_SETTINGS.matchLinkUnderlineColor,
+          });
+          applyAppearanceDOM({
+            ...get(),
+            colorLinksWithAccent: DEFAULT_SETTINGS.colorLinksWithAccent,
+            blueLinks: DEFAULT_SETTINGS.blueLinks,
+            underlineLinks: DEFAULT_SETTINGS.underlineLinks,
+            matchLinkUnderlineColor: DEFAULT_SETTINGS.matchLinkUnderlineColor,
           });
         } else if (tabId === 'files') {
           if (typeof window !== 'undefined') {

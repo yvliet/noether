@@ -229,10 +229,10 @@ function renderInlineFormatting(text: string): string {
     // Wikilinks
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const label = alias || target;
-      return `<span class="md-wikilink text-[var(--flint-accent)] hover:underline cursor-pointer select-text" data-wikilink-target="${target}">${label}</span>`;
+      return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${target}">${label}</span>`;
     })
     // Markdown links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-accent)] hover:underline inline-flex items-center gap-0.5">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">$1</a>');
 }
 
 /**

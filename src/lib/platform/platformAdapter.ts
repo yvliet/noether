@@ -1,5 +1,6 @@
 import { RecentVaultItem, VaultDiskItem } from '@/types';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { markLinkVisited } from '@/lib/visitedLinks';
 
 // Dynamic import helpers for Tauri to avoid crashing in pure browser/electron contexts
 let tauriCore: any = null;
@@ -111,6 +112,9 @@ export interface IPlatformAdapter {
   setAccentIcon(accentColor: string): Promise<void>;
   setWindowTitle(title: string): Promise<void>;
   notifyUserActivity(): Promise<void>;
+
+  // External URLs
+  openUrl(url: string): Promise<{ success: boolean; error?: string }>;
 }
 
 class PlatformAdapterImpl implements IPlatformAdapter {
@@ -1010,6 +1014,54 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         }
       } catch (e) {}
     }
+  }
+
+  private _lastOpenedUrl: string = '';
+  private _lastOpenedTime: number = 0;
+
+  public async openUrl(rawUrl: string): Promise<{ success: boolean; error?: string }> {
+    if (!rawUrl) return { success: false, error: 'Empty URL' };
+    let url = rawUrl.trim();
+    if (!/^https?:\/\//i.test(url) && !url.startsWith('mailto:')) {
+      if (url.startsWith('www.') || url.includes('.')) {
+        url = `https://${url}`;
+      }
+    }
+
+    const now = Date.now();
+    markLinkVisited(url);
+    if (rawUrl !== url) markLinkVisited(rawUrl);
+    if (url === this._lastOpenedUrl && now - this._lastOpenedTime < 500) {
+      return { success: true };
+    }
+    this._lastOpenedUrl = url;
+    this._lastOpenedTime = now;
+
+    if (this.isTauri()) {
+      try {
+        const { open } = await import('@tauri-apps/plugin-shell');
+        await open(url);
+        return { success: true };
+      } catch (e: any) {
+        console.warn('[PlatformAdapter] Tauri plugin-shell open failed', e);
+      }
+    }
+
+    if (this.isElectron() && (window as any).electronAPI?.openUrl) {
+      try {
+        return await (window as any).electronAPI.openUrl(url);
+      } catch (e) {}
+    }
+
+    try {
+      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      if (opened) return { success: true };
+    } catch (e: any) {
+      console.error('[PlatformAdapter] Failed to open URL via window.open', e);
+      return { success: false, error: e?.message || 'Failed to open URL' };
+    }
+
+    return { success: true };
   }
 }
 

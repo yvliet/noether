@@ -35,6 +35,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeVaultWindow: () => ipcRenderer.invoke('close-hearth-window'),
   openSettingsWindow: () => ipcRenderer.invoke('open-settings-window'),
   closeSettingsWindow: () => ipcRenderer.invoke('close-settings-window'),
+  openUrl: (url) => ipcRenderer.invoke('open-url', url),
 
   // General-purpose global hotkeys and window controls
   registerGlobalShortcut: (id, shortcut) => ipcRenderer.invoke('register-global-shortcut', id, shortcut),

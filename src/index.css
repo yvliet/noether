@@ -47,6 +47,51 @@
   --flint-accent-subtle: rgba(234, 88, 12, 0.15);
   --flint-accent-gradient: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
 
+  /* Link tokens */
+  --flint-link-color: var(--flint-accent);
+  --flint-link-hover: var(--flint-accent-hover, var(--flint-accent));
+  --flint-link-visited: var(--flint-accent);
+  --flint-link-decoration-color: var(--flint-border-strong);
+}
+
+:root[data-no-link-accent="true"],
+.flint-no-link-accent {
+  --flint-link-color: var(--flint-text-secondary, #dcddde);
+  --flint-link-hover: var(--flint-text-primary, #ffffff);
+  --flint-link-visited: var(--flint-text-secondary, #dcddde);
+}
+
+.theme-light:root[data-no-link-accent="true"],
+.theme-light.flint-no-link-accent {
+  --flint-link-color: var(--flint-text-primary, #0f172a);
+  --flint-link-hover: #000000;
+  --flint-link-visited: var(--flint-text-primary, #0f172a);
+}
+
+:root[data-no-link-accent="true"][data-blue-links="true"],
+:root.flint-no-link-accent.flint-blue-links,
+.flint-no-link-accent.flint-blue-links {
+  --flint-link-color: #58a6ff;
+  --flint-link-hover: #79b8ff;
+  --flint-link-visited: #bc8cff;
+}
+
+:root.theme-light[data-no-link-accent="true"][data-blue-links="true"],
+.theme-light:root[data-no-link-accent="true"][data-blue-links="true"],
+:root.theme-light.flint-no-link-accent.flint-blue-links,
+.theme-light.flint-no-link-accent.flint-blue-links {
+  --flint-link-color: #0000ee;
+  --flint-link-hover: #0000cc;
+  --flint-link-visited: #551a8b;
+}
+
+:root[data-color-link-underline="true"],
+.flint-color-link-underline {
+  --flint-link-decoration-color: currentColor;
+}
+
+:root {
+
   /* Selection & Code */
   --flint-selection-bg: #4a4e57;
   --flint-selection-text: #ffffff;
@@ -485,22 +530,46 @@ textarea.bg-transparent {
 
 .theme-light .md-wikilink,
 .theme-light .md-link,
+.theme-light .flint-link,
 .theme-light .ProseMirror .md-wikilink,
 .theme-light .ProseMirror .md-link,
 .theme-light .tiptap-reading-view .md-wikilink,
-.theme-light .tiptap-reading-view .md-link {
-  color: var(--flint-accent) !important;
-  text-decoration-color: var(--flint-border-strong) !important;
+.theme-light .tiptap-reading-view .md-link,
+.theme-light .flint-doc-wrapper a:not(.flint-btn),
+.theme-light .ProseMirror a {
+  color: var(--flint-link-color) !important;
+  text-decoration-color: var(--flint-link-decoration-color) !important;
+}
+
+.theme-light .md-wikilink.is-visited,
+.theme-light .md-wikilink[data-visited="true"],
+.theme-light .md-link.is-visited,
+.theme-light .md-link[data-visited="true"],
+.theme-light .flint-link.is-visited,
+.theme-light .flint-link[data-visited="true"],
+.theme-light .ProseMirror .md-wikilink.is-visited,
+.theme-light .ProseMirror .md-link.is-visited,
+.theme-light .tiptap-reading-view .md-wikilink.is-visited,
+.theme-light .tiptap-reading-view .md-link.is-visited,
+.theme-light .flint-doc-wrapper a:visited,
+.theme-light .ProseMirror a:visited,
+.theme-light .tiptap-reading-view a:visited,
+.theme-light a.is-visited,
+.theme-light a[data-visited="true"] {
+  color: var(--flint-link-visited) !important;
 }
 
 .theme-light .md-wikilink:hover,
 .theme-light .md-link:hover,
+.theme-light .flint-link:hover,
 .theme-light .ProseMirror .md-wikilink:hover,
 .theme-light .ProseMirror .md-link:hover,
 .theme-light .tiptap-reading-view .md-wikilink:hover,
-.theme-light .tiptap-reading-view .md-link:hover {
-  color: var(--flint-accent-hover) !important;
-  text-decoration-color: var(--flint-accent-hover) !important;
+.theme-light .tiptap-reading-view .md-link:hover,
+.theme-light .flint-doc-wrapper a:not(.flint-btn):hover,
+.theme-light .ProseMirror a:hover {
+  color: var(--flint-link-hover) !important;
+  text-decoration-color: var(--flint-link-hover) !important;
 }
 
 /* Global Selection Style (Obsidian visible neutral selection) */
@@ -1001,11 +1070,7 @@ li[data-type="taskItem"][data-checked="true"] > div {
 }
 
 .md-syntax-hidden {
-  display: inline;
-  font-size: 0;
-  line-height: 0;
-  color: transparent;
-  letter-spacing: -1px;
+  display: none !important;
 }
 
 /* Plain Text List Prefix Dimming (Numbers & Dashes/Bullets - Obsidian style) */
@@ -1172,31 +1237,163 @@ li[data-type="taskItem"][data-checked="true"] > div {
 
 .md-wikilink,
 .md-link,
+.flint-link,
 .ProseMirror .md-wikilink,
 .ProseMirror .md-link,
 .tiptap-reading-view .md-wikilink,
-.tiptap-reading-view .md-link {
-  color: var(--flint-accent);
+.tiptap-reading-view .md-link,
+.flint-doc-wrapper a:not(.flint-btn),
+.ProseMirror a {
+  color: var(--flint-link-color);
   text-decoration: underline;
-  text-decoration-color: var(--flint-border-strong);
+  text-decoration-color: var(--flint-link-decoration-color);
   text-underline-offset: 3px;
   cursor: pointer !important;
   pointer-events: auto !important;
 }
 
+/* Visited links */
+.md-wikilink.is-visited,
+.md-wikilink[data-visited="true"],
+.md-link.is-visited,
+.md-link[data-visited="true"],
+.flint-link.is-visited,
+.flint-link[data-visited="true"],
+.ProseMirror .md-wikilink.is-visited,
+.ProseMirror .md-link.is-visited,
+.tiptap-reading-view .md-wikilink.is-visited,
+.tiptap-reading-view .md-link.is-visited,
+.flint-doc-wrapper a:visited,
+.ProseMirror a:visited,
+.tiptap-reading-view a:visited,
+a.is-visited,
+a[data-visited="true"] {
+  color: var(--flint-link-visited);
+}
+
 .md-wikilink:hover,
 .md-link:hover,
+.flint-link:hover,
 .ProseMirror .md-wikilink:hover,
 .ProseMirror .md-link:hover,
 .tiptap-reading-view .md-wikilink:hover,
-.tiptap-reading-view .md-link:hover {
-  color: var(--flint-accent-hover, var(--flint-accent));
-  text-decoration-color: var(--flint-accent-hover, var(--flint-accent));
+.tiptap-reading-view .md-link:hover,
+.flint-doc-wrapper a:not(.flint-btn):hover,
+.ProseMirror a:hover {
+  color: var(--flint-link-hover);
+  text-decoration-color: var(--flint-link-hover);
+}
+
+/* Underline links toggle: when disabled, no underline by default, underline on hover */
+:root[data-no-link-underline="true"] .md-link,
+:root[data-no-link-underline="true"] .md-wikilink,
+:root[data-no-link-underline="true"] .flint-link,
+:root[data-no-link-underline="true"] .ProseMirror .md-wikilink,
+:root[data-no-link-underline="true"] .ProseMirror .md-link,
+:root[data-no-link-underline="true"] .tiptap-reading-view .md-wikilink,
+:root[data-no-link-underline="true"] .tiptap-reading-view .md-link,
+:root[data-no-link-underline="true"] .flint-doc-wrapper a:not(.flint-btn),
+:root[data-no-link-underline="true"] .ProseMirror a,
+.flint-no-link-underline .md-link,
+.flint-no-link-underline .md-wikilink,
+.flint-no-link-underline .flint-link,
+.flint-no-link-underline .ProseMirror .md-wikilink,
+.flint-no-link-underline .ProseMirror .md-link,
+.flint-no-link-underline .tiptap-reading-view .md-wikilink,
+.flint-no-link-underline .tiptap-reading-view .md-link,
+.flint-no-link-underline .flint-doc-wrapper a:not(.flint-btn),
+.flint-no-link-underline .ProseMirror a {
+  text-decoration: none !important;
+}
+
+:root[data-no-link-underline="true"] .md-link:hover,
+:root[data-no-link-underline="true"] .md-wikilink:hover,
+:root[data-no-link-underline="true"] .flint-link:hover,
+:root[data-no-link-underline="true"] .ProseMirror .md-wikilink:hover,
+:root[data-no-link-underline="true"] .ProseMirror .md-link:hover,
+:root[data-no-link-underline="true"] .tiptap-reading-view .md-wikilink:hover,
+:root[data-no-link-underline="true"] .tiptap-reading-view .md-link:hover,
+:root[data-no-link-underline="true"] .flint-doc-wrapper a:not(.flint-btn):hover,
+:root[data-no-link-underline="true"] .ProseMirror a:hover,
+.flint-no-link-underline .md-link:hover,
+.flint-no-link-underline .md-wikilink:hover,
+.flint-no-link-underline .flint-link:hover,
+.flint-no-link-underline .ProseMirror .md-wikilink:hover,
+.flint-no-link-underline .ProseMirror .md-link:hover,
+.flint-no-link-underline .tiptap-reading-view .md-wikilink:hover,
+.flint-no-link-underline .tiptap-reading-view .md-link:hover,
+.flint-no-link-underline .flint-doc-wrapper a:not(.flint-btn):hover,
+.flint-no-link-underline .ProseMirror a:hover {
+  text-decoration: underline !important;
 }
 
 .ProseMirror a {
   cursor: pointer !important;
   pointer-events: auto !important;
+}
+
+/* External link trailing icon: LinkSquare02Icon indicator for markdown & HTML links */
+.flint-show-link-icon .md-link:not(.is-focused)::after,
+.flint-show-link-icon .tiptap-reading-view a:not(:has(.md-link))::after,
+.flint-show-link-icon .ProseMirror a:not(:has(.md-link)):not(.md-link):not(.is-focused)::after,
+.flint-show-link-icon .flint-doc-wrapper a[target="_blank"]:not(:has(.md-link)):not(.md-link)::after {
+  content: '';
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-left: 0.22em;
+  margin-right: 0.08em;
+  vertical-align: -0.05em;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.0991 3.00012C7.45013 3.00669 5.53932 3.09629 4.31817 4.31764C3.00034 5.63568 3.00034 7.75704 3.00034 11.9997C3.00034 16.2424 3.00034 18.3638 4.31817 19.6818C5.63599 20.9999 7.75701 20.9999 11.9991 20.9999C16.241 20.9999 18.3621 20.9999 19.6799 19.6818C20.901 18.4605 20.9906 16.5493 20.9972 12.8998'/%3E%3Cpath d='M20.556 3.49612L11.0487 13.0586M20.556 3.49612C20.062 3.00151 16.7343 3.04761 16.0308 3.05762M20.556 3.49612C21.05 3.99074 21.0039 7.32273 20.9939 8.02714'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M11.0991 3.00012C7.45013 3.00669 5.53932 3.09629 4.31817 4.31764C3.00034 5.63568 3.00034 7.75704 3.00034 11.9997C3.00034 16.2424 3.00034 18.3638 4.31817 19.6818C5.63599 20.9999 7.75701 20.9999 11.9991 20.9999C16.241 20.9999 18.3621 20.9999 19.6799 19.6818C20.901 18.4605 20.9906 16.5493 20.9972 12.8998'/%3E%3Cpath d='M20.556 3.49612L11.0487 13.0586M20.556 3.49612C20.062 3.00151 16.7343 3.04761 16.0308 3.05762M20.556 3.49612C21.05 3.99074 21.0039 7.32273 20.9939 8.02714'/%3E%3C/svg%3E");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  opacity: 0.82;
+  text-decoration: none !important;
+}
+
+/* Prevent double icons when .md-link is nested inside or wraps an <a> tag */
+.flint-show-link-icon a:has(.md-link)::after,
+.flint-show-link-icon .md-link a::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Suppress all icons when editing / focused on markdown link syntax */
+.is-focused::after,
+.is-focused a::after,
+a.is-focused::after,
+a:has(.is-focused)::after,
+.md-link.is-focused::after,
+.md-syntax-dimmed::after,
+.md-syntax-dimmed a::after,
+a:has(.md-syntax-dimmed)::after,
+.md-syntax-hidden::after,
+.md-syntax-hidden a::after,
+a:has(.md-syntax-hidden)::after {
+  display: none !important;
+  content: none !important;
+}
+
+.flint-show-link-icon .md-link:hover::after,
+.flint-show-link-icon .ProseMirror a:hover::after,
+.flint-show-link-icon .tiptap-reading-view a:hover::after,
+.flint-show-link-icon .flint-doc-wrapper a[target="_blank"]:hover::after {
+  opacity: 1;
+}
+
+/* Defensive exclusions: buttons, images inside links */
+.ProseMirror a:has(img)::after,
+.tiptap-reading-view a:has(img)::after,
+.flint-doc-wrapper a:has(img)::after,
+a.flint-btn::after {
+  display: none !important;
+  content: none !important;
 }
 
 /* Obsidian Heading Target Focus Highlight (Zero text nudge / Zero layout shift) */

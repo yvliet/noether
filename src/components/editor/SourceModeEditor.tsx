@@ -24,6 +24,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
 }) => {
   const lineNumbers = useSettingsStore((s) => s.lineNumbers);
   const autoPairing = useSettingsStore((s) => s.autoPairing);
+  const spellcheck = useSettingsStore((s) => s.spellcheck);
   const tabSizeSetting = useSettingsStore((s) => s.tabSize);
   const tabSize = typeof tabSizeSetting === 'number' ? tabSizeSetting : parseInt(String(tabSizeSetting || 2), 10) || 2;
 
@@ -371,7 +372,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
           debouncedPushHistory(e.target.value);
         }}
         onKeyDown={handleKeyDown}
-        spellCheck={false}
+        spellCheck={spellcheck}
         autoCapitalize="off"
         autoCorrect="off"
         placeholder="Type markdown, YAML frontmatter, headings..."

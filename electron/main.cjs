@@ -771,6 +771,17 @@ function registerIpc() {
 
   ipcMain.handle('open-hearth-in-explorer', handleOpenHearthInExplorer);
   ipcMain.handle('open-vault-in-explorer', handleOpenHearthInExplorer);
+  ipcMain.handle('open-url', async (_, url) => {
+    try {
+      if (url && typeof url === 'string') {
+        shell.openExternal(url);
+        return { success: true };
+      }
+    } catch (e) {
+      console.error('[Main] Failed to open external URL:', e);
+    }
+    return { success: false };
+  });
 
   ipcMain.handle('scan-hearth-files', async (event, customHearthPath) => {
     try {

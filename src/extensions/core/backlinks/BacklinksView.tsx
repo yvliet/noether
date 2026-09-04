@@ -217,10 +217,10 @@ export const BacklinksView: React.FC = React.memo(() => {
                   <div
                     key={idx}
                     onClick={() => setActiveDocumentById(link.source_document_id)}
-                    className="p-2 rounded-lg bg-[#181818] hover:bg-[#222] cursor-pointer transition-all border border-[#242424] hover:border-[#333] group"
+                    className="p-2 rounded-lg bg-[#181818] hover:bg-[#222] cursor-pointer transition-none border border-[#242424] hover:border-[#333] group"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="font-medium text-[#dcddde] group-hover:text-white text-xs truncate">
+                      <div className="flint-link font-medium text-xs hover:underline truncate">
                         {link.source_document_title}
                       </div>
                       <span className="text-[9px] text-[#555]">
@@ -280,8 +280,8 @@ export const BacklinksView: React.FC = React.memo(() => {
                       }}
                       className="flex items-center gap-2 cursor-pointer truncate flex-1 min-w-0"
                     >
-                      <Link2Icon size={12} className={out.exists ? 'text-[#38bdf8]' : 'text-[#666]'} />
-                      <span className={`text-[12px] truncate ${out.exists ? 'text-[#dcddde] hover:text-white' : 'text-[#888] italic'}`}>
+                      <Link2Icon size={12} className={out.exists ? 'text-[var(--flint-link-color)]' : 'text-[#666]'} />
+                      <span className={`text-[12px] truncate ${out.exists ? 'flint-link hover:underline' : 'text-[#888] italic'}`}>
                         {out.link_text}
                       </span>
                     </div>
@@ -335,7 +335,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                       <div className="flex items-center justify-between">
                         <div
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
-                          className="font-medium text-[#dcddde] hover:text-white text-xs cursor-pointer truncate flex-1 min-w-0"
+                          className="flint-link font-medium text-xs cursor-pointer hover:underline truncate flex-1 min-w-0"
                         >
                           {unlinked.source_document_title}
                         </div>

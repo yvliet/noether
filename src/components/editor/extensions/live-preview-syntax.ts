@@ -7,6 +7,7 @@ import { findMathRangeAtPos } from './mathlive-wysiwyg';
 import { getIndentSize } from './smart-tab-indent';
 import { renderEmbedWidget } from '../embed-renderer';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { isLinkVisited } from '@/lib/visitedLinks';
 
 export const LivePreviewSyntaxPluginKey = new PluginKey('livePreviewSyntax');
 
@@ -18,8 +19,8 @@ const STRIKE_REGEX = /~~([^~\n]+)~~/g;
 const HIGHLIGHT_REGEX = /==([^=\n]+)==/g;
 const WIKI_REGEX = /\[\[([^\]\n]+)\]\]/g;
 const WIKI_EMBED_REGEX = /!\[\[([^\]\n]+)\]\]/g;
-const MD_LINK_REGEX = /\[([^\]\n]+)\]\(([^)\n]+)\)/g;
-const MD_EMBED_REGEX = /!\[([^\]\n]*)\]\(([^)\n]+)\)/g;
+const MD_LINK_REGEX = /\[([^\]\n]+)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
+const MD_EMBED_REGEX = /!\[([^\]\n]*)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
 const TAG_REGEX = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_\-\/]*)/g;
 const HEX_COLOR_REGEX = /^[0-9a-fA-F]{3,6}$/;
 const BLOCK_MATH_REGEX = /\$\$([\s\S]*?)\$\$/g;
@@ -430,6 +431,8 @@ function scanBlockDecorations(
         display = parts.slice(1).join('|');
       }
 
+      const isVisited = isLinkVisited(target);
+
       if (isMatchFocused) {
         // Dim opening brackets [[
         decorations.push(
@@ -443,8 +446,9 @@ function scanBlockDecorations(
           // Target before pipe
           decorations.push(
             Decoration.inline(matchStart + 2, matchStart + 2 + pipeOffset, {
-              class: 'md-wikilink is-focused',
+              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
               'data-wikilink-target': target,
+              'data-visited': isVisited ? 'true' : 'false',
             })
           );
           // Dim the pipe |
@@ -456,16 +460,18 @@ function scanBlockDecorations(
           // Display text after pipe
           decorations.push(
             Decoration.inline(matchStart + 2 + pipeOffset + 1, matchEnd - 2, {
-              class: 'md-wikilink is-focused',
+              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
               'data-wikilink-target': target,
+              'data-visited': isVisited ? 'true' : 'false',
             })
           );
         } else {
           // Wikilink target text
           decorations.push(
             Decoration.inline(matchStart + 2, matchEnd - 2, {
-              class: 'md-wikilink is-focused',
+              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
               'data-wikilink-target': target,
+              'data-visited': isVisited ? 'true' : 'false',
             })
           );
         }
@@ -492,15 +498,17 @@ function scanBlockDecorations(
           );
           decorations.push(
             Decoration.inline(matchStart + 2 + pipeOffset + 1, matchEnd - 2, {
-              class: 'md-wikilink',
+              class: `md-wikilink${isVisited ? ' is-visited' : ''}`,
               'data-wikilink-target': target,
+              'data-visited': isVisited ? 'true' : 'false',
             })
           );
         } else {
           decorations.push(
             Decoration.inline(matchStart + 2, matchEnd - 2, {
-              class: 'md-wikilink',
+              class: `md-wikilink${isVisited ? ' is-visited' : ''}`,
               'data-wikilink-target': target,
+              'data-visited': isVisited ? 'true' : 'false',
             })
           );
         }
@@ -525,6 +533,7 @@ function scanBlockDecorations(
       const linkText = mdLinkMatch[1];
       const linkUrl = mdLinkMatch[2];
       const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
+      const isVisited = isLinkVisited(linkUrl);
 
       if (isMatchFocused) {
         decorations.push(
@@ -534,8 +543,9 @@ function scanBlockDecorations(
         );
         decorations.push(
           Decoration.inline(matchStart + 1, matchStart + 1 + linkText.length, {
-            class: 'md-link is-focused',
+            class: `md-link is-focused${isVisited ? ' is-visited' : ''}`,
             'data-link-url': linkUrl,
+            'data-visited': isVisited ? 'true' : 'false',
           })
         );
         decorations.push(
@@ -551,8 +561,9 @@ function scanBlockDecorations(
         );
         decorations.push(
           Decoration.inline(matchStart + 1, matchStart + 1 + linkText.length, {
-            class: 'md-link',
+            class: `md-link${isVisited ? ' is-visited' : ''}`,
             'data-link-url': linkUrl,
+            'data-visited': isVisited ? 'true' : 'false',
           })
         );
         decorations.push(

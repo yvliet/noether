@@ -1715,6 +1715,18 @@ const EditorTab: React.FC = React.memo(() => {
   const setAutoPairing = useSettingsStore((s) => s.setAutoPairing);
   const tabSize = useSettingsStore((s) => s.tabSize);
   const setTabSize = useSettingsStore((s) => s.setTabSize);
+  const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
+  const setShowExternalLinkIcon = useSettingsStore((s) => s.setShowExternalLinkIcon);
+  const spellcheck = useSettingsStore((s) => s.spellcheck);
+  const setSpellcheck = useSettingsStore((s) => s.setSpellcheck);
+  const colorLinksWithAccent = useSettingsStore((s) => s.colorLinksWithAccent);
+  const setColorLinksWithAccent = useSettingsStore((s) => s.setColorLinksWithAccent);
+  const blueLinks = useSettingsStore((s) => s.blueLinks);
+  const setBlueLinks = useSettingsStore((s) => s.setBlueLinks);
+  const underlineLinks = useSettingsStore((s) => s.underlineLinks);
+  const setUnderlineLinks = useSettingsStore((s) => s.setUnderlineLinks);
+  const matchLinkUnderlineColor = useSettingsStore((s) => s.matchLinkUnderlineColor);
+  const setMatchLinkUnderlineColor = useSettingsStore((s) => s.setMatchLinkUnderlineColor);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
   const showToast = useWorkspaceStore((s) => s.showToast);
 
@@ -1732,7 +1744,13 @@ const EditorTab: React.FC = React.memo(() => {
     indentationGuides !== DEFAULT_SETTINGS.indentationGuides ||
     accentListPrefixes !== DEFAULT_SETTINGS.accentListPrefixes ||
     autoPairing !== DEFAULT_SETTINGS.autoPairing ||
-    tabSize !== DEFAULT_SETTINGS.tabSize;
+    tabSize !== DEFAULT_SETTINGS.tabSize ||
+    showExternalLinkIcon !== DEFAULT_SETTINGS.showExternalLinkIcon ||
+    spellcheck !== DEFAULT_SETTINGS.spellcheck ||
+    colorLinksWithAccent !== DEFAULT_SETTINGS.colorLinksWithAccent ||
+    blueLinks !== DEFAULT_SETTINGS.blueLinks ||
+    underlineLinks !== DEFAULT_SETTINGS.underlineLinks ||
+    matchLinkUnderlineColor !== DEFAULT_SETTINGS.matchLinkUnderlineColor;
 
   return (
     <div className="flex flex-col gap-6">
@@ -2017,6 +2035,134 @@ const EditorTab: React.FC = React.memo(() => {
                 title="Restore default (Enabled)"
               />
               <ToggleSwitch checked={autoPairing} onChange={setAutoPairing} />
+            </div>
+          </div>
+
+          {/* Show external link icon */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Show external link icon</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Display an external link icon next to links in rendered markdown notes.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={showExternalLinkIcon !== DEFAULT_SETTINGS.showExternalLinkIcon}
+                onReset={() => setShowExternalLinkIcon(DEFAULT_SETTINGS.showExternalLinkIcon)}
+                title="Restore default (Disabled)"
+              />
+              <ToggleSwitch checked={showExternalLinkIcon} onChange={setShowExternalLinkIcon} />
+            </div>
+          </div>
+
+          {/* Color all links with accent color */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Color all links with accent color</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Display markdown links, wikilinks, and document links using your active accent color.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={colorLinksWithAccent !== DEFAULT_SETTINGS.colorLinksWithAccent}
+                onReset={() => setColorLinksWithAccent(DEFAULT_SETTINGS.colorLinksWithAccent)}
+                title="Restore default (Enabled)"
+              />
+              <ToggleSwitch checked={colorLinksWithAccent} onChange={setColorLinksWithAccent} />
+            </div>
+          </div>
+
+          {/* Classic blue links */}
+          <div
+            className={`flex items-center justify-between p-4 ${
+              colorLinksWithAccent ? 'opacity-40' : ''
+            }`}
+          >
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Classic blue links</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Display links in standard browser blue with purple visited links instead of neutral text color.
+                {colorLinksWithAccent && ' (Disabled while accent color is active)'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={!colorLinksWithAccent && blueLinks !== DEFAULT_SETTINGS.blueLinks}
+                onReset={() => setBlueLinks(DEFAULT_SETTINGS.blueLinks)}
+                title="Restore default (Disabled)"
+              />
+              <ToggleSwitch
+                checked={blueLinks}
+                onChange={setBlueLinks}
+                disabled={colorLinksWithAccent}
+                title={colorLinksWithAccent ? 'Disabled while accent-colored links are enabled' : undefined}
+              />
+            </div>
+          </div>
+
+          {/* Underline links */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Underline links</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Display underlines under links. When turned off, underlines only appear on hover.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={underlineLinks !== DEFAULT_SETTINGS.underlineLinks}
+                onReset={() => setUnderlineLinks(DEFAULT_SETTINGS.underlineLinks)}
+                title="Restore default (Enabled)"
+              />
+              <ToggleSwitch checked={underlineLinks} onChange={setUnderlineLinks} />
+            </div>
+          </div>
+
+          {/* Match underline color to link */}
+          <div
+            className={`flex items-center justify-between p-4 ${
+              !underlineLinks ? 'opacity-40' : ''
+            }`}
+          >
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Match underline color to link</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Color the underline to match the link text color instead of the subtle border color.
+                {!underlineLinks && ' (Disabled while link underlines are turned off)'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={underlineLinks && matchLinkUnderlineColor !== DEFAULT_SETTINGS.matchLinkUnderlineColor}
+                onReset={() => setMatchLinkUnderlineColor(DEFAULT_SETTINGS.matchLinkUnderlineColor)}
+                title="Restore default (Disabled)"
+              />
+              <ToggleSwitch
+                checked={matchLinkUnderlineColor}
+                onChange={setMatchLinkUnderlineColor}
+                disabled={!underlineLinks}
+                title={!underlineLinks ? 'Disabled while link underlines are turned off' : undefined}
+              />
+            </div>
+          </div>
+
+          {/* Spellcheck */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Spellcheck</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Highlight spelling mistakes and typos with red wavy underlines in the editor.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={spellcheck !== DEFAULT_SETTINGS.spellcheck}
+                onReset={() => setSpellcheck(DEFAULT_SETTINGS.spellcheck)}
+                title="Restore default (Enabled)"
+              />
+              <ToggleSwitch checked={spellcheck} onChange={setSpellcheck} />
             </div>
           </div>
 

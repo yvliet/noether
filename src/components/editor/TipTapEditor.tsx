@@ -28,12 +28,15 @@ import { Fold, FoldPluginKey } from './extensions/fold';
 import { SearchAndReplace } from './extensions/search-and-replace';
 import { SmartTabIndent } from './extensions/smart-tab-indent';
 import { TableExitBehavior } from './extensions/table-exit-behavior';
+import { transformPastedHtmlToMarkdown } from './paste-markdown';
 import { SlashMenu } from './SlashMenu';
 import { WikiLinkPopup } from './WikiLinkPopup';
 import { MathKeyboard } from './MathKeyboard';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { platform } from '@/lib/platform/platformAdapter';
+import { markLinkVisited } from '@/lib/visitedLinks';
 import { getDocumentPath } from '@/lib/db/documents';
 import { useFlintApp, useExtensionList, usePlaceholderHints } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
@@ -251,13 +254,27 @@ function extractLinkTargetFromEvent(
     (document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null)?.closest('.md-link');
 
   if (mdLinkElem) {
-    const targetUrl =
-      mdLinkElem.getAttribute('data-link-url') ||
-      mdLinkElem.getAttribute('href') ||
-      null;
-    if (targetUrl) {
-      return { type: 'url', target: targetUrl };
+    const isFocused = mdLinkElem.classList.contains('is-focused');
+    const isModifierClick = event.ctrlKey || event.metaKey || event.button === 1;
+    // When unfocused (rendered view), clicking directly opens the link.
+    // When focused (editing raw syntax), clicking places the cursor for editing unless modifier/middle-click.
+    if (!isFocused || isModifierClick) {
+      const targetUrl =
+        mdLinkElem.getAttribute('data-link-url') ||
+        mdLinkElem.getAttribute('href') ||
+        null;
+      if (targetUrl) {
+        return { type: 'url', target: targetUrl };
+      }
     }
+    return null;
+  }
+
+  // 1c. Direct check for markdown syntax tokens (dimmed or hidden syntax)
+  // When editing syntax (e.g. [ or ](url)), normal clicks should place cursor for editing
+  const syntaxElem = targetElem?.closest('.md-syntax-dimmed, .md-syntax-hidden');
+  if (syntaxElem && !(event.ctrlKey || event.metaKey || event.button === 1)) {
+    return null;
   }
 
   // 2. Direct DOM check for <a> tags
@@ -265,6 +282,12 @@ function extractLinkTargetFromEvent(
     targetElem?.closest('a') ||
     (document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null)?.closest('a');
   if (anchor) {
+    if (
+      anchor.closest('.is-focused, .md-syntax-dimmed, .md-syntax-hidden') &&
+      !(event.ctrlKey || event.metaKey || event.button === 1)
+    ) {
+      return null;
+    }
     const href = anchor.getAttribute('href');
     if (href) {
       return { type: 'url', target: href };
@@ -754,6 +777,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         class: `prose prose-invert max-w-none focus:outline-none flex-1 min-h-[60px] text-[#dcddde] leading-relaxed select-text ${
           editable ? 'cursor-text' : 'cursor-default'
         }`,
+        spellcheck: useSettingsStore.getState().spellcheck ? 'true' : 'false',
       },
       handleDOMEvents: {
         mousedown: (view, event) => {
@@ -785,6 +809,12 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           }
           return false;
         },
+      },
+      transformPastedHTML: (html) => {
+        return transformPastedHtmlToMarkdown(html);
+      },
+      transformPastedText: (text) => {
+        return text.replace(/\u00a0/g, ' ');
       },
       handlePaste: (view, event) => {
         // 1. Check for image files in clipboard
@@ -879,19 +909,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       handleClick: (view, pos, event) => {
         const info = extractLinkTargetFromEvent(editor, event as MouseEvent);
         if (info) {
+          const rawTarget = (event.target as HTMLElement)?.closest('.md-link, .md-wikilink, a');
+          if (rawTarget) {
+            rawTarget.classList.add('is-visited');
+            rawTarget.setAttribute('data-visited', 'true');
+          }
           const isSplit = event.ctrlKey || event.metaKey || event.button === 1;
           if (info.type === 'wikilink') {
+            markLinkVisited(info.target);
             handleNavigateToWikiLink(info.target, isSplit);
             return true;
           } else if (info.type === 'url') {
-            if (
-              info.target.startsWith('http://') ||
-              info.target.startsWith('https://') ||
-              info.target.startsWith('mailto:')
-            ) {
-              window.open(info.target, '_blank', 'noopener,noreferrer');
-              return true;
-            }
+            markLinkVisited(info.target);
+            platform.openUrl(info.target);
+            return true;
           } else if (info.type === 'tag') {
             const ws = useWorkspaceStore.getState();
             const ds = useDocumentStore.getState();
@@ -1575,6 +1606,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const tabSize = useSettingsStore((s) => s.tabSize);
   const foldHeading = useSettingsStore((s) => s.foldHeading);
   const foldIndent = useSettingsStore((s) => s.foldIndent);
+  const spellcheck = useSettingsStore((s) => s.spellcheck);
+
+  useEffect(() => {
+    if (!editor || !editor.view || editor.isDestroyed) return;
+    editor.view.dom.setAttribute('spellcheck', spellcheck ? 'true' : 'false');
+    editor.setOptions({
+      editorProps: {
+        attributes: {
+          spellcheck: spellcheck ? 'true' : 'false',
+        },
+      },
+    });
+  }, [spellcheck, editor]);
+
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
     editor.view.dispatch(
@@ -1664,13 +1709,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         if (current.info.type === 'wikilink') {
           handleNavigateToWikiLink(current.info.target, current.isSplit);
         } else if (current.info.type === 'url') {
-          if (
-            current.info.target.startsWith('http://') ||
-            current.info.target.startsWith('https://') ||
-            current.info.target.startsWith('mailto:')
-          ) {
-            window.open(current.info.target, '_blank', 'noopener,noreferrer');
-          }
+          platform.openUrl(current.info.target);
         } else if (current.info.type === 'tag') {
           const ws = useWorkspaceStore.getState();
           const ds = useDocumentStore.getState();
@@ -1688,17 +1727,18 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       if (info) {
         e.preventDefault();
         e.stopPropagation();
+        const rawTarget = (e.target as HTMLElement)?.closest('.md-link, .md-wikilink, a');
+        if (rawTarget) {
+          rawTarget.classList.add('is-visited');
+          rawTarget.setAttribute('data-visited', 'true');
+        }
         const isSplit = e.ctrlKey || e.metaKey || e.button === 1;
         if (info.type === 'wikilink') {
+          markLinkVisited(info.target);
           handleNavigateToWikiLink(info.target, isSplit);
         } else if (info.type === 'url') {
-          if (
-            info.target.startsWith('http://') ||
-            info.target.startsWith('https://') ||
-            info.target.startsWith('mailto:')
-          ) {
-            window.open(info.target, '_blank', 'noopener,noreferrer');
-          }
+          markLinkVisited(info.target);
+          platform.openUrl(info.target);
         } else if (info.type === 'tag') {
           const ws = useWorkspaceStore.getState();
           const ds = useDocumentStore.getState();

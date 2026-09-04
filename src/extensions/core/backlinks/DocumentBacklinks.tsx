@@ -317,7 +317,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           e.stopPropagation();
                           setActiveDocumentById(group.docId);
                         }}
-                        className="font-normal text-xs text-[#dcddde] hover:text-white hover:underline truncate"
+                        className="flint-link font-normal text-xs hover:underline truncate"
                       >
                         {group.docTitle}
                       </span>
@@ -382,7 +382,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
                           className="flex items-center gap-1.5 cursor-pointer truncate flex-1 min-w-0"
                         >
-                          <span className="font-medium text-[#dcddde] hover:text-white hover:underline text-xs truncate">
+                          <span className="flint-link font-medium hover:underline text-xs truncate">
                             {unlinked.source_document_title}
                           </span>
                         </div>
