@@ -23,7 +23,7 @@
 
 [Overview](#overview) •
 [Architecture](#architectural-overview) •
-[Storage Pipeline](#dual-layer-storage-pipeline) •
+[Storage Pipeline](#dual-track-storage--synchronization-pipeline) •
 [Model Context Protocol](#native-model-context-protocol-mcp-integration) •
 [Technical Highlights](#technical-architecture--capabilities-matrix) •
 [Core Capabilities](#core-capabilities) •
@@ -46,7 +46,7 @@ Flint provides an open, extensible architecture that pairs plain-text Markdown v
 - **Compiled Native SQLite Engine (`rusqlite` + WAL + FTS5)**: A native Rust SQLite integration running directly in the Tauri host with Write-Ahead Logging (WAL) and 256MB memory-mapped I/O (`PRAGMA mmap_size = 268435456`). Delivers sub-millisecond query execution, statistical BM25 relevance ranking with diacritics removal, and zero WebAssembly heap overhead. SQLite performs integrity validation on boot (`PRAGMA integrity_check;`) and reconstructs the index from Markdown files automatically if needed.
 - **Sub-150MB Lightweight Desktop Footprint**: Windows WebView2 startup argument injection (`--in-process-gpu` compositing eliminating 150-200MB separate GPU process, single renderer process limit, bounded disk/media caches, pruned web subsystems, and size-optimized V8 heap) combined with Win32 physical working set memory trimming (`SetProcessWorkingSetSize`) after 120s of idle time.
 - **High-Performance Live Preview**: TipTap 2.x & ProseMirror editor engine with transaction decoration mapping (`DecorationSet.map`), dirty-range AST scanning, KaTeX compilation memoization, and bounded 50-snapshot undo history. Maintains sub-8ms typing latency on massive documents (100k+ words).
-- **Atomic File Persistence**: Note saves and database transactions write to temporary files first before executing atomic OS rename operations (`fs::rename`), eliminating data loss during sudden crashes or power loss.
+- **Atomic File Persistence**: Note saves write to temporary files first before executing atomic OS rename operations (`fs::rename`), while SQLite transactions commit direct WAL pages, eliminating data loss during sudden crashes or power loss.
 - **Fast Differential Sync**: Uses a `file_manifest` table and content hashing to skip unchanged files during cold-boot indexing, completing vault revalidation in milliseconds.
 - **Native AI Agent Server (MCP)**: Built-in stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`) allowing AI coding assistants (Claude Desktop, Antigravity, Gemini, Cursor) to search notes, read backlinks, and manage tasks via 13 structured RPC tools.
 - **Instant UI Responsiveness**: Micro-interactions (switches, buttons, menus, dropdowns, tree items) execute immediately with zero artificial animation delays or visual smearing, preserving a crisp, unbloated desktop feel.
@@ -62,12 +62,31 @@ Flint separates user interface components, relational query indexes, physical di
   <img src="docs/assets/architecture-diagram.svg" alt="Flint Architecture Flow: [1. Presentation &amp; Workspace Layer: Live Preview Editor (TipTap &amp; ProseMirror), 2D Knowledge Graph (Force-Directed Physics), Infinite 2D Canvas (Spatial Whiteboard), FSRS Review Deck (Spaced Repetition)] --Workspace Events--&gt; [2. Flint Micro-Kernel &amp; IoC: Typed EventBus (Decoupled Pub/Sub), IoC Registries (Commands, Views, Menus), Zustand Stores (Reactive State)] --Direct Tauri IPC--&gt; [3. Storage Engine &amp; Platform Bridge: Native rusqlite (WAL Mode &amp; FTS5), Atomic Persistence (WAL Commits &amp; Temp-Rename), Tauri v2 Core (Rust Native Architecture), Runtime Optimizer (Sub-150MB &amp; RAM Trimmer)] --Atomic File I/O--&gt; [4. Local File System Vault: Markdown Files (Universal Plain Text), .flint Storage (flint.sqlite &amp; Plugins), .trash Folder (Soft-Delete Safety)]" width="100%"/>
 </div>
 
+### Clean Micro-Kernel 4-Tier Stack
+
+Flint establishes a strict, uncompromised separation of concerns across a 4-tier micro-kernel stack. This guarantees that user-facing presentation, state coordination, native hardware bridges, and physical storage remain isolated behind explicit boundaries:
+
+1. **Tier 1: Presentation & Workspace Layer**:
+   - Houses high-performance UI and editing engines: TipTap 2.x & ProseMirror Live Preview, 2D Force-Directed Knowledge Graph, Infinite 2D Spatial Canvas, and FSRS-4.5 Review Deck.
+   - UI components exclusively capture user intent and dispatch high-level workspace events downward. **React components never invoke OS filesystem methods or database bindings directly.**
+
+2. **Tier 2: Flint Micro-Kernel & IoC State Layer**:
+   - Provides Inversion of Control (IoC) registries (commands, views, menus, custom folder renderers), the typed `EventBus`, and reactive Zustand state stores.
+   - Coordinates application state, manages extension lifecycles, and enforces strict native core isolation (zero extension leakage into native code directories).
+
+3. **Tier 3: Storage Engine & Platform Bridge**:
+   - The Cross-Platform Neutrality Bridge ([`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts)) routes all system requests across Tauri IPC into the compiled native Rust host.
+   - Encapsulates the native `rusqlite` database engine (WAL mode + FTS5 BM25), the atomic temp-and-rename file persistence coordinator, and host process management services.
+
+4. **Tier 4: Local File System Vault**:
+   - The user's local disk filesystem. Houses standard plain-text `*.md` files (100% physical ground truth), the internal `.flint/` directory (`flint.sqlite`, WAL journals, and extension schemas), and the `.trash/` soft-delete safety folder.
+
 ### Core Architectural Invariants
 
 1. **Dual Storage Model (Markdown Ground Truth + Native `rusqlite`)**:
-   - Plain-text `.md` files on disk are the ultimate authority. Flint does not lock your data into opaque binary databases.
+   - Plain-text `.md` files on disk are the ultimate authority. Flint never locks user knowledge into opaque binary blobs.
    - A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) indexes note metadata, block-level AST nodes, tags, tasks, and graph relationships for sub-millisecond queries.
-   - Database transactions commit directly to disk pages without UI-thread serialization or WebAssembly heap export overhead.
+   - Database transactions commit page-level diffs directly to disk pages without UI-thread serialization or WebAssembly heap export overhead.
 
 2. **Cross-Platform Neutrality Bridge (`IPlatformAdapter`)**:
    - React components and stores never invoke runtime-specific host primitives directly. All system calls route through [`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts).
@@ -79,20 +98,34 @@ Flint separates user interface components, relational query indexes, physical di
 
 ---
 
-## Dual-Layer Storage Pipeline
+## Dual-Track Storage & Synchronization Pipeline
 
 <div align="center">
-  <img src="docs/assets/dual-storage-model.svg" alt="Flint Dual-Layer Storage &amp; Sync Flow: [1. Native SQLite Engine: rusqlite Engine (WAL &amp; Integrity Check) -&gt; FTS5 Search (BM25 Ranked Index) -&gt; file_manifest (O(N) Diff Indexer)] --Page-Level Commits--&gt; [2. Persistence &amp; Sync: Atomic Writes (Temp &amp; Rename I/O) -&gt; Echo Suppression (Signature Tracking) -&gt; RAM Trimmer (Idle Working Set Trim)] --Atomic File I/O--&gt; [3. Physical Disk Vault: *.md Markdown (100% Ground Truth) -&gt; flint.sqlite (Native WAL &amp; FTS5 Index) -&gt; .trash/ (Soft-Delete Safety)]" width="100%"/>
+  <img src="docs/assets/dual-storage-model.svg" alt="Flint Dual-Track Storage &amp; Sync Architecture: [1. Workspace &amp; State Layer] bifurcates into two concurrent native tracks: [Track A: Markdown Persistence Engine (Debounced Save -&gt; Atomic Temp-Rename -&gt; Echo Suppression)] writing directly to [*.md Markdown Files], and [Track B: Native rusqlite Engine (Tauri IPC -&gt; WAL Page Commits -&gt; FTS5 BM25)] writing directly to [flint.sqlite &amp; WAL], reconciled via [file_manifest O(N) Diff Scan]" width="100%"/>
 </div>
 
-Flint achieves real-time relational graph queries and full-text retrieval while safeguarding plain-text Markdown files:
+Flint achieves real-time relational graph queries and full-text retrieval while safeguarding plain-text Markdown files through a **dual-track concurrent pipeline**, rather than a single sequential pipeline:
 
-- **Hierarchical Path Resolution**: Physical folders and files mirror your vault structure on disk directly (e.g. `02 Projects/Flint/About Flint.md`).
-- **Direct WAL Page Commits**: SQLite transactions write page-level diffs directly to `flint.sqlite-wal`, eliminating full database memory serialization and export overhead.
-- **Atomic Disk Writes**: Markdown note modifications write to a `.tmp` file first, then atomically rename to the target path via OS primitives (`fs::rename`).
-- **Deterministic Echo Suppression**: Flint computes and records internal save signatures before disk writes, preventing native file-system watchers from triggering recursive reload loops.
-- **Differential Startup Indexing**: Startup sync compares file modification timestamps and sizes against `file_manifest`. Unchanged notes bypass AST parsing and full-text re-indexing.
-- **Active Buffer Protection**: External changes (such as Git checkouts or external editors) sync into SQLite and inactive document views automatically without clobbering active user typing buffers.
+### 1. Track A: Markdown Physical Ground Truth (File Persistence Engine)
+- **Active Buffer Protection**: Keystrokes update in-memory ProseMirror document state instantly (sub-8ms typing latency). Active typing buffers are shielded from background disk synchronization overwrite.
+- **Debounced Save Coordinator**: Note saves are debounced to prevent disk I/O thrashing during continuous typing bursts.
+- **Atomic Temp-and-Rename Writes**: Note modifications write to an intermediate temporary file (`<target>.tmp.<pid>`) first, then atomically rename to the target path via OS primitives (`fs::rename`). This guarantees zero file corruption during unexpected crashes or power loss.
+- **Deterministic Echo Suppression**: Before issuing disk writes, Flint records an internal write signature (`LAST_INTERNAL_WRITE` timestamp). The native filesystem watcher verifies this signature to suppress redundant reload events, preventing recursive feedback loops while retaining instant detection of external changes (e.g. Git checkouts or external text editors).
+
+### 2. Track B: Relational Metadata & Query Index (Native `rusqlite` Engine)
+- **Direct Tauri IPC Dispatch**: Extracted AST nodes, YAML frontmatter, tags, `[[wikilinks]]`, and `- [ ]` tasks serialize across Tauri IPC directly to compiled Rust.
+- **Direct WAL Page Commits**: `rusqlite` writes SQLite page diffs directly to `flint.sqlite` and the Write-Ahead Log (`flint.sqlite-wal`) under `PRAGMA synchronous = NORMAL;` and 256MB memory mapping (`PRAGMA mmap_size = 268435456;`). `rusqlite` handles SQLite page writes directly—it does not route through the Markdown file persistence mechanism.
+- **Zero WebAssembly Serialization Overhead**: Eliminates `sql.js` memory dumps and whole-database exports; queries and index updates execute natively in sub-millisecond time.
+- **FTS5 Full-Text Indexing**: Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 relevance ranking keeps search instantly responsive across vaults with tens of thousands of notes.
+
+### 3. Differential Synchronization & Cold-Boot Re-indexing (`file_manifest`)
+- **$O(N)$ Manifest Scan**: On cold-boot startup and external file watcher events, Flint evaluates file modification timestamps (`mtime`) and content hashes against the `file_manifest` SQLite table.
+- **Unchanged File Bypass**: Unmodified Markdown files skip AST tokenization and full-text re-indexing completely, allowing cold-start vault revalidation in milliseconds.
+- **External Edit Reconciliation**: External modifications (e.g. Git branches or external CLI tools) ingest automatically into SQLite and inactive document views without clobbering active user typing buffers.
+
+### 4. Decoupled Host Process Management (Host Runtime vs. Storage Pipeline)
+- **Runtime Process Management Invariant**: Memory working-set trimming (Windows Win32 `SetProcessWorkingSetSize` after 120s of verified user idle time) and WebView2 startup argument tuning (`--in-process-gpu`, single renderer process limit, capped disk/media caches, and pruned browser subsystems) are **host runtime process management concerns** handled by the Tauri background optimizer.
+- They operate independently in the host runtime lifecycle and are strictly decoupled from the atomic file and database write pipelines.
 
 ---
 
@@ -238,7 +271,7 @@ Flint is engineered with explicit performance invariants designed to maintain fl
 | **Full-Text Search** | SQLite FTS5 Virtual Tables + BM25 | Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 ranking. Includes automatic FTS4 fallback. |
 | **Live Preview Editor** | Incremental Decoration Mapping | Keystrokes map existing decorations in $O(1)$ and only rescan dirty textblocks. KaTeX math HTML is memoized in memory. Undo history is bounded to 50 snapshots. |
 | **WebView2 Memory Tuning** | Browser Arguments Injection | In-process GPU compositing (`--in-process-gpu`), single renderer process cap (`--renderer-process-limit=1`), capped disk (10MB) and media (5MB) caches, disabled unused browser subsystems, and size-optimized V8 flags (`--max-old-space-size=128 --optimize-for-size`). |
-| **RAM Trimming** | Win32 Working Set Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory across the WebView2 process tree after 120s of verified user idle time. |
+| **Host Process RAM Trimming** | Win32 Working Set Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory across the WebView2 process tree after 120s of verified user idle time (decoupled background host runtime optimization). |
 | **Bundle Footprint** | Tree-Shaken Icon Catalogs | Replaced monolithic 6.75MB hugeicons catalog with tree-shaken named imports to eliminate boot heap bloat. |
 | **Data Safety & Atomic Writes** | Temporary-File + Rename | Note saves write to temporary files first, then atomically rename via OS primitives (`fs::rename`). Prevents file corruption on unexpected crashes or power loss. |
 | **Resilience & Self-Healing** | Boot Integrity Validation | SQLite executes `PRAGMA integrity_check;` on load. Automatically rebuilds clean index from Markdown ground truth if corrupted. |

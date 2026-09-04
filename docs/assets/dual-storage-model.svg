@@ -1,84 +1,317 @@
-<svg xmlns="http://www.w3.org/2000/svg" id="storage_diagram" width="100%" style="max-width: 1026.875px;" viewBox="-7.5 -8 1026.875 337" role="graphics-document document" aria-roledescription="flowchart-v2"><style>
-        * {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif !important;
-        }
-        svg {
-          background: transparent !important;
-        }
-        .node rect, .node circle, .node ellipse, .node polygon, .node path {
-          fill: #161b22 !important;
-          stroke: #38404a !important;
-          stroke-width: 1.2px !important;
-          rx: 6px !important;
-          ry: 6px !important;
-        }
-        .cluster rect {
-          fill: #0d1117 !important;
-          stroke: #30363d !important;
-          stroke-width: 1.2px !important;
-          rx: 8px !important;
-          ry: 8px !important;
-        }
-        .cluster-label text, .cluster-label span, .cluster span, .cluster p {
-          color: #ffffff !important;
-          fill: #ffffff !important;
-          font-weight: 700 !important;
-          font-size: 13.5px !important;
-          text-align: center !important;
-        }
-        .node .label, .nodeLabel, .label {
-          text-align: center !important;
-          color: #ffffff !important;
-          fill: #ffffff !important;
-          font-size: 12.5px !important;
-          line-height: 1.35 !important;
-        }
-        .nodeLabel b, .label b {
-          color: #ffffff !important;
-          fill: #ffffff !important;
-          font-weight: 700 !important;
-          font-size: 13px !important;
-          text-align: center !important;
-          display: inline !important;
-          line-height: 1.35 !important;
-        }
-        .sub-text {
-          color: #ffffff !important;
-          fill: #ffffff !important;
-          font-size: 11.5px !important;
-          font-weight: normal !important;
-          text-align: center !important;
-          display: inline !important;
-          line-height: 1.35 !important;
-          opacity: 1 !important;
-        }
-        .edgeLabel {
-          background-color: #161b22 !important;
-          color: #ffffff !important;
-          fill: #ffffff !important;
-          font-size: 11.5px !important;
-          font-weight: 600 !important;
-          text-align: center !important;
-        }
-        .edgeLabel span, .edgeLabel p, .edgeLabel text, .edgeLabel div {
-          color: #ffffff !important;
-          fill: #ffffff !important;
-          text-align: center !important;
-        }
-        .edgeLabel rect {
-          fill: #161b22 !important;
-          stroke: #30363d !important;
-          stroke-width: 1px !important;
-          rx: 4px !important;
-          ry: 4px !important;
-          opacity: 1 !important;
-        }
-        .edgePath .path {
-          stroke: #8b949e !important;
-          stroke-width: 1.6px !important;
-        }
-        .marker, .arrowheadPath, .marker path {
-          fill: #8b949e !important;
-          stroke: #8b949e !important;
-        }
-      </style><g><marker id="storage_diagram_flowchart-pointEnd" class="marker flowchart" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="storage_diagram_flowchart-pointStart" class="marker flowchart" viewBox="0 0 10 10" refX="4.5" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M 0 5 L 10 10 L 10 0 z" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="storage_diagram_flowchart-circleEnd" class="marker flowchart" viewBox="0 0 10 10" refX="11" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="storage_diagram_flowchart-circleStart" class="marker flowchart" viewBox="0 0 10 10" refX="-1" refY="5" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><circle cx="5" cy="5" r="5" class="arrowMarkerPath" style="stroke-width: 1; stroke-dasharray: 1, 0;"/></marker><marker id="storage_diagram_flowchart-crossEnd" class="marker cross flowchart" viewBox="0 0 11 11" refX="12" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><marker id="storage_diagram_flowchart-crossStart" class="marker cross flowchart" viewBox="0 0 11 11" refX="-1" refY="5.2" markerUnits="userSpaceOnUse" markerWidth="11" markerHeight="11" orient="auto"><path d="M 1,1 l 9,9 M 10,1 l -9,9" class="arrowMarkerPath" style="stroke-width: 2; stroke-dasharray: 1, 0;"/></marker><g class="root"><g class="clusters"/><g class="edgePaths"><path d="M242.75,160.5L256.389,160.5C270.029,160.5,297.307,160.5,323.703,160.5C350.098,160.5,375.61,160.5,388.366,160.5L401.122,160.5" id="L-Memory-SyncEngine-0" class=" edge-thickness-thick edge-pattern-solid flowchart-link LS-Memory LE-SyncEngine" style="stroke-width: 3.5px;fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/><path d="M642.563,160.5L655.514,160.5C668.466,160.5,694.37,160.5,719.39,160.5C744.41,160.5,768.547,160.5,780.616,160.5L792.684,160.5" id="L-SyncEngine-DiskVault-0" class=" edge-thickness-thick edge-pattern-solid flowchart-link LS-SyncEngine LE-DiskVault" style="stroke-width: 3.5px;fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel" transform="translate(324.5859375, 160.5)"><g class="label" transform="translate(-56.8359375, -10.5)"><foreignObject width="113.671875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;">Page-Level Commits</span></div></foreignObject></g></g><g class="edgeLabel" transform="translate(720.2734375, 160.5)"><g class="label" transform="translate(-52.7109375, -10.5)"><foreignObject width="105.421875" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;">Atomic File I/O</span></div></foreignObject></g></g></g><g class="nodes"><g class="root" transform="translate(790.484375, -8)"><g class="clusters"><g class="cluster default flowchart-label" id="DiskVault"><rect style="" rx="8" ry="8" x="8" y="8" width="212.890625" height="321" fill="#0d1117" stroke="#30363d"/><g class="cluster-label" transform="translate(35.375, 8)"><foreignObject width="158.140625" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; width: 100%;"><span class="nodeLabel" style="color: #ffffff !important; font-size: 13.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">3. Physical Disk Vault</b></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M114.445,90L114.445,94.167C114.445,98.333,114.445,106.667,114.445,114.117C114.445,121.567,114.445,128.133,114.445,131.417L114.445,134.7" id="L-MD-DB-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-MD LE-DB" style="fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/><path d="M114.445,197L114.445,201.167C114.445,205.333,114.445,213.667,114.445,221.117C114.445,228.567,114.445,235.133,114.445,238.417L114.445,241.7" id="L-DB-Trash-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-DB LE-Trash" style="fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-MD-12" data-node="true" data-id="MD" transform="translate(114.4453125, 61.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-68.3984375" y="-28.5" width="136.796875" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-60.8984375, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="121.796875" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">*.md Markdown</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">100% Ground Truth</span></span></div></foreignObject></g></g><g class="node default default flowchart-label" id="flowchart-DB-13" data-node="true" data-id="DB" transform="translate(114.4453125, 168.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-66.875" y="-28.5" width="133.75" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-59.375, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="118.75" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">flint.sqlite</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">Native WAL &amp; FTS5 Index</span></span></div></foreignObject></g></g><g class="node default default flowchart-label" id="flowchart-Trash-14" data-node="true" data-id="Trash" transform="translate(114.4453125, 275.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-71.4453125" y="-28.5" width="142.890625" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-63.9453125, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="127.890625" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">.trash/</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">Soft-Delete Safety</span></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(398.921875, -8)"><g class="clusters"><g class="cluster default flowchart-label" id="SyncEngine"><rect style="" rx="8" ry="8" x="8" y="8" width="236.140625" height="321" fill="#0d1117" stroke="#30363d"/><g class="cluster-label" transform="translate(46.6484375, 8)"><foreignObject width="158.84375" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; width: 100%;"><span class="nodeLabel" style="color: #ffffff !important; font-size: 13.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">2. Persistence &amp; Sync</b></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M126.07,90L126.07,94.167C126.07,98.333,126.07,106.667,126.07,114.117C126.07,121.567,126.07,128.133,126.07,131.417L126.07,134.7" id="L-Debounce-Watcher-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-Debounce LE-Watcher" style="fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/><path d="M126.07,197L126.07,201.167C126.07,205.333,126.07,213.667,126.07,221.117C126.07,228.567,126.07,235.133,126.07,238.417L126.07,241.7" id="L-Watcher-Trim-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-Watcher LE-Trim" style="fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-Debounce-6" data-node="true" data-id="Debounce" transform="translate(126.0703125, 61.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-77.34375" y="-28.5" width="154.6875" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-69.84375, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="139.6875" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">Atomic Writes</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">Temp &amp; Rename I/O</span></span></div></foreignObject></g></g><g class="node default default flowchart-label" id="flowchart-Watcher-7" data-node="true" data-id="Watcher" transform="translate(126.0703125, 168.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-69.7421875" y="-28.5" width="139.484375" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-62.2421875, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="124.484375" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">Echo Suppression</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">Signature Tracking</span></span></div></foreignObject></g></g><g class="node default default flowchart-label" id="flowchart-Trim-8" data-node="true" data-id="Trim" transform="translate(126.0703125, 275.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-83.0703125" y="-28.5" width="166.140625" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-75.5703125, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="151.140625" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">RAM Trimmer</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">Idle Working Set Trim</span></span></div></foreignObject></g></g></g></g><g class="root" transform="translate(-7.5, -8)"><g class="clusters"><g class="cluster default flowchart-label" id="Memory"><rect style="" rx="8" ry="8" x="8" y="8" width="242.75" height="321" fill="#0d1117" stroke="#30363d"/><g class="cluster-label" transform="translate(38.90625, 8)"><foreignObject width="180.9375" height="21"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; width: 100%;"><span class="nodeLabel" style="color: #ffffff !important; font-size: 13.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">1. Native SQLite Engine</b></span></div></foreignObject></g></g></g><g class="edgePaths"><path d="M129.375,90L129.375,94.167C129.375,98.333,129.375,106.667,129.375,114.117C129.375,121.567,129.375,128.133,129.375,131.417L129.375,134.7" id="L-SQLite-FTS-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-SQLite LE-FTS" style="fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/><path d="M129.375,197L129.375,201.167C129.375,205.333,129.375,213.667,129.375,221.117C129.375,228.567,129.375,235.133,129.375,238.417L129.375,241.7" id="L-FTS-Schemas-0" class=" edge-thickness-normal edge-pattern-solid flowchart-link LS-FTS LE-Schemas" style="fill:none;" marker-end="url(#storage_diagram_flowchart-pointEnd)"/></g><g class="edgeLabels"><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"></span></div></foreignObject></g></g><g class="edgeLabel"><g class="label" transform="translate(0, 0)"><foreignObject width="0" height="0"><div xmlns="http://www.w3.org/1999/xhtml" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"><span class="edgeLabel" style="color: #ffffff !important; font-size: 11.5px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 600 !important; text-align: center !important;"></span></div></foreignObject></g></g></g><g class="nodes"><g class="node default default flowchart-label" id="flowchart-SQLite-0" data-node="true" data-id="SQLite" transform="translate(129.375, 61.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-86.375" y="-28.5" width="172.75" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-78.875, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="157.75" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">rusqlite Engine</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">WAL &amp; Integrity Check</span></span></div></foreignObject></g></g><g class="node default default flowchart-label" id="flowchart-FTS-1" data-node="true" data-id="FTS" transform="translate(129.375, 168.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-75.375" y="-28.5" width="150.75" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-67.875, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="135.75" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">FTS5 Search</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">BM25 Ranked Index</span></span></div></foreignObject></g></g><g class="node default default flowchart-label" id="flowchart-Schemas-2" data-node="true" data-id="Schemas" transform="translate(129.375, 275.5)"><rect class="basic label-container" style="" rx="6" ry="6" x="-78.7421875" y="-28.5" width="157.484375" height="57" fill="#161b22" stroke="#38404a"/><g class="label" style="" transform="translate(-71.2421875, -21)"><rect rx="6" ry="6" fill="#161b22" stroke="#38404a"/><foreignObject width="142.484375" height="42"><div xmlns="http://www.w3.org/1999/xhtml" style="display: inline-block; white-space: nowrap; text-align: center; line-height: 1.35;"><span class="nodeLabel" style="text-align: center; line-height: 1.35;"><b style="color: #ffffff !important; font-size: 13px !important; font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; font-weight: 700 !important; text-align: center !important; line-height: 1.35 !important;">file_manifest</b><br /><span class="sub-text" style="font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, &quot;Noto Sans&quot;, Helvetica, Arial, sans-serif; color: rgb(255, 255, 255) !important; font-size: 11.5px !important; font-weight: normal !important; text-align: center; line-height: 1.35;">O(N) Diff Indexer</span></span></div></foreignObject></g></g></g></g></g></g></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" id="storage_diagram" width="100%" style="max-width: 1040px;" viewBox="0 0 1040 490" role="graphics-document document" aria-roledescription="flowchart-v2">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#8b949e" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#58a6ff" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#bc8cff" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3fb950" />
+    </marker>
+  </defs>
+  <style>
+    * {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif !important;
+    }
+    svg {
+      background: transparent !important;
+    }
+    .cluster-bg {
+      fill: #0d1117;
+      stroke: #30363d;
+      stroke-width: 1.2px;
+      rx: 8px;
+      ry: 8px;
+    }
+    .cluster-title {
+      fill: #ffffff;
+      font-weight: 700;
+      font-size: 13.5px;
+      text-anchor: middle;
+    }
+    .cluster-badge {
+      fill: #8b949e;
+      font-size: 11px;
+      font-weight: 600;
+      text-anchor: middle;
+    }
+    .node-box {
+      fill: #161b22;
+      stroke: #38404a;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-blue {
+      fill: #161b22;
+      stroke: #1f6feb;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-purple {
+      fill: #161b22;
+      stroke: #8957e5;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-green {
+      fill: #161b22;
+      stroke: #238636;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-title {
+      fill: #ffffff;
+      font-weight: 700;
+      font-size: 12.5px;
+      text-anchor: middle;
+    }
+    .node-sub {
+      fill: #8b949e;
+      font-weight: 400;
+      font-size: 11px;
+      text-anchor: middle;
+    }
+    .edge-path {
+      fill: none;
+      stroke: #8b949e;
+      stroke-width: 1.8px;
+    }
+    .edge-path-blue {
+      fill: none;
+      stroke: #58a6ff;
+      stroke-width: 2px;
+    }
+    .edge-path-purple {
+      fill: none;
+      stroke: #bc8cff;
+      stroke-width: 2px;
+    }
+    .edge-path-green {
+      fill: none;
+      stroke: #3fb950;
+      stroke-width: 1.8px;
+      stroke-dasharray: 4, 3;
+    }
+    .edge-label-bg {
+      fill: #161b22;
+      stroke: #30363d;
+      stroke-width: 1px;
+      rx: 4px;
+      ry: 4px;
+    }
+    .edge-label-text {
+      fill: #ffffff;
+      font-size: 11px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+  </style>
+
+  <!-- ==================== COLUMN 1: WORKSPACE & STATE LAYER ==================== -->
+  <g id="col-workspace">
+    <rect class="cluster-bg" x="16" y="20" width="240" height="450" />
+    <text class="cluster-title" x="136" y="44">1. Workspace &amp; State Layer</text>
+
+    <!-- Node: Live Editor Buffer -->
+    <g transform="translate(31, 62)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Live Preview Editor</text>
+      <text class="node-sub" x="105" y="41">Active Typing Buffer (Sub-8ms)</text>
+    </g>
+
+    <!-- Internal arrow: Editor to AST -->
+    <path class="edge-path" d="M 136, 116 L 136, 137" marker-end="url(#arrow)" />
+
+    <!-- Node: AST Extractor -->
+    <g transform="translate(31, 142)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">AST Node &amp; Frontmatter</text>
+      <text class="node-sub" x="105" y="41">Dirty-Range AST Scanner</text>
+    </g>
+
+    <!-- Internal arrow: AST to Zustand -->
+    <path class="edge-path" d="M 136, 196 L 136, 217" marker-end="url(#arrow)" />
+
+    <!-- Node: Zustand Reactive Stores -->
+    <g transform="translate(31, 222)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Zustand State Stores</text>
+      <text class="node-sub" x="105" y="41">Reactive In-Memory Cache</text>
+    </g>
+
+    <!-- Internal arrow: Zustand to Platform Bridge -->
+    <path class="edge-path" d="M 136, 276 L 136, 297" marker-end="url(#arrow)" />
+
+    <!-- Node: Platform Bridge -->
+    <g transform="translate(31, 302)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">IPlatformAdapter</text>
+      <text class="node-sub" x="105" y="41">Cross-Platform Neutrality Bridge</text>
+    </g>
+
+    <!-- Internal arrow: Platform Bridge to EventBus -->
+    <path class="edge-path" d="M 136, 356 L 136, 377" marker-end="url(#arrow)" />
+
+    <!-- Node: Typed EventBus -->
+    <g transform="translate(31, 382)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Typed EventBus</text>
+      <text class="node-sub" x="105" y="41">Micro-Kernel Pub/Sub (IoC)</text>
+    </g>
+  </g>
+
+  <!-- ==================== COLUMN 2: DUAL CONCURRENT ENGINES ==================== -->
+  <!-- Cluster 2A: Markdown File Persistence Track -->
+  <g id="col-persistence-track">
+    <rect class="cluster-bg" x="320" y="20" width="380" height="205" />
+    <text class="cluster-title" x="510" y="44">2A. Markdown Persistence Engine</text>
+
+    <!-- Node: Debounced Save Coordinator -->
+    <g transform="translate(335, 58)">
+      <rect class="node-box-accent-blue" x="0" y="0" width="350" height="46" />
+      <text class="node-title" x="175" y="20">Debounced Save Coordinator</text>
+      <text class="node-sub" x="175" y="36">Active Typing Buffer Protection</text>
+    </g>
+
+    <!-- Internal arrow: Debounce to Atomic Rename -->
+    <path class="edge-path-blue" d="M 510, 104 L 510, 114" marker-end="url(#arrow-blue)" />
+
+    <!-- Node: Atomic Temp-and-Rename -->
+    <g transform="translate(335, 118)">
+      <rect class="node-box-accent-blue" x="0" y="0" width="350" height="46" />
+      <text class="node-title" x="175" y="20">Atomic Temp-and-Rename</text>
+      <text class="node-sub" x="175" y="36">fs::write(&amp;temp_file) ➔ fs::rename(&amp;target)</text>
+    </g>
+
+    <!-- Internal arrow: Atomic Rename to Echo Suppression -->
+    <path class="edge-path-blue" d="M 510, 164 L 510, 172" marker-end="url(#arrow-blue)" />
+
+    <!-- Node: Deterministic Echo Suppression -->
+    <g transform="translate(335, 174)">
+      <rect class="node-box-accent-blue" x="0" y="0" width="350" height="42" />
+      <text class="node-title" x="175" y="18">Deterministic Echo Suppression</text>
+      <text class="node-sub" x="175" y="33">LAST_INTERNAL_WRITE Signature Guard</text>
+    </g>
+  </g>
+
+  <!-- Cluster 2B: Native SQLite Engine Track -->
+  <g id="col-sqlite-track">
+    <rect class="cluster-bg" x="320" y="245" width="380" height="225" />
+    <text class="cluster-title" x="510" y="269">2B. Native rusqlite Engine (WAL)</text>
+
+    <!-- Node: Direct Tauri IPC -->
+    <g transform="translate(335, 285)">
+      <rect class="node-box-accent-purple" x="0" y="0" width="350" height="46" />
+      <text class="node-title" x="175" y="20">Direct Tauri IPC Invocation</text>
+      <text class="node-sub" x="175" y="36">Zero WASM Heap Buffers &amp; Zero UI Overhead</text>
+    </g>
+
+    <!-- Internal arrow: IPC to FTS5 -->
+    <path class="edge-path-purple" d="M 510, 331 L 510, 341" marker-end="url(#arrow-purple)" />
+
+    <!-- Node: FTS5 Search Indexer -->
+    <g transform="translate(335, 345)">
+      <rect class="node-box-accent-purple" x="0" y="0" width="350" height="46" />
+      <text class="node-title" x="175" y="20">SQLite FTS5 BM25 Ranked Index</text>
+      <text class="node-sub" x="175" y="36">Block-Level unicode61 Tokenization</text>
+    </g>
+
+    <!-- Internal arrow: FTS5 to WAL Commits -->
+    <path class="edge-path-purple" d="M 510, 391 L 510, 401" marker-end="url(#arrow-purple)" />
+
+    <!-- Node: Direct WAL Page Commits -->
+    <g transform="translate(335, 405)">
+      <rect class="node-box-accent-purple" x="0" y="0" width="350" height="46" />
+      <text class="node-title" x="175" y="20">Direct Page-Level Commits (WAL)</text>
+      <text class="node-sub" x="175" y="36">PRAGMA synchronous = NORMAL (256MB mmap)</text>
+    </g>
+  </g>
+
+  <!-- ==================== COLUMN 3: PHYSICAL DISK VAULT ==================== -->
+  <g id="col-disk-vault">
+    <rect class="cluster-bg" x="760" y="20" width="264" height="450" />
+    <text class="cluster-title" x="892" y="44">3. Local File System Vault</text>
+
+    <!-- Node: Markdown Files -->
+    <g transform="translate(777, 65)">
+      <rect class="node-box-accent-blue" x="0" y="0" width="230" height="60" />
+      <text class="node-title" x="115" y="26">*.md Markdown Files</text>
+      <text class="node-sub" x="115" y="44">100% Physical Ground Truth</text>
+    </g>
+
+    <!-- Node: file_manifest Diff Reindexer -->
+    <g transform="translate(777, 185)">
+      <rect class="node-box-accent-green" x="0" y="0" width="230" height="54" />
+      <text class="node-title" x="115" y="24">file_manifest Diff Indexer</text>
+      <text class="node-sub" x="115" y="41">O(N) Hash Scan on Cold Boot / Sync</text>
+    </g>
+
+    <!-- Node: SQLite Database -->
+    <g transform="translate(777, 295)">
+      <rect class="node-box-accent-purple" x="0" y="0" width="230" height="60" />
+      <text class="node-title" x="115" y="26">flint.sqlite &amp; WAL</text>
+      <text class="node-sub" x="115" y="44">Relational Graph &amp; FTS5 Index</text>
+    </g>
+
+    <!-- Node: Trash Safety -->
+    <g transform="translate(777, 395)">
+      <rect class="node-box" x="0" y="0" width="230" height="46" />
+      <text class="node-title" x="115" y="20">.trash/ Safety Folder</text>
+      <text class="node-sub" x="115" y="36">Soft-Delete Crash Protection</text>
+    </g>
+  </g>
+
+  <!-- ==================== CROSS-TIER DATA FLOW ARROWS ==================== -->
+
+  <!-- 1. Track A: Workspace to Markdown Persistence Engine -->
+  <path class="edge-path-blue" d="M 241, 89 L 327, 81" marker-end="url(#arrow-blue)" />
+  <g transform="translate(254, 73)">
+    <rect class="edge-label-bg" x="0" y="0" width="60" height="18" />
+    <text class="edge-label-text" x="30" y="9">Note Save</text>
+  </g>
+
+  <!-- 2. Track A: Markdown Persistence to Physical *.md Files -->
+  <path class="edge-path-blue" d="M 685, 141 C 730, 141 730, 95 769, 95" marker-end="url(#arrow-blue)" />
+  <g transform="translate(690, 107)">
+    <rect class="edge-label-bg" x="0" y="0" width="82" height="18" />
+    <text class="edge-label-text" x="41" y="9">Atomic Rename</text>
+  </g>
+
+  <!-- 3. Track B: Workspace to Native rusqlite Engine -->
+  <path class="edge-path-purple" d="M 241, 329 C 285, 329 285, 308 327, 308" marker-end="url(#arrow-purple)" />
+  <g transform="translate(250, 310)">
+    <rect class="edge-label-bg" x="0" y="0" width="68" height="18" />
+    <text class="edge-label-text" x="34" y="9">Tauri IPC</text>
+  </g>
+
+  <!-- 4. Track B: rusqlite WAL Commits to flint.sqlite -->
+  <path class="edge-path-purple" d="M 685, 428 C 735, 428 735, 325 769, 325" marker-end="url(#arrow-purple)" />
+  <g transform="translate(688, 385)">
+    <rect class="edge-label-bg" x="0" y="0" width="86" height="18" />
+    <text class="edge-label-text" x="43" y="9">WAL Commits</text>
+  </g>
+
+  <!-- 5. Reconciliation: *.md to file_manifest -->
+  <path class="edge-path-green" d="M 892, 125 L 892, 177" marker-end="url(#arrow-green)" />
+  <g transform="translate(850, 145)">
+    <rect class="edge-label-bg" x="0" y="0" width="84" height="18" />
+    <text class="edge-label-text" x="42" y="9">Diff Scan O(N)</text>
+  </g>
+
+  <!-- 6. Reconciliation: file_manifest to SQLite Engine -->
+  <path class="edge-path-green" d="M 777, 212 C 735, 212 735, 368 693, 368" marker-end="url(#arrow-green)" />
+  <g transform="translate(702, 275)">
+    <rect class="edge-label-bg" x="0" y="0" width="68" height="18" />
+    <text class="edge-label-text" x="34" y="9">Sync Index</text>
+  </g>
+
+</svg>
