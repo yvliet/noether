@@ -1,0 +1,15 @@
+{
+  "id": "flint-sample-extension",
+  "name": "Sample Extension",
+  "version": "1.0.0",
+  "description": "A sample community extension for Flint demonstrating commands, setting tabs, and MCP tools.",
+  "author": "Your Name",
+  "minAppVersion": "0.4.0",
+  "category": "Productivity",
+  "tags": [
+    "sample",
+    "starter",
+    "demo"
+  ],
+  "icon": "sparkles"
+}

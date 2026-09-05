@@ -17,6 +17,10 @@
     "tauri:build": "tauri build",
     "docs:build": "npm --prefix website run build",
     "docs:deploy": "npm --prefix website run deploy",
+    "extensions:build": "npx tsx scripts/build-community-extensions.ts",
+    "registry:seed": "npx tsx scripts/seed-turso-registry.ts",
+    "registry:dev": "npm --prefix api run dev",
+    "registry:start": "npm --prefix api start",
     "release": "gh release create"
   },
   "dependencies": {

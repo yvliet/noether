@@ -1,79 +1,92 @@
-# Publishing Extensions & Marketplace Roadmap
+# Publishing Extensions & Marketplace Registry
 
-Share your creations with the Flint community. This guide walks you through preparing, packaging, and distributing your extensions today, as well as my roadmap for the upcoming centralized Community Marketplace.
+Share your creations with the Flint community. This guide walks you through preparing, packaging, and publishing your extensions to the Turso-backed Community Marketplace registry.
 
 
-## 1. Distribution Today: Local Hearth Installation & GitHub
+## 1. Turso libSQL Registry Architecture
 
 ---
 
-In the current version of Flint, extensions and themes operate on a local-first model:
+The Flint Community Registry is powered by a serverless Turso / libSQL edge database. When you publish an extension:
 
-- **Local Hearth Installation**: Users install extensions by downloading or cloning an extension folder into their Hearth's `.flint/plugins/<extension-id>/` directory.
-- **GitHub Distribution**: Developers distribute their extensions as open-source repositories on GitHub, attaching pre-built `main.js` and `manifest.json` bundles to GitHub Releases.
-
-```
-<your-hearth>/
-└── .flint/
-    └── plugins/
-        └── markdown-slides/
-            ├── manifest.json
-            ├── main.js
-            └── styles.css (optional)
-```
+- **Edge Metadata & Release Indexing**: Author profiles, plugin manifests, tags, and SemVer version histories are indexed across global edge replicas.
+- **Direct Bundle Distribution**: Your compiled JavaScript `main.js` and optional `styles.css` bundles are stored directly in the database or served via high-speed CDN URLs.
+- **Instant In-App Installation**: Flint users can browse, search, and install your extension with a single click in the Marketplace view without manually copying files or restarting the app.
 
 
 ## 2. Release Preparation Checklist
 
 ---
 
-Before tagging a release for your extension, ensure your repository satisfies the following standards:
+Before publishing your extension, verify that your package satisfies the following standards:
 
 - [ ] **Valid `manifest.json`**:
-  - `id`: Unique, lowercase kebab-case (e.g., `markdown-slides`).
+  - `id`: Unique, lowercase kebab-case (e.g., `markdown-mindmap`).
   - `name`: Clean, descriptive display title.
   - `version`: Strict Semantic Versioning string (e.g., `1.0.0`).
   - `description`: Crisp summary (40-160 characters).
   - `author`: Your name or organization.
-  - `authorUrl`: GitHub profile or project URL.
-  - `tags`: Relevant keywords (e.g., `["visualization", "productivity"]`).
+  - `category`: One of `Productivity`, `Visualization`, `Integration`, `Formatting`.
+  - `tags`: Relevant keywords (e.g., `["mindmap", "graph", "diagram"]`).
 - [ ] **Compiled `main.js`**:
-  - Bundled as CommonJS (`cjs`) targeting Node/neutral.
-  - Core dependencies (`flint`, `react`, `react-dom`) must be marked as **external** in your `esbuild` or `rollup` config so duplicate React runtimes are not bundled.
+  - Bundled as CommonJS (`cjs`) targeting modern browser/desktop environments (`es2022`).
+  - Core dependencies (`flint`, `@flint/api`, `react`, `react-dom`, `zod`) must be marked as **external** so duplicate runtimes are not bundled.
 - [ ] **Optional `styles.css`**: Scoped styles prefixed with your extension identifier to avoid polluting host styling (see [[CSS Variables & Design Tokens]]).
 - [ ] **`README.md`**: Clear documentation detailing features, keyboard shortcuts, and registered [[Model Context Protocol (MCP) Tools]].
-- [ ] **Desktop Responsiveness**: Verified that UI elements respond instantly with zero frame stutter or artificial animation delays (see [[Flint UI Components]]).
+- [ ] **Desktop Responsiveness**: Verified that UI elements respond instantly with zero artificial animation delays (see [[Flint UI Components]]).
 
 
-## 3. Packaging for GitHub Releases
+## 3. Publishing to the Turso Registry
 
 ---
 
-A clean and convenient way to distribute your extension to users is via GitHub Releases:
+You can publish new extensions or version updates via the Registry REST API:
+
+### Publishing Endpoint
+
+```http
+POST /api/v1/plugins/publish
+Content-Type: application/json
+```
+
+### Request Payload
+
+```json
+{
+  "manifest": {
+    "id": "markdown-mindmap",
+    "name": "Markdown Mindmap",
+    "version": "1.0.0",
+    "description": "Generate dynamic visual mindmaps from nested markdown lists and headers.",
+    "category": "Visualization",
+    "tags": ["mindmap", "visualization", "diagram"],
+    "minAppVersion": "0.4.0"
+  },
+  "bundleCode": "/* Compiled JavaScript bundle */",
+  "stylesCode": "/* Optional CSS styles */",
+  "readme": "# Markdown Mindmap\n\nTransforms markdown lists into interactive node trees.",
+  "author": {
+    "githubUsername": "yourname",
+    "displayName": "Your Name",
+    "avatarUrl": "https://avatars.githubusercontent.com/u/1234567"
+  }
+}
+```
+
+### Automated GitHub Actions Publishing
+
+You can automate publishing on GitHub release creation using a simple workflow that compiles your extension with `esbuild` and sends a `POST` request to the registry endpoint.
+
+
+## 4. Local Testing Before Publication
+
+---
+
+To test your extension locally before publishing:
 
 1. Build your production bundle:
    ```bash
    npm run build
    ```
-2. Create a release archive containing:
-   - `manifest.json`
-   - `main.js`
-   - `styles.css` (if applicable)
-   - `README.md`
-3. Draft a new Release on your GitHub repository (e.g. `v1.0.0`) and attach the compiled `main.js`, `manifest.json`, and `.zip` archive.
-4. Users can simply extract the archive into their `<hearth>/.flint/plugins/` directory and enable it under **Settings > Extensions**.
-
-
-## 4. Centralized Marketplace Roadmap
-
----
-
-I am actively engineering an official centralized Community Marketplace:
-
-> [!NOTE]
-> The automated Web Publishing Portal, CLI publishing tool (`flint-cli`), and in-app one-click installer are currently in active development. When ready, developers will be able to publish directly from GitHub Actions or CLI with cryptographic verification.
-
-Until the registry service is live:
-- Tag your GitHub repositories with `flint-extension` and `flint-notes`.
-- Showcase your plugin and gather feedback on the official [Flint GitHub Discussions](https://github.com/yvliet/flint/discussions).
-- Read [[Developer Policies & Guidelines]] and [[Plugin Submission Requirements]] to ensure long-term compatibility.
+2. Copy your folder containing `manifest.json` and `main.js` into `<your-hearth>/.flint/extensions/<your-extension-id>/`.
+3. Open Flint, navigate to **Settings > Extensions**, and enable your extension to test it live.

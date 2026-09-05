@@ -3,19 +3,27 @@
 Kickstart your Flint extension or theme with production-ready, copyable starter boilerplates. Every boilerplate includes strict TypeScript types, bundling configurations, and instant lifecycle integration with the Flint SDK.
 
 
-## 1. Quick CLI Scaffolder (1-Liner)
+## 1. Official Extension Starter Template Repository
 
 ---
 
-Run this one-liner in your terminal to bootstrap an extension project in your Hearth's `.flint/plugins/` directory:
+The quickest way to build a Flint extension is using the official standalone starter template repository (`templates/flint-extension-starter`):
 
 ```bash
-# Create directory and initialize project
+# Clone the official starter template
+git clone https://github.com/yvliet/flint-extension-starter.git my-flint-extension
+cd my-flint-extension
 
----
-mkdir -p my-flint-plugin/src && cd my-flint-plugin && npm init -y
-npm install --save-dev typescript esbuild @types/node @types/react
+# Install dependencies and build
+npm install
+npm run build
 ```
+
+The template comes pre-configured with:
+- **TypeScript & React JSX**: Strict types out of the box with zero runtime React bloat.
+- **esbuild Bundler**: Fast, single-file compilation targeting `dist/main.js`.
+- **Sandbox Configuration**: Automatically externalizes host packages (`flint`, `@flint/sdk`, `react`, `react-dom`, `zod`).
+- **GitHub Actions Publishing**: Automated CI/CD workflow in `.github/workflows/publish.yml` that builds and publishes releases to the Flint Turso Registry whenever a version tag (`v*`) is pushed.
 
 
 ## 2. Minimal Extension Starter

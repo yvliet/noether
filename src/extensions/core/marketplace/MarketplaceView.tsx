@@ -124,35 +124,47 @@ export const MarketplaceView: React.FC = () => {
       if (app.extensions.getExtensionManifest(ext.id)) {
         await app.extensions.enableExtension(ext.id);
       } else {
-        // 2. Third-party extension: attempt to fetch real assets from registry URLs
+        // 2. Fetch extension metadata and bundles from Turso registry
         const registryBase = getRegistryUrl().replace(/\/plugins\/?$/, '/plugins');
-        const manifestUrl = ext.manifestUrl || `${registryBase}/${ext.id}/manifest.json`;
-        const mainJsUrl = ext.mainJsUrl || ext.downloadUrl || `${registryBase}/${ext.id}/main.js`;
-        const stylesCssUrl = ext.stylesCssUrl || `${registryBase}/${ext.id}/styles.css`;
+        const downloadApiUrl = `${registryBase}/${ext.id}/download`;
 
         let manifestContent: string | null = null;
         let mainJsContent: string | null = null;
         let stylesCssContent: string | null = null;
 
         try {
-          const res = await fetch(manifestUrl, { signal: AbortSignal.timeout(4000) });
-          if (res.ok) manifestContent = await res.text();
+          const downloadRes = await fetch(downloadApiUrl, { signal: AbortSignal.timeout(5000) });
+          if (downloadRes.ok) {
+            const downloadData = await downloadRes.json();
+            if (downloadData.bundleCode) mainJsContent = downloadData.bundleCode;
+            if (downloadData.stylesCode) stylesCssContent = downloadData.stylesCode;
+            if (downloadData.manifest) manifestContent = JSON.stringify(downloadData.manifest, null, 2);
+          }
         } catch {
-          // Offline or custom assets not deployed yet
+          // Fallback to direct asset URLs
         }
 
-        try {
-          const res = await fetch(mainJsUrl, { signal: AbortSignal.timeout(4000) });
-          if (res.ok) mainJsContent = await res.text();
-        } catch {
-          // Offline or custom assets not deployed yet
+        if (!mainJsContent) {
+          const mainJsUrl = ext.mainJsUrl || ext.downloadUrl || `${registryBase}/${ext.id}/bundle`;
+          try {
+            const res = await fetch(mainJsUrl, { signal: AbortSignal.timeout(5000) });
+            if (res.ok) mainJsContent = await res.text();
+          } catch {}
         }
 
-        try {
-          const res = await fetch(stylesCssUrl, { signal: AbortSignal.timeout(3000) });
-          if (res.ok) stylesCssContent = await res.text();
-        } catch {
-          // Optional styles
+        if (!manifestContent) {
+          const manifestUrl = ext.manifestUrl || `${registryBase}/${ext.id}/manifest.json`;
+          try {
+            const res = await fetch(manifestUrl, { signal: AbortSignal.timeout(4000) });
+            if (res.ok) manifestContent = await res.text();
+          } catch {}
+        }
+
+        if (!stylesCssContent && ext.stylesCssUrl) {
+          try {
+            const res = await fetch(ext.stylesCssUrl, { signal: AbortSignal.timeout(3000) });
+            if (res.ok) stylesCssContent = await res.text();
+          } catch {}
         }
 
         // Parse or construct extension manifest descriptor

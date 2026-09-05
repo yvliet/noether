@@ -49,6 +49,8 @@ export interface PluginVersionRow {
   readme: string | null;
   bundle_url: string;
   styles_url: string | null;
+  bundle_code: string | null;
+  styles_code: string | null;
   manifest_json: string; // JSON serialized manifest
   sha256: string | null;
   published_at: string;
@@ -79,8 +81,10 @@ export type ExtensionManifest = z.infer<typeof ExtensionManifestSchema>;
  */
 export const PublishPluginSchema = z.object({
   manifest: ExtensionManifestSchema,
-  bundleUrl: z.string().url('Bundle URL must be a valid URL'),
-  stylesUrl: z.string().url('Styles URL must be a valid URL').optional(),
+  bundleUrl: z.string().optional(),
+  stylesUrl: z.string().optional(),
+  bundleCode: z.string().optional(),
+  stylesCode: z.string().optional(),
   readme: z.string().optional(),
   sha256: z.string().optional(),
   author: z.object({

@@ -39,6 +39,8 @@ CREATE TABLE IF NOT EXISTS plugin_versions (
   readme TEXT,
   bundle_url TEXT NOT NULL,
   styles_url TEXT,
+  bundle_code TEXT,
+  styles_code TEXT,
   manifest_json TEXT NOT NULL,
   sha256 TEXT,
   published_at TEXT NOT NULL DEFAULT (datetime('now')),

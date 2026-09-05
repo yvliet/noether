@@ -354,14 +354,122 @@ pluginRoutes.get('/:id/download', async (c) => {
     version: String(versionRow.version),
     bundleUrl,
     stylesUrl: versionRow.styles_url ? String(versionRow.styles_url) : null,
+    bundleCode: versionRow.bundle_code ? String(versionRow.bundle_code) : null,
+    stylesCode: versionRow.styles_code ? String(versionRow.styles_code) : null,
     manifest: parsedManifest,
     sha256: versionRow.sha256 ? String(versionRow.sha256) : null,
   });
 });
 
 /**
+ * GET /api/v1/plugins/:id/bundle
+ * Serves the compiled JavaScript extension bundle directly from the Turso database.
+ * Supports optional `?version=` query parameter.
+ */
+pluginRoutes.get('/:id/bundle', async (c) => {
+  const db = getDb();
+  const pluginId = c.req.param('id');
+  const targetVersion = c.req.query('version')?.trim();
+
+  let query = 'SELECT bundle_code, bundle_url FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let args: InValue[] = [pluginId];
+
+  if (targetVersion) {
+    query = 'SELECT bundle_code, bundle_url FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    args = [pluginId, targetVersion];
+  }
+
+  const result = await db.execute({ sql: query, args });
+  if (result.rows.length === 0) {
+    return c.json({ error: `Plugin bundle for '${pluginId}' not found` }, 404);
+  }
+
+  const row = result.rows[0];
+  if (row.bundle_code) {
+    return c.text(String(row.bundle_code), 200, {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    });
+  }
+
+  if (row.bundle_url) {
+    return c.redirect(String(row.bundle_url), 302);
+  }
+
+  return c.json({ error: 'No bundle code or URL available' }, 404);
+});
+
+/**
+ * GET /api/v1/plugins/:id/styles
+ * Serves the compiled CSS stylesheet directly from the Turso database.
+ * Supports optional `?version=` query parameter.
+ */
+pluginRoutes.get('/:id/styles', async (c) => {
+  const db = getDb();
+  const pluginId = c.req.param('id');
+  const targetVersion = c.req.query('version')?.trim();
+
+  let query = 'SELECT styles_code, styles_url FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let args: InValue[] = [pluginId];
+
+  if (targetVersion) {
+    query = 'SELECT styles_code, styles_url FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    args = [pluginId, targetVersion];
+  }
+
+  const result = await db.execute({ sql: query, args });
+  if (result.rows.length === 0) {
+    return c.json({ error: `Styles for '${pluginId}' not found` }, 404);
+  }
+
+  const row = result.rows[0];
+  if (row.styles_code) {
+    return c.text(String(row.styles_code), 200, {
+      'Content-Type': 'text/css; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    });
+  }
+
+  if (row.styles_url) {
+    return c.redirect(String(row.styles_url), 302);
+  }
+
+  return c.text('', 200, { 'Content-Type': 'text/css; charset=utf-8' });
+});
+
+/**
+ * GET /api/v1/plugins/:id/manifest.json
+ * Serves the raw extension manifest JSON directly from the Turso database.
+ * Supports optional `?version=` query parameter.
+ */
+pluginRoutes.get('/:id/manifest.json', async (c) => {
+  const db = getDb();
+  const pluginId = c.req.param('id');
+  const targetVersion = c.req.query('version')?.trim();
+
+  let query = 'SELECT manifest_json FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let args: InValue[] = [pluginId];
+
+  if (targetVersion) {
+    query = 'SELECT manifest_json FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    args = [pluginId, targetVersion];
+  }
+
+  const result = await db.execute({ sql: query, args });
+  if (result.rows.length === 0) {
+    return c.json({ error: `Manifest for '${pluginId}' not found` }, 404);
+  }
+
+  const row = result.rows[0];
+  return c.text(String(row.manifest_json), 200, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Cache-Control': 'public, max-age=3600',
+  });
+});
+
+/**
  * POST /api/v1/plugins/publish
- * Publishes a new extension version or updates an existing extension.
+ * Publishes a new extension version or updates an existing extension in Turso.
  * Validates extension manifest and bundle schemas using Zod.
  * Enforces author ownership and checks for duplicate version registrations.
  */
@@ -386,7 +494,8 @@ pluginRoutes.post('/publish', async (c) => {
     );
   }
 
-  const { manifest, bundleUrl, stylesUrl, readme, sha256, author } = parseResult.data;
+  const { manifest, bundleUrl: rawBundleUrl, stylesUrl, bundleCode, stylesCode, readme, sha256, author } = parseResult.data;
+  const bundleUrl = rawBundleUrl || `/api/v1/plugins/${manifest.id}/bundle`;
 
   // 1. Author verification / auto-registration
   const authorCheck = await db.execute({
@@ -475,13 +584,13 @@ pluginRoutes.post('/publish', async (c) => {
     });
   }
 
-  // 3. Register new version record
+  // 3. Register new version record with bundle_code and styles_code in Turso
   const versionId = `${manifest.id}_v${manifest.version}`;
   await db.execute({
     sql: `INSERT INTO plugin_versions (
             id, plugin_id, version, min_app_version, readme, bundle_url,
-            styles_url, manifest_json, sha256, published_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
+            styles_url, bundle_code, styles_code, manifest_json, sha256, published_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
     args: [
       versionId,
       manifest.id,
@@ -490,6 +599,8 @@ pluginRoutes.post('/publish', async (c) => {
       readme ?? null,
       bundleUrl,
       stylesUrl ?? null,
+      bundleCode ?? null,
+      stylesCode ?? null,
       JSON.stringify(manifest),
       sha256 ?? null,
     ],

@@ -12,6 +12,9 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.*
+!.env.example
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 test-results/

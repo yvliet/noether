@@ -51,6 +51,8 @@ CREATE TABLE IF NOT EXISTS plugin_versions (
   readme TEXT,
   bundle_url TEXT NOT NULL,
   styles_url TEXT,
+  bundle_code TEXT,
+  styles_code TEXT,
   manifest_json TEXT NOT NULL,
   sha256 TEXT,
   published_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -66,6 +68,43 @@ CREATE INDEX IF NOT EXISTS idx_plugin_versions_plugin_id ON plugin_versions(plug
 CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_versions_unique_ver ON plugin_versions(plugin_id, version);
 `;
 
+export function tryLoadEnv(): void {
+  try {
+    const candidates = [
+      path.resolve(process.cwd(), '.env'),
+      path.resolve(process.cwd(), 'api/.env'),
+      path.resolve(process.cwd(), '../.env'),
+    ];
+    for (const p of candidates) {
+      if (fs.existsSync(p)) {
+        try {
+          const content = fs.readFileSync(p, 'utf8');
+          for (const line of content.split('\n')) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+            const eqIdx = trimmed.indexOf('=');
+            if (eqIdx > 0) {
+              const key = trimmed.slice(0, eqIdx).trim();
+              const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, '');
+              if (key && !process.env[key]) {
+                process.env[key] = val;
+              }
+            }
+          }
+        } catch {}
+      }
+    }
+  } catch {}
+}
+
+function normalizeDatabaseUrl(rawUrl: string): string {
+  let url = rawUrl.trim();
+  if (url.startsWith('turso://')) {
+    url = 'libsql://' + url.slice('turso://'.length);
+  }
+  return url;
+}
+
 /**
  * Resolves or initializes the global libSQL client.
  * Configured via `DATABASE_URL` (e.g. `file:flint_registry.db` or Turso `libsql://...`)
@@ -73,7 +112,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_versions_unique_ver ON plugin_versi
  */
 export function getDb(): Client {
   if (!dbInstance) {
-    const url = process.env.DATABASE_URL || 'file:flint_registry.db';
+    tryLoadEnv();
+    const rawUrl = process.env.DATABASE_URL || 'file:flint_registry.db';
+    const url = normalizeDatabaseUrl(rawUrl);
     const authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
 
     dbInstance = createClient({

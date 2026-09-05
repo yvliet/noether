@@ -16,6 +16,9 @@ import { Extension } from './Extension';
 import { ExtensionManifest } from './types';
 import { platform } from '@/lib/platform/platformAdapter';
 
+import * as FlintSdk from '@/sdk';
+import * as ReactJsxRuntime from 'react/jsx-runtime';
+
 export class ExternalExtensionLoader {
   private app: FlintApp;
   private injectedStyles: Map<string, HTMLStyleElement> = new Map();
@@ -98,8 +101,9 @@ export class ExternalExtensionLoader {
       }
 
       // Create sandboxed module evaluation environment
-      // We pass the Flint SDK exports to the extension module
+      // We pass the complete Flint SDK exports to the extension module
       const flintSdk = {
+        ...FlintSdk,
         Extension,
         Plugin: Extension,
         FlintApp,
@@ -112,13 +116,21 @@ export class ExternalExtensionLoader {
         module: { exports: {} as unknown },
         require: (moduleName: string) => {
           if (moduleName === 'react') return React;
+          if (moduleName === 'react/jsx-runtime' || moduleName === 'react/jsx-dev-runtime') {
+            return ReactJsxRuntime;
+          }
           if (moduleName === 'zod') return z;
-          if (moduleName === 'flint' || moduleName === '@flint/api') {
+          if (
+            moduleName === 'flint' ||
+            moduleName === '@flint/api' ||
+            moduleName === '@flint/sdk' ||
+            moduleName === '@/sdk'
+          ) {
             return flintSdk;
           }
           throw new Error(
             `[Flint] Cannot require "${moduleName}" from an extension. ` +
-            `Only 'react', 'zod', and 'flint' (or '@flint/api') are available.`
+            `Only 'react', 'react/jsx-runtime', 'zod', and 'flint' (or '@flint/sdk') are available.`
           );
         },
         Flint: flintSdk,

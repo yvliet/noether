@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module RegistryApiVerification
  * @description
  * End-to-end integration and verification suite for Flint Plugin Registry API.
@@ -13,15 +13,12 @@ async function runTests() {
   console.log('=== Starting Flint Registry API Verification ===\n');
 
   // 1. Initialize Database
-  console.log('[Test 1] Initializing database and verifying zero fake seeds...');
+  console.log('[Test 1] Initializing database and verifying connectivity...');
   await initDatabase();
   const db = getDb();
   const countRes = await db.execute('SELECT COUNT(*) as count FROM plugins');
-  const pluginCount = Number(countRes.rows[0].count);
-  console.log(`✓ Database initialized with ${pluginCount} plugins (clean slate).`);
-  if (pluginCount !== 0) {
-    throw new Error(`Expected clean database with 0 plugins, but found ${pluginCount}`);
-  }
+  const initialPluginCount = Number(countRes.rows[0].count);
+  console.log(`✓ Database initialized and connected with ${initialPluginCount} plugins.`);
 
   // 2. Test Root Endpoint
   console.log('\n[Test 2] GET /');
@@ -41,15 +38,15 @@ async function runTests() {
     throw new Error('Health check failed');
   }
 
-  // 4. Test GET /api/v1/plugins (Initial empty state)
-  console.log('\n[Test 4] GET /api/v1/plugins (Empty state verification)');
-  const emptyListRes = await app.request('/api/v1/plugins');
-  const emptyListJson = await emptyListRes.json();
-  console.log(`Total: ${emptyListJson.total}, Items returned: ${emptyListJson.items.length}`);
-  if (emptyListJson.total !== 0 || emptyListJson.items.length !== 0) {
-    throw new Error('Expected initial catalogue to be empty');
+  // 4. Test GET /api/v1/plugins
+  console.log('\n[Test 4] GET /api/v1/plugins (Catalog listing query)');
+  const listRes = await app.request('/api/v1/plugins');
+  const listJson = await listRes.json();
+  console.log(`Total: ${listJson.total}, Items returned: ${listJson.items.length}`);
+  if (listJson.total < initialPluginCount) {
+    throw new Error('Expected list total to match database count');
   }
-  console.log('✓ Verified empty community extensions catalogue.');
+  console.log('✓ Verified community extensions catalogue listing.');
 
   // 5. Test POST /api/v1/plugins/publish (First community plugin: markdown-mindmap)
   console.log('\n[Test 5] POST /api/v1/plugins/publish (First community plugin)');
@@ -137,8 +134,9 @@ async function runTests() {
   console.log('\n[Test 8] GET /api/v1/plugins?category=Productivity');
   const catRes = await app.request('/api/v1/plugins?category=Productivity');
   const catJson = await catRes.json();
-  console.log('Category matches:', catJson.items.map((p: any) => p.id));
-  if (catJson.items.length !== 1 || catJson.items[0].id !== 'code-runner') {
+  const catMatches: string[] = catJson.items.map((p: any) => p.id);
+  console.log('Category matches:', catMatches);
+  if (!catMatches.includes('code-runner')) {
     throw new Error('Category filter for "Productivity" failed');
   }
   console.log('✓ Category filter verified.');
@@ -248,14 +246,80 @@ async function runTests() {
   if (checkBumpJson.latest_version.version !== '1.0.1' || checkBumpJson.versions.length !== 2) {
     throw new Error('Version bump did not update latest version or history');
   }
-  console.log('✓ Version bumping and version history tracking verified.');
+  // 14. Test Direct Bundle Storage & Retrieval
+  console.log('\n[Test 14] Direct Bundle Code Storage & Retrieval from Turso');
+  const bundleCodePayload = {
+    manifest: {
+      id: 'custom-bundle-test',
+      name: 'Custom Bundle Test',
+      version: '1.0.0',
+      description: 'Testing direct bundle storage in Turso',
+      category: 'Formatting' as const,
+      tags: ['test', 'bundle'],
+      minAppVersion: '0.4.0',
+    },
+    bundleCode: 'console.log("Hello from Turso direct bundle code!"); module.exports = class Test {};',
+    stylesCode: '.test-class { color: red; }',
+    readme: '# Custom Bundle Test',
+    author: {
+      githubUsername: 'turso_tester',
+      displayName: 'Turso Tester',
+    },
+  };
+
+  const pubBundleRes = await app.request('/api/v1/plugins/publish', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(bundleCodePayload),
+  });
+  if (pubBundleRes.status !== 201) {
+    throw new Error('Failed to publish plugin with direct bundle code');
+  }
+
+  const bundleFetchRes = await app.request('/api/v1/plugins/custom-bundle-test/bundle');
+  const bundleText = await bundleFetchRes.text();
+  console.log('Fetched bundle status:', bundleFetchRes.status, 'Bundle text length:', bundleText.length);
+  if (bundleFetchRes.status !== 200 || !bundleText.includes('Hello from Turso')) {
+    throw new Error('GET /api/v1/plugins/:id/bundle failed to return correct bundle code');
+  }
+
+  const stylesFetchRes = await app.request('/api/v1/plugins/custom-bundle-test/styles');
+  const stylesText = await stylesFetchRes.text();
+  console.log('Fetched styles status:', stylesFetchRes.status, 'Styles text:', stylesText);
+  if (stylesFetchRes.status !== 200 || !stylesText.includes('.test-class')) {
+    throw new Error('GET /api/v1/plugins/:id/styles failed to return correct stylesheet');
+  }
+
+  const manifestFetchRes = await app.request('/api/v1/plugins/custom-bundle-test/manifest.json');
+  const manifestJson = await manifestFetchRes.json();
+  console.log('Fetched manifest status:', manifestFetchRes.status, 'ID:', manifestJson.id);
+  if (manifestFetchRes.status !== 200 || manifestJson.id !== 'custom-bundle-test') {
+    throw new Error('GET /api/v1/plugins/:id/manifest.json failed');
+  }
+  console.log('✓ Direct Turso bundle, styles, and manifest delivery verified.');
+
+  console.log('\n[Test 15] Cleaning up temporary test records...');
+  await db.execute("DELETE FROM plugins WHERE id IN ('markdown-mindmap', 'code-runner', 'custom-bundle-test')");
+  await db.execute("DELETE FROM authors WHERE id IN ('author_devjane', 'author_coder_bob', 'author_turso_tester', 'author_impostor_user')");
+  console.log('✓ Cleaned up test records from database.');
 
   console.log('\n======================================================');
   console.log('  ALL FLINT REGISTRY API TESTS PASSED SUCCESSFULLY!   ');
   console.log('======================================================\n');
 }
 
-runTests().catch((err) => {
-  console.error('Test verification failed:', err);
-  process.exit(1);
-});
+async function main() {
+  try {
+    await runTests();
+  } catch (err) {
+    console.error('Test verification failed:', err);
+    try {
+      const db = getDb();
+      await db.execute("DELETE FROM plugins WHERE id IN ('markdown-mindmap', 'code-runner', 'custom-bundle-test')");
+      await db.execute("DELETE FROM authors WHERE id IN ('author_devjane', 'author_coder_bob', 'author_turso_tester', 'author_impostor_user')");
+    } catch {}
+    process.exit(1);
+  }
+}
+
+main();

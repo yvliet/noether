@@ -142,12 +142,37 @@ function normalizePluginItem(
     ? (categoryCandidate as MarketplaceExtensionItem['category'])
     : 'Productivity';
 
+  let authorName = 'Community';
+  let authorUrl = raw.authorUrl || localItem?.authorUrl;
+
+  if (typeof raw.author === 'string' && raw.author.trim()) {
+    authorName = raw.author.trim();
+  } else if (raw.author && typeof raw.author === 'object') {
+    const authorObj = raw.author as { display_name?: string; github_username?: string };
+    authorName = authorObj.display_name || authorObj.github_username || 'Community';
+    if (!authorUrl && authorObj.github_username) {
+      authorUrl = `https://github.com/${authorObj.github_username}`;
+    }
+  } else if (localItem?.author) {
+    authorName = localItem.author;
+  }
+
+  const registryUrl = getRegistryUrl();
+  const rootUrl = registryUrl.replace(/\/api\/v1\/plugins\/?$/, '').replace(/\/plugins\/?$/, '');
+  const resolveUrl = (u?: string) => {
+    if (!u) return undefined;
+    if (u.startsWith('http://') || u.startsWith('https://') || u.startsWith('data:')) return u;
+    return `${rootUrl}${u.startsWith('/') ? '' : '/'}${u}`;
+  };
+
+  const rawJsUrl = raw.mainJsUrl || raw.downloadUrl || raw.assetUrl;
+
   return {
     id: raw.id,
     name: raw.name || localItem?.name || raw.id,
     version: raw.version || localItem?.version || '1.0.0',
-    author: raw.author || localItem?.author || 'Community',
-    authorUrl: raw.authorUrl || localItem?.authorUrl,
+    author: authorName,
+    authorUrl,
     description: raw.description || localItem?.description || '',
     downloads: formattedDownloads,
     stars: typeof raw.stars === 'number' ? raw.stars : localItem?.stars ?? 5,
@@ -156,10 +181,10 @@ function normalizePluginItem(
     featured: raw.featured ?? localItem?.featured ?? false,
     readme: raw.readme || localItem?.readme,
     bannerImage: raw.bannerImage || localItem?.bannerImage,
-    mainJsUrl: raw.mainJsUrl || raw.downloadUrl || raw.assetUrl,
-    manifestUrl: raw.manifestUrl,
-    stylesCssUrl: raw.stylesCssUrl,
-    downloadUrl: raw.downloadUrl || raw.assetUrl,
+    mainJsUrl: resolveUrl(rawJsUrl) || `${registryUrl}/${raw.id}/bundle`,
+    manifestUrl: resolveUrl(raw.manifestUrl) || `${registryUrl}/${raw.id}/manifest.json`,
+    stylesCssUrl: resolveUrl(raw.stylesCssUrl) || `${registryUrl}/${raw.id}/styles`,
+    downloadUrl: resolveUrl(raw.downloadUrl) || `${registryUrl}/${raw.id}/download`,
   };
 }
 
@@ -282,6 +307,9 @@ async function fetchRegistryEndpoint(url: string, timeoutMs = 6000): Promise<Raw
 
     if (Array.isArray(data)) {
       return data;
+    }
+    if (data && Array.isArray(data.items)) {
+      return data.items;
     }
     if (data && Array.isArray(data.plugins)) {
       return data.plugins;

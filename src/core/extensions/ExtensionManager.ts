@@ -411,24 +411,12 @@ export class ExtensionManager {
           [];
         this.disabledCoreExtensionIds = new Set(Array.isArray(disabledCore) ? disabledCore : []);
         const enabled = config.enabledExtensions || config.enabledPlugins;
-        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : ['flint-cascade', 'flint-copilot', 'quicknote', 'fsrs-spaced-repetition']);
-        if (Array.isArray(enabled) && !enabled.includes('flint-cascade') && !this.disabledCoreExtensionIds.has('flint-cascade')) {
-          this.enabledExtensionIds.add('flint-cascade');
-        }
-        if (Array.isArray(enabled) && !enabled.includes('flint-copilot') && !this.disabledCoreExtensionIds.has('flint-copilot')) {
-          this.enabledExtensionIds.add('flint-copilot');
-        }
-        if (Array.isArray(enabled) && !enabled.includes('quicknote') && !this.disabledCoreExtensionIds.has('quicknote')) {
-          this.enabledExtensionIds.add('quicknote');
-        }
-        if (Array.isArray(enabled) && !enabled.includes('fsrs-spaced-repetition') && !this.disabledCoreExtensionIds.has('fsrs-spaced-repetition')) {
-          this.enabledExtensionIds.add('fsrs-spaced-repetition');
-        }
+        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : []);
         if (this.enabledExtensionIds.has('flint-folder-icons')) {
           this.enabledExtensionIds.delete('flint-folder-icons');
         }
       } else {
-        this.enabledExtensionIds = new Set(['flint-cascade', 'flint-copilot', 'quicknote', 'fsrs-spaced-repetition']);
+        this.enabledExtensionIds = new Set();
       }
     } catch (e) {
       console.warn('[ExtensionManager] Error loading extension config:', e);
