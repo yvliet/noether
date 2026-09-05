@@ -668,6 +668,7 @@ export class CopilotExtension extends Extension {
                 hasKeyConfigured: hasKey,
                 enableMcpTools: store.enableMcpTools,
                 includeActiveNoteContext: store.includeActiveNoteContext,
+                contextMode: store.contextMode,
               }),
             },
           ],

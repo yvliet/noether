@@ -66,6 +66,7 @@ export const CopilotSettingsTab: React.FC = () => {
   const customEndpoint = useCopilotStore((s) => s.customEndpoint);
   const systemPrompt = useCopilotStore((s) => s.systemPrompt);
   const includeActiveNoteContext = useCopilotStore((s) => s.includeActiveNoteContext);
+  const contextMode = useCopilotStore((s) => s.contextMode);
   const enableMcpTools = useCopilotStore((s) => s.enableMcpTools);
   const temperature = useCopilotStore((s) => s.temperature);
   const maxTokens = useCopilotStore((s) => s.maxTokens);
@@ -80,6 +81,7 @@ export const CopilotSettingsTab: React.FC = () => {
   const setCustomEndpoint = useCopilotStore((s) => s.setCustomEndpoint);
   const setSystemPrompt = useCopilotStore((s) => s.setSystemPrompt);
   const setIncludeActiveNoteContext = useCopilotStore((s) => s.setIncludeActiveNoteContext);
+  const setContextMode = useCopilotStore((s) => s.setContextMode);
   const setEnableMcpTools = useCopilotStore((s) => s.setEnableMcpTools);
   const setTemperature = useCopilotStore((s) => s.setTemperature);
   const setMaxTokens = useCopilotStore((s) => s.setMaxTokens);
@@ -438,7 +440,7 @@ export const CopilotSettingsTab: React.FC = () => {
 
         <SettingItem
           name="Attach Active Note Context"
-          description="Automatically include the title and content of the note currently open in your editor when asking questions."
+          description="Automatically include structural context for the note currently open in your editor when asking questions."
           controlClassName="justify-end"
         >
           <ToggleSwitch
@@ -446,6 +448,23 @@ export const CopilotSettingsTab: React.FC = () => {
             onChange={setIncludeActiveNoteContext}
           />
         </SettingItem>
+
+        {includeActiveNoteContext && (
+          <SettingItem
+            name="Context Detail Mode"
+            description="Smart Compact Outline includes title, tags, heading tree, and graph connections (~200 tokens, 10x faster). Full Document injects the verbatim note body."
+            controlClassName="justify-end"
+          >
+            <CustomSelect
+              value={contextMode}
+              options={[
+                { value: 'smart_compact', label: 'Smart Compact Outline (Recommended)' },
+                { value: 'full_text', label: 'Full Document Text (Legacy)' },
+              ]}
+              onChange={(val) => setContextMode(val as any)}
+            />
+          </SettingItem>
+        )}
       </SettingCard>
 
       {/* ── 4. System Prompt Persona ── */}

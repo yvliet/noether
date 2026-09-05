@@ -74,34 +74,173 @@ function toAnthropicTools(tools: readonly McpToolDefinition[]) {
 }
 
 /**
- * Resolves the active document's plain text content from Flint for prompt injection.
+ * Resolves the active document's context from Flint for prompt injection.
+ * Supports token-efficient smart compact outline (metadata + headings + links)
+ * or legacy full-text extraction.
  */
-export function getActiveDocumentContext(app: FlintApp): string | null {
+export function getSmartDocumentContext(
+  app: FlintApp,
+  mode: 'smart_compact' | 'full_text' | 'disabled' = 'smart_compact'
+): string | null {
+  if (mode === 'disabled') return null;
+
   try {
     const doc = app.vault.activeDocument;
     if (!doc || !doc.title) return null;
 
-    let textContent = '';
+    let parsedContent: any = null;
+    let rawText = '';
     if (doc.content_json) {
       if (typeof doc.content_json === 'string') {
         try {
-          const parsed = JSON.parse(doc.content_json);
-          textContent = extractTextFromTipTap(parsed);
+          parsedContent = JSON.parse(doc.content_json);
+          rawText = extractTextFromTipTap(parsedContent);
         } catch {
-          textContent = doc.content_json;
+          rawText = doc.content_json;
         }
       } else {
-        textContent = extractTextFromTipTap(doc.content_json);
+        parsedContent = doc.content_json;
+        rawText = extractTextFromTipTap(doc.content_json);
       }
     }
 
-    // Limit context preview to 15,000 characters to prevent overwhelming the context window
-    const truncated = textContent.length > 15000 ? textContent.slice(0, 15000) + '\n...[Content truncated for length]' : textContent;
+    if (mode === 'full_text') {
+      const truncated = rawText.length > 12000 ? rawText.slice(0, 12000) + '\n...[Content truncated for length]' : rawText;
+      return `Active Note Title: "${doc.title}"\nActive Note Content:\n\`\`\`markdown\n${truncated}\n\`\`\``;
+    }
 
-    return `Active Note Title: "${doc.title}"\nActive Note Content:\n\`\`\`markdown\n${truncated}\n\`\`\``;
+    // ── Smart Compact Outline Mode (~150-250 tokens) ──
+    const docs = app.hearth.documents || [];
+    const docMap = new Map(docs.map((d) => [d.id, d]));
+
+    // 1. Folder path resolution
+    const pathParts: string[] = [doc.title + (doc.is_folder ? '' : '.md')];
+    let curr = doc;
+    const visitedParents = new Set<string>([curr.id]);
+    while (curr.parent_id) {
+      const parent = docMap.get(curr.parent_id);
+      if (!parent || visitedParents.has(parent.id)) break;
+      visitedParents.add(parent.id);
+      pathParts.unshift(parent.title);
+      curr = parent;
+    }
+    const relativePath = pathParts.join('/');
+
+    // 2. Tags & frontmatter properties
+    const tags = new Set<string>();
+    let frontmatterSummary = '';
+    if (doc.properties) {
+      try {
+        const props = JSON.parse(doc.properties);
+        if (Array.isArray(props.tags)) {
+          props.tags.forEach((t: unknown) => tags.add(String(t).replace(/^#/, '')));
+        }
+        const nonTagProps = Object.entries(props).filter(([k]) => k !== 'tags');
+        if (nonTagProps.length > 0) {
+          frontmatterSummary = nonTagProps.slice(0, 5).map(([k, v]) => `${k}: ${JSON.stringify(v)}`).join(', ');
+        }
+      } catch {}
+    }
+    const inlineTagMatches = rawText.match(/#([a-zA-Z0-9_\-/]+)/g);
+    if (inlineTagMatches) {
+      inlineTagMatches.forEach((t) => tags.add(t.slice(1)));
+    }
+    const tagList = Array.from(tags).slice(0, 10).map((t) => `#${t}`).join(' ');
+
+    // 3. Hierarchical headings outline
+    const headings: string[] = [];
+    if (parsedContent) {
+      extractHeadings(parsedContent, headings);
+    }
+    const headingOutline = headings.length > 0
+      ? headings.slice(0, 15).join('\n')
+      : '(No headings defined)';
+
+    // 4. Outgoing wikilinks
+    const outgoingSet = new Set<string>();
+    const wikiRegex = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;
+    let match: RegExpExecArray | null;
+    while ((match = wikiRegex.exec(rawText)) !== null) {
+      if (match[1]) outgoingSet.add(match[1].trim());
+    }
+    const outgoingList = Array.from(outgoingSet).slice(0, 10).map((t) => `[[${t}]]`).join(', ') || 'None';
+
+    // 5. Incoming backlinks (fast in-memory scan across active hearth)
+    const targetTitleLower = doc.title.toLowerCase();
+    const incomingTitles: string[] = [];
+    for (const other of docs) {
+      if (other.id === doc.id || !other.content_json) continue;
+      if (other.content_json.toLowerCase().includes(`[[${targetTitleLower}`)) {
+        incomingTitles.push(other.title || 'Untitled');
+        if (incomingTitles.length >= 8) break;
+      }
+    }
+    const incomingList = incomingTitles.map((t) => `[[${t}]]`).join(', ') || 'None';
+
+    // 6. Word count and opening excerpt
+    const cleanWords = rawText.trim().split(/\s+/).filter(Boolean);
+    const wordCount = cleanWords.length;
+    const excerpt = cleanWords.slice(0, 100).join(' ');
+
+    const lines: string[] = [
+      `Note ID: ${doc.id}`,
+      `Title: "${doc.title}"`,
+      `Path: ${relativePath}`,
+    ];
+    if (tagList) lines.push(`Tags: ${tagList}`);
+    if (frontmatterSummary) lines.push(`Properties: { ${frontmatterSummary} }`);
+    lines.push(`Word Count: ~${wordCount} words`);
+    lines.push('');
+    lines.push('Headings Outline:');
+    lines.push(headingOutline);
+    lines.push('');
+    lines.push('Knowledge Graph Connections:');
+    lines.push(`- Outgoing Links: ${outgoingList}`);
+    lines.push(`- Inbound Backlinks: ${incomingList}`);
+    if (excerpt) {
+      lines.push('');
+      lines.push(`Opening Excerpt: "${excerpt}${wordCount > 100 ? '...' : ''}"`);
+    }
+    lines.push('');
+    lines.push(`[Token-saving notice: You have the structural outline and link topology above. If you need verbatim text or specific paragraphs to fulfill the user request, call \`flint_read_note(documentId: "${doc.id}")\`.]`);
+
+    return lines.join('\n');
   } catch (err) {
-    console.warn('[CopilotClient] Failed to extract active document context:', err);
+    console.warn('[CopilotClient] Failed to extract smart document context:', err);
     return null;
+  }
+}
+
+/**
+ * Backwards-compatibility wrapper for getSmartDocumentContext.
+ */
+export function getActiveDocumentContext(app: FlintApp): string | null {
+  const store = useCopilotStore.getState();
+  return getSmartDocumentContext(app, store.contextMode || 'smart_compact');
+}
+
+/**
+ * Fast recursive helper to extract heading hierarchy from TipTap JSON structure.
+ */
+function extractHeadings(node: any, out: string[], depth = 0): void {
+  if (!node || depth > 10) return;
+  if (node.type === 'heading') {
+    const level = typeof node.attrs?.level === 'number' ? node.attrs.level : 1;
+    let text = '';
+    if (Array.isArray(node.content)) {
+      for (const c of node.content) {
+        if (c.text) text += c.text;
+      }
+    }
+    if (text.trim()) {
+      const indent = '  '.repeat(Math.max(0, level - 1));
+      out.push(`${indent}${'#'.repeat(level)} ${text.trim()}`);
+    }
+  }
+  if (Array.isArray(node.content)) {
+    for (const child of node.content) {
+      extractHeadings(child, out, depth + 1);
+    }
   }
 }
 
@@ -175,11 +314,33 @@ export async function runCopilotTurn(
       contextualSystemPrompt += `\n\n=== CONTEXT ===\n${options.contextOverride}\n=== END CONTEXT ===`;
     }
   } else if (includeContext) {
-    const docContext = getActiveDocumentContext(app);
+    const docContext = getSmartDocumentContext(app, store.contextMode || 'smart_compact');
     if (docContext) {
       contextualSystemPrompt += `\n\n=== CONTEXT: CURRENTLY OPEN NOTE ===\n${docContext}\n=== END CONTEXT ===`;
     }
   }
+
+  // 4. Retrieve registered MCP tools from Flint
+  const enableTools = store.enableMcpTools && store.toolMode !== 'chat_only';
+  const mcpTools = enableTools ? app.tools.getAllTools() : [];
+
+  // Dynamic Capability Discovery: Inspect active extension tools cleanly via Flint ToolRegistry
+  const hasGraphTools = mcpTools.some((t) => t.name.startsWith('graph-view_'));
+  if (hasGraphTools) {
+    contextualSystemPrompt +=
+      '\n\n=== KNOWLEDGE GRAPH TOOLS ACTIVE ===\n' +
+      'Graph View is active. You have access to relational knowledge graph tools to explore connectivity without dumping raw note bodies:\n' +
+      '- `graph-view_get_local_graph`: Inspect incoming and outgoing links for any note (1 or 2 hops).\n' +
+      '- `graph-view_get_related_notes`: Discover related notes based on shared link topology and tags.\n' +
+      '- `graph-view_find_path`: Trace the shortest link chain connecting two notes.\n' +
+      '- `graph-view_get_hub_notes`: Surface central, highly interconnected concepts.\n' +
+      'Always prioritize checking local graph connections or searching note titles before requesting whole note texts.\n' +
+      '=== END KNOWLEDGE GRAPH TOOLS ===';
+  }
+
+  // Always guide the model to cite notes as clickable wikilinks
+  contextualSystemPrompt +=
+    '\n\nNOTE CITATION INSTRUCTION: When referencing any note by title or suggesting related notes, always format it as a clickable Flint wikilink: `[[Note Title]]`.';
 
   const messageHistory = options.history || store.messages;
 
@@ -188,10 +349,6 @@ export async function runCopilotTurn(
   let filesReadCount = 0;
   let filesEditedCount = 0;
 
-  // 4. Retrieve registered MCP tools from Flint
-  const enableTools = store.enableMcpTools && store.toolMode !== 'chat_only';
-  const mcpTools = enableTools ? app.tools.getAllTools() : [];
-
   const wrappedCallbacks: StreamDeltaCallback = {
     onDeltaText: options.onDeltaText,
     onToolCallStart: (tool) => {
@@ -199,7 +356,10 @@ export async function runCopilotTurn(
         tool.name.includes('read') ||
         tool.name.includes('search') ||
         tool.name.includes('backlinks') ||
-        tool.name.includes('list')
+        tool.name.includes('list') ||
+        tool.name.includes('graph') ||
+        tool.name.includes('path') ||
+        tool.name.includes('hub')
       ) {
         filesReadCount++;
       }

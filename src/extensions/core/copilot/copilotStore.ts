@@ -134,6 +134,7 @@ export interface CopilotSettingsState {
   customEndpoint: string;
   systemPrompt: string;
   includeActiveNoteContext: boolean;
+  contextMode: 'smart_compact' | 'full_text' | 'disabled';
   enableMcpTools: boolean;
   toolMode: 'auto' | 'chat_only';
   temperature: number;
@@ -161,6 +162,7 @@ export interface CopilotSettingsState {
   setCustomEndpoint: (endpoint: string) => void;
   setSystemPrompt: (prompt: string) => void;
   setIncludeActiveNoteContext: (include: boolean) => void;
+  setContextMode: (mode: 'smart_compact' | 'full_text' | 'disabled') => void;
   setEnableMcpTools: (enabled: boolean) => void;
   setToolMode: (mode: 'auto' | 'chat_only') => void;
   setSessionTopic: (topic: string) => void;
@@ -201,11 +203,20 @@ export interface CopilotSettingsState {
 const SETTINGS_STORAGE_KEY = 'flint_copilot_settings_v1';
 const HISTORY_STORAGE_KEY = 'flint_copilot_history_v1';
 
-export const DEFAULT_SYSTEM_PROMPT =
+export const LEGACY_DEFAULT_SYSTEM_PROMPT =
   'You are Copilot for Flint, an intelligent, concise, and focused AI assistant embedded directly inside the user’s personal knowledge workspace. ' +
   'You have full access to workspace tools through Flint’s native Model Context Protocol (MCP) to read, search, list, and modify notes, backlinks, and tags. ' +
   'When referencing notes, provide clean markdown links or summaries. Keep responses sharp, accurate, and immediately useful. ' +
   'Never make up facts about the user’s vault: if you need to know what notes exist or what a note contains, call the appropriate workspace tool.';
+
+export const DEFAULT_SYSTEM_PROMPT =
+  'You are Copilot for Flint, an intelligent personal thinking partner and knowledge assistant embedded directly inside the user’s personal knowledge workspace.\n\n' +
+  'Core Principles & Operating Directives:\n' +
+  '1. Vault & Note Mastery: You have direct access to Flint workspace tools via the Model Context Protocol (MCP) to search, read, create, update, and explore notes, links, and tags.\n' +
+  '2. Relational Intelligence: Think in graphs and networks. Actively illuminate connections between concepts, surface related notes, and cite notes using standard wikilinks: [[Note Title]].\n' +
+  '3. Token Economy & Speed: You are provided with a compact structural outline (metadata, heading hierarchy, and link neighbors) of the active note. If you require verbatim paragraph text or specific detailed sections, call the `flint_read_note` tool selectively rather than asking for full vault dumps.\n' +
+  '4. Grounded Truth: Never hallucinate facts about the user’s vault. If you need to know what notes exist or what a note contains, call the appropriate workspace tool.\n' +
+  '5. Style: Clear, punchy, intellectually rigorous, and formatted with clean markdown.';
 
 function loadPersistedSettings(): Partial<CopilotSettingsState> {
   try {
@@ -236,6 +247,7 @@ function persistSettings(state: CopilotSettingsState) {
       customEndpoint: state.customEndpoint,
       systemPrompt: state.systemPrompt,
       includeActiveNoteContext: state.includeActiveNoteContext,
+      contextMode: state.contextMode,
       enableMcpTools: state.enableMcpTools,
       toolMode: state.toolMode,
       sessionTopic: state.sessionTopic,
@@ -391,8 +403,12 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
   models: initialModels,
   apiKeys: { ...defaultKeys, ...(saved.apiKeys || {}) },
   customEndpoint: saved.customEndpoint || 'http://localhost:11434/v1',
-  systemPrompt: saved.systemPrompt !== undefined ? saved.systemPrompt : DEFAULT_SYSTEM_PROMPT,
+  systemPrompt:
+    saved.systemPrompt && saved.systemPrompt !== LEGACY_DEFAULT_SYSTEM_PROMPT
+      ? saved.systemPrompt
+      : DEFAULT_SYSTEM_PROMPT,
   includeActiveNoteContext: saved.includeActiveNoteContext !== undefined ? saved.includeActiveNoteContext : true,
+  contextMode: (saved.contextMode as any) || 'smart_compact',
   enableMcpTools: saved.enableMcpTools !== undefined ? saved.enableMcpTools : true,
   toolMode: saved.toolMode === 'chat_only' ? 'chat_only' : 'auto',
   sessions: initialSessions,
@@ -454,6 +470,11 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
 
   setIncludeActiveNoteContext: (includeActiveNoteContext) => {
     set({ includeActiveNoteContext });
+    persistSettings(get());
+  },
+
+  setContextMode: (contextMode) => {
+    set({ contextMode });
     persistSettings(get());
   },
 
@@ -889,6 +910,7 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
       customEndpoint: 'http://localhost:11434/v1',
       systemPrompt: DEFAULT_SYSTEM_PROMPT,
       includeActiveNoteContext: true,
+      contextMode: 'smart_compact',
       enableMcpTools: true,
       temperature: 0.7,
       maxTokens: 2048,
