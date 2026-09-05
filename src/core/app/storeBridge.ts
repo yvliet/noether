@@ -14,6 +14,7 @@ export interface StoreGetter<T = any> {
 
 export interface FlintStoreRefs {
   workspace: StoreGetter | null;
+  sidebarDock: StoreGetter | null;
   document: StoreGetter | null;
   contextMenu: StoreGetter | null;
   settings: StoreGetter | null;
@@ -23,6 +24,7 @@ export interface FlintStoreRefs {
 
 const defaultRefs: FlintStoreRefs = {
   workspace: null,
+  sidebarDock: null,
   document: null,
   contextMenu: null,
   settings: null,
@@ -44,12 +46,14 @@ export var storeRefs: FlintStoreRefs =
  */
 export function bindFlintStores(stores: {
   workspace?: StoreGetter;
+  sidebarDock?: StoreGetter;
   document?: StoreGetter;
   contextMenu?: StoreGetter;
   settings?: StoreGetter;
   fileHistory?: StoreGetter;
 }): void {
   if (stores.workspace) storeRefs.workspace = stores.workspace;
+  if (stores.sidebarDock) storeRefs.sidebarDock = stores.sidebarDock;
   if (stores.document) storeRefs.document = stores.document;
   if (stores.contextMenu) storeRefs.contextMenu = stores.contextMenu;
   if (stores.settings) storeRefs.settings = stores.settings;

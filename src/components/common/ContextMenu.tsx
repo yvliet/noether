@@ -503,6 +503,7 @@ export function useAppContextMenu() {
             if (!subDefs) return undefined;
             return subDefs.map((sub) => ({
               id: sub.id,
+              type: sub.type,
               title: sub.title,
               icon: sub.icon,
               shortcut: sub.shortcut,
@@ -522,6 +523,7 @@ export function useAppContextMenu() {
 
           return {
             id: def.id,
+            type: def.type,
             title: def.title,
             icon: def.icon,
             shortcut: def.shortcut,

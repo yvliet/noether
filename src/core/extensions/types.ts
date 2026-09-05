@@ -311,8 +311,10 @@ export type ContextMenuScope =
 export interface ContextMenuItemDefinition {
   /** Unique menu item identifier. */
   id: string;
+  /** Item rendering type. Default is 'item'. */
+  type?: 'item' | 'separator' | 'header';
   /** Text label displayed in the context menu. */
-  title: string;
+  title?: string;
   /** Optional icon element. */
   icon?: React.ReactNode;
   /** Optional keyboard shortcut hint text (e.g., 'Ctrl+C'). */

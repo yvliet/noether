@@ -205,6 +205,46 @@ export class FlintApp {
         }
       },
       setActiveSidebarTab: (side: 'left' | 'right', tabId: string): void => {
+        const dockStore = storeRefs.sidebarDock?.getState?.();
+        if (dockStore && Array.isArray(dockStore.items)) {
+          const matchingItem = dockStore.items.find(
+            (it: any) =>
+              it.id === tabId ||
+              it.extensionId === tabId ||
+              it.viewType === tabId ||
+              it.id.endsWith(`:${tabId}`) ||
+              (typeof tabId === 'string' && tabId.includes(':') && it.id === tabId.split(':')[1])
+          );
+
+          if (matchingItem) {
+            const zone = matchingItem.zone;
+            if (zone === 'right-bottom') {
+              storeRefs.workspace?.getState()?.setIsRightSidebarOpen(true);
+              dockStore.toggleItemEnabled?.(matchingItem.id, true);
+              dockStore.setActiveItemInZone('right-bottom', matchingItem.id);
+              return;
+            }
+            if (zone === 'left-bottom') {
+              storeRefs.workspace?.getState()?.setIsLeftSidebarOpen(true);
+              dockStore.toggleItemEnabled?.(matchingItem.id, true);
+              dockStore.setActiveItemInZone('left-bottom', matchingItem.id);
+              return;
+            }
+            if (zone === 'left-top') {
+              storeRefs.workspace?.getState()?.setIsLeftSidebarOpen(true);
+              storeRefs.workspace?.getState()?.setActiveLeftView(matchingItem.id);
+              dockStore.setActiveItemInZone('left-top', matchingItem.id);
+              return;
+            }
+            if (zone === 'right-top') {
+              storeRefs.workspace?.getState()?.setIsRightSidebarOpen(true);
+              storeRefs.workspace?.getState()?.setActiveRightTab(matchingItem.id);
+              dockStore.setActiveItemInZone('right-top', matchingItem.id);
+              return;
+            }
+          }
+        }
+
         if (side === 'left') {
           storeRefs.workspace?.getState()?.setActiveLeftView(tabId);
         } else {

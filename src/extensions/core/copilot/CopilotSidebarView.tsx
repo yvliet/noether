@@ -51,6 +51,7 @@ import {
   CheckIcon,
   Alert02Icon,
   Copy01Icon,
+  ArrowLeft01Icon,
   ArrowRight01Icon,
   FileAddIcon,
   RotateCcwIcon,
@@ -137,6 +138,8 @@ export const CopilotSidebarView: React.FC = () => {
   const includeActiveNoteContext = useCopilotStore((s) => s.includeActiveNoteContext);
   const fetchedModels = useCopilotStore((s) => s.fetchedModels);
   const refreshModels = useCopilotStore((s) => s.refreshModels);
+  const draftPrompt = useCopilotStore((s) => s.draftPrompt);
+  const setDraftPrompt = useCopilotStore((s) => s.setDraftPrompt);
   const sessionTopic = useCopilotStore((s) => s.sessionTopic);
   const toolMode = useCopilotStore((s) => s.toolMode);
   const sessions = useCopilotStore((s) => s.sessions);
@@ -155,6 +158,8 @@ export const CopilotSidebarView: React.FC = () => {
   const updateMessage = useCopilotStore((s) => s.updateMessage);
   const clearMessages = useCopilotStore((s) => s.clearMessages);
   const stopGeneration = useCopilotStore((s) => s.stopGeneration);
+  const getMessageVariants = useCopilotStore((s) => s.getMessageVariants);
+  const switchVariant = useCopilotStore((s) => s.switchVariant);
 
   const [inputVal, setInputVal] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -220,6 +225,23 @@ export const CopilotSidebarView: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages, isGenerating]);
 
+  // Consume any draft prompt passed externally from context menus or commands
+  useEffect(() => {
+    if (draftPrompt) {
+      setInputVal(draftPrompt);
+      setDraftPrompt('');
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.selectionStart = textareaRef.current.value.length;
+          textareaRef.current.selectionEnd = textareaRef.current.value.length;
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+        }
+      }, 50);
+    }
+  }, [draftPrompt, setDraftPrompt]);
+
   // Adjust input textarea height dynamically
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputVal(e.target.value);
@@ -254,12 +276,17 @@ export const CopilotSidebarView: React.FC = () => {
         pickSessionIconInBackground(activeSessionId, text);
       }
 
+      const activeThread = useCopilotStore.getState().messages;
+      const lastMsg = activeThread[activeThread.length - 1];
+      const parentId = lastMsg ? lastMsg.id : null;
+
       const userMsgId = `usr-${Date.now()}`;
       const assistantMsgId = `ast-${Date.now() + 1}`;
 
       // Append user message
       addMessage({
         id: userMsgId,
+        parentId,
         role: 'user',
         content: text,
         timestamp: Date.now(),
@@ -268,6 +295,7 @@ export const CopilotSidebarView: React.FC = () => {
       // Prepare empty assistant placeholder
       addMessage({
         id: assistantMsgId,
+        parentId: userMsgId,
         role: 'assistant',
         content: '',
         timestamp: Date.now(),
@@ -411,14 +439,95 @@ export const CopilotSidebarView: React.FC = () => {
     }
   };
 
-  // 1-Click Action: Regenerate response
-  const handleRegenerate = (index: number) => {
-    if (isGenerating) return;
-    const userMsg = messages[index - 1];
-    if (userMsg && userMsg.role === 'user') {
-      handleSendMessage(userMsg.content);
-    }
-  };
+  // 1-Click Action: Regenerate assistant response as a new sibling version
+  const handleRegenerate = useCallback(
+    async (messageId: string) => {
+      if (isGenerating) return;
+      const { sessions, activeSessionId } = useCopilotStore.getState();
+      const session = sessions.find((s) => s.id === activeSessionId);
+      if (!session) return;
+
+      const targetMsg = session.messages.find((m) => m.id === messageId);
+      if (!targetMsg) return;
+
+      const parentUserMsg = session.messages.find((m) => m.id === targetMsg.parentId);
+      if (!parentUserMsg || !parentUserMsg.content) return;
+
+      const assistantMsgId = `ast-${Date.now()}`;
+      addMessage({
+        id: assistantMsgId,
+        parentId: parentUserMsg.id,
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        isStreaming: true,
+        toolCalls: [],
+      });
+
+      try {
+        await runCopilotTurn(app, parentUserMsg.content, {
+          onDeltaText: (delta) => {
+            updateMessage(assistantMsgId, (prev) => ({
+              ...prev,
+              content: prev.content + delta,
+            }));
+          },
+          onToolCallStart: (tool) => {
+            updateMessage(assistantMsgId, (prev) => {
+              const existingCalls = prev.toolCalls || [];
+              return {
+                ...prev,
+                toolCalls: [
+                  ...existingCalls,
+                  {
+                    id: tool.id,
+                    name: tool.name,
+                    args: tool.args,
+                    status: 'running',
+                  },
+                ],
+              };
+            });
+          },
+          onToolCallComplete: (toolId, resultText, isError) => {
+            updateMessage(assistantMsgId, (prev) => {
+              const updatedCalls = (prev.toolCalls || []).map((tc) => {
+                if (tc.id === toolId) {
+                  return {
+                    ...tc,
+                    status: isError ? ('error' as const) : ('success' as const),
+                    result: resultText,
+                  };
+                }
+                return tc;
+              });
+              return { ...prev, toolCalls: updatedCalls };
+            });
+          },
+          onMetricsUpdate: (metrics) => {
+            updateMessage(assistantMsgId, (prev) => ({
+              ...prev,
+              elapsedTimeMs: metrics.elapsedTimeMs,
+              toolsExecutedCount: metrics.toolsExecutedCount,
+              filesReadCount: metrics.filesReadCount,
+              filesEditedCount: metrics.filesEditedCount,
+            }));
+          },
+        });
+
+        updateMessage(assistantMsgId, { isStreaming: false });
+      } catch (err: any) {
+        updateMessage(assistantMsgId, (prev) => ({
+          ...prev,
+          isStreaming: false,
+          content: prev.content
+            ? `${prev.content}\n\n*[Error: ${err.message || String(err)}]*`
+            : `*[Error: ${err.message || String(err)}]*`,
+        }));
+      }
+    },
+    [app, isGenerating, addMessage, updateMessage]
+  );
 
   // 1-Click Action: Open wikilink in editor
   const handleWikilinkClick = useCallback(
@@ -519,6 +628,12 @@ export const CopilotSidebarView: React.FC = () => {
     return found ? found.label : currentModel;
   }, [currentModel, modelOptions]);
 
+  const canCreateSession = useMemo(() => {
+    const active = sessions.find((s) => s.id === activeSessionId);
+    if (!active) return false;
+    return !(active.messages.length === 0 && active.topic === 'New Chat') && !isGenerating;
+  }, [sessions, activeSessionId, isGenerating]);
+
   const { showContextMenu } = useAppContextMenu();
 
   const handleTabContextMenu = useCallback(
@@ -563,6 +678,7 @@ export const CopilotSidebarView: React.FC = () => {
           id: 'new-session',
           title: 'New session',
           icon: <PlusSignIcon size={14} />,
+          disabled: !canCreateSession,
           onClick: () => {
             createNewSession();
           },
@@ -571,7 +687,7 @@ export const CopilotSidebarView: React.FC = () => {
 
       showContextMenu(e, items);
     },
-    [sessions, deleteSession, createNewSession, showContextMenu]
+    [sessions, deleteSession, createNewSession, showContextMenu, canCreateSession]
   );
 
   return (
@@ -589,16 +705,17 @@ export const CopilotSidebarView: React.FC = () => {
                 id: 'new-session',
                 title: 'New session',
                 icon: <PlusSignIcon size={14} />,
+                disabled: !canCreateSession,
                 onClick: () => {
                   createNewSession();
                 },
               },
             ]);
           }}
-          className="h-[38px] flex items-end justify-between pr-4 select-none border-b border-[var(--flint-border-base,#292929)] shrink-0 relative z-20"
+          className="h-[38px] flex items-end justify-between pr-2.5 select-none border-b border-[var(--flint-border-base,#292929)] shrink-0 relative z-20"
         >
           {/* Split Tabs Row */}
-          <div className="flex items-end gap-[2px] shrink min-w-0 flex-1 overflow-x-auto no-scrollbar relative -mb-[1px] pl-2.5 mr-1.5">
+          <div className="flex items-end gap-[2px] shrink min-w-0 flex-1 overflow-x-auto no-scrollbar relative -mb-[1px] pl-2 mr-1">
             {sessions.map((sess, index) => {
               const isActive = sess.id === activeSessionId;
               return (
@@ -619,7 +736,7 @@ export const CopilotSidebarView: React.FC = () => {
                       ? 'var(--flint-text-primary)'
                       : 'var(--flint-text-muted)',
                   }}
-                  className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[124px] max-w-[140px] min-w-[36px] h-[34px] shrink-0 ${
+                  className={`group relative flex items-center gap-1.5 px-2 text-xs cursor-pointer select-none flex-1 max-w-[140px] min-w-[36px] h-[34px] shrink ${
                     isActive
                       ? 'rounded-t-[7px] bg-[#151515] border-t border-x border-b-0 border-[var(--flint-border-base,#292929)] font-normal z-20 shadow-xs'
                       : 'bg-transparent font-normal border-0 hover:z-30'
@@ -696,7 +813,7 @@ export const CopilotSidebarView: React.FC = () => {
                     </>
                   )}
 
-                  <div className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-5">
+                  <div className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-4">
                     <div
                       className={`w-3.5 h-3.5 flex items-center justify-center shrink-0 ${
                         isActive
@@ -725,7 +842,7 @@ export const CopilotSidebarView: React.FC = () => {
                       deleteSession(sess.id);
                     }}
                     title="Close tab"
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 w-4 h-4 rounded flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
                   >
                     <Cancel01Icon size={12} />
                   </button>
@@ -734,18 +851,20 @@ export const CopilotSidebarView: React.FC = () => {
             })}
 
             {/* New Session Button */}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={createNewSession}
-              title="New session"
-              className="w-6 h-6 -translate-y-[6px] ml-[7px] rounded-[5px] flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-tab-hover,var(--flint-bg-card-hover))] cursor-pointer shrink-0"
+              disabled={!canCreateSession}
+              title={canCreateSession ? 'New session' : undefined}
+              className="w-6 h-6 p-0 -translate-y-[8px] ml-2.5 shrink-0 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)]"
             >
               <PlusSignIcon size={13} />
-            </button>
+            </Button>
           </div>
 
           {/* Right Header Controls */}
-          <div className="flex items-center gap-0.5 shrink-0 self-center">
+          <div className="flex items-center gap-0.5 shrink-0 self-center pl-1">
             <Button
               variant="ghost"
               size="sm"
@@ -1046,45 +1165,69 @@ export const CopilotSidebarView: React.FC = () => {
 
                     {!m.isStreaming && m.content && (
                       <div className="flex items-center gap-0.5">
-                        <Tooltip content="Insert into active note">
-                          <button
-                            type="button"
-                            onClick={() => handleInsertIntoNote(m.content)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer"
-                          >
-                            <ArrowRight01Icon size={12} />
-                          </button>
-                        </Tooltip>
+                        {(() => {
+                          const { variants, currentIndex } = getMessageVariants(m.id);
+                          const totalVariants = Math.max(1, variants.length);
+                          const isFirstVariant = currentIndex <= 0;
+                          const isLatestVariant = currentIndex >= totalVariants - 1;
 
-                        <Tooltip content="Copy message">
-                          <button
-                            type="button"
-                            onClick={() => handleCopyMessage(m.content)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer"
-                          >
-                            <Copy01Icon size={12} />
-                          </button>
-                        </Tooltip>
+                          return (
+                            <>
+                              {/* Left Chevron (<): Back to previous version */}
+                              <Tooltip content={isFirstVariant ? '' : 'Previous version'}>
+                                <button
+                                  type="button"
+                                  disabled={isGenerating || isFirstVariant}
+                                  onClick={() => switchVariant(m.id, 'prev')}
+                                  aria-label="Previous version"
+                                  className={`w-6 h-6 rounded flex items-center justify-center ${
+                                    isFirstVariant
+                                      ? 'text-[var(--flint-text-muted,#777777)]/30 cursor-not-allowed'
+                                      : 'text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer'
+                                  }`}
+                                >
+                                  <ArrowLeft01Icon size={12} />
+                                </button>
+                              </Tooltip>
 
-                        <Tooltip content="Save as new note">
-                          <button
-                            type="button"
-                            onClick={() => handleCreateAsNewNote(m.content)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer"
-                          >
-                            <FileAddIcon size={12} />
-                          </button>
-                        </Tooltip>
+                              {/* Subtle Version Counter (e.g. 1/2) */}
+                              <span className="text-[10px] tabular-nums text-[var(--flint-text-muted,#777777)] select-none px-0.5">
+                                {currentIndex + 1}/{totalVariants}
+                              </span>
 
-                        <Tooltip content="Regenerate response">
-                          <button
-                            type="button"
-                            onClick={() => handleRegenerate(index)}
-                            className="w-6 h-6 rounded flex items-center justify-center text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer"
-                          >
-                            <RotateCcwIcon size={12} />
-                          </button>
-                        </Tooltip>
+                              {/* Right Chevron (>): Next version if earlier version exists, or Regenerate if on latest */}
+                              <Tooltip content={isLatestVariant ? 'Regenerate response' : 'Next version'}>
+                                <button
+                                  type="button"
+                                  disabled={isGenerating}
+                                  onClick={() => {
+                                    if (isLatestVariant) {
+                                      handleRegenerate(m.id);
+                                    } else {
+                                      switchVariant(m.id, 'next');
+                                    }
+                                  }}
+                                  aria-label={isLatestVariant ? 'Regenerate response' : 'Next version'}
+                                  className="w-6 h-6 rounded flex items-center justify-center text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                                >
+                                  <ArrowRight01Icon size={12} />
+                                </button>
+                              </Tooltip>
+
+                              {/* Copy Message */}
+                              <Tooltip content="Copy message">
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyMessage(m.content)}
+                                  aria-label="Copy message"
+                                  className="w-6 h-6 rounded flex items-center justify-center text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#262626)] cursor-pointer"
+                                >
+                                  <Copy01Icon size={12} />
+                                </button>
+                              </Tooltip>
+                            </>
+                          );
+                        })()}
                       </div>
                     )}
                   </div>

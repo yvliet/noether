@@ -530,7 +530,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       isLeftSidebarOpen: true,
     });
     try {
-      useSidebarDockStore.getState().setActiveItemInZone('left-top', view);
+      const dock = useSidebarDockStore.getState();
+      const existing = dock.items.find(
+        (it) => it.id === view || it.extensionId === view || it.viewType === view
+      );
+      if (!existing || existing.zone === 'left-top') {
+        dock.setActiveItemInZone('left-top', view);
+      }
     } catch {}
     saveTabsSession(get().vaultPath);
   },
@@ -604,7 +610,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       isRightSidebarOpen: true,
     });
     try {
-      useSidebarDockStore.getState().setActiveItemInZone('right-top', tab);
+      const dock = useSidebarDockStore.getState();
+      const existing = dock.items.find(
+        (it) => it.id === tab || it.extensionId === tab || it.viewType === tab
+      );
+      if (!existing || existing.zone === 'right-top') {
+        dock.setActiveItemInZone('right-top', tab);
+      }
     } catch {}
     saveTabsSession(get().vaultPath);
   },

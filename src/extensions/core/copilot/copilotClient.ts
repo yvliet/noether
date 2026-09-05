@@ -23,8 +23,9 @@ import {
   PROVIDER_CATALOG,
   ToolExecutionDetail,
 } from './copilotStore';
+import { pickSessionIconInBackground } from './copilotSessionHelper';
 
-interface StreamDeltaCallback {
+export interface StreamDeltaCallback {
   onDeltaText: (text: string) => void;
   onToolCallStart?: (tool: { id: string; name: string; args: Record<string, unknown> }) => void;
   onToolCallComplete?: (toolId: string, resultText: string, isError?: boolean) => void;
@@ -34,6 +35,17 @@ interface StreamDeltaCallback {
     filesReadCount: number;
     filesEditedCount: number;
   }) => void;
+}
+
+export interface RunCopilotOptions extends StreamDeltaCallback {
+  /** Optional message history override (defaults to active store messages) */
+  history?: CopilotMessage[];
+  /** Optional context override (e.g. selected text or specific document text) */
+  contextOverride?: string | null;
+  /** Optional system prompt override */
+  systemPromptOverride?: string;
+  /** Optional abort signal to cancel execution */
+  signal?: AbortSignal;
 }
 
 /**
@@ -120,10 +132,11 @@ function extractTextFromTipTap(node: any): string {
 export async function runCopilotTurn(
   app: FlintApp,
   userPrompt: string,
-  callbacks: StreamDeltaCallback
+  callbacksOrOptions: StreamDeltaCallback | RunCopilotOptions
 ): Promise<string> {
   const store = useCopilotStore.getState();
   const provider = store.provider;
+  const options = callbacksOrOptions as RunCopilotOptions;
 
   // 1. Validation check
   if (!provider) {
@@ -133,7 +146,7 @@ export async function runCopilotTurn(
   const apiKey = store.apiKeys[provider] || '';
   const model = store.models[provider] || PROVIDER_CATALOG[provider].defaultModel;
   const customEndpoint = store.customEndpoint;
-  const systemPrompt = store.systemPrompt;
+  const systemPrompt = options.systemPromptOverride || store.systemPrompt;
   const includeContext = store.includeActiveNoteContext;
   const temperature = store.temperature;
   const maxTokens = store.maxTokens;
@@ -147,14 +160,28 @@ export async function runCopilotTurn(
   store.setAbortController(abortController);
   store.setIsGenerating(true);
 
-  // 3. Assemble Active Note Context
+  if (options.signal) {
+    if (options.signal.aborted) {
+      abortController.abort();
+    } else {
+      options.signal.addEventListener('abort', () => abortController.abort(), { once: true });
+    }
+  }
+
+  // 3. Assemble Context (with explicit override support)
   let contextualSystemPrompt = systemPrompt;
-  if (includeContext) {
+  if (options.contextOverride !== undefined) {
+    if (options.contextOverride) {
+      contextualSystemPrompt += `\n\n=== CONTEXT ===\n${options.contextOverride}\n=== END CONTEXT ===`;
+    }
+  } else if (includeContext) {
     const docContext = getActiveDocumentContext(app);
     if (docContext) {
       contextualSystemPrompt += `\n\n=== CONTEXT: CURRENTLY OPEN NOTE ===\n${docContext}\n=== END CONTEXT ===`;
     }
   }
+
+  const messageHistory = options.history || store.messages;
 
   const startTime = Date.now();
   let toolsExecutedCount = 0;
@@ -166,7 +193,7 @@ export async function runCopilotTurn(
   const mcpTools = enableTools ? app.tools.getAllTools() : [];
 
   const wrappedCallbacks: StreamDeltaCallback = {
-    onDeltaText: callbacks.onDeltaText,
+    onDeltaText: options.onDeltaText,
     onToolCallStart: (tool) => {
       if (
         tool.name.includes('read') ||
@@ -183,19 +210,19 @@ export async function runCopilotTurn(
       ) {
         filesEditedCount++;
       }
-      callbacks.onToolCallStart?.(tool);
+      options.onToolCallStart?.(tool);
     },
     onToolCallComplete: (toolId, resultText, isError) => {
       toolsExecutedCount++;
-      callbacks.onToolCallComplete?.(toolId, resultText, isError);
-      callbacks.onMetricsUpdate?.({
+      options.onToolCallComplete?.(toolId, resultText, isError);
+      options.onMetricsUpdate?.({
         elapsedTimeMs: Date.now() - startTime,
         toolsExecutedCount,
         filesReadCount,
         filesEditedCount,
       });
     },
-    onMetricsUpdate: callbacks.onMetricsUpdate,
+    onMetricsUpdate: options.onMetricsUpdate,
   };
 
   try {
@@ -206,7 +233,7 @@ export async function runCopilotTurn(
         apiKey,
         model,
         contextualSystemPrompt,
-        store.messages,
+        messageHistory,
         userPrompt,
         mcpTools,
         temperature,
@@ -222,7 +249,7 @@ export async function runCopilotTurn(
         model,
         customEndpoint,
         contextualSystemPrompt,
-        store.messages,
+        messageHistory,
         userPrompt,
         mcpTools,
         temperature,
@@ -232,7 +259,7 @@ export async function runCopilotTurn(
       );
     }
 
-    callbacks.onMetricsUpdate?.({
+    options.onMetricsUpdate?.({
       elapsedTimeMs: Date.now() - startTime,
       toolsExecutedCount,
       filesReadCount,
@@ -316,7 +343,13 @@ async function executeOpenAiCompatibleLoop(
     }
   }
 
-  if (newPrompt) {
+  const lastAdded = formattedMessages[formattedMessages.length - 1];
+  const alreadyIncluded =
+    lastAdded &&
+    lastAdded.role === 'user' &&
+    lastAdded.content.trim() === newPrompt.trim();
+
+  if (newPrompt && !alreadyIncluded) {
     formattedMessages.push({ role: 'user', content: newPrompt });
   }
 
@@ -505,7 +538,13 @@ async function executeAnthropicLoop(
     }
   }
 
-  if (newPrompt) {
+  const lastAdded = messages[messages.length - 1];
+  const alreadyIncluded =
+    lastAdded &&
+    lastAdded.role === 'user' &&
+    lastAdded.content.trim() === newPrompt.trim();
+
+  if (newPrompt && !alreadyIncluded) {
     messages.push({ role: 'user', content: newPrompt });
   }
 
@@ -649,6 +688,128 @@ async function executeAnthropicLoop(
   }
 
   return accumulatedText;
+}
+
+/**
+ * Dispatches a prompt directly into the active Copilot chat session in the right sidebar.
+ * Automatically opens the right sidebar, focuses the copilot tab, updates session metadata,
+ * appends messages to the reactive DAG, and streams the AI answer live into the chat thread.
+ */
+export async function executeCopilotChatPrompt(
+  app: FlintApp,
+  text: string,
+  options?: { contextOverride?: string }
+): Promise<void> {
+  const store = useCopilotStore.getState();
+  const prompt = text.trim();
+  if (!prompt || store.isGenerating) return;
+
+  // Open right sidebar and activate copilot tab
+  app.workspace.setActiveSidebarTab('right', 'copilot');
+  app.workspace.setSidebarOpen('right', true);
+
+  const isFirstMessage = store.messages.length === 0;
+
+  if (store.sessionTopic === 'New Chat') {
+    const derived = prompt.replace(/^[#\s*`\->]+/, '').slice(0, 26).trim();
+    if (derived) {
+      store.setSessionTopic(derived);
+    }
+  }
+
+  if (isFirstMessage) {
+    pickSessionIconInBackground(store.activeSessionId, prompt);
+  }
+
+  const activeThread = store.messages;
+  const lastMsg = activeThread[activeThread.length - 1];
+  const parentId = lastMsg ? lastMsg.id : null;
+
+  const userMsgId = `usr-${Date.now()}`;
+  const assistantMsgId = `ast-${Date.now() + 1}`;
+
+  // Append user message
+  store.addMessage({
+    id: userMsgId,
+    parentId,
+    role: 'user',
+    content: prompt,
+    timestamp: Date.now(),
+  });
+
+  // Prepare empty assistant placeholder
+  store.addMessage({
+    id: assistantMsgId,
+    parentId: userMsgId,
+    role: 'assistant',
+    content: '',
+    timestamp: Date.now(),
+    isStreaming: true,
+    toolCalls: [],
+  });
+
+  try {
+    await runCopilotTurn(app, prompt, {
+      contextOverride: options?.contextOverride,
+      onDeltaText: (delta) => {
+        store.updateMessage(assistantMsgId, (prev) => ({
+          ...prev,
+          content: prev.content + delta,
+        }));
+      },
+      onToolCallStart: (tool) => {
+        store.updateMessage(assistantMsgId, (prev) => {
+          const existingCalls = prev.toolCalls || [];
+          return {
+            ...prev,
+            toolCalls: [
+              ...existingCalls,
+              {
+                id: tool.id,
+                name: tool.name,
+                args: tool.args,
+                status: 'running',
+              },
+            ],
+          };
+        });
+      },
+      onToolCallComplete: (toolId, resultText, isError) => {
+        store.updateMessage(assistantMsgId, (prev) => {
+          const updatedCalls = (prev.toolCalls || []).map((tc) => {
+            if (tc.id === toolId) {
+              return {
+                ...tc,
+                status: isError ? ('error' as const) : ('success' as const),
+                result: resultText,
+              };
+            }
+            return tc;
+          });
+          return { ...prev, toolCalls: updatedCalls };
+        });
+      },
+      onMetricsUpdate: (metrics) => {
+        store.updateMessage(assistantMsgId, (prev) => ({
+          ...prev,
+          elapsedTimeMs: metrics.elapsedTimeMs,
+          toolsExecutedCount: metrics.toolsExecutedCount,
+          filesReadCount: metrics.filesReadCount,
+          filesEditedCount: metrics.filesEditedCount,
+        }));
+      },
+    });
+
+    store.updateMessage(assistantMsgId, { isStreaming: false });
+  } catch (err: any) {
+    store.updateMessage(assistantMsgId, (prev) => ({
+      ...prev,
+      isStreaming: false,
+      content: prev.content
+        ? `${prev.content}\n\n*[Error: ${err.message || String(err)}]*`
+        : `*[Error: ${err.message || String(err)}]*`,
+    }));
+  }
 }
 
 export { fetchLiveModels } from './copilotModels';

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { TabItem } from '@/types';
 import { useWorkspaceStore } from './workspaceStore';
+import { bindFlintStores } from '@/core/app/storeBridge';
 
 export type DockZone = 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom';
 
@@ -125,6 +126,18 @@ function loadPersistedState(vaultPath?: string): {
         'right-bottom': parsed.activeItemByZone?.['right-bottom'] ?? null,
       };
       ensureActiveItemsEnabled(cleanedItems, activeByZone);
+
+      // Restore copilot to bottom dock if it was inadvertently moved to right-top
+      const copilot = cleanedItems.find((it) => it.id === 'copilot');
+      if (copilot && copilot.zone === 'right-top') {
+        copilot.zone = 'right-bottom';
+        copilot.enabled = true;
+        activeByZone['right-bottom'] = 'copilot';
+        if (activeByZone['right-top'] === 'copilot') {
+          const remaining = cleanedItems.filter((it) => it.zone === 'right-top' && it.id !== 'copilot');
+          activeByZone['right-top'] = remaining.length > 0 ? remaining[0].id : null;
+        }
+      }
 
       return {
         items: cleanedItems,
@@ -790,25 +803,16 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
             existing.enabled = true;
             changed = true;
           }
-          if (
-            existing.zone !== defaultZone &&
-            !updatedItems.some(
-              (it) => it.zone === defaultZone && it.enabled && it.id === existing.id
-            )
-          ) {
-            existing.zone = defaultZone;
-            changed = true;
-          }
-          if (nextActiveByZone[defaultZone] !== existing.id) {
-            nextActiveByZone[defaultZone] = existing.id;
+          const targetZone = existing.zone;
+          if (nextActiveByZone[targetZone] !== existing.id) {
+            nextActiveByZone[targetZone] = existing.id;
             changed = true;
           }
         } else if (
-          !nextActiveByZone[defaultZone] &&
-          existing.enabled &&
-          existing.zone === defaultZone
+          !nextActiveByZone[existing.zone] &&
+          existing.enabled
         ) {
-          nextActiveByZone[defaultZone] = existing.id;
+          nextActiveByZone[existing.zone] = existing.id;
           changed = true;
         }
       }
@@ -820,3 +824,6 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
     }
   },
 }));
+
+bindFlintStores({ sidebarDock: useSidebarDockStore });
+

@@ -35,6 +35,7 @@ export interface ToolExecutionDetail {
 
 export interface CopilotMessage {
   id: string;
+  parentId?: string | null;
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
@@ -52,8 +53,77 @@ export interface CopilotSession {
   topic: string;
   icon: string;
   messages: CopilotMessage[];
+  activeVariantMap?: Record<string, string>;
   createdAt: number;
   updatedAt: number;
+}
+
+/**
+ * Normalizes legacy flat message histories to ensure every message has a deterministic parentId.
+ */
+export function normalizeSessionMessages(messages: CopilotMessage[]): CopilotMessage[] {
+  if (!messages || messages.length === 0) return [];
+  let prevId: string | null = null;
+  return messages.map((m, idx) => {
+    if (m.parentId === undefined) {
+      const parentId = idx === 0 ? null : prevId;
+      prevId = m.id;
+      return { ...m, parentId };
+    }
+    prevId = m.id;
+    return m;
+  });
+}
+
+/**
+ * Reconstructs the active linear conversation thread from the DAG starting from the root,
+ * following the activeVariantMap selections at each branching point.
+ */
+export function computeActiveThread(
+  messages: CopilotMessage[],
+  activeVariantMap: Record<string, string> = {}
+): CopilotMessage[] {
+  if (!messages || messages.length === 0) return [];
+
+  // Group children by parentId
+  const childrenMap = new Map<string | null, CopilotMessage[]>();
+  for (const msg of messages) {
+    const pId = msg.parentId ?? null;
+    const list = childrenMap.get(pId) || [];
+    list.push(msg);
+    childrenMap.set(pId, list);
+  }
+
+  // Find root message(s)
+  const roots = childrenMap.get(null) || [];
+  if (roots.length === 0) {
+    // If no explicit root exists, fallback to sequential messages
+    return messages;
+  }
+
+  const thread: CopilotMessage[] = [];
+  const selectedRootId = activeVariantMap['root'];
+  let current: CopilotMessage | undefined =
+    roots.find((r) => r.id === selectedRootId) || roots[roots.length - 1];
+
+  const visited = new Set<string>();
+
+  while (current && !visited.has(current.id)) {
+    visited.add(current.id);
+    thread.push(current);
+
+    const children = childrenMap.get(current.id);
+    if (!children || children.length === 0) {
+      break;
+    }
+
+    const selectedChildId: string | undefined = activeVariantMap[current.id];
+    current =
+      children.find((c) => c.id === selectedChildId) ||
+      children[children.length - 1];
+  }
+
+  return thread;
 }
 
 export interface CopilotSettingsState {
@@ -111,10 +181,18 @@ export interface CopilotSettingsState {
   deleteMessage: (id: string) => void;
   clearMessages: () => void;
 
+  // Branch & Version Navigation
+  getMessageVariants: (messageId: string) => { variants: CopilotMessage[]; currentIndex: number };
+  switchVariant: (messageId: string, direction: 'prev' | 'next') => void;
+
   // Generator Lifecycle
   setIsGenerating: (generating: boolean) => void;
   setAbortController: (ctrl: AbortController | null) => void;
   stopGeneration: () => void;
+
+  // Draft Input / External Prompt Prefill
+  draftPrompt: string;
+  setDraftPrompt: (prompt: string) => void;
 
   // Defaults
   restoreDefaults: () => void;
@@ -196,16 +274,24 @@ function loadPersistedSessions(
 
     if (!Array.isArray(sessions) || sessions.length === 0) {
       const initialId = `sess-${Date.now()}`;
+      const normalizedFallback = normalizeSessionMessages(fallbackHistory);
       sessions = [
         {
           id: initialId,
           topic: fallbackTopic || 'New Chat',
           icon: 'ChatIcon',
-          messages: fallbackHistory.length > 0 ? fallbackHistory : [],
+          messages: normalizedFallback,
+          activeVariantMap: {},
           createdAt: Date.now(),
           updatedAt: Date.now(),
         },
       ];
+    } else {
+      sessions = sessions.map((s) => ({
+        ...s,
+        messages: normalizeSessionMessages(s.messages || []),
+        activeVariantMap: s.activeVariantMap || {},
+      }));
     }
 
     const savedActiveId = localStorage.getItem(ACTIVE_SESSION_STORAGE_KEY);
@@ -224,6 +310,7 @@ function loadPersistedSessions(
           topic: 'New Chat',
           icon: 'ChatIcon',
           messages: [],
+          activeVariantMap: {},
           createdAt: Date.now(),
           updatedAt: Date.now(),
         },
@@ -237,7 +324,8 @@ function persistSessions(sessions: CopilotSession[], activeSessionId: string) {
   try {
     const sanitized = sessions.map((s) => ({
       ...s,
-      messages: s.messages.slice(-100).map((m) => ({ ...m, isStreaming: false })),
+      messages: s.messages.slice(-200).map((m) => ({ ...m, isStreaming: false })),
+      activeVariantMap: s.activeVariantMap || {},
     }));
     localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sanitized));
     localStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, activeSessionId);
@@ -252,6 +340,10 @@ const { sessions: initialSessions, activeSessionId: initialActiveSessionId } =
   loadPersistedSessions(savedHistory, saved.sessionTopic || 'New Chat');
 const activeSession =
   initialSessions.find((s) => s.id === initialActiveSessionId) || initialSessions[0];
+const initialActiveThread = computeActiveThread(
+  activeSession.messages,
+  activeSession.activeVariantMap
+);
 
 const defaultModels: Record<CopilotProvider, string> = {
   anthropic: PROVIDER_CATALOG.anthropic.defaultModel,
@@ -313,9 +405,12 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
   isFetchingModels: false,
   fetchModelsError: null,
 
-  messages: activeSession.messages,
+  messages: initialActiveThread,
   isGenerating: false,
   abortController: null,
+
+  draftPrompt: '',
+  setDraftPrompt: (prompt) => set({ draftPrompt: prompt }),
 
   setProvider: (provider) => {
     set({ provider });
@@ -398,6 +493,7 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
       topic: 'New Chat',
       icon: 'ChatIcon',
       messages: [],
+      activeVariantMap: {},
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -425,15 +521,18 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
     const target = sessions.find((s) => s.id === sessionId);
     if (!target) return;
 
+    const normalized = normalizeSessionMessages(target.messages);
+    const activeThread = computeActiveThread(normalized, target.activeVariantMap);
+
     set({
       activeSessionId: target.id,
       sessionTopic: target.topic,
-      messages: target.messages,
+      messages: activeThread,
       isGenerating: false,
       abortController: null,
     });
     persistSessions(sessions, target.id);
-    persistHistory(target.messages);
+    persistHistory(activeThread);
   },
 
   deleteSession: (sessionId: string) => {
@@ -446,6 +545,7 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
         topic: 'New Chat',
         icon: 'ChatIcon',
         messages: [],
+        activeVariantMap: {},
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
@@ -472,15 +572,18 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
     }
 
     const active = nextSessions.find((s) => s.id === nextActiveId) || nextSessions[0];
+    const normalized = normalizeSessionMessages(active.messages);
+    const activeThread = computeActiveThread(normalized, active.activeVariantMap);
+
     set({
       sessions: nextSessions,
       activeSessionId: active.id,
       sessionTopic: active.topic,
-      messages: active.messages,
+      messages: activeThread,
       isGenerating: activeSessionId === sessionId ? false : get().isGenerating,
     });
     persistSessions(nextSessions, active.id);
-    persistHistory(active.messages);
+    persistHistory(activeThread);
   },
 
   updateSessionIcon: (sessionId: string, icon: string) => {
@@ -570,56 +673,131 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
 
   setMessages: (messages) => {
     const { sessions, activeSessionId } = get();
+    const normalized = normalizeSessionMessages(messages);
+    const activeThread = computeActiveThread(normalized);
     const nextSessions = sessions.map((s) =>
-      s.id === activeSessionId ? { ...s, messages, updatedAt: Date.now() } : s
+      s.id === activeSessionId
+        ? { ...s, messages: normalized, activeVariantMap: {}, updatedAt: Date.now() }
+        : s
     );
-    set({ messages, sessions: nextSessions });
-    persistHistory(messages);
+    set({ messages: activeThread, sessions: nextSessions });
+    persistHistory(activeThread);
     persistSessions(nextSessions, activeSessionId);
   },
 
   addMessage: (message) => {
     const { sessions, activeSessionId, messages } = get();
-    const next = [...messages, message];
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (!session) return;
+
+    let parentId = message.parentId;
+    if (parentId === undefined) {
+      const lastActive = messages[messages.length - 1];
+      parentId = lastActive ? lastActive.id : null;
+    }
+
+    const normalizedMessage: CopilotMessage = {
+      ...message,
+      parentId,
+    };
+
+    const parentKey = parentId ?? 'root';
+    const nextVariantMap = {
+      ...(session.activeVariantMap || {}),
+      [parentKey]: normalizedMessage.id,
+    };
+
+    const nextSessionMessages = [...session.messages, normalizedMessage];
+    const nextActiveThread = computeActiveThread(nextSessionMessages, nextVariantMap);
+
     const nextSessions = sessions.map((s) =>
       s.id === activeSessionId
-        ? { ...s, messages: [...s.messages, message], updatedAt: Date.now() }
+        ? {
+            ...s,
+            messages: nextSessionMessages,
+            activeVariantMap: nextVariantMap,
+            updatedAt: Date.now(),
+          }
         : s
     );
-    set({ messages: next, sessions: nextSessions });
-    persistHistory(next);
+
+    set({
+      sessions: nextSessions,
+      messages: nextActiveThread,
+    });
+
     persistSessions(nextSessions, activeSessionId);
+    persistHistory(nextActiveThread);
   },
 
   updateMessage: (id, updater) => {
     const { sessions, activeSessionId, messages } = get();
-    const next = messages.map((m) => {
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (!session) return;
+
+    const updateMsg = (m: CopilotMessage) => {
       if (m.id !== id) return m;
       if (typeof updater === 'function') {
         return updater(m);
       }
       return { ...m, ...updater };
-    });
+    };
+
+    const nextSessionMessages = session.messages.map(updateMsg);
+    const nextActiveThread = messages.map(updateMsg);
+
     const nextSessions = sessions.map((s) =>
       s.id === activeSessionId
-        ? { ...s, messages: next, updatedAt: Date.now() }
+        ? { ...s, messages: nextSessionMessages, updatedAt: Date.now() }
         : s
     );
-    set({ messages: next, sessions: nextSessions });
-    persistHistory(next);
+
+    set({ messages: nextActiveThread, sessions: nextSessions });
+    persistHistory(nextActiveThread);
     persistSessions(nextSessions, activeSessionId);
   },
 
   deleteMessage: (id) => {
-    const { sessions, activeSessionId, messages } = get();
-    const next = messages.filter((m) => m.id !== id);
+    const { sessions, activeSessionId } = get();
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (!session) return;
+
+    // Collect message and all its recursive descendant IDs
+    const toDelete = new Set<string>([id]);
+    let added = true;
+    while (added) {
+      added = false;
+      for (const m of session.messages) {
+        if (m.parentId && toDelete.has(m.parentId) && !toDelete.has(m.id)) {
+          toDelete.add(m.id);
+          added = true;
+        }
+      }
+    }
+
+    const nextSessionMessages = session.messages.filter((m) => !toDelete.has(m.id));
+    const nextVariantMap = { ...(session.activeVariantMap || {}) };
+    for (const [parentKey, childId] of Object.entries(nextVariantMap)) {
+      if (toDelete.has(parentKey) || toDelete.has(childId)) {
+        delete nextVariantMap[parentKey];
+      }
+    }
+
+    const nextActiveThread = computeActiveThread(nextSessionMessages, nextVariantMap);
+
     const nextSessions = sessions.map((s) =>
       s.id === activeSessionId
-        ? { ...s, messages: next, updatedAt: Date.now() }
+        ? {
+            ...s,
+            messages: nextSessionMessages,
+            activeVariantMap: nextVariantMap,
+            updatedAt: Date.now(),
+          }
         : s
     );
-    set({ messages: next, sessions: nextSessions });
-    persistHistory(next);
+
+    set({ messages: nextActiveThread, sessions: nextSessions });
+    persistHistory(nextActiveThread);
     persistSessions(nextSessions, activeSessionId);
   },
 
@@ -627,12 +805,69 @@ export const useCopilotStore = create<CopilotSettingsState>((set, get) => ({
     const { sessions, activeSessionId } = get();
     const nextSessions = sessions.map((s) =>
       s.id === activeSessionId
-        ? { ...s, messages: [], updatedAt: Date.now() }
+        ? { ...s, messages: [], activeVariantMap: {}, updatedAt: Date.now() }
         : s
     );
     set({ messages: [], sessions: nextSessions });
     persistHistory([]);
     persistSessions(nextSessions, activeSessionId);
+  },
+
+  getMessageVariants: (messageId: string) => {
+    const { sessions, activeSessionId } = get();
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (!session) return { variants: [], currentIndex: -1 };
+
+    const target = session.messages.find((m) => m.id === messageId);
+    if (!target) return { variants: [], currentIndex: -1 };
+
+    const parentId = target.parentId ?? null;
+    const variants = session.messages.filter(
+      (m) => (m.parentId ?? null) === parentId && m.role === target.role
+    );
+    const currentIndex = variants.findIndex((m) => m.id === target.id);
+
+    return { variants, currentIndex: Math.max(0, currentIndex) };
+  },
+
+  switchVariant: (messageId: string, direction: 'prev' | 'next') => {
+    const { sessions, activeSessionId, getMessageVariants } = get();
+    const session = sessions.find((s) => s.id === activeSessionId);
+    if (!session) return;
+
+    const { variants, currentIndex } = getMessageVariants(messageId);
+    if (variants.length <= 1) return;
+
+    const targetIndex = direction === 'prev' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= variants.length) return;
+
+    const target = variants[targetIndex];
+    const parentKey = target.parentId ?? 'root';
+
+    const nextVariantMap = {
+      ...(session.activeVariantMap || {}),
+      [parentKey]: target.id,
+    };
+
+    const nextSessions = sessions.map((s) =>
+      s.id === activeSessionId
+        ? {
+            ...s,
+            activeVariantMap: nextVariantMap,
+            updatedAt: Date.now(),
+          }
+        : s
+    );
+
+    const activeThread = computeActiveThread(session.messages, nextVariantMap);
+
+    set({
+      sessions: nextSessions,
+      messages: activeThread,
+    });
+
+    persistSessions(nextSessions, activeSessionId);
+    persistHistory(activeThread);
   },
 
   setIsGenerating: (isGenerating) => set({ isGenerating }),

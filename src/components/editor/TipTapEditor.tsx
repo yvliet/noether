@@ -1774,15 +1774,21 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     } catch (e) {}
   }, [content, editor]);
 
-  // Notify parent of editor instance
+  // Notify parent of editor instance and sync active editor registry
   useEffect(() => {
     if (editor) {
       (window as any).__flintEditor = editor;
+      app.editor.setActiveEditor(editor);
       if (onEditorReady) {
         onEditorReady(editor);
       }
+      return () => {
+        if (app.editor.getActiveEditor() === editor) {
+          app.editor.setActiveEditor(null);
+        }
+      };
     }
-  }, [editor, onEditorReady]);
+  }, [editor, onEditorReady, app.editor]);
 
   // Dismiss suggestion popups whenever the active document switches
   useEffect(() => {

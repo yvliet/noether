@@ -31,6 +31,7 @@ export class EditorRegistry {
   private breadcrumbDecorators: Map<string, BreadcrumbDecoratorDefinition> = new Map();
   private documentTitleDecorators: Map<string, DocumentTitleDecoratorDefinition> = new Map();
   private listeners: Set<() => void> = new Set();
+  private activeEditor: any = null;
 
   private cachedHeaders: DocumentHeaderDefinition[] = [];
   private cachedFooters: DocumentFooterDefinition[] = [];
@@ -40,6 +41,21 @@ export class EditorRegistry {
   private cachedBreadcrumbProviders: BreadcrumbProviderDefinition[] = [];
   private cachedBreadcrumbDecorators: BreadcrumbDecoratorDefinition[] = [];
   private cachedDocumentTitleDecorators: DocumentTitleDecoratorDefinition[] = [];
+
+  /**
+   * Sets the active rich text editor instance.
+   * General-purpose slot used by the active editor view.
+   */
+  public setActiveEditor(editor: any): void {
+    this.activeEditor = editor;
+  }
+
+  /**
+   * Retrieves the currently focused or active rich text editor instance, if one is mounted.
+   */
+  public getActiveEditor(): any {
+    return this.activeEditor;
+  }
 
   public registerExtension(factory: TiptapExtensionFactory): Disposable {
     this.extensionFactories.add(factory);
