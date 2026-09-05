@@ -27,7 +27,6 @@ import {
   Cancel01Icon,
   RotateCcwIcon,
   CheckIcon,
-  SparklesIcon,
 } from '@/components/common/Icons';
 import { EMOJI_CATALOG, EMOJI_CATEGORIES, EmojiDefinition } from './emoji/emojiCatalog';
 import { EmojiRenderer, EmojiStyle } from './emoji/EmojiRenderer';
@@ -678,7 +677,7 @@ export const IconPicker = React.memo(
     <div
       ref={containerRef}
       style={{ zIndex: 100, boxShadow: 'var(--flint-shadow-2)' }}
-      className={`bg-[#1c1c1c] border border-[#303030] rounded-xl flex flex-col text-xs text-[#dcddde] select-none overflow-hidden ${
+      className={`bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg flex flex-col text-xs text-[var(--flint-text-primary,#dcddde)] select-none overflow-hidden ${
         variant === 'popover'
           ? `absolute top-full mt-1.5 ${align === 'right' ? 'right-0' : 'left-0'} w-76`
           : variant === 'submenu'
@@ -687,28 +686,11 @@ export const IconPicker = React.memo(
       } ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Header with Title, Mode Switcher & Close Button */}
-      <div className="p-2.5 border-b border-[#262626] flex flex-col gap-2 bg-[#1e1e1e]/80">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0">
-            {headerIcon}
-            <span className="text-[11px] font-medium text-white truncate">
-              {title}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1 rounded text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer"
-            title="Close (Esc)"
-          >
-            <Cancel01Icon size={12} />
-          </button>
-        </div>
-
+      {/* Controls: Mode Switcher, Search Input & Category Filters */}
+      <div className="p-2 border-b border-[var(--flint-border-base)] flex flex-col gap-1.5">
         {/* Mode Switcher: Icons vs Emojis */}
         {showModeSwitcher && (
-          <div className="grid grid-cols-2 p-0.5 bg-[#141414] rounded-lg border border-[#2b2b2b]">
+          <div className="grid grid-cols-2 p-0.5 bg-[var(--flint-bg-input,#1a1a1a)] rounded-md border border-[var(--flint-border-base)]">
             <button
               type="button"
               onClick={() => {
@@ -716,13 +698,12 @@ export const IconPicker = React.memo(
                 setSelectedCategory('All');
                 setSearchQuery('');
               }}
-              className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center ${
                 pickerMode === 'icons'
-                  ? 'bg-[#262626] text-white shadow-xs'
-                  : 'text-[#888] hover:text-[#bbb]'
+                  ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-primary)] shadow-xs'
+                  : 'text-[var(--flint-text-muted,#777)] hover:text-[var(--flint-text-primary)]'
               }`}
             >
-              <SparklesIcon size={12} />
               <span>Icons</span>
             </button>
             <button
@@ -732,21 +713,20 @@ export const IconPicker = React.memo(
                 setSelectedEmojiCategory('All');
                 setSearchQuery('');
               }}
-              className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
+              className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center ${
                 pickerMode === 'emojis'
-                  ? 'bg-[#262626] text-white shadow-xs'
-                  : 'text-[#888] hover:text-[#bbb]'
+                  ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-primary)] shadow-xs'
+                  : 'text-[var(--flint-text-muted,#777)] hover:text-[var(--flint-text-primary)]'
               }`}
             >
-              <span className="text-xs leading-none">😀</span>
               <span>Emojis</span>
             </button>
           </div>
         )}
 
         {/* Search input */}
-        <div className="flex items-center gap-1.5 px-2 py-1 bg-[#141414] border border-[#2b2b2b] focus-within:border-[#444] rounded-md">
-          <Search01Icon size={12} className="text-[#666] shrink-0" />
+        <div className="flex items-center gap-1.5 px-2 py-1 bg-[var(--flint-bg-input,#1a1a1a)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-border-strong,#444)] rounded-md">
+          <Search01Icon size={12} className="text-[var(--flint-text-muted,#777)] shrink-0" />
           <input
             ref={searchInputRef}
             type="text"
@@ -863,13 +843,13 @@ export const IconPicker = React.memo(
                   : `Search ${fullCatalog.length > 0 ? fullCatalog.length : '6,700'}+ icons...`
                 : `Search ${EMOJI_CATALOG.length}+ emojis...`
             }
-            className="bg-transparent border-none outline-none flex-1 text-[11px] text-white placeholder-[#555]"
+            className="bg-transparent border-none outline-none flex-1 text-[11px] text-[var(--flint-text-primary)] placeholder-[var(--flint-text-muted,#777)]"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-[#666] hover:text-white cursor-pointer"
+              className="text-[var(--flint-text-muted,#777)] hover:text-[var(--flint-text-primary)] cursor-pointer"
             >
               <Cancel01Icon size={10} />
             </button>
@@ -888,8 +868,8 @@ export const IconPicker = React.memo(
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
                     isSelected
-                      ? 'bg-[var(--flint-accent,#ea580c)] text-white font-medium shadow-[0_1px_2px_rgba(0,0,0,0.3)]'
-                      : 'bg-[#222222] hover:bg-[#2a2a2a] text-[#888] hover:text-[#ccc] border border-[#2b2b2b]'
+                      ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-primary)] border border-[var(--flint-border-strong,#444)] font-medium shadow-xs'
+                      : 'bg-[var(--flint-bg-input,#1a1a1a)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-base)]'
                   }`}
                 >
                   {cat}
@@ -908,8 +888,8 @@ export const IconPicker = React.memo(
                   onClick={() => setSelectedEmojiCategory(cat)}
                   className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
                     isSelected
-                      ? 'bg-[var(--flint-accent,#ea580c)] text-white font-medium shadow-[0_1px_2px_rgba(0,0,0,0.3)]'
-                      : 'bg-[#222222] hover:bg-[#2a2a2a] text-[#888] hover:text-[#ccc] border border-[#2b2b2b]'
+                      ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-primary)] border border-[var(--flint-border-strong,#444)] font-medium shadow-xs'
+                      : 'bg-[var(--flint-bg-input,#1a1a1a)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-base)]'
                   }`}
                 >
                   {cat === 'Smileys & Emotion'
@@ -938,11 +918,11 @@ export const IconPicker = React.memo(
       >
         {pickerMode === 'icons' ? (
           isCatalogLoading && fullCatalog.length === 0 ? (
-            <div className="text-center py-8 text-[11px] text-[#666]">
+            <div className="text-center py-8 text-[11px] text-[var(--flint-text-muted,#777)]">
               Loading icon catalog...
             </div>
           ) : filteredIcons.length === 0 ? (
-            <div className="text-center py-8 text-[11px] text-[#666]">
+            <div className="text-center py-8 text-[11px] text-[var(--flint-text-muted,#777)]">
               No icons found matching &ldquo;{searchQuery}&rdquo;
             </div>
           ) : (
@@ -974,15 +954,15 @@ export const IconPicker = React.memo(
                     title={icon.name}
                     className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
                       isSelected
-                        ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] text-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
+                        ? 'bg-[var(--flint-bg-sidebar-active,#2f2f2f)] border border-[var(--flint-border-strong,#555)] text-[var(--flint-text-primary)] shadow-xs'
                         : isHighlighted
-                        ? 'bg-[#2a2a2a] text-white border border-[#444]'
-                        : 'bg-[#202020] hover:bg-[#282828] text-[#999] hover:text-white border border-[#282828] hover:border-[#3a3a3a]'
+                        ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-primary)] border border-[var(--flint-border-strong,#444)]'
+                        : 'bg-[var(--flint-bg-input,#1a1a1a)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-secondary,#a0a0a0)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-subtle,#2a2a2a)] hover:border-[var(--flint-border-base,#3a3a3a)]'
                     }`}
                   >
                     <HugeIconRenderer iconDef={icon.iconDef} size={15} />
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-accent,#ea580c)] text-white rounded-full flex items-center justify-center text-[7px] shadow-xs">
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-text-primary)] text-[var(--flint-bg-popover,#232323)] rounded-full flex items-center justify-center text-[7px] shadow-xs font-bold">
                         <CheckIcon size={7} />
                       </span>
                     )}
@@ -992,7 +972,7 @@ export const IconPicker = React.memo(
             </div>
           )
         ) : filteredEmojis.length === 0 ? (
-          <div className="text-center py-8 text-[11px] text-[#666]">
+          <div className="text-center py-8 text-[11px] text-[var(--flint-text-muted,#777)]">
             No emojis found matching &ldquo;{searchQuery}&rdquo;
           </div>
         ) : (
@@ -1021,15 +1001,15 @@ export const IconPicker = React.memo(
                   title={emoji.name}
                   className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
                     isSelected
-                      ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
+                      ? 'bg-[var(--flint-bg-sidebar-active,#2f2f2f)] border border-[var(--flint-border-strong,#555)] shadow-xs'
                       : isHighlighted
-                      ? 'bg-[#2a2a2a] text-white border border-[#444]'
-                      : 'bg-[#202020] hover:bg-[#282828] border border-[#282828] hover:border-[#3a3a3a]'
+                      ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] border border-[var(--flint-border-strong,#444)]'
+                      : 'bg-[var(--flint-bg-input,#1a1a1a)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] border border-[var(--flint-border-subtle,#2a2a2a)] hover:border-[var(--flint-border-base,#3a3a3a)]'
                   }`}
                 >
                   <EmojiRenderer emoji={emoji.char} size={16} style={emojiStyle} />
                   {isSelected && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-accent,#ea580c)] text-white rounded-full flex items-center justify-center text-[7px] shadow-xs">
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--flint-text-primary)] text-[var(--flint-bg-popover,#232323)] rounded-full flex items-center justify-center text-[7px] shadow-xs font-bold">
                       <CheckIcon size={7} />
                     </span>
                   )}
@@ -1041,23 +1021,23 @@ export const IconPicker = React.memo(
       </div>
 
       {/* Footer: Hovered info / Reset defaults */}
-      <div className="px-2.5 py-1.5 border-t border-[#252525] bg-[#161616] flex items-center justify-between text-[10px] text-[#777]">
+      <div className="px-2.5 py-1.5 border-t border-[var(--flint-border-base)] bg-[var(--flint-bg-input,#1a1a1a)] flex items-center justify-between text-[10px] text-[var(--flint-text-muted)]">
         <div className="truncate min-w-0 flex-1 pr-2">
           {pickerMode === 'icons' ? (
             hoveredIcon ? (
-              <span className="text-[#ccc] font-medium">{hoveredIcon.name}</span>
+              <span className="text-[var(--flint-text-primary)] font-medium">{hoveredIcon.name}</span>
             ) : displayedIcons[highlightedIndex] ? (
-              <span className="text-[#ccc] font-medium">{displayedIcons[highlightedIndex].name}</span>
+              <span className="text-[var(--flint-text-primary)] font-medium">{displayedIcons[highlightedIndex].name}</span>
             ) : (
               <span>{filteredIcons.length} icons</span>
             )
           ) : hoveredEmoji ? (
-            <span className="text-[#ccc] font-medium flex items-center gap-1">
+            <span className="text-[var(--flint-text-primary)] font-medium flex items-center gap-1">
               <span>{hoveredEmoji.char}</span>
               <span>{hoveredEmoji.name}</span>
             </span>
           ) : displayedEmojis[highlightedIndex] ? (
-            <span className="text-[#ccc] font-medium flex items-center gap-1">
+            <span className="text-[var(--flint-text-primary)] font-medium flex items-center gap-1">
               <span>{displayedEmojis[highlightedIndex].char}</span>
               <span>{displayedEmojis[highlightedIndex].name}</span>
             </span>
@@ -1073,7 +1053,7 @@ export const IconPicker = React.memo(
               onResetToDefault();
               onClose();
             }}
-            className="text-[10px] text-[#777] hover:text-[#bbb] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
+            className="text-[10px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:underline flex items-center gap-1 cursor-pointer shrink-0"
           >
             <RotateCcwIcon size={10} />
             <span>{resetLabel}</span>

@@ -46,10 +46,6 @@ export const IconifySubmenuPicker = React.memo(
           isOpen={true}
           onClose={onClose}
           variant="submenu"
-          title="Insert Icon"
-          headerIcon={
-            <SparklesIcon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
-          }
           showModeSwitcher={false}
           autoFocus={true}
           onSelectIcon={(iconId) => {
