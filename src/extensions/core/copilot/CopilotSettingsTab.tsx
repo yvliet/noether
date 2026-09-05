@@ -425,11 +425,11 @@ export const CopilotSettingsTab: React.FC = () => {
       {/* ── 3. Workspace MCP Integration Card ── */}
       <SettingCard
         title="Workspace MCP Tools & Context"
-        description="Control how Copilot reads notes and accesses your personal knowledge vault."
+        description="Control how Copilot reads notes and accesses your personal knowledge hearth."
       >
         <SettingItem
           name="Enable Flint MCP Tools"
-          description="Allow Copilot to autonomously execute built-in tools (flint_search_notes, flint_read_note, backlinks, note creation) to answer questions about your vault."
+          description="Allow Copilot to autonomously execute built-in tools (flint_search_notes, flint_read_note, backlinks, note creation) to answer questions about your hearth."
           controlClassName="justify-end"
         >
           <ToggleSwitch

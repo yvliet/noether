@@ -26,6 +26,7 @@ import {
   PROVIDER_CATALOG,
   CopilotMessage,
   ModelOption,
+  ToolExecutionDetail,
 } from './copilotStore';
 import { runCopilotTurn } from './copilotClient';
 import { pickSessionIconInBackground } from './copilotSessionHelper';
@@ -125,6 +126,110 @@ function formatDuration(ms?: number): string {
   const mins = Math.floor(totalSeconds / 60);
   const secs = totalSeconds % 60;
   return `${mins}m ${secs}s`;
+}
+
+/**
+ * Resolves a human-readable document or target name from tool arguments,
+ * stripping paths and markdown file extensions for clean display.
+ */
+function getFriendlyTargetName(args?: Record<string, unknown>): string | null {
+  if (!args) return null;
+  const raw = args.title ?? args.path ?? args.filename ?? args.name ?? args.id ?? args.note ?? args.target;
+  if (typeof raw !== 'string') return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const noExt = trimmed.replace(/\.md$/i, '');
+  const parts = noExt.split(/[/\\]/);
+  const name = parts[parts.length - 1] || noExt;
+  return name.length > 45 ? `${name.slice(0, 42)}...` : name;
+}
+
+/**
+ * Transforms technical tool execution calls and JSON schemas into concise,
+ * non-technical human action statements without exposing raw JSON, internal args,
+ * or low-level function signatures.
+ */
+function formatToolExecutionFriendly(tc: ToolExecutionDetail): {
+  label: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  status: 'running' | 'success' | 'error';
+} {
+  const name = (tc.name || '').toLowerCase();
+  const target = getFriendlyTargetName(tc.args);
+  const query = typeof tc.args?.query === 'string' ? tc.args.query.trim() : null;
+
+  let label = '';
+  let icon: React.ComponentType<{ size?: number; className?: string }> = LayersIcon;
+
+  if (name.includes('search')) {
+    if (name.includes('across')) {
+      label = query ? `Searched across hearths for "${query}"` : 'Searched across hearths';
+    } else {
+      label = query ? `Searched notes for "${query}"` : 'Searched hearth notes';
+    }
+    icon = Search01Icon;
+  } else if (name.includes('read') || name.includes('open') || name.includes('view')) {
+    label = target ? `Read note "${target}"` : 'Read note';
+    icon = BookOpen01Icon;
+  } else if (name.includes('create') || name.includes('new')) {
+    label = target ? `Created note "${target}"` : 'Created new note';
+    icon = FileAddIcon;
+  } else if (name.includes('update') || name.includes('edit') || name.includes('write')) {
+    label = target ? `Updated note "${target}"` : 'Updated note';
+    icon = Edit02Icon;
+  } else if (name.includes('delete') || name.includes('remove')) {
+    label = target ? `Deleted note "${target}"` : 'Deleted note';
+    icon = Delete02Icon;
+  } else if (name.includes('backlink')) {
+    label = target ? `Checked backlinks for "${target}"` : 'Checked note backlinks';
+    icon = LayersIcon;
+  } else if (name.includes('hearth')) {
+    if (name.includes('switch')) {
+      label = target ? `Switched to hearth "${target}"` : 'Switched hearth';
+    } else if (name.includes('list')) {
+      label = 'Listed hearths';
+    } else {
+      label = 'Checked active hearth';
+    }
+    icon = Database01Icon;
+  } else if (name.includes('task')) {
+    if (name.includes('get') || name.includes('list')) {
+      label = 'Checked task list';
+    } else if (name.includes('add') || name.includes('create')) {
+      label = target ? `Added task "${target}"` : 'Added new task';
+    } else {
+      label = 'Updated task';
+    }
+    icon = CheckIcon;
+  } else if (name.includes('fsrs') || name.includes('card') || name.includes('flashcard')) {
+    label = 'Checked review flashcards';
+    icon = BookOpen01Icon;
+  } else if (name.includes('canvas')) {
+    label = target ? `Inspected canvas "${target}"` : 'Inspected canvas board';
+    icon = LayersIcon;
+  } else if (name.includes('command') || name.includes('terminal') || name.includes('bash') || name.includes('exec')) {
+    const cmd = typeof tc.args?.command === 'string' ? tc.args.command : typeof tc.args?.cmd === 'string' ? tc.args.cmd : null;
+    label = cmd ? `Ran command "${cmd}"` : 'Ran command';
+    icon = Database01Icon;
+  } else if (name.includes('list') || name.includes('browse')) {
+    label = 'Browsed hearth notes';
+    icon = BookOpen01Icon;
+  } else {
+    // Clean fallback for custom extension tools
+    const cleanName = tc.name
+      .replace(/^(flint_|core_|ext_)/, '')
+      .replace(/[_-]/g, ' ')
+      .trim();
+    const formatted = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    label = target ? `${formatted} "${target}"` : query ? `${formatted} for "${query}"` : formatted;
+    icon = LayersIcon;
+  }
+
+  return {
+    label,
+    icon,
+    status: tc.status,
+  };
 }
 
 export const CopilotSidebarView: React.FC = () => {
@@ -542,7 +647,7 @@ export const CopilotSidebarView: React.FC = () => {
         } else {
           const res = await app.tools.executeTool('flint_search_notes', { query: clean });
           if (!res.isError && res.content.length > 0) {
-            app.workspace.showToast(`Searched vault for "${clean}"`);
+            app.workspace.showToast(`Searched hearth for "${clean}"`);
           } else {
             app.workspace.showToast(`Note "${clean}" not found`);
           }
@@ -1058,74 +1163,105 @@ export const CopilotSidebarView: React.FC = () => {
                 );
               }
 
-              // Assistant Response: Stepped Tool Execution Accordion + Prose + Worked Duration Footer
-              const hasTools = m.toolCalls && m.toolCalls.length > 0;
-              const isSummaryExpanded = expandedSummaryIds.has(m.id);
+              // Assistant Response: Stepped Activity Rows + Prose + Worked Duration Footer
+              const isEditTool = (name: string) =>
+                name.includes('create') ||
+                name.includes('update') ||
+                name.includes('delete') ||
+                name.includes('edit') ||
+                name.includes('write');
 
-              const readCount = m.filesReadCount ?? (m.toolCalls ? m.toolCalls.filter((tc) => tc.name.includes('read') || tc.name.includes('search') || tc.name.includes('list')).length : 0);
-              const editCount = m.filesEditedCount ?? (m.toolCalls ? m.toolCalls.filter((tc) => tc.name.includes('create') || tc.name.includes('update') || tc.name.includes('delete')).length : 0);
-              const totalTools = m.toolCalls ? m.toolCalls.length : 0;
+              const readAndQueryTools = m.toolCalls ? m.toolCalls.filter((tc) => !isEditTool(tc.name)) : [];
+              const editTools = m.toolCalls ? m.toolCalls.filter((tc) => isEditTool(tc.name)) : [];
+
+              const readCount = m.filesReadCount ?? readAndQueryTools.filter((tc) => tc.name.includes('read') || tc.name.includes('search') || tc.name.includes('list')).length;
+              const commandCount = readAndQueryTools.filter((tc) => tc.name.includes('command') || tc.name.includes('terminal') || tc.name.includes('bash') || tc.name.includes('exec')).length;
+              const otherToolCount = Math.max(0, readAndQueryTools.length - readCount - commandCount);
+              const editCount = m.filesEditedCount ?? editTools.length;
+
+              const hasReadTools = readAndQueryTools.length > 0 || (readCount > 0 && editTools.length === 0);
+              const hasEditActivity = editCount > 0 || editTools.length > 0;
+
+              const isToolsExpanded = expandedSummaryIds.has(`${m.id}-tools`);
+              const isEditsExpanded = expandedSummaryIds.has(`${m.id}-edits`);
+
+              // Human-friendly activity summaries (matching img2 style)
+              const summaryParts: string[] = [];
+              if (readCount > 0) {
+                summaryParts.push(`Read ${readCount} file${readCount > 1 ? 's' : ''}`);
+              }
+              if (commandCount > 0) {
+                summaryParts.push(`ran ${commandCount} command${commandCount > 1 ? 's' : ''}`);
+              }
+              if (otherToolCount > 0 && (readCount > 0 || commandCount > 0)) {
+                summaryParts.push(`ran ${otherToolCount} tool${otherToolCount > 1 ? 's' : ''}`);
+              } else if (readCount === 0 && commandCount === 0 && readAndQueryTools.length > 0) {
+                summaryParts.push(`Ran ${readAndQueryTools.length} tool${readAndQueryTools.length > 1 ? 's' : ''}`);
+              }
+              if (m.thoughtDurationMs) {
+                summaryParts.push(`thought for ${formatDuration(m.thoughtDurationMs)}`);
+              } else if (m.elapsedTimeMs) {
+                summaryParts.push(`worked for ${formatDuration(m.elapsedTimeMs)}`);
+              }
+
+              const readSummaryText = summaryParts.length > 0 ? summaryParts.join(', ') : 'Activity';
+              const editSummaryText = `Edited ${editCount} file${editCount > 1 ? 's' : ''}`;
+
+              const ReadActivityIcon =
+                readAndQueryTools.length === 1 && readAndQueryTools[0].name.includes('search')
+                  ? Search01Icon
+                  : readAndQueryTools.length === 1 &&
+                    (readAndQueryTools[0].name.includes('read') ||
+                      readAndQueryTools[0].name.includes('view') ||
+                      readAndQueryTools[0].name.includes('open'))
+                  ? BookOpen01Icon
+                  : LayersIcon;
 
               return (
-                <div key={m.id} className="w-full space-y-2">
-                  {/* Stepped Multi-Tool Execution Accordion */}
-                  {hasTools && (
-                    <div className="border border-[var(--flint-border-base,#2a2a2a)] rounded-[6px] bg-[var(--flint-bg-card,#181818)] overflow-hidden select-none">
+                <div key={m.id} className="w-full space-y-1.5">
+                  {/* Stepped Multi-Tool Activity Row (Unboxed & Borderless) */}
+                  {hasReadTools && (
+                    <div className="w-full select-none">
                       <button
                         type="button"
-                        onClick={() => toggleSummaryExpanded(m.id)}
-                        className="w-full px-2.5 py-1.5 flex items-center justify-between text-left text-[11px] text-[var(--flint-text-muted,#888888)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#222222)] cursor-pointer"
+                        onClick={() => readAndQueryTools.length > 0 && toggleSummaryExpanded(`${m.id}-tools`)}
+                        className={`w-full px-2.5 flex items-center justify-between text-left text-[11px] text-[var(--flint-text-muted,#777777)] bg-transparent border-0 p-0 m-0 outline-none appearance-none select-none ${
+                          readAndQueryTools.length > 0 ? 'cursor-pointer' : 'cursor-default'
+                        }`}
                       >
-                        <div className="flex items-center gap-2 truncate">
-                          <LayersIcon size={12} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
-                          <span className="truncate">
-                            {readCount > 0 && `Read ${readCount} file${readCount > 1 ? 's' : ''}`}
-                            {readCount > 0 && totalTools > readCount && `, ran ${totalTools - readCount} tool${totalTools - readCount > 1 ? 's' : ''}`}
-                            {readCount === 0 && `Ran ${totalTools} tool${totalTools > 1 ? 's' : ''}`}
-                            {m.elapsedTimeMs ? `, worked for ${formatDuration(m.elapsedTimeMs)}` : ''}
+                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--flint-text-muted,#777777)] truncate">
+                          <span className="w-2.5 h-2.5 flex items-center justify-center shrink-0">
+                            <ReadActivityIcon size={12} className="text-[var(--flint-text-muted,#777777)] opacity-70 shrink-0" />
                           </span>
+                          <span className="truncate">{readSummaryText}</span>
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0 ml-2">
-                          {isSummaryExpanded ? <ChevronDownIcon size={11} /> : <ChevronRightIcon size={11} />}
-                        </div>
+                        {readAndQueryTools.length > 0 && (
+                          <div className="shrink-0 ml-2 text-[var(--flint-text-muted,#777777)] flex items-center">
+                            {isToolsExpanded ? <ChevronDownIcon size={11} /> : <ChevronRightIcon size={11} />}
+                          </div>
+                        )}
                       </button>
 
-                      {/* Granular Tool Logs Preview */}
-                      {isSummaryExpanded && (
-                        <div className="p-2 border-t border-[var(--flint-border-subtle,#222222)] bg-[var(--flint-bg-input,#121212)] space-y-1.5">
-                          {m.toolCalls?.map((tc) => {
-                            const isSuccess = tc.status === 'success';
-                            const isError = tc.status === 'error';
-                            const isRunning = tc.status === 'running';
-
-                            const ToolIcon =
-                              tc.name.includes('search') ? Search01Icon : tc.name.includes('read') ? BookOpen01Icon : Database01Icon;
-
+                      {/* Human-Friendly Non-Technical Activity Steps */}
+                      {isToolsExpanded && readAndQueryTools.length > 0 && (
+                        <div className="relative pl-[26px] pr-2.5 pt-0.5 -mt-0.5 space-y-1 select-none">
+                          <div className="absolute left-[14.5px] top-[7px] bottom-1 w-[1px] bg-[var(--flint-border-subtle,#262626)]" />
+                          {readAndQueryTools.map((tc) => {
+                            const step = formatToolExecutionFriendly(tc);
+                            const StepIcon = step.icon;
                             return (
                               <div
                                 key={tc.id}
-                                className="p-2 rounded-[4px] border border-[var(--flint-border-subtle,#262626)] bg-[var(--flint-bg-card,#161616)] text-[10px] font-mono space-y-1"
+                                className="flex items-center gap-1.5 text-[11px] text-[var(--flint-text-muted,#777777)]"
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-1.5 truncate">
-                                    <ToolIcon size={11} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
-                                    <span className="text-[var(--flint-text-primary,#dddddd)] truncate">{tc.name}</span>
-                                  </div>
-                                  <div>
-                                    {isRunning && <span className="text-[var(--flint-text-muted,#888888)]">Running...</span>}
-                                    {isSuccess && <CheckIcon size={11} className="text-[#22c55e]" />}
-                                    {isError && <Alert02Icon size={11} className="text-[#ef4444]" />}
-                                  </div>
-                                </div>
-                                <div className="text-[var(--flint-text-muted,#666666)] truncate">
-                                  args: {JSON.stringify(tc.args)}
-                                </div>
-                                {tc.result && (
-                                  <div className="text-[var(--flint-text-muted,#888888)] line-clamp-2">
-                                    result: {tc.result}
-                                  </div>
-                                )}
+                                <span className="w-2.5 h-2.5 flex items-center justify-center shrink-0">
+                                  <StepIcon size={11} className="text-[var(--flint-text-muted,#777777)] opacity-70 shrink-0" />
+                                </span>
+                                <span className="truncate">
+                                  {step.label}
+                                  {step.status === 'error' ? ' (failed)' : step.status === 'running' ? ' (running...)' : ''}
+                                </span>
                               </div>
                             );
                           })}
@@ -1134,11 +1270,54 @@ export const CopilotSidebarView: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Stepped Edit Summary Bar if files were edited */}
-                  {editCount > 0 && !hasTools && (
-                    <div className="px-2.5 py-1.5 flex items-center gap-2 text-[11px] text-[var(--flint-text-muted,#888888)] border border-[var(--flint-border-base,#2a2a2a)] rounded-[6px] bg-[var(--flint-bg-card,#181818)] select-none">
-                      <Edit02Icon size={12} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
-                      <span>Edited {editCount} note{editCount > 1 ? 's' : ''}</span>
+                  {/* Stepped Edit Activity Row (Unboxed & Borderless) */}
+                  {hasEditActivity && (
+                    <div className="w-full select-none">
+                      <button
+                        type="button"
+                        onClick={() => editTools.length > 0 && toggleSummaryExpanded(`${m.id}-edits`)}
+                        className={`w-full px-2.5 flex items-center justify-between text-left text-[11px] text-[var(--flint-text-muted,#777777)] bg-transparent border-0 p-0 m-0 outline-none appearance-none select-none ${
+                          editTools.length > 0 ? 'cursor-pointer' : 'cursor-default'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--flint-text-muted,#777777)] truncate">
+                          <span className="w-2.5 h-2.5 flex items-center justify-center shrink-0">
+                            <Edit02Icon size={12} className="text-[var(--flint-text-muted,#777777)] opacity-70 shrink-0" />
+                          </span>
+                          <span className="truncate">{editSummaryText}</span>
+                        </div>
+
+                        {editTools.length > 0 && (
+                          <div className="shrink-0 ml-2 text-[var(--flint-text-muted,#777777)] flex items-center">
+                            {isEditsExpanded ? <ChevronDownIcon size={11} /> : <ChevronRightIcon size={11} />}
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Human-Friendly Non-Technical Edit Steps */}
+                      {isEditsExpanded && editTools.length > 0 && (
+                        <div className="relative pl-[26px] pr-2.5 pt-0.5 -mt-0.5 space-y-1 select-none">
+                          <div className="absolute left-[14.5px] top-[7px] bottom-1 w-[1px] bg-[var(--flint-border-subtle,#262626)]" />
+                          {editTools.map((tc) => {
+                            const step = formatToolExecutionFriendly(tc);
+                            const StepIcon = step.icon;
+                            return (
+                              <div
+                                key={tc.id}
+                                className="flex items-center gap-1.5 text-[11px] text-[var(--flint-text-muted,#777777)]"
+                              >
+                                <span className="w-2.5 h-2.5 flex items-center justify-center shrink-0">
+                                  <StepIcon size={11} className="text-[var(--flint-text-muted,#777777)] opacity-70 shrink-0" />
+                                </span>
+                                <span className="truncate">
+                                  {step.label}
+                                  {step.status === 'error' ? ' (failed)' : step.status === 'running' ? ' (running...)' : ''}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
 
