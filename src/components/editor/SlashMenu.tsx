@@ -54,13 +54,13 @@ export const SlashMenu = React.memo(
             // Submenu active: delegate to active submenu handler
             if (activeSubmenuRef.current) {
               if (activeSubmenuRef.current === 'table') {
+                const handled = gridPickerRef.current?.onKeyDown(event);
+                if (handled) return true;
                 if (event.key === 'Escape' || event.key === 'ArrowLeft') {
                   setActiveSubmenu(null);
                   activeSubmenuRef.current = null;
                   return true;
                 }
-                const handled = gridPickerRef.current?.onKeyDown(event);
-                if (handled) return true;
               } else {
                 const handled = submenuRef.current?.onKeyDown(event);
                 if (handled) return true;

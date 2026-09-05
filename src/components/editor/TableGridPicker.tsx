@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react';
-import { TableIcon } from '@/components/common/Icons';
 
 export interface TableGridPickerProps {
   onSelect: (dimensions: { rows: number; cols: number }) => void;
@@ -41,31 +40,50 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
   useImperativeHandle(ref, () => ({
     onKeyDown: (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') {
-        setHovered((prev) => ({
-          ...prev,
-          cols: Math.min(maxCols, prev.cols + 1),
-        }));
+        setHovered((prev) => {
+          const next = {
+            ...prev,
+            cols: Math.min(maxCols, prev.cols + 1),
+          };
+          hoveredRef.current = next;
+          return next;
+        });
         return true;
       }
       if (e.key === 'ArrowLeft') {
-        setHovered((prev) => ({
-          ...prev,
-          cols: Math.max(1, prev.cols - 1),
-        }));
-        return true;
+        if (hoveredRef.current.cols > 1) {
+          setHovered((prev) => {
+            const next = {
+              ...prev,
+              cols: Math.max(1, prev.cols - 1),
+            };
+            hoveredRef.current = next;
+            return next;
+          });
+          return true;
+        }
+        return false;
       }
       if (e.key === 'ArrowDown') {
-        setHovered((prev) => ({
-          ...prev,
-          rows: Math.min(maxRows, prev.rows + 1),
-        }));
+        setHovered((prev) => {
+          const next = {
+            ...prev,
+            rows: Math.min(maxRows, prev.rows + 1),
+          };
+          hoveredRef.current = next;
+          return next;
+        });
         return true;
       }
       if (e.key === 'ArrowUp') {
-        setHovered((prev) => ({
-          ...prev,
-          rows: Math.max(1, prev.rows - 1),
-        }));
+        setHovered((prev) => {
+          const next = {
+            ...prev,
+            rows: Math.max(1, prev.rows - 1),
+          };
+          hoveredRef.current = next;
+          return next;
+        });
         return true;
       }
       if (e.key === 'Enter') {
@@ -91,13 +109,8 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
     <div
       onClick={(e) => e.stopPropagation()}
       style={{ boxShadow: 'var(--flint-shadow-2)' }}
-      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-xl p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
+      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-lg p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
     >
-      {/* Header */}
-      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--flint-text-primary,#fff)] px-1">
-        <TableIcon size={14} className="text-[var(--flint-text-secondary,#dcddde)]" />
-        <span>Insert Table</span>
-      </div>
 
       {/* Visual Grid Selector directly on popover background */}
       <div
