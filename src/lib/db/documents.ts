@@ -625,6 +625,13 @@ export function jsonToMarkdown(
         return node.attrs?.display === 'block' ? `\n$$\n${latex}\n$$\n` : `$${latex}$`;
       }
 
+      if (node.type === 'iconChip' || node.type === 'icon') {
+        const pack = node.attrs?.pack || 'hugeicons';
+        const iconId = node.attrs?.iconId || '';
+        if (!iconId) return '';
+        return `:${pack}:${iconId}:`;
+      }
+
       if (node.type === 'heading') {
         const level = node.attrs?.level || 1;
         const prefix = '#'.repeat(level);
@@ -750,6 +757,51 @@ function isTableDelimiterRow(line: string): boolean {
  * In Flint Live Preview, each line is stored as a paragraph so that LivePreviewSyntax
  * can perform high-performance, real-time token rendering.
  */
+function parseInlineMarkdownTokens(line: string): any[] {
+  const iconRegex = /:([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+):/g;
+  if (!iconRegex.test(line)) {
+    return [{ type: 'text', text: line }];
+  }
+
+  iconRegex.lastIndex = 0;
+  const inlineNodes: any[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = iconRegex.exec(line)) !== null) {
+    const start = match.index;
+    const end = iconRegex.lastIndex;
+
+    if (start > lastIndex) {
+      inlineNodes.push({
+        type: 'text',
+        text: line.slice(lastIndex, start),
+      });
+    }
+
+    const pack = match[1];
+    const iconId = match[2];
+    inlineNodes.push({
+      type: 'iconChip',
+      attrs: {
+        pack,
+        iconId,
+      },
+    });
+
+    lastIndex = end;
+  }
+
+  if (lastIndex < line.length) {
+    inlineNodes.push({
+      type: 'text',
+      text: line.slice(lastIndex),
+    });
+  }
+
+  return inlineNodes.length > 0 ? inlineNodes : [{ type: 'text', text: line }];
+}
+
 export function markdownToTipTapJson(md: string): string {
   if (!md || !md.trim()) {
     return JSON.stringify({
@@ -774,7 +826,7 @@ export function markdownToTipTapJson(md: string): string {
     } else {
       content.push({
         type: 'paragraph',
-        content: [{ type: 'text', text: line }],
+        content: parseInlineMarkdownTokens(line),
       });
     }
   }

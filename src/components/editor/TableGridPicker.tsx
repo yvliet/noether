@@ -90,7 +90,8 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-xl shadow-[var(--flint-shadow-2,0_4px_16px_rgba(0,0,0,0.4))] p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
+      style={{ boxShadow: 'var(--flint-shadow-2)' }}
+      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-xl p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
     >
       {/* Header */}
       <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[var(--flint-text-primary,#fff)] px-1">

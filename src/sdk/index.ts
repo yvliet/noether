@@ -35,6 +35,8 @@ export { Extension, Plugin } from '../core/extensions/Extension';
 export { ExtensionManager, PluginManager } from '../core/extensions/ExtensionManager';
 export { FlintApp, appInstance } from '../core/app/FlintApp';
 export { SlotRegistry } from '../core/registries/SlotRegistry';
+export { IconRegistry } from '../core/registries/IconRegistry';
+export type { IconPackProvider, IconDescriptor, IconRenderOptions } from '../core/registries/IconRegistry';
 export { ExtensionDatabaseManager } from '../core/database/ExtensionDatabaseManager';
 export { ExtensionWorkerPool } from '../core/workers/ExtensionWorkerPool';
 export { registerNativeTools } from '../core/mcp/NativeMcpTools';

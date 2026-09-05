@@ -196,8 +196,16 @@ export interface SlashCommandDefinition {
   icon: string | React.ReactNode;
   /** Optional badge label (e.g., 'New', 'Pro'). */
   badge?: string;
+  /** Optional submenu flyout definition for auxiliary item selection (e.g. icon picker, table picker) */
+  submenu?: {
+    id: string;
+    render: (props: { ref?: React.Ref<any>; onSelect: (extra?: any) => void; onClose: () => void }) => React.ReactNode;
+    onKeyDown?: (event: KeyboardEvent) => boolean;
+  };
+  /** Optional predicate to conditionally show or hide this command */
+  isEnabled?: () => boolean;
   /** Execution callback receiving the TipTap editor instance and cursor range. */
-  command: (params: { editor: any; range: { from: number; to: number } }) => void;
+  command: (params: { editor: any; range: { from: number; to: number }; [key: string]: any }) => void;
 }
 
 /**

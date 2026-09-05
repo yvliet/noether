@@ -755,6 +755,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
   const lastEmittedJsonRef = useRef<string | null>(null);
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const slashExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInternalUpdateRef = useRef(false);
   const wasEditableRef = useRef(editable);
   const handleContextMenuRef = useRef<((e: MouseEvent) => void) | null>(null);
@@ -773,11 +774,37 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         title: p.title,
         description: p.description,
         icon: typeof p.icon === 'string' ? (p.icon as any) : p.icon,
+        badge: p.badge,
+        submenu: p.submenu,
+        isEnabled: p.isEnabled,
         command: p.command,
       });
     }
     return Array.from(map.values());
   }, [extensionSlashCommands]);
+
+  const getSlashItems = useCallback((): SlashItem[] => {
+    const extCommands = app.editor.getSlashCommands();
+    const map = new Map<string, SlashItem>();
+    for (const item of baseSlashItems) {
+      map.set(item.title.toLowerCase(), item);
+    }
+    for (const p of extCommands) {
+      map.set(p.title.toLowerCase(), {
+        title: p.title,
+        description: p.description,
+        icon: typeof p.icon === 'string' ? (p.icon as any) : p.icon,
+        badge: p.badge,
+        submenu: p.submenu,
+        isEnabled: p.isEnabled,
+        command: p.command,
+      });
+    }
+    return Array.from(map.values());
+  }, [app.editor]);
+
+  const getSlashItemsRef = useRef(getSlashItems);
+  getSlashItemsRef.current = getSlashItems;
 
   const handleNavigateToWikiLink = useCallback(
     (rawTarget: string, isSplit: boolean = false) => {
@@ -890,34 +917,55 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       SlashCommands.configure({
         suggestion: {
           allow: ({ editor }) => {
-            return editor.isFocused || editor.view.hasFocus();
+            const isEditorFocused = editor.isFocused || editor.view.hasFocus();
+            if (isEditorFocused) return true;
+            if (
+              typeof document !== 'undefined' &&
+              document.activeElement &&
+              containerRef.current?.contains(document.activeElement)
+            ) {
+              return true;
+            }
+            return false;
           },
           items: ({ query }) => {
-            return slashItems.filter(
+            const currentSlashItems = getSlashItemsRef.current();
+            return currentSlashItems.filter(
               (item) =>
-                item.title.toLowerCase().includes(query.toLowerCase()) ||
-                item.description.toLowerCase().includes(query.toLowerCase())
+                (!item.isEnabled || item.isEnabled()) &&
+                (item.title.toLowerCase().includes(query.toLowerCase()) ||
+                  item.description.toLowerCase().includes(query.toLowerCase()))
             );
           },
           render: () => {
             return {
               onStart: (props: any) => {
+                if (slashExitTimerRef.current) {
+                  clearTimeout(slashExitTimerRef.current);
+                  slashExitTimerRef.current = null;
+                }
                 const rect = props.clientRect?.();
                 suggestionPopupsRef.current?.setSlashMenuProps({
                   items: props.items,
                   command: (item: SlashItem, extra?: any) => {
+                    suggestionPopupsRef.current?.setSlashMenuProps(null);
                     props.command({ ...item, ...extra });
                   },
                   rect: rect || null,
                 });
               },
               onUpdate: (props: any) => {
+                if (slashExitTimerRef.current) {
+                  clearTimeout(slashExitTimerRef.current);
+                  slashExitTimerRef.current = null;
+                }
                 suggestionPopupsRef.current?.setSlashMenuProps((prev) =>
                   prev
                     ? {
                         ...prev,
                         items: props.items,
                         command: (item: SlashItem, extra?: any) => {
+                          suggestionPopupsRef.current?.setSlashMenuProps(null);
                           props.command({ ...item, ...extra });
                         },
                         rect: prev.rect || props.clientRect?.() || null,
@@ -933,7 +981,24 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                 return slashMenuRef.current?.onKeyDown(props) || false;
               },
               onExit: () => {
-                suggestionPopupsRef.current?.setSlashMenuProps(null);
+                if (slashExitTimerRef.current) {
+                  clearTimeout(slashExitTimerRef.current);
+                }
+                // Defer cleanup check so document.activeElement has updated
+                // when focus deliberately transfers into a popup input (such as
+                // the icon picker search bar). If focus remains in the editor or
+                // anywhere outside the popup, the popup is cleanly dismissed.
+                slashExitTimerRef.current = setTimeout(() => {
+                  slashExitTimerRef.current = null;
+                  if (
+                    typeof document !== 'undefined' &&
+                    document.activeElement &&
+                    document.activeElement.closest?.('[data-flint-suggestion-popup="true"]')
+                  ) {
+                    return;
+                  }
+                  suggestionPopupsRef.current?.setSlashMenuProps(null);
+                }, 0);
               },
             };
           },
@@ -1883,7 +1948,12 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current);
         updateTimerRef.current = null;
-        if (editor && !editor.isDestroyed) {
+      }
+      if (slashExitTimerRef.current) {
+        clearTimeout(slashExitTimerRef.current);
+        slashExitTimerRef.current = null;
+      }
+      if (editor && !editor.isDestroyed) {
           try {
             const jsonStr = JSON.stringify(editor.getJSON());
             if (jsonStr !== lastEmittedJsonRef.current) {
@@ -1893,9 +1963,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             }
           } catch (e) {}
         }
-      }
-    };
-  }, [editor, onChange]);
+      };
+    }, [editor, onChange]);
 
   // Keep editor content in sync when active document switches or updates externally
   useEffect(() => {

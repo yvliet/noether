@@ -26,6 +26,12 @@ import {
 
 export const IconifySettingsTab: React.FC = () => {
   const icons = useIconifyStore((s) => s.icons);
+  const enableFolderIcons = useIconifyStore((s) => s.enableFolderIcons);
+  const setEnableFolderIcons = useIconifyStore((s) => s.setEnableFolderIcons);
+  const enableFileIcons = useIconifyStore((s) => s.enableFileIcons);
+  const setEnableFileIcons = useIconifyStore((s) => s.setEnableFileIcons);
+  const enableDocumentIcons = useIconifyStore((s) => s.enableDocumentIcons);
+  const setEnableDocumentIcons = useIconifyStore((s) => s.setEnableDocumentIcons);
   const showDefaultFolderIcons = useIconifyStore((s) => s.showDefaultFolderIcons);
   const setShowDefaultFolderIcons = useIconifyStore((s) => s.setShowDefaultFolderIcons);
   const showDefaultFileIcons = useIconifyStore((s) => s.showDefaultFileIcons);
@@ -77,6 +83,9 @@ export const IconifySettingsTab: React.FC = () => {
   const fileCount = useMemo(() => allEntries.filter((e) => !e.isFolder).length, [allEntries]);
 
   const isModified =
+    !enableFolderIcons ||
+    !enableFileIcons ||
+    !enableDocumentIcons ||
     !showDefaultFolderIcons ||
     showDefaultFileIcons ||
     !showEditorTitleIcon ||
@@ -96,6 +105,9 @@ export const IconifySettingsTab: React.FC = () => {
   };
 
   const handleRestoreDefaults = () => {
+    setEnableFolderIcons(true);
+    setEnableFileIcons(true);
+    setEnableDocumentIcons(true);
     setShowDefaultFolderIcons(true);
     setShowDefaultFileIcons(false);
     setShowEditorTitleIcon(true);
@@ -112,7 +124,7 @@ export const IconifySettingsTab: React.FC = () => {
         <div>
           <h3 className="text-sm font-semibold text-white mb-0.5">Iconify</h3>
           <p className="text-[11px] text-[#777]">
-            Customize icons for folders, notes, files, and tabs with persistent SQLite storage.
+            Let icons live in all of Flint. Customize folders, files, tabs, and documents with persistent SQLite storage.
           </p>
         </div>
         {isModified && (
@@ -125,6 +137,78 @@ export const IconifySettingsTab: React.FC = () => {
             <span>Restore defaults</span>
           </button>
         )}
+      </div>
+
+      {/* Core Feature Toggles Card */}
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* Enable folder icons */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Folder Icons</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Enable custom and default icons for folders in the file tree and breadcrumbs.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {!enableFolderIcons && (
+              <button
+                type="button"
+                onClick={() => setEnableFolderIcons(true)}
+                title="Restore default (Enabled)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <ToggleSwitch checked={enableFolderIcons} onChange={setEnableFolderIcons} />
+          </div>
+        </div>
+
+        {/* Enable file icons */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">File Icons</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Enable custom icons for notes, canvas boards, and files in the file tree.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {!enableFileIcons && (
+              <button
+                type="button"
+                onClick={() => setEnableFileIcons(true)}
+                title="Restore default (Enabled)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <ToggleSwitch checked={enableFileIcons} onChange={setEnableFileIcons} />
+          </div>
+        </div>
+
+        {/* Enable document icons */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">In-Document Icons</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Enable the /icon slash command and inline interactive icon chips in documents.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {!enableDocumentIcons && (
+              <button
+                type="button"
+                onClick={() => setEnableDocumentIcons(true)}
+                title="Restore default (Enabled)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <ToggleSwitch checked={enableDocumentIcons} onChange={setEnableDocumentIcons} />
+          </div>
+        </div>
       </div>
 
       {/* General Configuration Card */}

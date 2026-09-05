@@ -66,6 +66,7 @@ import {
   WorkerTaskDefinition,
   RunTaskOptions,
 } from './types';
+import type { IconPackProvider } from '../registries/IconRegistry';
 
 export abstract class Extension {
   /**
@@ -305,6 +306,18 @@ export abstract class Extension {
    */
   public registerSlashCommand(item: SlashCommandDefinition): Disposable {
     const d = this.app.editor.registerSlashCommand(item);
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a custom icon pack provider into Flint's central IconRegistry.
+   *
+   * @param provider - Icon pack provider definition.
+   * @returns A Disposable to unregister the provider.
+   * @since 1.1.0
+   */
+  public registerIconPackProvider(provider: IconPackProvider): Disposable {
+    const d = this.app.icons.registerProvider(provider);
     return this.registerDisposable(d);
   }
 

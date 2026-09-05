@@ -37,17 +37,19 @@ import {
 import { IconifyEditorTitleIcon } from './IconifyEditorTitleIcon';
 import { IconifyPickerModal } from './IconifyPickerModal';
 import { IconifySettingsTab } from './IconifySettingsTab';
+import { IconChipExtension } from './IconChipExtension';
+import { IconifySubmenuPicker } from './IconifySubmenuPicker';
 import { getIconifyIconDef } from './iconifyCatalog';
 import { iconifyReadme } from './readme';
 
 export const ICONIFY_MANIFEST: ExtensionManifest = {
   id: 'iconify',
   name: 'Iconify',
-  version: '1.0.0',
-  description: 'Customize icons for folders, notes, files, and tabs with a rich HugeIcons selector and SQLite persistence.',
+  version: '1.1.0',
+  description: 'Let icons live in all of Flint. Customize folders, files, tabs, and rich text documents with an extensible multi-pack icon system and SQLite persistence.',
   author: 'Yuliet Li',
   isCore: false,
-  tags: ['icons', 'customization', 'file-tree', 'tabs', 'notes', 'ui'],
+  tags: ['icons', 'customization', 'file-tree', 'tabs', 'notes', 'ui', 'editor'],
   readme: iconifyReadme,
 };
 
@@ -86,17 +88,17 @@ export class IconifyExtension extends Extension {
     this.registerFileTreeDecorator({
       id: 'iconify-tree-decorator',
       renderIcon: (doc, context) => {
-        // For files: render the custom or default icon directly in the first (chevron/spacer) slot
-        // so all filenames on the same depth level start at the exact same horizontal X coordinate!
+        const { enableFileIcons } = useIconifyStore.getState();
         if (!doc.is_folder) {
+          if (!enableFileIcons) return context.defaultIcon;
           return <IconifyFileIconSlot doc={doc} />;
         }
-        // For folders: retain the default interactive chevron button
         return context.defaultIcon;
       },
       renderPrefix: (doc, context) => {
-        // For folders: render folder icon in the prefix slot (between chevron and folder title)
+        const { enableFolderIcons } = useIconifyStore.getState();
         if (doc.is_folder) {
+          if (!enableFolderIcons) return null;
           return (
             <IconifyFolderPrefixSlot
               doc={doc}
@@ -104,7 +106,6 @@ export class IconifyExtension extends Extension {
             />
           );
         }
-        // For files: prefix is empty because the icon lives directly in the first slot!
         return null;
       },
     });
@@ -126,10 +127,14 @@ export class IconifyExtension extends Extension {
     this.registerBreadcrumbDecorator({
       id: 'iconify-breadcrumb-decorator',
       renderIcon: (item) => {
+        const isFolder = Boolean(item.isFolder);
+        const state = useIconifyStore.getState();
+        if (isFolder && !state.enableFolderIcons) return null;
+        if (!isFolder && !state.enableFileIcons) return null;
         return (
           <IconifyBreadcrumbIcon
             itemId={item.id}
-            isFolder={Boolean(item.isFolder)}
+            isFolder={isFolder}
           />
         );
       },
@@ -156,7 +161,15 @@ export class IconifyExtension extends Extension {
       scope: 'file-tree',
       group: 'tools',
       order: 45,
-      isVisible: (_app, data) => Boolean((data as DocumentItem)?.id),
+      isVisible: (_app, data) => {
+        const doc = data as DocumentItem;
+        if (!doc?.id) return false;
+        const isFolder = Boolean(doc.is_folder);
+        const state = useIconifyStore.getState();
+        if (isFolder && !state.enableFolderIcons) return false;
+        if (!isFolder && !state.enableFileIcons) return false;
+        return true;
+      },
       customSubmenu: ({ data, onClose }) => {
         const doc = data as DocumentItem;
         const isFolder = Boolean(doc.is_folder);
@@ -205,7 +218,11 @@ export class IconifyExtension extends Extension {
       isVisible: (_app, data) => {
         const doc = data as DocumentItem;
         if (!doc?.id) return false;
-        return Boolean(useIconifyStore.getState().icons[doc.id]);
+        const isFolder = Boolean(doc.is_folder);
+        const state = useIconifyStore.getState();
+        if (isFolder && !state.enableFolderIcons) return false;
+        if (!isFolder && !state.enableFileIcons) return false;
+        return Boolean(state.icons[doc.id]);
       },
       onClick: async (_app, data) => {
         if (data && (data as DocumentItem).id) {
@@ -321,7 +338,81 @@ export class IconifyExtension extends Extension {
       render: () => <IconifySettingsTab />,
     });
 
-    // 13. Register Commands
+    // 13. Register TipTap In-Document Icon Chip Extension
+    this.registerEditorExtension(() => IconChipExtension);
+
+    // 14. Register /icon Slash Command with dynamic flyout submenu selector
+    this.registerSlashCommand({
+      title: 'Icon',
+      description: 'Insert an icon into your document',
+      icon: <SparklesIcon size={16} />,
+      badge: 'New',
+      isEnabled: () => useIconifyStore.getState().enableDocumentIcons,
+      submenu: {
+        id: 'iconify-submenu',
+        render: (props) => (
+          <IconifySubmenuPicker
+            ref={props.ref}
+            onSelect={(data) => {
+              props.onSelect(data);
+            }}
+            onClose={props.onClose}
+          />
+        ),
+      },
+      command: ({ editor, range, iconId, pack, color }) => {
+        const targetIcon = iconId || 'sparkles';
+        const targetPack = pack || 'hugeicons';
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContent({
+            type: 'iconChip',
+            attrs: {
+              iconId: targetIcon,
+              pack: targetPack,
+              color: color || null,
+            },
+          })
+          .insertContent(' ')
+          .run();
+      },
+    });
+
+    // 15. Register Commands
+    this.addCommand({
+      id: 'toggle-folder-icons',
+      title: 'Iconify: Toggle folder icons',
+      section: 'Settings',
+      icon: <Folder01Icon size={16} />,
+      action: () => {
+        const current = useIconifyStore.getState().enableFolderIcons;
+        useIconifyStore.getState().setEnableFolderIcons(!current);
+      },
+    });
+
+    this.addCommand({
+      id: 'toggle-file-icons',
+      title: 'Iconify: Toggle file icons',
+      section: 'Settings',
+      icon: <File01Icon size={16} />,
+      action: () => {
+        const current = useIconifyStore.getState().enableFileIcons;
+        useIconifyStore.getState().setEnableFileIcons(!current);
+      },
+    });
+
+    this.addCommand({
+      id: 'toggle-document-icons',
+      title: 'Iconify: Toggle in-document icons (/icon)',
+      section: 'Settings',
+      icon: <SparklesIcon size={16} />,
+      action: () => {
+        const current = useIconifyStore.getState().enableDocumentIcons;
+        useIconifyStore.getState().setEnableDocumentIcons(!current);
+      },
+    });
     this.addCommand({
       id: 'toggle-default-folder-icons',
       title: 'Iconify: Toggle default folder icons',

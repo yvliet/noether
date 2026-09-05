@@ -22,6 +22,9 @@ import { ContextMenuRegistry } from '../registries/ContextMenuRegistry';
 import { ModalRegistry } from '../registries/ModalRegistry';
 import { PropertyRegistry } from '../registries/PropertyRegistry';
 import { TabDecoratorRegistry } from '../registries/TabDecoratorRegistry';
+import { IconRegistry } from '../registries/IconRegistry';
+import { DynamicHugeIcon } from '@/components/common/IconPicker';
+import { EmojiRenderer } from '@/components/common/emoji';
 import { ToolRegistry } from '../registries/ToolRegistry';
 import { SlotRegistry } from '../registries/SlotRegistry';
 import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
@@ -71,6 +74,8 @@ export class FlintApp {
   public properties: PropertyRegistry;
   /** Tab decorator registry managing custom tab titles, icons, and tooltips. */
   public tabDecorators: TabDecoratorRegistry;
+  /** Icon registry managing multi-pack icon providers and universal rendering. */
+  public icons: IconRegistry;
   /** MCP Tool registry managing AI agent callable tool definitions. */
   public tools: ToolRegistry;
   /** UI Portal slot registry managing contextual toolbars, minimaps, and canvas overlays. */
@@ -106,8 +111,35 @@ export class FlintApp {
     this.modals = new ModalRegistry();
     this.properties = new PropertyRegistry();
     this.tabDecorators = new TabDecoratorRegistry();
+    this.icons = new IconRegistry();
     this.tools = new ToolRegistry(this);
     this.slots = new SlotRegistry();
+
+    // Register Native Built-in Icon Providers
+    this.icons.registerProvider({
+      id: 'hugeicons',
+      name: 'HugeIcons',
+      description: 'Curated library of 6,700+ vector icons',
+      render: (iconId, options) =>
+        React.createElement(DynamicHugeIcon, {
+          iconId,
+          size: options?.size,
+          className: options?.className,
+          color: options?.color,
+        }),
+    });
+
+    this.icons.registerProvider({
+      id: 'emoji',
+      name: 'Emoji',
+      description: 'Universal Unicode emoji icons',
+      render: (emojiChar, options) =>
+        React.createElement(EmojiRenderer, {
+          emoji: emojiChar,
+          size: options?.size,
+          className: options?.className,
+        }),
+    });
     this.dbManager = new ExtensionDatabaseManager(this);
     this.workerPool = new ExtensionWorkerPool(this);
     this.events = new EventBus();

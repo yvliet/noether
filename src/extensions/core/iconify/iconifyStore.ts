@@ -38,6 +38,12 @@ export interface IconifyState {
   pickerTarget: IconPickerTarget | null;
   /** Whether the store has completed initial DB hydration */
   isLoaded: boolean;
+  /** Whether folder icons feature is enabled */
+  enableFolderIcons: boolean;
+  /** Whether file icons feature is enabled */
+  enableFileIcons: boolean;
+  /** Whether in-document icons feature (/icon command and inline icons) is enabled */
+  enableDocumentIcons: boolean;
   /** Whether to show default folder open/close icons when no custom icon is set */
   showDefaultFolderIcons: boolean;
   /** Whether to show default file icons when no custom icon is set */
@@ -47,6 +53,12 @@ export interface IconifyState {
   /** Active emoji set style ('native' | 'twemoji' | 'apple' | 'google' | 'whatsapp') */
   emojiStyle: import('@/components/common/emoji').EmojiStyle;
 
+  /** Set enableFolderIcons toggle */
+  setEnableFolderIcons: (enable: boolean) => void;
+  /** Set enableFileIcons toggle */
+  setEnableFileIcons: (enable: boolean) => void;
+  /** Set enableDocumentIcons toggle */
+  setEnableDocumentIcons: (enable: boolean) => void;
   /** Set showDefaultFolderIcons toggle */
   setShowDefaultFolderIcons: (show: boolean) => void;
   /** Set showDefaultFileIcons toggle */
@@ -72,54 +84,65 @@ export interface IconifyState {
 export const useIconifyStore = create<IconifyState>((set, get) => {
   const initialSettings = loadIconifySettingsFromLocalStorage();
 
+  const persistCurrentSettings = (overrides?: Partial<import('./iconifyDb').IconifySettings>) => {
+    saveIconifySettingsToLocalStorage({
+      enableFolderIcons: get().enableFolderIcons,
+      enableFileIcons: get().enableFileIcons,
+      enableDocumentIcons: get().enableDocumentIcons,
+      showDefaultFolderIcons: get().showDefaultFolderIcons,
+      showDefaultFileIcons: get().showDefaultFileIcons,
+      showEditorTitleIcon: get().showEditorTitleIcon,
+      emojiStyle: get().emojiStyle,
+      ...overrides,
+    });
+  };
+
   return {
     // Synchronously load from localStorage so icons render on frame 0 upon refresh
     icons: loadIconifyFromLocalStorage(),
     pickerTarget: null,
     isLoaded: false,
+    enableFolderIcons: initialSettings.enableFolderIcons,
+    enableFileIcons: initialSettings.enableFileIcons,
+    enableDocumentIcons: initialSettings.enableDocumentIcons,
     showDefaultFolderIcons: initialSettings.showDefaultFolderIcons,
     showDefaultFileIcons: initialSettings.showDefaultFileIcons,
     showEditorTitleIcon: initialSettings.showEditorTitleIcon,
     emojiStyle: initialSettings.emojiStyle,
 
+    setEnableFolderIcons: (enable: boolean) => {
+      set({ enableFolderIcons: enable });
+      persistCurrentSettings({ enableFolderIcons: enable });
+    },
+
+    setEnableFileIcons: (enable: boolean) => {
+      set({ enableFileIcons: enable });
+      persistCurrentSettings({ enableFileIcons: enable });
+    },
+
+    setEnableDocumentIcons: (enable: boolean) => {
+      set({ enableDocumentIcons: enable });
+      persistCurrentSettings({ enableDocumentIcons: enable });
+    },
+
     setShowDefaultFolderIcons: (show: boolean) => {
       set({ showDefaultFolderIcons: show });
-      saveIconifySettingsToLocalStorage({
-        showDefaultFolderIcons: show,
-        showDefaultFileIcons: get().showDefaultFileIcons,
-        showEditorTitleIcon: get().showEditorTitleIcon,
-        emojiStyle: get().emojiStyle,
-      });
+      persistCurrentSettings({ showDefaultFolderIcons: show });
     },
 
     setShowDefaultFileIcons: (show: boolean) => {
       set({ showDefaultFileIcons: show });
-      saveIconifySettingsToLocalStorage({
-        showDefaultFolderIcons: get().showDefaultFolderIcons,
-        showDefaultFileIcons: show,
-        showEditorTitleIcon: get().showEditorTitleIcon,
-        emojiStyle: get().emojiStyle,
-      });
+      persistCurrentSettings({ showDefaultFileIcons: show });
     },
 
     setShowEditorTitleIcon: (show: boolean) => {
       set({ showEditorTitleIcon: show });
-      saveIconifySettingsToLocalStorage({
-        showDefaultFolderIcons: get().showDefaultFolderIcons,
-        showDefaultFileIcons: get().showDefaultFileIcons,
-        showEditorTitleIcon: show,
-        emojiStyle: get().emojiStyle,
-      });
+      persistCurrentSettings({ showEditorTitleIcon: show });
     },
 
     setEmojiStyle: (style: import('@/components/common/emoji').EmojiStyle) => {
       set({ emojiStyle: style });
-      saveIconifySettingsToLocalStorage({
-        showDefaultFolderIcons: get().showDefaultFolderIcons,
-        showDefaultFileIcons: get().showDefaultFileIcons,
-        showEditorTitleIcon: get().showEditorTitleIcon,
-        emojiStyle: style,
-      });
+      persistCurrentSettings({ emojiStyle: style });
     },
 
     loadIcons: async () => {

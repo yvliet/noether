@@ -18,7 +18,7 @@
  * @since 1.0.0
  */
 
-import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { loadIcon } from '@hugeicons/core-free-icons/loader';
 import type { IconCategory, CatalogIconDefinition } from './iconCatalog';
@@ -31,10 +31,15 @@ import {
 } from '@/components/common/Icons';
 import { EMOJI_CATALOG, EMOJI_CATEGORIES, EmojiDefinition } from './emoji/emojiCatalog';
 import { EmojiRenderer, EmojiStyle } from './emoji/EmojiRenderer';
+import { storeRefs } from '@/core/app/storeBridge';
 
 export type { IconCategory, CatalogIconDefinition } from './iconCatalog';
 
 export type IconPickerVariant = 'modal' | 'popover' | 'submenu';
+
+export interface IconPickerHandle {
+  onKeyDown: (e: KeyboardEvent) => boolean;
+}
 
 export interface IconPickerProps {
   isOpen: boolean;
@@ -49,6 +54,8 @@ export interface IconPickerProps {
   resetLabel?: string;
   className?: string;
   emojiStyle?: EmojiStyle;
+  showModeSwitcher?: boolean;
+  autoFocus?: boolean;
 }
 
 // ── In-Memory Dynamic Icon Cache & Resolver ──
@@ -300,6 +307,8 @@ export function renderUnifiedIcon(
   options: { size?: number; className?: string; color?: string; emojiStyle?: EmojiStyle } = {}
 ): React.ReactNode {
   if (!iconId) return null;
+
+  // Handle explicit emoji shortcode with optional emojiStyle override
   if (iconId.startsWith('emoji:')) {
     const char = iconId.slice(6);
     return (
@@ -311,6 +320,16 @@ export function renderUnifiedIcon(
       />
     );
   }
+
+  // If iconId contains a pack namespace (e.g. 'hugeicons:star', 'lucide:home', 'react:FaHome')
+  // or appInstance is initialized, delegate to the central IconRegistry
+  const app = storeRefs.appInstance;
+  if (app?.icons) {
+    const rendered = app.icons.renderIcon(iconId, options);
+    if (rendered) return rendered;
+  }
+
+  // Default fallback to HugeIcons dynamic loader
   return (
     <DynamicHugeIcon
       iconId={iconId}
@@ -336,23 +355,33 @@ const CATEGORIES: IconCategory[] = [
 const INITIAL_RENDER_COUNT = 96;
 const CHUNK_RENDER_COUNT = 96;
 
-export const IconPicker: React.FC<IconPickerProps> = ({
-  isOpen,
-  onClose,
-  onSelectIcon,
-  currentIconId,
-  title = 'Select Icon',
-  headerIcon,
-  variant = 'modal',
-  align = 'left',
-  onResetToDefault,
-  resetLabel = 'Reset default',
-  className = '',
-  emojiStyle = 'native',
-}) => {
-  const [pickerMode, setPickerMode] = useState<'icons' | 'emojis'>(() => {
-    return currentIconId?.startsWith('emoji:') ? 'emojis' : 'icons';
-  });
+let moduleCatalogCache: CatalogIconDefinition[] | null = null;
+
+export const IconPicker = React.memo(
+  forwardRef<IconPickerHandle, IconPickerProps>(
+    (
+      {
+        isOpen,
+        onClose,
+        onSelectIcon,
+        currentIconId,
+        title = 'Select Icon',
+        headerIcon,
+        variant = 'modal',
+        align = 'left',
+        onResetToDefault,
+        resetLabel = 'Reset default',
+        className = '',
+        emojiStyle = 'native',
+        showModeSwitcher = true,
+        autoFocus = true,
+      },
+      ref
+    ) => {
+      const [pickerMode, setPickerMode] = useState<'icons' | 'emojis'>(() => {
+        if (!showModeSwitcher) return 'icons';
+        return currentIconId?.startsWith('emoji:') ? 'emojis' : 'icons';
+      });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<IconCategory>('All');
   const [selectedEmojiCategory, setSelectedEmojiCategory] = useState<string>('All');
@@ -361,19 +390,30 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   const [visibleLimit, setVisibleLimit] = useState(INITIAL_RENDER_COUNT);
 
   // Lazy loaded full icon catalog
-  const [fullCatalog, setFullCatalog] = useState<CatalogIconDefinition[]>([]);
+  const [fullCatalog, setFullCatalog] = useState<CatalogIconDefinition[]>(
+    () => moduleCatalogCache || []
+  );
   const [isCatalogLoading, setIsCatalogLoading] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gridScrollRef = useRef<HTMLDivElement>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const highlightedIndexRef = useRef(highlightedIndex);
+  highlightedIndexRef.current = highlightedIndex;
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Dynamically load catalog on open
   useEffect(() => {
     if (isOpen && fullCatalog.length === 0 && !isCatalogLoading) {
+      if (moduleCatalogCache && moduleCatalogCache.length > 0) {
+        setFullCatalog(moduleCatalogCache);
+        return;
+      }
       setIsCatalogLoading(true);
       import('./iconCatalog')
         .then((m) => {
+          moduleCatalogCache = m.UNIFIED_ICONS_CATALOG;
           setFullCatalog(m.UNIFIED_ICONS_CATALOG);
           // Pre-populate dynamic cache with loaded definitions
           for (const item of m.UNIFIED_ICONS_CATALOG) {
@@ -439,9 +479,10 @@ export const IconPicker: React.FC<IconPickerProps> = ({
     return list;
   }, [searchQuery, selectedEmojiCategory]);
 
-  // Reset pagination on search or category switch
+  // Reset pagination & highlighted index on search or category switch
   useEffect(() => {
     setVisibleLimit(INITIAL_RENDER_COUNT);
+    setHighlightedIndex(0);
     if (gridScrollRef.current) {
       gridScrollRef.current.scrollTop = 0;
     }
@@ -455,6 +496,104 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   const displayedEmojis = useMemo(() => {
     return filteredEmojis.slice(0, visibleLimit);
   }, [filteredEmojis, visibleLimit]);
+
+  // Expose keyboard navigation handle to parent popovers (e.g. SlashMenu flyout)
+  useImperativeHandle(
+    ref,
+    () => ({
+      onKeyDown: (event: KeyboardEvent): boolean => {
+        const total = pickerMode === 'icons' ? displayedIcons.length : displayedEmojis.length;
+
+        if (event.key === 'ArrowRight') {
+          if (total === 0) return false;
+          setHighlightedIndex((prev) => {
+            const next = Math.min(prev + 1, total - 1);
+            itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+            return next;
+          });
+          return true;
+        }
+
+        if (event.key === 'ArrowLeft') {
+          if (highlightedIndexRef.current === 0) {
+            // User reached the first item; allow parent to back out
+            return false;
+          }
+          setHighlightedIndex((prev) => {
+            const next = Math.max(prev - 1, 0);
+            itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+            return next;
+          });
+          return true;
+        }
+
+        if (event.key === 'ArrowDown') {
+          if (total === 0) return false;
+          setHighlightedIndex((prev) => {
+            const next = Math.min(prev + 6, total - 1);
+            itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+            return next;
+          });
+          return true;
+        }
+
+        if (event.key === 'ArrowUp') {
+          setHighlightedIndex((prev) => {
+            const next = Math.max(prev - 6, 0);
+            itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+            return next;
+          });
+          return true;
+        }
+
+        if (event.key === 'Enter') {
+          if (pickerMode === 'icons') {
+            const current = displayedIcons[highlightedIndexRef.current];
+            if (current) {
+              if (current.iconDef) {
+                iconDefCache.set(current.id, current.iconDef);
+                notifyCacheListeners();
+              }
+              onSelectIcon(current.id);
+              onClose();
+              return true;
+            }
+          } else {
+            const current = displayedEmojis[highlightedIndexRef.current];
+            if (current) {
+              onSelectIcon(`emoji:${current.char}`);
+              onClose();
+              return true;
+            }
+          }
+          return false;
+        }
+
+        if (event.key === 'Escape') {
+          onClose();
+          return true;
+        }
+
+        const isInputFocused =
+          typeof document !== 'undefined' && document.activeElement === searchInputRef.current;
+        if (!isInputFocused) {
+          if (event.key === 'Backspace') {
+            setSearchQuery((prev) => prev.slice(0, -1));
+            setHighlightedIndex(0);
+            return true;
+          }
+          if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+            setSearchQuery((prev) => prev + event.key);
+            setHighlightedIndex(0);
+            return true;
+          }
+        }
+
+        return false;
+      },
+    }),
+    [displayedIcons, displayedEmojis, pickerMode, onSelectIcon, onClose]
+  );
 
   // Infinite scroll handler
   const handleGridScroll = useCallback(() => {
@@ -472,21 +611,34 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   // Focus search input on open
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => {
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-      }, 50);
+      if (autoFocus) {
+        const focusInput = () => {
+          if (searchInputRef.current) {
+            searchInputRef.current.focus();
+            searchInputRef.current.select();
+          }
+        };
+        focusInput();
+        const rId = requestAnimationFrame(focusInput);
+        const tId = setTimeout(focusInput, 25);
+        return () => {
+          cancelAnimationFrame(rId);
+          clearTimeout(tId);
+        };
+      }
     } else {
       setSearchQuery('');
       setSelectedCategory('All');
       setSelectedEmojiCategory('All');
       setHoveredIcon(null);
       setHoveredEmoji(null);
+      setHighlightedIndex(0);
       setVisibleLimit(INITIAL_RENDER_COUNT);
     }
-  }, [isOpen]);
+  }, [isOpen, autoFocus]);
 
-  // Escape & outside click handler
+  // Escape & outside click handler — skip for submenu variant since the parent
+  // SlashMenu handles Escape/ArrowLeft navigation for submenus
   useEffect(() => {
     if (!isOpen) return;
 
@@ -503,13 +655,17 @@ export const IconPicker: React.FC<IconPickerProps> = ({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown, true);
+    if (variant !== 'submenu') {
+      document.addEventListener('keydown', handleKeyDown, true);
+    }
     if (variant === 'popover') {
       document.addEventListener('mousedown', handleClickOutside, true);
     }
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown, true);
+      if (variant !== 'submenu') {
+        document.removeEventListener('keydown', handleKeyDown, true);
+      }
       if (variant === 'popover') {
         document.removeEventListener('mousedown', handleClickOutside, true);
       }
@@ -521,8 +677,8 @@ export const IconPicker: React.FC<IconPickerProps> = ({
   const content = (
     <div
       ref={containerRef}
-      style={{ zIndex: 100 }}
-      className={`bg-[#1c1c1c] border border-[#303030] rounded-xl shadow-[0_16px_40px_rgba(0,0,0,0.85)] flex flex-col text-xs text-[#dcddde] select-none overflow-hidden ${
+      style={{ zIndex: 100, boxShadow: 'var(--flint-shadow-2)' }}
+      className={`bg-[#1c1c1c] border border-[#303030] rounded-xl flex flex-col text-xs text-[#dcddde] select-none overflow-hidden ${
         variant === 'popover'
           ? `absolute top-full mt-1.5 ${align === 'right' ? 'right-0' : 'left-0'} w-76`
           : variant === 'submenu'
@@ -551,40 +707,42 @@ export const IconPicker: React.FC<IconPickerProps> = ({
         </div>
 
         {/* Mode Switcher: Icons vs Emojis */}
-        <div className="grid grid-cols-2 p-0.5 bg-[#141414] rounded-lg border border-[#2b2b2b]">
-          <button
-            type="button"
-            onClick={() => {
-              setPickerMode('icons');
-              setSelectedCategory('All');
-              setSearchQuery('');
-            }}
-            className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
-              pickerMode === 'icons'
-                ? 'bg-[#262626] text-white shadow-xs'
-                : 'text-[#888] hover:text-[#bbb]'
-            }`}
-          >
-            <SparklesIcon size={12} />
-            <span>Icons</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPickerMode('emojis');
-              setSelectedEmojiCategory('All');
-              setSearchQuery('');
-            }}
-            className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
-              pickerMode === 'emojis'
-                ? 'bg-[#262626] text-white shadow-xs'
-                : 'text-[#888] hover:text-[#bbb]'
-            }`}
-          >
-            <span className="text-xs leading-none">😀</span>
-            <span>Emojis</span>
-          </button>
-        </div>
+        {showModeSwitcher && (
+          <div className="grid grid-cols-2 p-0.5 bg-[#141414] rounded-lg border border-[#2b2b2b]">
+            <button
+              type="button"
+              onClick={() => {
+                setPickerMode('icons');
+                setSelectedCategory('All');
+                setSearchQuery('');
+              }}
+              className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
+                pickerMode === 'icons'
+                  ? 'bg-[#262626] text-white shadow-xs'
+                  : 'text-[#888] hover:text-[#bbb]'
+              }`}
+            >
+              <SparklesIcon size={12} />
+              <span>Icons</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPickerMode('emojis');
+                setSelectedEmojiCategory('All');
+                setSearchQuery('');
+              }}
+              className={`py-1 text-[11px] font-medium rounded-md cursor-pointer flex items-center justify-center gap-1.5 ${
+                pickerMode === 'emojis'
+                  ? 'bg-[#262626] text-white shadow-xs'
+                  : 'text-[#888] hover:text-[#bbb]'
+              }`}
+            >
+              <span className="text-xs leading-none">😀</span>
+              <span>Emojis</span>
+            </button>
+          </div>
+        )}
 
         {/* Search input */}
         <div className="flex items-center gap-1.5 px-2 py-1 bg-[#141414] border border-[#2b2b2b] focus-within:border-[#444] rounded-md">
@@ -594,6 +752,110 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              // Shortcuts like Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+Z must affect the searchbar and stop propagation to ProseMirror
+              if (e.ctrlKey || e.metaKey) {
+                e.stopPropagation();
+                if (e.key.toLowerCase() === 'a') {
+                  e.currentTarget.select();
+                }
+                return;
+              }
+
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (pickerMode === 'icons') {
+                  const current = displayedIcons[highlightedIndexRef.current];
+                  if (current) {
+                    if (current.iconDef) {
+                      iconDefCache.set(current.id, current.iconDef);
+                      notifyCacheListeners();
+                    }
+                    onSelectIcon(current.id);
+                    onClose();
+                  }
+                } else {
+                  const current = displayedEmojis[highlightedIndexRef.current];
+                  if (current) {
+                    onSelectIcon(`emoji:${current.char}`);
+                    onClose();
+                  }
+                }
+                return;
+              }
+
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                e.stopPropagation();
+                const total = pickerMode === 'icons' ? displayedIcons.length : displayedEmojis.length;
+                if (total > 0) {
+                  setHighlightedIndex((prev) => {
+                    const next = Math.min(prev + 6, total - 1);
+                    itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+                    return next;
+                  });
+                }
+                return;
+              }
+
+              if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                e.stopPropagation();
+                setHighlightedIndex((prev) => {
+                  const next = Math.max(prev - 6, 0);
+                  itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+                  return next;
+                });
+                return;
+              }
+
+              if (e.key === 'ArrowRight' && e.currentTarget.selectionStart === e.currentTarget.value.length) {
+                e.preventDefault();
+                e.stopPropagation();
+                const total = pickerMode === 'icons' ? displayedIcons.length : displayedEmojis.length;
+                if (total > 0) {
+                  setHighlightedIndex((prev) => {
+                    const next = Math.min(prev + 1, total - 1);
+                    itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+                    return next;
+                  });
+                }
+                return;
+              }
+
+              if (e.key === 'ArrowLeft' && e.currentTarget.selectionStart === 0 && e.currentTarget.selectionEnd === 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (highlightedIndexRef.current > 0) {
+                  setHighlightedIndex((prev) => {
+                    const next = Math.max(prev - 1, 0);
+                    itemRefs.current[next]?.scrollIntoView({ block: 'nearest' });
+                    return next;
+                  });
+                } else {
+                  onClose();
+                }
+                return;
+              }
+
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                onClose();
+                return;
+              }
+
+              if (e.key === 'Tab') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (showModeSwitcher) {
+                  setPickerMode((prev) => (prev === 'icons' ? 'emojis' : 'icons'));
+                  setHighlightedIndex(0);
+                }
+                return;
+              }
+            }}
             placeholder={
               pickerMode === 'icons'
                 ? isCatalogLoading
@@ -685,12 +947,16 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-6 gap-1.5">
-              {displayedIcons.map((icon) => {
+              {displayedIcons.map((icon, index) => {
                 const isSelected = currentIconId === icon.id;
+                const isHighlighted = index === highlightedIndex;
 
                 return (
                   <button
                     key={icon.id}
+                    ref={(el) => {
+                      itemRefs.current[index] = el;
+                    }}
                     type="button"
                     onClick={() => {
                       if (icon.iconDef) {
@@ -700,12 +966,17 @@ export const IconPicker: React.FC<IconPickerProps> = ({
                       onSelectIcon(icon.id);
                       onClose();
                     }}
-                    onMouseEnter={() => setHoveredIcon(icon)}
+                    onMouseEnter={() => {
+                      setHighlightedIndex(index);
+                      setHoveredIcon(icon);
+                    }}
                     onMouseLeave={() => setHoveredIcon(null)}
                     title={icon.name}
                     className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
                       isSelected
                         ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] text-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
+                        : isHighlighted
+                        ? 'bg-[#2a2a2a] text-white border border-[#444]'
                         : 'bg-[#202020] hover:bg-[#282828] text-[#999] hover:text-white border border-[#282828] hover:border-[#3a3a3a]'
                     }`}
                   >
@@ -726,24 +997,33 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           </div>
         ) : (
           <div className="grid grid-cols-6 gap-1.5">
-            {displayedEmojis.map((emoji) => {
+            {displayedEmojis.map((emoji, index) => {
               const emojiIconId = `emoji:${emoji.char}`;
               const isSelected = currentIconId === emojiIconId;
+              const isHighlighted = index === highlightedIndex;
 
               return (
                 <button
                   key={emoji.char}
+                  ref={(el) => {
+                    itemRefs.current[index] = el;
+                  }}
                   type="button"
                   onClick={() => {
                     onSelectIcon(emojiIconId);
                     onClose();
                   }}
-                  onMouseEnter={() => setHoveredEmoji(emoji)}
+                  onMouseEnter={() => {
+                    setHighlightedIndex(index);
+                    setHoveredEmoji(emoji);
+                  }}
                   onMouseLeave={() => setHoveredEmoji(null)}
                   title={emoji.name}
                   className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
                     isSelected
                       ? 'bg-[var(--flint-accent,#ea580c)]/20 border border-[var(--flint-accent,#ea580c)] shadow-[0_0_8px_rgba(234,88,12,0.2)]'
+                      : isHighlighted
+                      ? 'bg-[#2a2a2a] text-white border border-[#444]'
                       : 'bg-[#202020] hover:bg-[#282828] border border-[#282828] hover:border-[#3a3a3a]'
                   }`}
                 >
@@ -766,6 +1046,8 @@ export const IconPicker: React.FC<IconPickerProps> = ({
           {pickerMode === 'icons' ? (
             hoveredIcon ? (
               <span className="text-[#ccc] font-medium">{hoveredIcon.name}</span>
+            ) : displayedIcons[highlightedIndex] ? (
+              <span className="text-[#ccc] font-medium">{displayedIcons[highlightedIndex].name}</span>
             ) : (
               <span>{filteredIcons.length} icons</span>
             )
@@ -773,6 +1055,11 @@ export const IconPicker: React.FC<IconPickerProps> = ({
             <span className="text-[#ccc] font-medium flex items-center gap-1">
               <span>{hoveredEmoji.char}</span>
               <span>{hoveredEmoji.name}</span>
+            </span>
+          ) : displayedEmojis[highlightedIndex] ? (
+            <span className="text-[#ccc] font-medium flex items-center gap-1">
+              <span>{displayedEmojis[highlightedIndex].char}</span>
+              <span>{displayedEmojis[highlightedIndex].name}</span>
             </span>
           ) : (
             <span>{filteredEmojis.length} emojis</span>
@@ -808,6 +1095,8 @@ export const IconPicker: React.FC<IconPickerProps> = ({
       {content}
     </div>
   );
-};
+  })
+);
+IconPicker.displayName = 'IconPicker';
 
 export default IconPicker;

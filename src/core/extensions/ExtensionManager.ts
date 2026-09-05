@@ -41,17 +41,29 @@ export class ExtensionManager {
     if (this.isInitialized) return;
     this.loadConfig();
 
-    // 1. Discover external extensions from disk
-    await this.externalLoader.discoverAndLoadExtensions();
-
-    // 2. Initialize all registered extensions based on enabled state
+    // 1. Initialize registered bundled extensions immediately
     for (const [id, manifest] of this.manifests.entries()) {
       const isCore = manifest.isCore === true;
       const isEnabled = isCore
         ? !this.disabledCoreExtensionIds.has(id)
         : this.enabledExtensionIds.has(id);
 
-      if (isEnabled) {
+      if (isEnabled && !this.instances.has(id)) {
+        await this.enableExtension(id);
+      }
+    }
+
+    // 2. Discover external extensions from disk
+    await this.externalLoader.discoverAndLoadExtensions();
+
+    // 3. Initialize any newly discovered external extensions
+    for (const [id, manifest] of this.manifests.entries()) {
+      const isCore = manifest.isCore === true;
+      const isEnabled = isCore
+        ? !this.disabledCoreExtensionIds.has(id)
+        : this.enabledExtensionIds.has(id);
+
+      if (isEnabled && !this.instances.has(id)) {
         await this.enableExtension(id);
       }
     }

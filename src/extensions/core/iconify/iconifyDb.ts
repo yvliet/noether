@@ -40,6 +40,9 @@ function getSettingsLocalStorageKey(): string {
 }
 
 export interface IconifySettings {
+  enableFolderIcons: boolean;
+  enableFileIcons: boolean;
+  enableDocumentIcons: boolean;
   showDefaultFolderIcons: boolean;
   showDefaultFileIcons: boolean;
   showEditorTitleIcon: boolean;
@@ -47,6 +50,9 @@ export interface IconifySettings {
 }
 
 export const DEFAULT_ICONIFY_SETTINGS: IconifySettings = {
+  enableFolderIcons: true,
+  enableFileIcons: true,
+  enableDocumentIcons: true,
   showDefaultFolderIcons: true,
   showDefaultFileIcons: false,
   showEditorTitleIcon: true,
@@ -63,6 +69,18 @@ export function loadIconifySettingsFromLocalStorage(): IconifySettings {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
+        enableFolderIcons:
+          parsed.enableFolderIcons !== undefined
+            ? Boolean(parsed.enableFolderIcons)
+            : DEFAULT_ICONIFY_SETTINGS.enableFolderIcons,
+        enableFileIcons:
+          parsed.enableFileIcons !== undefined
+            ? Boolean(parsed.enableFileIcons)
+            : DEFAULT_ICONIFY_SETTINGS.enableFileIcons,
+        enableDocumentIcons:
+          parsed.enableDocumentIcons !== undefined
+            ? Boolean(parsed.enableDocumentIcons)
+            : DEFAULT_ICONIFY_SETTINGS.enableDocumentIcons,
         showDefaultFolderIcons:
           parsed.showDefaultFolderIcons !== undefined
             ? Boolean(parsed.showDefaultFolderIcons)

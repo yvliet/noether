@@ -33,6 +33,7 @@ export const SlashMenu = React.memo(
       activeSubmenuRef.current = activeSubmenu;
 
       const gridPickerRef = useRef<TableGridPickerHandle>(null);
+      const submenuRef = useRef<{ onKeyDown: (e: KeyboardEvent) => boolean } | null>(null);
       const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
       useEffect(() => {
@@ -50,15 +51,25 @@ export const SlashMenu = React.memo(
               return false;
             }
 
-            // Submenu active: table picker navigation
-            if (activeSubmenuRef.current === 'table') {
-              if (event.key === 'Escape' || event.key === 'ArrowLeft') {
-                setActiveSubmenu(null);
-                activeSubmenuRef.current = null;
-                return true;
+            // Submenu active: delegate to active submenu handler
+            if (activeSubmenuRef.current) {
+              if (activeSubmenuRef.current === 'table') {
+                if (event.key === 'Escape' || event.key === 'ArrowLeft') {
+                  setActiveSubmenu(null);
+                  activeSubmenuRef.current = null;
+                  return true;
+                }
+                const handled = gridPickerRef.current?.onKeyDown(event);
+                if (handled) return true;
+              } else {
+                const handled = submenuRef.current?.onKeyDown(event);
+                if (handled) return true;
+                if (event.key === 'Escape' || event.key === 'ArrowLeft') {
+                  setActiveSubmenu(null);
+                  activeSubmenuRef.current = null;
+                  return true;
+                }
               }
-              const handled = gridPickerRef.current?.onKeyDown(event);
-              if (handled) return true;
             }
 
             if (event.key === 'ArrowUp') {
@@ -81,22 +92,26 @@ export const SlashMenu = React.memo(
               return true;
             }
 
-            if (event.key === 'ArrowRight') {
-              const currentItem = items[selectedIndexRef.current];
-              if (currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table')) {
-                setActiveSubmenu('table');
-                activeSubmenuRef.current = 'table';
-                return true;
-              }
+            const currentItem = items[selectedIndexRef.current];
+            const isTable = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
+            const hasSubmenu = Boolean(currentItem?.submenu) || Boolean(isTable);
+            const subId = currentItem?.submenu?.id || (isTable ? 'table' : null);
+
+            if (event.key === 'ArrowRight' && hasSubmenu && subId) {
+              setActiveSubmenu(subId);
+              activeSubmenuRef.current = subId;
+              return true;
             }
 
             if (event.key === 'Enter' || event.key === 'Tab') {
-              const currentItem = items[selectedIndexRef.current];
               if (currentItem) {
-                if (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table') {
-                  if (activeSubmenuRef.current !== 'table') {
-                    setActiveSubmenu('table');
-                    activeSubmenuRef.current = 'table';
+                if (hasSubmenu && subId) {
+                  if (activeSubmenuRef.current !== subId) {
+                    setActiveSubmenu(subId);
+                    activeSubmenuRef.current = subId;
+                    return true;
+                  } else {
+                    command(currentItem);
                     return true;
                   }
                 } else {
@@ -117,7 +132,8 @@ export const SlashMenu = React.memo(
           <div
             data-flint-suggestion-popup="true"
             onMouseDown={(e) => e.preventDefault()}
-            className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none"
+            style={{ boxShadow: 'var(--flint-shadow-2)' }}
+            className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none"
           >
             No matching block commands
           </div>
@@ -130,16 +146,26 @@ export const SlashMenu = React.memo(
       return (
         <div
           data-flint-suggestion-popup="true"
-          onMouseDown={(e) => e.preventDefault()}
+          onMouseDown={(e) => {
+            const target = e.target as HTMLElement;
+            if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+              e.preventDefault();
+            }
+          }}
           className="relative flex items-start gap-2"
         >
-          <div className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none">
+          <div
+            style={{ boxShadow: 'var(--flint-shadow-2)' }}
+            className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
+          >
             <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
               Insert Block
             </div>
             {items.map((item, index) => {
               const isSelected = index === selectedIndex;
               const isTable = item.icon === 'table' || item.title.toLowerCase() === 'table';
+              const hasSub = Boolean(item.submenu) || isTable;
+              const itemSubId = item.submenu?.id || (isTable ? 'table' : null);
 
               return (
                 <button
@@ -149,8 +175,8 @@ export const SlashMenu = React.memo(
                   }}
                   type="button"
                   onClick={() => {
-                    if (isTable) {
-                      const nextSub = activeSubmenu === 'table' ? null : 'table';
+                    if (hasSub && itemSubId) {
+                      const nextSub = activeSubmenu === itemSubId ? null : itemSubId;
                       setActiveSubmenu(nextSub);
                       activeSubmenuRef.current = nextSub;
                     } else {
@@ -160,9 +186,9 @@ export const SlashMenu = React.memo(
                   onMouseEnter={() => {
                     selectedIndexRef.current = index;
                     setSelectedIndex(index);
-                    if (isTable) {
-                      setActiveSubmenu('table');
-                      activeSubmenuRef.current = 'table';
+                    if (hasSub && itemSubId) {
+                      setActiveSubmenu(itemSubId);
+                      activeSubmenuRef.current = itemSubId;
                     } else {
                       setActiveSubmenu(null);
                       activeSubmenuRef.current = null;
@@ -194,11 +220,11 @@ export const SlashMenu = React.memo(
                     </div>
                   </div>
 
-                  {isTable && (
+                  {hasSub && (
                     <ChevronRightIcon
                       size={14}
                       className={`shrink-0 ${
-                        activeSubmenu === 'table' ? 'text-white' : 'text-[var(--flint-text-muted)]'
+                        activeSubmenu === itemSubId ? 'text-white' : 'text-[var(--flint-text-muted)]'
                       }`}
                     />
                   )}
@@ -207,21 +233,42 @@ export const SlashMenu = React.memo(
             })}
           </div>
 
-          {/* Table Grid Picker Flyout */}
-          {activeSubmenu === 'table' && isTableItem && (
+          {/* Submenu Flyout (Table Grid, Icon Picker, or Extension Submenu) */}
+          {activeSubmenu && currentItem && (
             <div>
-              <TableGridPicker
-                ref={gridPickerRef}
-                onSelect={(dimensions) => {
-                  if (currentItem) {
-                    command(currentItem, dimensions);
-                  }
-                }}
-                onClose={() => {
-                  setActiveSubmenu(null);
-                  activeSubmenuRef.current = null;
-                }}
-              />
+              {activeSubmenu === 'table' && isTableItem ? (
+                <TableGridPicker
+                  ref={gridPickerRef}
+                  onSelect={(dimensions) => {
+                    if (currentItem) {
+                      setActiveSubmenu(null);
+                      activeSubmenuRef.current = null;
+                      command(currentItem, dimensions);
+                    }
+                  }}
+                  onClose={() => {
+                    setActiveSubmenu(null);
+                    activeSubmenuRef.current = null;
+                  }}
+                />
+              ) : currentItem.submenu && currentItem.submenu.id === activeSubmenu ? (
+                currentItem.submenu.render({
+                  ref: submenuRef,
+                  onSelect: (extra) => {
+                    if (currentItem) {
+                      setActiveSubmenu(null);
+                      activeSubmenuRef.current = null;
+                      command(currentItem, extra);
+                    }
+                  },
+                  onClose: () => {
+                    setActiveSubmenu(null);
+                    activeSubmenuRef.current = null;
+                    const editorEl = document.querySelector('.ProseMirror') as HTMLElement | null;
+                    editorEl?.focus();
+                  },
+                })
+              ) : null}
             </div>
           )}
         </div>
