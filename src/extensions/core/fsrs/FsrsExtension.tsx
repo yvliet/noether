@@ -1,7 +1,7 @@
 /**
  * @module FsrsExtension
  * @description
- * Built-in core extension embedding the FSRS-4.5 spaced repetition review engine.
+ * Built-in community extension embedding the FSRS-4.5 spaced repetition review engine.
  * Registers the flashcard modal host, action rail review launcher, sidebar cards tab,
  * status bar due counter, and card creation slash commands.
  *
@@ -46,7 +46,7 @@ export const FSRS_MANIFEST: ExtensionManifest = {
   version: '1.0.0',
   description: 'Modern FSRS-4.5 spaced repetition flashcard review engine embedded directly in notes.',
   author: 'Yuliet Li',
-  isCore: true,
+  isCore: false,
   tags: ['spaced-repetition', 'fsrs', 'flashcards', 'learning', 'study'],
   readme: fsrsReadme,
 };

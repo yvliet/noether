@@ -16,14 +16,16 @@ import {
   ChevronRightIcon,
   Store01Icon,
   Folder01Icon,
-  SparklesIcon,
+  StickyNote02Icon,
+  Brain02Icon,
 } from '@/components/common/Icons';
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { renderPropertyIcon } from '@/extensions/core/properties/propertyIcons';
 import { usePropertiesSettings } from '@/extensions/core/properties/propertiesSettings';
 import { CascadeIcon } from '@/extensions/core/cascade/cascadeIcons';
-import { iconifyReadme } from '@/extensions/core/iconify/readme';
+import { quicknoteReadme } from '@/extensions/core/quicknote/readme';
+import { fsrsReadme } from '@/extensions/core/fsrs/readme';
 import { ArtificialIntelligence01Icon } from '@/extensions/core/copilot/copilotIcons';
 import { copilotReadme } from '@/extensions/core/copilot/readme';
 
@@ -73,17 +75,30 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     icon: <CascadeIcon size={18} className="text-[#dcddde]" />,
   },
   {
-    id: 'iconify',
-    name: 'Iconify',
+    id: 'quicknote',
+    name: 'Quicknote',
     version: '1.0.0',
     author: 'Yuliet Li',
-    description: 'Customize icons for folders, notes, files, and tabs with a rich HugeIcons selector and SQLite persistence.',
+    description: 'Physical sticky note overlay for rapid thought, task, and note capture.',
     downloads: '38.4k',
     stars: 5,
-    category: 'Visualization',
+    category: 'Productivity',
     featured: true,
-    icon: <SparklesIcon size={18} className="text-[var(--flint-accent,#ea580c)]" />,
-    readme: iconifyReadme,
+    icon: <StickyNote02Icon size={18} className="text-[#dcddde]" />,
+    readme: quicknoteReadme,
+  },
+  {
+    id: 'fsrs-spaced-repetition',
+    name: 'Spaced Repetition (FSRS)',
+    version: '1.0.0',
+    author: 'Yuliet Li',
+    description: 'Modern FSRS-4.5 spaced repetition flashcard review engine embedded directly in notes.',
+    downloads: '45.1k',
+    stars: 5,
+    category: 'Productivity',
+    featured: true,
+    icon: <Brain02Icon size={18} className="text-[#dcddde]" />,
+    readme: fsrsReadme,
   },
 ];
 

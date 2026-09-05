@@ -94,7 +94,7 @@ Flint establishes a strict, uncompromised separation of concerns across a 4-tier
 
 3. **Strict Native Core Isolation**:
    - Native core directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import extension or plugin code.
-   - Core extensions (Backlinks, Canvas, Graph, Spaced Repetition, Journal, Tasks) and community extensions (such as Cascade Books and Iconify) interface exclusively through the public Flint SDK (`src/sdk`), IoC registries, and the typed `EventBus`.
+   - Core extensions (Backlinks, Canvas, Graph, Iconify, Journal, Tasks) and community extensions (such as Cascade Books, Copilot, Quicknote, and Spaced Repetition) interface exclusively through the public Flint SDK (`src/sdk`), IoC registries, and the typed `EventBus`.
 
 ---
 
@@ -245,17 +245,23 @@ Add Flint to your client's MCP configuration (e.g. `claude_desktop_config.json`)
 
 ## Pre-Bundled Community Extensions
 
-Flint pre-bundles two showcase community extensions built exclusively on top of the public Flint SDK (`src/sdk`) with `isCore: false`. These serve as production-grade reference implementations demonstrating how community developers can build rich capabilities without touching native core code, before they are decoupled into standalone marketplace packages:
+Flint pre-bundles showcase community extensions built exclusively on top of the public Flint SDK (`src/sdk`) with `isCore: false`. These serve as production-grade reference implementations demonstrating how community developers can build rich capabilities without touching native core code, before they are decoupled into standalone marketplace packages:
 
 ### 1. Cascade Sequential Books (`flint-cascade`)
 - **Sequential Navigation**: Organize notes into sequential books and chapters with smooth hotkey navigation (`Alt + ,` / `Alt + .`) and automatic graph breadcrumbs.
 - **SDK Reference Model**: Demonstrates custom sidebar virtual folder injection, status bar page counters, reading order properties, and MCP tool registration using only public extension APIs.
 
-### 2. Iconify & Multi-Style Emoji Engine (`iconify`)
-- **Custom Iconography**: Assign custom icons or emojis to note titles, tabs, and file tree items with dedicated SQLite storage.
-- **Chevron-Aligned Slots**: File tree icons seat cleanly in the chevron spacer slot to guarantee uniform filename alignment.
-- **Multi-Style Resolution**: Supports Native, Twitter (Twemoji), Apple, Google, and Microsoft Fluent emoji sets with dual hex format resolution.
-- **SDK Reference Model**: Demonstrates dynamic SQLite table creation on `onload()`, icon picker modals, and full MCP management (`iconify_set_icon`, `iconify_get_icon`).
+### 2. Copilot For Flint (`flint-copilot`)
+- **Knowledge Graph AI Copilot**: Context-aware AI assistant with multi-provider BYOK streaming, tool calling, and active note reasoning.
+- **SDK Reference Model**: Demonstrates multi-surface dock zones, stream decoding, and MCP tool execution pipelines.
+
+### 3. Quicknote Scratchpad (`quicknote`)
+- **Sticky Note Overlay**: Desktop-grade HUD overlay for rapid thought, task, and note capture with native formatting.
+- **SDK Reference Model**: Demonstrates global modal injection, customizable shortcuts, and background vault synchronization.
+
+### 4. Embedded FSRS Spaced Repetition (`fsrs-spaced-repetition`)
+- **Spaced Repetition Review Engine**: Modern FSRS-4.5 flashcard scheduling embedded directly in markdown note syntax (`::`, `;;`, `{...}`).
+- **SDK Reference Model**: Demonstrates action rail launchers, dedicated review modal dialogs, status bar counter badges, and custom review tables.
 
 ---
 

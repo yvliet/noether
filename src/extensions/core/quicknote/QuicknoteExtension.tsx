@@ -1,7 +1,7 @@
 /**
  * @module QuicknoteExtension
  * @description
- * Built-in core extension providing a physical sticky note HUD overlay for
+ * Built-in community extension providing a physical sticky note HUD overlay for
  * rapid thought, task, and note capture.
  *
  * Exclusively uses the Flint SDK, IoC Registries, and EventBus.
@@ -33,7 +33,7 @@ export const QUICKNOTE_MANIFEST: ExtensionManifest = {
   version: '1.0.0',
   description: 'Physical sticky note overlay for rapid thought, task, and note capture.',
   author: 'Yuliet Li',
-  isCore: true,
+  isCore: false,
   tags: ['quicknote', 'sticky-notes', 'capture', 'post-it', 'scratchpad'],
   readme: quicknoteReadme,
 };

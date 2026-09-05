@@ -1,7 +1,7 @@
 /**
  * @module IconifyExtension
  * @description
- * Built-in community extension for customizing icons across Flint.
+ * Built-in core extension for customizing icons across Flint.
  * Allows assigning curated HugeIcons to folders, notes, canvases, files, and tabs.
  * Renders in the file tree, tab bar, context menus, and provides full MCP management.
  *
@@ -48,7 +48,7 @@ export const ICONIFY_MANIFEST: ExtensionManifest = {
   version: '1.1.0',
   description: 'Let icons live in all of Flint. Customize folders, files, tabs, and rich text documents with an extensible multi-pack icon system and SQLite persistence.',
   author: 'Yuliet Li',
-  isCore: false,
+  isCore: true,
   tags: ['icons', 'customization', 'file-tree', 'tabs', 'notes', 'ui', 'editor'],
   readme: iconifyReadme,
 };
