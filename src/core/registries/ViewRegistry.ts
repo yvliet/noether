@@ -20,7 +20,7 @@ export class ViewRegistry {
 
   /**
    * Dynamic mapping from view type string to owning extension metadata.
-   * Populated automatically when extensions register views — no hardcoded entries.
+   * Populated automatically when extensions register views without hardcoded entries.
    */
   private viewTypeToExtension: Map<string, { extensionId: string; pluginId: string; title?: string }> = new Map();
 

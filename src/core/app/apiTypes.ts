@@ -3,7 +3,7 @@
  * @description
  * Public API type contracts for the FlintApp plugin surface.
  * These interfaces define the shape of `app.workspace`, `app.vault`,
- * and `app.settings` — the primary ways plugins interact with the
+ * and `app.settings`, the primary ways plugins interact with the
  * application without importing internal stores.
  *
  * @since 0.2.0
@@ -110,7 +110,7 @@ export interface WorkspaceAPI {
 
   /**
    * Returns a snapshot of all open tabs.
-   * The returned array is a shallow copy — mutations do not affect app state.
+   * The returned array is a shallow copy; mutations do not affect app state.
    * @since 0.2.0
    */
   getTabs(): readonly TabItem[];
@@ -549,7 +549,7 @@ export interface HearthAPI {
 
   /**
    * Merges the given properties into a document's existing frontmatter.
-   * Does NOT replace existing properties — pass `null` or `undefined` values to delete specific keys.
+   * Does NOT replace existing properties; pass `null` or `undefined` values to delete specific keys.
    *
    * @param docId - The document's unique identifier.
    * @param properties - Key-value pairs to merge into the document's properties.

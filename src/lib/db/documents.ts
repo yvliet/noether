@@ -1256,7 +1256,7 @@ export function computeFastHash(str: string): string {
 
 /**
  * Scans the physical vault folder on disk and synchronizes all .md files and folders into SQLite.
- * Uses file_manifest for fast O(N stat) differential indexing — skipping untouched files.
+ * Uses file_manifest for fast O(N stat) differential indexing, skipping untouched files.
  */
 export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> {
   if (!platform.isDesktop()) {

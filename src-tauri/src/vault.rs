@@ -829,6 +829,46 @@ pub fn read_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) 
 }
 
 #[tauri::command]
+pub fn install_plugin_bundle(
+    state: tauri::State<AppState>,
+    plugin_folder: String,
+    manifest_json: String,
+    main_js: String,
+    styles_css: Option<String>,
+) -> Value {
+    mark_internal_write();
+    let cfg = state.config.lock().unwrap();
+    let target_vault = PathBuf::from(&cfg.current_vault_path);
+    let plugins_dir = target_vault.join(".flint").join("plugins");
+    let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
+    let target_dir = plugins_dir.join(&safe_folder);
+
+    if !is_safe_vault_path(&target_vault, &target_dir) {
+        return json!({ "success": false, "error": "Security: Plugin path escapes vault boundary" });
+    }
+
+    if let Err(e) = fs::create_dir_all(&target_dir) {
+        return json!({ "success": false, "error": format!("Failed to create plugin directory: {}", e) });
+    }
+
+    if let Err(e) = fs::write(target_dir.join("manifest.json"), manifest_json) {
+        return json!({ "success": false, "error": format!("Failed to write manifest.json: {}", e) });
+    }
+
+    if let Err(e) = fs::write(target_dir.join("main.js"), main_js) {
+        return json!({ "success": false, "error": format!("Failed to write main.js: {}", e) });
+    }
+
+    if let Some(css) = styles_css {
+        if !css.trim().is_empty() {
+            let _ = fs::write(target_dir.join("styles.css"), css);
+        }
+    }
+
+    json!({ "success": true, "path": target_dir.to_string_lossy() })
+}
+
+#[tauri::command]
 pub fn open_vault_window() -> Value {
     json!({ "success": true })
 }

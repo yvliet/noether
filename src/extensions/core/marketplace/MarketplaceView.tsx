@@ -23,84 +23,22 @@ import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { renderPropertyIcon } from '@/extensions/core/properties/propertyIcons';
 import { usePropertiesSettings } from '@/extensions/core/properties/propertiesSettings';
-import { CascadeIcon } from '@/extensions/core/cascade/cascadeIcons';
-import { quicknoteReadme } from '@/extensions/core/quicknote/readme';
-import { fsrsReadme } from '@/extensions/core/fsrs/readme';
-import { ArtificialIntelligence01Icon } from '@/extensions/core/copilot/copilotIcons';
-import { copilotReadme } from '@/extensions/core/copilot/readme';
+import { RotateCcwIcon } from '@/components/common/Icons';
+import { platform } from '@/lib/platform/platformAdapter';
+import type { ExtensionManifest } from '@/core/extensions/types';
+import {
+  COMMUNITY_MARKETPLACE_CATALOGUE,
+  MarketplaceExtensionItem,
+  MarketplacePluginItem,
+} from './marketplaceCatalogue';
+import { useMarketplaceQuery, getRegistryUrl } from './useMarketplaceQuery';
 
-export interface MarketplaceExtensionItem {
-  id: string;
-  name: string;
-  version: string;
-  author: string;
-  authorUrl?: string;
-  description: string;
-  downloads: string;
-  stars: number;
-  category: 'Productivity' | 'Visualization' | 'Integration' | 'Formatting';
-  icon: React.ReactNode;
-  featured?: boolean;
-  readme?: string;
-  bannerImage?: string;
-}
-
-// Backwards compatibility alias
-export type MarketplacePluginItem = MarketplaceExtensionItem;
-
-export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
-  {
-    id: 'flint-copilot',
-    name: 'Copilot For Flint',
-    version: '1.0.0',
-    author: 'Yuliet Li',
-    description: 'Fast, intelligent AI copilot assistant with BYOK multi-provider support and direct access to Flint workspace MCP tools.',
-    downloads: '24.8k',
-    stars: 5,
-    category: 'Productivity',
-    featured: true,
-    icon: <ArtificialIntelligence01Icon size={18} className="text-[var(--flint-accent,#ea580c)]" />,
-    readme: copilotReadme,
-  },
-  {
-    id: 'flint-cascade',
-    name: 'Cascade',
-    version: '1.0.0',
-    author: 'Yuliet Li',
-    description: 'Turn notes into sequential cascades (books) with status-bar linking, graph backlinks, and custom sidebar folders.',
-    downloads: '52.4k',
-    stars: 5,
-    category: 'Productivity',
-    featured: true,
-    icon: <CascadeIcon size={18} className="text-[#dcddde]" />,
-  },
-  {
-    id: 'quicknote',
-    name: 'Quicknote',
-    version: '1.0.0',
-    author: 'Yuliet Li',
-    description: 'Physical sticky note overlay for rapid thought, task, and note capture.',
-    downloads: '38.4k',
-    stars: 5,
-    category: 'Productivity',
-    featured: true,
-    icon: <StickyNote02Icon size={18} className="text-[#dcddde]" />,
-    readme: quicknoteReadme,
-  },
-  {
-    id: 'fsrs-spaced-repetition',
-    name: 'Spaced Repetition (FSRS)',
-    version: '1.0.0',
-    author: 'Yuliet Li',
-    description: 'Modern FSRS-4.5 spaced repetition flashcard review engine embedded directly in notes.',
-    downloads: '45.1k',
-    stars: 5,
-    category: 'Productivity',
-    featured: true,
-    icon: <Brain02Icon size={18} className="text-[#dcddde]" />,
-    readme: fsrsReadme,
-  },
-];
+// Re-export catalogue and models for consumers
+export {
+  COMMUNITY_MARKETPLACE_CATALOGUE,
+  type MarketplaceExtensionItem,
+  type MarketplacePluginItem,
+};
 
 export const MarketplaceView: React.FC = () => {
   const app = useFlintApp();
@@ -120,6 +58,9 @@ export const MarketplaceView: React.FC = () => {
     foldHeading,
     fontSize,
   } = useSettingsStore();
+
+  // Dynamic SWR marketplace hook with instant local fallback
+  const { extensions, isUpdating, isError, refetch } = useMarketplaceQuery();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -175,11 +116,114 @@ export const MarketplaceView: React.FC = () => {
     );
   };
 
-  const handleInstallExtension = (ext: MarketplaceExtensionItem) => {
+  const handleInstallExtension = async (ext: MarketplaceExtensionItem) => {
     setInstallingIds((prev) => new Set(prev).add(ext.id));
 
-    setTimeout(async () => {
-      // Register in local installed state
+    try {
+      // 1. If already registered in runtime (e.g. bundled extension), enable directly
+      if (app.extensions.getExtensionManifest(ext.id)) {
+        await app.extensions.enableExtension(ext.id);
+      } else {
+        // 2. Third-party extension: attempt to fetch real assets from registry URLs
+        const registryBase = getRegistryUrl().replace(/\/plugins\/?$/, '/plugins');
+        const manifestUrl = ext.manifestUrl || `${registryBase}/${ext.id}/manifest.json`;
+        const mainJsUrl = ext.mainJsUrl || ext.downloadUrl || `${registryBase}/${ext.id}/main.js`;
+        const stylesCssUrl = ext.stylesCssUrl || `${registryBase}/${ext.id}/styles.css`;
+
+        let manifestContent: string | null = null;
+        let mainJsContent: string | null = null;
+        let stylesCssContent: string | null = null;
+
+        try {
+          const res = await fetch(manifestUrl, { signal: AbortSignal.timeout(4000) });
+          if (res.ok) manifestContent = await res.text();
+        } catch {
+          // Offline or custom assets not deployed yet
+        }
+
+        try {
+          const res = await fetch(mainJsUrl, { signal: AbortSignal.timeout(4000) });
+          if (res.ok) mainJsContent = await res.text();
+        } catch {
+          // Offline or custom assets not deployed yet
+        }
+
+        try {
+          const res = await fetch(stylesCssUrl, { signal: AbortSignal.timeout(3000) });
+          if (res.ok) stylesCssContent = await res.text();
+        } catch {
+          // Optional styles
+        }
+
+        // Parse or construct extension manifest descriptor
+        let manifestData: ExtensionManifest | null = null;
+        if (manifestContent) {
+          try {
+            manifestData = JSON.parse(manifestContent);
+          } catch {}
+        }
+
+        if (!manifestData) {
+          manifestData = {
+            id: ext.id,
+            name: ext.name,
+            version: ext.version || '1.0.0',
+            description: ext.description || '',
+            author: ext.author || 'Community',
+            isCore: false,
+          };
+          manifestContent = JSON.stringify(manifestData, null, 2);
+        } else {
+          manifestData.isCore = false;
+          manifestContent = JSON.stringify(manifestData, null, 2);
+        }
+
+        // Provide standard starter code if remote entry bundle is not hosted
+        if (!mainJsContent || !mainJsContent.trim()) {
+          const cleanClassName = (ext.name.replace(/[^a-zA-Z0-9]/g, '') || 'Community') + 'Extension';
+          mainJsContent = `const { Extension } = require('flint');
+
+module.exports = class ${cleanClassName} extends Extension {
+  async onload() {
+    console.log('[Flint] Loaded community extension: ${ext.name} (v${ext.version})');
+  }
+
+  onunload() {
+    console.log('[Flint] Unloaded extension: ${ext.name}');
+  }
+};
+`;
+        }
+
+        // 3. Prepare the hearth extension directory on desktop
+        if (platform.isDesktop()) {
+          try {
+            await platform.installExtensionBundle(
+              ext.id,
+              manifestContent,
+              mainJsContent,
+              stylesCssContent || undefined
+            );
+            await app.extensions.refreshCommunityExtensions();
+          } catch (diskErr) {
+            console.warn('[MarketplaceView] Could not prepare extension directory on disk:', diskErr);
+          }
+        }
+
+        // 4. In-memory registration fallback if runtime has not loaded from disk
+        if (!app.extensions.getExtensionManifest(ext.id)) {
+          await app.extensions.externalLoader.loadFromSource(
+            manifestData,
+            mainJsContent,
+            stylesCssContent || undefined
+          );
+        }
+
+        // 5. Enable the extension
+        await app.extensions.enableExtension(ext.id);
+      }
+
+      // 6. Record in local installed state
       setLocalInstalledIds((prev) => {
         const next = new Set(prev).add(ext.id);
         const json = JSON.stringify(Array.from(next));
@@ -188,42 +232,17 @@ export const MarketplaceView: React.FC = () => {
         return next;
       });
 
-      // Register or enable in extension manager
-      try {
-        if (app.extensions.getExtensionManifest(ext.id)) {
-          await app.extensions.enableExtension(ext.id);
-        } else {
-          class CommunityExtensionStub extends Extension {
-            onload() {
-              console.log(`[Community Extension] Loaded ${ext.name}`);
-            }
-          }
-
-          app.extensions.registerExtension(
-            {
-              id: ext.id,
-              name: ext.name,
-              version: ext.version,
-              description: ext.description,
-              author: ext.author,
-              isCore: false,
-            },
-            CommunityExtensionStub
-          );
-          await app.extensions.enableExtension(ext.id);
-        }
-      } catch (err) {
-        console.warn('Registered in runtime manager:', err);
-      }
-
+      showToast(`Installed "${ext.name}"`, 'success');
+    } catch (err) {
+      console.error('[MarketplaceView] Failed to install extension:', err);
+      showToast(`Failed to install "${ext.name}"`, 'warning');
+    } finally {
       setInstallingIds((prev) => {
         const next = new Set(prev);
         next.delete(ext.id);
         return next;
       });
-
-      showToast(`Installed "${ext.name}"`, 'success');
-    }, 600);
+    }
   };
 
   const handleUninstallExtension = async (ext: MarketplaceExtensionItem) => {
@@ -245,7 +264,7 @@ export const MarketplaceView: React.FC = () => {
   };
 
   const filteredExtensions = useMemo(() => {
-    let list = [...COMMUNITY_MARKETPLACE_CATALOGUE];
+    let list = [...extensions];
 
     // Category filter
     if (selectedCategory === 'Featured') {
@@ -287,7 +306,7 @@ export const MarketplaceView: React.FC = () => {
     }
 
     return list;
-  }, [searchQuery, selectedCategory, sortBy, sortOrder, localInstalledIds, extensionList]);
+  }, [extensions, searchQuery, selectedCategory, sortBy, sortOrder, localInstalledIds, extensionList]);
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#181818] text-[var(--flint-text-primary)] select-none">
@@ -349,13 +368,13 @@ export const MarketplaceView: React.FC = () => {
                   type="button"
                   onClick={() => setIsPropertiesFolded((prev) => !prev)}
                   title={isPropertiesFolded ? 'Unfold properties' : 'Fold properties'}
-                  className={`absolute -left-[36px] top-[calc(50%-4px)] -translate-y-1/2 w-[36px] h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] transition-opacity cursor-pointer z-10 ${
+                  className={`absolute -left-[36px] top-[calc(50%-4px)] -translate-y-1/2 w-[36px] h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] cursor-pointer z-10 ${
                     isPropertiesFolded ? 'opacity-100 text-[#aaa]' : 'opacity-0 group-hover/title:opacity-100'
                   }`}
                 >
                   <ChevronDownIcon
                     size={18}
-                    className={`transition-transform duration-150 ${isPropertiesFolded ? '-rotate-90' : 'rotate-0'}`}
+                    className={isPropertiesFolded ? '-rotate-90' : 'rotate-0'}
                   />
                 </button>
               )}
@@ -370,11 +389,7 @@ export const MarketplaceView: React.FC = () => {
 
             {/* Frontmatter Properties */}
             {showPropsInDoc && propertiesInDoc !== 'Hidden' && (
-              <div
-                className={`transition-all duration-150 ease-in-out ${
-                  isPropertiesFolded ? 'hidden' : 'block'
-                }`}
-              >
+              <div className={isPropertiesFolded ? 'hidden' : 'block'}>
                 <div className="flex flex-col gap-1 text-xs mb-3">
                   {/* Category */}
                   <div className="flex items-center gap-2 group/prop hover:bg-[#202020]/40 rounded px-1.5 py-0.5 -mx-1.5">
@@ -394,7 +409,7 @@ export const MarketplaceView: React.FC = () => {
                       <span>Extensions</span>
                     </div>
                     <div className="text-xs text-[#b0b0b0]">
-                      {filteredExtensions.length} of {COMMUNITY_MARKETPLACE_CATALOGUE.length}
+                      {filteredExtensions.length} of {extensions.length}
                     </div>
                   </div>
                 </div>
@@ -426,6 +441,15 @@ export const MarketplaceView: React.FC = () => {
 
             {/* Sort & Order Dropdowns */}
             <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+              <button
+                type="button"
+                onClick={() => refetch()}
+                title={isUpdating ? 'Updating catalogue from registry...' : 'Refresh marketplace catalogue'}
+                disabled={isUpdating}
+                className="flint-btn !p-1.5 flex items-center justify-center cursor-pointer"
+              >
+                <RotateCcwIcon size={14} className={isUpdating ? 'animate-spin' : ''} />
+              </button>
               <CustomSelect
                 value={sortBy}
                 onChange={(val) => setSortBy(val as 'popular' | 'rating' | 'name')}
@@ -440,7 +464,7 @@ export const MarketplaceView: React.FC = () => {
                 type="button"
                 onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
                 title={sortOrder === 'asc' ? 'Ascending\nClick for descending' : 'Descending\nClick for ascending'}
-                className="flint-btn !p-1.5 flex items-center justify-center"
+                className="flint-btn !p-1.5 flex items-center justify-center cursor-pointer"
               >
                 {sortOrder === 'asc' ? <ArrowUp01Icon size={14} /> : <ArrowDown01Icon size={14} />}
               </button>
@@ -448,7 +472,24 @@ export const MarketplaceView: React.FC = () => {
           </div>
 
           {/* 2-Column Extension Cards Grid matching page width */}
-          {filteredExtensions.length === 0 ? (
+          {extensions.length === 0 ? (
+            <div className="text-center py-20 flex flex-col items-center justify-center max-w-sm mx-auto">
+              <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--flint-accent,#ea580c)]">
+                <Store01Icon size={24} />
+              </div>
+              <h3 className="text-sm font-semibold text-white mb-1.5">No Community Extensions Yet</h3>
+              <p className="text-xs text-[#888] leading-relaxed mb-4 text-center">
+                The Flint community extensions registry is open with a clean slate. Publish or sync extensions from the registry.
+              </p>
+              <button
+                onClick={() => refetch()}
+                className="flint-btn flint-btn-primary !py-1.5 !px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcwIcon size={13} className={isUpdating ? 'animate-spin' : ''} />
+                <span>Check Registry Updates</span>
+              </button>
+            </div>
+          ) : filteredExtensions.length === 0 ? (
             <div className="text-center py-16 flex flex-col items-center justify-center">
               <p className="text-xs text-[#777] mb-3">
                 No community extensions match your filter.
@@ -458,7 +499,7 @@ export const MarketplaceView: React.FC = () => {
                   setSearchQuery('');
                   setSelectedCategory('All');
                 }}
-                className="flint-btn"
+                className="flint-btn cursor-pointer"
               >
                 Clear filters
               </button>
@@ -472,7 +513,7 @@ export const MarketplaceView: React.FC = () => {
                 return (
                   <div
                     key={ext.id}
-                    className="p-3.5 rounded-xl bg-[#1b1b1b] hover:bg-[#1f1f1f] border border-[#262626] hover:border-[#333333] transition-all flex flex-col justify-between gap-2.5 group relative shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+                    className="p-3.5 rounded-xl bg-[#1b1b1b] hover:bg-[#1f1f1f] border border-[#262626] hover:border-[#333333] flex flex-col justify-between gap-2.5 group relative shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
                   >
                     {/* Optional Card Banner Image */}
                     {ext.bannerImage && (
@@ -493,7 +534,7 @@ export const MarketplaceView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name)}
-                              className="text-xs font-medium text-white hover:text-[var(--flint-accent)] transition-colors truncate text-left cursor-pointer"
+                              className="text-xs font-medium text-white hover:text-[var(--flint-accent)] truncate text-left cursor-pointer"
                             >
                               {ext.name}
                             </button>

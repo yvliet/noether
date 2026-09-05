@@ -89,9 +89,11 @@ export interface IPlatformAdapter {
   openExtensionsFolder(): Promise<{ success: boolean; path?: string }>;
   listInstalledExtensions(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>>;
   readExtensionBundle(extensionFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }>;
+  installExtensionBundle(extensionFolder: string, manifestJson: string, mainJs: string, stylesCss?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   openPluginsFolder(): Promise<{ success: boolean; path?: string }>;
   listInstalledPlugins(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>>;
   readPluginBundle(pluginFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }>;
+  installPluginBundle(pluginFolder: string, manifestJson: string, mainJs: string, stylesCss?: string): Promise<{ success: boolean; path?: string; error?: string }>;
 
   // Zoom
   setZoomFactor(factor: number): void;
@@ -694,6 +696,32 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       return await invoke('read_plugin_bundle', { pluginFolder });
     }
     return { success: false };
+  }
+
+  public async installExtensionBundle(
+    extensionFolder: string,
+    manifestJson: string,
+    mainJs: string,
+    stylesCss?: string
+  ): Promise<{ success: boolean; path?: string; error?: string }> {
+    return this.installPluginBundle(extensionFolder, manifestJson, mainJs, stylesCss);
+  }
+
+  public async installPluginBundle(
+    pluginFolder: string,
+    manifestJson: string,
+    mainJs: string,
+    stylesCss?: string
+  ): Promise<{ success: boolean; path?: string; error?: string }> {
+    if (this.isTauri()) {
+      return await invoke('install_plugin_bundle', {
+        pluginFolder,
+        manifestJson,
+        mainJs,
+        stylesCss: stylesCss || null,
+      });
+    }
+    return { success: false, error: 'Desktop only' };
   }
 
   // Zoom

@@ -66,7 +66,7 @@ import {
   TextStrikethroughIcon,
   HighlighterIcon,
   PlusSignSquareIcon,
-  Link01Icon,
+  Link04Icon,
   ExternalLinkIcon,
   Search01Icon,
   ParagraphIcon,
@@ -1456,7 +1456,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         items.push({
           id: 'add-link',
           title: 'Add link',
-          icon: <Link01Icon size={14} />,
+          icon: <Link04Icon size={14} />,
           onClick: () => {
             restoreSelection();
             if (!empty && selectedText) {

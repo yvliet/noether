@@ -680,7 +680,7 @@ export interface McpToolResult {
  * Tools are automatically unregistered when the extension is disabled or unloaded.
  *
  * Why generic `Record<string, unknown>` for handler args instead of typed generics:
- * MCP tool calls arrive as untyped JSON from external agents — the handler must
+ * MCP tool calls arrive as untyped JSON from external agents, so the handler must
  * validate and cast at runtime regardless. This keeps the registry type-simple
  * while handlers remain fully type-safe internally.
  *

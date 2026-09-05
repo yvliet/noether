@@ -71,9 +71,30 @@ export class ExternalExtensionLoader {
         return false;
       }
 
+      return await this.loadFromSource(manifest, bundle.jsCode, bundle.cssCode);
+    } catch (err) {
+      console.error(`[ExternalExtensionLoader] Error reading extension "${manifest.id}":`, err);
+      return false;
+    }
+  }
+
+  /**
+   * Evaluates an extension bundle from memory/network and registers it with the runtime.
+   *
+   * @param manifest - Extension manifest descriptor.
+   * @param jsCode - Compiled JavaScript code.
+   * @param cssCode - Optional CSS stylesheet code.
+   * @returns `true` if loaded and registered successfully.
+   */
+  public async loadFromSource(
+    manifest: ExtensionManifest,
+    jsCode: string,
+    cssCode?: string
+  ): Promise<boolean> {
+    try {
       // Handle CSS injection if present
-      if (bundle.cssCode) {
-        this.injectExtensionStyle(manifest.id, bundle.cssCode);
+      if (cssCode) {
+        this.injectExtensionStyle(manifest.id, cssCode);
       }
 
       // Create sandboxed module evaluation environment
@@ -111,7 +132,7 @@ export class ExternalExtensionLoader {
         'require',
         'Flint',
         'React',
-        bundle.jsCode
+        jsCode
       );
 
       factory(

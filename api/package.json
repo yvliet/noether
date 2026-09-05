@@ -1,0 +1,26 @@
+{
+  "name": "@flint/registry-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serverless dynamic database and REST API for the Flint Community Plugin Registry",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "tsx test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.8",
+    "@libsql/client": "^0.14.0",
+    "hono": "^4.7.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "tsx": "^4.19.3",
+    "typescript": "~5.7.3"
+  }
+}

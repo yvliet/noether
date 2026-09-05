@@ -1,0 +1,553 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+
+  /* Obsidian dark surface & Flint design tokens */
+  --flint-bg-app: #151515;
+  --flint-bg-sidebar: #151515;
+  --flint-bg-sidebar-hover: #1f1f1f;
+  --flint-bg-sidebar-active: #272727;
+  --flint-bg-main: #151515;
+  --flint-bg-card: #1c1c1c;
+  --flint-bg-card-hover: #242424;
+  --flint-bg-input: #1f1f1f;
+
+  /* Obsidian theme aliases */
+  --background-primary: #151515;
+  --background-primary-alt: #1f1f1f;
+  --background-secondary: #1a1a1a;
+  --background-secondary-alt: #292929;
+  --interactive-normal: #2a2a2a;
+  --interactive-hover: #363636;
+  --divider-color: #292929;
+  --border-width: 1px;
+
+  /* Border tokens */
+  --flint-border-subtle: #202020;
+  --flint-border-base: #292929;
+  --flint-border-strong: #383838;
+
+  /* Text tokens */
+  --flint-text-primary: #dadada;
+  --flint-text-secondary: #b3b3b3;
+  --flint-text-muted: #888888;
+  --flint-text-faint: #666666;
+  --text-normal: #dadada;
+  --text-muted: #b3b3b3;
+  --text-faint: #666666;
+
+  /* Accent tokens (Flint signature flame orange accent) */
+  --flint-accent: #ea580c;
+  --flint-accent-hover: #f97316;
+  --flint-accent-active: #9a3412;
+  --flint-accent-subtle: rgba(234, 88, 12, 0.15);
+  --text-accent: #ea580c;
+  --text-accent-hover: #f97316;
+
+  /* Graph tokens */
+  --graph-line: #333333;
+  --graph-node: #9e9e9e;
+  --graph-node-unresolved: #555555;
+  --graph-node-focused: #ea580c;
+  --graph-node-tag: #ea580c;
+  --graph-text: #dadada;
+
+  /* Native system font stack (matching Flint desktop editor exactly) */
+  --font-interface-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-text-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  --font-monospace-fallback: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --font-interface: var(--font-interface-fallback);
+  --font-text: var(--font-text-fallback);
+  --font-monospace: var(--font-monospace-fallback);
+}
+
+.theme-light,
+html.theme-light,
+html.light {
+  color-scheme: light;
+
+  /* Obsidian light surface & Flint design tokens - balanced soft lightness */
+  --flint-bg-app: #ffffff;
+  --flint-bg-sidebar: #fafafa;
+  --flint-bg-sidebar-hover: #f3f4f6;
+  --flint-bg-sidebar-active: #e5e7eb;
+  --flint-bg-main: #ffffff;
+  --flint-bg-card: #f9fafb;
+  --flint-bg-card-hover: #f3f4f6;
+  --flint-bg-input: #ffffff;
+
+  /* Obsidian theme aliases */
+  --background-primary: #ffffff;
+  --background-primary-alt: #fafafa;
+  --background-secondary: #f9fafb;
+  --background-secondary-alt: #f3f4f6;
+  --interactive-normal: #f3f4f6;
+  --interactive-hover: #e5e7eb;
+  --divider-color: #ededf0;
+  --border-width: 1px;
+
+  /* Soft, balanced border tokens */
+  --flint-border-subtle: #f4f4f6;
+  --flint-border-base: #e8e8ec;
+  --flint-border-strong: #dcdde2;
+
+  /* Warm, natural text tokens */
+  --flint-text-primary: #22252a;
+  --flint-text-secondary: #4b5563;
+  --flint-text-muted: #6b7280;
+  --flint-text-faint: #9ca3af;
+  --text-normal: #22252a;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+
+  /* Accent tokens (Flint signature flame orange accent) */
+  --flint-accent: #ea580c;
+  --flint-accent-hover: #f97316;
+  --flint-accent-active: #c2410c;
+  --flint-accent-subtle: rgba(234, 88, 12, 0.12);
+  --text-accent: #ea580c;
+  --text-accent-hover: #f97316;
+
+  /* Graph tokens */
+  --graph-line: #e2e4e9;
+  --graph-node: #94a3b8;
+  --graph-node-unresolved: #cbd5e1;
+  --graph-node-focused: #ea580c;
+  --graph-node-tag: #ea580c;
+  --graph-text: #22252a;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  font-variant-numeric: normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior: none;
+}
+
+/* Ensure numbers in text and UI use proportional digits matching Flint desktop */
+body, input, button, select, textarea, span, div, h1, h2, h3, h4, p, a {
+  font-variant-numeric: normal !important;
+}
+
+/* Strict zero micro-interaction animation lag (instant native desktop feel) */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+.flint-btn,
+.flint-tree-item,
+.tab-pill {
+  transition: none !important;
+  animation-duration: 0s !important;
+}
+
+/* Custom Obsidian-style lightweight scrollbar */
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #2d2d2d;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-right: 3px solid transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #3d3d3d;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button,
+*::-webkit-scrollbar-button,
+::-webkit-scrollbar-button:single-button,
+::-webkit-scrollbar-button:vertical:decrement,
+::-webkit-scrollbar-button:vertical:increment,
+::-webkit-scrollbar-button:horizontal:decrement,
+::-webkit-scrollbar-button:horizontal:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.custom-scrollbar {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+/* Sidebar hover-only scrollbar: thumb is invisible until the sidebar is hovered */
+.sidebar-container {
+  overflow-x: hidden;
+}
+
+.sidebar-hover-scrollbar {
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+}
+
+.sidebar-hover-scrollbar::-webkit-scrollbar {
+  width: 9px;
+  height: 9px;
+}
+
+.sidebar-hover-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-hover-scrollbar::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+  border-radius: 9999px;
+}
+
+.sidebar-hover-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.sidebar-hover-scrollbar::-webkit-scrollbar-button,
+.sidebar-hover-scrollbar::-webkit-scrollbar-button:single-button,
+.sidebar-hover-scrollbar::-webkit-scrollbar-button:vertical:decrement,
+.sidebar-hover-scrollbar::-webkit-scrollbar-button:vertical:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* When the sidebar container is hovered, reveal the scrollbar thumb in #2d2d2d */
+.sidebar-container:hover .sidebar-hover-scrollbar::-webkit-scrollbar-thumb,
+.sidebar-hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #2d2d2d;
+  background-clip: padding-box;
+}
+
+/* When the thumb itself is hovered, lighten up a bit to #3d3d3d */
+.sidebar-container:hover .sidebar-hover-scrollbar::-webkit-scrollbar-thumb:hover,
+.sidebar-hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background-color: #3d3d3d;
+  background-clip: padding-box;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none !important;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Flint Native Desktop Button & Form Controls */
+.flint-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: var(--interactive-normal, #363636);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.28);
+  color: var(--text-normal, #dadada);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 10px;
+  cursor: pointer;
+  user-select: none;
+  outline: none !important;
+  transition: none;
+}
+
+.flint-btn:hover {
+  background-color: var(--interactive-hover, #3f3f3f);
+  color: #ffffff;
+}
+
+.flint-btn:active {
+  background-color: #2e2e2e;
+}
+
+.flint-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background-color: var(--flint-accent, #ea580c);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 5px;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 1px 3px 0 rgba(0, 0, 0, 0.32);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 12px;
+  cursor: pointer;
+  user-select: none;
+  outline: none !important;
+  transition: none;
+}
+
+.flint-btn-primary:hover {
+  background-color: var(--flint-accent-hover, #f97316);
+  color: #ffffff;
+}
+
+/* Global Selection Style */
+::selection {
+  background-color: #4a4e57;
+  color: #ffffff;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-monospace) !important;
+}
+
+/* ==========================================================================
+   Light Mode Clean Surface & Typography Overrides
+   ========================================================================== */
+
+.theme-light,
+.theme-light body,
+.theme-light #root {
+  background-color: #ffffff !important;
+  color: #22252a !important;
+}
+
+/* Light Mode Background Overrides */
+.theme-light .bg-\[\#151515\],
+.theme-light .bg-\[\#141414\],
+.theme-light .bg-\[\#131313\],
+.theme-light .bg-\[\#161616\] {
+  background-color: #ffffff !important;
+}
+
+.theme-light .bg-\[\#181818\],
+.theme-light .bg-\[\#191919\],
+.theme-light .bg-\[\#1a1a1a\],
+.theme-light .bg-\[\#1c1c1c\],
+.theme-light .bg-\[\#1e1e1e\],
+.theme-light .bg-\[\#1f1f1f\] {
+  background-color: #f9fafb !important;
+}
+
+.theme-light .bg-\[\#202020\],
+.theme-light .bg-\[\#222222\],
+.theme-light .bg-\[\#242424\],
+.theme-light .bg-\[\#252525\],
+.theme-light .bg-\[\#262626\],
+.theme-light .bg-\[\#282828\],
+.theme-light .bg-\[\#2a2a2a\],
+.theme-light .bg-\[\#2c2c2c\],
+.theme-light .bg-\[\#303030\] {
+  background-color: #f3f4f6 !important;
+}
+
+/* Guidelines in Outline & Trees */
+.theme-light .bg-\[\#333333\] {
+  background-color: #e8e8ec !important;
+}
+
+/* Light Mode Text Overrides - Warm, readable neutral charcoal */
+.theme-light .text-white,
+.theme-light .text-\[\#ffffff\],
+.theme-light .text-\[\#f8fafc\],
+.theme-light .text-\[\#dadada\],
+.theme-light .text-\[\#cccccc\] {
+  color: #22252a !important;
+}
+
+.theme-light .text-\[\#b3b3b3\],
+.theme-light .text-\[\#999999\],
+.theme-light .text-\[\#888888\] {
+  color: #6b7280 !important;
+}
+
+.theme-light .text-\[\#666666\],
+.theme-light .text-\[\#555555\] {
+  color: #9ca3af !important;
+}
+
+.theme-light .hover\:text-white:hover,
+.theme-light .hover\:text-\[\#ffffff\]:hover,
+.theme-light .group:hover .group-hover\:text-white {
+  color: #111827 !important;
+}
+
+/* Light Mode Border Overrides - Soft 8% lightness contrast */
+.theme-light .border-\[\#1c1c1c\],
+.theme-light .border-\[\#202020\],
+.theme-light .border-\[\#242424\],
+.theme-light .border-\[\#252525\],
+.theme-light .border-\[\#262626\],
+.theme-light .border-\[\#282828\],
+.theme-light .border-\[\#292929\],
+.theme-light .border-\[\#2a2a2a\],
+.theme-light .border-\[\#2b2b2b\],
+.theme-light .border-\[\#2c2c2c\],
+.theme-light .border-\[\#2d2d2d\],
+.theme-light .border-\[\#2e2e2e\],
+.theme-light .border-\[\#303030\],
+.theme-light .border-\[\#333333\],
+.theme-light .border-\[\#363636\],
+.theme-light .border-\[\#383838\] {
+  border-color: #e8e8ec !important;
+}
+
+.theme-light .border-\[\#3a3a3a\],
+.theme-light .border-\[\#404040\],
+.theme-light .border-\[\#444444\],
+.theme-light .border-\[\#484848\],
+.theme-light .border-\[\#555555\] {
+  border-color: #dcdde2 !important;
+}
+
+/* Light Mode Hover Overrides */
+.theme-light .hover\:bg-\[\#1a1a1a\]:hover,
+.theme-light .hover\:bg-\[\#1f1f1f\]:hover,
+.theme-light .hover\:bg-\[\#202020\]:hover,
+.theme-light .hover\:bg-\[\#242424\]:hover,
+.theme-light .hover\:bg-\[\#282828\]:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.theme-light .hover\:border-\[\#3a3a3a\]:hover,
+.theme-light .hover\:border-\[\#404040\]:hover,
+.theme-light .hover\:border-\[\#444444\]:hover,
+.theme-light .hover\:border-\[\#484848\]:hover {
+  border-color: #dcdde2 !important;
+}
+
+/* Light Mode Selection */
+.theme-light ::selection {
+  background-color: #fed7aa !important;
+  color: #7c2d12 !important;
+}
+
+/* Light Mode Scrollbars */
+.theme-light ::-webkit-scrollbar-thumb {
+  background-color: #e0e2e8;
+}
+
+.theme-light ::-webkit-scrollbar-thumb:hover {
+  background-color: #c4c6cf;
+}
+
+.theme-light .sidebar-container:hover .sidebar-hover-scrollbar::-webkit-scrollbar-thumb,
+.theme-light .sidebar-hover-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: #e0e2e8;
+}
+
+.theme-light .sidebar-container:hover .sidebar-hover-scrollbar::-webkit-scrollbar-thumb:hover,
+.theme-light .sidebar-hover-scrollbar:hover::-webkit-scrollbar-thumb:hover {
+  background-color: #c4c6cf;
+}
+
+/* Light Mode Inputs */
+.theme-light input {
+  background-color: #ffffff !important;
+  border-color: #e8e8ec !important;
+  color: #22252a !important;
+}
+
+.theme-light input::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Light Mode Code Blocks & Inline Code */
+.theme-light pre,
+.theme-light pre code {
+  background-color: #f9fafb !important;
+  color: #22252a !important;
+  border-color: #e8e8ec !important;
+}
+
+.theme-light code:not(pre code) {
+  background-color: #f3f4f6 !important;
+  border-color: #e8e8ec !important;
+  color: #22252a !important;
+}
+
+/* Light Mode Tables - Full outer and inner horizontal/vertical outlines */
+.theme-light table,
+.theme-light .overflow-x-auto {
+  background-color: #ffffff !important;
+  border-color: #e8e8ec !important;
+}
+
+.theme-light table thead,
+.theme-light table thead tr,
+.theme-light table tbody,
+.theme-light table tbody tr {
+  border-color: #e8e8ec !important;
+}
+
+.theme-light table th {
+  background-color: #f9fafb !important;
+  color: #22252a !important;
+  border-color: #e8e8ec !important;
+}
+
+.theme-light table td {
+  border-color: #e8e8ec !important;
+  color: #4b5563 !important;
+}
+
+.theme-light table tr:hover td {
+  background-color: #f9fafb !important;
+}
+
+/* Light Mode Sidebar Continuous Guidelines & Active Rails */
+.theme-light [data-tree-item-id] .border-l,
+.theme-light .sidebar-container .border-l {
+  border-color: #e8e8ec !important;
+}
+
+.theme-light .group:hover .group-hover\:bg-white {
+  background-color: #c4c6cf !important;
+}
+
+/* Visual / Diagram code block font-sans override */
+pre.font-sans,
+pre.font-sans code {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+/* Merged table headers */
+table .table-header-merged {
+  background-color: #202020;
+  text-align: center;
+  font-weight: 700;
+  color: #dadada;
+}
+
+.theme-light table .table-header-merged {
+  background-color: #f3f4f6 !important;
+  color: #22252a !important;
+}
+

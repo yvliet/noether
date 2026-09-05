@@ -114,7 +114,7 @@ Flint achieves real-time relational graph queries and full-text retrieval while 
 
 ### 2. Track B: Relational Metadata & Query Index (Native `rusqlite` Engine)
 - **Direct Tauri IPC Dispatch**: Extracted AST nodes, YAML frontmatter, tags, `[[wikilinks]]`, and `- [ ]` tasks serialize across Tauri IPC directly to compiled Rust.
-- **Direct WAL Page Commits**: `rusqlite` writes SQLite page diffs directly to `flint.sqlite` and the Write-Ahead Log (`flint.sqlite-wal`) under `PRAGMA synchronous = NORMAL;` and 256MB memory mapping (`PRAGMA mmap_size = 268435456;`). `rusqlite` handles SQLite page writes directly—it does not route through the Markdown file persistence mechanism.
+- **Direct WAL Page Commits**: `rusqlite` writes SQLite page diffs directly to `flint.sqlite` and the Write-Ahead Log (`flint.sqlite-wal`) under `PRAGMA synchronous = NORMAL;` and 256MB memory mapping (`PRAGMA mmap_size = 268435456;`). `rusqlite` handles SQLite page writes directly without routing through the Markdown file persistence mechanism.
 - **Zero WebAssembly Serialization Overhead**: Eliminates `sql.js` memory dumps and whole-database exports; queries and index updates execute natively in sub-millisecond time.
 - **FTS5 Full-Text Indexing**: Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 relevance ranking keeps search instantly responsive across vaults with tens of thousands of notes.
 
@@ -476,7 +476,15 @@ export default class ReadingAnalyticsExtension extends Extension {
 }
 ```
 
-For comprehensive documentation on extension points, context menus, custom views, and settings tabs, refer to [`docs/PLUGIN_GUIDE.md`](docs/PLUGIN_GUIDE.md) and [`docs/mcp-setup-guide.md`](docs/mcp-setup-guide.md).
+### Documentation Suite
+
+For detailed technical guides, end-user workflows, and architecture specifications:
+- **[User Guide & Manual](docs/USER_GUIDE.md)**: Comprehensive manual for writing, active recall, spatial whiteboarding, and vault management.
+- **[Systems Architecture Specification](docs/ARCHITECTURE.md)**: In-depth technical specification of the micro-kernel, storage pipeline, and performance invariants.
+- **[Keyboard Shortcuts Cheat Sheet](docs/KEYBOARD_SHORTCUTS.md)**: Quick reference for all hotkeys and commands.
+- **[Plugin Developer Guide](docs/PLUGIN_GUIDE.md)**: Building, debugging, and distributing custom Flint extensions.
+- **[Model Context Protocol (MCP) Setup](docs/mcp-setup-guide.md)**: Connecting Claude Desktop, Antigravity, and Cursor.
+- **[Contributing Guidelines](docs/CONTRIBUTING.md)**: Code standards, setup, and pull request verification.
 
 ---
 

@@ -183,7 +183,7 @@ export class FlintApp {
   }
 
   /**
-   * Workspace API — controls UI state: tabs, sidebars, view modes, dialogs, and navigation.
+   * Workspace API: controls UI state including tabs, sidebars, view modes, dialogs, and navigation.
    * @see WorkspaceAPI
    * @since 0.1.0
    */
@@ -373,7 +373,7 @@ export class FlintApp {
   }
 
   /**
-   * Hearth API — interacts with notes, documents, and database persistence.
+   * Hearth API: interacts with notes, documents, and database persistence.
    * @see HearthAPI
    * @since 0.1.0
    */
@@ -483,7 +483,7 @@ export class FlintApp {
   }
 
   /**
-   * Settings API — application preferences and interface configuration.
+   * Settings API: application preferences and interface configuration.
    * @see SettingsAPI
    * @since 0.2.0
    */

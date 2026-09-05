@@ -1091,7 +1091,7 @@ b .flint-list-prefix {
 /**
  * Visually replace bullet markers (-, *, +) with a centered dot (·).
  * Why font-size: 0 + ::after instead of text-replace: the underlying text stays as '-'
- * for markdown compatibility and cursor navigation — this is purely cosmetic.
+ * for markdown compatibility and cursor navigation; this is purely cosmetic.
  */
 .flint-bullet-marker {
   font-size: 0;

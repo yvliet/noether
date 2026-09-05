@@ -2021,7 +2021,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   }, []);
 
   // Spawns a node in a random position within an invisible circle in the center.
-  // Initial velocity is 0 (does NOT fly off) — its presence & repulsion naturally push nearby nodes outward.
+  // Initial velocity is 0 (does NOT fly off); its presence and repulsion naturally push nearby nodes outward.
   const spawnTimelapseNode = useCallback((idx: number) => {
     const currentNodes = nodesRef.current;
     if (idx < 0 || idx >= currentNodes.length) return;

@@ -26,8 +26,8 @@ Plugins reside in your vault's `.flint/plugins/<plugin-id>/` directory:
   "version": "1.0.0",
   "minAppVersion": "0.1.0",
   "description": "Calculates estimated reading time for your active note in the status bar.",
-  "author": "Your Name",
-  "authorUrl": "https://github.com/yourname"
+  "author": "Yuliet Li",
+  "authorUrl": "https://github.com/yvliet"
 }
 ```
 

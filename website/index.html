@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/x-icon" href="./favicon.ico" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./flint-icon.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="./flint-icon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flint Developer Docs</title>
+    <meta name="description" content="Official Flint Developer Documentation: Extensions, Themes, Architecture, and Community Directory." />
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem('flint_docs_theme');
+          if (t === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('theme-light', 'light');
+          } else {
+            document.documentElement.classList.add('dark');
+            document.documentElement.classList.remove('theme-light', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

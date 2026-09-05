@@ -8,8 +8,8 @@ Model Context Protocol (MCP) is an open standard that allows AI agents to discov
 
 Flint exposes tools at two levels:
 
-1. **Native Core Tools** (`flint_*`) — Always available: search, read, create, update, delete notes, manage properties, bookmarks, tags, and backlinks.
-2. **Extension Tools** (`{extensionId}_*`) — Available when the extension is enabled: tasks, flashcards, canvas, journal, cascade, etc. Disabling an extension removes its tools.
+1. **Native Core Tools** (`flint_*`): Always available to search, read, create, update, delete notes, manage properties, bookmarks, tags, and backlinks.
+2. **Extension Tools** (`{extensionId}_*`): Available when the extension is enabled (tasks, flashcards, canvas, journal, cascade, etc.). Disabling an extension removes its tools.
 
 ## In-App Agent Usage (Phase 1)
 
@@ -40,7 +40,7 @@ When an AI agent connects to Flint:
 3. It can seamlessly switch workspaces via `flint_switch_hearth` without restarting the connection.
 4. It can perform cross-workspace searches via `flint_search_across_hearths`.
 
-## External Agent Setup (Phase 2 — Stdio/SSE Transport)
+## External Agent Setup (Phase 2: Stdio/SSE Transport)
 
 Because Flint auto-discovers your Hearths, you can connect external agents with **zero configuration flags**:
 
@@ -114,11 +114,11 @@ Flint exposes built-in MCP prompts that external clients (Claude Desktop, Cursor
 
 When extensions are enabled, their tools are also available:
 
-- `tasks_get_all` — Get pending/completed tasks across vault
-- `fsrs-spaced-repetition_get_due_cards` — Get flashcards due for review
-- `canvas_get_board` — Get canvas nodes and edges
-- `journal_open_today` — Open or create today's journal note
-- `flint-cascade_list` — List all cascade books
+- `tasks_get_all`: Get pending/completed tasks across vault
+- `fsrs-spaced-repetition_get_due_cards`: Get flashcards due for review
+- `canvas_get_board`: Get canvas nodes and edges
+- `journal_open_today`: Open or create today's journal note
+- `flint-cascade_list`: List all cascade books
 
 ## Writing Extension Tools & Prompts
 

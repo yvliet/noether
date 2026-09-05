@@ -636,7 +636,7 @@ export const IconPicker = React.memo(
     }
   }, [isOpen, autoFocus]);
 
-  // Escape & outside click handler — skip for submenu variant since the parent
+  // Escape & outside click handler, skipped for submenu variant since the parent
   // SlashMenu handles Escape/ArrowLeft navigation for submenus
   useEffect(() => {
     if (!isOpen) return;

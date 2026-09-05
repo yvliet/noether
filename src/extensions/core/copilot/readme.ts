@@ -8,7 +8,7 @@ export const copilotReadme = `
 ## Key Features
 
 - **Fast Right Sidebar Assistant**: Always available with zero distraction, perfectly matching Flint's native desktop aesthetics.
-- **Dynamic Hugeicons Branding**: Automatically reflects your active AI engine in the sidebar tab icon — switching between Claude (\`ClaudeIcon\`), ChatGPT (\`ChatGptIcon\`), Gemini (\`GoogleGeminiIcon\`), DeepSeek (\`DeepseekIcon\`), and the master \`ArtificialIntelligence01Icon\`.
+- **Dynamic Hugeicons Branding**: Automatically reflects your active AI engine in the sidebar tab icon, switching dynamically between Claude (\`ClaudeIcon\`), ChatGPT (\`ChatGptIcon\`), Gemini (\`GoogleGeminiIcon\`), DeepSeek (\`DeepseekIcon\`), and the master \`ArtificialIntelligence01Icon\`.
 - **Bring Your Own Key (BYOK)**: Connect directly to your preferred provider with zero intermediary servers. Supports:
   - **Anthropic**: Claude 3.7 Sonnet, Claude 3.5 Sonnet, Claude 3.5 Haiku
   - **OpenAI**: GPT-4o, GPT-4o Mini, o3-mini, o1, ChatGPT-4o Dynamic

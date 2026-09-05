@@ -11,7 +11,7 @@ import {
   MinusSignIcon,
   Brain02Icon,
   TableIcon,
-  Link01Icon,
+  Link04Icon,
   ChevronRightIcon,
 } from '@/components/common/Icons';
 import { SlashItem } from './extensions/slash-command';
@@ -307,7 +307,7 @@ function renderIcon(name: string | React.ReactNode) {
     case 'table':
       return <TableIcon size={16} />;
     case 'link':
-      return <Link01Icon size={16} />;
+      return <Link04Icon size={16} />;
     default:
       return <QuoteDownIcon size={16} />;
   }
