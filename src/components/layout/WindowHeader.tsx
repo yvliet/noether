@@ -896,9 +896,10 @@ export const WindowHeader: React.FC = React.memo(() => {
       }
 
       const isDoc =
-        (item.type === 'document' || item.id.startsWith('doc:')) ||
-        item.id.startsWith('tab-') ||
-        (!item.viewType || item.viewType === 'document');
+        item.type === 'document' ||
+        item.id.startsWith('doc:') ||
+        (item.type !== 'extension' &&
+          (item.id.startsWith('tab-') || !item.viewType || item.viewType === 'document'));
 
       if (isDoc && item.id !== 'files' && item.id !== 'search') {
         return <StickyNote02Icon size={14} />;
@@ -910,6 +911,9 @@ export const WindowHeader: React.FC = React.memo(() => {
         (t) =>
           t.id === item.id ||
           t.id === item.viewType ||
+          t.id === item.extensionId ||
+          t.id.endsWith(`:${item.id}`) ||
+          (typeof item.id === 'string' && item.id.includes(':') && t.id === item.id.split(':')[1]) ||
           (item.viewType && t.id.includes(item.viewType))
       );
       if (extTab && extTab.icon) {
@@ -957,8 +961,9 @@ export const WindowHeader: React.FC = React.memo(() => {
         (t) =>
           t.id === item.id ||
           t.id === item.viewType ||
+          t.id === item.extensionId ||
           t.id.endsWith(`:${item.id}`) ||
-          (item.id.includes(':') && t.id === item.id.split(':')[1])
+          (typeof item.id === 'string' && item.id.includes(':') && t.id === item.id.split(':')[1])
       );
       if (extTab?.title) return extTab.title;
 
@@ -1022,15 +1027,21 @@ export const WindowHeader: React.FC = React.memo(() => {
           className="h-full flex items-center gap-0.5 px-2 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
         >
           {leftTopDockItems.map((item, index) => {
+            const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
+            const extTab = leftTabs.find(
+              (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
+            );
             const icon = renderDockIcon(item);
             const isActive =
               (item.id === 'files' && activeLeftView === 'files') ||
               (item.id === 'search' && activeLeftView === 'search') ||
               activeLeftView === item.id ||
+              activeLeftView === tabKey ||
               activeLeftView === item.viewType ||
               activeLeftView === item.extensionId ||
               activeLeftView === item.documentId ||
-              activeLeftView === `doc:${item.documentId}`;
+              activeLeftView === `doc:${item.documentId}` ||
+              (extTab && (activeLeftView === extTab.id || extTab.id.endsWith(`:${activeLeftView}`)));
             const itemTitle = getDockItemTitle(item);
 
             return (
@@ -1140,7 +1151,7 @@ export const WindowHeader: React.FC = React.memo(() => {
             {rightTopDockItems.map((item, index) => {
               const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
               const extTab = rightTabs.find(
-                (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType
+                (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
               );
               const icon = renderDockIcon(item);
               const isActive =

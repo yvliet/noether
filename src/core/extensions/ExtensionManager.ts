@@ -351,18 +351,21 @@ export class ExtensionManager {
           [];
         this.disabledCoreExtensionIds = new Set(Array.isArray(disabledCore) ? disabledCore : []);
         const enabled = config.enabledExtensions || config.enabledPlugins;
-        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : ['flint-cascade', 'iconify']);
+        this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : ['flint-cascade', 'iconify', 'flint-copilot']);
         if (Array.isArray(enabled) && !enabled.includes('flint-cascade') && !this.disabledCoreExtensionIds.has('flint-cascade')) {
           this.enabledExtensionIds.add('flint-cascade');
         }
         if (Array.isArray(enabled) && !enabled.includes('iconify') && !this.disabledCoreExtensionIds.has('iconify')) {
           this.enabledExtensionIds.add('iconify');
         }
+        if (Array.isArray(enabled) && !enabled.includes('flint-copilot') && !this.disabledCoreExtensionIds.has('flint-copilot')) {
+          this.enabledExtensionIds.add('flint-copilot');
+        }
         if (this.enabledExtensionIds.has('flint-folder-icons')) {
           this.enabledExtensionIds.delete('flint-folder-icons');
         }
       } else {
-        this.enabledExtensionIds = new Set(['flint-cascade', 'iconify']);
+        this.enabledExtensionIds = new Set(['flint-cascade', 'iconify', 'flint-copilot']);
       }
     } catch (e) {
       console.warn('[ExtensionManager] Error loading extension config:', e);

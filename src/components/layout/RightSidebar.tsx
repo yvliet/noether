@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useFlintApp, useSidebarTabs } from '@/core/app/AppContext';
 import { useSidebarDockStore } from '@/store/sidebarDockStore';
 import { SidebarDockPane } from './SidebarDockPane';
 import { SidebarSecondaryIconBar } from './SidebarSecondaryIconBar';
@@ -8,9 +7,6 @@ import { useActiveTabDrag } from '@/hooks/useTabReorder';
 import { Cancel01Icon } from '@/components/common/Icons';
 
 export const RightSidebar: React.FC = React.memo(() => {
-
-  const app = useFlintApp();
-  const rightTabs = useSidebarTabs('right');
   const rightSidebarWidth = useWorkspaceStore((s) => s.rightSidebarWidth);
   const setRightSidebarWidth = useWorkspaceStore((s) => s.setRightSidebarWidth);
   const activeRightTab = useWorkspaceStore((s) => s.activeRightTab);
@@ -37,7 +33,10 @@ export const RightSidebar: React.FC = React.memo(() => {
             it.extensionId === activeRightTab ||
             it.documentId === activeRightTab ||
             `doc:${it.documentId}` === activeRightTab ||
-            it.id.endsWith(`:${activeRightTab}`)) &&
+            it.id.endsWith(`:${activeRightTab}`) ||
+            (typeof activeRightTab === 'string' &&
+              activeRightTab.includes(':') &&
+              it.id === activeRightTab.split(':')[1])) &&
           it.zone === 'right-top' &&
           it.enabled
       )
@@ -102,12 +101,6 @@ export const RightSidebar: React.FC = React.memo(() => {
     [setSplitRatio]
   );
 
-  // Find active tab definition
-  const currentTab = useMemo(
-    () => rightTabs.find((t) => t.id === activeRightTab || t.id.endsWith(`:${activeRightTab}`)) || rightTabs[0],
-    [rightTabs, activeRightTab]
-  );
-
   const activeDrag = useActiveTabDrag();
 
   return (
@@ -152,8 +145,6 @@ export const RightSidebar: React.FC = React.memo(() => {
       >
         {isDockedTop ? (
           <SidebarDockPane zone="right-top" />
-        ) : currentTab ? (
-          currentTab.render(app)
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16">
             <Cancel01Icon size={24} className="opacity-40" />
@@ -182,7 +173,7 @@ export const RightSidebar: React.FC = React.memo(() => {
 
           <SidebarSecondaryIconBar zone="right-bottom" />
 
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <SidebarDockPane zone="right-bottom" />
           </div>
         </div>

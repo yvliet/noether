@@ -265,7 +265,7 @@ interface WorkspaceState {
   activeLeftView: LeftNavView;
   setActiveLeftView: (view: LeftNavView) => void;
   leftSidebarHistory: string[];
-  getLastActiveLeftView: (excludeIds?: string[]) => string | null;
+  getLastActiveLeftView: (excludeIds?: string[], preferredIndex?: number) => string | null;
   isLeftSidebarOpen: boolean;
   setIsLeftSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   toggleLeftSidebar: () => void;
@@ -276,7 +276,7 @@ interface WorkspaceState {
   activeRightTab: SidebarTab;
   setActiveRightTab: (tab: SidebarTab) => void;
   rightSidebarHistory: string[];
-  getLastActiveRightTab: (excludeIds?: string[]) => string | null;
+  getLastActiveRightTab: (excludeIds?: string[], preferredIndex?: number) => string | null;
   isRightSidebarOpen: boolean;
   setIsRightSidebarOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
   toggleRightSidebar: () => void;
@@ -534,15 +534,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     } catch {}
     saveTabsSession(get().vaultPath);
   },
-  getLastActiveLeftView: (excludeIds = []) => {
+  getLastActiveLeftView: (excludeIds = [], preferredIndex?: number) => {
     const { leftSidebarHistory = [], activeLeftView } = get();
     const excludes = new Set(excludeIds);
     if (activeLeftView) excludes.add(activeLeftView);
 
     const dockItems = useSidebarDockStore.getState().items;
-    const validDockItems = dockItems.filter(
-      (it) => it.zone === 'left-top' && it.enabled && !excludes.has(it.id)
-    );
+    const validDockItems = dockItems
+      .filter((it) => it.zone === 'left-top' && it.enabled && !excludes.has(it.id))
+      .sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
 
     if (validDockItems.length === 0) {
       return null;
@@ -557,14 +557,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           it.viewType === candidate ||
           it.extensionId === candidate ||
           it.documentId === candidate ||
-          `doc:${it.documentId}` === candidate
+          `doc:${it.documentId}` === candidate ||
+          it.id.endsWith(`:${candidate}`) ||
+          (typeof candidate === 'string' && candidate.includes(':') && it.id === candidate.split(':')[1])
       );
       if (matchingDock) {
         return matchingDock.id;
       }
     }
 
-    return validDockItems[0].id;
+    const fallbackIdx =
+      typeof preferredIndex === 'number'
+        ? Math.min(Math.max(0, preferredIndex), validDockItems.length - 1)
+        : 0;
+    return validDockItems[fallbackIdx].id;
   },
   isLeftSidebarOpen: true,
   setIsLeftSidebarOpen: (open) => {
@@ -602,15 +608,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     } catch {}
     saveTabsSession(get().vaultPath);
   },
-  getLastActiveRightTab: (excludeIds = []) => {
+  getLastActiveRightTab: (excludeIds = [], preferredIndex?: number) => {
     const { rightSidebarHistory = [], activeRightTab } = get();
     const excludes = new Set(excludeIds);
     if (activeRightTab) excludes.add(activeRightTab);
 
     const dockItems = useSidebarDockStore.getState().items;
-    const validDockItems = dockItems.filter(
-      (it) => it.zone === 'right-top' && it.enabled && !excludes.has(it.id)
-    );
+    const validDockItems = dockItems
+      .filter((it) => it.zone === 'right-top' && it.enabled && !excludes.has(it.id))
+      .sort((a, b) => (a.order ?? 50) - (b.order ?? 50));
 
     if (validDockItems.length === 0) {
       return null;
@@ -625,14 +631,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           it.viewType === candidate ||
           it.extensionId === candidate ||
           it.documentId === candidate ||
-          `doc:${it.documentId}` === candidate
+          `doc:${it.documentId}` === candidate ||
+          it.id.endsWith(`:${candidate}`) ||
+          (typeof candidate === 'string' && candidate.includes(':') && it.id === candidate.split(':')[1])
       );
       if (matchingDock) {
         return matchingDock.id;
       }
     }
 
-    return validDockItems[0].id;
+    const fallbackIdx =
+      typeof preferredIndex === 'number'
+        ? Math.min(Math.max(0, preferredIndex), validDockItems.length - 1)
+        : 0;
+    return validDockItems[fallbackIdx].id;
   },
   isRightSidebarOpen: true,
   setIsRightSidebarOpen: (open) => {
@@ -1445,10 +1457,28 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     // Otherwise pane has remaining tabs
     let nextActiveTabId = currentPane.activeTabId;
+    let nextHistory = currentPane.tabHistory
+      ? [...currentPane.tabHistory.filter((id) => id !== tabId)]
+      : [];
+
     if (currentPane.activeTabId === tabId) {
       const closedIndex = currentPane.tabs.findIndex((t) => t.id === tabId);
-      const nextIndex = Math.min(closedIndex, remainingTabs.length - 1);
-      nextActiveTabId = remainingTabs[nextIndex].id;
+      const history = currentPane.tabHistory || [];
+      let historyMatch: string | undefined;
+      for (let i = history.length - 1; i >= 0; i--) {
+        const cand = history[i];
+        if (cand !== tabId && remainingTabs.some((t) => t.id === cand)) {
+          historyMatch = cand;
+          break;
+        }
+      }
+
+      if (historyMatch) {
+        nextActiveTabId = historyMatch;
+      } else {
+        const nextIndex = Math.min(Math.max(0, closedIndex), remainingTabs.length - 1);
+        nextActiveTabId = remainingTabs[nextIndex].id;
+      }
     }
 
     const nextTab = remainingTabs.find((t) => t.id === nextActiveTabId);
@@ -1457,6 +1487,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       tabs: remainingTabs,
       activeTabId: nextActiveTabId,
       activeDocumentId: nextTab?.document_id || null,
+      tabHistory: nextHistory,
     };
 
     const newPanes = {
@@ -1993,10 +2024,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const tab = currentPane.tabs.find((t) => t.id === tabId);
     const docId = tab?.document_id || null;
 
+    const prevActive = currentPane.activeTabId;
+    let nextTabHistory = currentPane.tabHistory ? [...currentPane.tabHistory] : [];
+    if (prevActive && prevActive !== tabId) {
+      nextTabHistory = [...nextTabHistory.filter((id) => id !== prevActive), prevActive].slice(-30);
+    }
+
     const updatedPane = {
       ...currentPane,
       activeTabId: tabId,
       activeDocumentId: docId,
+      tabHistory: nextTabHistory,
     };
     const newPanes = { ...panes, [paneId]: updatedPane };
 

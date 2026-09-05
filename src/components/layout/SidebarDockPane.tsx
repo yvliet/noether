@@ -117,7 +117,11 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
             it.viewType === activeLeftView ||
             it.extensionId === activeLeftView ||
             it.documentId === activeLeftView ||
-            `doc:${it.documentId}` === activeLeftView)
+            `doc:${it.documentId}` === activeLeftView ||
+            it.id.endsWith(`:${activeLeftView}`) ||
+            (typeof activeLeftView === 'string' &&
+              activeLeftView.includes(':') &&
+              it.id === activeLeftView.split(':')[1]))
       );
       if (match) return match;
     }
@@ -133,14 +137,28 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
             it.extensionId === activeRightTab ||
             it.documentId === activeRightTab ||
             `doc:${it.documentId}` === activeRightTab ||
-            it.id.endsWith(`:${activeRightTab}`))
+            it.id.endsWith(`:${activeRightTab}`) ||
+            (typeof activeRightTab === 'string' &&
+              activeRightTab.includes(':') &&
+              it.id === activeRightTab.split(':')[1]))
       );
       if (match) return match;
     }
 
     // 3. Check direct match on activeItemId for this zone
     if (activeItemId) {
-      const direct = items.find((it) => it.id === activeItemId && it.zone === zone && it.enabled);
+      const direct = items.find(
+        (it) =>
+          it.zone === zone &&
+          it.enabled &&
+          (it.id === activeItemId ||
+            it.extensionId === activeItemId ||
+            it.viewType === activeItemId ||
+            it.id.endsWith(`:${activeItemId}`) ||
+            (typeof activeItemId === 'string' &&
+              activeItemId.includes(':') &&
+              it.id === activeItemId.split(':')[1]))
+      );
       if (direct) return direct;
     }
 
@@ -188,13 +206,10 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
 
   // If it's a new or empty document tab in the dock, render the empty tab state
   const isDocLike =
-    activeItem.type === 'document' ||
-    activeItem.id.startsWith('doc:') ||
-    activeItem.id.startsWith('tab-') ||
-    !activeItem.viewType ||
-    activeItem.viewType === 'document';
+    (activeItem.type === 'document' || activeItem.id.startsWith('doc:')) &&
+    (!activeItem.documentId || activeItem.documentId.startsWith('__'));
 
-  if (isDocLike && (!activeItem.documentId || activeItem.documentId.startsWith('__'))) {
+  if (isDocLike) {
     return <DockEmptyView zone={zone} activeItemId={activeItem.id} />;
   }
 
@@ -204,8 +219,11 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
     (t) =>
       t.id === activeItem.id ||
       t.id === activeItem.viewType ||
+      t.id === activeItem.extensionId ||
       t.id.endsWith(`:${activeItem.id}`) ||
-      (activeItem.id.includes(':') && t.id === activeItem.id.split(':')[1])
+      (typeof activeItem.id === 'string' &&
+        activeItem.id.includes(':') &&
+        t.id === activeItem.id.split(':')[1])
   );
 
   if (extTab) {

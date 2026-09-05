@@ -24,6 +24,8 @@ import { renderPropertyIcon } from '@/extensions/core/properties/propertyIcons';
 import { usePropertiesSettings } from '@/extensions/core/properties/propertiesSettings';
 import { CascadeIcon } from '@/extensions/core/cascade/cascadeIcons';
 import { iconifyReadme } from '@/extensions/core/iconify/readme';
+import { ArtificialIntelligence01Icon } from '@/extensions/core/copilot/copilotIcons';
+import { copilotReadme } from '@/extensions/core/copilot/readme';
 
 export interface MarketplaceExtensionItem {
   id: string;
@@ -45,6 +47,19 @@ export interface MarketplaceExtensionItem {
 export type MarketplacePluginItem = MarketplaceExtensionItem;
 
 export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
+  {
+    id: 'flint-copilot',
+    name: 'Copilot For Flint',
+    version: '1.0.0',
+    author: 'Yuliet Li',
+    description: 'Fast, intelligent AI copilot assistant with BYOK multi-provider support and direct access to Flint workspace MCP tools.',
+    downloads: '24.8k',
+    stars: 5,
+    category: 'Productivity',
+    featured: true,
+    icon: <ArtificialIntelligence01Icon size={18} className="text-[var(--flint-accent,#ea580c)]" />,
+    readme: copilotReadme,
+  },
   {
     id: 'flint-cascade',
     name: 'Cascade',

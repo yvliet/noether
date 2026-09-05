@@ -14,6 +14,7 @@ import { BookmarksExtension, BOOKMARKS_MANIFEST } from './bookmarks/BookmarksExt
 import { MarketplaceExtension, MARKETPLACE_MANIFEST } from './marketplace/MarketplaceExtension';
 import { CascadeExtension, CASCADE_MANIFEST } from './cascade/CascadeExtension';
 import { IconifyExtension, ICONIFY_MANIFEST } from './iconify/IconifyExtension';
+import { CopilotExtension, COPILOT_MANIFEST } from './copilot/CopilotExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
 import { DefaultStatusBarExtension, DEFAULT_STATUS_BAR_MANIFEST } from './defaults/DefaultStatusBarExtension';
 
@@ -37,6 +38,7 @@ export function registerAllCoreExtensions(app: FlintApp): void {
   // Bundled community extensions (isCore: false)
   app.extensions.registerExtension(CASCADE_MANIFEST, CascadeExtension);
   app.extensions.registerExtension(ICONIFY_MANIFEST, IconifyExtension);
+  app.extensions.registerExtension(COPILOT_MANIFEST, CopilotExtension);
 }
 
 // Backwards-compat alias

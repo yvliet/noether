@@ -127,14 +127,39 @@ export const LeftSidebar: React.FC = React.memo(() => {
         it.extensionId === activeLeftView ||
         it.documentId === activeLeftView ||
         `doc:${it.documentId}` === activeLeftView ||
-        (activeLeftView.startsWith('doc:') && it.id === activeLeftView)
+        (activeLeftView.startsWith('doc:') && it.id === activeLeftView) ||
+        it.id.endsWith(`:${activeLeftView}`) ||
+        (typeof activeLeftView === 'string' &&
+          activeLeftView.includes(':') &&
+          it.id === activeLeftView.split(':')[1])
     );
   }, [hasLeftTopItems, activeLeftView, leftTopDockItems]);
 
   const activeCustomTab = useMemo(() => {
     if (!hasLeftTopItems || !activeLeftView) return null;
-    if (!leftTopDockItems.some((it) => it.id === activeLeftView || it.extensionId === activeLeftView)) return null;
-    return sidebarTabs.find((t) => t.id === activeLeftView) || null;
+    if (
+      !leftTopDockItems.some(
+        (it) =>
+          it.id === activeLeftView ||
+          it.extensionId === activeLeftView ||
+          it.viewType === activeLeftView ||
+          it.id.endsWith(`:${activeLeftView}`) ||
+          (typeof activeLeftView === 'string' &&
+            activeLeftView.includes(':') &&
+            it.id === activeLeftView.split(':')[1])
+      )
+    )
+      return null;
+    return (
+      sidebarTabs.find(
+        (t) =>
+          t.id === activeLeftView ||
+          t.id.endsWith(`:${activeLeftView}`) ||
+          (typeof activeLeftView === 'string' &&
+            activeLeftView.includes(':') &&
+            t.id === activeLeftView.split(':')[1])
+      ) || null
+    );
   }, [hasLeftTopItems, activeLeftView, leftTopDockItems, sidebarTabs]);
 
   const handleVerticalSplitResizeStart = useCallback(
@@ -555,7 +580,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
         onPointerDown={handleBackgroundClick}
         onClick={handleBackgroundClick}
         onContextMenu={handleRootContextMenu}
-        className="min-h-0 overflow-y-auto px-2 py-1 custom-scrollbar flex flex-col"
+        className={`min-h-0 flex flex-col ${
+          isDockedTop || activeCustomTab
+            ? 'overflow-hidden'
+            : 'overflow-y-auto px-2 py-1 custom-scrollbar'
+        }`}
       >
         {!hasLeftTopItems || (!isFilesActive && !isSearchActive && !isDockedTop && !activeCustomTab) ? (
           <div className="flex-1 flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16">
@@ -628,7 +657,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
           <SidebarSecondaryIconBar zone="left-bottom" />
 
-          <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col">
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
             <SidebarDockPane zone="left-bottom" />
           </div>
         </div>

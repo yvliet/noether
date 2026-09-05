@@ -7,6 +7,7 @@ export interface PaneModel {
   tabs: TabItem[];
   activeTabId: string | null;
   activeDocumentId?: string | null;
+  tabHistory?: string[];
 }
 
 export type LayoutNode =
