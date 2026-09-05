@@ -16,7 +16,6 @@ import { Extension } from './Extension';
 import { ExtensionManifest } from './types';
 import { platform } from '@/lib/platform/platformAdapter';
 
-import * as FlintSdk from '@/sdk';
 import * as ReactJsxRuntime from 'react/jsx-runtime';
 
 export class ExternalExtensionLoader {
@@ -99,6 +98,9 @@ export class ExternalExtensionLoader {
       if (cssCode) {
         this.injectExtensionStyle(manifest.id, cssCode);
       }
+
+      // Dynamically load the Flint SDK to break circular dependency during initialization
+      const FlintSdk = await import('@/sdk');
 
       // Create sandboxed module evaluation environment
       // We pass the complete Flint SDK exports to the extension module

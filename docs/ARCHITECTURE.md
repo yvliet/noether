@@ -73,8 +73,7 @@ TipTap 2.x and ProseMirror maintain a **sub-8ms input latency** on documents exc
 
 Flint runs in a compiled native Rust container (Tauri v2) paired with Windows WebView2 runtime optimizations:
 
-- **In-Process GPU Compositing**: Injected `--in-process-gpu` startup argument eliminates the separate 150–200MB Chromium GPU process on Windows.
-- **Process & Cache Caps**: Enforces `--renderer-process-limit=1`, capped disk cache (10MB), capped media cache (5MB), and pruned background browser subsystems.
+- **Native Hardware Compositing**: Leverages native DirectX and DirectComposition hardware acceleration for smooth 60 FPS rendering.
 - **Working Set RAM Trimming**: When the user is verified idle for 120 seconds, the background host process optimizer invokes the Win32 API `SetProcessWorkingSetSize` across the WebView2 process tree, purging standby memory pages back to the operating system.
 
 ---

@@ -1254,6 +1254,29 @@ export function computeFastHash(str: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
 }
 
+export const DEFAULT_WELCOME_MARKDOWN = `---
+id: welcome-to-flint
+title: Welcome to Flint
+bookmarked: true
+---
+
+# Welcome to Flint ⚡
+
+Flint is a local-first writing environment and knowledge engine combining a modern typography canvas with embedded SQLite relational persistence and a modular extension ecosystem.
+
+## Key Features & Hotkeys
+
+- **Quick Open / Command Search**: \`Ctrl + K\` or \`Cmd + K\`
+- **Slash Commands**: Type \`/\` at any empty line to insert headings, task lists, code blocks, or custom extension blocks.
+- **Bi-directional Wiki-links**: Type \`[[\` to link to any note in your Hearth.
+- **Graph View**: Explore connections between ideas dynamically.
+- **Daily Notes**: Keep track of daily thoughts and logs seamlessly.
+
+## Getting Started
+
+Create notes, organize folders in the left sidebar, and explore installed extensions from Settings (\`Ctrl + ,\`).
+`;
+
 /**
  * Scans the physical vault folder on disk and synchronizes all .md files and folders into SQLite.
  * Uses file_manifest for fast O(N stat) differential indexing, skipping untouched files.
@@ -1264,10 +1287,20 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
   }
 
   try {
-    const diskItems = await platform.scanVaultFiles();
-    if (!diskItems || diskItems.length === 0) return { syncedCount: 0 };
-
+    let diskItems = await platform.scanVaultFiles();
     const existingDocs = await getAllDocuments();
+
+    // If both disk and SQLite have zero documents, auto-seed the initial welcome document
+    if ((!diskItems || diskItems.length === 0) && existingDocs.length === 0) {
+      try {
+        await platform.saveMarkdownFile('Welcome to Flint', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Flint.md');
+        diskItems = await platform.scanVaultFiles();
+      } catch (seedErr) {
+        console.error('[Flint Docs] Failed to auto-seed Welcome note to disk:', seedErr);
+      }
+    }
+
+    if (!diskItems || diskItems.length === 0) return { syncedCount: 0 };
     let trashRows: { original_id: string; title: string; original_path: string }[] = [];
     try {
       trashRows = await dbAdapter.query<{ original_id: string; title: string; original_path: string }>(
@@ -1381,12 +1414,14 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         const { properties, bodyText } = parseFrontmatter(fileContent);
         const contentJson = markdownToTipTapJson(bodyText);
         const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
-        const newId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        const isWelcomeDoc = fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint';
+        const newId = isWelcomeDoc ? 'welcome-to-flint' : `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+        const isBookmarked = isWelcomeDoc ? 1 : 0;
         const now = fileMtime;
         await dbAdapter.execute(
           `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
-           VALUES (?, ?, ?, ?, 0, 0, 0, 'base', ?, ?, ?)`,
-          [newId, parentId, fileName, contentJson, propertiesJson, now, now]
+           VALUES (?, ?, ?, ?, 0, 0, ?, 'base', ?, ?, ?)`,
+          [newId, parentId, fileName, contentJson, isBookmarked, propertiesJson, now, now]
         );
         try {
           await dbAdapter.execute(

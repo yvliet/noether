@@ -74,7 +74,7 @@ Flint provides an open, extensible architecture that pairs plain-text Markdown v
 - **100% Free & Open Source (GPLv3)**: Fully transparent codebase with zero telemetry, zero proprietary lock-in, zero paywalled sync tiers, and no commercial license fees.
 - **Physical Markdown Ground Truth**: Plain-text `.md` files on your local drive are the single source of truth. Your knowledge remains yours, portable across any editor or Unix toolchain forever.
 - **Compiled Native SQLite Engine (`rusqlite` + WAL + FTS5)**: A native Rust SQLite integration running directly in the Tauri host with Write-Ahead Logging (WAL) and 256MB memory-mapped I/O (`PRAGMA mmap_size = 268435456`). Delivers sub-millisecond query execution, statistical BM25 relevance ranking with diacritics removal, and zero WebAssembly heap overhead. SQLite performs integrity validation on boot (`PRAGMA integrity_check;`) and reconstructs the index from Markdown files automatically if needed.
-- **Sub-150MB Lightweight Desktop Footprint**: Windows WebView2 startup argument injection (`--in-process-gpu` compositing eliminating 150-200MB separate GPU process, single renderer process limit, bounded disk/media caches, pruned web subsystems, and size-optimized V8 heap) combined with Win32 physical working set memory trimming (`SetProcessWorkingSetSize`) after 120s of idle time.
+- **Sub-150MB Lightweight Desktop Footprint**: High-performance Tauri v2 desktop runtime combined with Win32 physical working set memory trimming (`SetProcessWorkingSetSize`) after 120s of idle time and selective chunk splitting.
 - **High-Performance Live Preview**: TipTap 2.x & ProseMirror editor engine with transaction decoration mapping (`DecorationSet.map`), dirty-range AST scanning, KaTeX compilation memoization, and bounded 50-snapshot undo history. Maintains sub-8ms typing latency on massive documents (100k+ words).
 - **Atomic File Persistence**: Note saves write to temporary files first before executing atomic OS rename operations (`fs::rename`), while SQLite transactions commit direct WAL pages, eliminating data loss during sudden crashes or power loss.
 - **Fast Differential Sync**: Uses a `file_manifest` table and content hashing to skip unchanged files during cold-boot indexing, completing vault revalidation in milliseconds.
@@ -154,8 +154,8 @@ Flint achieves real-time relational graph queries and full-text retrieval while 
 - **External Edit Reconciliation**: External modifications (e.g. Git branches or external CLI tools) ingest automatically into SQLite and inactive document views without clobbering active user typing buffers.
 
 ### 4. Decoupled Host Process Management (Host Runtime vs. Storage Pipeline)
-- **Runtime Process Management Invariant**: Memory working-set trimming (Windows Win32 `SetProcessWorkingSetSize` after 120s of verified user idle time) and WebView2 startup argument tuning (`--in-process-gpu`, single renderer process limit, capped disk/media caches, and pruned browser subsystems) are **host runtime process management concerns** handled by the Tauri background optimizer.
-- They operate independently in the host runtime lifecycle and are strictly decoupled from the atomic file and database write pipelines.
+- **Runtime Process Management Invariant**: Memory working-set trimming (Windows Win32 `SetProcessWorkingSetSize` after 120s of verified user idle time) is a **host runtime process management concern** handled by the Tauri background optimizer.
+- It operates independently in the host runtime lifecycle and is strictly decoupled from the atomic file and database write pipelines.
 
 ---
 
@@ -178,8 +178,8 @@ Flint includes a built-in stdio **Model Context Protocol (MCP)** server (`bin/fl
 | `flint_delete_note` | Document | Moves a note to the `.trash/` safety folder and removes it from the index (*destructive*). |
 | `flint_list_all_notes` | Document | Lists note titles, paths, tags, and timestamps across the active Hearth. |
 | `flint_get_backlinks` | Graph | Resolves incoming backlinks, outgoing references, and unlinked mentions for a document. |
-| `tasks_get_all` | Tasks | Aggregates all open and completed `- [ ]` markdown tasks across the Hearth. |
-| `fsrs-spaced-repetition_get_due_cards` | Study | Returns flashcards due for review under the FSRS-4.5 scheduling algorithm. |
+| `tasks_get_all` | Workspace | Retrieves task items across the active workspace with completion statuses and tags. |
+| `fsrs-spaced-repetition_get_due_cards` | Review | Fetches flashcards currently due for spaced repetition review. |
 
 ### Connecting AI Agents (Claude Desktop / Antigravity / Cursor)
 

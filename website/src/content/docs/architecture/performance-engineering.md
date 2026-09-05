@@ -12,7 +12,7 @@ Flint is engineered with explicit performance invariants designed to maintain fl
 | **Relational Indexing** | Compiled Native `rusqlite` | Direct Tauri IPC invocation to Rust SQLite; zero WASM overhead, zero whole-db exports, WAL journaling with 256MB memory-mapped I/O (`PRAGMA mmap_size = 268435456`). |
 | **Full-Text Retrieval** | SQLite FTS5 Virtual Tables + BM25 | Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 ranking. |
 | **Live Preview Editor** | Incremental Decoration Mapping | $O(1)$ transaction mapping (`DecorationSet.map`) rescans only dirty textblocks. KaTeX formulas memoize in RAM. Undo history is bounded to 50 snapshots. |
-| **WebView2 RAM Tuning** | Browser Arguments Injection | In-process GPU compositing (`--in-process-gpu`), single renderer process cap, capped disk (10MB) and media (5MB) caches, and size-optimized V8 flags. |
+| **Hardware Compositing** | Native DirectX / DirectComposition | Dedicated GPU pipeline for tear-free 60 FPS workspace rendering and Canvas pan/zoom. |
 | **Working Set Trimming** | Win32 Memory Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory after 120s of idle time. |
 | **Startup Differential Sync** | Manifest Tracking | `file_manifest` compares timestamps and hashes to skip AST re-indexing on unchanged notes. |
 | **Echo Suppression** | Signature-Based Write Tracking | Records internal save signatures to prevent file watchers from triggering recursive reload loops. |

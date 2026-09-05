@@ -3,7 +3,7 @@ import { useBookmarksSettings, DEFAULT_BOOKMARKS_SETTINGS } from './bookmarksSet
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { Bookmark01Icon, RotateCcwIcon } from '@/components/common/Icons';
-import { SettingCard, SettingItem, Button, Toggle } from '@/sdk';
+import { SettingCard, SettingItem, Button, Toggle } from '@/components/ui';
 
 export const BookmarksSettingsTab: React.FC = () => {
   const documents = useDocumentStore((s) => s.documents);

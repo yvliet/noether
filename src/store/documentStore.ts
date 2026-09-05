@@ -218,6 +218,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
               }
             }
           }
+
+          if (!get().activeDocument && useWorkspaceStore.getState().mainViewMode === 'document' && initialDocs.length > 0) {
+            const defaultDoc = initialDocs.find((d) => d.id === 'welcome-to-flint') || initialDocs.find((d) => !d.is_folder);
+            if (defaultDoc) {
+              await get().setActiveDocumentById(defaultDoc.id);
+            }
+          }
         }
       } else {
         const shouldShowLoading = options?.showLoading ?? true;
@@ -280,6 +287,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
                 useWorkspaceStore.getState().openEmptyTab();
               }
             }
+          }
+        }
+
+        if (!get().activeDocument && useWorkspaceStore.getState().mainViewMode === 'document' && docs.length > 0) {
+          const defaultDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder);
+          if (defaultDoc) {
+            await get().setActiveDocumentById(defaultDoc.id);
           }
         }
       } else {

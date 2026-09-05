@@ -2,7 +2,7 @@ import React from 'react';
 import { useJournalSettings, DEFAULT_JOURNAL_SETTINGS } from './journalSettings';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { RotateCcwIcon, Folder01Icon } from '@/components/common/Icons';
-import { SettingCard, SettingItem, TextInput, Toggle, Button } from '@/sdk';
+import { SettingCard, SettingItem, TextInput, Toggle, Button } from '@/components/ui';
 
 export const JournalSettingsTab: React.FC = () => {
   const {
