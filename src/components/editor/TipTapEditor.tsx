@@ -522,9 +522,10 @@ const EditorSuggestionPopups = React.memo(
       useEffect(() => {
         if (!isAnyOpen) return;
 
-        const handlePointerDown = (e: MouseEvent) => {
-          const target = e.target as Node | null;
-          if (containerRef.current && target && containerRef.current.contains(target)) {
+        const handlePointerDown = (e: MouseEvent | PointerEvent) => {
+          const rawTarget = e.target as Node | null;
+          const targetEl = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
+          if (targetEl?.closest?.('[data-flint-suggestion-popup="true"]')) {
             return;
           }
           setSlashMenuProps(null);
@@ -532,26 +533,32 @@ const EditorSuggestionPopups = React.memo(
         };
 
         const handleScroll = (e: Event) => {
-          const target = e.target as HTMLElement | null;
-          if (target && target.closest?.('[data-flint-suggestion-popup="true"]')) {
+          const rawTarget = e.target as Node | null;
+          const targetEl = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
+          if (targetEl?.closest?.('[data-flint-suggestion-popup="true"]')) {
             return;
           }
           setSlashMenuProps(null);
           setWikiProps(null);
         };
 
+        window.addEventListener('pointerdown', handlePointerDown, true);
         window.addEventListener('mousedown', handlePointerDown, true);
         window.addEventListener('scroll', handleScroll, true);
         return () => {
+          window.removeEventListener('pointerdown', handlePointerDown, true);
           window.removeEventListener('mousedown', handlePointerDown, true);
           window.removeEventListener('scroll', handleScroll, true);
         };
-      }, [isAnyOpen, containerRef]);
+      }, [isAnyOpen]);
 
       return (
         <>
           {slashMenuProps && slashMenuProps.rect && (
-            <div style={getSmartFloatingStyle(slashMenuProps.rect, 300, 340, 6)}>
+            <div
+              className="pointer-events-none"
+              style={getSmartFloatingStyle(slashMenuProps.rect, 300, 340, 6)}
+            >
               <SlashMenu
                 ref={slashMenuRef}
                 items={slashMenuProps.items}
@@ -561,7 +568,10 @@ const EditorSuggestionPopups = React.memo(
           )}
 
           {wikiProps && wikiProps.rect && (
-            <div style={getSmartFloatingStyle(wikiProps.rect, 270, 300, 6)}>
+            <div
+              className="pointer-events-none"
+              style={getSmartFloatingStyle(wikiProps.rect, 270, 300, 6)}
+            >
               <WikiLinkPopup
                 ref={wikiPopupRef}
                 items={wikiProps.items}

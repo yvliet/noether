@@ -64,7 +64,7 @@ export const WikiLinkPopup = React.memo(
         <div
           data-flint-suggestion-popup="true"
           onMouseDown={(e) => e.preventDefault()}
-          className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs select-none"
+          className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs select-none"
         >
           <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
             Link to Note

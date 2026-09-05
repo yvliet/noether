@@ -133,7 +133,7 @@ export const SlashMenu = React.memo(
             data-flint-suggestion-popup="true"
             onMouseDown={(e) => e.preventDefault()}
             style={{ boxShadow: 'var(--flint-shadow-2)' }}
-            className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none"
+            className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none"
           >
             No matching block commands
           </div>
@@ -144,19 +144,17 @@ export const SlashMenu = React.memo(
       const isTableItem = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
 
       return (
-        <div
-          data-flint-suggestion-popup="true"
-          onMouseDown={(e) => {
-            const target = e.target as HTMLElement;
-            if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
-              e.preventDefault();
-            }
-          }}
-          className="relative flex items-start gap-2"
-        >
+        <div className="relative flex items-start gap-2 pointer-events-none">
           <div
+            data-flint-suggestion-popup="true"
+            onMouseDown={(e) => {
+              const target = e.target as HTMLElement;
+              if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+              }
+            }}
             style={{ boxShadow: 'var(--flint-shadow-2)' }}
-            className="bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
+            className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
           >
             <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
               Insert Block
@@ -235,7 +233,7 @@ export const SlashMenu = React.memo(
 
           {/* Submenu Flyout (Table Grid, Icon Picker, or Extension Submenu) */}
           {activeSubmenu && currentItem && (
-            <div>
+            <div data-flint-suggestion-popup="true" className="pointer-events-auto">
               {activeSubmenu === 'table' && isTableItem ? (
                 <TableGridPicker
                   ref={gridPickerRef}
