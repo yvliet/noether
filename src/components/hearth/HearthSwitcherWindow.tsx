@@ -18,6 +18,7 @@ import { RecentHearthItem } from '@/types';
 import { TooltipProvider } from '@/components/common/TooltipProvider';
 import { useIsMaximized } from '@/hooks/useIsMaximized';
 import { platform } from '@/lib/platform/platformAdapter';
+import { APP_VERSION } from '@/version';
 
 export const HearthSwitcherWindow: React.FC = React.memo(() => {
   const isMaximized = useIsMaximized();
@@ -361,7 +362,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
         <div className="flex flex-col items-center mb-7 shrink-0 select-none">
           <FlintLogoIcon size={100} className="mb-3" />
           <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Flint</h1>
-          <span className="text-xs text-[#777] mt-1">Version 0.1.0</span>
+          <span className="text-xs text-[#777] mt-1">Version {APP_VERSION}</span>
         </div>
 
         {/* SLIDING VIEWPORT CONTAINER */}

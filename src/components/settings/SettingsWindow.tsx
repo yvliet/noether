@@ -60,6 +60,7 @@ import { AppProvider, useFlintApp, useExtensionList, useSettingTabs, useCommands
 import { ExtensionSettingTab } from '@/core/extensions/types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { dbAdapter } from '@/lib/db/adapter';
+import { APP_VERSION } from '@/version';
 
 // Individual Field Reset Button (renders subtle undo icon when setting is not default)
 const FieldResetButton: React.FC<{
@@ -474,10 +475,10 @@ const GeneralTab: React.FC = React.memo(() => {
         {/* Row: Version & Updates */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
-            <div className="text-sm font-medium text-white">Version 0.1.0</div>
-            <div className="text-xs text-[#888] mt-0.5">Installer version: 0.1.0</div>
+            <div className="text-sm font-medium text-white">Version {APP_VERSION}</div>
+            <div className="text-xs text-[#888] mt-0.5">Installer version: {APP_VERSION}</div>
             <a
-              href="https://github.com"
+              href="https://github.com/yvliet/flint/releases"
               target="_blank"
               rel="noreferrer"
               className="text-xs text-[#38bdf8] hover:underline mt-0.5 inline-block w-fit"
@@ -486,7 +487,7 @@ const GeneralTab: React.FC = React.memo(() => {
             </a>
           </div>
           <button
-            onClick={() => showToast('Flint is up to date (v0.1.0)', 'info')}
+            onClick={() => showToast(`Flint is up to date (v${APP_VERSION})`, 'info')}
             className="flint-btn"
           >
             Check for updates

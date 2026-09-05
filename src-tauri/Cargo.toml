@@ -1,6 +1,6 @@
 [package]
 name = "flint-desktop"
-version = "0.1.0"
+version = "0.4.0"
 description = "Flint Local-First Hybrid Document and Knowledge Engine"
 authors = ["Yuliet Li"]
 edition = "2021"

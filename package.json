@@ -1,7 +1,7 @@
 {
   "name": "flint",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.4.0",
   "type": "module",
   "bin": {
     "flint-mcp-server": "./bin/flint-mcp-server.cjs"
@@ -16,7 +16,8 @@
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "docs:build": "npm --prefix website run build",
-    "docs:deploy": "npm --prefix website run deploy"
+    "docs:deploy": "npm --prefix website run deploy",
+    "release": "gh release create"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.0",

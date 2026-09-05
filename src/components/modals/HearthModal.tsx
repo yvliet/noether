@@ -12,6 +12,7 @@ import {
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { platform } from '@/lib/platform/platformAdapter';
 import { RecentHearthItem } from '@/types';
+import { APP_VERSION } from '@/version';
 
 export const HearthModal: React.FC = React.memo(() => {
   const isHearthModalOpen = useWorkspaceStore((state) => state.isHearthModalOpen || state.isVaultModalOpen);
@@ -239,7 +240,7 @@ export const HearthModal: React.FC = React.memo(() => {
           <div className="flex flex-col items-center mb-7 shrink-0">
             <FlintLogoIcon size={100} className="mb-3 text-[var(--flint-text-primary)]" />
             <h1 className="text-2xl font-bold tracking-tight text-[var(--flint-text-primary)] font-sans">Flint</h1>
-            <span className="text-xs text-[var(--flint-text-muted,#777)] mt-1">Version 0.1.0</span>
+            <span className="text-xs text-[var(--flint-text-muted,#777)] mt-1">Version {APP_VERSION}</span>
           </div>
 
           {/* Action Cards Container */}
