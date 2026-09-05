@@ -285,19 +285,10 @@ Flint is engineered with explicit performance invariants designed to maintain fl
 # 1. Verify Zero TypeScript Type Regressions
 npx tsc --noEmit
 
-# 2. Execute Reliability, Scalability & Resilience Benchmark Suite
-node scripts/test-reliability-and-scaling.cjs
-
-# 3. Execute Editor Writing Edge Cases Suite (Playwright Headless)
-node scripts/test-document-writing-edge-cases.cjs
-
-# 4. Execute Undo/Redo (CTRL+Z) Recovery & Stress Suite
-node scripts/test-ctrl-z-suite.cjs
-
-# 5. Benchmark Production Bundle Build Time
+# 2. Benchmark Production Bundle Build Time
 npm run build
 
-# 6. Launch Tauri Native Desktop with Background Memory Trimming
+# 3. Launch Tauri Native Desktop with Background Memory Trimming
 npm run app
 ```
 
