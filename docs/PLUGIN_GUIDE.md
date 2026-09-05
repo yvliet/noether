@@ -200,7 +200,97 @@ this.registerContextMenuItem({
 });
 ```
 
+### H. Dynamic React Portal Slots
+Mount React components into built-in layout slots (`workspace:root`, `editor:minimap`, `editor:viewport-overlay`, `editor:floating-toolbar`):
+
+```javascript
+this.registerPortalSlot({
+  id: 'my-floating-badge',
+  slot: 'editor:floating-toolbar',
+  order: 10,
+  when: (ctx) => ctx.viewMode === 'Visible',
+  render: (ctx) => {
+    return React.createElement('div', { className: 'badge' }, 'Active Note');
+  }
+});
+```
+
+### I. Native ProseMirror & TipTap Extensions
+Register transaction-mapped ProseMirror plugins, input rules, paste rules, or custom shortcuts without degrading typing latency:
+
+```javascript
+this.registerEditorPlugin({
+  id: 'my-mention-decorator',
+  decorations: (state, ctx) => {
+    // Return DecorationSet mapped efficiently on keystrokes
+    return null;
+  },
+  shortcuts: {
+    'Mod-Alt-m': (editor) => {
+      editor.chain().focus().insertContent('@').run();
+      return true;
+    }
+  }
+});
+```
+
+### J. Declarative SQLite Tables & Dynamic Migrations
+Define typed SQLite tables with automatic column migrations, version tracking, and cascade deletions when notes are deleted:
+
+```javascript
+this.myTable = await this.defineTable({
+  tableName: 'my_plugin_data',
+  columns: [
+    { name: 'documentId', type: 'TEXT', notNull: true, onDelete: 'cascade' },
+    { name: 'score', type: 'REAL', default: '0.0' },
+    { name: 'metadata', type: 'TEXT' }
+  ],
+  indexes: [
+    { name: 'idx_my_plugin_doc', columns: ['documentId'] }
+  ]
+});
+
+// Query or modify data
+await this.myTable.insert({ documentId: 'note-1', score: 9.5, metadata: '{}' });
+const rows = await this.myTable.select({ where: { documentId: 'note-1' } });
+```
+
+### K. Type-Safe Zod-to-MCP Tool Automation
+Register AI tools using Zod schemas for automated validation:
+
+```javascript
+const { z } = require('flint');
+
+this.registerTool({
+  name: 'calculate_metric',
+  description: 'Calculates a metric for a document',
+  schema: z.object({
+    documentId: z.string(),
+    multiplier: z.number().default(1)
+  }),
+  handler: async ({ documentId, multiplier }) => {
+    return {
+      content: [{ type: 'text', text: `Result: ${multiplier * 42}` }]
+    };
+  }
+});
+```
+
+### L. Off-Thread Web Worker Pipeline
+Run CPU-intensive tasks in a Web Worker off the main UI thread with live EventBus telemetry:
+
+```javascript
+// Register the worker task
+this.registerWorkerTask('heavy-calculation', (input, emitEvent) => {
+  emitEvent('calc:progress', { percent: 50 });
+  return input.numbers.reduce((a, b) => a + b, 0);
+});
+
+// Run task off-thread
+const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] });
+```
+
 ---
 
 ## 3. Core Plugins
-In Flint, all built-in features (Graph, Canvas, FSRS Flashcards, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Plugin API! You can see their source code in `src/plugins/core/`.
+In Flint, all built-in features (Graph, Canvas, FSRS Flashcards, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension / Plugin API! You can see their source code in `src/plugins/core/`.

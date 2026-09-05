@@ -9,6 +9,11 @@
 
 import React from 'react';
 import type { Extension as TiptapExtension } from '@tiptap/react';
+import type { Plugin as ProseMirrorPlugin, EditorState } from '@tiptap/pm/state';
+import type { DecorationSet } from '@tiptap/pm/view';
+import type { InputRule } from '@tiptap/core';
+import type { NodeViewRenderer } from '@tiptap/react';
+import type { z } from 'zod';
 import type { FlintApp } from '../app/FlintApp';
 import type { DocumentItem, TabItem } from '@/types';
 
@@ -739,4 +744,215 @@ export interface McpPromptDefinition {
   /** Owning extension identifier */
   extensionId?: string;
 }
+
+// ── Dynamic UI Layering & Portal Slot Contracts ──
+
+/**
+ * Designated UI injection locations for React Portal slots.
+ * @since 0.4.0
+ */
+export type PortalSlotLocation =
+  | 'editor:viewport-overlay'
+  | 'editor:floating-toolbar'
+  | 'editor:minimap'
+  | 'editor:gutter'
+  | 'workspace:root'
+  | (string & {});
+
+/**
+ * Contextual state provided to Portal Slot render functions.
+ * @since 0.4.0
+ */
+export interface PortalSlotContext {
+  /** Reference to host FlintApp instance */
+  app: FlintApp;
+  /** Active note identifier, if mounted within an editor */
+  documentId?: string;
+  /** Current document record */
+  document?: DocumentItem | null;
+  /** Active TipTap Editor instance */
+  editor?: any;
+  /** Current editor view mode ('Visible' for Live Preview, 'Source' for Raw Markdown) */
+  viewMode?: 'Visible' | 'Source';
+  /** Bounding client rectangle of the host container */
+  containerRect?: DOMRect;
+  /** Scrollable DOM container element of the active viewport */
+  scrollContainer?: HTMLElement | null;
+}
+
+/**
+ * Configuration for registering a declarative UI portal slot.
+ * @since 0.4.0
+ */
+export interface PortalSlotDefinition {
+  /** Unique slot item identifier */
+  id: string;
+  /** Anchor slot target where the component should be mounted */
+  slot: PortalSlotLocation;
+  /** Sorting order priority (higher numbers render on top) */
+  order?: number;
+  /** Optional predicate determining if the slot item should be active */
+  predicate?: (context: PortalSlotContext) => boolean;
+  /** Render function returning the React element */
+  render: (context: PortalSlotContext) => React.ReactNode;
+}
+
+// ── Native ProseMirror / TipTap Extension Contracts ──
+
+/**
+ * Context provided to community editor plugins during active editor lifecycle.
+ * @since 0.4.0
+ */
+export interface EditorPluginContext {
+  app: FlintApp;
+  documentId: string;
+  editor: any;
+}
+
+/**
+ * Declarative registration for native ProseMirror plugins, decorations, input rules, and NodeViews.
+ * @since 0.4.0
+ */
+export interface EditorPluginDefinition {
+  /** Unique editor plugin identifier */
+  id: string;
+  /** Optional human-readable name */
+  name?: string;
+  /** Factory returning native ProseMirror Plugin instances */
+  proseMirrorPlugins?: (context: EditorPluginContext) => ProseMirrorPlugin[];
+  /** High-performance dynamic decoration generator mapped across transactions */
+  decorations?: (state: EditorState, context: EditorPluginContext) => DecorationSet | null | undefined;
+  /** Custom TipTap / React NodeView renderers for custom block or inline nodes */
+  nodeViews?: Record<string, NodeViewRenderer>;
+  /** Custom input rules for pattern-triggered markdown transformations */
+  inputRules?: (context: EditorPluginContext) => InputRule[];
+  /** Custom paste rules for clipboard content transformation */
+  pasteRules?: (context: EditorPluginContext) => any[];
+  /** Hotkey shortcut handlers intercepted before default editor actions */
+  keyboardShortcuts?: Record<string, (context: { editor: any; event: KeyboardEvent }) => boolean>;
+}
+
+// ── Declarative Schema & Migration Builder Contracts ──
+
+/**
+ * Supported column data types in Flint's relational SQLite database.
+ * @since 0.4.0
+ */
+export type ColumnDataType = 'text' | 'integer' | 'real' | 'blob' | 'boolean' | 'json';
+
+/**
+ * Column definition specification for declarative table creation.
+ * @since 0.4.0
+ */
+export interface ColumnDefinition {
+  type: ColumnDataType;
+  primaryKey?: boolean;
+  nullable?: boolean;
+  default?: string | number | boolean | null;
+  unique?: boolean;
+  indexed?: boolean;
+  references?: {
+    table: string;
+    column: string;
+    onDelete?: 'cascade' | 'set null' | 'restrict';
+  };
+}
+
+/**
+ * Secondary index definition for declarative tables.
+ * @since 0.4.0
+ */
+export interface TableIndexDefinition {
+  name: string;
+  columns: string[];
+  unique?: boolean;
+}
+
+/**
+ * Migration helper passed to versioned migration functions.
+ * @since 0.4.0
+ */
+export interface MigrationHelper {
+  addColumn: (tableName: string, columnName: string, definition: ColumnDefinition) => Promise<void>;
+  dropColumn?: (tableName: string, columnName: string) => Promise<void>;
+  createIndex: (tableName: string, index: TableIndexDefinition) => Promise<void>;
+  execute: (sql: string, params?: any[]) => Promise<void>;
+}
+
+/**
+ * Declarative table configuration with automated migration and teardown specifications.
+ * @since 0.4.0
+ */
+export interface TableDefinition<TColumns extends Record<string, ColumnDefinition> = Record<string, ColumnDefinition>> {
+  tableName: string;
+  version: number;
+  columns: TColumns;
+  indexes?: TableIndexDefinition[];
+  migrations?: Record<number, (db: MigrationHelper) => Promise<void>>;
+  teardownPolicy?: 'drop-on-uninstall' | 'preserve';
+}
+
+/**
+ * Filter and pagination options for table queries.
+ * @since 0.4.0
+ */
+export interface QueryOptions<T> {
+  where?: Partial<T> | Record<string, any>;
+  orderBy?: keyof T | string;
+  orderDirection?: 'ASC' | 'DESC';
+  limit?: number;
+  offset?: number;
+}
+
+/**
+ * Strongly typed CRUD query interface returned by `this.defineTable()`.
+ * @since 0.4.0
+ */
+export interface ExtensionTable<TRecord extends Record<string, any>> {
+  insert(record: Partial<TRecord>): Promise<void>;
+  insertMany(records: Partial<TRecord>[]): Promise<void>;
+  select(options?: QueryOptions<TRecord>): Promise<TRecord[]>;
+  selectOne(options?: QueryOptions<TRecord>): Promise<TRecord | null>;
+  update(where: Partial<TRecord>, patch: Partial<TRecord>): Promise<number>;
+  delete(where: Partial<TRecord>): Promise<number>;
+  count(where?: Partial<TRecord>): Promise<number>;
+  rawQuery<R = any>(sql: string, params?: any[]): Promise<R[]>;
+}
+
+// ── Type-Safe Zod-to-MCP Tool Contracts ──
+
+/**
+ * Type-safe MCP tool registration definition accepting a Zod schema for input validation.
+ * @since 0.4.0
+ */
+export interface McpZodToolDefinition<TSchema extends z.ZodTypeAny = z.ZodTypeAny> {
+  name: string;
+  extensionId?: string;
+  description: string;
+  category?: string;
+  isDestructive?: boolean;
+  schema: TSchema;
+  handler: (params: z.infer<TSchema>, app: FlintApp) => Promise<McpToolResult>;
+}
+
+// ── Background Web Worker Pipeline Contracts ──
+
+/**
+ * Specification for an off-thread task executed in a Web Worker.
+ * @since 0.4.0
+ */
+export interface WorkerTaskDefinition<TInput = any, TOutput = any> {
+  taskId: string;
+  run: (input: TInput, emitEvent: (eventName: string, payload: any) => void) => Promise<TOutput> | TOutput;
+}
+
+/**
+ * Dispatch options for running off-thread worker tasks.
+ * @since 0.4.0
+ */
+export interface RunTaskOptions {
+  priority?: 'background' | 'user-blocking';
+  timeoutMs?: number;
+}
+
 

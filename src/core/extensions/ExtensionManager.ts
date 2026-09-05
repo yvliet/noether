@@ -207,6 +207,54 @@ export class ExtensionManager {
     return this.disableExtension(pluginId);
   }
 
+  /**
+   * Uninstalls an extension:
+   * 1. Disables the extension if currently active (triggering unload lifecycle).
+   * 2. Executes automated table teardown via ExtensionDatabaseManager, dropping tables with 'drop-on-uninstall'.
+   * 3. Purges persistent localStorage configuration and metadata.
+   * 4. Emits 'extension:uninstalled' event on the EventBus.
+   *
+   * @param extensionId - Manifest ID of the extension to uninstall.
+   * @returns boolean indicating whether uninstallation completed successfully.
+   * @since 0.4.0
+   */
+  public async uninstallExtension(extensionId: string): Promise<boolean> {
+    try {
+      // 1. Disable first
+      await this.disableExtension(extensionId);
+
+      // 2. Teardown relational database tables
+      await this.app.dbManager.teardownExtension(extensionId);
+
+      // 3. Purge from registered sets & storage
+      this.enabledExtensionIds.delete(extensionId);
+      this.disabledCoreExtensionIds.delete(extensionId);
+      this.manifests.delete(extensionId);
+      this.constructors.delete(extensionId);
+
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(`flint_extension_data_${extensionId}`);
+        localStorage.removeItem(`flint_plugin_data_${extensionId}`);
+      }
+
+      this.saveConfig();
+      this.app.events.emit('extension:uninstalled' as any, { extensionId });
+      this.app.events.emit('plugin:uninstalled' as any, { pluginId: extensionId });
+      this.recomputeSnapshot();
+      this.notify();
+
+      console.log(`[ExtensionManager] Uninstalled extension "${extensionId}"`);
+      return true;
+    } catch (err) {
+      console.error(`[ExtensionManager] Error uninstalling extension "${extensionId}":`, err);
+      return false;
+    }
+  }
+
+  public async uninstallPlugin(pluginId: string): Promise<boolean> {
+    return this.uninstallExtension(pluginId);
+  }
+
   public isExtensionEnabled(extensionId: string): boolean {
     const manifest = this.manifests.get(extensionId);
     if (!manifest || manifest.isCore) {

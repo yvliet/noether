@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useSyncExternalStore } from 'react';
+import React, { createContext, useContext, useSyncExternalStore, useMemo } from 'react';
 import { FlintApp, appInstance } from './FlintApp';
 import {
   ActionRailItem,
@@ -24,6 +24,10 @@ import {
   BreadcrumbProviderDefinition,
   BreadcrumbDecoratorDefinition,
   DocumentTitleDecoratorDefinition,
+  PortalSlotDefinition,
+  PortalSlotLocation,
+  PortalSlotContext,
+  EditorPluginDefinition,
 } from '../extensions/types';
 
 import { ExtensionListSnapshot, PluginListSnapshot } from '../extensions/ExtensionManager';
@@ -189,13 +193,17 @@ export const useContextMenuItems = (
   data?: any
 ): ContextMenuItemDefinition[] => {
   const app = useFlintApp();
-  return useSyncExternalStore(
+  const allItems = useSyncExternalStore(
     (onStoreChange) => {
       const d = app.contextMenu.subscribe(onStoreChange);
       return () => d.dispose();
     },
-    () => app.contextMenu.getItemsForScope(scope, data, app)
+    () => app.contextMenu.getAllItems()
   );
+
+  return useMemo(() => {
+    return app.contextMenu.getItemsForScope(scope, data, app);
+  }, [allItems, scope, data, app]);
 };
 
 export const useModals = (): ModalDefinition[] => {
@@ -306,5 +314,52 @@ export const useDocumentTitleDecorators = (): DocumentTitleDecoratorDefinition[]
     () => app.editor.getDocumentTitleDecorators()
   );
 };
+
+export const usePortalSlots = (
+  location: PortalSlotLocation,
+  context?: PortalSlotContext
+): readonly PortalSlotDefinition[] => {
+  const app = useFlintApp();
+  const rawSlots = useSyncExternalStore(
+    (onStoreChange) => {
+      const d = app.slots.subscribe(onStoreChange);
+      return () => d.dispose();
+    },
+    () => app.slots.getRawSlots(location)
+  );
+
+  return useMemo(() => {
+    if (!context || rawSlots.length === 0) {
+      return rawSlots;
+    }
+
+    const hasPredicates = rawSlots.some((s) => typeof s.predicate === 'function');
+    if (!hasPredicates) {
+      return rawSlots;
+    }
+
+    return rawSlots.filter((item) => {
+      if (!item.predicate) return true;
+      try {
+        return item.predicate(context);
+      } catch (err) {
+        console.error(`[SlotRegistry] Error evaluating predicate for slot item "${item.id}":`, err);
+        return false;
+      }
+    });
+  }, [rawSlots, context]);
+};
+
+export const useEditorPlugins = (): EditorPluginDefinition[] => {
+  const app = useFlintApp();
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const d = app.editor.subscribe(onStoreChange);
+      return () => d.dispose();
+    },
+    () => app.editor.getEditorPlugins()
+  );
+};
+
 
 

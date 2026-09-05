@@ -9,6 +9,8 @@ import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
 import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
+import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
+import type { PortalSlotContext } from '@/core/extensions/types';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
 import { dbAdapter } from '@/lib/db/adapter';
 import { DocumentProperties } from '@/types';
@@ -338,6 +340,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   useEffect(() => {
     setEditorMinHeight(undefined);
   }, [currentDoc?.id, content, documentFooters.length]);
+
+  const portalSlotContext: PortalSlotContext = useMemo(
+    () => ({
+      app,
+      documentId: currentDoc?.id,
+      document: currentDoc,
+      editor: editorInstance,
+      viewMode: isSourceMode ? 'Source' : 'Visible',
+      scrollContainer: scrollViewportRef.current,
+    }),
+    [app, currentDoc, editorInstance, isSourceMode]
+  );
 
   const defaultHeaderFolded = useMemo(() => {
     return documentHeaders.some((h) =>
@@ -1095,6 +1109,27 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             isReplaceOpen={isReplaceOpen}
             onClose={() => setIsFindOpen(false)}
             onToggleReplace={() => setIsReplaceOpen((prev) => !prev)}
+          />
+
+          {/* Dynamic Extension Minimap Slot */}
+          <ExtensionPortalSlotHost
+            slot="editor:minimap"
+            context={portalSlotContext}
+            className="absolute top-0 right-0 bottom-0 pointer-events-none z-20 flex justify-end"
+          />
+
+          {/* Dynamic Extension Viewport Overlay Slot */}
+          <ExtensionPortalSlotHost
+            slot="editor:viewport-overlay"
+            context={portalSlotContext}
+            className="absolute inset-0 pointer-events-none z-30 overflow-hidden"
+          />
+
+          {/* Dynamic Extension Floating Contextual Toolbar Slot */}
+          <ExtensionPortalSlotHost
+            slot="editor:floating-toolbar"
+            context={portalSlotContext}
+            className="absolute inset-0 pointer-events-none z-40 overflow-visible"
           />
 
           <div

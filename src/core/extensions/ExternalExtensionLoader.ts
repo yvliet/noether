@@ -10,6 +10,7 @@
  */
 
 import React from 'react';
+import { z } from 'zod';
 import { FlintApp } from '../app/FlintApp';
 import { Extension } from './Extension';
 import { ExtensionManifest } from './types';
@@ -82,6 +83,7 @@ export class ExternalExtensionLoader {
         Plugin: Extension,
         FlintApp,
         appInstance: this.app,
+        z,
       };
 
       const moduleScope = {
@@ -89,12 +91,13 @@ export class ExternalExtensionLoader {
         module: { exports: {} as unknown },
         require: (moduleName: string) => {
           if (moduleName === 'react') return React;
+          if (moduleName === 'zod') return z;
           if (moduleName === 'flint' || moduleName === '@flint/api') {
             return flintSdk;
           }
           throw new Error(
             `[Flint] Cannot require "${moduleName}" from an extension. ` +
-            `Only 'react' and 'flint' (or '@flint/api') are available.`
+            `Only 'react', 'zod', and 'flint' (or '@flint/api') are available.`
           );
         },
         Flint: flintSdk,

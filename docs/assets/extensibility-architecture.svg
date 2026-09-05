@@ -1,0 +1,372 @@
+<svg xmlns="http://www.w3.org/2000/svg" id="extensibility_diagram" width="100%" style="max-width: 1040px;" viewBox="0 0 1040 500" role="graphics-document document" aria-roledescription="flowchart-v2">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#8b949e" />
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#58a6ff" />
+    </marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#bc8cff" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3fb950" />
+    </marker>
+    <marker id="arrow-amber" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d29922" />
+    </marker>
+    <marker id="arrow-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#39c5bb" />
+    </marker>
+  </defs>
+  <style>
+    * {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif !important;
+    }
+    svg {
+      background: transparent !important;
+    }
+    .cluster-bg {
+      fill: #0d1117;
+      stroke: #30363d;
+      stroke-width: 1.2px;
+      rx: 8px;
+      ry: 8px;
+    }
+    .cluster-title {
+      fill: #ffffff;
+      font-weight: 700;
+      font-size: 13.5px;
+      text-anchor: middle;
+    }
+    .cluster-badge {
+      fill: #8b949e;
+      font-size: 11px;
+      font-weight: 600;
+      text-anchor: middle;
+    }
+    .node-box {
+      fill: #161b22;
+      stroke: #38404a;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-blue {
+      fill: #161b22;
+      stroke: #1f6feb;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-purple {
+      fill: #161b22;
+      stroke: #8957e5;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-amber {
+      fill: #161b22;
+      stroke: #9e6a03;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-green {
+      fill: #161b22;
+      stroke: #238636;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-box-accent-cyan {
+      fill: #161b22;
+      stroke: #1f883d;
+      stroke-width: 1.2px;
+      rx: 6px;
+      ry: 6px;
+    }
+    .node-title {
+      fill: #ffffff;
+      font-weight: 700;
+      font-size: 12.5px;
+      text-anchor: middle;
+    }
+    .node-sub {
+      fill: #8b949e;
+      font-weight: 400;
+      font-size: 11px;
+      text-anchor: middle;
+    }
+    .edge-path {
+      fill: none;
+      stroke: #8b949e;
+      stroke-width: 1.8px;
+    }
+    .edge-path-blue {
+      fill: none;
+      stroke: #58a6ff;
+      stroke-width: 1.8px;
+    }
+    .edge-path-purple {
+      fill: none;
+      stroke: #bc8cff;
+      stroke-width: 1.8px;
+    }
+    .edge-path-amber {
+      fill: none;
+      stroke: #d29922;
+      stroke-width: 1.8px;
+    }
+    .edge-path-green {
+      fill: none;
+      stroke: #3fb950;
+      stroke-width: 1.8px;
+    }
+    .edge-path-cyan {
+      fill: none;
+      stroke: #39c5bb;
+      stroke-width: 1.8px;
+    }
+    .edge-label-bg {
+      fill: #161b22;
+      stroke: #30363d;
+      stroke-width: 1px;
+      rx: 4px;
+      ry: 4px;
+    }
+    .edge-label-text {
+      fill: #ffffff;
+      font-size: 10px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+  </style>
+
+  <!-- ==================== COLUMN 1: EXTENSIONS LAYER ==================== -->
+  <g id="col-extensions">
+    <rect class="cluster-bg" x="16" y="20" width="230" height="460" />
+    <text class="cluster-title" x="131" y="44">1. Extension Layer</text>
+    <text class="cluster-badge" x="131" y="60">User Space / Sandboxed</text>
+
+    <!-- Node: Core Extensions -->
+    <g transform="translate(26, 78)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Core Extensions</text>
+      <text class="node-sub" x="105" y="41">Graph, Canvas, Tasks, FSRS</text>
+    </g>
+
+    <!-- Node: Community Extensions -->
+    <g transform="translate(26, 158)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Community Extensions</text>
+      <text class="node-sub" x="105" y="41">User Plugins (.flint/plugins)</text>
+    </g>
+
+    <!-- Node: Core Isolation -->
+    <g transform="translate(26, 238)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Strict Core Isolation</text>
+      <text class="node-sub" x="105" y="41">Zero Native Directory Imports</text>
+    </g>
+
+    <!-- Node: Dynamic Lifecycle -->
+    <g transform="translate(26, 318)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Dynamic Lifecycle</text>
+      <text class="node-sub" x="105" y="41">onload() &amp; Auto Cleanup</text>
+    </g>
+
+    <!-- Node: Extension Schemas -->
+    <g transform="translate(26, 398)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Isolated SQLite Tables</text>
+      <text class="node-sub" x="105" y="41">Dedicated DB Namespace</text>
+    </g>
+  </g>
+
+  <!-- ==================== COLUMN 2: FLINT SDK LAYER ==================== -->
+  <g id="col-sdk">
+    <rect class="cluster-bg" x="276" y="20" width="230" height="460" />
+    <text class="cluster-title" x="391" y="44">2. Flint SDK Layer</text>
+    <text class="cluster-badge" x="391" y="60">Public API Contracts (src/sdk)</text>
+
+    <!-- Node: Extension Base Class -->
+    <g transform="translate(286, 78)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Extension Base Class</text>
+      <text class="node-sub" x="105" y="41">Unified Extension API</text>
+    </g>
+
+    <!-- Node: Zod Validation -->
+    <g transform="translate(286, 158)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Zod Schema Engine</text>
+      <text class="node-sub" x="105" y="41">Type-Safe Introspection</text>
+    </g>
+
+    <!-- Node: React Hooks & Types -->
+    <g transform="translate(286, 238)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">React Hooks &amp; Helpers</text>
+      <text class="node-sub" x="105" y="41">usePortalSlots, useEditorPlugins</text>
+    </g>
+
+    <!-- Node: EventBus Bridge -->
+    <g transform="translate(286, 318)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Typed EventBus SDK</text>
+      <text class="node-sub" x="105" y="41">Decoupled Pub/Sub Signals</text>
+    </g>
+
+    <!-- Node: Platform Bridge -->
+    <g transform="translate(286, 398)">
+      <rect class="node-box" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Platform Bridge</text>
+      <text class="node-sub" x="105" y="41">IPlatformAdapter Safe Routing</text>
+    </g>
+  </g>
+
+  <!-- ==================== COLUMN 3: MICRO-KERNEL REGISTRIES ==================== -->
+  <g id="col-registries">
+    <rect class="cluster-bg" x="536" y="20" width="235" height="460" />
+    <text class="cluster-title" x="653" y="44">3. Micro-Kernel IoC</text>
+    <text class="cluster-badge" x="653" y="60">Registries &amp; Background Services</text>
+
+    <!-- Node: SlotRegistry -->
+    <g transform="translate(548, 78)">
+      <rect class="node-box-accent-blue" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">SlotRegistry</text>
+      <text class="node-sub" x="105" y="41">Dynamic UI Layout Portals</text>
+    </g>
+
+    <!-- Node: EditorRegistry -->
+    <g transform="translate(548, 158)">
+      <rect class="node-box-accent-purple" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">EditorRegistry</text>
+      <text class="node-sub" x="105" y="41">ProseMirror Plugins &amp; Hooks</text>
+    </g>
+
+    <!-- Node: ToolRegistry -->
+    <g transform="translate(548, 238)">
+      <rect class="node-box-accent-amber" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">ToolRegistry</text>
+      <text class="node-sub" x="105" y="41">Zod-to-MCP Server Validation</text>
+    </g>
+
+    <!-- Node: DatabaseManager -->
+    <g transform="translate(548, 318)">
+      <rect class="node-box-accent-green" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">DatabaseManager</text>
+      <text class="node-sub" x="105" y="41">Versioned DDL &amp; Cascades</text>
+    </g>
+
+    <!-- Node: WorkerPool -->
+    <g transform="translate(548, 398)">
+      <rect class="node-box-accent-cyan" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">WorkerPool</text>
+      <text class="node-sub" x="105" y="41">Off-Thread Web Worker Tasks</text>
+    </g>
+  </g>
+
+  <!-- ==================== COLUMN 4: HOST PRESENTATION & CORE ==================== -->
+  <g id="col-host">
+    <rect class="cluster-bg" x="801" y="20" width="225" height="460" />
+    <text class="cluster-title" x="913" y="44">4. Host Presentation &amp; Core</text>
+    <text class="cluster-badge" x="913" y="60">Native Tauri v2 &amp; React 19</text>
+
+    <!-- Node: PortalSlotHost -->
+    <g transform="translate(808, 78)">
+      <rect class="node-box-accent-blue" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Portal Slot Hosts</text>
+      <text class="node-sub" x="105" y="41">workspace:root, editor:*</text>
+    </g>
+
+    <!-- Node: TipTap Bridge -->
+    <g transform="translate(808, 158)">
+      <rect class="node-box-accent-purple" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">TipTap Editor Bridge</text>
+      <text class="node-sub" x="105" y="41">Sub-8ms Mapped Decorations</text>
+    </g>
+
+    <!-- Node: MCP Server -->
+    <g transform="translate(808, 238)">
+      <rect class="node-box-accent-amber" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Native Stdio MCP Server</text>
+      <text class="node-sub" x="105" y="41">AI Agents (Claude, Cursor, AGY)</text>
+    </g>
+
+    <!-- Node: Native rusqlite -->
+    <g transform="translate(808, 318)">
+      <rect class="node-box-accent-green" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">Native rusqlite WAL</text>
+      <text class="node-sub" x="105" y="41">Direct SQLite Page Commits</text>
+    </g>
+
+    <!-- Node: EventBus Telemetry -->
+    <g transform="translate(808, 398)">
+      <rect class="node-box-accent-cyan" x="0" y="0" width="210" height="54" />
+      <text class="node-title" x="105" y="24">EventBus Telemetry</text>
+      <text class="node-sub" x="105" y="41">Off-Thread Progress Streaming</text>
+    </g>
+  </g>
+
+  <!-- ==================== HORIZONTAL INTER-COLUMN CONNECTORS ==================== -->
+  <!-- Col 1 to Col 2 -->
+  <path class="edge-path" d="M 236, 185 L 286, 185" marker-end="url(#arrow)" />
+  <g transform="translate(244, 175)">
+    <rect class="edge-label-bg" x="0" y="0" width="34" height="20" />
+    <text class="edge-label-text" x="17" y="10">SDK</text>
+  </g>
+
+  <path class="edge-path" d="M 236, 345 L 286, 345" marker-end="url(#arrow)" />
+  <g transform="translate(244, 335)">
+    <rect class="edge-label-bg" x="0" y="0" width="34" height="20" />
+    <text class="edge-label-text" x="17" y="10">Events</text>
+  </g>
+
+  <!-- Col 2 to Col 3 -->
+  <path class="edge-path" d="M 496, 265 L 548, 265" marker-end="url(#arrow)" />
+  <g transform="translate(504, 255)">
+    <rect class="edge-label-bg" x="0" y="0" width="36" height="20" />
+    <text class="edge-label-text" x="18" y="10">IoC Reg</text>
+  </g>
+
+  <!-- Col 3 to Col 4 (Specialized Subsystem Bridges) -->
+  <!-- Row 1: Slots (Blue) -->
+  <path class="edge-path-blue" d="M 758, 105 L 808, 105" marker-end="url(#arrow-blue)" />
+  <g transform="translate(764, 95)">
+    <rect class="edge-label-bg" style="stroke: #1f6feb;" x="0" y="0" width="38" height="20" />
+    <text class="edge-label-text" style="fill: #58a6ff;" x="19" y="10">Portals</text>
+  </g>
+
+  <!-- Row 2: Editor (Purple) -->
+  <path class="edge-path-purple" d="M 758, 185 L 808, 185" marker-end="url(#arrow-purple)" />
+  <g transform="translate(764, 175)">
+    <rect class="edge-label-bg" style="stroke: #8957e5;" x="0" y="0" width="38" height="20" />
+    <text class="edge-label-text" style="fill: #bc8cff;" x="19" y="10">Hooks</text>
+  </g>
+
+  <!-- Row 3: MCP (Amber) -->
+  <path class="edge-path-amber" d="M 758, 265 L 808, 265" marker-end="url(#arrow-amber)" />
+  <g transform="translate(764, 255)">
+    <rect class="edge-label-bg" style="stroke: #9e6a03;" x="0" y="0" width="38" height="20" />
+    <text class="edge-label-text" style="fill: #d29922;" x="19" y="10">Tools</text>
+  </g>
+
+  <!-- Row 4: Database (Green) -->
+  <path class="edge-path-green" d="M 758, 345 L 808, 345" marker-end="url(#arrow-green)" />
+  <g transform="translate(764, 335)">
+    <rect class="edge-label-bg" style="stroke: #238636;" x="0" y="0" width="38" height="20" />
+    <text class="edge-label-text" style="fill: #3fb950;" x="19" y="10">Tables</text>
+  </g>
+
+  <!-- Row 5: Workers (Cyan) -->
+  <path class="edge-path-cyan" d="M 758, 425 L 808, 425" marker-end="url(#arrow-cyan)" />
+  <g transform="translate(764, 415)">
+    <rect class="edge-label-bg" style="stroke: #1f883d;" x="0" y="0" width="38" height="20" />
+    <text class="edge-label-text" style="fill: #39c5bb;" x="19" y="10">Tasks</text>
+  </g>
+</svg>

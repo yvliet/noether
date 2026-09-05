@@ -10,6 +10,8 @@ import {
   BreadcrumbProviderDefinition,
   BreadcrumbDecoratorDefinition,
   DocumentTitleDecoratorDefinition,
+  EditorPluginDefinition,
+  EditorPluginContext,
 } from '../extensions/types';
 
 export interface CodeBlockRendererDefinition {
@@ -30,6 +32,7 @@ export class EditorRegistry {
   private breadcrumbProviders: Map<string, BreadcrumbProviderDefinition> = new Map();
   private breadcrumbDecorators: Map<string, BreadcrumbDecoratorDefinition> = new Map();
   private documentTitleDecorators: Map<string, DocumentTitleDecoratorDefinition> = new Map();
+  private editorPlugins: Map<string, EditorPluginDefinition> = new Map();
   private listeners: Set<() => void> = new Set();
   private activeEditor: any = null;
 
@@ -41,6 +44,7 @@ export class EditorRegistry {
   private cachedBreadcrumbProviders: BreadcrumbProviderDefinition[] = [];
   private cachedBreadcrumbDecorators: BreadcrumbDecoratorDefinition[] = [];
   private cachedDocumentTitleDecorators: DocumentTitleDecoratorDefinition[] = [];
+  private cachedEditorPlugins: EditorPluginDefinition[] = [];
 
   /**
    * Sets the active rich text editor instance.
@@ -82,6 +86,28 @@ export class EditorRegistry {
 
   public getExtensions(): Extension[] {
     return this.cachedExtensions;
+  }
+
+  public registerEditorPlugin(plugin: EditorPluginDefinition): Disposable {
+    this.editorPlugins.set(plugin.id, plugin);
+    this.recomputeEditorPlugins();
+    this.notify();
+
+    return {
+      dispose: () => {
+        this.editorPlugins.delete(plugin.id);
+        this.recomputeEditorPlugins();
+        this.notify();
+      },
+    };
+  }
+
+  public getEditorPlugins(): EditorPluginDefinition[] {
+    return this.cachedEditorPlugins;
+  }
+
+  private recomputeEditorPlugins(): void {
+    this.cachedEditorPlugins = Array.from(this.editorPlugins.values());
   }
 
   private recomputeExtensions(): void {

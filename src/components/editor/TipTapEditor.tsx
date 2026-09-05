@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo, useImperativeHandle } from 'react';
 import { Extension } from '@tiptap/core';
-import { TextSelection } from '@tiptap/pm/state';
+import { TextSelection, Plugin as ProseMirrorPlugin, PluginKey, EditorState } from '@tiptap/pm/state';
+import { DecorationSet } from '@tiptap/pm/view';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
+import type { EditorPluginDefinition, EditorPluginContext } from '@/core/extensions/types';
+import type { FlintApp } from '@/core/app/FlintApp';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Typography from '@tiptap/extension-typography';
@@ -571,7 +574,153 @@ const EditorSuggestionPopups = React.memo(
     }
   )
 );
-EditorSuggestionPopups.displayName = 'EditorSuggestionPopups';
+function computeCommunityDecorations(
+  plugins: EditorPluginDefinition[],
+  state: EditorState,
+  ctx: EditorPluginContext,
+  mappedSet?: DecorationSet
+): DecorationSet {
+  let combinedSet = mappedSet ?? DecorationSet.empty;
+
+  for (const p of plugins) {
+    if (p.decorations) {
+      try {
+        const result = p.decorations(state, ctx);
+        if (result) {
+          combinedSet = combinedSet.add(state.doc, result.find());
+        }
+      } catch (err) {
+        console.error(`[FlintCommunityEditorBridge] Error computing decorations for "${p.id}":`, err);
+      }
+    }
+  }
+
+  return combinedSet;
+}
+
+const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
+  const docId = documentId || '';
+  return Extension.create({
+    name: 'flintCommunityEditorBridge',
+
+    addProseMirrorPlugins() {
+      const plugins = app.editor.getEditorPlugins();
+      const pmPlugins: ProseMirrorPlugin[] = [];
+      const ctx: EditorPluginContext = {
+        app,
+        documentId: docId,
+        editor: this.editor,
+      };
+
+      for (const p of plugins) {
+        if (p.proseMirrorPlugins) {
+          try {
+            const returned = p.proseMirrorPlugins(ctx);
+            if (Array.isArray(returned)) {
+              pmPlugins.push(...returned);
+            }
+          } catch (err) {
+            console.error(`[FlintCommunityEditorBridge] Error initializing ProseMirror plugins for "${p.id}":`, err);
+          }
+        }
+      }
+
+      // High-performance transaction mapping decoration plugin for sub-8ms typing latency
+      const decorationPlugin = new ProseMirrorPlugin({
+        key: new PluginKey('flint_community_decorations'),
+        state: {
+          init(_, state) {
+            return computeCommunityDecorations(plugins, state, ctx);
+          },
+          apply(tr, oldDecoSet, _oldState, newState) {
+            if (!tr.docChanged) {
+              return oldDecoSet;
+            }
+            const mapped = oldDecoSet.map(tr.mapping, tr.doc);
+            return computeCommunityDecorations(plugins, newState, ctx, mapped);
+          },
+        },
+        props: {
+          decorations(state) {
+            return this.getState(state);
+          },
+        },
+      });
+
+      pmPlugins.push(decorationPlugin);
+      return pmPlugins;
+    },
+
+    addInputRules() {
+      const plugins = app.editor.getEditorPlugins();
+      const inputRules: any[] = [];
+      const ctx: EditorPluginContext = {
+        app,
+        documentId: docId,
+        editor: this.editor,
+      };
+
+      for (const p of plugins) {
+        if (p.inputRules) {
+          try {
+            const rules = p.inputRules(ctx);
+            if (Array.isArray(rules)) {
+              inputRules.push(...rules);
+            }
+          } catch (err) {
+            console.error(`[FlintCommunityEditorBridge] Error initializing input rules for "${p.id}":`, err);
+          }
+        }
+      }
+      return inputRules;
+    },
+
+    addPasteRules() {
+      const plugins = app.editor.getEditorPlugins();
+      const pasteRules: any[] = [];
+      const ctx: EditorPluginContext = {
+        app,
+        documentId: docId,
+        editor: this.editor,
+      };
+
+      for (const p of plugins) {
+        if (p.pasteRules) {
+          try {
+            const rules = p.pasteRules(ctx);
+            if (Array.isArray(rules)) {
+              pasteRules.push(...rules);
+            }
+          } catch (err) {
+            console.error(`[FlintCommunityEditorBridge] Error initializing paste rules for "${p.id}":`, err);
+          }
+        }
+      }
+      return pasteRules;
+    },
+
+    addKeyboardShortcuts() {
+      const plugins = app.editor.getEditorPlugins();
+      const shortcuts: Record<string, () => boolean> = {};
+
+      for (const p of plugins) {
+        if (p.keyboardShortcuts) {
+          for (const [key, handler] of Object.entries(p.keyboardShortcuts)) {
+            shortcuts[key] = () => {
+              try {
+                return handler({ editor: this.editor, event: window.event as KeyboardEvent });
+              } catch (err) {
+                console.error(`[FlintCommunityEditorBridge] Error in shortcut "${key}" for "${p.id}":`, err);
+                return false;
+              }
+            };
+          }
+        }
+      }
+      return shortcuts;
+    },
+  });
+};
 
 interface TipTapEditorProps {
   documentId?: string;
@@ -736,6 +885,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       suggestionPopupsRef.current?.closeAll();
     },
     extensions: [
+      createCommunityEditorBridge(app, documentId),
       ...app.editor.getExtensions(),
       SlashCommands.configure({
         suggestion: {

@@ -20,8 +20,11 @@ import {
   McpPromptDefinition,
   McpPromptResult,
   McpPromptArgument,
+  McpZodToolDefinition,
   Disposable,
 } from '../extensions/types';
+import { zodToMcpJsonSchema, formatZodIssues } from '@/lib/mcp/zodToJsonSchema';
+import type { z } from 'zod';
 import type { FlintApp } from '../app/FlintApp';
 
 export class ToolRegistry {
@@ -35,21 +38,51 @@ export class ToolRegistry {
 
   /**
    * Registers an MCP Tool callable by AI agents and external clients.
+   * Supports both raw JSON schema tool definitions and type-safe Zod-powered tool definitions.
    *
-   * @param tool - Tool definition conforming to the MCP specification.
+   * @param tool - Tool definition conforming to the MCP specification or Zod schema definition.
    * @returns A Disposable to unregister the tool.
    * @since 0.3.0
    */
-  public registerTool(tool: McpToolDefinition): Disposable {
-    const key = tool.name.toLowerCase();
-    this.tools.set(key, tool);
+  public registerTool<TSchema extends z.ZodTypeAny>(tool: McpZodToolDefinition<TSchema>): Disposable;
+  public registerTool(tool: McpToolDefinition): Disposable;
+  public registerTool(tool: McpToolDefinition | McpZodToolDefinition<any>): Disposable {
+    let resolvedTool: McpToolDefinition;
+
+    if ('schema' in tool && tool.schema) {
+      const zodTool = tool as McpZodToolDefinition;
+      const parameters = zodToMcpJsonSchema(zodTool.schema);
+
+      resolvedTool = {
+        name: zodTool.name,
+        description: zodTool.description,
+        category: zodTool.category,
+        isDestructive: zodTool.isDestructive,
+        parameters,
+        handler: async (args: Record<string, unknown>, app: FlintApp) => {
+          const parsed = zodTool.schema.safeParse(args);
+          if (!parsed.success) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: formatZodIssues(parsed.error) }],
+            };
+          }
+          return zodTool.handler(parsed.data, app);
+        },
+      };
+    } else {
+      resolvedTool = tool as McpToolDefinition;
+    }
+
+    const key = resolvedTool.name.toLowerCase();
+    this.tools.set(key, resolvedTool);
     this.recomputeCache();
     this.notify();
     this.app.events.emit('mcp:tools-changed', { count: this.tools.size });
 
     return {
       dispose: () => {
-        this.unregisterTool(tool.name);
+        this.unregisterTool(resolvedTool.name);
       },
     };
   }

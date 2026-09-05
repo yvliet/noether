@@ -27,6 +27,7 @@ import { dbAdapter } from '@/lib/db/adapter';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { appInstance } from '@/core/app/FlintApp';
 import { AppProvider, useFlintApp, useViews, useModals, useExtensionList } from '@/core/app/AppContext';
+import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import { platform } from '@/lib/platform/platformAdapter';
 
 const LazyDisabledExtensionView = React.lazy(() =>
@@ -469,6 +470,13 @@ export const AppShell: React.FC = React.memo(() => {
         <ToastNotification />
         <ContextMenuRenderer />
         <TooltipProvider />
+
+        {/* Global Extension Portal Overlay (HUDs, floating canvas tools, ambient timers) */}
+        <ExtensionPortalSlotHost
+          slot="workspace:root"
+          context={{ app: appInstance }}
+          className="absolute inset-0 pointer-events-none z-40 overflow-hidden"
+        />
       </div>
     </AppProvider>
   );

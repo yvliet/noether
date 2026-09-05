@@ -34,8 +34,14 @@
 export { Extension, Plugin } from '../core/extensions/Extension';
 export { ExtensionManager, PluginManager } from '../core/extensions/ExtensionManager';
 export { FlintApp, appInstance } from '../core/app/FlintApp';
+export { SlotRegistry } from '../core/registries/SlotRegistry';
+export { ExtensionDatabaseManager } from '../core/database/ExtensionDatabaseManager';
+export { ExtensionWorkerPool } from '../core/workers/ExtensionWorkerPool';
 export { registerNativeTools } from '../core/mcp/NativeMcpTools';
 export { EventBus } from '../core/events/EventBus';
+export { z } from 'zod';
+export { zodToMcpJsonSchema, formatZodIssues } from '../lib/mcp/zodToJsonSchema';
+export { usePortalSlots, useEditorPlugins } from '../core/app/AppContext';
 export { renderHugeIconSvg } from '../components/common/Icons';
 export type { IconProps, RenderHugeIconSvgOptions } from '../components/common/Icons';
 export {
@@ -124,16 +130,47 @@ export type {
   DocumentTitleDecoratorContext,
 } from '../core/extensions/types';
 
+// ── Portal Slot Types ──
+export type {
+  PortalSlotLocation,
+  PortalSlotContext,
+  PortalSlotDefinition,
+} from '../core/extensions/types';
+
+// ── ProseMirror & Editor Plugin Types ──
+export type {
+  EditorPluginContext,
+  EditorPluginDefinition,
+} from '../core/extensions/types';
+
+// ── Declarative Schema & Migration Types ──
+export type {
+  ColumnDataType,
+  ColumnDefinition,
+  TableIndexDefinition,
+  MigrationHelper,
+  TableDefinition,
+  QueryOptions,
+  ExtensionTable,
+} from '../core/extensions/types';
+
 // ── MCP Tool & Prompt Types ──
 export type {
   McpJsonSchema,
   McpContentBlock,
   McpToolResult,
   McpToolDefinition,
+  McpZodToolDefinition,
   McpPromptArgument,
   McpPromptMessage,
   McpPromptResult,
   McpPromptDefinition,
+} from '../core/extensions/types';
+
+// ── Background Web Worker Types ──
+export type {
+  WorkerTaskDefinition,
+  RunTaskOptions,
 } from '../core/extensions/types';
 
 // ── Event Bus Types ──

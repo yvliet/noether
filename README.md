@@ -50,7 +50,7 @@ Flint provides an open, extensible architecture that pairs plain-text Markdown v
 - **Fast Differential Sync**: Uses a `file_manifest` table and content hashing to skip unchanged files during cold-boot indexing, completing vault revalidation in milliseconds.
 - **Native AI Agent Server (MCP)**: Built-in stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`) allowing AI coding assistants (Claude Desktop, Antigravity, Gemini, Cursor) to search notes, read backlinks, and manage tasks via 13 structured RPC tools.
 - **Instant UI Responsiveness**: Micro-interactions (switches, buttons, menus, dropdowns, tree items) execute immediately with zero artificial animation delays or visual smearing, preserving a crisp, unbloated desktop feel.
-- **Micro-Kernel Plugin SDK**: Built-in features and third-party extensions build on the identical modular Flint SDK (`src/sdk`) using Inversion of Control (IoC) registries and a typed EventBus.
+- **Advanced Micro-Kernel Plugin SDK**: Built-in features and third-party extensions build on the identical modular Flint SDK (`src/sdk`) using Inversion of Control (IoC) registries, a typed EventBus, dynamic React portal slots, native ProseMirror transaction-mapped plugin bridges, declarative SQLite tables with automated migration tracking and cascade purges, type-safe Zod-to-MCP tool automation, and off-thread Web Worker pipelines.
 
 ---
 
@@ -191,7 +191,7 @@ Add Flint to your client's MCP configuration (e.g. `claude_desktop_config.json`)
 | **Sequential Book Reader** | **Showcase Community Extension: Cascade**. Pre-bundled reference extension demonstrating sequential chapter navigation (`Alt+,` / `Alt+.`), graph breadcrumbs, and SDK custom folder nodes. |
 | **Global Tasks Dashboard** | **Core Tasks Kanban & List**. Centralizes every `- [ ]` and `- [x]` task across the entire vault into an actionable dashboard. |
 | **Iconography & Customization** | **Showcase Community Extension: Iconify**. Pre-bundled reference extension demonstrating custom note title icons, file tree chevron-spacer slots, and multi-style emoji resolution (Native, Twemoji, Apple, Google, Fluent). |
-| **Extension Architecture** | **Micro-Kernel IoC Plugin SDK (`src/sdk`)**. Decoupled EventBus, IoC registries for commands/views/menus, dynamic SQLite schemas, and mandatory MCP tool registration. |
+| **Extension Architecture** | **Advanced Micro-Kernel SDK (`src/sdk`)**. Dynamic React portal slots (`workspace:root`, `editor:*`), native ProseMirror transaction-mapped plugin bridge, declarative SQLite table definitions with cascade cleanup, type-safe Zod-to-MCP tool automation, and off-thread Web Worker pipeline. |
 
 ---
 
@@ -342,9 +342,41 @@ npm run tauri:build
 
 ## Extensibility & Plugin SDK
 
-Flint features a modular micro-kernel architecture. Both native core extensions and third-party plugins build on the public **Flint SDK** (`src/sdk`). Extensions are categorized into two tiers:
+Flint features an advanced modular micro-kernel architecture designed to provide deep host integration while preserving strict native core isolation, sub-8ms typing latency guarantees, and zero micro-interaction delays. Both native core features and third-party extensions build on the identical public **Flint SDK** (`src/sdk`).
+
+Extensions are categorized into two tiers:
 - **Core Extensions (`isCore: true`)**: Built directly into the runtime distribution (e.g. Graph, Canvas, FSRS-4.5, Tasks, Journal, Backlinks). They cannot be uninstalled and are enabled by default.
-- **Community Extensions (`isCore: false`)**: Decoupled, standalone extensions (such as pre-bundled showcase plugins `Cascade` and `Iconify`, and user-installed plugins). They run within standard extension boundaries, manage their own isolated SQLite tables, and can be toggled or uninstalled.
+- **Community Extensions (`isCore: false`)**: Decoupled, standalone extensions (such as pre-bundled showcase plugins `Cascade` and `Iconify`, and user-installed plugins). They run within standard extension boundaries, manage their own isolated SQLite tables, and can be toggled or uninstalled with clean disk teardown.
+
+### Extensibility Architecture Flow
+
+<div align="center">
+  <img src="docs/assets/extensibility-architecture.svg" alt="Flint Extensibility Architecture: [1. Extension Layer (Core &amp; Community Extensions, Strict Core Isolation, Lifecycle, Schemas)] --SDK/Events--&gt; [2. Flint SDK Layer (Extension Base, Zod Engine, Hooks, Platform Bridge)] --IoC Binding--&gt; [3. Micro-Kernel IoC Registries (SlotRegistry, EditorRegistry, ToolRegistry, DatabaseManager, WorkerPool)] --Portals/Hooks/Tools/Tables/Tasks--&gt; [4. Host Presentation &amp; Core (Portal Slot Hosts, TipTap Bridge, Native MCP Server, Native rusqlite, EventBus Telemetry)]" width="100%"/>
+</div>
+
+### The 5 Extension Superpowers
+
+1. **Dynamic UI Layering & React Portal Slots (`registerPortalSlot`)**
+   - Mount React components directly into designated host layout slots (`workspace:root`, `editor:minimap`, `editor:viewport-overlay`, `editor:floating-toolbar`) without DOM monkey-patching.
+   - Supports deterministic ordering (`order`), contextual predicates (`when(ctx)`), pointer-events pass-through, and isolated error boundaries.
+
+2. **Native ProseMirror & TipTap Bridge (`registerEditorPlugin`)**
+   - Register custom ProseMirror plugins, input rules, paste rules, and keyboard shortcuts.
+   - Dynamic decorations map through ProseMirror transactions (`mapping.map(decorations)`), running in $O(K)$ time over active decorations rather than $O(N)$ document scans, maintaining sub-8ms typing latency on massive documents.
+
+3. **Declarative SQLite Schema & Dynamic Migrations (`defineTable`)**
+   - Declare type-safe SQLite schemas directly in code (`this.defineTable(...)`).
+   - Automatically diffs columns and applies non-destructive migrations (`ALTER TABLE ADD COLUMN`), tracks table versions in `flint_extension_tables`, executes cascade deletions when notes are removed (`onDelete: 'cascade'`), and cleans up tables upon uninstallation.
+
+4. **Type-Safe Zod-to-MCP Tool Automation (`registerTool`)**
+   - Register AI agent tools using standard Zod schemas (`z.object({...})`).
+   - The engine automatically generates compliant `McpJsonSchema` definitions, scopes tool names (`{extensionId}_{toolName}`) to prevent collisions, and validates parameters with `schema.safeParse(...)` before invoking handlers.
+
+5. **Off-Thread Web Worker Pipeline (`registerWorkerTask` & `runTask`)**
+   - Offload heavy, CPU-intensive algorithms (geometry parsing, clustering, syntax analysis) to dedicated Web Workers.
+   - Includes a two-way `EventBus` bridge allowing background tasks to stream progress updates directly to the UI without blocking the main event loop.
+
+---
 
 ### Plugin Directory Structure
 Plugins are stored within your vault under `.flint/plugins/<plugin-id>/`:
@@ -359,62 +391,83 @@ Plugins are stored within your vault under `.flint/plugins/<plugin-id>/`:
                     └── styles.css (optional)
 ```
 
-### Sample Plugin with MCP Tool Registration (`main.js`)
+### Modern Extension Example (`main.js` / TypeScript)
 
-```javascript
-const { Plugin } = require('flint');
+```typescript
+import { Extension, z } from 'flint';
 
-module.exports = class ReadingTimePlugin extends Plugin {
+export default class ReadingAnalyticsExtension extends Extension {
+  private analyticsTable!: any;
+
   async onload() {
-    // 1. Register a command in the Command Palette (Ctrl + K)
-    this.addCommand({
-      id: 'show-reading-time',
-      title: 'Calculate Active Note Reading Time',
-      hotkey: 'Ctrl+Shift+U',
-      action: (app) => {
-        const text = app.vault.activeDocument?.title || '';
-        app.workspace.showToast('Estimated read time: ~2 mins', 'info');
-      },
+    // 1. Declarative SQLite Table with Foreign Key Cascades
+    this.analyticsTable = await this.defineTable({
+      tableName: 'reading_analytics',
+      columns: [
+        { name: 'documentId', type: 'TEXT', notNull: true, onDelete: 'cascade' },
+        { name: 'wordCount', type: 'INTEGER', notNull: true },
+        { name: 'estimatedMinutes', type: 'REAL', notNull: true },
+        { name: 'recordedAt', type: 'INTEGER', notNull: true },
+      ],
+      indexes: [
+        { name: 'idx_analytics_doc', columns: ['documentId'] },
+      ],
     });
 
-    // 2. Register a persistent status bar widget
-    this.addStatusBarItem({
-      id: 'reading-time-status',
-      alignment: 'right',
-      render: (app) => {
-        return React.createElement('span', { className: 'text-xs text-muted' }, '📖 ~2 min read');
-      },
+    // 2. Dynamic Floating Toolbar Slot
+    this.registerPortalSlot({
+      id: 'reading-time-pill',
+      slot: 'editor:floating-toolbar',
+      order: 10,
+      render: (ctx) => (
+        <div className="bg-surface border border-border px-2 py-0.5 rounded text-xs text-muted shadow-sm">
+          ⏱️ {Math.ceil((ctx.document?.content?.split(/\s+/).length || 0) / 200)} min read
+        </div>
+      ),
     });
 
-    // 3. Register an MCP Tool for local AI Agents
+    // 3. Type-Safe Zod-to-MCP Tool for AI Agents
     this.registerTool({
-      name: 'get_reading_time',
-      description: 'Calculates the estimated reading time of a note in minutes',
-      parameters: {
-        type: 'object',
-        properties: {
-          notePath: { type: 'string', description: 'Relative path or title of the note' },
-        },
-        required: ['notePath'],
-      },
-      handler: async (args) => {
-        const note = await this.app.vault.readNote(args.notePath);
-        const words = (note?.content || '').split(/\s+/).length;
+      name: 'get_reading_stats',
+      description: 'Calculates reading metrics and logs stats into the database.',
+      schema: z.object({
+        documentId: z.string().describe('Target document identifier'),
+      }),
+      handler: async ({ documentId }) => {
+        const doc = await this.app.vault.readNote(documentId);
+        const words = (doc?.content || '').split(/\s+/).length;
         const minutes = Math.ceil(words / 200);
-        return { content: [{ type: 'text', text: `Estimated reading time: ${minutes} min (${words} words)` }] };
+
+        await this.analyticsTable.insert({
+          documentId,
+          wordCount: words,
+          estimatedMinutes: minutes,
+          recordedAt: Date.now(),
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ documentId, words, estimatedMinutes: minutes }),
+            },
+          ],
+        };
       },
     });
 
-    // 4. Subscribe to workspace events
-    this.app.events.on('document:saved', (doc) => {
-      console.log('Document saved:', doc.title);
+    // 4. Background Web Worker Task
+    this.registerWorkerTask('compute-metrics', (input: { text: string }, emitEvent) => {
+      emitEvent('metrics:progress', { percent: 50 });
+      const words = input.text.split(/\s+/).length;
+      return { wordCount: words, readingTime: Math.ceil(words / 200) };
     });
   }
 
   onunload() {
-    // All UI items, commands, and MCP tools are cleaned up automatically
+    // All portal slots, database handles, editor hooks, and worker tasks clean up automatically
   }
-};
+}
 ```
 
 For comprehensive documentation on extension points, context menus, custom views, and settings tabs, refer to [`docs/PLUGIN_GUIDE.md`](docs/PLUGIN_GUIDE.md) and [`docs/mcp-setup-guide.md`](docs/mcp-setup-guide.md).

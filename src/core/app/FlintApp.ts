@@ -23,6 +23,9 @@ import { ModalRegistry } from '../registries/ModalRegistry';
 import { PropertyRegistry } from '../registries/PropertyRegistry';
 import { TabDecoratorRegistry } from '../registries/TabDecoratorRegistry';
 import { ToolRegistry } from '../registries/ToolRegistry';
+import { SlotRegistry } from '../registries/SlotRegistry';
+import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
+import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
@@ -70,6 +73,12 @@ export class FlintApp {
   public tabDecorators: TabDecoratorRegistry;
   /** MCP Tool registry managing AI agent callable tool definitions. */
   public tools: ToolRegistry;
+  /** UI Portal slot registry managing contextual toolbars, minimaps, and canvas overlays. */
+  public slots: SlotRegistry;
+  /** Relational database manager managing extension tables, migrations, and cascade teardown. */
+  public dbManager: ExtensionDatabaseManager;
+  /** Background Web Worker pool for off-thread CPU-intensive extension operations. */
+  public workerPool: ExtensionWorkerPool;
   /** Central event bus for decoupled inter-extension and system communications. */
   public events: EventBus;
   /** Extensions manager overseeing discovery, loading, enable/disable states, and sandbox. */
@@ -98,6 +107,9 @@ export class FlintApp {
     this.properties = new PropertyRegistry();
     this.tabDecorators = new TabDecoratorRegistry();
     this.tools = new ToolRegistry(this);
+    this.slots = new SlotRegistry();
+    this.dbManager = new ExtensionDatabaseManager(this);
+    this.workerPool = new ExtensionWorkerPool(this);
     this.events = new EventBus();
     this.extensions = new ExtensionManager(this);
     setAppInstanceBridge(this);
