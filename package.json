@@ -14,7 +14,9 @@
     "start": "npm run app",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build"
+    "tauri:build": "tauri build",
+    "docs:build": "npm --prefix website run build",
+    "docs:deploy": "npm --prefix website run deploy"
   },
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.3.0",
