@@ -3,7 +3,42 @@
 Flint is distributed as a lightweight, cross-platform native desktop application built with Rust and Tauri. You can install pre-compiled binaries or build directly from source.
 
 
-## 1. Desktop Installation
+## 1. Quick Install via One-Liner
+
+---
+
+You can install Flint instantly from your terminal with a single command:
+
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.ps1 | iex
+```
+
+### macOS & Linux (Bash)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.sh | bash
+```
+
+---
+
+## 2. Desktop Binaries & Direct Download
+
+---
+
+Pre-compiled standalone binaries and installers are available directly on the [Flint Releases page](https://github.com/yvliet/flint/releases/latest).
+
+### Platform Download Matrix
+
+| Operating System | Package Format | Architecture | Download Link |
+| :--- | :--- | :--- | :--- |
+| **Windows** | `.msi` (Installer) | x64 | [Flint-Setup-x64.msi](https://github.com/yvliet/flint/releases/latest) |
+| **Windows** | `.exe` (Standalone) | x64 | [Flint-x64.exe](https://github.com/yvliet/flint/releases/latest) |
+| **macOS** | `.dmg` (Universal) | Apple Silicon & Intel | [Flint.dmg](https://github.com/yvliet/flint/releases/latest) |
+| **Linux** | `.AppImage` (Portable) | x86_64 | [Flint.AppImage](https://github.com/yvliet/flint/releases/latest) |
+| **Linux** | `.deb` (Debian/Ubuntu) | x86_64 | [flint_amd64.deb](https://github.com/yvliet/flint/releases/latest) |
+| **Web Preview** | Browser (WASM SQLite) | Any modern browser | [yvliet.github.io/flint](https://yvliet.github.io/flint/) |
 
 ---
 
@@ -17,9 +52,9 @@ Flint is distributed as a lightweight, cross-platform native desktop application
 
 ---
 
-### macOS
+### macOS Manual Installation
 
-1. Download the latest `.dmg` release from the [Flint Releases page](https://github.com/yvliet/flint/releases).
+1. Download the latest `.dmg` release from the [Flint Releases page](https://github.com/yvliet/flint/releases/latest).
 2. Open the downloaded `.dmg` disk image.
 3. Drag **Flint.app** into your `/Applications` folder.
 4. Launch Flint from Spotlight (`Cmd + Space`) or Launchpad.
@@ -29,9 +64,9 @@ Flint is distributed as a lightweight, cross-platform native desktop application
 
 ---
 
-### Windows
+### Windows Manual Installation
 
-1. Download the Windows installer (`Flint-Setup-x64.exe` or `.msi`) from the [Releases page](https://github.com/yvliet/flint/releases).
+1. Download the Windows installer (`Flint-Setup-x64.msi` or `.exe`) from the [Releases page](https://github.com/yvliet/flint/releases/latest).
 2. Run the installer wizard to install Flint into your user profile (`%LOCALAPPDATA%\Programs\Flint`).
 3. Launch Flint via the Start Menu or desktop shortcut.
 
@@ -40,21 +75,17 @@ Flint is distributed as a lightweight, cross-platform native desktop application
 
 ---
 
-### Linux
+### Linux Manual Installation
 
 Flint provides both portable AppImage packages and native Debian packages:
 
 #### AppImage (Universal)
 ```bash
 # Make the AppImage executable
-
----
-chmod +x Flint-x86_64.AppImage
+chmod +x Flint.AppImage
 
 # Launch Flint
-
----
-./Flint-x86_64.AppImage
+./Flint.AppImage
 ```
 
 #### Debian / Ubuntu (`.deb`)
@@ -65,7 +96,7 @@ sudo dpkg -i flint_*_amd64.deb
 ```
 
 
-## 2. Opening or Creating Your First Hearth
+## 3. Opening or Creating Your First Hearth
 
 ---
 
@@ -75,7 +106,7 @@ When you first launch Flint, the workspace selector greets you:
 2. **Open Existing Folder**: Choose any existing directory containing Markdown notes (such as an existing Obsidian vault, Foam directory, or GitHub documentation repo). Flint scans the directory, populates its SQLite index, and renders your note hierarchy without altering your existing files.
 
 
-## 3. Building From Source
+## 4. Building From Source
 
 ---
 
@@ -137,7 +168,7 @@ src-tauri/target/release/bundle/
 ```
 
 
-## 4. Verification & Type Checking
+## 5. Verification & Type Checking
 
 ---
 
@@ -145,18 +176,14 @@ Ensure that all TypeScript types and Rust components pass static analysis:
 
 ```bash
 # Verify TypeScript typing across all core modules
-
----
 npx tsc --noEmit
 
 # Verify Rust compilation and linting
-
----
 cd src-tauri && cargo check
 ```
 
 
-## 5. Next Steps
+## 6. Next Steps
 
 ---
 

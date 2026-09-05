@@ -22,6 +22,7 @@
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-06b6d4.svg?logo=tailwindcss&logoColor=white)](tailwind.config.js)
 
 [Overview](#overview) •
+[Install](#quick-install--downloads) •
 [Architecture](#architectural-overview) •
 [Storage Pipeline](#dual-track-storage--synchronization-pipeline) •
 [Model Context Protocol](#native-model-context-protocol-mcp-integration) •
@@ -32,6 +33,35 @@
 [Plugin Development](#extensibility--plugin-sdk)
 
 </div>
+
+---
+
+## Quick Install & Downloads
+
+Install Flint instantly via terminal one-liner or download standalone desktop binaries:
+
+### Terminal One-Liner Installers
+
+#### Windows (PowerShell)
+```powershell
+irm https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.ps1 | iex
+```
+
+#### macOS & Linux (Bash)
+```bash
+curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.sh | bash
+```
+
+### Direct Download Matrix
+
+| Platform | Format | Architecture | Direct Download |
+| :--- | :--- | :--- | :--- |
+| **Windows** | `.msi` Installer | x64 | [Flint-Setup-x64.msi](https://github.com/yvliet/flint/releases/latest) |
+| **Windows** | `.exe` Standalone | x64 | [Flint-x64.exe](https://github.com/yvliet/flint/releases/latest) |
+| **macOS** | `.dmg` Package | Apple Silicon & Intel | [Flint.dmg](https://github.com/yvliet/flint/releases/latest) |
+| **Linux** | `.AppImage` Portable | x86_64 | [Flint.AppImage](https://github.com/yvliet/flint/releases/latest) |
+| **Linux** | `.deb` Package | x86_64 | [flint_amd64.deb](https://github.com/yvliet/flint/releases/latest) |
+| **Web Preview** | In-Browser (WASM) | Modern Browsers | [Launch Web App →](https://yvliet.github.io/flint/) |
 
 ---
 
