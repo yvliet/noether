@@ -9,6 +9,7 @@ import { renderEmbedWidget } from '../embed-renderer';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isLinkVisited } from '@/lib/visitedLinks';
+import { matchLineListPrefix } from './smart-pairing-utils';
 
 export const LivePreviewSyntaxPluginKey = new PluginKey('livePreviewSyntax');
 
@@ -65,7 +66,6 @@ const hangIndentCache = new Map<string, number>();
  * Measures the exact pixel width of a list item prefix (leading spaces + marker + trailing space)
  * under the active editor font metrics.
  *
- * WHY THIS, NOT THAT:
  * Measuring via an in-memory 2D canvas gives 100% pixel-perfect alignment with the first
  * character of the list item text across any font family (Segoe UI, Inter, Roboto, monospace)
  * and font size. Caching by `${font}::${prefix}` ensures O(1) instantaneous lookups during typing.
@@ -215,17 +215,17 @@ function scanBlockDecorations(
   // even when indented with Tab, preserving clean markdown without modifying document content.
   if (node.type.name === 'paragraph' && text) {
     const firstLine = text.includes('\n') ? text.slice(0, text.indexOf('\n')) : text;
-    const listMatch = firstLine.match(/^([ \t]*)(\d+\.|[a-zA-Z]{1,2}\.|[-*+])( +)/);
-    if (listMatch) {
-      const leadingIndent = listMatch[1];
-      const marker = listMatch[2];
-      const spaceAfter = listMatch[3];
+    const listInfo = matchLineListPrefix(firstLine);
+    if (listInfo) {
+      const leadingIndent = listInfo.leadingIndent;
+      const marker = listInfo.marker;
+      const spaceAfter = listInfo.spaceAfter;
 
-      const isBullet = /^[-*+]$/.test(marker);
+      const isBullet = listInfo.isBullet;
       const isMarkerFocused =
         isFocused &&
-        selFrom <= blockStart + leadingIndent.length + marker.length &&
-        selTo >= blockStart + leadingIndent.length;
+        selFrom <= blockStart + listInfo.markerEndInLine &&
+        selTo >= blockStart + listInfo.markerStartInLine;
       const showBulletGlyph = isBullet && !isMarkerFocused;
 
       const normalizedIndent = leadingIndent.replace(/\t/g, ' '.repeat(getIndentSize()));
@@ -347,18 +347,16 @@ function scanBlockDecorations(
         );
       }
 
-      // List Prefix Dimming (e.g., "1. ", "2. ", "a. ", "aa. ", "- ", "* ", "+ ", "  - ")
+      // List Prefix Dimming (e.g., "1. ", "2. ", "a. ", "aa. ", "- ", "* ", "+ ", "  - ", "**1. ", "**- ")
       // Only dims when there is a space after the marker
-      const listMatch = lineStr.match(/^([ \t]*)(\d+\.|[a-zA-Z]{1,2}\.|[-*+]) /);
-      if (listMatch) {
-        const indentLen = listMatch[1].length;
-        const markerLen = listMatch[2].length;
-        const markerStart = blockStart + lineOffset + indentLen;
-        const markerEnd = markerStart + markerLen;
+      const listInfo = matchLineListPrefix(lineStr);
+      if (listInfo) {
+        const markerStart = blockStart + lineOffset + listInfo.markerStartInLine;
+        const markerEnd = blockStart + lineOffset + listInfo.markerEndInLine;
         // Bullet markers (-, *, +) get an extra class so CSS can visually replace them with a centered dot.
         // When the caret enters or touches the bullet marker, reveal the actual markdown character (e.g. '-')
         // with full caret visibility instead of hiding it behind a 0-font-size pseudo-element dot.
-        const isBullet = /^[-*+]$/.test(listMatch[2]);
+        const isBullet = listInfo.isBullet;
         const isMarkerFocused = isFocused && selFrom <= markerEnd && selTo >= markerStart;
         const showBulletGlyph = isBullet && !isMarkerFocused;
         decorations.push(

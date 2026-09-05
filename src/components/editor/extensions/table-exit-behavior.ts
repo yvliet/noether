@@ -168,6 +168,38 @@ export const TableExitBehavior = Extension.create({
       Delete: ({ editor }) => {
         return handleDeleteInTable(editor);
       },
+
+      // 7. Tab: In table, advance to next cell; if in the last cell of the table, add row after
+      Tab: ({ editor }) => {
+        const { state } = editor;
+        const { selection } = state;
+        const { $from } = selection;
+
+        let tableDepth = -1;
+        for (let d = $from.depth; d > 0; d--) {
+          if ($from.node(d).type.name === 'table') {
+            tableDepth = d;
+            break;
+          }
+        }
+        if (tableDepth === -1) return false;
+
+        // Try navigating to next cell first
+        if (editor.commands.goToNextCell()) {
+          return true;
+        }
+
+        // If at the end of the table, append a new row and advance to its first cell
+        const tableNode = $from.node(tableDepth);
+        const isLastRow = $from.index(tableDepth) === tableNode.childCount - 1;
+        if (isLastRow) {
+          if (editor.commands.addRowAfter()) {
+            editor.commands.goToNextCell();
+            return true;
+          }
+        }
+        return false;
+      },
     };
   },
 

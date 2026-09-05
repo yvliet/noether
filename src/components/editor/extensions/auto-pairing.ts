@@ -2,23 +2,35 @@ import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import { getEffectiveTextRange } from './markdown-shortcuts';
 import { useSettingsStore } from '@/store/settingsStore';
+import {
+  analyzeSelectionWrap,
+  getCollapsedPairingAction,
+  getSmartBackspaceAction,
+  getTabOutDelta,
+} from './smart-pairing-utils';
+import { findMathRangeAtPos } from './mathlive-wysiwyg';
+import { isSuggestionActive } from './suggestion-state';
 
 export const AutoPairingPluginKey = new PluginKey('autoPairing');
-
-const BRACKET_PAIRS: Record<string, string> = {
-  '[': ']',
-  '(': ')',
-  '{': '}',
-  '"': '"',
-};
-
-const CLOSING_CHARS = new Set([']', ')', '}', '"', '*', '`', '~', '=']);
 
 export interface AutoPairingStorage {
   autoPairing: boolean;
   unsubscribe: (() => void) | null;
 }
 
+/**
+ * Smart Auto-Pairing and Autowrapping Extension for Flint.
+ *
+ * 1. Soft Undo: Immediately pressing Backspace after an auto-pair removes ONLY the auto-inserted
+ *    closing character, allowing typists to type single characters (e.g. emoticons or footnotes)
+ *    without being trapped in unwanted pairs.
+ * 2. Tab Out: Pressing Tab immediately before a closing delimiter jumps out past the closing delimiter,
+ *    keeping hands firmly anchored to the home row without reaching for arrow keys.
+ * 3. Asymmetric Selection Balancing: Pre-existing delimiters on one side are balanced without creating
+ *    malformed syntax like `**word*`.
+ * 4. Math Subscript/Superscript: Auto-braces `^{}` and `_{}` when typing inside LaTeX math spans.
+ * 5. Single Quote Intelligence: Distinguishes between English contractions (`don't`) and paired quotes.
+ */
 export const AutoPairing = Extension.create<never, AutoPairingStorage>({
   name: 'autoPairing',
 
@@ -45,7 +57,7 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
 
   addProseMirrorPlugins() {
     const extensionThis = this;
-    const editor = this.editor;
+    let lastAutoPair: { pos: number; char: string } | null = null;
 
     return [
       new Plugin({
@@ -61,289 +73,181 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
               const { selection } = state;
               const { from, to, empty } = selection;
 
-              // 1. Text is selected: wrap or unwrap via editor.chain()
+              // 1. Text is selected: wrap or unwrap via smart selection wrapping
               if (!empty) {
+                lastAutoPair = null;
                 const range = getEffectiveTextRange(state.doc, selection);
                 if (range.empty) return false;
-                const { from, to, text: selText } = range;
+                const { from: selFrom, to: selTo, text: selText } = range;
 
+                const $from = state.doc.resolve(selFrom);
+                const blockStart = $from.start();
+                const blockEnd = $from.end();
+                const blockText = state.doc.textBetween(blockStart, blockEnd);
+                const selStartInBlock = selFrom - blockStart;
+                const selEndInBlock = selTo - blockStart;
+
+                const wrapResult = analyzeSelectionWrap(
+                  selFrom,
+                  selTo,
+                  selText,
+                  blockText,
+                  selStartInBlock,
+                  selEndInBlock,
+                  key
+                );
+
+                if (wrapResult) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const tr = state.tr.replaceWith(
+                    wrapResult.replaceFrom,
+                    wrapResult.replaceTo,
+                    state.schema.text(wrapResult.text)
+                  );
+                  tr.setSelection(
+                    TextSelection.create(tr.doc, wrapResult.selectionFrom, wrapResult.selectionTo)
+                  );
+                  view.dispatch(tr);
+                  return true;
+                }
+                return false;
+              }
+
+              // 2. Selection is collapsed: auto-pair, step-over, tab-out, or soft-undo
+              if (empty) {
                 const $from = state.doc.resolve(from);
                 const blockStart = $from.start();
                 const blockEnd = $from.end();
                 const blockText = state.doc.textBetween(blockStart, blockEnd);
-                const selStartInBlock = from - blockStart;
-                const selEndInBlock = to - blockStart;
+                const caretPosInBlock = from - blockStart;
 
-                const beforeTwo = selStartInBlock >= 2 ? blockText.slice(selStartInBlock - 2, selStartInBlock) : '';
-                const afterTwo = selEndInBlock <= blockText.length - 2 ? blockText.slice(selEndInBlock, selEndInBlock + 2) : '';
-                const beforeOne = selStartInBlock >= 1 ? blockText.slice(selStartInBlock - 1, selStartInBlock) : '';
-                const afterOne = selEndInBlock <= blockText.length - 1 ? blockText.slice(selEndInBlock, selEndInBlock + 1) : '';
-
-                if (key === '*') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  if (selText.startsWith('*') && selText.endsWith('*') && !selText.startsWith('**') && selText.length >= 2) {
-                    const unwrapped = selText.slice(1, -1);
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
-                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
-                    view.dispatch(tr);
-                  } else if (beforeOne === '*' && afterOne === '*' && beforeTwo !== '**' && afterTwo !== '**') {
-                    const innerLength = to - from;
-                    const tr = state.tr;
-                    tr.delete(to, to + 1);
-                    tr.delete(from - 1, from);
-                    tr.setSelection(TextSelection.create(tr.doc, from - 1, from - 1 + innerLength));
-                    view.dispatch(tr);
-                  } else {
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(`*${selText}*`));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
-                    view.dispatch(tr);
-                  }
-                  return true;
-                }
-
-                if (key === '`') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  if (selText.startsWith('`') && selText.endsWith('`') && selText.length >= 2) {
-                    const unwrapped = selText.slice(1, -1);
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
-                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
-                    view.dispatch(tr);
-                  } else if (beforeOne === '`' && afterOne === '`') {
-                    const innerLength = to - from;
-                    const tr = state.tr;
-                    tr.delete(to, to + 1);
-                    tr.delete(from - 1, from);
-                    tr.setSelection(TextSelection.create(tr.doc, from - 1, from - 1 + innerLength));
-                    view.dispatch(tr);
-                  } else {
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(`\`${selText}\``));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
-                    view.dispatch(tr);
-                  }
-                  return true;
-                }
-
-                if (key === '~') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  if (selText.startsWith('~~') && selText.endsWith('~~') && selText.length >= 4) {
-                    const unwrapped = selText.slice(2, -2);
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
-                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
-                    view.dispatch(tr);
-                  } else if (beforeTwo === '~~' && afterTwo === '~~') {
-                    const innerLength = to - from;
-                    const tr = state.tr;
-                    tr.delete(to, to + 2);
-                    tr.delete(from - 2, from);
-                    tr.setSelection(TextSelection.create(tr.doc, from - 2, from - 2 + innerLength));
-                    view.dispatch(tr);
-                  } else {
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(`~~${selText}~~`));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 2, from + 2 + selText.length));
-                    view.dispatch(tr);
-                  }
-                  return true;
-                }
-
-                if (key === '=') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  if (selText.startsWith('==') && selText.endsWith('==') && selText.length >= 4) {
-                    const unwrapped = selText.slice(2, -2);
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
-                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
-                    view.dispatch(tr);
-                  } else if (beforeTwo === '==' && afterTwo === '==') {
-                    const innerLength = to - from;
-                    const tr = state.tr;
-                    tr.delete(to, to + 2);
-                    tr.delete(from - 2, from);
-                    tr.setSelection(TextSelection.create(tr.doc, from - 2, from - 2 + innerLength));
-                    view.dispatch(tr);
-                  } else {
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(`==${selText}==`));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 2, from + 2 + selText.length));
-                    view.dispatch(tr);
-                  }
-                  return true;
-                }
-
-                if (key === '[' || key === ']') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  // Case 1: Selection itself is [[...]] -> unwrap to plain text
-                  if (selText.startsWith('[[') && selText.endsWith(']]') && selText.length >= 4) {
-                    const unwrapped = selText.slice(2, -2);
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(unwrapped));
-                    tr.setSelection(TextSelection.create(tr.doc, from, from + unwrapped.length));
-                    view.dispatch(tr);
-                    return true;
-                  }
-
-                  // Case 2: Selected text is surrounded by [[ before and ]] after -> unwrap
-                  if (beforeTwo === '[[' && afterTwo === ']]') {
-                    const innerLength = to - from;
-                    const tr = state.tr;
-                    tr.delete(to, to + 2);
-                    tr.delete(from - 2, from);
-                    tr.setSelection(TextSelection.create(tr.doc, from - 2, from - 2 + innerLength));
-                    view.dispatch(tr);
-                    return true;
-                  }
-
-                  // Case 3: Selection is single-bracketed [text] -> upgrade to [[text]]
-                  if (selText.startsWith('[') && selText.endsWith(']') && selText.length >= 2) {
-                    const inner = selText.slice(1, -1);
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(`[[${inner}]]`));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 2, from + 2 + inner.length));
-                    view.dispatch(tr);
-                    return true;
-                  }
-
-                  // Case 4: Selected text is surrounded by [ before and ] after -> upgrade to [[text]]
-                  if (beforeOne === '[' && afterOne === ']') {
-                    const innerLength = selText.length;
-                    const tr = state.tr.replaceWith(from - 1, to + 1, state.schema.text(`[[${selText}]]`));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + innerLength));
-                    view.dispatch(tr);
-                    return true;
-                  }
-
-                  // Case 5: Plain text selected -> wrap in [...] first (progressive wrapping)
-                  const tr = state.tr.replaceWith(from, to, state.schema.text(`[${selText}]`));
-                  tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
-                  view.dispatch(tr);
-                  return true;
-                }
-
-                if (BRACKET_PAIRS[key]) {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  const closeChar = BRACKET_PAIRS[key];
-                  if (beforeOne === key && afterOne === closeChar) {
-                    const innerLength = to - from;
-                    const tr = state.tr;
-                    tr.delete(to, to + 1);
-                    tr.delete(from - 1, from);
-                    tr.setSelection(TextSelection.create(tr.doc, from - 1, from - 1 + innerLength));
-                    view.dispatch(tr);
-                  } else {
-                    const tr = state.tr.replaceWith(from, to, state.schema.text(`${key}${selText}${closeChar}`));
-                    tr.setSelection(TextSelection.create(tr.doc, from + 1, from + 1 + selText.length));
-                    view.dispatch(tr);
-                  }
-                  return true;
-                }
-              }
-
-              // 2. Selection is collapsed: auto-pair, step-over, or backspace
-              if (empty) {
-                const afterChar = state.doc.textBetween(from, Math.min(from + 1, state.doc.content.size));
-
-                // Step over closing character
-                if (CLOSING_CHARS.has(key) && key === afterChar) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const tr = state.tr.setSelection(TextSelection.create(state.doc, from + 1));
-                  view.dispatch(tr);
-                  return true;
-                }
-
-                // Auto-pair asterisks
-                if (key === '*') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  const beforeChar = from > 0 ? state.doc.textBetween(from - 1, from) : '';
-                  const insertText = beforeChar === '*' ? '***' : '**';
-                  const tr = state.tr.insertText(insertText, from);
-                  tr.setSelection(TextSelection.create(tr.doc, from + 1));
-                  view.dispatch(tr);
-                  return true;
-                }
-
-                // Auto-pair inline code
-                if (key === '`') {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  const tr = state.tr.insertText('``', from);
-                  tr.setSelection(TextSelection.create(tr.doc, from + 1));
-                  view.dispatch(tr);
-                  return true;
-                }
-
-                // Auto-pair highlight
-                if (key === '=') {
-                  const beforeChar = from > 0 ? state.doc.textBetween(from - 1, from) : '';
-                  if (beforeChar === '=') {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const tr = state.tr.insertText('===', from);
-                    tr.setSelection(TextSelection.create(tr.doc, from + 1));
-                    view.dispatch(tr);
-                    return true;
-                  }
-                }
-
-                // Auto-pair brackets & quotes
-                if (BRACKET_PAIRS[key]) {
-                  event.preventDefault();
-                  event.stopPropagation();
-
-                  const closeChar = BRACKET_PAIRS[key];
-                  const tr = state.tr.insertText(`${key}${closeChar}`, from);
-                  tr.setSelection(TextSelection.create(tr.doc, from + 1));
-                  view.dispatch(tr);
-                  return true;
-                }
-
-                // Backspace deleting pairs
-                if (key === 'Backspace') {
-                  const pos = from;
-                  if (pos > 0 && pos < state.doc.content.size) {
-                    const prevChar = state.doc.textBetween(pos - 1, pos);
-                    const nextChar = state.doc.textBetween(pos, pos + 1);
-
-                    if (
-                      (BRACKET_PAIRS[prevChar] && BRACKET_PAIRS[prevChar] === nextChar) ||
-                      (prevChar === '*' && nextChar === '*') ||
-                      (prevChar === '`' && nextChar === '`')
-                    ) {
+                // 2A. Tab-Out: Pressing Tab before a closing delimiter steps out of it
+                if (key === 'Tab' && !event.shiftKey) {
+                  if (!isSuggestionActive(state)) {
+                    const textAfter = blockText.slice(caretPosInBlock);
+                    const tabDelta = getTabOutDelta(textAfter);
+                    if (tabDelta > 0) {
                       event.preventDefault();
                       event.stopPropagation();
-                      const tr = state.tr.delete(pos - 1, pos + 1);
+                      const tr = state.tr.setSelection(
+                        TextSelection.create(state.doc, from + tabDelta)
+                      );
                       view.dispatch(tr);
+                      lastAutoPair = null;
                       return true;
                     }
-
-                    if (pos >= 2 && pos + 2 <= state.doc.content.size) {
-                      const prevTwo = state.doc.textBetween(pos - 2, pos);
-                      const nextTwo = state.doc.textBetween(pos, pos + 2);
-                      if (
-                        (prevTwo === '**' && nextTwo === '**') ||
-                        (prevTwo === '~~' && nextTwo === '~~') ||
-                        (prevTwo === '==' && nextTwo === '==') ||
-                        (prevTwo === '$$' && nextTwo === '$$') ||
-                        (prevTwo === '[[' && nextTwo === ']]')
-                      ) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        const tr = state.tr.delete(pos - 2, pos + 2);
-                        view.dispatch(tr);
-                        return true;
-                      }
-                    }
                   }
+                }
+
+                // 2B. Backspace handling: Soft Undo or symmetrical contraction
+                if (key === 'Backspace') {
+                  // Soft Undo: If user immediately hits Backspace after an auto-pair,
+                  // remove only the auto-inserted closing character, leaving the typed character intact.
+                  if (lastAutoPair && lastAutoPair.pos === from) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const tr = state.tr.delete(from, from + lastAutoPair.char.length);
+                    view.dispatch(tr);
+                    lastAutoPair = null;
+                    return true;
+                  }
+                  lastAutoPair = null;
+
+                  const bsAction = getSmartBackspaceAction(blockText, caretPosInBlock);
+                  if (bsAction) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const tr = state.tr.delete(
+                      from - bsAction.deleteBefore,
+                      from + bsAction.deleteAfter
+                    );
+                    view.dispatch(tr);
+                    return true;
+                  }
+                  return false;
+                }
+
+                // Reset soft-undo tracking on non-backspace keystrokes
+                lastAutoPair = null;
+
+                // 2C. Math Subscript/Superscript Auto-Bracing inside $...$ or $$...$$
+                if (key === '^' || key === '_') {
+                  const mathRange = findMathRangeAtPos(state.doc, from);
+                  if (mathRange) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const insert = `${key}{}`;
+                    const tr = state.tr.insertText(insert, from);
+                    tr.setSelection(TextSelection.create(tr.doc, from + 2));
+                    view.dispatch(tr);
+                    lastAutoPair = { pos: from + 2, char: '}' };
+                    return true;
+                  }
+                }
+
+                // 2D. Character pairing and smart actions
+                const pairResult = getCollapsedPairingAction(key, blockText, caretPosInBlock);
+                if (pairResult.action === 'none') {
+                  return false;
+                }
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (pairResult.action === 'step_over') {
+                  const tr = state.tr.setSelection(
+                    TextSelection.create(state.doc, from + (pairResult.caretDelta ?? 1))
+                  );
+                  view.dispatch(tr);
+                  return true;
+                }
+
+                if (pairResult.action === 'bullet_space') {
+                  const tr = state.tr;
+                  if (pairResult.deleteAfter) {
+                    tr.delete(from, from + pairResult.deleteAfter);
+                  }
+                  tr.insertText(pairResult.insertText ?? ' ', from);
+                  tr.setSelection(
+                    TextSelection.create(tr.doc, from + (pairResult.caretDelta ?? 1))
+                  );
+                  view.dispatch(tr);
+                  return true;
+                }
+
+                if (pairResult.action === 'close_single') {
+                  const tr = state.tr.insertText(pairResult.insertText ?? key, from);
+                  tr.setSelection(
+                    TextSelection.create(tr.doc, from + (pairResult.caretDelta ?? 1))
+                  );
+                  view.dispatch(tr);
+                  return true;
+                }
+
+                if (pairResult.action === 'escalate') {
+                  const insert = pairResult.insertText ?? '**';
+                  const half = Math.floor(insert.length / 2);
+                  const leftPart = insert.slice(0, half);
+                  const rightPart = insert.slice(half);
+                  const tr = state.tr;
+                  tr.insertText(rightPart, from);
+                  tr.insertText(leftPart, from);
+                  tr.setSelection(TextSelection.create(tr.doc, from + leftPart.length));
+                  view.dispatch(tr);
+                  lastAutoPair = { pos: from + leftPart.length, char: rightPart };
+                  return true;
+                }
+
+                if (pairResult.action === 'pair') {
+                  const insert = pairResult.insertText ?? `${key}${key}`;
+                  const delta = pairResult.caretDelta ?? 1;
+                  const rightPart = insert.slice(delta);
+                  const tr = state.tr.insertText(insert, from);
+                  tr.setSelection(TextSelection.create(tr.doc, from + delta));
+                  view.dispatch(tr);
+                  lastAutoPair = { pos: from + delta, char: rightPart };
+                  return true;
                 }
               }
 

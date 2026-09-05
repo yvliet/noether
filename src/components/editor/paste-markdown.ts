@@ -1,7 +1,6 @@
 /**
  * HTML-to-Markdown clipboard paste transformation engine for Flint.
  *
- * WHY THIS, NOT THAT:
  * Flint uses a pure Markdown architecture where all styling (bold, italic, links)
  * is represented as Markdown text tokens decorated by LivePreviewSyntax.
  * When pasting rich text from web browsers (Wikipedia, articles), Google Docs, or Word,

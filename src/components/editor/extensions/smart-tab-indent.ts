@@ -285,7 +285,6 @@ export function handleSmartHome(editor: any, isShift: boolean): boolean {
   const indentMatch = lineText.match(/^[ \t]+/);
   const indentLen = indentMatch ? indentMatch[0].length : 0;
 
-  // WHY THIS, NOT THAT:
   // If this line has NO indentation, delegate to native browser Home / Shift+Home.
   // The browser natively navigates visual line boxes (handling both wrapped text and hard breaks <br>)
   // without jumping to or selecting the preceding lines in the paragraph.

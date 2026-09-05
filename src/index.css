@@ -804,8 +804,7 @@ kbd,
   margin: 1.75rem 0;
 }
 
-/* Task lists
- * WHY THIS, NOT THAT:
+/* Task lists:
  * TipTap renders task items as <li data-type="taskItem"><label><input type="checkbox">...</label><div><p>...</p></div></li>.
  * When ProseMirror paragraphs have default vertical margins (0.5rem) and the label has uncoordinated top margins,
  * the text and checkbox become vertically misaligned (the text hangs noticeably lower than the checkbox).
@@ -1071,11 +1070,20 @@ li[data-type="taskItem"][data-checked="true"] > div {
   text-indent: calc(-1 * var(--flint-hang-indent, 0px)) !important;
 }
 
-/* Plain Text List Prefix Dimming (Numbers & Dashes/Bullets - Obsidian style) */
+/* Plain Text List Prefix Dimming (Numbers & Dashes/Bullets - Obsidian style)
+   Ensures numbers/lists remain dimmed (and normal font weight) even when inside or marked with bold */
 .flint-numbered-prefix,
-.flint-list-prefix {
-  color: #777777;
-  font-weight: 400;
+.flint-list-prefix,
+.md-bold.flint-numbered-prefix,
+.md-bold.flint-list-prefix,
+.md-bold .flint-numbered-prefix,
+.md-bold .flint-list-prefix,
+strong .flint-numbered-prefix,
+strong .flint-list-prefix,
+b .flint-numbered-prefix,
+b .flint-list-prefix {
+  color: #777777 !important;
+  font-weight: 400 !important;
   font-style: normal;
   text-decoration: none;
 }
@@ -1094,70 +1102,117 @@ li[data-type="taskItem"][data-checked="true"] > div {
 }
 
 .theme-light .flint-numbered-prefix,
-.theme-light .flint-list-prefix {
+.theme-light .flint-list-prefix,
+.theme-light .md-bold.flint-numbered-prefix,
+.theme-light .md-bold.flint-list-prefix,
+.theme-light .md-bold .flint-numbered-prefix,
+.theme-light .md-bold .flint-list-prefix,
+.theme-light strong .flint-numbered-prefix,
+.theme-light strong .flint-list-prefix,
+.theme-light b .flint-numbered-prefix,
+.theme-light b .flint-list-prefix {
   color: #94a3b8 !important;
+  font-weight: 400 !important;
 }
 
 .tiptap-reading-view .flint-numbered-prefix,
-.tiptap-reading-view .flint-list-prefix {
+.tiptap-reading-view .flint-list-prefix,
+.tiptap-reading-view .md-bold.flint-numbered-prefix,
+.tiptap-reading-view .md-bold.flint-list-prefix,
+.tiptap-reading-view .md-bold .flint-numbered-prefix,
+.tiptap-reading-view .md-bold .flint-list-prefix {
   color: #777777 !important;
   font-size: inherit !important;
   line-height: inherit !important;
   letter-spacing: normal !important;
   display: inline !important;
+  font-weight: 400 !important;
 }
 /* Preserve bullet → centered dot visual replacement in reading view */
 .tiptap-reading-view .flint-bullet-marker {
   font-size: 0 !important;
 }
 .tiptap-reading-view .flint-bullet-marker::after {
+  content: '•';
   font-size: 1rem !important;
 }
 
 .theme-light .tiptap-reading-view .flint-numbered-prefix,
-.theme-light .tiptap-reading-view .flint-list-prefix {
+.theme-light .tiptap-reading-view .flint-list-prefix,
+.theme-light .tiptap-reading-view .md-bold.flint-numbered-prefix,
+.theme-light .tiptap-reading-view .md-bold.flint-list-prefix,
+.theme-light .tiptap-reading-view .md-bold .flint-numbered-prefix,
+.theme-light .tiptap-reading-view .md-bold .flint-list-prefix {
   color: #94a3b8 !important;
+  font-weight: 400 !important;
 }
 
+ol > li::marker,
+ul > li::marker,
 .ProseMirror ol > li::marker,
 .ProseMirror ul > li::marker {
-  color: #777777;
+  color: #777777 !important;
+  font-weight: 400 !important;
 }
 
+.theme-light ol > li::marker,
+.theme-light ul > li::marker,
 .theme-light .ProseMirror ol > li::marker,
 .theme-light .ProseMirror ul > li::marker {
   color: #94a3b8 !important;
+  font-weight: 400 !important;
 }
 
 /* Accent Recolor for Numbers & Lists (when accent list markers toggle is on) */
 .flint-accent-lists .flint-numbered-prefix,
 .flint-accent-lists .flint-list-prefix,
+.flint-accent-lists .md-bold.flint-numbered-prefix,
+.flint-accent-lists .md-bold.flint-list-prefix,
+.flint-accent-lists .md-bold .flint-numbered-prefix,
+.flint-accent-lists .md-bold .flint-list-prefix,
 .flint-accent-lists .tiptap-reading-view .flint-numbered-prefix,
 .flint-accent-lists .tiptap-reading-view .flint-list-prefix,
+.flint-accent-lists ol > li::marker,
+.flint-accent-lists ul > li::marker,
 .flint-accent-lists .ProseMirror ol > li::marker,
 .flint-accent-lists .ProseMirror ul > li::marker {
   color: var(--flint-accent) !important;
   opacity: 0.82 !important;
+  font-weight: 400 !important;
 }
 
 .theme-dark .flint-accent-lists .flint-numbered-prefix,
 .theme-dark .flint-accent-lists .flint-list-prefix,
+.theme-dark .flint-accent-lists .md-bold.flint-numbered-prefix,
+.theme-dark .flint-accent-lists .md-bold.flint-list-prefix,
+.theme-dark .flint-accent-lists .md-bold .flint-numbered-prefix,
+.theme-dark .flint-accent-lists .md-bold .flint-list-prefix,
 .theme-dark .flint-accent-lists .tiptap-reading-view .flint-numbered-prefix,
 .theme-dark .flint-accent-lists .tiptap-reading-view .flint-list-prefix,
+.theme-dark .flint-accent-lists ol > li::marker,
+.theme-dark .flint-accent-lists ul > li::marker,
 .theme-dark .flint-accent-lists .ProseMirror ol > li::marker,
 .theme-dark .flint-accent-lists .ProseMirror ul > li::marker {
   color: color-mix(in srgb, var(--flint-accent) 80%, #d4d4d8 20%) !important;
   opacity: 0.85 !important;
+  font-weight: 400 !important;
 }
 
 .theme-light .flint-accent-lists .flint-numbered-prefix,
 .theme-light .flint-accent-lists .flint-list-prefix,
+.theme-light .flint-accent-lists .md-bold.flint-numbered-prefix,
+.theme-light .flint-accent-lists .md-bold.flint-list-prefix,
+.theme-light .flint-accent-lists .md-bold .flint-numbered-prefix,
+.theme-light .flint-accent-lists .md-bold .flint-list-prefix,
 .theme-light .flint-accent-lists .tiptap-reading-view .flint-numbered-prefix,
 .theme-light .flint-accent-lists .tiptap-reading-view .flint-list-prefix,
+.theme-light .flint-accent-lists ol > li::marker,
+.theme-light .flint-accent-lists ul > li::marker,
 .theme-light .flint-accent-lists .ProseMirror ol > li::marker,
 .theme-light .flint-accent-lists .ProseMirror ul > li::marker {
   color: color-mix(in srgb, var(--flint-accent) 85%, #09090b 15%) !important;
   opacity: 0.82 !important;
+  font-weight: 400 !important;
 }
 
 /* Obsidian Reading View: Default Cursor & Strict Markdown Syntax Concealment */
