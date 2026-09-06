@@ -24,6 +24,7 @@ import {
   SparklesIcon,
   StickyNote02Icon,
   Brain02Icon,
+  DatabaseSync01Icon,
 } from '@/components/common/Icons';
 import { fetchTursoPlugins } from './tursoClient';
 
@@ -38,6 +39,8 @@ export interface RawRegistryPlugin {
   version?: string;
   author?: string;
   authorUrl?: string;
+  repoUrl?: string;
+  repo_url?: string;
   description?: string;
   downloads?: string | number;
   stars?: number;
@@ -117,6 +120,9 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
     if (lower === 'brain-02' || lower === 'brain' || lower === 'fsrs') {
       return React.createElement(Brain02Icon, { size: 18, className: 'text-[#ec4899]' });
     }
+    if (lower === 'cloud' || lower === 'sync' || lower === 'database' || lower === 'databasesync') {
+      return React.createElement(DatabaseSync01Icon, { size: 18, className: 'text-[#3ecf8e]' });
+    }
     if (iconUrl.startsWith('http://') || iconUrl.startsWith('https://') || iconUrl.startsWith('data:image')) {
       return React.createElement('img', {
         src: iconUrl,
@@ -195,6 +201,7 @@ function normalizePluginItem(
     version: raw.version || localItem?.version || '1.0.0',
     author: authorName,
     authorUrl,
+    repoUrl: raw.repoUrl || raw.repo_url || localItem?.repoUrl,
     description: raw.description || localItem?.description || '',
     downloads: formattedDownloads,
     stars: typeof raw.stars === 'number' ? raw.stars : localItem?.stars ?? 5,
@@ -285,6 +292,7 @@ function persistCache(extensions: MarketplaceExtensionItem[]): void {
       version: item.version,
       author: item.author,
       authorUrl: item.authorUrl,
+      repoUrl: item.repoUrl,
       description: item.description,
       downloads: item.downloads,
       stars: item.stars,
@@ -385,31 +393,41 @@ export function useMarketplaceQuery(): MarketplaceQueryResult {
     let rawPlugins: RawRegistryPlugin[] | null = null;
     let fetchError: Error | null = null;
 
-    // 1. Primary endpoint attempt
-    try {
-      rawPlugins = await fetchRegistryEndpoint(primaryUrl);
-    } catch (err: any) {
-      fetchError = err instanceof Error ? err : new Error(String(err));
-      console.warn(`[useMarketplaceQuery] Primary registry (${primaryUrl}) request failed:`, err);
-    }
-
-    // 2. Localhost development fallback if primary endpoint fails
-    if (!rawPlugins && primaryUrl !== devUrl) {
+    // 1. If custom registry endpoint is configured, query it first
+    const hasCustomRegistry = primaryUrl !== PRIMARY_REGISTRY_URL;
+    if (hasCustomRegistry) {
       try {
-        console.info(`[useMarketplaceQuery] Attempting localhost fallback (${devUrl})...`);
-        rawPlugins = await fetchRegistryEndpoint(devUrl, 2500);
-      } catch {
-        // Fallback also failed; retain primary error
+        rawPlugins = await fetchRegistryEndpoint(primaryUrl);
+      } catch (err: any) {
+        fetchError = err instanceof Error ? err : new Error(String(err));
+        console.warn(`[useMarketplaceQuery] Custom registry (${primaryUrl}) request failed:`, err);
       }
     }
 
-    // 3. Direct Turso libSQL edge database query
+    // 2. Direct Turso libSQL edge database query (fast production registry)
     if (!rawPlugins) {
       try {
-        console.info('[useMarketplaceQuery] Connecting directly to Turso libSQL edge database...');
         rawPlugins = await fetchTursoPlugins();
       } catch (tursoErr) {
         console.warn('[useMarketplaceQuery] Direct Turso query failed:', tursoErr);
+      }
+    }
+
+    // 3. Primary HTTP endpoint attempt (if Turso failed and not already attempted)
+    if (!rawPlugins && !hasCustomRegistry) {
+      try {
+        rawPlugins = await fetchRegistryEndpoint(primaryUrl, 2500);
+      } catch (err: any) {
+        fetchError = err instanceof Error ? err : new Error(String(err));
+      }
+    }
+
+    // 4. Localhost development fallback if primary endpoint fails
+    if (!rawPlugins && primaryUrl !== devUrl) {
+      try {
+        rawPlugins = await fetchRegistryEndpoint(devUrl, 1500);
+      } catch {
+        // Fallback also failed; retain primary error
       }
     }
 

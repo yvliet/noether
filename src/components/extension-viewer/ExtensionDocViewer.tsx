@@ -11,11 +11,24 @@ import {
   Tag01Icon,
   GitForkIcon,
   LeftToRightListBulletIcon,
+  LinkSquare02Icon,
+  Download01Icon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { DocLayoutWrapper } from '@/components/layout/DocLayoutWrapper';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
+import { platform } from '@/lib/platform/platformAdapter';
 import { highlightCode } from './syntaxHighlighter';
+import {
+  resolveExtensionMetadata,
+  fetchGitHubReadme,
+  fetchTursoReadme,
+  getCachedReadme,
+  setCachedReadme,
+  extractGitHubRepo,
+  rewriteGitHubRelativeImages,
+  type ExtensionResolvedMeta,
+} from './readmeResolver';
 
 export interface ExtensionDocViewerProps {
   extensionId?: string;
@@ -511,7 +524,13 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
     return app.extensions.getExtensionManifest(targetExtensionId);
   }, [app, targetExtensionId]);
 
+  const meta: ExtensionResolvedMeta = useMemo(() => {
+    return resolveExtensionMetadata(targetExtensionId, manifest);
+  }, [targetExtensionId, manifest]);
+
+  const isInstalled = meta.isInstalled;
   const [isEnabled, setIsEnabled] = useState(() => app.extensions.isExtensionEnabled(targetExtensionId));
+  const [isInstalling, setIsInstalling] = useState(false);
 
   useEffect(() => {
     setIsEnabled(app.extensions.isExtensionEnabled(targetExtensionId));
@@ -521,18 +540,73 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
     return () => sub.dispose();
   }, [app, targetExtensionId]);
 
-  const tags = manifest?.tags || ['extension'];
-  const creatorName = manifest?.author || 'Yuliet Li';
-  const version = manifest?.version || '1.0.0';
-  const description = manifest?.description || '';
-  const readmeContent = manifest?.readme || `# ${manifest?.name || targetExtensionId}\n\n${description}`;
+  const [readmeContent, setReadmeContent] = useState<string>(() => {
+    const cached = getCachedReadme(targetExtensionId);
+    if (cached) return cached;
+    if (meta.readme) return meta.readme;
+    return `# ${meta.name}\n\n${meta.description || 'Loading extension documentation...'}`;
+  });
+
+  // Dynamic GitHub README and multi-tier documentation fetcher
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    async function loadDocumentation() {
+      // 1. Live GitHub raw README fetch
+      const gh = extractGitHubRepo(meta.repoUrl, meta.authorUrl, targetExtensionId);
+      if (gh) {
+        try {
+          const ghReadme = await fetchGitHubReadme(gh.owner, gh.repo, controller.signal);
+          if (ghReadme && isMounted) {
+            const rewritten = rewriteGitHubRelativeImages(ghReadme, gh.owner, gh.repo);
+            setReadmeContent(rewritten);
+            setCachedReadme(targetExtensionId, rewritten);
+            return;
+          }
+        } catch {
+          // GitHub fetch failed or offline; continue to fallback
+        }
+      }
+
+      // 2. Turso libSQL edge database fallback
+      try {
+        const tursoReadme = await fetchTursoReadme(targetExtensionId, controller.signal);
+        if (tursoReadme && isMounted) {
+          setReadmeContent(tursoReadme);
+          setCachedReadme(targetExtensionId, tursoReadme);
+          return;
+        }
+      } catch {
+        // Turso fallback failed
+      }
+
+      // 3. Manifest/catalogue description fallback
+      if (meta.readme && isMounted) {
+        setReadmeContent(meta.readme);
+      }
+    }
+
+    loadDocumentation();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [targetExtensionId, meta.repoUrl, meta.authorUrl, meta.readme]);
+
+  const tags = meta.tags;
+  const creatorName = meta.author;
+  const version = meta.version;
+  const description = meta.description;
+  const repoUrl = meta.repoUrl;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-[#181818] overflow-hidden select-text">
       {/* 1. Shared Modular Document Sub-Header (Standard layout matching notes & graph view) */}
       <PageSubHeader
-        title={manifest?.name || targetExtensionId}
-        icon={manifest?.isCore ? <PackageIcon size={13} /> : <PuzzleIcon size={13} />}
+        title={meta.name}
+        icon={meta.isCore ? <PackageIcon size={13} /> : <PuzzleIcon size={13} />}
         document={null}
         showReadingToggle={false}
         showBookmark={false}
@@ -541,32 +615,64 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
         customRightActions={
           <>
             {/* Quick Configure Link to Settings */}
-            <button
-              type="button"
-              onClick={() => {
-                setIsSettingsOpen(true, targetExtensionId);
-              }}
-              title={`${manifest?.name || targetExtensionId} options`}
-              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] transition-colors cursor-pointer"
-            >
-              <Settings02Icon size={14} />
-            </button>
-
-            {/* Quick Enabled Toggle */}
-            <div className="flex items-center px-1">
-              <ToggleSwitch
-                checked={isEnabled}
-                onChange={async (val) => {
-                  setIsEnabled(val);
-                  if (val) {
-                    await app.extensions.enableExtension(targetExtensionId);
-                    showToast(`Enabled ${manifest?.name || 'extension'}`, 'success');
-                  } else {
-                    await app.extensions.disableExtension(targetExtensionId);
-                    showToast(`Disabled ${manifest?.name || 'extension'}`, 'info');
-                  }
+            {isInstalled && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(true, targetExtensionId);
                 }}
-              />
+                title={`${meta.name} options`}
+                className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+              >
+                <Settings02Icon size={14} />
+              </button>
+            )}
+
+            {/* Quick Enabled Toggle or Install Button */}
+            <div className="flex items-center px-1">
+              {isInstalled ? (
+                <ToggleSwitch
+                  checked={isEnabled}
+                  onChange={async (val) => {
+                    setIsEnabled(val);
+                    if (val) {
+                      await app.extensions.enableExtension(targetExtensionId);
+                      showToast(`Enabled ${meta.name}`, 'success');
+                    } else {
+                      await app.extensions.disableExtension(targetExtensionId);
+                      showToast(`Disabled ${meta.name}`, 'info');
+                    }
+                  }}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsInstalling(true);
+                    try {
+                      await app.extensions.refreshCommunityExtensions();
+                      await app.extensions.enableExtension(targetExtensionId);
+                      showToast(`Installed ${meta.name}`, 'success');
+                    } catch (err) {
+                      console.error('[ExtensionDocViewer] Install failed:', err);
+                      showToast(`Failed to install ${meta.name}`, 'warning');
+                    } finally {
+                      setIsInstalling(false);
+                    }
+                  }}
+                  disabled={isInstalling}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[5px] bg-[#e5e7eb] hover:bg-white text-black cursor-pointer"
+                >
+                  {isInstalling ? (
+                    <span>Installing...</span>
+                  ) : (
+                    <>
+                      <Download01Icon size={13} />
+                      <span>Install</span>
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </>
         }
@@ -575,11 +681,11 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
       {/* 2. Shared Document Layout Canvas Wrapper (Identical pixel layout & margins to Note Document) */}
       <DocLayoutWrapper isReadingMode={true}>
         {/* Optional Banner Asset Image */}
-        {manifest?.bannerImage && (
+        {meta.bannerImage && (
           <div className="w-full h-44 mb-6 rounded-xl overflow-hidden border border-[#2a2a2a] shadow-lg relative bg-[#1c1c1c]">
             <img
-              src={manifest.bannerImage}
-              alt={`${manifest?.name || targetExtensionId} Banner`}
+              src={meta.bannerImage}
+              alt={`${meta.name} Banner`}
               className="w-full h-full object-cover"
             />
           </div>
@@ -593,7 +699,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
               style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
               className="w-full font-bold text-[#e5e7eb] pb-2 font-text tracking-tight leading-tight select-text"
             >
-              {manifest?.name || targetExtensionId}
+              {meta.name}
             </h1>
           </div>
 
@@ -612,7 +718,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                   {tags.map((tag: string) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[#252525] hover:bg-[#2d2d2d] text-[#b0b0b0] hover:text-white border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] transition-all font-medium text-xs"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[#252525] hover:bg-[#2d2d2d] text-[#b0b0b0] hover:text-white border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] font-medium text-xs"
                     >
                       #{tag.replace(/^#/, '')}
                     </span>
@@ -629,11 +735,43 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                   <span className="text-[11px] font-medium text-[#777]">Creator</span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="text-[11px] text-[#dcddde] font-normal leading-tight font-sans select-text">
-                    {creatorName}
-                  </span>
+                  {meta.authorUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => platform.openUrl(meta.authorUrl!)}
+                      className="text-[11px] text-[#38bdf8] hover:underline font-normal leading-tight font-sans cursor-pointer text-left"
+                    >
+                      {creatorName}
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-[#dcddde] font-normal leading-tight font-sans select-text">
+                      {creatorName}
+                    </span>
+                  )}
                 </div>
               </div>
+
+              {/* Property: Repository */}
+              {repoUrl && (
+                <div className="flex items-center gap-2 min-h-[28px]">
+                  <div className="relative flex items-center shrink-0 w-24">
+                    <span className="p-1 -ml-1 text-[#777] flex items-center mr-1">
+                      <LinkSquare02Icon size={12} className="text-[#888]" />
+                    </span>
+                    <span className="text-[11px] font-medium text-[#777]">Repository</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => platform.openUrl(repoUrl)}
+                      className="text-[11px] text-[#38bdf8] hover:underline font-mono truncate text-left cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <span>{repoUrl.replace(/^https?:\/\/(www\.)?github\.com\//, '')}</span>
+                      <LinkSquare02Icon size={10} className="opacity-70" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Property: Version */}
               <div className="flex items-center gap-2 min-h-[28px]">

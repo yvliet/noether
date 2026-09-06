@@ -221,6 +221,7 @@ export async function fetchTursoPlugins(): Promise<RawRegistryPlugin[]> {
       description: String(row.description || ''),
       author: authorDisplayName,
       authorUrl,
+      repoUrl: row.repo_url ? String(row.repo_url) : undefined,
       category: row.category || 'Productivity',
       downloads: Number(row.downloads ?? 0),
       stars: Number(row.stars ?? 5),

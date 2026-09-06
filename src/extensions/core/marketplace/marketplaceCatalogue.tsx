@@ -4,6 +4,7 @@ import {
   SparklesIcon,
   StickyNote02Icon,
   Brain02Icon,
+  DatabaseSync01Icon,
 } from '@/components/common/Icons';
 
 export interface MarketplaceExtensionItem {
@@ -12,6 +13,7 @@ export interface MarketplaceExtensionItem {
   version: string;
   author: string;
   authorUrl?: string;
+  repoUrl?: string;
   description: string;
   downloads: string;
   stars: number;
@@ -35,11 +37,27 @@ export type MarketplacePluginItem = MarketplaceExtensionItem;
  */
 export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
   {
+    id: 'flint-universal-sync',
+    name: 'Universal External Sync',
+    version: '1.0.0',
+    author: 'Yuliet Li',
+    authorUrl: 'https://github.com/yvliet',
+    repoUrl: 'https://github.com/yvliet/flint-universal-sync',
+    description:
+      'Cross-device note synchronization supporting Supabase (free tier with guided setup), Turso, Cloudflare D1, and Custom REST databases.',
+    downloads: '256',
+    stars: 5,
+    category: 'Integration',
+    icon: <DatabaseSync01Icon size={18} className="text-[#3ecf8e]" />,
+    featured: true,
+  },
+  {
     id: 'flint-cascade',
     name: 'Cascade',
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
+    repoUrl: 'https://github.com/yvliet/flint-cascade',
     description:
       'Organize notes into sequential cascades (books) with status-bar linking, graph backlinks, and custom sidebar folders.',
     downloads: '128',
@@ -47,8 +65,6 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     category: 'Productivity',
     icon: <Motion01Icon size={18} className="text-[#38bdf8]" />,
     featured: true,
-    readme:
-      '# Cascade\n\nOrganize notes into sequential cascades (books) with status-bar linking, graph backlinks, and custom sidebar folders.',
   },
   {
     id: 'flint-copilot',
@@ -56,6 +72,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
+    repoUrl: 'https://github.com/yvliet/flint-copilot',
     description:
       'Native AI assistant with local LLM integration, multimodal reasoning, automated summarization, and context-aware chat.',
     downloads: '128',
@@ -63,8 +80,6 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     category: 'Productivity',
     icon: <SparklesIcon size={18} className="text-[#a855f7]" />,
     featured: true,
-    readme:
-      '# Copilot\n\nNative AI assistant with local LLM integration, multimodal reasoning, automated summarization, and context-aware chat.',
   },
   {
     id: 'quicknote',
@@ -72,6 +87,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
+    repoUrl: 'https://github.com/yvliet/quicknote',
     description:
       'Instant floating scratchpad for capturing thoughts, web snippets, and ideas without leaving your current note.',
     downloads: '128',
@@ -79,8 +95,6 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     category: 'Productivity',
     icon: <StickyNote02Icon size={18} className="text-[#eab308]" />,
     featured: true,
-    readme:
-      '# Quicknote\n\nInstant floating scratchpad for capturing thoughts, web snippets, and ideas without leaving your current note.',
   },
   {
     id: 'fsrs-spaced-repetition',
@@ -88,6 +102,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
+    repoUrl: 'https://github.com/yvliet/fsrs-spaced-repetition',
     description:
       'State-of-the-art Free Spaced Repetition Scheduler (FSRS) flashcard review system built right inside Flint.',
     downloads: '128',
@@ -95,7 +110,5 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     category: 'Productivity',
     icon: <Brain02Icon size={18} className="text-[#ec4899]" />,
     featured: true,
-    readme:
-      '# Spaced Repetition (FSRS)\n\nState-of-the-art Free Spaced Repetition Scheduler (FSRS) flashcard review system built right inside Flint.',
   },
 ];
