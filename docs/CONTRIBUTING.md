@@ -1,10 +1,12 @@
 # Contributing to Flint
 
-Thank you for your interest in contributing to **Flint**! We are building an open-source, local-first knowledge engine that pairs the sovereignty of plain-text Markdown files with native desktop speed, embedded relational query acceleration, and AI-native agent integration.
+Thank you for your interest in contributing to **Flint**! We are building a fast, local-first note-taking app that pairs the simplicity of plain-text Markdown files with native desktop speed, an embedded SQLite database in Rust, and native AI tool integration.
 
 ---
 
 ## 1. Prerequisites & Environment Setup
+
+---
 
 Before compiling or developing Flint, ensure you have the following installed:
 
@@ -25,6 +27,8 @@ npm install
 ---
 
 ## 2. Development Workflow & Commands
+
+---
 
 ### Running the Desktop Application (Rust Native + Tauri v2)
 This is the primary development environment with the compiled `rusqlite` WAL engine:
@@ -51,24 +55,26 @@ npm run tauri:build
 
 ---
 
-## 3. Engineering Standards & Architectural Rules
+## 3. Engineering Guidelines & Invariants
 
-To maintain high architectural integrity, Flint enforces strict engineering invariants:
+---
 
-### 1. Strict Native Core Isolation (Zero Extension Leakage)
+To keep the codebase maintainable and lightning-fast, we follow these core guidelines:
+
+### 1. Strict Native Core Isolation
 - **Never import extension code into native core directories**: Core folders (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) must remain strictly isolated from plugin code (`src/extensions/*`).
 - Features must integrate exclusively through the Flint SDK (`src/sdk`), Inversion of Control (IoC) registries (`SlotRegistry`, `EditorRegistry`, `ToolRegistry`, `DatabaseManager`), and the typed `EventBus`.
 
-### 2. Cross-Platform Neutrality Bridge
+### 2. Cross-Platform Bridge
 - Never invoke runtime-specific host primitives (e.g. Tauri API, Node `fs`, or Electron) directly inside React components or stores.
 - Always route system operations through [`src/lib/platform/platformAdapter.ts`](../src/lib/platform/platformAdapter.ts).
 
 ### 3. Type Safety & Verification
-- Always run `npx tsc --noEmit` before opening pull requests to verify zero TypeScript type regressions across both the main application and extension surfaces.
+- Always run `npx tsc --noEmit` before opening pull requests to verify zero TypeScript type regressions.
 
-### 4. Zero Micro-Interaction Animation & Instant UI Responsiveness
+### 4. Zero Animation Delay & Instant UI Snappiness
 - Do not add artificial transitions or delays (`transition-all`, `duration-200`, `fade-in`, etc.) to micro-interactions such as toggle switches, buttons, menus, dropdowns, or file tree items.
-- UI elements must toggle and respond instantly to preserve a crisp, responsive native desktop feel. High-FPS continuous spatial simulations (such as Knowledge Graph physics and Canvas pan/zoom) retain mathematical easing where appropriate.
+- UI elements must toggle and respond instantly to preserve a crisp, responsive native desktop feel. Continuous spatial simulations (such as Knowledge Graph physics and Canvas pan/zoom) retain mathematical easing where appropriate.
 
 ### 5. MCP Tool Registration for Extensions
 - Every extension managing queryable data or user actions must register at least one Model Context Protocol tool via `this.registerTool()`.
@@ -77,6 +83,8 @@ To maintain high architectural integrity, Flint enforces strict engineering inva
 ---
 
 ## 4. Documentation & Developer Portal
+
+---
 
 The Flint developer and user documentation site lives in the `website/` directory.
 
@@ -97,6 +105,8 @@ npm run build
 ---
 
 ## 5. Pull Request Verification Checklist
+
+---
 
 Before submitting a pull request, verify the following:
 

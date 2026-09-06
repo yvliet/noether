@@ -12,7 +12,7 @@
     \  \:\       \__\/         \__\/      \  \:\           \__\/
      \__\/                                 \__\/                " width="502"/>
 
-### The Open-Source, High-Performance Knowledge Engine & AI-Native Workspace
+### A fast, local-first note-taking app and knowledge engine that respects your plain text.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
 [![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-ea580c.svg?logo=tauri&logoColor=white)](src-tauri)
@@ -22,12 +22,11 @@
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-06b6d4.svg?logo=tailwindcss&logoColor=white)](tailwind.config.js)
 
 [Overview](#overview) •
-[Install](#quick-install--downloads) •
+[Downloads](#quick-install--downloads) •
 [Architecture](#architectural-overview) •
 [Storage Pipeline](#dual-track-storage--synchronization-pipeline) •
 [Model Context Protocol](#native-model-context-protocol-mcp-integration) •
-[Technical Highlights](#technical-architecture--capabilities-matrix) •
-[Core Capabilities](#core-capabilities) •
+[Core Features](#core-capabilities) •
 [Performance Engineering](#performance--systems-engineering) •
 [Quickstart](#quickstart--installation) •
 [Plugin Development](#extensibility--plugin-sdk)
@@ -38,7 +37,7 @@
 
 ## Quick Install & Downloads
 
-Install Flint instantly via terminal one-liner or download standalone desktop binaries:
+Install Flint directly via terminal or grab the standalone desktop installer for your platform:
 
 ### Terminal One-Liner Installers
 
@@ -67,20 +66,20 @@ curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.s
 
 ## Overview
 
-Flint is an open-source (GPLv3), local-first knowledge engine and note-taking environment. It is engineered with a compiled native Rust backend (Tauri v2), a native SQLite engine (`rusqlite` with WAL and FTS5), and a built-in **Model Context Protocol (MCP)** server for local AI coding assistants.
+Flint is a fast, local-first note-taking app and personal knowledge engine. It gives you the durability of plain Markdown files on your own computer, combined with the speed of a native Rust backend (Tauri v2), an embedded SQLite database (`rusqlite` with WAL and FTS5), and a built-in Model Context Protocol (MCP) server for local AI coding assistants.
 
-Flint provides an open, extensible architecture that pairs plain-text Markdown vaults ("Hearths"), bi-directional `[[wiki-links]]`, 2D spatial whiteboards, embedded FSRS-4.5 spaced repetition, and deep systems optimizations:
+No cloud lock-in, no monthly sync subscriptions, and no slow loading spinners. Your notes stay in standard `.md` files that you can open in any text editor, forever:
 
-- **100% Free & Open Source (GPLv3)**: Fully transparent codebase with zero telemetry, zero proprietary lock-in, zero paywalled sync tiers, and no commercial license fees.
-- **Physical Markdown Ground Truth**: Plain-text `.md` files on your local drive are the single source of truth. Your knowledge remains yours, portable across any editor or Unix toolchain forever.
-- **Compiled Native SQLite Engine (`rusqlite` + WAL + FTS5)**: A native Rust SQLite integration running directly in the Tauri host with Write-Ahead Logging (WAL) and 256MB memory-mapped I/O (`PRAGMA mmap_size = 268435456`). Delivers sub-millisecond query execution, statistical BM25 relevance ranking with diacritics removal, and zero WebAssembly heap overhead. SQLite performs integrity validation on boot (`PRAGMA integrity_check;`) and reconstructs the index from Markdown files automatically if needed.
-- **Sub-150MB Lightweight Desktop Footprint**: High-performance Tauri v2 desktop runtime combined with Win32 physical working set memory trimming (`SetProcessWorkingSetSize`) after 120s of idle time and selective chunk splitting.
-- **High-Performance Live Preview**: TipTap 2.x & ProseMirror editor engine with transaction decoration mapping (`DecorationSet.map`), dirty-range AST scanning, KaTeX compilation memoization, and bounded 50-snapshot undo history. Maintains sub-8ms typing latency on massive documents (100k+ words).
-- **Atomic File Persistence**: Note saves write to temporary files first before executing atomic OS rename operations (`fs::rename`), while SQLite transactions commit direct WAL pages, eliminating data loss during sudden crashes or power loss.
-- **Fast Differential Sync**: Uses a `file_manifest` table and content hashing to skip unchanged files during cold-boot indexing, completing vault revalidation in milliseconds.
-- **Native AI Agent Server (MCP)**: Built-in stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`) allowing AI coding assistants (Claude Desktop, Antigravity, Gemini, Cursor) to search notes, read backlinks, and manage tasks via 13 structured RPC tools.
-- **Instant UI Responsiveness**: Micro-interactions (switches, buttons, menus, dropdowns, tree items) execute immediately with zero artificial animation delays or visual smearing, preserving a crisp, unbloated desktop feel.
-- **Advanced Micro-Kernel Plugin SDK**: Built-in features and third-party extensions build on the identical modular Flint SDK (`src/sdk`) using Inversion of Control (IoC) registries, a typed EventBus, dynamic React portal slots, native ProseMirror transaction-mapped plugin bridges, declarative SQLite tables with automated migration tracking and cascade purges, type-safe Zod-to-MCP tool automation, and off-thread Web Worker pipelines.
+- **100% Free & Open Source (GPLv3)**: Completely transparent, zero telemetry, zero paywalled tiers, and no tracking.
+- **Plain Markdown on your disk**: Notes live as ordinary `.md` files in your folders. Your data is yours forever, easy to back up, version with Git, or sync with tools like Syncthing or Dropbox.
+- **Fast Rust SQLite Index (`rusqlite` + WAL + FTS5)**: Runs directly in the native Tauri process with Write-Ahead Logging (WAL) and 256MB memory mapping. Search, tag queries, and backlink lookups across 20,000+ notes run in sub-millisecond time with zero WebAssembly memory overhead.
+- **Lightweight desktop footprint**: Built on Tauri v2 with automatic physical RAM trimming (`SetProcessWorkingSetSize` after 120s of idle time), keeping memory usage lean (typically under 150MB).
+- **Live Preview that stays responsive**: TipTap 2.x and ProseMirror with smart transaction-mapped decorations and formula caching. Typing stays snappy (sub-8ms latency) even in 100,000-word documents.
+- **Crash-resilient atomic saves**: Note saves write to temporary files first before executing atomic OS rename operations (`fs::rename`). If your computer suddenly loses power, your files are never left half-written.
+- **Fast differential startup scan**: Checks file modification times and content hashes against a `file_manifest` table so opening large vaults takes just milliseconds.
+- **Built-in AI Assistant Server (MCP)**: Includes an out-of-the-box stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`) so AI assistants (Claude Desktop, Antigravity, Gemini, Cursor) can search, read, and write notes through 13 structured tools.
+- **Instant UI with zero animation delay**: Buttons, toggle switches, menus, dropdowns, and file tree items respond immediately with zero artificial transition delays for a snappy native desktop feel.
+- **Modular Extension SDK**: Build plugins with clean React layout slots, custom SQLite tables with automatic migrations, background Web Workers, and auto-generated MCP tools.
 
 ---
 
@@ -92,39 +91,39 @@ Flint separates user interface components, relational query indexes, physical di
   <img src="docs/assets/architecture-diagram.svg" alt="Flint Architecture Flow: [1. Presentation &amp; Workspace Layer: Live Preview Editor (TipTap &amp; ProseMirror), 2D Knowledge Graph (Force-Directed Physics), Infinite 2D Canvas (Spatial Whiteboard), FSRS Review Deck (Spaced Repetition)] --Workspace Events--&gt; [2. Flint Micro-Kernel &amp; IoC: Typed EventBus (Decoupled Pub/Sub), IoC Registries (Commands, Views, Menus), Zustand Stores (Reactive State)] --Direct Tauri IPC--&gt; [3. Storage Engine &amp; Platform Bridge: Native rusqlite (WAL Mode &amp; FTS5), Atomic Persistence (WAL Commits &amp; Temp-Rename), Tauri v2 Core (Rust Native Architecture), Runtime Optimizer (Sub-150MB &amp; RAM Trimmer)] --Atomic File I/O--&gt; [4. Local File System Vault: Markdown Files (Universal Plain Text), .flint Storage (flint.sqlite &amp; Plugins), .trash Folder (Soft-Delete Safety)]" width="100%"/>
 </div>
 
-### Clean Micro-Kernel 4-Tier Stack
+### 4-Tier Stack
 
-Flint establishes a strict, uncompromised separation of concerns across a 4-tier micro-kernel stack. This guarantees that user-facing presentation, state coordination, native hardware bridges, and physical storage remain isolated behind explicit boundaries:
+Flint maintains clean boundaries across four layers so UI code never tangles with disk I/O or database drivers:
 
 1. **Tier 1: Presentation & Workspace Layer**:
-   - Houses high-performance UI and editing engines: TipTap 2.x & ProseMirror Live Preview, 2D Force-Directed Knowledge Graph, Infinite 2D Spatial Canvas, and FSRS-4.5 Review Deck.
-   - UI components exclusively capture user intent and dispatch high-level workspace events downward. **React components never invoke OS filesystem methods or database bindings directly.**
+   - Houses the UI and editing engines: TipTap 2.x and ProseMirror Live Preview, 2D Knowledge Graph, Infinite 2D Canvas, and FSRS-4.5 Review Deck.
+   - UI components handle user interaction and dispatch events. React components never call filesystem APIs or database drivers directly.
 
-2. **Tier 2: Flint Micro-Kernel & IoC State Layer**:
-   - Provides Inversion of Control (IoC) registries (commands, views, menus, custom folder renderers), the typed `EventBus`, and reactive Zustand state stores.
-   - Coordinates application state, manages extension lifecycles, and enforces strict native core isolation (zero extension leakage into native code directories).
+2. **Tier 2: Micro-Kernel & State Layer**:
+   - Provides Inversion of Control (IoC) registries (commands, views, menus, custom folder renderers), a typed `EventBus`, and reactive Zustand state stores.
+   - Manages extension lifecycles and keeps core code completely isolated from plugin logic.
 
-3. **Tier 3: Storage Engine & Platform Bridge**:
-   - The Cross-Platform Neutrality Bridge ([`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts)) routes all system requests across Tauri IPC into the compiled native Rust host.
-   - Encapsulates the native `rusqlite` database engine (WAL mode + FTS5 BM25), the atomic temp-and-rename file persistence coordinator, and host process management services.
+3. **Tier 3: Platform Bridge & Native Storage**:
+   - The platform adapter ([`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts)) routes system calls across Tauri IPC into compiled Rust.
+   - Wraps the native `rusqlite` database engine (WAL mode + FTS5 BM25 search), the atomic temp-and-rename file writer, and process memory optimizers.
 
 4. **Tier 4: Local File System Vault**:
-   - The user's local disk filesystem. Houses standard plain-text `*.md` files (100% physical ground truth), the internal `.flint/` directory (`flint.sqlite`, WAL journals, and extension schemas), and the `.trash/` soft-delete safety folder.
+   - Your local disk directory. Contains standard `.md` Markdown files, the internal `.flint/` folder (`flint.sqlite` index and plugin configs), and the `.trash/` soft-delete folder.
 
 ### Core Architectural Invariants
 
-1. **Dual Storage Model (Markdown Ground Truth + Native `rusqlite`)**:
-   - Plain-text `.md` files on disk are the ultimate authority. Flint never locks user knowledge into opaque binary blobs.
-   - A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) indexes note metadata, block-level AST nodes, tags, tasks, and graph relationships for sub-millisecond queries.
-   - Database transactions commit page-level diffs directly to disk pages without UI-thread serialization or WebAssembly heap export overhead.
+1. **Markdown Files as Single Source of Truth**:
+   - Plain-text `.md` files on your disk are the real data. Flint never locks your notes inside a closed database.
+   - A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) indexes note metadata, block nodes, tags, tasks, and graph links for instant queries.
+   - Database transactions commit page diffs directly to disk pages without UI-thread serialization or WebAssembly heap overhead.
 
-2. **Cross-Platform Neutrality Bridge (`IPlatformAdapter`)**:
-   - React components and stores never invoke runtime-specific host primitives directly. All system calls route through [`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts).
-   - Operates primarily on Tauri v2 (Rust native binary) with in-memory SQLite fallback for web browser preview environments.
+2. **Cross-Platform Bridge (`IPlatformAdapter`)**:
+   - React components and stores never call OS-specific APIs directly. All system calls route through [`src/lib/platform/platformAdapter.ts`](file:///c:/Users/sultan%20haikal/Downloads/Flint/src/lib/platform/platformAdapter.ts).
+   - Runs on Tauri v2 (Rust native) for desktop builds, with an in-memory SQLite fallback for web previews.
 
-3. **Strict Native Core Isolation**:
-   - Native core directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import extension or plugin code.
-   - Core extensions (Backlinks, Canvas, Graph, Iconify, Journal, Tasks) and community extensions (such as Cascade Books, Copilot, Quicknote, and Spaced Repetition) interface exclusively through the public Flint SDK (`src/sdk`), IoC registries, and the typed `EventBus`.
+3. **Strict Core Isolation**:
+   - Core directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import extension or plugin code.
+   - Built-in features (Backlinks, Canvas, Graph, Iconify, Journal, Tasks) and community extensions interface solely through the public Flint SDK (`src/sdk`), IoC registries, and the typed `EventBus`.
 
 ---
 
@@ -134,34 +133,33 @@ Flint establishes a strict, uncompromised separation of concerns across a 4-tier
   <img src="docs/assets/dual-storage-model.svg" alt="Flint Dual-Track Storage &amp; Sync Architecture: [1. Workspace &amp; State Layer] bifurcates into two concurrent native tracks: [Track A: Markdown Persistence Engine (Debounced Save -&gt; Atomic Temp-Rename -&gt; Echo Suppression)] writing directly to [*.md Markdown Files], and [Track B: Native rusqlite Engine (Tauri IPC -&gt; WAL Page Commits -&gt; FTS5 BM25)] writing directly to [flint.sqlite &amp; WAL], reconciled via [file_manifest O(N) Diff Scan]" width="100%"/>
 </div>
 
-Flint achieves real-time relational graph queries and full-text retrieval while safeguarding plain-text Markdown files through a **dual-track concurrent pipeline**, rather than a single sequential pipeline:
+Flint gives you fast graph queries and full-text search while keeping your notes as clean Markdown files on disk through a concurrent dual-track pipeline:
 
-### 1. Track A: Markdown Physical Ground Truth (File Persistence Engine)
-- **Active Buffer Protection**: Keystrokes update in-memory ProseMirror document state instantly (sub-8ms typing latency). Active typing buffers are shielded from background disk synchronization overwrite.
-- **Debounced Save Coordinator**: Note saves are debounced to prevent disk I/O thrashing during continuous typing bursts.
-- **Atomic Temp-and-Rename Writes**: Note modifications write to an intermediate temporary file (`<target>.tmp.<pid>`) first, then atomically rename to the target path via OS primitives (`fs::rename`). This guarantees zero file corruption during unexpected crashes or power loss.
-- **Deterministic Echo Suppression**: Before issuing disk writes, Flint records an internal write signature (`LAST_INTERNAL_WRITE` timestamp). The native filesystem watcher verifies this signature to suppress redundant reload events, preventing recursive feedback loops while retaining instant detection of external changes (e.g. Git checkouts or external text editors).
+### 1. Track A: Markdown File Persistence
+- **Active Buffer Protection**: Keystrokes update in-memory ProseMirror document state immediately (sub-8ms latency). Background file saves never overwrite active typing buffers.
+- **Debounced Save Coordinator**: File writes are debounced to avoid disk thrashing during rapid typing.
+- **Atomic Temp-and-Rename Writes**: Changes write to a temporary file (`<target>.tmp.<pid>`) first, then atomically rename to the destination path via OS primitives (`fs::rename`). This prevents file corruption if your computer crashes mid-save.
+- **Echo Suppression**: Before writing to disk, Flint logs an internal write timestamp (`LAST_INTERNAL_WRITE`). The file watcher checks this timestamp to ignore its own saves, preventing reload loops while still catching external edits from Git or other text editors immediately.
 
-### 2. Track B: Relational Metadata & Query Index (Native `rusqlite` Engine)
-- **Direct Tauri IPC Dispatch**: Extracted AST nodes, YAML frontmatter, tags, `[[wikilinks]]`, and `- [ ]` tasks serialize across Tauri IPC directly to compiled Rust.
-- **Direct WAL Page Commits**: `rusqlite` writes SQLite page diffs directly to `flint.sqlite` and the Write-Ahead Log (`flint.sqlite-wal`) under `PRAGMA synchronous = NORMAL;` and 256MB memory mapping (`PRAGMA mmap_size = 268435456;`). `rusqlite` handles SQLite page writes directly without routing through the Markdown file persistence mechanism.
-- **Zero WebAssembly Serialization Overhead**: Eliminates `sql.js` memory dumps and whole-database exports; queries and index updates execute natively in sub-millisecond time.
-- **FTS5 Full-Text Indexing**: Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 relevance ranking keeps search instantly responsive across vaults with tens of thousands of notes.
+### 2. Track B: Relational SQLite Index (`rusqlite`)
+- **Direct Tauri IPC**: Extracted AST nodes, YAML frontmatter, tags, `[[wikilinks]]`, and `- [ ]` tasks are sent over Tauri IPC to compiled Rust.
+- **Direct WAL Page Commits**: `rusqlite` writes SQLite page diffs directly to `flint.sqlite` and the Write-Ahead Log (`flint.sqlite-wal`) with `PRAGMA synchronous = NORMAL;` and 256MB memory mapping (`PRAGMA mmap_size = 268435456;`).
+- **Zero WASM Overhead**: Eliminates `sql.js` memory dumps and whole-database exports; queries and index updates run natively in less than a millisecond.
+- **FTS5 Full-Text Search**: Block-level indexing with `unicode61 remove_diacritics 1` and BM25 statistical relevance ranking keeps search instant across vaults with tens of thousands of notes.
 
-### 3. Differential Synchronization & Cold-Boot Re-indexing (`file_manifest`)
-- **$O(N)$ Manifest Scan**: On cold-boot startup and external file watcher events, Flint evaluates file modification timestamps (`mtime`) and content hashes against the `file_manifest` SQLite table.
-- **Unchanged File Bypass**: Unmodified Markdown files skip AST tokenization and full-text re-indexing completely, allowing cold-start vault revalidation in milliseconds.
-- **External Edit Reconciliation**: External modifications (e.g. Git branches or external CLI tools) ingest automatically into SQLite and inactive document views without clobbering active user typing buffers.
+### 3. Differential Synchronization (`file_manifest`)
+- **Fast Startup Scan**: On startup and external file watcher events, Flint compares file modification timestamps (`mtime`) and content hashes against the `file_manifest` SQLite table.
+- **Skip Unchanged Notes**: Unmodified Markdown files skip AST parsing and re-indexing, letting cold-start vault validation finish in milliseconds.
+- **External Edit Detection**: Changes made outside Flint (such as Git checkouts or external editors) update the index and inactive views automatically without touching your active editor buffer.
 
-### 4. Decoupled Host Process Management (Host Runtime vs. Storage Pipeline)
-- **Runtime Process Management Invariant**: Memory working-set trimming (Windows Win32 `SetProcessWorkingSetSize` after 120s of verified user idle time) is a **host runtime process management concern** handled by the Tauri background optimizer.
-- It operates independently in the host runtime lifecycle and is strictly decoupled from the atomic file and database write pipelines.
+### 4. Background Process Optimization
+- Memory working-set trimming (Windows Win32 `SetProcessWorkingSetSize` after 120s of idle time) runs in the background host process, keeping memory usage minimal without interrupting active typing or database writes.
 
 ---
 
 ## Native Model Context Protocol (MCP) Integration
 
-Flint includes a built-in stdio **Model Context Protocol (MCP)** server (`bin/flint-mcp-server.cjs`), enabling AI coding assistants and autonomous agents (Claude Desktop, Google Antigravity, Gemini, Cursor) to interact directly with your knowledge graph.
+Flint includes a built-in stdio **Model Context Protocol (MCP)** server (`bin/flint-mcp-server.cjs`), allowing AI coding assistants and autonomous agents (Claude Desktop, Google Antigravity, Gemini, Cursor) to interact directly with your notes and knowledge graph.
 
 ### Built-in MCP Tools
 
@@ -170,15 +168,15 @@ Flint includes a built-in stdio **Model Context Protocol (MCP)** server (`bin/fl
 | `flint_list_hearths` | Workspace | Discovers recent vaults ("Hearths") and their active paths. |
 | `flint_get_active_hearth` | Workspace | Returns the path, name, and configuration of the active Hearth. |
 | `flint_switch_hearth` | Workspace | Switches the active workspace context to another Hearth path. |
-| `flint_search_notes` | Search | Queries the active Hearth using SQLite FTS5 with BM25 statistical relevance ranking. |
+| `flint_search_notes` | Search | Queries notes in the active Hearth using SQLite FTS5 with BM25 ranking. |
 | `flint_search_across_hearths` | Search | Searches across all known Hearths on the machine. |
-| `flint_read_note` | Document | Reads a note by path or title, parsing YAML frontmatter and raw Markdown content. |
-| `flint_create_note` | Document | Atomically creates a new Markdown note with frontmatter metadata. |
-| `flint_update_note` | Document | Atomically updates note content with frontmatter merging and disk synchronization. |
+| `flint_read_note` | Document | Reads a note by path or title, returning frontmatter metadata and raw Markdown. |
+| `flint_create_note` | Document | Creates a new Markdown note with optional frontmatter metadata. |
+| `flint_update_note` | Document | Updates note content with frontmatter merging and disk synchronization. |
 | `flint_delete_note` | Document | Moves a note to the `.trash/` safety folder and removes it from the index (*destructive*). |
 | `flint_list_all_notes` | Document | Lists note titles, paths, tags, and timestamps across the active Hearth. |
-| `flint_get_backlinks` | Graph | Resolves incoming backlinks, outgoing references, and unlinked mentions for a document. |
-| `tasks_get_all` | Workspace | Retrieves task items across the active workspace with completion statuses and tags. |
+| `flint_get_backlinks` | Graph | Returns incoming backlinks, outgoing references, and unlinked mentions for a note. |
+| `tasks_get_all` | Workspace | Retrieves all tasks across the workspace with completion statuses and tags. |
 | `fsrs-spaced-repetition_get_due_cards` | Review | Fetches flashcards currently due for spaced repetition review. |
 
 ### Connecting AI Agents (Claude Desktop / Antigravity / Cursor)
@@ -198,30 +196,30 @@ Add Flint to your client's MCP configuration (e.g. `claude_desktop_config.json`)
 
 ---
 
-## Technical Architecture & Capabilities Matrix
+## Technical Highlights Matrix
 
-| Architectural Dimension | Technical Implementation & Flint Invariants |
+| Dimension | Implementation Details |
 | :--- | :--- |
-| **Licensing & Code Freedom** | **100% Free & Open Source (GPLv3)**. Complete source transparency, zero telemetry, zero paywalled feature tiers, and zero commercial license fees. |
-| **Data Ground Truth** | **Universal Plain-Text Markdown (`.md`)**. Vaults are standard folders on your filesystem; notes remain fully portable and editable outside Flint. |
-| **Relational Metadata & Query Index** | **Compiled Native Rust SQLite (`rusqlite`)**. Configured with `PRAGMA journal_mode = WAL`, `PRAGMA synchronous = NORMAL`, and `PRAGMA mmap_size = 268435456` (256MB memory mapping). Zero WASM overhead. |
-| **Full-Text Retrieval** | **SQLite FTS5 Virtual Tables + BM25**. Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 relevance ranking. |
-| **Persistence & Crash Resilience** | **Atomic Temp-and-Rename Writes**. Saves write to temporary files before atomic OS renames (`fs::rename`). SQLite validates integrity on load via `PRAGMA integrity_check;`. |
-| **Startup Differential Sync** | **$O(N)$ Manifest Scan (`file_manifest`)**. Compares file modification times and content hashes to skip AST re-indexing on unchanged notes. |
-| **AI Agent Protocol (MCP)** | **Native Stdio MCP Server**. Out-of-the-box stdio server exposing 13 RPC tools for Claude Desktop, Antigravity, Gemini, and Cursor. |
-| **Desktop Host Architecture** | **Pure Tauri v2 (Compiled Rust Core)**. Replaces heavy multi-process runtimes with a lean, compiled native Rust application binary. |
-| **Memory Working Set Optimization** | **Windows WebView2 Tuning + Working Set Trimmer**. In-process GPU compositing (`--in-process-gpu`), single renderer cap, capped caches, and Win32 `SetProcessWorkingSetSize` idle RAM trimming. |
-| **Live Preview Editor Engine** | **ProseMirror / TipTap 2.x**. $O(1)$ transaction decoration mapping (`DecorationSet.map`), dirty-range AST scanning, MathLive formula chips, and KaTeX compilation caching. |
-| **Editor Buffer Safety** | **Active Typing Protected**. Typing buffers are isolated from file-watcher clobbering, paired with signature-based echo suppression. |
-| **Link Tracking & Styling** | **Persistent Visited Link Tracking**. Tracks visited wiki-links across Live Preview, Reading View, and Backlinks; configurable link color schemes and underline modes. |
-| **Web Clip Cleaner** | **Intelligent HTML-to-Markdown Paste Parser**. Automatically strips citation footnotes (e.g. `[1]`, `[cite]`) and converts HTML tags cleanly on paste. |
-| **Knowledge Graph View** | **2D Force-Directed Graph Engine**. Real-time repulsion physics, link distance tuning, and automatic physics suspension on window minimize. |
+| **Licensing** | **100% Free & Open Source (GPLv3)**. Full source code transparency, zero telemetry, no paywalled features, and no commercial license fees. |
+| **Data Format** | **Standard Plain-Text Markdown (`.md`)**. Notes are regular files on your disk; always portable and editable in any tool. |
+| **Relational Index** | **Compiled Rust SQLite (`rusqlite`)**. Configured with `PRAGMA journal_mode = WAL`, `PRAGMA synchronous = NORMAL`, and `PRAGMA mmap_size = 268435456` (256MB memory mapping). Zero WASM overhead. |
+| **Full-Text Search** | **SQLite FTS5 Virtual Tables + BM25**. Block-level tokenization with `unicode61 remove_diacritics 1` and BM25 relevance ranking. |
+| **Data Safety** | **Atomic Temp-and-Rename Writes**. Saves write to temporary files before atomic OS renames (`fs::rename`). SQLite validates integrity on load via `PRAGMA integrity_check;`. |
+| **Startup Sync** | **Fast Manifest Scan (`file_manifest`)**. Compares file timestamps and hashes to skip re-indexing unchanged notes. |
+| **AI Protocol (MCP)** | **Native Stdio MCP Server**. Exposes 13 structured RPC tools for Claude Desktop, Antigravity, Gemini, and Cursor out of the box. |
+| **Desktop Runtime** | **Tauri v2 (Rust Core)**. Replaces heavy multi-process runtimes with a lean, compiled native Rust binary. |
+| **Memory Tuning** | **WebView2 Arguments + RAM Trimmer**. In-process GPU compositing, single renderer cap, and Win32 `SetProcessWorkingSetSize` idle RAM trimming. |
+| **Live Preview Editor** | **ProseMirror / TipTap 2.x**. Fast transaction decoration mapping (`DecorationSet.map`), dirty-range AST scanning, MathLive formula chips, and KaTeX compilation caching. |
+| **Editor Buffer Safety** | **Active Typing Protected**. Typing buffers are isolated from file-watcher reloads, paired with timestamp-based echo suppression. |
+| **Link Styling** | **Persistent Visited Link Tracking**. Tracks visited wiki-links across Live Preview, Reading View, and Backlinks; configurable colors and underline modes. |
+| **Web Clip Cleaner** | **Clean HTML-to-Markdown Paste**. Automatically strips citation footnotes (e.g. `[1]`, `[cite]`) and converts web formatting cleanly. |
+| **Knowledge Graph** | **2D Force-Directed Graph**. Real-time repulsion physics, link distance controls, and automatic physics sleep on window minimize. |
 | **Spatial Whiteboard** | **Infinite 2D Node Canvas (`.flint/canvas`)**. Free-form canvas supporting note cards, text nodes, group containers, and connector lines. |
-| **Spaced Repetition Engine** | **Core FSRS-4.5 Scheduler (`ts-fsrs`)**. Flashcards generated directly from Markdown notes using basic (`::`), bi-directional (`;;`), and cloze (`{...}`) syntax. |
-| **Sequential Book Reader** | **Showcase Community Extension: Cascade**. Pre-bundled reference extension demonstrating sequential chapter navigation (`Alt+,` / `Alt+.`), graph breadcrumbs, and SDK custom folder nodes. |
-| **Global Tasks Dashboard** | **Core Tasks Kanban & List**. Centralizes every `- [ ]` and `- [x]` task across the entire vault into an actionable dashboard. |
-| **Iconography & Customization** | **Showcase Community Extension: Iconify**. Pre-bundled reference extension demonstrating custom note title icons, file tree chevron-spacer slots, and multi-style emoji resolution (Native, Twemoji, Apple, Google, Fluent). |
-| **Extension Architecture** | **Advanced Micro-Kernel SDK (`src/sdk`)**. Dynamic React portal slots (`workspace:root`, `editor:*`), native ProseMirror transaction-mapped plugin bridge, declarative SQLite table definitions with cascade cleanup, type-safe Zod-to-MCP tool automation, and off-thread Web Worker pipeline. |
+| **Spaced Repetition** | **FSRS-4.5 Scheduler (`ts-fsrs`)**. Flashcards generated directly from Markdown notes using basic (`::`), bi-directional (`;;`), and cloze (`{...}`) syntax. |
+| **Sequential Books** | **Showcase Extension: Cascade**. Reference extension demonstrating sequential chapter navigation (`Alt+,` / `Alt+.`), graph breadcrumbs, and custom folder nodes. |
+| **Tasks Dashboard** | **Core Tasks Kanban & List**. Collects every `- [ ]` and `- [x]` task across your entire vault into an actionable board. |
+| **Icon Customization** | **Showcase Extension: Iconify**. Reference extension demonstrating custom note title icons, file tree slots, and multi-style emoji resolution. |
+| **Extension SDK** | **Micro-Kernel SDK (`src/sdk`)**. Dynamic React portal slots, native ProseMirror plugin bridges, declarative SQLite tables with migrations, Zod-to-MCP tools, and Web Worker pipelines. |
 
 ---
 
@@ -229,102 +227,102 @@ Add Flint to your client's MCP configuration (e.g. `claude_desktop_config.json`)
 
 ### 1. High-Performance Live Preview Editor
 - **Rich Typography**: TipTap 2.x and ProseMirror with real-time Markdown rendering.
-- **Incremental Decoration Mapping**: Replaces whole-document rescans with $O(1)$ transaction mapping (`DecorationSet.map`). Only rescans dirty textblocks on keystrokes, preserving sub-8ms typing latency on massive documents (100k+ words).
+- **Smart Decoration Mapping**: Maps existing decorations in $O(1)$ and only rescans modified textblocks, maintaining sub-8ms typing latency on massive documents (100k+ words).
 - **MathLive & KaTeX Memoization**: Interactive visual LaTeX formula editor chips with in-memory compilation caching for instant rendering.
-- **Hierarchical Folding**: Chevron list folding, heading folding, and ellipsis placeholder expansion with mapped fold decorations.
-- **Smart Indentation & Pairing**: Auto-incrementing numbered/lettered lists, smart `Home` caret navigation, and bracket/quote selection wrapping.
-- **Bounded Undo History**: TipTap undo history depth is bounded to 50 snapshots to prevent unbounded ProseMirror memory growth.
-- **Slash Commands (`/`)**: Fast insertion palette for headings, task lists, code blocks, callouts, and math nodes.
+- **Hierarchical Folding**: Fold bullet lists, headings, and code blocks with clean chevron controls.
+- **Smart Indentation & Pairing**: Auto-incrementing lists, smart `Home` key navigation, and automatic bracket/quote selection wrapping.
+- **Bounded Undo History**: Undo history depth is capped at 50 snapshots to prevent unbounded memory growth.
+- **Slash Commands (`/`)**: Fast insertion palette for headings, task lists, code blocks, callouts, and math blocks.
 
 ### 2. Enhanced Link Styling & Web Clip Cleaner
-- **Visited Link Tracking**: Persistent visited state tracking across Live Preview, Reading View, and Backlinks.
-- **Customizable Link Palette**: Select between active theme accent, classic browser blue with purple visited tracking, or neutral text color.
-- **Underline Modes**: Toggle always-on underlines versus hover-only styling, with optional underline color matching.
-- **External Link Indicators**: Toggleable trailing external link icons with clean inline rendering.
-- **Citation Footnote Stripping**: Rich HTML-to-markdown paste parser that converts web formatting cleanly while automatically stripping academic and Wikipedia citation footnotes (e.g. `[1]`, `[citation needed]`).
+- **Visited Link Tracking**: Remembers visited links across Live Preview, Reading View, and Backlinks.
+- **Customizable Link Palette**: Choose between your theme accent color, classic browser blue with purple visited links, or neutral text.
+- **Underline Modes**: Choose always-on underlines or hover-only styling.
+- **External Link Indicators**: Toggleable trailing external link icons.
+- **Citation Footnote Stripping**: Pasting text copied from Wikipedia or research papers automatically converts HTML to Markdown while stripping academic citation markers like `[1]` and `[citation needed]`.
 
 ### 3. Knowledge Graph & Bi-Directional Linking
 - Interactive 2D force-directed physics graph with customizable node repulsion, link distance, and search filters.
 - Real-time resolution of incoming backlinks, outgoing references, and unlinked document mentions powered by SQLite joins.
-- Physics simulation automatically pauses when the application window is minimized, eliminating idle GPU/CPU load.
+- Physics simulation automatically pauses when the application window is minimized to save CPU and GPU power.
 
 ### 4. Infinite 2D Spatial Canvas
 - Free-form visual whiteboard supporting note cards, text nodes, group containers, and connector lines stored in `.flint/canvas`.
 - Infinite pan, zoom, snap-to-grid alignment, and color-coded node grouping.
 
 ### 5. Embedded FSRS-4.5 Spaced Repetition
-- Integrated Free Spaced Repetition Scheduler (`ts-fsrs`) generating flashcards directly from markdown notes:
+- Modern Free Spaced Repetition Scheduler (`ts-fsrs`) generating flashcards directly from markdown notes:
   - `Concept :: Descriptor` (Basic flashcard)
   - `Term ;; Definition` (Bi-directional card)
   - `{Cloze Deletions}` (Contextual recall)
 - Dedicated review deck modal with stability/difficulty metrics, retention targeting, and review heatmaps.
 
 ### 6. Centralized Tasks Dashboard
-- Aggregates every `- [ ]` and `- [x]` markdown task across your entire Hearth into a centralized, actionable kanban and checklist.
+- Aggregates every `- [ ]` and `- [x]` markdown task across your entire Hearth into a centralized kanban board and checklist.
 
 ### 7. Journal & Daily Notes
 - One-click daily scratchpad creation with configurable date formatting and chronological navigation.
 
-### 8. Native UI & Multi-Window Frameless Settings
-- Standalone frameless multi-window configuration suite mirroring native desktop utility UX.
-- 3D tactile buttons (`flint-btn`) and overhauled form controls with crisp borders and visual depth.
-- Instant responsiveness with zero artificial transition delays on micro-interactions.
+### 8. Native UI & Multi-Window Settings
+- Standalone frameless settings window designed for a clean desktop feel.
+- Crisp 3D tactile buttons (`flint-btn`) and overhauled form controls with clear visual depth.
+- Instant responsiveness with 0ms artificial animation delays on micro-interactions.
 - Pre-installed themes: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Flint Dark/Light, Forest Emerald, and Minimal.
 
 ---
 
 ## Pre-Bundled Community Extensions
 
-Flint pre-bundles showcase community extensions built exclusively on top of the public Flint SDK (`src/sdk`) with `isCore: false`. These serve as production-grade reference implementations demonstrating how community developers can build rich capabilities without touching native core code, before they are decoupled into standalone marketplace packages:
+Flint includes showcase community extensions built entirely on top of the public Flint SDK (`src/sdk`) with `isCore: false`. These demonstrate how developers can build rich capabilities without touching native core code:
 
 ### 1. Cascade Sequential Books (`flint-cascade`)
-- **Sequential Navigation**: Organize notes into sequential books and chapters with smooth hotkey navigation (`Alt + ,` / `Alt + .`) and automatic graph breadcrumbs.
-- **SDK Reference Model**: Demonstrates custom sidebar virtual folder injection, status bar page counters, reading order properties, and MCP tool registration using only public extension APIs.
+- **Sequential Navigation**: Organize notes into sequential books and chapters with hotkey navigation (`Alt + ,` / `Alt + .`) and automatic graph breadcrumbs.
+- **SDK Reference**: Demonstrates custom sidebar virtual folder injection, status bar page counters, reading order properties, and MCP tool registration.
 
 ### 2. Copilot For Flint (`flint-copilot`)
 - **Knowledge Graph AI Copilot**: Context-aware AI assistant with multi-provider BYOK streaming, tool calling, and active note reasoning.
-- **SDK Reference Model**: Demonstrates multi-surface dock zones, stream decoding, and MCP tool execution pipelines.
+- **SDK Reference**: Demonstrates multi-surface dock zones, stream decoding, and MCP tool execution pipelines.
 
 ### 3. Quicknote Scratchpad (`quicknote`)
-- **Sticky Note Overlay**: Desktop-grade HUD overlay for rapid thought, task, and note capture with native formatting.
-- **SDK Reference Model**: Demonstrates global modal injection, customizable shortcuts, and background vault synchronization.
+- **Sticky Note Overlay**: Desktop HUD overlay for rapid thought, task, and note capture with native formatting.
+- **SDK Reference**: Demonstrates global modal injection, customizable shortcuts, and background vault synchronization.
 
 ### 4. Embedded FSRS Spaced Repetition (`fsrs-spaced-repetition`)
 - **Spaced Repetition Review Engine**: Modern FSRS-4.5 flashcard scheduling embedded directly in markdown note syntax (`::`, `;;`, `{...}`).
-- **SDK Reference Model**: Demonstrates action rail launchers, dedicated review modal dialogs, status bar counter badges, and custom review tables.
+- **SDK Reference**: Demonstrates action rail launchers, dedicated review modal dialogs, status bar counter badges, and custom review tables.
 
 ---
 
 ## Performance & Systems Engineering
 
-Flint is engineered with explicit performance invariants designed to maintain fluid 60 FPS rendering and minimal memory overhead even across vaults containing tens of thousands of notes.
+Flint is engineered to stay fast, lightweight, and responsive even across vaults containing tens of thousands of notes.
 
-### Systems Optimizations & Architectural Invariants
+### Systems Optimizations
 
-| Subsystem | Optimization Strategy | Implementation Details |
+| Subsystem | Strategy | Implementation Details |
 | :--- | :--- | :--- |
-| **Relational Indexing** | Compiled Native `rusqlite` | Direct Tauri IPC invocation to compiled Rust `rusqlite`; zero WASM overhead, zero memory heap dumps, and direct disk page writing. |
-| **Full-Text Search** | SQLite FTS5 Virtual Tables + BM25 | Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 ranking. Includes automatic FTS4 fallback. |
-| **Live Preview Editor** | Incremental Decoration Mapping | Keystrokes map existing decorations in $O(1)$ and only rescan dirty textblocks. KaTeX math HTML is memoized in memory. Undo history is bounded to 50 snapshots. |
-| **WebView2 Memory Tuning** | Browser Arguments Injection | In-process GPU compositing (`--in-process-gpu`), single renderer process cap (`--renderer-process-limit=1`), capped disk (10MB) and media (5MB) caches, disabled unused browser subsystems, and size-optimized V8 flags (`--max-old-space-size=128 --optimize-for-size`). |
-| **Host Process RAM Trimming** | Win32 Working Set Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory across the WebView2 process tree after 120s of verified user idle time (decoupled background host runtime optimization). |
-| **Bundle Footprint** | Tree-Shaken Icon Catalogs | Replaced monolithic 6.75MB hugeicons catalog with tree-shaken named imports to eliminate boot heap bloat. |
-| **Data Safety & Atomic Writes** | Temporary-File + Rename | Note saves write to temporary files first, then atomically rename via OS primitives (`fs::rename`). Prevents file corruption on unexpected crashes or power loss. |
-| **Resilience & Self-Healing** | Boot Integrity Validation | SQLite executes `PRAGMA integrity_check;` on load. Automatically rebuilds clean index from Markdown ground truth if corrupted. |
+| **Relational Indexing** | Native `rusqlite` | Direct Tauri IPC invocation to compiled Rust `rusqlite`; zero WASM overhead, zero memory heap dumps, and direct disk page writing. |
+| **Full-Text Search** | SQLite FTS5 + BM25 | Block-level tokenization with `unicode61 remove_diacritics 1` and BM25 ranking. Includes automatic FTS4 fallback. |
+| **Live Preview Editor** | Smart Decoration Mapping | Keystrokes map existing decorations in $O(1)$ and only rescan modified textblocks. KaTeX math HTML is cached in memory. Undo history is capped at 50 snapshots. |
+| **WebView2 Tuning** | Browser Flags Injection | In-process GPU compositing (`--in-process-gpu`), single renderer process cap (`--renderer-process-limit=1`), capped disk (10MB) and media (5MB) caches, and size-optimized V8 flags. |
+| **Host Process RAM** | Win32 Working Set Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory across the WebView2 process tree after 120s of verified idle time. |
+| **Bundle Footprint** | Tree-Shaken Icon Imports | Uses tree-shaken named icon imports rather than monolithic icon catalog objects to keep the initial heap lean. |
+| **Data Safety** | Temp-and-Rename Saves | Note saves write to temporary files first, then atomically rename via OS primitives (`fs::rename`). Prevents file corruption if power cuts mid-save. |
+| **Resilience** | Boot Integrity Validation | SQLite executes `PRAGMA integrity_check;` on load. Automatically rebuilds clean index from Markdown ground truth if corrupted. |
 | **Differential Sync** | Manifest Tracking | `file_manifest` tracks file modification times and content hashes. Cold-start sync skips unchanged files, completing in under 1ms. |
-| **Echo Suppression** | Signature-Based Write Tracking | Tracks internal save signatures across native runtimes to prevent file watchers from triggering reload loops. |
-| **Instant UI Snappiness** | Zero Transition Delay | Micro-interactions (switches, buttons, menus, dropdowns) render with zero artificial transition durations for an instant, responsive native desktop feel. |
+| **Echo Suppression** | Timestamp Write Tracking | Tracks internal save timestamps across native runtimes to prevent file watchers from triggering reload loops. |
+| **Instant UI** | Zero Animation Delay | Micro-interactions (switches, buttons, menus, dropdowns) render with zero artificial transition delays for an instant, responsive native desktop feel. |
 
 ### Verification & Testing Commands
 
 ```bash
-# 1. Verify Zero TypeScript Type Regressions
+# 1. Verify TypeScript Types
 npx tsc --noEmit
 
 # 2. Benchmark Production Bundle Build Time
 npm run build
 
-# 3. Launch Tauri Native Desktop with Background Memory Trimming
+# 3. Launch Tauri Native Desktop App
 npm run app
 ```
 
@@ -378,11 +376,11 @@ npm run tauri:build
 
 ## Extensibility & Plugin SDK
 
-Flint features an advanced modular micro-kernel architecture designed to provide deep host integration while preserving strict native core isolation, sub-8ms typing latency guarantees, and zero micro-interaction delays. Both native core features and third-party extensions build on the identical public **Flint SDK** (`src/sdk`).
+Flint features a modular micro-kernel architecture where both built-in core features and third-party extensions build on the identical public **Flint SDK** (`src/sdk`).
 
 Extensions are categorized into two tiers:
-- **Core Extensions (`isCore: true`)**: Built directly into the runtime distribution (e.g. Graph, Canvas, FSRS-4.5, Tasks, Journal, Backlinks). They cannot be uninstalled and are enabled by default.
-- **Community Extensions (`isCore: false`)**: Decoupled, standalone extensions (such as pre-bundled showcase plugins `Cascade` and `Iconify`, and user-installed plugins). They run within standard extension boundaries, manage their own isolated SQLite tables, and can be toggled or uninstalled with clean disk teardown.
+- **Core Extensions (`isCore: true`)**: Built directly into the runtime (Graph, Canvas, FSRS-4.5, Tasks, Journal, Backlinks). Enabled by default and part of the main distribution.
+- **Community Extensions (`isCore: false`)**: Standalone extensions (such as showcase plugins `Cascade` and `Iconify`, and user-installed plugins). They run in isolated boundaries, manage their own SQLite tables, and can be toggled or removed cleanly.
 
 ### Extensibility Architecture Flow
 
@@ -390,32 +388,32 @@ Extensions are categorized into two tiers:
   <img src="docs/assets/extensibility-architecture.svg" alt="Flint Extensibility Architecture: [1. Extension Layer (Core &amp; Community Extensions, Strict Core Isolation, Lifecycle, Schemas)] --SDK/Events--&gt; [2. Flint SDK Layer (Extension Base, Zod Engine, Hooks, Platform Bridge)] --IoC Binding--&gt; [3. Micro-Kernel IoC Registries (SlotRegistry, EditorRegistry, ToolRegistry, DatabaseManager, WorkerPool)] --Portals/Hooks/Tools/Tables/Tasks--&gt; [4. Host Presentation &amp; Core (Portal Slot Hosts, TipTap Bridge, Native MCP Server, Native rusqlite, EventBus Telemetry)]" width="100%"/>
 </div>
 
-### The 5 Extension Superpowers
+### 5 Extension Superpowers
 
 1. **Dynamic UI Layering & React Portal Slots (`registerPortalSlot`)**
-   - Mount React components directly into designated host layout slots (`workspace:root`, `editor:minimap`, `editor:viewport-overlay`, `editor:floating-toolbar`) without DOM monkey-patching.
-   - Supports deterministic ordering (`order`), contextual predicates (`when(ctx)`), pointer-events pass-through, and isolated error boundaries.
+   - Mount React components directly into host layout slots (`workspace:root`, `editor:minimap`, `editor:viewport-overlay`, `editor:floating-toolbar`) without DOM monkey-patching.
+   - Supports ordering (`order`), contextual conditions (`when(ctx)`), and isolated error boundaries.
 
 2. **Native ProseMirror & TipTap Bridge (`registerEditorPlugin`)**
    - Register custom ProseMirror plugins, input rules, paste rules, and keyboard shortcuts.
-   - Dynamic decorations map through ProseMirror transactions (`mapping.map(decorations)`), running in $O(K)$ time over active decorations rather than $O(N)$ document scans, maintaining sub-8ms typing latency on massive documents.
+   - Decorations map efficiently through ProseMirror transactions (`mapping.map(decorations)`), maintaining sub-8ms typing latency on large documents.
 
 3. **Declarative SQLite Schema & Dynamic Migrations (`defineTable`)**
    - Declare type-safe SQLite schemas directly in code (`this.defineTable(...)`).
-   - Automatically diffs columns and applies non-destructive migrations (`ALTER TABLE ADD COLUMN`), tracks table versions in `flint_extension_tables`, executes cascade deletions when notes are removed (`onDelete: 'cascade'`), and cleans up tables upon uninstallation.
+   - Automatically diffs columns and applies non-destructive migrations (`ALTER TABLE ADD COLUMN`), tracks table versions, handles cascade deletions when notes are removed (`onDelete: 'cascade'`), and cleans up tables upon uninstallation.
 
 4. **Type-Safe Zod-to-MCP Tool Automation (`registerTool`)**
    - Register AI agent tools using standard Zod schemas (`z.object({...})`).
-   - The engine automatically generates compliant `McpJsonSchema` definitions, scopes tool names (`{extensionId}_{toolName}`) to prevent collisions, and validates parameters with `schema.safeParse(...)` before invoking handlers.
+   - The engine automatically generates compliant `McpJsonSchema` definitions, scopes tool names (`{extensionId}_{toolName}`), and validates parameters before invoking handlers.
 
 5. **Off-Thread Web Worker Pipeline (`registerWorkerTask` & `runTask`)**
    - Offload heavy, CPU-intensive algorithms (geometry parsing, clustering, syntax analysis) to dedicated Web Workers.
-   - Includes a two-way `EventBus` bridge allowing background tasks to stream progress updates directly to the UI without blocking the main event loop.
+   - Includes a two-way `EventBus` bridge allowing background tasks to stream progress updates directly to the UI without blocking the main thread.
 
 ---
 
 ### Plugin Directory Structure
-Plugins are stored within your vault under `.flint/plugins/<plugin-id>/`:
+Plugins live inside your vault under `.flint/plugins/<plugin-id>/`:
 
 ```
 <My-Hearth>/
@@ -509,8 +507,8 @@ export default class ReadingAnalyticsExtension extends Extension {
 ### Documentation Suite
 
 For detailed technical guides, end-user workflows, and architecture specifications:
-- **[User Guide & Manual](docs/USER_GUIDE.md)**: Comprehensive manual for writing, active recall, spatial whiteboarding, and vault management.
-- **[Systems Architecture Specification](docs/ARCHITECTURE.md)**: In-depth technical specification of the micro-kernel, storage pipeline, and performance invariants.
+- **[User Guide & Manual](docs/USER_GUIDE.md)**: Comprehensive guide for writing, active recall, spatial whiteboarding, and vault management.
+- **[Systems Architecture Specification](docs/ARCHITECTURE.md)**: In-depth technical specification of the micro-kernel, storage pipeline, and performance engineering.
 - **[Keyboard Shortcuts Cheat Sheet](docs/KEYBOARD_SHORTCUTS.md)**: Quick reference for all hotkeys and commands.
 - **[Plugin Developer Guide](docs/PLUGIN_GUIDE.md)**: Building, debugging, and distributing custom Flint extensions.
 - **[Model Context Protocol (MCP) Setup](docs/mcp-setup-guide.md)**: Connecting Claude Desktop, Antigravity, and Cursor.
@@ -520,9 +518,9 @@ For detailed technical guides, end-user workflows, and architecture specificatio
 
 ## Contributing & Architecture Standards
 
-We welcome contributions from systems engineers, UI/UX designers, and open-source advocates.
+We welcome contributions from systems engineers, UI/UX designers, and open-source developers.
 
-### Key Engineering Rules
+### Key Engineering Invariants
 1. **Strict Native Core Isolation**: Never import extension/plugin code into native directories (`src/core`, `src/lib`, `src/store`, `src/components`). Extensions must interact solely via `src/sdk`, IoC registries, and `EventBus`.
 2. **Cross-Platform Bridge**: Route all hardware and OS calls through `src/lib/platform/platformAdapter.ts`.
 3. **MCP Tool Registration**: Every extension managing queryable data must register at least one `McpToolDefinition` via `this.registerTool()`.

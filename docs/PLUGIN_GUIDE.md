@@ -90,6 +90,8 @@ module.exports = class ReadingTimePlugin extends Plugin {
 
 ## 2. Plugin Extension Points
 
+---
+
 ### A. Ribbon Icons
 ```javascript
 this.addRibbonIcon(id, iconElementOrSvg, tooltipTitle, (app) => { ... }, orderIndex);
@@ -294,7 +296,9 @@ const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] }
 
 ## 3. Core & Community Extensions
 
-In Flint, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension API! You can review their implementation in `src/extensions/core/`.
+---
+
+In Flint, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension SDK. You can review their implementation in `src/extensions/core/`.
 
 To build your own standalone community extension, clone the official template repository:
 ```bash

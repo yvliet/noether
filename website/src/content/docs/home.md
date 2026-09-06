@@ -9,11 +9,11 @@ Whether you are building custom TypeScript extensions, crafting CSS themes, or e
 
 ---
 
-Flint is designed around four foundational engineering invariants:
+Flint is designed around four core pillars:
 
-- **Local-First & Sovereign Data**: Every note in Flint is a standard, human-readable CommonMark `.md` file stored in your local directory. There are no proprietary file formats or cloud lock-ins. Explore the [[Dual-Storage Architecture]] to see how disk text files sync with embedded databases.
+- **Local-First & Plain Text**: Every note in Flint is a standard, human-readable CommonMark `.md` file stored in your local directory. There are no proprietary file formats or cloud lock-ins. Explore the [[Dual-Storage Architecture]] to see how disk text files sync with embedded databases.
 - **Micro-Kernel & Strict Isolation**: The host application internals are strictly separated from extensions. Core directories never leak into plugins, and extensions integrate exclusively through the [[Flint SDK API Reference]] and typed events. Learn more in [[Micro-Kernel & Extension Architecture]].
-- **Sub-50ms Desktop Ergonomics**: Built with React 19, TipTap/ProseMirror, and Tailwind CSS inside a lightweight Tauri Rust container, all micro-interactions execute instantly with zero artificial transition lag.
+- **Fast Desktop Snappiness**: Built with React 19, TipTap/ProseMirror, and Tailwind CSS inside a lightweight Tauri Rust container, all micro-interactions execute instantly with zero artificial animation lag.
 - **Native AI Tooling (MCP)**: Every extension can register structured tools and prompts via the Model Context Protocol. AI agents can safely query your local notes and trigger actions. See [[Model Context Protocol (MCP) Tools]].
 
 

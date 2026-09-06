@@ -24,16 +24,20 @@ Welcome to the **Flint User Guide**! This manual covers everything you need to k
 
 ## 1. Core Philosophy & Architecture
 
-Flint is an open-source, local-first knowledge engine engineered around four foundational principles:
+---
 
-- **Physical Markdown Ground Truth**: Your notes exist as standard, human-readable CommonMark `.md` files on your local hard drive. There are no proprietary database locks or encrypted blobs. If you ever stop using Flint, your notes remain completely accessible in any text editor forever.
-- **Compiled Native SQLite Engine (`rusqlite` + WAL)**: Note metadata, tags, block nodes, forward links, and backlinks are indexed into a local SQLite database (`.flint/flint.sqlite`) running directly in the native Tauri Rust host. This delivers sub-millisecond query execution without WebAssembly heap overhead.
-- **Sub-8ms Input Latency**: The Live Preview editor utilizes $O(1)$ transaction decoration mapping, dirty-range AST scanning, and formula memoization to keep typing instant and fluid even on documents exceeding 100,000 words.
-- **AI-Native via MCP**: Flint includes an out-of-the-box Model Context Protocol (MCP) stdio server allowing Claude Desktop, Google Antigravity, Cursor, and Gemini to query, read, and write notes securely.
+Flint is an open-source, local-first note-taking app and knowledge engine built around four principles:
+
+- **Plain Markdown on Disk**: Your notes exist as standard, human-readable CommonMark `.md` files on your local hard drive. There are no proprietary database locks or encrypted blobs. If you ever stop using Flint, your notes remain completely accessible in any text editor forever.
+- **Fast Rust SQLite Index (`rusqlite` + WAL)**: Note metadata, tags, block nodes, forward links, and backlinks are indexed into a local SQLite database (`.flint/flint.sqlite`) running directly in the native Tauri Rust host. This delivers sub-millisecond query execution without WebAssembly memory overhead.
+- **Fast, Fluid Typing**: The Live Preview editor uses transaction decoration mapping, dirty-range AST scanning, and formula caching to keep typing responsive (sub-8ms latency) even on documents exceeding 100,000 words.
+- **AI-Ready via MCP**: Flint includes an out-of-the-box Model Context Protocol (MCP) stdio server allowing Claude Desktop, Google Antigravity, Cursor, and Gemini to query, read, and write notes securely.
 
 ---
 
 ## 2. Workspaces & Hearths
+
+---
 
 In Flint, individual note vaults are called **Hearths**.
 
@@ -51,6 +55,8 @@ When you delete a note, Flint never immediately destroys the file on disk. Inste
 ---
 
 ## 3. Live Preview Editor & Markdown
+
+---
 
 Flint provides a hybrid WYSIWYG / Markdown editor built on TipTap 2.x and ProseMirror.
 
@@ -94,6 +100,8 @@ Pasting text copied from research articles, Wikipedia, or web pages automaticall
 
 ## 4. Bidirectional Linking & Knowledge Graph
 
+---
+
 Flint turns independent notes into a structured web of thoughts.
 
 ### Wiki-Link Syntax
@@ -117,6 +125,8 @@ Located in the right sidebar, the Backlinks Pane displays:
 
 ## 5. Infinite 2D Spatial Canvas
 
+---
+
 For visual brainstorming, concept mapping, and system architecture design:
 
 - Click **Canvas** on the Action Rail or run `Ctrl+K` → *Open Canvas*.
@@ -129,6 +139,8 @@ For visual brainstorming, concept mapping, and system architecture design:
 ---
 
 ## 6. Embedded FSRS-4.5 Spaced Repetition
+
+---
 
 Flint features an integrated flashcard scheduler powered by **FSRS-4.5 (Free Spaced Repetition Scheduler)** via `ts-fsrs`.
 
@@ -151,6 +163,8 @@ Create flashcards directly in your notes:
 
 ## 7. Centralized Tasks Dashboard
 
+---
+
 Never lose track of action items scattered across project notes:
 
 - Write tasks in any document: `- [ ] Buy server hardware #infra`
@@ -163,6 +177,8 @@ Never lose track of action items scattered across project notes:
 
 ## 8. Journal & Daily Notes
 
+---
+
 - Click the **Journal** icon or press `Ctrl+Alt+J` to open today's scratchpad (e.g. `Journal/2026-09-06.md`).
 - Customize note naming formats (`YYYY-MM-DD`, `YYYY/MM/DD`) and default templates in *Settings → Extensions → Journal*.
 - Use `Alt+←` and `Alt+→` in the journal header to step backward and forward through previous daily entries.
@@ -170,6 +186,8 @@ Never lose track of action items scattered across project notes:
 ---
 
 ## 9. Full-Text Search & Quick Open
+
+---
 
 - **Quick Open (`Ctrl+K` or `Ctrl+O`)**: Search notes by title, folder path, or alias with fuzzy matching.
 - **Vault-Wide Search (`Ctrl+Shift+F`)**: Powered by SQLite FTS5 with BM25 ranking. Includes automatic diacritics removal (e.g. `cliche` matches `cliché`).
@@ -181,6 +199,8 @@ Never lose track of action items scattered across project notes:
 ---
 
 ## 10. Model Context Protocol (MCP) AI Integration
+
+---
 
 Flint includes a built-in stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`). External AI assistants can query and modify your notes directly.
 
@@ -204,6 +224,8 @@ Add to your client configuration file:
 
 ## 11. Themes & Customization
 
+---
+
 Open **Settings** (`Ctrl+,`) → **Appearance**:
 - **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Flint Dark/Light, Forest Emerald, and Minimal.
 - **Tactile 3D Buttons**: Flint uses physical button styling (`flint-btn`) with crisp borders and instant zero-delay interactions.
@@ -217,14 +239,16 @@ Open **Settings** (`Ctrl+,`) → **Appearance**:
 
 Flint features an integrated updater that monitors official GitHub releases:
 
-- **Automatic Background Checks**: When enabled in **Settings** (`Ctrl+,`) → **General**, Flint polls GitHub Releases after startup (with a 4-hour cooldown) and notifies you when new releases are available.
-- **Manual Verification**: Click **Check for updates** in the General settings tab anytime to immediately test against the remote repository.
+- **Automatic Background Checks**: When enabled in **Settings** (`Ctrl+,`) → **General**, Flint checks GitHub Releases after startup (with a 4-hour cooldown) and notifies you when new releases are available.
+- **Manual Check**: Click **Check for updates** in the General settings tab anytime to immediately check against the remote repository.
 - **Early Access Channel**: Opt in to preview builds and release candidates via the **Receive early access versions** switch.
 - **Direct Installer Download**: Launch the update modal to review release notes and download the matching `.exe` or `.msi` Windows installer directly.
 
 ---
 
 ## 13. Keyboard Shortcuts Cheat Sheet
+
+---
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
@@ -250,3 +274,4 @@ Flint features an integrated updater that monitors official GitHub releases:
 | **Trigger Wiki-Link Popup** | `[[` | `[[` |
 | **Zoom In / Out / Reset** | `Ctrl + +` / `Ctrl + -` / `Ctrl + 0` | `Cmd + +` / `Cmd + -` / `Cmd + 0` |
 | **Open Settings** | `Ctrl + ,` | `Cmd + ,` |
+
