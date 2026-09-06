@@ -1,17 +1,17 @@
-# Flint Plugin Developer Guide
+# Flint Extension Developer Guide
 
-Welcome to the **Flint Plugin Ecosystem**! Flint is built with a micro-kernel architecture where both internal features and community additions are structured as modular plugins.
+Welcome to the **Flint Extension Ecosystem**! Flint is built with a micro-kernel architecture where both internal features and community additions are structured as modular extensions.
 
 ---
 
-## 1. Quick Start: Creating Your First Plugin
+## 1. Quick Start: Creating Your First Extension
 
-Plugins reside in your vault's `.flint/plugins/<plugin-id>/` directory:
+Extensions reside in your Hearth's `.flint/extensions/<extension-id>/` directory:
 
 ```
-<My-Vault>/
+<My-Hearth>/
   .flint/
-    plugins/
+    extensions/
       word-counter/
         manifest.json
         main.js
@@ -33,11 +33,11 @@ Plugins reside in your vault's `.flint/plugins/<plugin-id>/` directory:
 
 ### `main.js`
 ```javascript
-const { Plugin } = require('flint');
+const { Extension } = require('flint');
 
-module.exports = class ReadingTimePlugin extends Plugin {
+module.exports = class ReadingTimeExtension extends Extension {
   async onload() {
-    console.log('Reading Time Plugin loaded!');
+    console.log('Reading Time Extension loaded!');
 
     // 1. Add Ribbon Action Icon
     this.addRibbonIcon(
@@ -80,7 +80,7 @@ module.exports = class ReadingTimePlugin extends Plugin {
   }
 
   onunload() {
-    console.log('Reading Time Plugin unloaded!');
+    console.log('Reading Time Extension unloaded!');
     // All UI elements and event listeners registered via this.add* are cleaned up automatically!
   }
 };
@@ -88,7 +88,7 @@ module.exports = class ReadingTimePlugin extends Plugin {
 
 ---
 
-## 2. Plugin Extension Points
+## 2. Extension Points
 
 ---
 
@@ -133,7 +133,7 @@ this.registerView({
 });
 ```
 
-### E. Persistent Plugin Settings
+### E. Persistent Extension Settings
 ```javascript
 // Load saved JSON settings
 const config = await this.loadData() || { mySetting: true };
@@ -145,7 +145,7 @@ await this.saveData({ mySetting: false });
 ### F. Settings Preferences Tab
 ```javascript
 this.registerSettingTab({
-  id: 'my-plugin-settings',
+  id: 'my-extension-settings',
   name: 'Word Counter',
   render: () => {
     return React.createElement('div', null, 'Configure word counter rules...');
@@ -154,7 +154,7 @@ this.registerSettingTab({
 ```
 
 ### G. Custom Context Menu Items (Right-Click)
-Plugins can register items directly into Flint's lightweight custom context menus for various scopes:
+Extensions can register items directly into Flint's lightweight custom context menus for various scopes:
 - `'file-tree'`: Right-clicking files or folders in the sidebar.
 - `'file-tree-root'`: Right-clicking empty background space in the file tree.
 - `'editor'`: Right-clicking inside the document editor or selection.
@@ -218,7 +218,7 @@ this.registerPortalSlot({
 ```
 
 ### I. Native ProseMirror & TipTap Extensions
-Register transaction-mapped ProseMirror plugins, input rules, paste rules, or custom shortcuts without degrading typing latency:
+Register transaction-mapped ProseMirror decorators, input rules, paste rules, or custom shortcuts without degrading typing latency:
 
 ```javascript
 this.registerEditorPlugin({
@@ -241,14 +241,14 @@ Define typed SQLite tables with automatic column migrations, version tracking, a
 
 ```javascript
 this.myTable = await this.defineTable({
-  tableName: 'my_plugin_data',
+  tableName: 'my_extension_data',
   columns: [
     { name: 'documentId', type: 'TEXT', notNull: true, onDelete: 'cascade' },
     { name: 'score', type: 'REAL', default: '0.0' },
     { name: 'metadata', type: 'TEXT' }
   ],
   indexes: [
-    { name: 'idx_my_plugin_doc', columns: ['documentId'] }
+    { name: 'idx_my_extension_doc', columns: ['documentId'] }
   ]
 });
 

@@ -158,7 +158,7 @@ Comprehensive architecture specifications, user manuals, and developer guides ar
 
 - **[User Guide](https://yvliet.github.io/flint/)** (`docs/USER_GUIDE.md`): Complete guide for writing, active recall flashcards, spatial whiteboarding, and vault management.
 - **[Architecture Specification](https://yvliet.github.io/flint/)** (`docs/ARCHITECTURE.md`): 4-tier micro-kernel stack, dual-track storage engine, WAL commits, memory optimization, and echo suppression.
-- **[Plugin Developer Guide](https://yvliet.github.io/flint/)** (`docs/PLUGIN_GUIDE.md`): Building custom extensions using React portal slots, declarative SQLite tables, and background Web Workers.
+- **[Extension Developer Guide](https://yvliet.github.io/flint/)** (`docs/EXTENSION_GUIDE.md`): Building custom extensions using React portal slots, declarative SQLite tables, and background Web Workers.
 - **[Model Context Protocol (MCP) Setup](https://yvliet.github.io/flint/)** (`docs/mcp-setup-guide.md`): Configuration guide for Claude Desktop, Antigravity, Gemini, and Cursor.
 - **[Keyboard Shortcuts](https://yvliet.github.io/flint/)** (`docs/KEYBOARD_SHORTCUTS.md`): Complete reference table of all hotkeys and commands.
 - **[Contributing Guidelines](https://yvliet.github.io/flint/)** (`docs/CONTRIBUTING.md`): Codebase standards, core isolation rules, and pull request verification.
