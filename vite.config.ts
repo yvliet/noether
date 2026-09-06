@@ -48,11 +48,8 @@ export default defineConfig(({ mode }) => {
       ],
     },
   },
-  optimizeDeps: {
-    exclude: ['sql.js'],
-  },
   build: {
-    target: 'esnext',
+    target: ['es2021', 'chrome100', 'safari13'],
     cssCodeSplit: true,
     rollupOptions: {
       output: {
@@ -64,8 +61,13 @@ export default defineConfig(({ mode }) => {
             '@tiptap/extension-highlight',
             '@tiptap/extension-link',
             '@tiptap/extension-placeholder',
+            '@tiptap/extension-table',
+            '@tiptap/extension-table-cell',
+            '@tiptap/extension-table-header',
+            '@tiptap/extension-table-row',
             '@tiptap/extension-task-item',
             '@tiptap/extension-task-list',
+            '@tiptap/extension-typography',
             '@tiptap/suggestion',
           ],
           'vendor-radix': [

@@ -34,8 +34,8 @@ export interface IPlatformAdapter {
   closeSettingsWindow(): Promise<{ success: boolean }>;
 
   // Global hotkeys and focus
-  registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean }>;
-  unregisterGlobalShortcut(id: string): Promise<{ success: boolean }>;
+  registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean; error?: string }>;
+  unregisterGlobalShortcut(id: string): Promise<{ success: boolean; error?: string }>;
   onGlobalShortcut(callback: (id: string) => void): () => void;
   focusMainWindow(): Promise<{ success: boolean }>;
 
@@ -45,8 +45,8 @@ export interface IPlatformAdapter {
   selectParentFolder(): Promise<{ canceled: boolean; path?: string }>;
   createNewHearth(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[]; error?: string }>;
   renameHearth(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentVaultItem[]; error?: string }>;
-  removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[] }>;
-  setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[] }>;
+  removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[]; error?: string }>;
+  setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[]; error?: string }>;
   openHearthInExplorer(hearthPath?: string): Promise<{ success: boolean; error?: string }>;
 
   // Vault (Backwards compatibility)
@@ -54,8 +54,8 @@ export interface IPlatformAdapter {
   selectVaultFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentVaults?: RecentVaultItem[] }>;
   createNewVault(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
   renameVault(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }>;
-  removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[] }>;
-  setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[] }>;
+  removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[]; error?: string }>;
+  setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
   openVaultInExplorer(vaultPath?: string): Promise<{ success: boolean; error?: string }>;
 
   // File I/O
@@ -86,14 +86,16 @@ export interface IPlatformAdapter {
   onVaultFilesChanged(callback: () => void): () => void;
 
   // Extensions / Plugins
-  openExtensionsFolder(): Promise<{ success: boolean; path?: string }>;
+  openExtensionsFolder(): Promise<{ success: boolean; path?: string; error?: string }>;
   listInstalledExtensions(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>>;
   readExtensionBundle(extensionFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }>;
   installExtensionBundle(extensionFolder: string, manifestJson: string, mainJs: string, stylesCss?: string): Promise<{ success: boolean; path?: string; error?: string }>;
-  openPluginsFolder(): Promise<{ success: boolean; path?: string }>;
+  uninstallExtensionBundle(extensionFolder: string): Promise<{ success: boolean; error?: string }>;
+  openPluginsFolder(): Promise<{ success: boolean; path?: string; error?: string }>;
   listInstalledPlugins(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>>;
   readPluginBundle(pluginFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }>;
   installPluginBundle(pluginFolder: string, manifestJson: string, mainJs: string, stylesCss?: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  uninstallPluginBundle(pluginFolder: string): Promise<{ success: boolean; error?: string }>;
 
   // Zoom
   setZoomFactor(factor: number): void;
@@ -237,13 +239,19 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onMaximizedChange(callback: (isMaximized: boolean) => void): () => void {
     if (this.isTauri()) {
       let unlistenResize: (() => void) | null = null;
+      let disposed = false;
       const current = getCurrentWindow();
       current.onResized(() => {
         current.isMaximized().then((max) => callback(Boolean(max)));
-      }).then((unlisten) => {
-        unlistenResize = unlisten;
+      }).then((fn) => {
+        if (disposed) {
+          fn();
+        } else {
+          unlistenResize = fn;
+        }
       });
       return () => {
+        disposed = true;
         if (unlistenResize) unlistenResize();
       };
     }
@@ -267,13 +275,18 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onMinimizedChange(callback: (isMinimized: boolean) => void): () => void {
     let unlistenResize: (() => void) | null = null;
     let unlistenVis: (() => void) | null = null;
+    let disposed = false;
 
     if (this.isTauri()) {
       const current = getCurrentWindow();
       current.onResized(() => {
         current.isMinimized().then((min) => callback(Boolean(min)));
-      }).then((unlisten) => {
-        unlistenResize = unlisten;
+      }).then((fn) => {
+        if (disposed) {
+          fn();
+        } else {
+          unlistenResize = fn;
+        }
       });
     }
 
@@ -284,6 +297,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     }
 
     return () => {
+      disposed = true;
       if (unlistenResize) unlistenResize();
       if (unlistenVis) unlistenVis();
     };
@@ -319,30 +333,36 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   // General-Purpose Global Hotkeys & Window Focus
-  public async registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean }> {
+  public async registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean; error?: string }> {
     if (this.isTauri()) {
       return (await invoke('register_global_shortcut', { id, shortcut })) || { success: true };
     }
-    return { success: true };
+    return { success: false, error: 'Desktop mode only' };
   }
 
-  public async unregisterGlobalShortcut(id: string): Promise<{ success: boolean }> {
+  public async unregisterGlobalShortcut(id: string): Promise<{ success: boolean; error?: string }> {
     if (this.isTauri()) {
       return (await invoke('unregister_global_shortcut', { id })) || { success: true };
     }
-    return { success: true };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public onGlobalShortcut(callback: (id: string) => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
+      let disposed = false;
       listen('global-shortcut-activated', (event: any) => {
         const id = typeof event.payload === 'string' ? event.payload : (event.payload?.id || '');
         callback(id);
       }).then((fn) => {
-        unlisten = fn;
+        if (disposed) {
+          fn();
+        } else {
+          unlisten = fn;
+        }
       });
       return () => {
+        disposed = true;
         if (unlisten) unlisten();
       };
     }
@@ -446,7 +466,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         return { success: false, error: e?.message || 'Failed to rename Hearth', recentHearths: [] };
       }
     }
-    return { success: true, path: targetPath, name: newName, recentHearths: [] };
+    return { success: false, path: targetPath, name: newName, recentHearths: [], error: 'Desktop mode only' };
   }
 
   public async renameVault(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }> {
@@ -454,37 +474,37 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: res.success, path: res.path, name: res.name, recentVaults: res.recentHearths, error: res.error };
   }
 
-  public async removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[] }> {
+  public async removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
       const res: any = await invoke('remove_recent_vault', { vaultPath: hearthPath });
       return { success: Boolean(res?.success), recentHearths: res?.recentVaults || [] };
     }
-    return { success: false, recentHearths: [] };
+    return { success: false, recentHearths: [], error: 'Desktop mode only' };
   }
 
-  public async removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[] }> {
+  public async removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[]; error?: string }> {
     const res = await this.removeRecentHearth(vaultPath);
-    return { success: res.success, recentVaults: res.recentHearths };
+    return { success: res.success, recentVaults: res.recentHearths, error: res.error };
   }
 
-  public async setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[] }> {
+  public async setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
       const res: any = await invoke('set_current_vault', { vaultPath: hearthPath });
       return { ...res, recentHearths: res?.recentVaults || [] };
     }
-    return { success: false, path: '', name: '', recentHearths: [] };
+    return { success: false, path: '', name: '', recentHearths: [], error: 'Desktop mode only' };
   }
 
-  public async setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[] }> {
+  public async setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }> {
     const res = await this.setCurrentHearth(vaultPath);
-    return { success: res.success, path: res.path, name: res.name, recentVaults: res.recentHearths };
+    return { success: res.success, path: res.path, name: res.name, recentVaults: res.recentHearths, error: res.error };
   }
 
   public async openHearthInExplorer(hearthPath?: string): Promise<{ success: boolean; error?: string }> {
     if (this.isTauri()) {
       return await invoke('open_vault_in_explorer', { vaultPath: hearthPath || null });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async openVaultInExplorer(vaultPath?: string): Promise<{ success: boolean; error?: string }> {
@@ -528,7 +548,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('save_markdown_file', { filename, content, relativePath: relativePath || null, vaultPath: vaultPath || null });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }> {
@@ -539,7 +559,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         modifiedTime: options.mtime !== undefined ? options.mtime : null,
       })) || { success: true };
     }
-    return { success: true };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
@@ -547,7 +567,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('delete_markdown_file', { filenameOrPath, vaultPath: vaultPath || null });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }> {
@@ -561,7 +581,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         vaultPath: vaultPath || null,
       });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async openTrashFolder(): Promise<{ success: boolean; path?: string; error?: string }> {
@@ -576,7 +596,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('save_trash_file', { filename, content, relativePath: relativePath || null });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async deleteTrashFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }> {
@@ -584,7 +604,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('delete_trash_file', { filenameOrPath });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async emptyTrashFolder(): Promise<{ success: boolean; error?: string }> {
@@ -592,7 +612,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('empty_trash_folder');
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   // Database persistence
@@ -600,7 +620,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('save_database', { bytes, vaultPath: customVaultPath || null });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null> {
@@ -619,6 +639,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onHearthChanged(callback: (hearth: { path: string; name: string; recentHearths: RecentVaultItem[] }) => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
+      let disposed = false;
       listen('vault-changed', (event: any) => {
         callback({
           path: event.payload?.path,
@@ -626,9 +647,14 @@ class PlatformAdapterImpl implements IPlatformAdapter {
           recentHearths: event.payload?.recentHearths || event.payload?.recentVaults || [],
         });
       }).then((fn) => {
-        unlisten = fn;
+        if (disposed) {
+          fn();
+        } else {
+          unlisten = fn;
+        }
       });
       return () => {
+        disposed = true;
         if (unlisten) unlisten();
       };
     }
@@ -652,12 +678,18 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public onVaultFilesChanged(callback: () => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
+      let disposed = false;
       listen('vault-files-changed', () => {
         callback();
       }).then((fn) => {
-        unlisten = fn;
+        if (disposed) {
+          fn();
+        } else {
+          unlisten = fn;
+        }
       });
       return () => {
+        disposed = true;
         if (unlisten) unlisten();
       };
     }
@@ -665,15 +697,15 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   // Extensions / Plugins
-  public async openExtensionsFolder(): Promise<{ success: boolean; path?: string }> {
+  public async openExtensionsFolder(): Promise<{ success: boolean; path?: string; error?: string }> {
     return this.openPluginsFolder();
   }
 
-  public async openPluginsFolder(): Promise<{ success: boolean; path?: string }> {
+  public async openPluginsFolder(): Promise<{ success: boolean; path?: string; error?: string }> {
     if (this.isTauri()) {
       return await invoke('open_plugins_folder');
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async listInstalledExtensions(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>> {
@@ -695,7 +727,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       return await invoke('read_plugin_bundle', { pluginFolder });
     }
-    return { success: false };
+    return { success: false, error: 'Desktop mode only' };
   }
 
   public async installExtensionBundle(
@@ -721,7 +753,18 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         stylesCss: stylesCss || null,
       });
     }
-    return { success: false, error: 'Desktop only' };
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public async uninstallExtensionBundle(extensionFolder: string): Promise<{ success: boolean; error?: string }> {
+    return this.uninstallPluginBundle(extensionFolder);
+  }
+
+  public async uninstallPluginBundle(pluginFolder: string): Promise<{ success: boolean; error?: string }> {
+    if (this.isTauri()) {
+      return await invoke('uninstall_plugin_bundle', { pluginFolder });
+    }
+    return { success: false, error: 'Desktop mode only' };
   }
 
   // Zoom

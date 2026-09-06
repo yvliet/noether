@@ -53,6 +53,7 @@ pub fn run() {
             vault::list_installed_plugins,
             vault::read_plugin_bundle,
             vault::install_plugin_bundle,
+            vault::uninstall_plugin_bundle,
             vault::open_vault_window,
             vault::close_vault_window,
             vault::open_settings_window,

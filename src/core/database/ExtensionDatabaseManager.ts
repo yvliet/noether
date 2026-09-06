@@ -44,7 +44,7 @@ interface ExtensionTableMeta {
 export class ExtensionDatabaseManager {
   private app: FlintApp;
   private isMetaTableReady = false;
-  private cascadeListeners: Map<string, Disposable[]> = new Map();
+  private cascadeListeners: Map<string, Map<string, Disposable>> = new Map();
 
   constructor(app: FlintApp) {
     this.app = app;
@@ -271,9 +271,22 @@ export class ExtensionDatabaseManager {
         colDef.references.column === 'id' &&
         colDef.references.onDelete === 'cascade'
       ) {
+        const colKey = `${physicalName}.${colName}`;
+        let extListeners = this.cascadeListeners.get(extensionId);
+        if (!extListeners) {
+          extListeners = new Map<string, Disposable>();
+          this.cascadeListeners.set(extensionId, extListeners);
+        }
+
+        const existingListener = extListeners.get(colKey);
+        if (existingListener) {
+          existingListener.dispose();
+          extListeners.delete(colKey);
+        }
+
         const unsub = this.app.events.on('document:deleted', ({ id }) => {
           dbAdapter
-            .execute(`DELETE FROM ${physicalName} WHERE ${colName} = ?`, [id])
+            .execute(`DELETE FROM ${physicalName} WHERE "${colName}" = ?`, [id])
             .catch((err) => {
               console.error(
                 `[ExtensionDatabaseManager] Cascade deletion error for ${physicalName}.${colName}:`,
@@ -282,12 +295,7 @@ export class ExtensionDatabaseManager {
             });
         });
 
-        let list = this.cascadeListeners.get(extensionId);
-        if (!list) {
-          list = [];
-          this.cascadeListeners.set(extensionId, list);
-        }
-        list.push(unsub);
+        extListeners.set(colKey, unsub);
       }
     }
   }
@@ -303,6 +311,7 @@ export class ExtensionDatabaseManager {
         const keys = Object.keys(record);
         if (keys.length === 0) return;
 
+        const quotedKeys = keys.map((k) => `"${k}"`);
         const placeholders = keys.map(() => '?').join(', ');
         const values = keys.map((k) => {
           const val = record[k];
@@ -312,7 +321,7 @@ export class ExtensionDatabaseManager {
           return val;
         });
 
-        const sql = `INSERT INTO ${physicalName} (${keys.join(', ')}) VALUES (${placeholders});`;
+        const sql = `INSERT INTO ${physicalName} (${quotedKeys.join(', ')}) VALUES (${placeholders});`;
         await dbAdapter.execute(sql, values);
       },
 
@@ -320,8 +329,9 @@ export class ExtensionDatabaseManager {
         if (records.length === 0) return;
         const first = records[0];
         const keys = Object.keys(first);
+        const quotedKeys = keys.map((k) => `"${k}"`);
         const placeholders = keys.map(() => '?').join(', ');
-        const sql = `INSERT INTO ${physicalName} (${keys.join(', ')}) VALUES (${placeholders});`;
+        const sql = `INSERT INTO ${physicalName} (${quotedKeys.join(', ')}) VALUES (${placeholders});`;
 
         const queries = records.map((rec) => ({
           sql,
@@ -345,9 +355,9 @@ export class ExtensionDatabaseManager {
           const whereClauses: string[] = [];
           for (const [k, v] of Object.entries(options.where)) {
             if (v === null) {
-              whereClauses.push(`${k} IS NULL`);
+              whereClauses.push(`"${k}" IS NULL`);
             } else {
-              whereClauses.push(`${k} = ?`);
+              whereClauses.push(`"${k}" = ?`);
               params.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);
             }
           }
@@ -355,8 +365,11 @@ export class ExtensionDatabaseManager {
         }
 
         if (options?.orderBy) {
-          const dir = options.orderDirection || 'ASC';
-          sql += ` ORDER BY ${String(options.orderBy)} ${dir}`;
+          const rawOrder = String(options.orderBy);
+          if (/^[a-zA-Z0-9_]+$/.test(rawOrder)) {
+            const dir = String(options.orderDirection || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+            sql += ` ORDER BY "${rawOrder}" ${dir}`;
+          }
         }
 
         if (typeof options?.limit === 'number') {
@@ -385,7 +398,7 @@ export class ExtensionDatabaseManager {
         const params: any[] = [];
 
         for (const k of patchKeys) {
-          setClauses.push(`${k} = ?`);
+          setClauses.push(`"${k}" = ?`);
           const v = patch[k];
           params.push(typeof v === 'boolean' ? (v ? 1 : 0) : typeof v === 'object' && v !== null ? JSON.stringify(v) : v);
         }
@@ -398,9 +411,9 @@ export class ExtensionDatabaseManager {
           for (const k of whereKeys) {
             const v = where[k];
             if (v === null) {
-              whereClauses.push(`${k} IS NULL`);
+              whereClauses.push(`"${k}" IS NULL`);
             } else {
-              whereClauses.push(`${k} = ?`);
+              whereClauses.push(`"${k}" = ?`);
               params.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);
             }
           }
@@ -423,9 +436,9 @@ export class ExtensionDatabaseManager {
           for (const k of whereKeys) {
             const v = where[k];
             if (v === null) {
-              whereClauses.push(`${k} IS NULL`);
+              whereClauses.push(`"${k}" IS NULL`);
             } else {
-              whereClauses.push(`${k} = ?`);
+              whereClauses.push(`"${k}" = ?`);
               params.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);
             }
           }
@@ -445,9 +458,9 @@ export class ExtensionDatabaseManager {
           const whereClauses: string[] = [];
           for (const [k, v] of Object.entries(where)) {
             if (v === null) {
-              whereClauses.push(`${k} IS NULL`);
+              whereClauses.push(`"${k}" IS NULL`);
             } else {
-              whereClauses.push(`${k} = ?`);
+              whereClauses.push(`"${k}" = ?`);
               params.push(typeof v === 'boolean' ? (v ? 1 : 0) : v);
             }
           }
@@ -468,9 +481,9 @@ export class ExtensionDatabaseManager {
    * Cleans up in-memory cascade listeners when an extension is unloaded.
    */
   public cleanupExtension(extensionId: string): void {
-    const list = this.cascadeListeners.get(extensionId);
-    if (list) {
-      list.forEach((d) => d.dispose());
+    const extListeners = this.cascadeListeners.get(extensionId);
+    if (extListeners) {
+      extListeners.forEach((d) => d.dispose());
       this.cascadeListeners.delete(extensionId);
     }
   }

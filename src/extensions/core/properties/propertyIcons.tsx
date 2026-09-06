@@ -1,4 +1,6 @@
 import React from 'react';
+import { appInstance } from '@/core/app/FlintApp';
+import { getAppInstanceBridge } from '@/core/app/storeBridge';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   Tag01Icon,
@@ -223,13 +225,17 @@ export const DEFAULT_PROPERTY_ICON_MAP: Record<string, string> = {
   email: 'mail',
 };
 
+function getRegisteredPropertyIcons(): any[] {
+  const app = getAppInstanceBridge() || appInstance;
+  return app?.properties?.getPropertyIcons?.() || [];
+}
+
 export function getPropertyIconDef(iconId?: string): PropertyIconDefinition | undefined {
   if (!iconId) return undefined;
   const staticDef = PROPERTY_ICON_MAP.get(iconId);
   if (staticDef) return staticDef;
   try {
-    const { appInstance } = require('@/core/app/FlintApp');
-    const dynamicIcons = appInstance?.properties?.getPropertyIcons?.() || [];
+    const dynamicIcons = getRegisteredPropertyIcons();
     return dynamicIcons.find((i: PropertyIconDefinition) => i.id === iconId);
   } catch {
     return undefined;
@@ -260,8 +266,7 @@ export function getPropertyIconId(
   }
 
   try {
-    const { appInstance } = require('@/core/app/FlintApp');
-    const dynamicIcons = appInstance?.properties?.getPropertyIcons?.() || [];
+    const dynamicIcons = getRegisteredPropertyIcons();
     for (const dIcon of dynamicIcons) {
       if (dIcon.defaultKeys?.some((k: string) => {
         const lk = k.toLowerCase().trim();

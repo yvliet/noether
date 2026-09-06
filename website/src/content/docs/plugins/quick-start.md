@@ -156,7 +156,7 @@ For larger extensions, I strongly recommend authoring in TypeScript and compilin
   "name": "flint-word-counter",
   "version": "1.0.0",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --outfile=main.js --external:flint --external:react"
+    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --outfile=main.js --external:flint --external:react --external:react-dom --external:clsx --external:tailwind-merge --external:zustand --external:@hugeicons/* --external:zod"
   },
   "devDependencies": {
     "esbuild": "^0.23.0",
@@ -164,6 +164,8 @@ For larger extensions, I strongly recommend authoring in TypeScript and compilin
   }
 }
 ```
+
+Flint's runtime sandbox exposes `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`, and `@hugeicons` directly, so you can mark them external to keep your plugin bundle lightweight.
 
 ### TypeScript Source (`src/index.ts`)
 ```typescript

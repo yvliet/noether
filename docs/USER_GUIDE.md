@@ -241,7 +241,6 @@ Flint features an integrated updater that monitors official GitHub releases:
 
 - **Automatic Background Checks**: When enabled in **Settings** (`Ctrl+,`) → **General**, Flint checks GitHub Releases after startup (with a 4-hour cooldown) and notifies you when new releases are available.
 - **Manual Check**: Click **Check for updates** in the General settings tab anytime to immediately check against the remote repository.
-- **Early Access Channel**: Opt in to preview builds and release candidates via the **Receive early access versions** switch.
 - **Direct Installer Download**: Launch the update modal to review release notes and download the matching `.exe` or `.msi` Windows installer directly.
 
 ---

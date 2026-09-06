@@ -9,6 +9,8 @@
 //! 4. Thread-Safe Concurrency: Managed via `parking_lot::Mutex<Option<Connection>>` in `AppState`.
 
 use std::path::PathBuf;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::Engine;
 use parking_lot::Mutex;
 use rusqlite::{types::ValueRef, Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
@@ -142,8 +144,7 @@ fn sqlite_to_json_val(val_ref: ValueRef) -> Value {
             Value::String(s.into_owned())
         }
         ValueRef::Blob(b) => {
-            let s = String::from_utf8_lossy(b);
-            Value::String(s.into_owned())
+            Value::String(BASE64_STANDARD.encode(b))
         }
     }
 }
@@ -288,6 +289,98 @@ pub fn flint_db_query(
     Ok(results)
 }
 
+/// Splits a multi-statement SQL script into individual statements,
+/// respecting single-quote strings, double-quote identifiers, brackets,
+/// backticks, and line/block comments.
+pub fn split_sql_statements(sql: &str) -> Vec<&str> {
+    let mut statements = Vec::new();
+    let mut in_single_quote = false;
+    let mut in_double_quote = false;
+    let mut in_bracket = false;
+    let mut in_backtick = false;
+    let mut in_line_comment = false;
+    let mut in_block_comment = false;
+
+    let chars: Vec<(usize, char)> = sql.char_indices().collect();
+    let len = chars.len();
+    let mut start = 0;
+
+    let mut i = 0;
+    while i < len {
+        let (byte_idx, ch) = chars[i];
+        let next_ch = if i + 1 < len { Some(chars[i + 1].1) } else { None };
+
+        if in_line_comment {
+            if ch == '\n' {
+                in_line_comment = false;
+            }
+        } else if in_block_comment {
+            if ch == '*' && next_ch == Some('/') {
+                in_block_comment = false;
+                i += 1;
+            }
+        } else if in_single_quote {
+            if ch == '\'' {
+                if next_ch == Some('\'') {
+                    // Escaped single quote ('')
+                    i += 1;
+                } else {
+                    in_single_quote = false;
+                }
+            }
+        } else if in_double_quote {
+            if ch == '"' {
+                if next_ch == Some('"') {
+                    // Escaped double quote ("")
+                    i += 1;
+                } else {
+                    in_double_quote = false;
+                }
+            }
+        } else if in_bracket {
+            if ch == ']' {
+                in_bracket = false;
+            }
+        } else if in_backtick {
+            if ch == '`' {
+                in_backtick = false;
+            }
+        } else {
+            if ch == '-' && next_ch == Some('-') {
+                in_line_comment = true;
+                i += 1;
+            } else if ch == '/' && next_ch == Some('*') {
+                in_block_comment = true;
+                i += 1;
+            } else if ch == '\'' {
+                in_single_quote = true;
+            } else if ch == '"' {
+                in_double_quote = true;
+            } else if ch == '[' {
+                in_bracket = true;
+            } else if ch == '`' {
+                in_backtick = true;
+            } else if ch == ';' {
+                let stmt = sql[start..byte_idx].trim();
+                if !stmt.is_empty() {
+                    statements.push(stmt);
+                }
+                start = byte_idx + 1;
+            }
+        }
+        i += 1;
+    }
+
+    if start < sql.len() {
+        let remaining = sql[start..].trim();
+        if !remaining.is_empty() {
+            statements.push(remaining);
+        }
+    }
+
+    statements
+}
+
 #[tauri::command]
 pub fn flint_db_execute(
     state: tauri::State<'_, DbState>,
@@ -303,10 +396,15 @@ pub fn flint_db_execute(
             Ok(_) => Ok(1),
             Err(rusqlite::Error::ExecuteReturnedResults) => {
                 // Statements like PRAGMAs or RETURNING clauses that produce rows
-                // can be stepped through to completion
-                let mut stmt = conn.prepare(&sql).map_err(|e| format!("Execute prepare error: {} | SQL: {}", e, sql))?;
-                let mut rows = stmt.query([]).map_err(|e| format!("Execute query error: {} | SQL: {}", e, sql))?;
-                while let Some(_) = rows.next().map_err(|e| format!("Execute row error: {} | SQL: {}", e, sql))? {}
+                // can be stepped through to completion across all statements in the batch
+                let statements = split_sql_statements(&sql);
+                for stmt_sql in statements {
+                    let mut stmt = conn.prepare(stmt_sql)
+                        .map_err(|e| format!("Execute prepare error: {} | SQL: {}", e, stmt_sql))?;
+                    let mut rows = stmt.query([])
+                        .map_err(|e| format!("Execute query error: {} | SQL: {}", e, stmt_sql))?;
+                    while let Some(_) = rows.next().map_err(|e| format!("Execute row error: {} | SQL: {}", e, stmt_sql))? {}
+                }
                 Ok(1)
             }
             Err(e) => Err(format!("Execute batch error: {} | SQL: {}", e, sql)),
@@ -398,5 +496,51 @@ mod tests {
         let h = if ico_bytes[7] == 0 { 256 } else { ico_bytes[7] as u32 };
         assert_eq!(w, 256, "Icon entry 0 must be 256px wide for crisp rendering");
         assert_eq!(h, 256, "Icon entry 0 must be 256px high for crisp rendering");
+    }
+
+    #[test]
+    fn test_split_sql_statements() {
+        let sql = "PRAGMA journal_mode = WAL; CREATE TABLE t (id TEXT); INSERT INTO t VALUES ('a;b;c');";
+        let stmts = split_sql_statements(sql);
+        assert_eq!(stmts, vec![
+            "PRAGMA journal_mode = WAL",
+            "CREATE TABLE t (id TEXT)",
+            "INSERT INTO t VALUES ('a;b;c')"
+        ]);
+
+        let sql_comments = "-- line; comment\nSELECT 1; /* block ; comment */ SELECT 2";
+        let stmts2 = split_sql_statements(sql_comments);
+        assert_eq!(stmts2.len(), 2);
+    }
+
+    #[test]
+    fn test_sqlite_to_json_val_blob_base64() {
+        let binary_data = vec![0x00, 0xFF, 0xFE, 0x12, 0x34];
+        let val_ref = ValueRef::Blob(&binary_data);
+        let json_val = sqlite_to_json_val(val_ref);
+        let expected_b64 = BASE64_STANDARD.encode(&binary_data);
+        assert_eq!(json_val, Value::String(expected_b64));
+    }
+
+    #[test]
+    fn test_execute_batch_multi_statement_fallback() {
+        let conn = Connection::open_in_memory().unwrap();
+        let sql = "PRAGMA journal_mode = WAL; CREATE TABLE multi_test (id INT, val TEXT); INSERT INTO multi_test VALUES (1, 'one'); INSERT INTO multi_test VALUES (2, 'two');";
+        let res = match conn.execute_batch(sql) {
+            Ok(_) => Ok(1),
+            Err(rusqlite::Error::ExecuteReturnedResults) => {
+                let statements = split_sql_statements(sql);
+                for stmt_sql in statements {
+                    let mut stmt = conn.prepare(stmt_sql).unwrap();
+                    let mut rows = stmt.query([]).unwrap();
+                    while let Some(_) = rows.next().unwrap() {}
+                }
+                Ok(1)
+            }
+            Err(e) => Err(e.to_string()),
+        };
+        assert!(res.is_ok());
+        let count: i64 = conn.query_row("SELECT count(*) FROM multi_test", [], |r| r.get(0)).unwrap();
+        assert_eq!(count, 2, "All statements in the multi-statement batch should execute");
     }
 }

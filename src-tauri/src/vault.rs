@@ -26,31 +26,93 @@ pub fn notify_user_activity() -> Value {
     json!({ "success": true })
 }
 
+/// Helper to strip Windows verbatim UNC prefixes (`\\?\UNC\server\share` -> `\\server\share`)
+/// and drive letter prefixes (`\\?\C:\...` -> `C:\...`).
+fn strip_unc_prefix(path_str: &str) -> String {
+    if path_str.len() >= 8 && path_str[..8].eq_ignore_ascii_case(r"\\?\UNC\") {
+        format!(r"\\{}", &path_str[8..])
+    } else if path_str.len() >= 4 && path_str[..4].eq_ignore_ascii_case(r"\\?\") {
+        path_str[4..].to_string()
+    } else {
+        path_str.to_string()
+    }
+}
+
+/// Normalizes path components and resolves relative traversals lexically without disk lookups
+fn normalize_path(p: &Path) -> PathBuf {
+    let s = p.to_string_lossy().replace('/', "\\");
+    let stripped = strip_unc_prefix(&s);
+    let path = PathBuf::from(stripped);
+    let mut normalized = PathBuf::new();
+    for component in path.components() {
+        match component {
+            std::path::Component::ParentDir => {
+                normalized.pop();
+            }
+            std::path::Component::CurDir => {}
+            _ => normalized.push(component),
+        }
+    }
+    normalized
+}
+
 /// Helper to normalize and ensure a target path stays strictly inside the vault root or .flint directory
 pub fn is_safe_vault_path(target_vault: &Path, candidate: &Path) -> bool {
+    if target_vault.as_os_str().is_empty() || candidate.as_os_str().is_empty() {
+        return false;
+    }
+
     let vault_canonical = match target_vault.canonicalize() {
-        Ok(p) => p,
-        Err(_) => target_vault.to_path_buf(),
+        Ok(p) => normalize_path(&p),
+        Err(_) => normalize_path(target_vault),
     };
 
-    let candidate_canonical = match candidate.canonicalize() {
-        Ok(p) => p,
-        Err(_) => {
-            let mut normalized = PathBuf::new();
-            for component in candidate.components() {
-                match component {
-                    std::path::Component::ParentDir => {
-                        normalized.pop();
-                    }
-                    std::path::Component::CurDir => {}
-                    _ => normalized.push(component),
-                }
+    let candidate_canonical = if let Ok(p) = candidate.canonicalize() {
+        normalize_path(&p)
+    } else {
+        let mut current = candidate.to_path_buf();
+        let mut tail = Vec::new();
+        while !current.as_os_str().is_empty() && !current.exists() {
+            if let Some(name) = current.file_name() {
+                tail.push(name.to_os_string());
             }
-            normalized
+            if let Some(parent) = current.parent() {
+                current = parent.to_path_buf();
+            } else {
+                break;
+            }
+        }
+
+        if current.exists() {
+            match current.canonicalize() {
+                Ok(mut canon) => {
+                    for seg in tail.into_iter().rev() {
+                        canon.push(seg);
+                    }
+                    normalize_path(&canon)
+                }
+                Err(_) => normalize_path(candidate),
+            }
+        } else {
+            normalize_path(candidate)
         }
     };
 
-    candidate_canonical.starts_with(&vault_canonical) || candidate.starts_with(target_vault)
+    let check_starts_with = |cand: &Path, base: &Path| -> bool {
+        #[cfg(windows)]
+        {
+            let cand_lower = cand.to_string_lossy().to_lowercase();
+            let base_lower = base.to_string_lossy().to_lowercase();
+            Path::new(&cand_lower).starts_with(Path::new(&base_lower))
+        }
+        #[cfg(not(windows))]
+        {
+            cand.starts_with(base)
+        }
+    };
+
+    check_starts_with(&candidate_canonical, &vault_canonical)
+        || check_starts_with(&normalize_path(candidate), &normalize_path(target_vault))
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -477,10 +539,17 @@ pub fn save_markdown_file(
 
     match write_res {
         Ok(_) => {
-            let _ = fs::rename(&temp_file, &file_path);
-            json!({ "success": true, "path": file_path.to_string_lossy() })
+            if let Err(e) = fs::rename(&temp_file, &file_path) {
+                let _ = fs::remove_file(&temp_file);
+                json!({ "success": false, "error": format!("Failed to persist file: {}", e) })
+            } else {
+                json!({ "success": true, "path": file_path.to_string_lossy() })
+            }
         }
-        Err(e) => json!({ "success": false, "error": e.to_string() }),
+        Err(e) => {
+            let _ = fs::remove_file(&temp_file);
+            json!({ "success": false, "error": e.to_string() })
+        }
     }
 }
 
@@ -503,6 +572,10 @@ pub fn set_file_attributes(
         if alt.exists() {
             file_path = alt;
         }
+    }
+
+    if clean.is_empty() || clean == "." || clean == "/" || clean == "\\" || file_path == target_vault {
+        return json!({ "success": false, "error": "Cannot modify vault root directory attributes" });
     }
 
     if !is_safe_vault_path(&target_vault, &file_path) {
@@ -530,8 +603,18 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
     let target_vault = PathBuf::from(&cfg.current_vault_path);
 
     let clean = filename_or_path.replace('\\', "/");
+    let direct_path = target_vault.join(&clean);
+
+    if clean.is_empty() || clean == "." || clean == "/" || clean == "\\" || direct_path == target_vault {
+        return json!({ "success": false, "error": "Cannot delete vault root directory" });
+    }
+
     let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
     let file_path = target_vault.join(&file_with_ext);
+
+    if file_path == target_vault {
+        return json!({ "success": false, "error": "Cannot delete vault root directory" });
+    }
 
     if !is_safe_vault_path(&target_vault, &file_path) {
         return json!({ "success": false, "error": "Security: Target path escapes vault directory boundary" });
@@ -544,7 +627,6 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
             let _ = fs::remove_file(&file_path);
         }
     } else {
-        let direct_path = target_vault.join(&clean);
         if !is_safe_vault_path(&target_vault, &direct_path) {
             return json!({ "success": false, "error": "Security: Target path escapes vault directory boundary" });
         }
@@ -711,7 +793,7 @@ pub fn save_trash_file(
         }
     };
 
-    if !is_safe_vault_path(&PathBuf::from(&cfg.current_vault_path), &file_path) {
+    if !is_safe_vault_path(&trash_dir, &file_path) {
         return json!({ "success": false, "error": "Security: Trash path escapes vault directory boundary" });
     }
 
@@ -732,10 +814,20 @@ pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String
     let trash_dir = PathBuf::from(&cfg.current_vault_path).join(".trash");
 
     let clean = filename_or_path.replace('\\', "/");
+    let direct_path = trash_dir.join(&clean);
+
+    if clean.is_empty() || clean == "." || clean == "/" || clean == "\\" || direct_path == trash_dir {
+        return json!({ "success": false, "error": "Cannot delete trash root directory" });
+    }
+
     let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
     let file_path = trash_dir.join(&file_with_ext);
 
-    if !is_safe_vault_path(&PathBuf::from(&cfg.current_vault_path), &file_path) {
+    if file_path == trash_dir {
+        return json!({ "success": false, "error": "Cannot delete trash root directory" });
+    }
+
+    if !is_safe_vault_path(&trash_dir, &file_path) {
         return json!({ "success": false, "error": "Security: Trash path escapes vault directory boundary" });
     }
 
@@ -746,8 +838,7 @@ pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String
             let _ = fs::remove_file(&file_path);
         }
     } else {
-        let direct_path = trash_dir.join(&clean);
-        if !is_safe_vault_path(&PathBuf::from(&cfg.current_vault_path), &direct_path) {
+        if !is_safe_vault_path(&trash_dir, &direct_path) {
             return json!({ "success": false, "error": "Security: Trash path escapes vault directory boundary" });
         }
         if direct_path.exists() {
@@ -777,28 +868,61 @@ pub fn empty_trash_folder(state: tauri::State<AppState>) -> Value {
 #[tauri::command]
 pub fn list_installed_plugins(state: tauri::State<AppState>) -> Vec<PluginManifest> {
     let cfg = state.config.lock().unwrap();
-    let plugins_dir = Path::new(&cfg.current_vault_path).join(".flint").join("plugins");
+    let target_vault = Path::new(&cfg.current_vault_path);
+    let plugins_dir = target_vault.join(".flint").join("plugins");
+    let extensions_dir = target_vault.join(".flint").join("extensions");
     let _ = fs::create_dir_all(&plugins_dir);
 
     let mut plugins = Vec::new();
-    if let Ok(entries) = fs::read_dir(plugins_dir) {
-        for entry in entries.flatten() {
-            if let Ok(ft) = entry.file_type() {
-                if ft.is_dir() {
-                    let folder_name = entry.file_name().to_string_lossy().to_string();
-                    let manifest_file = entry.path().join("manifest.json");
-                    if manifest_file.exists() {
-                        if let Ok(content) = fs::read_to_string(manifest_file) {
-                            if let Ok(manifest_val) = serde_json::from_str::<Value>(&content) {
-                                plugins.push(PluginManifest {
-                                    id: manifest_val.get("id").and_then(|v| v.as_str()).unwrap_or(&folder_name).to_string(),
-                                    name: manifest_val.get("name").and_then(|v| v.as_str()).unwrap_or(&folder_name).to_string(),
-                                    version: manifest_val.get("version").and_then(|v| v.as_str()).unwrap_or("1.0.0").to_string(),
-                                    description: manifest_val.get("description").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                                    author: manifest_val.get("author").and_then(|v| v.as_str()).unwrap_or("").to_string(),
-                                    folder: folder_name,
-                                    is_core: false,
-                                });
+    let mut seen_ids = std::collections::HashSet::new();
+    let mut seen_folders = std::collections::HashSet::new();
+
+    let scan_dirs = [plugins_dir, extensions_dir];
+
+    for dir in &scan_dirs {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                if let Ok(ft) = entry.file_type() {
+                    if ft.is_dir() {
+                        let folder_name = entry.file_name().to_string_lossy().to_string();
+                        let manifest_file = entry.path().join("manifest.json");
+                        if manifest_file.exists() {
+                            if let Ok(content) = fs::read_to_string(manifest_file) {
+                                if let Ok(manifest_val) = serde_json::from_str::<Value>(&content) {
+                                    let id = manifest_val
+                                        .get("id")
+                                        .and_then(|v| v.as_str())
+                                        .unwrap_or(&folder_name)
+                                        .to_string();
+
+                                    if seen_ids.insert(id.clone()) && seen_folders.insert(folder_name.clone()) {
+                                        plugins.push(PluginManifest {
+                                            id,
+                                            name: manifest_val
+                                                .get("name")
+                                                .and_then(|v| v.as_str())
+                                                .unwrap_or(&folder_name)
+                                                .to_string(),
+                                            version: manifest_val
+                                                .get("version")
+                                                .and_then(|v| v.as_str())
+                                                .unwrap_or("1.0.0")
+                                                .to_string(),
+                                            description: manifest_val
+                                                .get("description")
+                                                .and_then(|v| v.as_str())
+                                                .unwrap_or("")
+                                                .to_string(),
+                                            author: manifest_val
+                                                .get("author")
+                                                .and_then(|v| v.as_str())
+                                                .unwrap_or("")
+                                                .to_string(),
+                                            folder: folder_name,
+                                            is_core: false,
+                                        });
+                                    }
+                                }
                             }
                         }
                     }
@@ -813,12 +937,45 @@ pub fn list_installed_plugins(state: tauri::State<AppState>) -> Vec<PluginManife
 #[tauri::command]
 pub fn read_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) -> PluginBundle {
     let cfg = state.config.lock().unwrap();
-    let plugin_dir = Path::new(&cfg.current_vault_path).join(".flint").join("plugins").join(plugin_folder);
-    let main_js = plugin_dir.join("main.js");
-    let styles_css = plugin_dir.join("styles.css");
+    let target_vault = PathBuf::from(&cfg.current_vault_path);
 
-    let js_code = fs::read_to_string(main_js).ok();
-    let css_code = fs::read_to_string(styles_css).ok();
+    if plugin_folder.trim().is_empty() {
+        return PluginBundle {
+            success: false,
+            js_code: None,
+            css_code: None,
+            error: Some("Plugin folder name cannot be empty".to_string()),
+        };
+    }
+
+    let plugins_dir = target_vault.join(".flint").join("plugins").join(&plugin_folder);
+    let extensions_dir = target_vault.join(".flint").join("extensions").join(&plugin_folder);
+
+    if !is_safe_vault_path(&target_vault, &plugins_dir) || !is_safe_vault_path(&target_vault, &extensions_dir) {
+        return PluginBundle {
+            success: false,
+            js_code: None,
+            css_code: None,
+            error: Some("Security: Plugin path escapes vault boundary".to_string()),
+        };
+    }
+
+    // Check .flint/plugins/ first, then fall back to .flint/extensions/
+    let resolved_dir = if plugins_dir.join("main.js").exists() {
+        plugins_dir
+    } else if extensions_dir.join("main.js").exists() {
+        extensions_dir
+    } else if plugins_dir.exists() {
+        plugins_dir
+    } else {
+        extensions_dir
+    };
+
+    let main_js = resolved_dir.join("main.js");
+    let styles_css = resolved_dir.join("styles.css");
+
+    let js_code = fs::read_to_string(&main_js).ok();
+    let css_code = fs::read_to_string(&styles_css).ok();
 
     PluginBundle {
         success: js_code.is_some(),
@@ -866,6 +1023,38 @@ pub fn install_plugin_bundle(
     }
 
     json!({ "success": true, "path": target_dir.to_string_lossy() })
+}
+
+#[tauri::command]
+pub fn uninstall_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) -> Value {
+    if plugin_folder.trim().is_empty() {
+        return json!({ "success": false, "error": "Plugin folder cannot be empty" });
+    }
+
+    mark_internal_write();
+    let cfg = state.config.lock().unwrap();
+    let target_vault = PathBuf::from(&cfg.current_vault_path);
+    let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
+
+    if safe_folder.trim().is_empty() {
+        return json!({ "success": false, "error": "Invalid plugin folder name" });
+    }
+
+    // Remove from .flint/plugins directory if present
+    let plugins_dir = target_vault.join(".flint").join("plugins");
+    let target_dir = plugins_dir.join(&safe_folder);
+    if target_dir != plugins_dir && is_safe_vault_path(&target_vault, &target_dir) && target_dir.exists() {
+        let _ = fs::remove_dir_all(&target_dir);
+    }
+
+    // Also remove from .flint/extensions directory if present
+    let extensions_dir = target_vault.join(".flint").join("extensions");
+    let target_ext_dir = extensions_dir.join(&safe_folder);
+    if target_ext_dir != extensions_dir && is_safe_vault_path(&target_vault, &target_ext_dir) && target_ext_dir.exists() {
+        let _ = fs::remove_dir_all(&target_ext_dir);
+    }
+
+    json!({ "success": true })
 }
 
 #[tauri::command]
@@ -1113,5 +1302,55 @@ pub fn unregister_global_shortcut(id: String) -> Value {
         }
     }
     json!({ "success": true })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_safe_vault_path_empty_vault() {
+        let vault = Path::new("");
+        let candidate = Path::new("some/file.md");
+        assert!(!is_safe_vault_path(vault, candidate));
+
+        let empty_cand = Path::new("");
+        let valid_vault = Path::new("C:\\Vault");
+        assert!(!is_safe_vault_path(valid_vault, empty_cand));
+    }
+
+    #[test]
+    fn test_strip_unc_prefix() {
+        assert_eq!(strip_unc_prefix(r"\\?\UNC\server\share\folder"), r"\\server\share\folder");
+        assert_eq!(strip_unc_prefix(r"\\?\C:\Users\Flint"), r"C:\Users\Flint");
+        assert_eq!(strip_unc_prefix(r"C:\Users\Flint"), r"C:\Users\Flint");
+        assert_eq!(strip_unc_prefix(r"\\server\share\folder"), r"\\server\share\folder");
+    }
+
+    #[test]
+    fn test_is_safe_vault_path_unc_and_case() {
+        let vault = Path::new(r"C:\Vault");
+        let valid_candidate = Path::new(r"c:\vault\notes\today.md");
+        assert!(is_safe_vault_path(vault, valid_candidate));
+
+        let escape_candidate = Path::new(r"C:\Vault\..\Windows\System32\cmd.exe");
+        assert!(!is_safe_vault_path(vault, escape_candidate));
+
+        let unc_vault = Path::new(r"\\?\UNC\server\share\vault");
+        let unc_cand = Path::new(r"\\server\share\vault\notes\doc.md");
+        assert!(is_safe_vault_path(unc_vault, unc_cand));
+    }
+
+    #[test]
+    fn test_is_safe_vault_path_nonexistent_file() {
+        let temp_dir = std::env::temp_dir().join("flint_vault_test");
+        let _ = fs::create_dir_all(&temp_dir);
+        let non_existent = temp_dir.join("subfolder").join("non_existent_note.md");
+        assert!(is_safe_vault_path(&temp_dir, &non_existent));
+
+        let escaping_non_existent = temp_dir.join("..").join("escaping_file.md");
+        assert!(!is_safe_vault_path(&temp_dir, &escaping_non_existent));
+        let _ = fs::remove_dir_all(&temp_dir);
+    }
 }
 

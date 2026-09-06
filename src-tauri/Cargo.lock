@@ -893,8 +893,9 @@ dependencies = [
 
 [[package]]
 name = "flint-desktop"
-version = "0.4.2"
+version = "0.4.4"
 dependencies = [
+ "base64 0.22.1",
  "dirs 5.0.1",
  "image",
  "notify",

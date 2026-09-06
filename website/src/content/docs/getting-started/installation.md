@@ -108,7 +108,6 @@ You can customize client update behavior in `Settings` (`Ctrl+,`) under the **Ge
 
 - **Check for updates**: Performs an immediate lookup against GitHub Releases. If a newer release is discovered, the Update dialog appears with changelogs and download buttons.
 - **Automatic updates**: Enabled by default. Flint performs a background check 3 seconds after boot with a 4-hour cooldown window between checks, notifying you via toast notification when an update is available.
-- **Receive early access versions**: When enabled, the updater includes pre-release builds and release candidates alongside stable releases.
 
 ### Installer Delivery & Package Selection
 

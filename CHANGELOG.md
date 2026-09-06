@@ -4,6 +4,43 @@ All notable changes to Flint will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2026-09-06
+
+### Added
+- **Host Module Forwarding in Extension Sandbox**: Exposed `clsx`, `tailwind-merge`, `zustand`, `zustand/vanilla`, `@hugeicons/react`, and `@hugeicons/core-free-icons` directly into the sandboxed `require` environment, eliminating bloated bundled runtime duplicates.
+- **SDK Subpath Aliasing**: Added runtime support for `'flint/sdk'`, `'@flint'`, `'@flint/core'`, and `'flint-sdk'` require paths.
+- **Extension Upgrades via SemVer**: Added automatic version comparison in the marketplace installer to support seamless one-click upgrades for installed community extensions.
+- **Dual Plugin Directory Scanning**: Added transparent support for reading and listing extensions across both `.flint/extensions/` and legacy `.flint/plugins/` directories.
+
+### Fixed
+- **Extension Installation State Desynchronization**: Resolved issue where marketplace items showed installed state prematurely by unifying the installation lifecycle through `ExtensionManager` and removing stale local storage keys.
+- **Silent Marketplace Failure Modes**: Replaced empty dummy class generation on network failures with explicit error returns and increased download timeouts to 5000ms.
+- **Zod Module Export Shape**: Normalized `require('zod')` export shape to `{ ...z, default: z, z }` to support compiled CommonJS destructuring and property access.
+- **Windows Path Normalization and Security**: Added UNC and verbatim prefix stripping (`\\?\UNC\...` and `\\?\C:\...`), case-insensitive containment checks, and nearest existing parent canonicalization for non-existent file paths.
+- **Vault Root Deletion Guard**: Blocked empty or dot paths in `delete_markdown_file` and `set_file_attributes` from targeting the vault root.
+- **Trash Directory Boundary Checks**: Restricted trash file operations strictly to the `.trash/` directory.
+- **SQLite BLOB Base64 Serialization**: Serialized SQLite binary blobs into standard Base64 strings instead of lossy UTF-8 replacement strings.
+- **SQLite Batch Execution Fallback**: Implemented robust SQL statement splitting that respects quotes, backticks, and comments so multi-statement scripts execute completely during row-returning query fallbacks.
+- **Tauri Event Listener Memory Leaks**: Added cancellation flags to asynchronous event listener registrations in `platformAdapter.ts` to prevent leaks on unmounted components.
+- **Storage Sync Debounce**: Debounced cross-window storage synchronization to prevent duplicate reloads across config keys.
+- **Extension Settings Placeholder**: Rendered an explicit disabled placeholder with an "Enable" button when viewing settings of a disabled extension instead of displaying a blank panel.
+
+### Changed
+- **Local Storage Quota Protection**: Excluded full markdown README contents from marketplace catalogue queries and local cache storage.
+- **Build Target Modernization**: Updated Vite build targets to modern ECMAScript and browser releases (`es2021`, `chrome100`, `safari13`), grouped TipTap table extensions into vendor chunks, and enabled link-time optimization (LTO) in release profiles.
+
+---
+
+## [0.4.3] - 2026-09-06
+
+### Changed
+- **Update Modal UI Streamlining**: Removed the redundant "Update Available" header banner and replaced the boxed "Ready to Install" pill outline with clean, flat text and icon styling.
+- **Consistent Modal Label Alignment**: Indented release title, changelog section labels, and package size metadata with uniform padding (`px-4`) to align with the inner text grid.
+- **General Settings Simplification**: Removed legacy early access channel toggles and obsolete account sections to maintain a lightweight, offline-first settings panel.
+- **Modal Keyboard Dismissal**: Added `Escape` key listener to dismiss the update dialog instantly.
+
+---
+
 ## [0.4.2] - 2026-09-06
 
 ### Added

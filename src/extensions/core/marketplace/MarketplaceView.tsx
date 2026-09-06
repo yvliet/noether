@@ -33,6 +33,7 @@ import {
 } from './marketplaceCatalogue';
 import { useMarketplaceQuery, getRegistryUrl } from './useMarketplaceQuery';
 import { fetchTursoPluginBundle } from './tursoClient';
+import { installMarketplaceExtension } from './extensionInstaller';
 
 // Re-export catalogue and models for consumers
 export {
@@ -72,16 +73,6 @@ export const MarketplaceView: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [installingIds, setInstallingIds] = useState<Set<string>>(new Set());
-  const [localInstalledIds, setLocalInstalledIds] = useState<Set<string>>(() => {
-    try {
-      const saved =
-        localStorage.getItem('flint_installed_community_extensions') ||
-        localStorage.getItem('flint_installed_community_plugins');
-      return saved ? new Set(JSON.parse(saved)) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
 
   const categories = ['All', 'Featured', 'Productivity', 'Visualization', 'Integration', 'Formatting', 'Installed'];
 
@@ -111,155 +102,19 @@ export const MarketplaceView: React.FC = () => {
   }, [isFindOpen]);
 
   const isExtensionInstalled = (id: string) => {
-    return (
-      localInstalledIds.has(id) ||
-      app.extensions.isExtensionEnabled(id)
-    );
+    return app.extensions.isExtensionInstalled(id);
   };
 
   const handleInstallExtension = async (ext: MarketplaceExtensionItem) => {
     setInstallingIds((prev) => new Set(prev).add(ext.id));
 
     try {
-      // 1. If already registered in runtime (e.g. bundled extension), enable directly
-      if (app.extensions.getExtensionManifest(ext.id)) {
-        await app.extensions.enableExtension(ext.id);
+      const ok = await installMarketplaceExtension(app, ext);
+      if (ok) {
+        showToast(`Installed "${ext.name}"`, 'success');
       } else {
-        // 2. Fetch extension metadata and bundles from Turso registry
-        const registryBase = getRegistryUrl().replace(/\/plugins\/?$/, '/plugins');
-        const downloadApiUrl = `${registryBase}/${ext.id}/download`;
-
-        let manifestContent: string | null = null;
-        let mainJsContent: string | null = null;
-        let stylesCssContent: string | null = null;
-
-        try {
-          const downloadRes = await fetch(downloadApiUrl, { signal: AbortSignal.timeout(5000) });
-          if (downloadRes.ok) {
-            const downloadData = await downloadRes.json();
-            if (downloadData.bundleCode) mainJsContent = downloadData.bundleCode;
-            if (downloadData.stylesCode) stylesCssContent = downloadData.stylesCode;
-            if (downloadData.manifest) manifestContent = JSON.stringify(downloadData.manifest, null, 2);
-          }
-        } catch {
-          // Fallback to direct asset URLs or Turso edge database
-        }
-
-        // Direct Turso edge database retrieval fallback
-        if (!mainJsContent) {
-          try {
-            const tursoBundle = await fetchTursoPluginBundle(ext.id);
-            if (tursoBundle) {
-              if (tursoBundle.bundleCode) mainJsContent = tursoBundle.bundleCode;
-              if (tursoBundle.stylesCode) stylesCssContent = tursoBundle.stylesCode;
-              if (tursoBundle.manifest) manifestContent = JSON.stringify(tursoBundle.manifest, null, 2);
-            }
-          } catch (tursoErr) {
-            console.warn('[MarketplaceView] Direct Turso bundle retrieval failed:', tursoErr);
-          }
-        }
-
-        if (!mainJsContent) {
-          const mainJsUrl = ext.mainJsUrl || ext.downloadUrl || `${registryBase}/${ext.id}/bundle`;
-          try {
-            const res = await fetch(mainJsUrl, { signal: AbortSignal.timeout(5000) });
-            if (res.ok) mainJsContent = await res.text();
-          } catch {}
-        }
-
-        if (!manifestContent) {
-          const manifestUrl = ext.manifestUrl || `${registryBase}/${ext.id}/manifest.json`;
-          try {
-            const res = await fetch(manifestUrl, { signal: AbortSignal.timeout(4000) });
-            if (res.ok) manifestContent = await res.text();
-          } catch {}
-        }
-
-        if (!stylesCssContent && ext.stylesCssUrl) {
-          try {
-            const res = await fetch(ext.stylesCssUrl, { signal: AbortSignal.timeout(3000) });
-            if (res.ok) stylesCssContent = await res.text();
-          } catch {}
-        }
-
-        // Parse or construct extension manifest descriptor
-        let manifestData: ExtensionManifest | null = null;
-        if (manifestContent) {
-          try {
-            manifestData = JSON.parse(manifestContent);
-          } catch {}
-        }
-
-        if (!manifestData) {
-          manifestData = {
-            id: ext.id,
-            name: ext.name,
-            version: ext.version || '1.0.0',
-            description: ext.description || '',
-            author: ext.author || 'Community',
-            isCore: false,
-          };
-          manifestContent = JSON.stringify(manifestData, null, 2);
-        } else {
-          manifestData.isCore = false;
-          manifestContent = JSON.stringify(manifestData, null, 2);
-        }
-
-        // Provide standard starter code if remote entry bundle is not hosted
-        if (!mainJsContent || !mainJsContent.trim()) {
-          const cleanClassName = (ext.name.replace(/[^a-zA-Z0-9]/g, '') || 'Community') + 'Extension';
-          mainJsContent = `const { Extension } = require('flint');
-
-module.exports = class ${cleanClassName} extends Extension {
-  async onload() {
-    console.log('[Flint] Loaded community extension: ${ext.name} (v${ext.version})');
-  }
-
-  onunload() {
-    console.log('[Flint] Unloaded extension: ${ext.name}');
-  }
-};
-`;
-        }
-
-        // 3. Prepare the hearth extension directory on desktop
-        if (platform.isDesktop()) {
-          try {
-            await platform.installExtensionBundle(
-              ext.id,
-              manifestContent,
-              mainJsContent,
-              stylesCssContent || undefined
-            );
-            await app.extensions.refreshCommunityExtensions();
-          } catch (diskErr) {
-            console.warn('[MarketplaceView] Could not prepare extension directory on disk:', diskErr);
-          }
-        }
-
-        // 4. In-memory registration fallback if runtime has not loaded from disk
-        if (!app.extensions.getExtensionManifest(ext.id)) {
-          await app.extensions.externalLoader.loadFromSource(
-            manifestData,
-            mainJsContent,
-            stylesCssContent || undefined
-          );
-        }
-
-        // 5. Enable the extension
-        await app.extensions.enableExtension(ext.id);
+        showToast(`Failed to install "${ext.name}"`, 'warning');
       }
-
-      // 6. Record in local installed state
-      setLocalInstalledIds((prev) => {
-        const next = new Set(prev).add(ext.id);
-        const json = JSON.stringify(Array.from(next));
-        localStorage.setItem('flint_installed_community_extensions', json);
-        localStorage.setItem('flint_installed_community_plugins', json);
-        return next;
-      });
-
-      showToast(`Installed "${ext.name}"`, 'success');
     } catch (err) {
       console.error('[MarketplaceView] Failed to install extension:', err);
       showToast(`Failed to install "${ext.name}"`, 'warning');
@@ -273,21 +128,17 @@ module.exports = class ${cleanClassName} extends Extension {
   };
 
   const handleUninstallExtension = async (ext: MarketplaceExtensionItem) => {
-    setLocalInstalledIds((prev) => {
-      const next = new Set(prev);
-      next.delete(ext.id);
-      const json = JSON.stringify(Array.from(next));
-      localStorage.setItem('flint_installed_community_extensions', json);
-      localStorage.setItem('flint_installed_community_plugins', json);
-      return next;
-    });
-
-    if (app.extensions.getExtensionManifest(ext.id)) {
-      await app.extensions.disableExtension(ext.id);
-    } else {
-      await app.extensions.disableExtension(ext.id);
+    try {
+      const ok = await app.extensions.uninstallExtension(ext.id);
+      if (ok) {
+        showToast(`Uninstalled "${ext.name}"`, 'info');
+      } else {
+        showToast(`Failed to uninstall "${ext.name}"`, 'warning');
+      }
+    } catch (err) {
+      console.error('[MarketplaceView] Failed to uninstall extension:', err);
+      showToast(`Failed to uninstall "${ext.name}"`, 'warning');
     }
-    showToast(`Uninstalled "${ext.name}"`, 'info');
   };
 
   const filteredExtensions = useMemo(() => {
@@ -333,7 +184,7 @@ module.exports = class ${cleanClassName} extends Extension {
     }
 
     return list;
-  }, [extensions, searchQuery, selectedCategory, sortBy, sortOrder, localInstalledIds, extensionList]);
+  }, [extensions, searchQuery, selectedCategory, sortBy, sortOrder, extensionList]);
 
   return (
     <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#181818] text-[var(--flint-text-primary)] select-none">

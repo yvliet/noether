@@ -6,14 +6,13 @@
  * or navigate to the GitHub release page.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { APP_VERSION } from '@/version';
 import {
   Cancel01Icon,
   Download01Icon,
   ExternalLinkIcon,
-  SparklesIcon,
   CheckmarkCircle02Icon,
 } from '@/components/common/Icons';
 import {
@@ -28,6 +27,17 @@ export const UpdateModal: React.FC = React.memo(() => {
   const release = useWorkspaceStore((s) => s.availableUpdateRelease) as AppRelease | null;
   const showToast = useWorkspaceStore((s) => s.showToast);
   const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    if (!isUpdateModalOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsUpdateModalOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isUpdateModalOpen, setIsUpdateModalOpen]);
 
   if (!isUpdateModalOpen || !release) return null;
 
@@ -55,26 +65,20 @@ export const UpdateModal: React.FC = React.memo(() => {
       <div
         data-card="true"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg bg-[#1e1e1e] border border-[#2e2e2e] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-xs max-h-[580px]"
+        className="relative w-full max-w-lg bg-[#1e1e1e] border border-[#2e2e2e] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-xs max-h-[580px]"
       >
-        {/* Modal Header */}
-        <div className="h-12 px-5 border-b border-[#282828] flex items-center justify-between bg-[#181818] shrink-0">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[#f5f5f5]">
-            <SparklesIcon size={16} className="text-[var(--flint-accent,#ea580c)]" />
-            <span>Update Available</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsUpdateModalOpen(false)}
-            className="p-1 rounded text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer"
-            title="Close dialog"
-          >
-            <Cancel01Icon size={16} />
-          </button>
-        </div>
+        {/* Floating Close Button */}
+        <button
+          type="button"
+          onClick={() => setIsUpdateModalOpen(false)}
+          className="absolute top-3.5 right-3.5 z-10 p-1.5 rounded-lg text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer"
+          title="Close dialog"
+        >
+          <Cancel01Icon size={16} />
+        </button>
 
         {/* Modal Body */}
-        <div className="p-5 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+        <div className="p-5 pt-8 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
           {/* Version Highlights Card */}
           <div className="p-4 rounded-xl bg-[#252525] border border-[#333] flex items-center justify-between">
             <div className="flex flex-col gap-1">
@@ -85,7 +89,7 @@ export const UpdateModal: React.FC = React.memo(() => {
                 Current: v{APP_VERSION} → Newest: v{release.version}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[var(--flint-accent,#ea580c)]/15 border border-[var(--flint-accent,#ea580c)]/30 text-[var(--flint-accent,#ea580c)] text-[11px] font-semibold">
+            <div className="flex items-center gap-1.5 text-[var(--flint-accent,#ea580c)] text-[11px] font-semibold">
               <CheckmarkCircle02Icon size={13} />
               <span>Ready to Install</span>
             </div>
@@ -93,14 +97,14 @@ export const UpdateModal: React.FC = React.memo(() => {
 
           {/* Release Title */}
           {release.title && release.title !== release.tagName && (
-            <div className="text-xs font-semibold text-[#e0e0e0]">
+            <div className="text-xs font-semibold text-[#e0e0e0] px-4">
               {release.title}
             </div>
           )}
 
           {/* Release Notes / Changelog */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-[11px] font-medium text-[#aaa] uppercase tracking-wider">
+            <span className="text-[11px] font-medium text-[#aaa] uppercase tracking-wider px-4">
               Release Notes
             </span>
             <div className="p-3.5 rounded-lg bg-[#181818] border border-[#282828] text-[#ccc] leading-relaxed max-h-56 overflow-y-auto font-mono text-[11px] whitespace-pre-wrap select-text">
@@ -110,7 +114,7 @@ export const UpdateModal: React.FC = React.memo(() => {
 
           {/* Installer Details */}
           {release.windowsSetupAsset && (
-            <div className="text-[11px] text-[#777] flex items-center gap-1.5">
+            <div className="text-[11px] text-[#777] flex items-center gap-1.5 px-4">
               <span>Package:</span>
               <span className="font-mono text-[#aaa]">{release.windowsSetupAsset.name}</span>
               <span>•</span>

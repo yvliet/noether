@@ -2,6 +2,7 @@ import type { FlintApp } from '../app/FlintApp';
 import { Extension } from './Extension';
 import { ExtensionManifest, ViewDefinition } from './types';
 import { ExternalExtensionLoader } from './ExternalExtensionLoader';
+import { platform } from '@/lib/platform/platformAdapter';
 
 export type ExtensionConstructor = new (app: FlintApp, manifest: ExtensionManifest) => Extension;
 export type PluginConstructor = ExtensionConstructor;
@@ -29,6 +30,8 @@ export class ExtensionManager {
   private listeners: Set<() => void> = new Set();
   private isInitialized = false;
   public externalLoader: ExternalExtensionLoader;
+  private syncTimer: any = null;
+  private pendingSyncResolvers: Array<() => void> = [];
 
   private cachedSnapshot: ExtensionListSnapshot = { core: [], community: [], all: [] };
 
@@ -82,7 +85,27 @@ export class ExtensionManager {
     this.notify();
   }
 
-  public async syncFromStorage(): Promise<void> {
+  public syncFromStorage(): Promise<void> {
+    return new Promise((resolve) => {
+      this.pendingSyncResolvers.push(resolve);
+      if (this.syncTimer) {
+        clearTimeout(this.syncTimer);
+      }
+      this.syncTimer = setTimeout(async () => {
+        this.syncTimer = null;
+        const resolvers = [...this.pendingSyncResolvers];
+        this.pendingSyncResolvers = [];
+        try {
+          await this.doSyncFromStorage();
+        } finally {
+          resolvers.forEach((res) => res());
+        }
+      }, 50);
+    });
+  }
+
+  private async doSyncFromStorage(): Promise<void> {
+    await this.refreshCommunityExtensions();
     this.loadConfig();
 
     for (const [id, manifest] of this.manifests.entries()) {
@@ -121,7 +144,7 @@ export class ExtensionManager {
       ? !this.disabledCoreExtensionIds.has(manifest.id)
       : this.enabledExtensionIds.has(manifest.id);
 
-    if (shouldEnable && !this.instances.has(manifest.id)) {
+    if (this.isInitialized && shouldEnable && !this.instances.has(manifest.id)) {
       this.enableExtension(manifest.id);
     }
     this.notify();
@@ -131,41 +154,84 @@ export class ExtensionManager {
     this.registerExtension(manifest, pluginClass);
   }
 
-  public async enableExtension(extensionId: string): Promise<boolean> {
-    const manifest = this.manifests.get(extensionId);
-    const Constructor = this.constructors.get(extensionId);
+  public async installExtension(
+    manifest: ExtensionManifest,
+    jsCode?: string,
+    cssCode?: string
+  ): Promise<boolean> {
+    const success = await this.externalLoader.installExtension(manifest, jsCode, cssCode);
+    this.recomputeSnapshot();
+    this.notify();
+    return success;
+  }
 
-    if (!manifest || !Constructor) {
+  public async installPlugin(
+    manifest: ExtensionManifest,
+    jsCode?: string,
+    cssCode?: string
+  ): Promise<boolean> {
+    return this.installExtension(manifest, jsCode, cssCode);
+  }
+
+  public async enableExtension(extensionId: string): Promise<boolean> {
+    const manifest = this.getExtensionManifest(extensionId);
+    if (!manifest) {
       console.warn(`[ExtensionManager] Cannot enable unknown extension: "${extensionId}"`);
       return false;
     }
+    const targetId = manifest.id;
+    const Constructor = this.constructors.get(targetId) || this.constructors.get(extensionId);
 
-    if (this.instances.has(extensionId)) {
+    if (!Constructor) {
+      console.warn(`[ExtensionManager] No constructor found for extension: "${targetId}"`);
+      return false;
+    }
+
+    if (this.instances.has(targetId) || this.instances.has(extensionId)) {
       return true;
     }
 
+    let instance: Extension | null = null;
     try {
-      const instance = new Constructor(this.app, manifest);
+      instance = new Constructor(this.app, manifest);
       await instance.onload();
-      this.instances.set(extensionId, instance);
-      this.app.events.emit('extension:loaded', { extensionId });
-      this.app.events.emit('plugin:loaded', { pluginId: extensionId });
+      this.instances.set(targetId, instance);
+      if (targetId !== extensionId) {
+        this.instances.set(extensionId, instance);
+      }
+      this.app.events.emit('extension:loaded', { extensionId: targetId });
+      this.app.events.emit('plugin:loaded', { pluginId: targetId });
 
       if (manifest.isCore) {
+        this.disabledCoreExtensionIds.delete(targetId);
         this.disabledCoreExtensionIds.delete(extensionId);
       } else {
+        this.enabledExtensionIds.add(targetId);
         this.enabledExtensionIds.add(extensionId);
       }
 
       this.saveConfig();
-      this.app.events.emit('extension:enabled', { extensionId });
-      this.app.events.emit('plugin:enabled', { pluginId: extensionId });
+      this.app.events.emit('extension:enabled', { extensionId: targetId });
+      this.app.events.emit('plugin:enabled', { pluginId: targetId });
       this.recomputeSnapshot();
       this.notify();
-      console.log(`[ExtensionManager] Enabled extension "${manifest.name}" (${extensionId})`);
+      console.log(`[ExtensionManager] Enabled extension "${manifest.name}" (${targetId})`);
       return true;
     } catch (err) {
-      console.error(`[ExtensionManager] Failed to load extension "${extensionId}":`, err);
+      if (instance) {
+        try {
+          instance.unload();
+        } catch (unloadErr) {
+          console.warn(`[ExtensionManager] Error during instance.unload() cleanup for "${targetId}":`, unloadErr);
+        }
+      }
+      this.externalLoader.removeExtensionStyle(targetId);
+      if (targetId !== extensionId) {
+        this.externalLoader.removeExtensionStyle(extensionId);
+      }
+      this.instances.delete(targetId);
+      this.instances.delete(extensionId);
+      console.error(`[ExtensionManager] Failed to load extension "${targetId}":`, err);
       this.app.workspace.showToast(`Failed to load extension: ${manifest.name}`, 'warning');
       return false;
     }
@@ -176,12 +242,20 @@ export class ExtensionManager {
   }
 
   public async disableExtension(extensionId: string): Promise<boolean> {
-    const manifest = this.manifests.get(extensionId);
-    const instance = this.instances.get(extensionId);
+    const manifest = this.getExtensionManifest(extensionId);
+    const targetId = manifest?.id || extensionId;
+    const instance = this.instances.get(targetId) || this.instances.get(extensionId);
 
     if (!instance) {
       if (manifest?.isCore) {
+        this.disabledCoreExtensionIds.add(targetId);
         this.disabledCoreExtensionIds.add(extensionId);
+        this.saveConfig();
+        this.recomputeSnapshot();
+        this.notify();
+      } else {
+        this.enabledExtensionIds.delete(targetId);
+        this.enabledExtensionIds.delete(extensionId);
         this.saveConfig();
         this.recomputeSnapshot();
         this.notify();
@@ -191,26 +265,30 @@ export class ExtensionManager {
 
     try {
       instance.unload();
+      this.instances.delete(targetId);
       this.instances.delete(extensionId);
+      this.externalLoader.removeExtensionStyle(targetId);
       this.externalLoader.removeExtensionStyle(extensionId);
-      this.app.events.emit('extension:unloaded', { extensionId });
-      this.app.events.emit('plugin:unloaded', { pluginId: extensionId });
+      this.app.events.emit('extension:unloaded', { extensionId: targetId });
+      this.app.events.emit('plugin:unloaded', { pluginId: targetId });
 
       if (manifest?.isCore) {
+        this.disabledCoreExtensionIds.add(targetId);
         this.disabledCoreExtensionIds.add(extensionId);
       } else {
+        this.enabledExtensionIds.delete(targetId);
         this.enabledExtensionIds.delete(extensionId);
       }
 
       this.saveConfig();
-      this.app.events.emit('extension:disabled', { extensionId });
-      this.app.events.emit('plugin:disabled', { pluginId: extensionId });
+      this.app.events.emit('extension:disabled', { extensionId: targetId });
+      this.app.events.emit('plugin:disabled', { pluginId: targetId });
       this.recomputeSnapshot();
       this.notify();
-      console.log(`[ExtensionManager] Disabled extension "${extensionId}"`);
+      console.log(`[ExtensionManager] Disabled extension "${targetId}"`);
       return true;
     } catch (err) {
-      console.error(`[ExtensionManager] Error disabling extension "${extensionId}":`, err);
+      console.error(`[ExtensionManager] Error disabling extension "${targetId}":`, err);
       return false;
     }
   }
@@ -223,8 +301,9 @@ export class ExtensionManager {
    * Uninstalls an extension:
    * 1. Disables the extension if currently active (triggering unload lifecycle).
    * 2. Executes automated table teardown via ExtensionDatabaseManager, dropping tables with 'drop-on-uninstall'.
-   * 3. Purges persistent localStorage configuration and metadata.
-   * 4. Emits 'extension:uninstalled' event on the EventBus.
+   * 3. Deletes extension directory on disk if on desktop.
+   * 4. Purges persistent localStorage configuration and metadata.
+   * 5. Emits 'extension:uninstalled' event on the EventBus.
    *
    * @param extensionId - Manifest ID of the extension to uninstall.
    * @returns boolean indicating whether uninstallation completed successfully.
@@ -232,30 +311,69 @@ export class ExtensionManager {
    */
   public async uninstallExtension(extensionId: string): Promise<boolean> {
     try {
+      const manifest = this.getExtensionManifest(extensionId);
+      const targetId = manifest?.id || extensionId;
+
       // 1. Disable first
-      await this.disableExtension(extensionId);
+      await this.disableExtension(targetId);
 
       // 2. Teardown relational database tables
-      await this.app.dbManager.teardownExtension(extensionId);
+      await this.app.dbManager.teardownExtension(targetId);
+      if (targetId !== extensionId) {
+        await this.app.dbManager.teardownExtension(extensionId);
+      }
 
-      // 3. Purge from registered sets & storage
+      // 3. Remove physical files if on desktop
+      if (platform.isDesktop()) {
+        try {
+          await platform.uninstallExtensionBundle(targetId);
+          if (targetId !== extensionId) {
+            await platform.uninstallExtensionBundle(extensionId);
+          }
+        } catch (diskErr) {
+          console.warn(`[ExtensionManager] Failed to remove extension directory for "${targetId}":`, diskErr);
+        }
+      }
+
+      // 4. Purge from registered sets & storage
+      this.enabledExtensionIds.delete(targetId);
       this.enabledExtensionIds.delete(extensionId);
+      this.disabledCoreExtensionIds.delete(targetId);
       this.disabledCoreExtensionIds.delete(extensionId);
+      this.manifests.delete(targetId);
       this.manifests.delete(extensionId);
+      this.constructors.delete(targetId);
       this.constructors.delete(extensionId);
 
       if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(`flint_extension_data_${targetId}`);
+        localStorage.removeItem(`flint_plugin_data_${targetId}`);
         localStorage.removeItem(`flint_extension_data_${extensionId}`);
         localStorage.removeItem(`flint_plugin_data_${extensionId}`);
+
+        const cleanLocalStorageArray = (key: string) => {
+          try {
+            const raw = localStorage.getItem(key);
+            if (raw) {
+              const list = JSON.parse(raw);
+              if (Array.isArray(list)) {
+                const next = list.filter((id) => id !== targetId && id !== extensionId);
+                localStorage.setItem(key, JSON.stringify(next));
+              }
+            }
+          } catch {}
+        };
+        cleanLocalStorageArray('flint_installed_community_extensions');
+        cleanLocalStorageArray('flint_installed_community_plugins');
       }
 
       this.saveConfig();
-      this.app.events.emit('extension:uninstalled' as any, { extensionId });
-      this.app.events.emit('plugin:uninstalled' as any, { pluginId: extensionId });
+      this.app.events.emit('extension:uninstalled' as any, { extensionId: targetId });
+      this.app.events.emit('plugin:uninstalled' as any, { pluginId: targetId });
       this.recomputeSnapshot();
       this.notify();
 
-      console.log(`[ExtensionManager] Uninstalled extension "${extensionId}"`);
+      console.log(`[ExtensionManager] Uninstalled extension "${targetId}"`);
       return true;
     } catch (err) {
       console.error(`[ExtensionManager] Error uninstalling extension "${extensionId}":`, err);
@@ -268,15 +386,52 @@ export class ExtensionManager {
   }
 
   public isExtensionEnabled(extensionId: string): boolean {
-    const manifest = this.manifests.get(extensionId);
-    if (!manifest || manifest.isCore) {
-      return !this.disabledCoreExtensionIds.has(extensionId);
+    const manifest = this.getExtensionManifest(extensionId);
+    if (!manifest) {
+      return false;
     }
-    return this.enabledExtensionIds.has(extensionId);
+    const targetId = manifest.id;
+    const aliases = new Set<string>([targetId, extensionId]);
+    if (targetId.startsWith('flint-')) {
+      aliases.add(targetId.slice(6));
+    } else {
+      aliases.add(`flint-${targetId}`);
+    }
+    if (extensionId) {
+      if (extensionId.startsWith('flint-')) {
+        aliases.add(extensionId.slice(6));
+      } else {
+        aliases.add(`flint-${extensionId}`);
+      }
+    }
+
+    if (manifest.isCore) {
+      for (const alias of aliases) {
+        if (this.disabledCoreExtensionIds.has(alias)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    for (const alias of aliases) {
+      if (this.enabledExtensionIds.has(alias)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   public isPluginEnabled(pluginId: string): boolean {
     return this.isExtensionEnabled(pluginId);
+  }
+
+  public isExtensionInstalled(extensionId: string): boolean {
+    return this.getExtensionManifest(extensionId) !== undefined;
+  }
+
+  public isPluginInstalled(pluginId: string): boolean {
+    return this.isExtensionInstalled(pluginId);
   }
 
   public getExtension(extensionId: string): Extension | undefined {

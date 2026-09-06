@@ -292,6 +292,18 @@ this.registerWorkerTask('heavy-calculation', (input, emitEvent) => {
 const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] });
 ```
 
+### M. Available Host Dependencies & Subpath Aliases
+The Flint extension sandbox forwards essential host dependencies to your extension's `require()` environment so you do not need to bundle large duplicate runtimes:
+
+- **SDK Aliases**: `require('flint')`, `require('flint/sdk')`, `require('@flint')`, `require('@flint/core')`, `require('flint-sdk')`
+- **UI & React**: `require('react')`, `require('react/jsx-runtime')`, `require('react-dom')`, `require('react-dom/client')`
+- **Schema Validation**: `require('zod')` (supports both named and default exports)
+- **Styling Utilities**: `require('clsx')`, `require('tailwind-merge')`
+- **State Management**: `require('zustand')`, `require('zustand/vanilla')`
+- **Icon System**: `require('@hugeicons/react')`, `require('@hugeicons/core-free-icons')`
+
+Extensions can be placed in either `.flint/extensions/<id>` or `.flint/plugins/<id>`. Both directories are automatically discovered and loaded on launch.
+
 ---
 
 ## 3. Core & Community Extensions
@@ -304,4 +316,5 @@ To build your own standalone community extension, clone the official template re
 ```bash
 git clone https://github.com/yvliet/flint-extension-starter.git
 ```
+
 

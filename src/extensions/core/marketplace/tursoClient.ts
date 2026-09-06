@@ -91,7 +91,12 @@ async function executeTursoQuery(
   try {
     const formattedArgs = args.map((arg) => {
       if (arg === null || arg === undefined) return { type: 'null' };
-      if (typeof arg === 'number') return { type: 'integer', value: String(arg) };
+      if (typeof arg === 'number') {
+        if (Number.isInteger(arg)) {
+          return { type: 'integer', value: String(arg) };
+        }
+        return { type: 'float', value: arg };
+      }
       if (typeof arg === 'boolean') return { type: 'integer', value: arg ? '1' : '0' };
       return { type: 'text', value: String(arg) };
     });
@@ -109,15 +114,27 @@ async function executeTursoQuery(
       ],
     };
 
-    const res = await fetch(pipelineEndpoint, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    let res: Response;
+    try {
+      res = await fetch(pipelineEndpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+    } catch (fetchErr: any) {
+      if (fetchErr?.name === 'AbortError') {
+        throw new Error(`Turso query timed out after ${timeoutMs}ms`);
+      }
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        throw new Error('Network offline: unable to reach Turso database');
+      }
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr);
+      throw new Error(`Turso network or DNS failure: ${msg}`);
+    }
 
     if (!res.ok) {
       throw new Error(`Turso HTTP request failed with status ${res.status}: ${res.statusText}`);
@@ -185,14 +202,7 @@ export async function fetchTursoPlugins(): Promise<RawRegistryPlugin[]> {
         WHERE pv.plugin_id = p.id
         ORDER BY pv.published_at DESC
         LIMIT 1
-      ) as latest_version,
-      (
-        SELECT pv.readme
-        FROM plugin_versions pv
-        WHERE pv.plugin_id = p.id
-        ORDER BY pv.published_at DESC
-        LIMIT 1
-      ) as readme
+      ) as latest_version
     FROM plugins p
     JOIN authors a ON p.author_id = a.id
     ORDER BY p.downloads DESC
@@ -227,10 +237,31 @@ export async function fetchTursoPlugins(): Promise<RawRegistryPlugin[]> {
       stars: Number(row.stars ?? 5),
       icon: row.icon || undefined,
       bannerImage: row.banner_url || undefined,
-      readme: row.readme || undefined,
       featured: Boolean(row.is_verified) || Number(row.downloads ?? 0) > 100,
     };
   });
+}
+
+/**
+ * Fetches the markdown readme for an extension on demand from Turso.
+ */
+export async function fetchTursoReadme(pluginId: string): Promise<string | null> {
+  const sql = `
+    SELECT pv.readme
+    FROM plugin_versions pv
+    WHERE pv.plugin_id = ?
+    ORDER BY pv.published_at DESC
+    LIMIT 1
+  `;
+  try {
+    const rows = await executeTursoQuery(sql, [pluginId], 8000);
+    if (rows && rows.length > 0 && rows[0].readme) {
+      return String(rows[0].readme);
+    }
+  } catch (err) {
+    console.warn(`[TursoRegistryClient] Failed to fetch readme for ${pluginId}:`, err);
+  }
+  return null;
 }
 
 /**
@@ -251,7 +282,7 @@ export async function fetchTursoPluginBundle(pluginId: string): Promise<TursoBun
     LIMIT 1
   `;
 
-  const rows = await executeTursoQuery(sql, [pluginId]);
+  const rows = await executeTursoQuery(sql, [pluginId], 15000);
   if (!rows || rows.length === 0) {
     return null;
   }

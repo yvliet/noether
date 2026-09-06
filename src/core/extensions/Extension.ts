@@ -117,7 +117,12 @@ export abstract class Extension {
    */
   public unload(): void {
     try {
-      this.onunload();
+      const res = this.onunload();
+      if (res instanceof Promise) {
+        res.catch((err: unknown) => {
+          console.error(`[Extension:${this.manifest.id}] Error in async onunload:`, err);
+        });
+      }
     } catch (err) {
       console.error(`[Extension:${this.manifest.id}] Error in onunload:`, err);
     }

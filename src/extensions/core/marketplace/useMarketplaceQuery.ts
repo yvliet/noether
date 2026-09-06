@@ -61,6 +61,7 @@ export interface MarketplaceQueryResult {
   isLoading: boolean;
   isUpdating: boolean;
   isError: boolean;
+  isOffline: boolean;
   error: Error | null;
   lastUpdated: number | null;
   refetch: () => Promise<void>;
@@ -303,7 +304,7 @@ function persistCache(extensions: MarketplaceExtensionItem[]): void {
       manifestUrl: item.manifestUrl,
       stylesCssUrl: item.stylesCssUrl,
       downloadUrl: item.downloadUrl,
-      readme: item.readme && item.readme.length < 50000 ? item.readme : undefined,
+      // Readmes are excluded to preserve localStorage quota and prevent quota exceeded errors
     }));
 
     localStorage.setItem(STORAGE_CACHE_KEY, JSON.stringify(serializable));
@@ -375,13 +376,18 @@ export function useMarketplaceQuery(): MarketplaceQueryResult {
   );
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
   const [isError, setIsError] = useState<boolean>(false);
+  const [isOffline, setIsOffline] = useState<boolean>(
+    typeof navigator !== 'undefined' ? !navigator.onLine : false
+  );
   const [error, setError] = useState<Error | null>(null);
 
   const fetchRegistry = useCallback(async () => {
     // Only attempt fetch if online
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setIsOffline(true);
       return;
     }
+    setIsOffline(false);
 
     setIsUpdating(true);
     setIsError(false);
@@ -453,18 +459,25 @@ export function useMarketplaceQuery(): MarketplaceQueryResult {
     fetchRegistry();
   }, [fetchRegistry]);
 
-  // Revalidate automatically when network connectivity returns
+  // Revalidate automatically when network connectivity returns or goes offline
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleOnline = () => {
+      setIsOffline(false);
       console.info('[useMarketplaceQuery] Network restored; revalidating catalogue...');
       fetchRegistry();
     };
 
+    const handleOffline = () => {
+      setIsOffline(true);
+    };
+
     window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
     return () => {
       window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, [fetchRegistry]);
 
@@ -473,6 +486,7 @@ export function useMarketplaceQuery(): MarketplaceQueryResult {
     isLoading: false, // Always instant due to SWR synchronous cache initialization
     isUpdating,
     isError,
+    isOffline,
     error,
     lastUpdated,
     refetch: fetchRegistry,

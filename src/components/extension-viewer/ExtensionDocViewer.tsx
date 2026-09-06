@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useFlintApp } from '@/core/app/AppContext';
+import { useFlintApp, useExtensionList } from '@/core/app/AppContext';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import {
@@ -488,6 +488,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
   documentId: propDocId,
 }) => {
   const app = useFlintApp();
+  const extensionList = useExtensionList();
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const panes = useWorkspaceStore((s) => s.panes);
@@ -565,7 +566,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
 
   const manifest = useMemo(() => {
     return app.extensions.getExtensionManifest(targetExtensionId);
-  }, [app, targetExtensionId]);
+  }, [app, targetExtensionId, extensionList]);
 
   const meta: ExtensionResolvedMeta = useMemo(() => {
     return resolveExtensionMetadata(targetExtensionId, manifest);
@@ -698,9 +699,19 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                   onClick={async () => {
                     setIsInstalling(true);
                     try {
-                      await app.extensions.refreshCommunityExtensions();
-                      await app.extensions.enableExtension(targetExtensionId);
-                      showToast(`Installed ${meta.name}`, 'success');
+                      const ok = await app.extensions.installExtension({
+                        id: targetExtensionId,
+                        name: meta.name,
+                        version: meta.version,
+                        description: meta.description,
+                        author: meta.author,
+                        isCore: false,
+                      });
+                      if (ok) {
+                        showToast(`Installed ${meta.name}`, 'success');
+                      } else {
+                        showToast(`Failed to install ${meta.name}`, 'warning');
+                      }
                     } catch (err) {
                       console.error('[ExtensionDocViewer] Install failed:', err);
                       showToast(`Failed to install ${meta.name}`, 'warning');

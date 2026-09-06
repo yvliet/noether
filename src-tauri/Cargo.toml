@@ -1,6 +1,6 @@
 [package]
 name = "flint-desktop"
-version = "0.4.2"
+version = "0.4.4"
 description = "Flint Local-First Hybrid Document and Knowledge Engine"
 authors = ["Yuliet Li"]
 edition = "2021"
@@ -26,3 +26,12 @@ walkdir = "2.5"
 dirs = "5.0"
 notify = "6.1"
 image = { version = "0.25", default-features = false, features = ["png"] }
+base64 = "0.22"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+

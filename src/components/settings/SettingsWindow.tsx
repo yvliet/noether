@@ -438,8 +438,6 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
 const GeneralTab: React.FC = React.memo(() => {
   const autoUpdates = useSettingsStore((s) => s.autoUpdates);
   const setAutoUpdates = useSettingsStore((s) => s.setAutoUpdates);
-  const earlyAccess = useSettingsStore((s) => s.earlyAccess);
-  const setEarlyAccess = useSettingsStore((s) => s.setEarlyAccess);
   const language = useSettingsStore((s) => s.language);
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
@@ -449,7 +447,6 @@ const GeneralTab: React.FC = React.memo(() => {
 
   const isGeneralModified =
     autoUpdates !== DEFAULT_SETTINGS.autoUpdates ||
-    earlyAccess !== DEFAULT_SETTINGS.earlyAccess ||
     language !== DEFAULT_SETTINGS.language;
 
   return (
@@ -457,7 +454,7 @@ const GeneralTab: React.FC = React.memo(() => {
       <div className="flex items-center justify-between px-4">
         <div>
           <h3 className="text-sm font-semibold text-white mb-0.5">General</h3>
-          <p className="text-[11px] text-[#777]">Application updates, display language, and account info.</p>
+          <p className="text-[11px] text-[#777]">Application updates and display language.</p>
         </div>
         {isGeneralModified && (
           <button
@@ -529,24 +526,6 @@ const GeneralTab: React.FC = React.memo(() => {
           </div>
         </div>
 
-        {/* Row: Receive early access versions */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Receive early access versions</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Auto-update to the latest early access version. These versions include new features but may be less stable.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <FieldResetButton
-              isModified={earlyAccess !== DEFAULT_SETTINGS.earlyAccess}
-              onReset={() => setEarlyAccess(DEFAULT_SETTINGS.earlyAccess)}
-              title="Restore default (Disabled)"
-            />
-            <ToggleSwitch checked={earlyAccess} onChange={setEarlyAccess} />
-          </div>
-        </div>
-
         {/* Row: Language */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
@@ -589,60 +568,6 @@ const GeneralTab: React.FC = React.memo(() => {
           >
             Open
           </button>
-        </div>
-      </div>
-
-      {/* Subheading: Account */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Account</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Your account</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                You're not logged in right now. An account is only needed for Cloud Sync and early access versions.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => showToast('Flint is in local offline-first mode', 'info')}
-                className="flint-btn"
-              >
-                Log in
-              </button>
-              <button
-                onClick={() => showToast('Cloud sync coming soon', 'info')}
-                className="flint-btn"
-              >
-                Sign up
-              </button>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Commercial license</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Help keep Flint 100% user-supported and unlock enterprise compliance.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => showToast('License activated', 'success')}
-                className="flint-btn"
-              >
-                Activate
-              </button>
-              <button
-                onClick={() => showToast('Opening purchase link', 'info')}
-                className="flint-btn"
-              >
-                Purchase
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -2902,6 +2827,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
   const extensionList = useExtensionList();
   const allSettingTabs = useSettingTabs();
   const showToast = useWorkspaceStore((s) => s.showToast);
+  const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
 
   const communityExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
@@ -2919,6 +2845,24 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
       await app.extensions.enableExtension(extensionId);
     }
   }, [app]);
+
+  const handleUninstallExtension = useCallback((ext: { id: string; name: string }) => {
+    openConfirmDialog({
+      title: 'Uninstall Extension',
+      message: `Are you sure you want to uninstall "${ext.name}"?`,
+      subtext: 'This will remove the extension files from disk, reset its settings, and drop its database tables.',
+      confirmText: 'Uninstall',
+      isDanger: true,
+      onConfirm: async () => {
+        const ok = await app.extensions.uninstallExtension(ext.id);
+        if (ok) {
+          showToast(`Uninstalled "${ext.name}"`, 'info');
+        } else {
+          showToast(`Failed to uninstall "${ext.name}"`, 'warning');
+        }
+      },
+    });
+  }, [app, openConfirmDialog, showToast]);
 
   const handleOpenExtensionsFolder = useCallback(() => {
     if (platform.isDesktop()) {
@@ -2998,7 +2942,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                         }
                       }}
                       title={`View ${ext.name} README`}
-                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
                     >
                       <BookOpen01Icon size={14} />
                     </button>
@@ -3007,11 +2951,19 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                     <button
                       onClick={() => onNavigateTab(communityTab.id)}
                       title={`${ext.name} options`}
-                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
                     >
                       <Settings02Icon size={15} />
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={() => handleUninstallExtension(ext)}
+                    title={`Uninstall ${ext.name}`}
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#f85153] hover:bg-[#2a2a2a] cursor-pointer"
+                  >
+                    <Delete02Icon size={14} />
+                  </button>
                   <ToggleSwitch
                     checked={isEnabled}
                     onChange={() => handleToggleExtension(ext.id)}
@@ -3525,94 +3477,103 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             )}
 
             {/* DYNAMIC EXTENSION SETTING TAB RENDER (CORE & COMMUNITY) */}
-            {!fontPickerMode && !isTrashViewOpen && allSettingTabs.some((t) => isTabMatch(t, activeTab)) && (
-              <div className="flex flex-col gap-4">
-                {(() => {
-                  const currentTab = allSettingTabs.find((t) => isTabMatch(t, activeTab));
-                  if (!currentTab) return null;
-                  const extId = currentTab.extensionId || currentTab.pluginId || currentTab.id.split(':')[0];
-                  const manifest = app.extensions.getExtensionManifest(extId);
-                  const isEnabled = app.extensions.isExtensionEnabled(extId);
+            {(() => {
+              if (fontPickerMode || isTrashViewOpen) return null;
+              const BUILTIN_TABS = new Set([
+                'general', 'appearance', 'interface', 'editor', 'files', 'hotkeys',
+                'core-extensions', 'core-plugins', 'community-extensions', 'community-plugins',
+              ]);
+              if (BUILTIN_TABS.has(activeTab)) return null;
 
-                  return (
-                    <>
-                      {/* Top Extension Header with Enabled Toggle matching CoreExtensions row design */}
-                      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
-                        <div className="flex-1 pr-4">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-[13px] font-normal text-white">
-                              {manifest?.name || currentTab.name}
-                            </span>
-                            {manifest?.version && (
-                              <span className="text-[11px] text-[#777] font-normal">
-                                v{manifest.version}
-                              </span>
-                            )}
-                          </div>
-                          {manifest?.description && (
-                            <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
-                              {manifest.description}
-                            </p>
-                          )}
-                        </div>
+              const currentTab = allSettingTabs.find((t) => isTabMatch(t, activeTab));
+              const candidateId = activeTab.includes(':') ? activeTab.split(':')[0] : activeTab;
+              const manifest = currentTab
+                ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.pluginId || currentTab.id.split(':')[0])
+                : (app.extensions.getExtensionManifest(candidateId) || app.extensions.getExtensionManifest(activeTab));
 
-                        <div className="flex items-center gap-2">
-                          {manifest?.readme && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: extId, title: manifest?.name || currentTab.name, timestamp: Date.now() }));
-                                useWorkspaceStore.getState().openExtensionDocTab(extId, manifest?.name || currentTab.name);
-                                handleClose();
-                              }}
-                              title={`View ${manifest?.name || currentTab.name} documentation`}
-                              className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
-                            >
-                              <BookOpen01Icon size={14} />
-                            </button>
-                          )}
-                          <ToggleSwitch
-                            checked={isEnabled}
-                            onChange={async (val) => {
-                              if (val) {
-                                await app.extensions.enableExtension(extId);
-                                showToast(`Enabled ${manifest?.name || 'extension'}`, 'success');
-                              } else {
-                                await app.extensions.disableExtension(extId);
-                                showToast(`Disabled ${manifest?.name || 'extension'}`, 'info');
-                              }
-                            }}
-                          />
-                        </div>
-                      </div>
+              if (!currentTab && !manifest) return null;
 
-                      {/* Extension Setting Content */}
-                      {isEnabled ? (
-                        <div className="flex flex-col gap-4">
-                          {currentTab.render()}
-                        </div>
-                      ) : (
-                        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
-                          <span className="text-xs text-[#888]">
-                            {manifest?.name || 'This extension'} is currently disabled.
+              const extId = currentTab?.extensionId || currentTab?.pluginId || manifest?.id || candidateId;
+              const isEnabled = extId ? app.extensions.isExtensionEnabled(extId) : false;
+              const tabName = manifest?.name || currentTab?.name || extId;
+
+              return (
+                <div className="flex flex-col gap-4">
+                  {/* Top Extension Header with Enabled Toggle matching CoreExtensions row design */}
+                  <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
+                    <div className="flex-1 pr-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-[13px] font-normal text-white">
+                          {tabName}
+                        </span>
+                        {manifest?.version && (
+                          <span className="text-[11px] text-[#777] font-normal">
+                            v{manifest.version}
                           </span>
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              await app.extensions.enableExtension(extId);
-                              showToast(`Enabled ${manifest?.name || 'extension'}`, 'success');
-                            }}
-                            className="flint-btn flint-btn-primary"
-                          >
-                            Enable {manifest?.name || 'Extension'}
-                          </button>
-                        </div>
+                        )}
+                      </div>
+                      {manifest?.description && (
+                        <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+                          {manifest.description}
+                        </p>
                       )}
-                    </>
-                  );
-                })()}
-              </div>
-            )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {manifest?.readme && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: extId, title: tabName, timestamp: Date.now() }));
+                            useWorkspaceStore.getState().openExtensionDocTab(extId, tabName);
+                            handleClose();
+                          }}
+                          title={`View ${tabName} documentation`}
+                          className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
+                        >
+                          <BookOpen01Icon size={14} />
+                        </button>
+                      )}
+                      <ToggleSwitch
+                        checked={isEnabled}
+                        onChange={async (val) => {
+                          if (val) {
+                            await app.extensions.enableExtension(extId);
+                            showToast(`Enabled ${tabName}`, 'success');
+                          } else {
+                            await app.extensions.disableExtension(extId);
+                            showToast(`Disabled ${tabName}`, 'info');
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Extension Setting Content */}
+                  {isEnabled && currentTab ? (
+                    <div className="flex flex-col gap-4">
+                      {currentTab.render()}
+                    </div>
+                  ) : (
+                    <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
+                      <span className="text-xs text-[#888]">
+                        {tabName} is currently disabled.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await app.extensions.enableExtension(extId);
+                          showToast(`Enabled ${tabName}`, 'success');
+                        }}
+                        className="flint-btn flint-btn-primary"
+                      >
+                        Enable {tabName}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </main>
       </div>
