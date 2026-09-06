@@ -3,15 +3,16 @@
 Once you have built an extension, this guide covers versioning strategies, local updates, and handling breaking changes.
 
 
-## 1. Semantic Versioning (SemVer)
+## 1. Semantic Versioning & Release Formats
 
 ---
 
-Flint follows strict **Semantic Versioning** (`MAJOR.MINOR.PATCH`):
+Flint supports standard **Semantic Versioning** (`MAJOR.MINOR.PATCH` / `x.y.z`) as well as extended four-part versioning (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w` / `x.y.zw`) for granular sub-patch releases:
 
 - **MAJOR** (`1.0.0` → `2.0.0`): Incompatible changes, breaking API removals, or substantial SQLite schema revisions.
 - **MINOR** (`1.0.0` → `1.1.0`): Backwards-compatible new features, newly added commands, or additional MCP tools.
 - **PATCH** (`1.0.0` → `1.0.1`): Backwards-compatible bug fixes and performance optimizations.
+- **BUILD / REVISION** (`1.0.1.1` → `1.0.1.2`): Minor build revisions, hotfixes, or packaging updates.
 
 
 ## 2. Managing Database Migrations

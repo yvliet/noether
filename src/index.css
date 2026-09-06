@@ -652,8 +652,9 @@ textarea::selection {
   -webkit-app-region: no-drag;
 }
 
-/* TipTap Editor Prose Custom Styles */
-.ProseMirror {
+/* TipTap Editor Prose Custom Styles & Markdown Prose Renderers */
+.ProseMirror,
+.markdown-prose {
   outline: none;
   font-family: var(--font-text);
   font-size: var(--editor-font-size, 16px);
@@ -668,66 +669,76 @@ kbd,
   font-family: var(--font-monospace) !important;
 }
 
-.ProseMirror ::selection {
+.ProseMirror ::selection,
+.markdown-prose ::selection {
   background-color: var(--flint-selection-bg, #4a4e57);
   color: var(--flint-selection-text, #ffffff);
 }
 
-
-.ProseMirror p {
+.ProseMirror p,
+.markdown-prose p {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
 .ProseMirror strong,
-.ProseMirror b {
+.ProseMirror b,
+.markdown-prose strong,
+.markdown-prose b {
   font-weight: 700;
   color: var(--flint-text-primary);
 }
 
 .ProseMirror em,
-.ProseMirror i {
+.ProseMirror i,
+.markdown-prose em,
+.markdown-prose i {
   font-style: italic;
   color: var(--flint-text-secondary);
 }
 
-.ProseMirror h1 {
+.ProseMirror h1,
+.markdown-prose h1 {
   font-size: calc(var(--editor-font-size, 16px) * 1.85);
   font-weight: 700;
   color: var(--flint-text-primary);
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   line-height: 1.3;
 }
 
-.ProseMirror h2 {
+.ProseMirror h2,
+.markdown-prose h2 {
   font-size: calc(var(--editor-font-size, 16px) * 1.45);
   font-weight: 600;
   color: var(--flint-text-primary);
-  margin-top: 0.5rem;
+  margin-top: 1.25rem;
   margin-bottom: 0.5rem;
   line-height: 1.35;
 }
 
-.ProseMirror h3 {
+.ProseMirror h3,
+.markdown-prose h3 {
   font-size: calc(var(--editor-font-size, 16px) * 1.2);
   font-weight: 600;
   color: var(--flint-text-secondary);
-  margin-top: 0.5rem;
+  margin-top: 1rem;
   margin-bottom: 0.5rem;
   line-height: 1.4;
 }
 
-.ProseMirror h4 {
+.ProseMirror h4,
+.markdown-prose h4 {
   font-size: calc(var(--editor-font-size, 16px) * 1.08);
   font-weight: 600;
   color: var(--flint-text-secondary);
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
   margin-bottom: 0.4rem;
   line-height: 1.45;
 }
 
-.ProseMirror h5 {
+.ProseMirror h5,
+.markdown-prose h5 {
   font-size: calc(var(--editor-font-size, 16px) * 0.95);
   font-weight: 600;
   color: var(--flint-text-muted);
@@ -735,7 +746,8 @@ kbd,
   margin-bottom: 0.35rem;
 }
 
-.ProseMirror h6 {
+.ProseMirror h6,
+.markdown-prose h6 {
   font-size: calc(var(--editor-font-size, 16px) * 0.88);
   font-weight: 600;
   color: var(--flint-text-muted);
@@ -743,21 +755,24 @@ kbd,
   margin-bottom: 0.3rem;
 }
 
-.ProseMirror ul {
+.ProseMirror ul,
+.markdown-prose ul {
   list-style-type: '•  ';
   padding-left: 1.5rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
-.ProseMirror ol {
+.ProseMirror ol,
+.markdown-prose ol {
   list-style-type: decimal;
   padding-left: 1.5rem;
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }
 
-.ProseMirror blockquote {
+.ProseMirror blockquote,
+.markdown-prose blockquote {
   border-left: 3px solid var(--flint-border-strong);
   padding-left: 1rem;
   margin-left: 0;
@@ -768,7 +783,8 @@ kbd,
   font-style: italic;
 }
 
-.ProseMirror code {
+.ProseMirror code,
+.markdown-prose code {
   background-color: var(--flint-code-bg, var(--flint-bg-card));
   color: var(--flint-code-text, var(--flint-text-primary));
   padding: 0.15rem 0.35rem;
@@ -778,7 +794,8 @@ kbd,
   border: 1px solid var(--flint-border-subtle);
 }
 
-.ProseMirror pre {
+.ProseMirror pre,
+.markdown-prose pre {
   background-color: var(--flint-bg-input);
   border: 1px solid var(--flint-border-subtle);
   border-radius: 0.5rem;
@@ -789,7 +806,8 @@ kbd,
   font-family: var(--font-monospace) !important;
 }
 
-.ProseMirror pre code {
+.ProseMirror pre code,
+.markdown-prose pre code {
   background: transparent;
   padding: 0;
   border: none;
@@ -798,7 +816,8 @@ kbd,
   font-family: var(--font-monospace) !important;
 }
 
-.ProseMirror hr {
+.ProseMirror hr,
+.markdown-prose hr {
   border: none;
   border-top: 1px solid var(--flint-border-subtle);
   margin: 1.75rem 0;
@@ -2235,6 +2254,7 @@ a.flint-btn::after {
 }
 
 .ProseMirror table,
+.markdown-prose table,
 .flint-table {
   border-collapse: collapse;
   border-spacing: 0;
@@ -2251,6 +2271,8 @@ a.flint-btn::after {
 
 .ProseMirror table td,
 .ProseMirror table th,
+.markdown-prose table td,
+.markdown-prose table th,
 .flint-table td,
 .flint-table th {
   min-width: 80px;
@@ -2315,12 +2337,15 @@ a.flint-btn::after {
 }
 
 .theme-light .ProseMirror table,
+.theme-light .markdown-prose table,
 .theme-light .flint-table {
   border-color: #e4e4e7;
 }
 
 .theme-light .ProseMirror table td,
 .theme-light .ProseMirror table th,
+.theme-light .markdown-prose table td,
+.theme-light .markdown-prose table th,
 .theme-light .flint-table td,
 .theme-light .flint-table th {
   border-color: #e4e4e7;

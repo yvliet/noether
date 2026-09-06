@@ -1,6 +1,6 @@
 # TypeScript API: Versioning & Compatibility
 
-Flint uses strict Semantic Versioning (`MAJOR.MINOR.PATCH`) to guarantee API compatibility and prevent breaking changes from affecting installed community extensions and themes.
+Flint uses Semantic Versioning (`MAJOR.MINOR.PATCH` / `x.y.z`) and extended four-part versioning (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w` / `x.y.zw`) to guarantee API compatibility and prevent breaking changes from affecting installed community extensions and themes.
 
 
 ## 1. The `minAppVersion` Field

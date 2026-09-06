@@ -32,7 +32,7 @@ Every Flint extension must include a valid `manifest.json` file in its root dire
 | :--- | :--- | :--- | :--- |
 | `id` | `string` | **Yes** | Unique identifier for the extension. Must be lowercase alphanumeric with hyphens (e.g., `word-counter`, `kanban-boards`). |
 | `name` | `string` | **Yes** | Human-readable title displayed in the extensions manager and community marketplace. |
-| `version` | `string` | **Yes** | Semantic versioning string formatted as `MAJOR.MINOR.PATCH` (e.g., `1.0.0`). |
+| `version` | `string` | **Yes** | Version string formatted as standard SemVer `MAJOR.MINOR.PATCH` (`x.y.z`, e.g. `1.0.0`) or extended four-part `MAJOR.MINOR.PATCH.BUILD` (`x.y.z.w` / `x.y.zw`, e.g. `1.0.0.1`). |
 | `description` | `string` | **Yes** | Brief one- or two-sentence overview of the extension's capabilities (recommended: 40-160 characters). |
 | `minAppVersion` | `string` | No | Minimum version of the Flint host application required for compatibility (e.g., `0.2.0`). Defaults to `0.1.0`. |
 | `author` | `string` | No | Name of the author, team, or maintainer. |
@@ -70,8 +70,8 @@ You can validate your `manifest.json` using the official JSON Schema:
     },
     "version": {
       "type": "string",
-      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
-      "description": "SemVer version string."
+      "pattern": "^(0|[1-9]\\d*)(\\.(0|[1-9]\\d*))+(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+      "description": "SemVer or extended version string."
     },
     "minAppVersion": {
       "type": "string",

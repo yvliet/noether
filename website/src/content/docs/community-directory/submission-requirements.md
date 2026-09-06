@@ -9,7 +9,7 @@ These guidelines define the standards that extensions must meet to ensure securi
 
 - `id`: Lowercase alphanumeric string with hyphens. Must be unique.
 - `name`: Human-readable display title.
-- `version`: Valid Semantic Versioning string (e.g. `1.0.0`).
+- `version`: Valid Semantic Versioning or extended four-part version string (e.g. `1.0.0` or `1.0.0.1`).
 - `minAppVersion`: Specifies the lowest compatible Flint version.
 - `description`: Clear, concise summary of capabilities.
 - `author`: Developer or team name.

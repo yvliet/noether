@@ -15,7 +15,7 @@ export interface ExtensionManifest {
   /** Human-readable display title */
   name: string;
 
-  /** Semantic version string (e.g., '1.0.0') */
+  /** Version string (e.g., '1.0.0' or '1.0.0.1') */
   version: string;
 
   /** Brief overview of functionality (40-160 characters) */

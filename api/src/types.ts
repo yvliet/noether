@@ -62,7 +62,7 @@ export interface PluginVersionRow {
 export const ExtensionManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-_]+$/, 'Plugin ID must be lowercase alphanumeric with hyphens or underscores'),
   name: z.string().min(1, 'Plugin name is required'),
-  version: z.string().regex(/^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/, 'Must follow SemVer format (e.g., 1.0.0)'),
+  version: z.string().regex(/^\d+(\.\d+)+(-[a-zA-Z0-9.]+)?$/, 'Must follow SemVer or extended version format (e.g., 1.0.0 or 1.0.0.1)'),
   description: z.string().min(1, 'Description is required'),
   minAppVersion: z.string().optional().default('0.1.0'),
   author: z.string().optional(),

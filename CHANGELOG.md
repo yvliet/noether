@@ -4,6 +4,17 @@ All notable changes to Flint will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2026-09-06
+
+### Added
+- **Extended Versioning Support**: Allowed four-part versioning schemes (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w`) across extension manifest schemas and documentation for granular build and hotfix tracking.
+
+### Fixed
+- **Extension README Viewer Typography**: Fixed extension README pages having smaller font sizes by integrating dynamic `--editor-font-size` scaling, proportional heading calculations, and standard document typography rules.
+- **Reading View Styling Synchronization**: Synced extension markdown rendering with active document settings (`flint-accent-lists`, `flint-indent-guides`, `flint-strict-line-breaks`, `flint-show-link-icon`) and theme tokens for full light and dark mode parity.
+
+---
+
 ## [0.4.1] - 2026-09-06
 
 ### Added

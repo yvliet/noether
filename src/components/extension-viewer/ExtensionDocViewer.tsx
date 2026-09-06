@@ -38,7 +38,7 @@ export interface ExtensionDocViewerProps {
   app?: any;
 }
 
-// Resilient, pure Markdown renderer conforming 100% to Flint document styling and list rules
+// Resilient, pure Markdown renderer conforming 100% to Flint document styling and typography rules
 export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ content }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
@@ -72,24 +72,24 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         nodes.push(
           <ListTag
             key={`list-${key}`}
-            className="my-3 space-y-2 text-[#cccccc] text-xs leading-relaxed pl-1"
+            className="my-2 space-y-1 text-[var(--flint-text-primary)] text-[var(--editor-font-size,16px)] leading-[1.75] pl-1"
           >
             {listBuffer.map((item, idx) => {
-              const indentPadding = item.indent > 0 ? { paddingLeft: `${item.indent * 18}px` } : undefined;
+              const indentPadding = item.indent > 0 ? { paddingLeft: `${item.indent * 24}px` } : undefined;
 
               if (item.type === 'task') {
                 return (
                   <li key={idx} style={indentPadding} className="flex items-start gap-2 list-none">
-                    <span className="flex items-center justify-center h-[1.6em] shrink-0">
+                    <span className="flex items-center justify-center h-[1.75em] shrink-0 select-none">
                       <input
                         type="checkbox"
                         checked={item.checked}
                         readOnly
-                        className="m-0 cursor-default accent-[var(--flint-accent)] rounded"
+                        className="m-0 cursor-default accent-[var(--flint-accent)] rounded w-[14px] h-[14px]"
                       />
                     </span>
                     <span
-                      className={`flex-1 ${item.checked ? 'line-through text-[#666666]' : ''}`}
+                      className={`flex-1 ${item.checked ? 'line-through text-[var(--flint-text-muted)]' : 'text-[var(--flint-text-primary)]'}`}
                       dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }}
                     />
                   </li>
@@ -99,11 +99,11 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
               if (item.type === 'ordered') {
                 return (
                   <li key={idx} style={indentPadding} className="flex items-start gap-2 list-none">
-                    <span className="flint-numbered-prefix flint-list-prefix text-[#666666] font-normal select-none shrink-0 min-w-[18px] text-left">
+                    <span className="flint-numbered-prefix flint-list-prefix text-[#777] font-normal select-none shrink-0 min-w-[20px] text-left">
                       {item.marker}
                     </span>
                     <span
-                      className="flex-1"
+                      className="flex-1 text-[var(--flint-text-primary)]"
                       dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }}
                     />
                   </li>
@@ -112,11 +112,11 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
 
               return (
                 <li key={idx} style={indentPadding} className="flex items-start gap-2 list-none">
-                  <span className="flint-list-prefix text-[#666666] font-normal select-none shrink-0 text-center w-3">
-                    ·
+                  <span className="flint-list-prefix text-[#777] font-normal select-none shrink-0 text-center w-4">
+                    •
                   </span>
                   <span
-                    className="flex-1"
+                    className="flex-1 text-[var(--flint-text-primary)]"
                     dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(item.text) }}
                   />
                 </li>
@@ -144,20 +144,20 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
           const bodyRows = isSeparator ? rows.slice(2) : rows.slice(1);
 
           nodes.push(
-            <div key={`table-${key}`} className="my-4 overflow-x-auto rounded-lg border border-[#2a2a2a] bg-[#161616]">
-              <table className="w-full text-left text-xs border-collapse">
+            <div key={`table-${key}`} className="my-4 overflow-x-auto rounded-lg border border-[var(--flint-border-subtle)] bg-[var(--flint-bg-card)]/40">
+              <table className="w-full text-left text-[13.5px] border-collapse flint-table">
                 <thead>
-                  <tr className="bg-[#202020] border-b border-[#2a2a2a] text-[#e0e0e0] font-semibold">
+                  <tr className="bg-[var(--flint-bg-card)] border-b border-[var(--flint-border-subtle)] text-[var(--flint-text-primary)] font-semibold">
                     {headerRow.map((cell, cIdx) => (
-                      <th key={cIdx} className="px-3.5 py-2.5" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cell) }} />
+                      <th key={cIdx} className="px-3.5 py-2.5 border border-[var(--flint-border-subtle)]" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cell) }} />
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#222222]">
+                <tbody className="divide-y divide-[var(--flint-border-subtle)]">
                   {bodyRows.map((row, rIdx) => (
-                    <tr key={rIdx} className="hover:bg-[#1f1f1f]/50 transition-colors">
+                    <tr key={rIdx} className="hover:bg-[var(--flint-bg-card)]/80">
                       {row.map((cell, cIdx) => (
-                        <td key={cIdx} className="px-3.5 py-2 text-[#cccccc]" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cell) }} />
+                        <td key={cIdx} className="px-3.5 py-2 text-[var(--flint-text-secondary)] border border-[var(--flint-border-subtle)]" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cell) }} />
                       ))}
                     </tr>
                   ))}
@@ -180,8 +180,8 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
           const blockCode = codeBuffer.join('\n');
           const blockIndex = i;
           nodes.push(
-            <div key={`code-${i}`} className="relative my-3.5 rounded-lg overflow-hidden border border-[#2d2d2d] bg-[#141414] group">
-              <div className="flex items-center justify-between px-3 py-1.5 bg-[#1e1e1e] border-b border-[#2d2d2d] text-[11px] text-[#888] font-mono select-none">
+            <div key={`code-${i}`} className="relative my-4 rounded-lg overflow-hidden border border-[var(--flint-border-subtle)] bg-[var(--flint-bg-input)] group">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--flint-bg-card)] border-b border-[var(--flint-border-subtle)] text-[12px] text-[var(--flint-text-muted)] font-mono select-none">
                 <span>{codeLanguage || 'text'}</span>
                 <button
                   type="button"
@@ -190,13 +190,13 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
                     setCopiedIndex(blockIndex);
                     setTimeout(() => setCopiedIndex(null), 1500);
                   }}
-                  className="flex items-center gap-1 text-[#888] hover:text-white transition-colors cursor-pointer"
+                  className="flex items-center gap-1 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
                 >
                   {copiedIndex === blockIndex ? <CheckIcon size={12} className="text-emerald-400" /> : <Copy01Icon size={12} />}
                   <span>{copiedIndex === blockIndex ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
-              <pre className="p-3.5 text-xs font-mono text-[#dcdcdc] overflow-x-auto leading-relaxed">
+              <pre className="p-3.5 text-[calc(var(--editor-font-size,16px)*0.85)] font-mono text-[var(--flint-text-primary)] overflow-x-auto leading-relaxed">
                 <code dangerouslySetInnerHTML={{ __html: highlightCode(blockCode, codeLanguage) }} />
               </pre>
             </div>
@@ -273,7 +273,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
 
       // Horizontal rules (--- or *** or ___)
       if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim()) || /^___+$/.test(line.trim())) {
-        nodes.push(<hr key={`hr-${i}`} className="my-6 border-t border-[#2a2a2a]" />);
+        nodes.push(<hr key={`hr-${i}`} className="my-6 border-0 border-t border-[var(--flint-border-subtle)]" />);
         continue;
       }
 
@@ -281,7 +281,11 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       if (line.startsWith('# ')) {
         const title = line.slice(2);
         nodes.push(
-          <h1 key={`h1-${i}`} className="text-xl font-bold text-white tracking-tight mt-6 mb-2">
+          <h1
+            key={`h1-${i}`}
+            style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 1.85)' }}
+            className="font-bold text-[var(--flint-text-primary)] tracking-tight mt-6 mb-2 leading-[1.3]"
+          >
             {formatHeadingTitle(title)}
           </h1>
         );
@@ -290,7 +294,11 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       if (line.startsWith('## ')) {
         const title = line.slice(3);
         nodes.push(
-          <h2 key={`h2-${i}`} className="text-base font-semibold text-[#f0f0f0] tracking-tight mt-5 mb-2">
+          <h2
+            key={`h2-${i}`}
+            style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 1.45)' }}
+            className="font-semibold text-[var(--flint-text-primary)] tracking-tight mt-5 mb-2 leading-[1.35]"
+          >
             {formatHeadingTitle(title)}
           </h2>
         );
@@ -299,7 +307,11 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       if (line.startsWith('### ')) {
         const title = line.slice(4);
         nodes.push(
-          <h3 key={`h3-${i}`} className="text-sm font-semibold text-[#e0e0e0] mt-4 mb-1.5">
+          <h3
+            key={`h3-${i}`}
+            style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 1.2)' }}
+            className="font-semibold text-[var(--flint-text-secondary)] mt-4 mb-1.5 leading-[1.4]"
+          >
             {formatHeadingTitle(title)}
           </h3>
         );
@@ -308,9 +320,39 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       if (line.startsWith('#### ')) {
         const title = line.slice(5);
         nodes.push(
-          <h4 key={`h4-${i}`} className="text-xs font-semibold text-[#d4d4d4] mt-3 mb-1">
+          <h4
+            key={`h4-${i}`}
+            style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 1.08)' }}
+            className="font-semibold text-[var(--flint-text-secondary)] mt-3 mb-1 leading-[1.45]"
+          >
             {formatHeadingTitle(title)}
           </h4>
+        );
+        continue;
+      }
+      if (line.startsWith('##### ')) {
+        const title = line.slice(6);
+        nodes.push(
+          <h5
+            key={`h5-${i}`}
+            style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 0.95)' }}
+            className="font-semibold text-[var(--flint-text-muted)] mt-2.5 mb-1"
+          >
+            {formatHeadingTitle(title)}
+          </h5>
+        );
+        continue;
+      }
+      if (line.startsWith('###### ')) {
+        const title = line.slice(7);
+        nodes.push(
+          <h6
+            key={`h6-${i}`}
+            style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 0.88)' }}
+            className="font-semibold text-[var(--flint-text-muted)] mt-2 mb-1"
+          >
+            {formatHeadingTitle(title)}
+          </h6>
         );
         continue;
       }
@@ -324,27 +366,27 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
           const calloutType = isCallout[1].toUpperCase();
           const cleanText = quoteText.replace(/^\[![^\]]+\]\s*/i, '');
           const calloutColors: Record<string, { border: string; bg: string; text: string }> = {
-            NOTE: { border: 'border-blue-500/40', bg: 'bg-blue-500/10', text: 'text-blue-400' },
-            TIP: { border: 'border-emerald-500/40', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-            IMPORTANT: { border: 'border-purple-500/40', bg: 'bg-purple-500/10', text: 'text-purple-400' },
-            WARNING: { border: 'border-amber-500/40', bg: 'bg-amber-500/10', text: 'text-amber-400' },
-            CAUTION: { border: 'border-rose-500/40', bg: 'bg-rose-500/10', text: 'text-rose-400' },
+            NOTE: { border: 'border-blue-500/50', bg: 'bg-blue-500/10', text: 'text-blue-400' },
+            TIP: { border: 'border-emerald-500/50', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+            IMPORTANT: { border: 'border-purple-500/50', bg: 'bg-purple-500/10', text: 'text-purple-400' },
+            WARNING: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400' },
+            CAUTION: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400' },
           };
           const style = calloutColors[calloutType] || calloutColors.NOTE;
 
           nodes.push(
-            <div key={`callout-${i}`} className={`my-3 p-3 border-l-3 ${style.border} ${style.bg} rounded-r-lg text-xs`}>
-              <div className={`font-semibold ${style.text} mb-1 flex items-center gap-1.5`}>
+            <div key={`callout-${i}`} className={`my-3 p-3.5 border-l-[3px] ${style.border} ${style.bg} rounded-r-lg text-[var(--editor-font-size,16px)]`}>
+              <div className={`font-semibold text-xs uppercase tracking-wider ${style.text} mb-1 flex items-center gap-1.5`}>
                 {calloutType}
               </div>
-              {cleanText && <div className="text-[#cccccc] leading-relaxed" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) }} />}
+              {cleanText && <div className="text-[var(--flint-text-secondary)] leading-[1.75]" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) }} />}
             </div>
           );
           continue;
         }
 
         nodes.push(
-          <div key={`quote-${i}`} className="my-3 pl-3.5 py-1 border-l-2 border-[var(--flint-accent)] bg-[var(--flint-accent)]/5 text-xs text-[#cccccc] rounded-r">
+          <div key={`quote-${i}`} className="my-3 pl-4 pr-3 py-1.5 border-l-[3px] border-[var(--flint-border-strong)] bg-[var(--flint-bg-card)]/40 text-[var(--flint-text-muted)] italic text-[var(--editor-font-size,16px)] leading-[1.75] rounded-r">
             <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(quoteText) }} />
           </div>
         );
@@ -355,7 +397,8 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       nodes.push(
         <p
           key={`p-${i}`}
-          className="text-xs text-[#cccccc] leading-relaxed my-2.5"
+          style={{ fontSize: 'var(--editor-font-size, 16px)' }}
+          className="text-[var(--flint-text-primary)] leading-[1.75] my-2"
           dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }}
         />
       );
@@ -367,7 +410,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
     return nodes;
   }, [content, copiedIndex]);
 
-  return <div className="markdown-prose flex flex-col">{elements}</div>;
+  return <div className="markdown-prose flint-doc-prose flex flex-col font-text text-[var(--editor-font-size,16px)] leading-[1.75] text-[var(--flint-text-primary)] select-text">{elements}</div>;
 });
 
 // Format heading title with dimmed number prefixes if present
@@ -376,7 +419,7 @@ function formatHeadingTitle(title: string): React.ReactNode {
   if (numberedMatch) {
     return (
       <span className="flex items-baseline gap-1.5">
-        <span className="flint-numbered-prefix flint-list-prefix text-[#666666] font-normal select-none">
+        <span className="flint-numbered-prefix flint-list-prefix text-[#777] font-normal select-none">
           {numberedMatch[1]}
         </span>
         <span>{numberedMatch[2]}</span>
@@ -391,27 +434,27 @@ function renderInlineMarkdown(text: string): string {
   if (!text) return '';
   return text
     // Keyboard tags: <kbd>Key</kbd>
-    .replace(/<kbd>(.*?)<\/kbd>/g, '<kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-[#282828] border border-[#383838] rounded text-[#ddd] shadow-xs">$1</kbd>')
+    .replace(/<kbd>(.*?)<\/kbd>/g, '<kbd class="px-1.5 py-0.5 text-[0.75em] font-mono bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] rounded text-[var(--flint-text-secondary)] shadow-xs">$1</kbd>')
     // Inline code: `code`
-    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 text-[11px] font-mono bg-[#222222] border border-[#333333] rounded text-[#e6b450]">$1</code>')
+    .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 text-[0.875em] font-mono bg-[var(--flint-code-bg,var(--flint-bg-card))] border border-[var(--flint-border-subtle)] rounded text-[var(--flint-code-text,var(--flint-text-primary))]">$1</code>')
     // Bold: **text**
-    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-white">$1</strong>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-bold text-[var(--flint-text-primary)]">$1</strong>')
     // Italic: *text*
-    .replace(/\*([^*]+)\*/g, '<em class="italic text-[#ddd]">$1</em>')
+    .replace(/\*([^*]+)\*/g, '<em class="italic text-[var(--flint-text-secondary)]">$1</em>')
     // Strikethrough: ~~text~~
-    .replace(/~~([^~]+)~~/g, '<del class="line-through text-[#888]">$1</del>')
+    .replace(/~~([^~]+)~~/g, '<del class="line-through text-[var(--flint-text-muted)]">$1</del>')
     // Markdown Embeds: ![alt](url)
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, url) => {
-      return `<img src="${url}" alt="${alt || ''}" class="flint-media-image rounded-md border border-[#2a2a2a] max-w-full my-2 block" loading="lazy" />`;
+      return `<img src="${url}" alt="${alt || ''}" class="flint-media-image rounded-md border border-[var(--flint-border-subtle)] max-w-full my-3 block" loading="lazy" />`;
     })
     // Wikilink Embeds: ![[target|alias/size]]
     .replace(/!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(target.trim());
       if (isImg) {
-        return `<img src="${target.trim()}" alt="${alias || target.trim()}" class="flint-media-image rounded-md border border-[#2a2a2a] max-w-full my-2 block" loading="lazy" />`;
+        return `<img src="${target.trim()}" alt="${alias || target.trim()}" class="flint-media-image rounded-md border border-[var(--flint-border-subtle)] max-w-full my-3 block" loading="lazy" />`;
       }
       const label = alias || target;
-      return `<div class="flint-embed-card flint-note-embed rounded-lg border border-[#2e2e2e] bg-[#161616]/90 p-3 my-2 text-xs text-[#cccccc]"><div class="flex items-center gap-1.5 text-xs font-semibold text-[var(--flint-accent)] mb-1"><span>📄 Embedded: ${target}</span></div><div class="italic text-[#888888]">${label}</div></div>`;
+      return `<div class="flint-embed-card flint-note-embed rounded-lg border border-[var(--flint-border-subtle)] bg-[var(--flint-bg-card)]/90 p-3 my-3 text-[0.9em] text-[var(--flint-text-secondary)]"><div class="flex items-center gap-1.5 text-xs font-semibold text-[var(--flint-accent)] mb-1"><span>📄 Embedded: ${target}</span></div><div class="italic text-[var(--flint-text-muted)]">${label}</div></div>`;
     })
     // Standard Markdown links: [text](url) or [text]([[target]]) or [text](target)
     .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) => {
@@ -601,8 +644,13 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
   const description = meta.description;
   const repoUrl = meta.repoUrl;
 
+  const accentListPrefixes = useSettingsStore((s) => s.accentListPrefixes);
+  const indentationGuides = useSettingsStore((s) => s.indentationGuides);
+  const strictLineBreaks = useSettingsStore((s) => s.strictLineBreaks);
+  const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
+
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#181818] overflow-hidden select-text">
+    <div className="flex-1 flex flex-col h-full bg-[var(--flint-bg-main)] overflow-hidden select-text">
       {/* 1. Shared Modular Document Sub-Header (Standard layout matching notes & graph view) */}
       <PageSubHeader
         title={meta.name}
@@ -622,7 +670,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                   setIsSettingsOpen(true, targetExtensionId);
                 }}
                 title={`${meta.name} options`}
-                className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+                className="p-1 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-hover)] cursor-pointer"
               >
                 <Settings02Icon size={14} />
               </button>
@@ -682,7 +730,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
       <DocLayoutWrapper isReadingMode={true}>
         {/* Optional Banner Asset Image */}
         {meta.bannerImage && (
-          <div className="w-full h-44 mb-6 rounded-xl overflow-hidden border border-[#2a2a2a] shadow-lg relative bg-[#1c1c1c]">
+          <div className="w-full h-44 mb-6 rounded-xl overflow-hidden border border-[var(--flint-border-subtle)] shadow-lg relative bg-[var(--flint-bg-card)]">
             <img
               src={meta.bannerImage}
               alt={`${meta.name} Banner`}
@@ -696,8 +744,8 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
           {/* Document Title Header */}
           <div className="mb-3 relative">
             <h1
-              style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
-              className="w-full font-bold text-[#e5e7eb] pb-2 font-text tracking-tight leading-tight select-text"
+              style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 2.3)' }}
+              className="w-full font-bold text-[var(--flint-text-primary)] pb-2 font-text tracking-tight leading-tight select-text"
             >
               {meta.name}
             </h1>
@@ -709,16 +757,16 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
               {/* Property: Tags */}
               <div className="flex items-center gap-2 flex-wrap min-h-[28px]">
                 <div className="relative flex items-center shrink-0 w-24">
-                  <span className="p-1 -ml-1 text-[#777] flex items-center mr-1">
-                    <Tag01Icon size={12} className="text-[#888]" />
+                  <span className="p-1 -ml-1 text-[var(--flint-text-muted)] flex items-center mr-1">
+                    <Tag01Icon size={12} className="text-[var(--flint-text-muted)]" />
                   </span>
-                  <span className="text-[11px] font-medium text-[#777]">Tags</span>
+                  <span className="text-[11px] font-medium text-[var(--flint-text-muted)]">Tags</span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap flex-1">
                   {tags.map((tag: string) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[#252525] hover:bg-[#2d2d2d] text-[#b0b0b0] hover:text-white border border-[#383838] hover:border-[#484848] shadow-[0_1px_2px_rgba(0,0,0,0.35)] font-medium text-xs"
+                      className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--flint-bg-card)] hover:bg-[var(--flint-bg-hover)] text-[var(--flint-text-secondary)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-subtle)] shadow-xs font-medium text-xs"
                     >
                       #{tag.replace(/^#/, '')}
                     </span>
@@ -729,22 +777,22 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
               {/* Property: Creator */}
               <div className="flex items-center gap-2 min-h-[28px]">
                 <div className="relative flex items-center shrink-0 w-24">
-                  <span className="p-1 -ml-1 text-[#777] flex items-center mr-1">
-                    <PackageIcon size={12} className="text-[#888]" />
+                  <span className="p-1 -ml-1 text-[var(--flint-text-muted)] flex items-center mr-1">
+                    <PackageIcon size={12} className="text-[var(--flint-text-muted)]" />
                   </span>
-                  <span className="text-[11px] font-medium text-[#777]">Creator</span>
+                  <span className="text-[11px] font-medium text-[var(--flint-text-muted)]">Creator</span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   {meta.authorUrl ? (
                     <button
                       type="button"
                       onClick={() => platform.openUrl(meta.authorUrl!)}
-                      className="text-[11px] text-[#38bdf8] hover:underline font-normal leading-tight font-sans cursor-pointer text-left"
+                      className="text-[11px] text-[var(--flint-link-color)] hover:underline font-normal leading-tight font-sans cursor-pointer text-left"
                     >
                       {creatorName}
                     </button>
                   ) : (
-                    <span className="text-[11px] text-[#dcddde] font-normal leading-tight font-sans select-text">
+                    <span className="text-[11px] text-[var(--flint-text-secondary)] font-normal leading-tight font-sans select-text">
                       {creatorName}
                     </span>
                   )}
@@ -755,16 +803,16 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
               {repoUrl && (
                 <div className="flex items-center gap-2 min-h-[28px]">
                   <div className="relative flex items-center shrink-0 w-24">
-                    <span className="p-1 -ml-1 text-[#777] flex items-center mr-1">
-                      <LinkSquare02Icon size={12} className="text-[#888]" />
+                    <span className="p-1 -ml-1 text-[var(--flint-text-muted)] flex items-center mr-1">
+                      <LinkSquare02Icon size={12} className="text-[var(--flint-text-muted)]" />
                     </span>
-                    <span className="text-[11px] font-medium text-[#777]">Repository</span>
+                    <span className="text-[11px] font-medium text-[var(--flint-text-muted)]">Repository</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
                     <button
                       type="button"
                       onClick={() => platform.openUrl(repoUrl)}
-                      className="text-[11px] text-[#38bdf8] hover:underline font-mono truncate text-left cursor-pointer inline-flex items-center gap-1"
+                      className="text-[11px] text-[var(--flint-link-color)] hover:underline font-mono truncate text-left cursor-pointer inline-flex items-center gap-1"
                     >
                       <span>{repoUrl.replace(/^https?:\/\/(www\.)?github\.com\//, '')}</span>
                       <LinkSquare02Icon size={10} className="opacity-70" />
@@ -776,13 +824,13 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
               {/* Property: Version */}
               <div className="flex items-center gap-2 min-h-[28px]">
                 <div className="relative flex items-center shrink-0 w-24">
-                  <span className="p-1 -ml-1 text-[#777] flex items-center mr-1">
-                    <GitForkIcon size={12} className="text-[#888]" />
+                  <span className="p-1 -ml-1 text-[var(--flint-text-muted)] flex items-center mr-1">
+                    <GitForkIcon size={12} className="text-[var(--flint-text-muted)]" />
                   </span>
-                  <span className="text-[11px] font-medium text-[#777]">Version</span>
+                  <span className="text-[11px] font-medium text-[var(--flint-text-muted)]">Version</span>
                 </div>
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                  <span className="text-[11px] text-[#dcddde] font-normal leading-tight font-sans select-text">
+                  <span className="text-[11px] text-[var(--flint-text-secondary)] font-normal leading-tight font-sans select-text">
                     {version}
                   </span>
                 </div>
@@ -792,13 +840,13 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
               {description && (
                 <div className="flex items-center gap-2 min-h-[28px]">
                   <div className="relative flex items-center shrink-0 w-24">
-                    <span className="p-1 -ml-1 text-[#777] flex items-center mr-1">
-                      <LeftToRightListBulletIcon size={12} className="text-[#888]" />
+                    <span className="p-1 -ml-1 text-[var(--flint-text-muted)] flex items-center mr-1">
+                      <LeftToRightListBulletIcon size={12} className="text-[var(--flint-text-muted)]" />
                     </span>
-                    <span className="text-[11px] font-medium text-[#777]">Description</span>
+                    <span className="text-[11px] font-medium text-[var(--flint-text-muted)]">Description</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                    <span className="text-[11px] text-[#dcddde] font-normal leading-tight font-sans select-text">
+                    <span className="text-[11px] text-[var(--flint-text-secondary)] font-normal leading-tight font-sans select-text">
                       {description}
                     </span>
                   </div>
@@ -808,11 +856,17 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
           </div>
 
           {/* Divider Line under Document Header */}
-          <div className="border-b border-[#282828] mb-5" />
+          <div className="border-b border-[var(--flint-border-subtle)] mb-5" />
         </div>
 
         {/* Rendered README.md Prose Body */}
-        <div className="flex-1 flex flex-col">
+        <div
+          className={`flex-1 flex flex-col font-text ${
+            accentListPrefixes ? 'flint-accent-lists' : ''
+          } ${indentationGuides ? 'flint-indent-guides' : ''} ${
+            strictLineBreaks ? 'flint-strict-line-breaks' : ''
+          } ${showExternalLinkIcon ? 'flint-show-link-icon' : ''} tiptap-reading-view`}
+        >
           <MarkdownDocRenderer content={readmeContent} />
         </div>
       </DocLayoutWrapper>
