@@ -18,10 +18,17 @@ import {
   COMMUNITY_MARKETPLACE_CATALOGUE,
   MarketplaceExtensionItem,
 } from './marketplaceCatalogue';
-import { Store01Icon } from '@/components/common/Icons';
+import {
+  Store01Icon,
+  Motion01Icon,
+  SparklesIcon,
+  StickyNote02Icon,
+  Brain02Icon,
+} from '@/components/common/Icons';
+import { fetchTursoPlugins } from './tursoClient';
 
 export const PRIMARY_REGISTRY_URL = 'https://api.flintnotes.com/api/v1/plugins';
-export const LOCALHOST_DEV_URL = 'http://localhost:8787/api/v1/plugins';
+export const LOCALHOST_DEV_URL = 'http://localhost:3001/api/v1/plugins';
 export const STORAGE_CACHE_KEY = 'flint_marketplace_catalogue_cache';
 export const STORAGE_CACHE_TIME_KEY = 'flint_marketplace_catalogue_cache_time';
 
@@ -96,13 +103,28 @@ export function getDevRegistryUrl(): string {
  * ship bundled SVG components.
  */
 function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
-  if (iconUrl && (iconUrl.startsWith('http://') || iconUrl.startsWith('https://') || iconUrl.startsWith('data:image'))) {
-    return React.createElement('img', {
-      src: iconUrl,
-      alt: name,
-      className: 'w-4 h-4 object-contain rounded-xs select-none',
-      loading: 'lazy',
-    });
+  if (iconUrl) {
+    const lower = iconUrl.toLowerCase().trim();
+    if (lower === 'motion' || lower === 'motion-01' || lower === 'motion01') {
+      return React.createElement(Motion01Icon, { size: 18, className: 'text-[#38bdf8]' });
+    }
+    if (lower === 'sparkles' || lower === 'sparkle') {
+      return React.createElement(SparklesIcon, { size: 18, className: 'text-[#a855f7]' });
+    }
+    if (lower === 'sticky-note-02' || lower === 'quicknote' || lower === 'sticky-note') {
+      return React.createElement(StickyNote02Icon, { size: 18, className: 'text-[#eab308]' });
+    }
+    if (lower === 'brain-02' || lower === 'brain' || lower === 'fsrs') {
+      return React.createElement(Brain02Icon, { size: 18, className: 'text-[#ec4899]' });
+    }
+    if (iconUrl.startsWith('http://') || iconUrl.startsWith('https://') || iconUrl.startsWith('data:image')) {
+      return React.createElement('img', {
+        src: iconUrl,
+        alt: name,
+        className: 'w-4 h-4 object-contain rounded-xs select-none',
+        loading: 'lazy',
+      });
+    }
   }
 
   return React.createElement(Store01Icon, { size: 18, className: 'text-[#dcddde]' });
@@ -381,7 +403,17 @@ export function useMarketplaceQuery(): MarketplaceQueryResult {
       }
     }
 
-    // 3. Process results or record failure
+    // 3. Direct Turso libSQL edge database query
+    if (!rawPlugins) {
+      try {
+        console.info('[useMarketplaceQuery] Connecting directly to Turso libSQL edge database...');
+        rawPlugins = await fetchTursoPlugins();
+      } catch (tursoErr) {
+        console.warn('[useMarketplaceQuery] Direct Turso query failed:', tursoErr);
+      }
+    }
+
+    // 4. Process results or record failure
     if (rawPlugins) {
       const merged = mergeCatalogue(rawPlugins);
       setExtensions(merged);

@@ -61,6 +61,7 @@ import { ExtensionSettingTab } from '@/core/extensions/types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { dbAdapter } from '@/lib/db/adapter';
 import { APP_VERSION } from '@/version';
+import { useAutoUpdater } from '@/hooks/useAutoUpdater';
 
 // Individual Field Reset Button (renders subtle undo icon when setting is not default)
 const FieldResetButton: React.FC<{
@@ -443,6 +444,8 @@ const GeneralTab: React.FC = React.memo(() => {
   const setLanguage = useSettingsStore((s) => s.setLanguage);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
   const showToast = useWorkspaceStore((s) => s.showToast);
+  const setIsUpdateModalOpen = useWorkspaceStore((s) => s.setIsUpdateModalOpen);
+  const { checkForUpdatesNow, isChecking, hasUpdate, latestRelease } = useAutoUpdater();
 
   const isGeneralModified =
     autoUpdates !== DEFAULT_SETTINGS.autoUpdates ||
@@ -486,12 +489,26 @@ const GeneralTab: React.FC = React.memo(() => {
               Read the changelog.
             </a>
           </div>
-          <button
-            onClick={() => showToast(`Flint is up to date (v${APP_VERSION})`, 'info')}
-            className="flint-btn"
-          >
-            Check for updates
-          </button>
+          <div className="flex items-center gap-2">
+            {hasUpdate && latestRelease && (
+              <button
+                type="button"
+                onClick={() => setIsUpdateModalOpen(true, latestRelease)}
+                className="flint-btn flint-btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer"
+              >
+                <SparklesIcon size={13} />
+                <span>Update to v{latestRelease.version}</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={checkForUpdatesNow}
+              disabled={isChecking}
+              className="flint-btn text-xs py-1.5 px-3 disabled:opacity-50 cursor-pointer"
+            >
+              {isChecking ? 'Checking...' : 'Check for updates'}
+            </button>
+          </div>
         </div>
 
         {/* Row: Automatic updates */}

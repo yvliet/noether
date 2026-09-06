@@ -32,6 +32,7 @@ import {
   MarketplacePluginItem,
 } from './marketplaceCatalogue';
 import { useMarketplaceQuery, getRegistryUrl } from './useMarketplaceQuery';
+import { fetchTursoPluginBundle } from './tursoClient';
 
 // Re-export catalogue and models for consumers
 export {
@@ -141,7 +142,21 @@ export const MarketplaceView: React.FC = () => {
             if (downloadData.manifest) manifestContent = JSON.stringify(downloadData.manifest, null, 2);
           }
         } catch {
-          // Fallback to direct asset URLs
+          // Fallback to direct asset URLs or Turso edge database
+        }
+
+        // Direct Turso edge database retrieval fallback
+        if (!mainJsContent) {
+          try {
+            const tursoBundle = await fetchTursoPluginBundle(ext.id);
+            if (tursoBundle) {
+              if (tursoBundle.bundleCode) mainJsContent = tursoBundle.bundleCode;
+              if (tursoBundle.stylesCode) stylesCssContent = tursoBundle.stylesCode;
+              if (tursoBundle.manifest) manifestContent = JSON.stringify(tursoBundle.manifest, null, 2);
+            }
+          } catch (tursoErr) {
+            console.warn('[MarketplaceView] Direct Turso bundle retrieval failed:', tursoErr);
+          }
         }
 
         if (!mainJsContent) {

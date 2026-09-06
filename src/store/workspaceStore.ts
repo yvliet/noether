@@ -373,6 +373,9 @@ interface WorkspaceState {
   setIsHearthModalOpen: (open: boolean) => void;
   isVaultModalOpen: boolean;
   setIsVaultModalOpen: (open: boolean) => void;
+  isUpdateModalOpen: boolean;
+  availableUpdateRelease: any | null;
+  setIsUpdateModalOpen: (open: boolean, release?: any | null) => void;
 
   // Custom Obsidian Dialogs & Toasts
   skipDeleteConfirmation: boolean;
@@ -2157,6 +2160,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   setIsHearthModalOpen: (open) => set({ isHearthModalOpen: open, isVaultModalOpen: open }),
   isVaultModalOpen: false,
   setIsVaultModalOpen: (open) => set({ isHearthModalOpen: open, isVaultModalOpen: open }),
+  isUpdateModalOpen: false,
+  availableUpdateRelease: null,
+  setIsUpdateModalOpen: (open, release) =>
+    set((state) => ({
+      isUpdateModalOpen: open,
+      availableUpdateRelease: release !== undefined ? release : open ? state.availableUpdateRelease : null,
+    })),
 
   // Custom Obsidian Dialogs & Toasts
   skipDeleteConfirmation: false,

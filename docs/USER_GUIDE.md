@@ -17,7 +17,8 @@ Welcome to the **Flint User Guide**! This manual covers everything you need to k
 9. [Full-Text Search & Quick Open](#9-full-text-search--quick-open)
 10. [Model Context Protocol (MCP) AI Integration](#10-model-context-protocol-mcp-ai-integration)
 11. [Themes & Customization](#11-themes--customization)
-12. [Keyboard Shortcuts Cheat Sheet](#12-keyboard-shortcuts-cheat-sheet)
+12. [Client Updates & Release Management](#12-client-updates--release-management)
+13. [Keyboard Shortcuts Cheat Sheet](#13-keyboard-shortcuts-cheat-sheet)
 
 ---
 
@@ -45,7 +46,7 @@ In Flint, individual note vaults are called **Hearths**.
 When you delete a note, Flint never immediately destroys the file on disk. Instead:
 - The `.md` file is moved into the hidden `.trash/` directory inside your Hearth.
 - Original paths and deletion timestamps are logged in the `trash_items` SQLite table.
-- Files can be restored to their exact prior location at any time from *Settings -> File Safety*.
+- Files can be restored to their exact prior location at any time from *Settings → File Safety*.
 
 ---
 
@@ -55,7 +56,7 @@ Flint provides a hybrid WYSIWYG / Markdown editor built on TipTap 2.x and ProseM
 
 ### Modes
 - **Live Preview (Default)**: Markdown formatting renders interactively as you write. Clicking on a formatted token reveals the underlying syntax for precise inline editing.
-- **Source Mode**: Monospaced raw CommonMark text view, toggled via `Ctrl+K` -> *Toggle Source Mode*.
+- **Source Mode**: Monospaced raw CommonMark text view, toggled via `Ctrl+K` → *Toggle Source Mode*.
 
 ### Slash Commands (`/`)
 Type `/` on any blank line to access the quick-insertion menu:
@@ -118,7 +119,7 @@ Located in the right sidebar, the Backlinks Pane displays:
 
 For visual brainstorming, concept mapping, and system architecture design:
 
-- Click **Canvas** on the Action Rail or run `Ctrl+K` -> *Open Canvas*.
+- Click **Canvas** on the Action Rail or run `Ctrl+K` → *Open Canvas*.
 - **Note Cards**: Drag documents from the file tree directly onto the canvas plane.
 - **Sticky Text Nodes**: Double-click anywhere to create free-form sticky cards.
 - **Group Containers**: Select cards and press `Ctrl+G` to encase them in colored, titled container frames.
@@ -144,7 +145,7 @@ Create flashcards directly in your notes:
   - `2` (Hard): Conservative interval progression.
   - `3` (Good): Standard target retention progression.
   - `4` (Easy): Accelerated interval expansion.
-- View stability ($S$), difficulty ($D$), and upcoming review heatmaps in *Settings -> Extensions -> Spaced Repetition*.
+- View stability ($S$), difficulty ($D$), and upcoming review heatmaps in *Settings → Extensions → Spaced Repetition*.
 
 ---
 
@@ -163,7 +164,7 @@ Never lose track of action items scattered across project notes:
 ## 8. Journal & Daily Notes
 
 - Click the **Journal** icon or press `Ctrl+Alt+J` to open today's scratchpad (e.g. `Journal/2026-09-06.md`).
-- Customize note naming formats (`YYYY-MM-DD`, `YYYY/MM/DD`) and default templates in *Settings -> Extensions -> Journal*.
+- Customize note naming formats (`YYYY-MM-DD`, `YYYY/MM/DD`) and default templates in *Settings → Extensions → Journal*.
 - Use `Alt+←` and `Alt+→` in the journal header to step backward and forward through previous daily entries.
 
 ---
@@ -203,14 +204,27 @@ Add to your client configuration file:
 
 ## 11. Themes & Customization
 
-Open **Settings** (`Ctrl+,`) -> **Appearance**:
+Open **Settings** (`Ctrl+,`) → **Appearance**:
 - **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Flint Dark/Light, Forest Emerald, and Minimal.
 - **Tactile 3D Buttons**: Flint uses physical button styling (`flint-btn`) with crisp borders and instant zero-delay interactions.
 - **Link Styling**: Choose between theme accent, classic browser blue/purple, or neutral link palettes.
 
 ---
 
-## 12. Keyboard Shortcuts Cheat Sheet
+## 12. Client Updates & Release Management
+
+---
+
+Flint features an integrated updater that monitors official GitHub releases:
+
+- **Automatic Background Checks**: When enabled in **Settings** (`Ctrl+,`) → **General**, Flint polls GitHub Releases after startup (with a 4-hour cooldown) and notifies you when new releases are available.
+- **Manual Verification**: Click **Check for updates** in the General settings tab anytime to immediately test against the remote repository.
+- **Early Access Channel**: Opt in to preview builds and release candidates via the **Receive early access versions** switch.
+- **Direct Installer Download**: Launch the update modal to review release notes and download the matching `.exe` or `.msi` Windows installer directly.
+
+---
+
+## 13. Keyboard Shortcuts Cheat Sheet
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
@@ -230,7 +244,7 @@ Open **Settings** (`Ctrl+,`) -> **Appearance**:
 | **Toggle Bold / Italic** | `Ctrl + B` / `Ctrl + I` | `Cmd + B` / `Cmd + I` |
 | **Toggle Highlight** | `Ctrl + Shift + H` | `Cmd + Shift + H` |
 | **Inline Code** | `Ctrl + E` | `Cmd + E` |
-| **Heading Levels 1–6** | `Ctrl + Alt + 1..6` | `Cmd + Alt + 1..6` |
+| **Heading Levels 1 to 6** | `Ctrl + Alt + 1..6` | `Cmd + Alt + 1..6` |
 | **Insert Checklist Task** | `Ctrl + Shift + 9` | `Cmd + Shift + 9` |
 | **Trigger Slash Menu** | `/` | `/` |
 | **Trigger Wiki-Link Popup** | `[[` | `[[` |

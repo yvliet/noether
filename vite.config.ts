@@ -1,16 +1,29 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 
 // https://vitejs.dev/config/
-export default defineConfig({
-  base: './',
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+  const tursoUrl = env.VITE_TURSO_DATABASE_URL || env.DATABASE_URL || 'https://flint-ricriya.aws-ap-northeast-1.turso.io';
+  const normalizedTursoUrl = tursoUrl.startsWith('turso://')
+    ? 'https://' + tursoUrl.slice('turso://'.length)
+    : tursoUrl.startsWith('libsql://')
+    ? 'https://' + tursoUrl.slice('libsql://'.length)
+    : tursoUrl;
+
+  return {
+    base: './',
+    plugins: [react()],
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
     },
-  },
+    define: {
+      'import.meta.env.VITE_TURSO_DATABASE_URL': JSON.stringify(normalizedTursoUrl),
+      'import.meta.env.VITE_TURSO_AUTH_TOKEN': JSON.stringify(env.VITE_TURSO_AUTH_TOKEN || env.TURSO_AUTH_TOKEN || ''),
+    },
   server: {
     host: '127.0.0.1',
     port: 5173,
@@ -69,5 +82,6 @@ export default defineConfig({
       },
     },
   },
+};
 });
 

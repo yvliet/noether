@@ -20,11 +20,13 @@ const HelpModal = React.lazy(() => import('@/components/modals/HelpModal').then(
 const ConfirmModal = React.lazy(() => import('@/components/modals/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
 const PromptModal = React.lazy(() => import('@/components/modals/PromptModal').then(m => ({ default: m.PromptModal })));
 const ImageLightboxModal = React.lazy(() => import('@/components/modals/ImageLightboxModal').then(m => ({ default: m.ImageLightboxModal })));
+const UpdateModal = React.lazy(() => import('@/components/modals/UpdateModal').then(m => ({ default: m.UpdateModal })));
 import { dragTooltipManager, FOLDER_SVG } from '@/lib/dragTooltip';
 
 import { FlintLogoIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useAutoUpdater } from '@/hooks/useAutoUpdater';
 import { appInstance } from '@/core/app/FlintApp';
 import { AppProvider, useFlintApp, useViews, useModals, useExtensionList } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
@@ -197,6 +199,7 @@ const MainViewport: React.FC = React.memo(() => {
 
 export const AppShell: React.FC = React.memo(() => {
   useKeyboardShortcuts();
+  useAutoUpdater();
 
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const isRightSidebarOpen = useWorkspaceStore((s) => s.isRightSidebarOpen);
@@ -465,6 +468,7 @@ export const AppShell: React.FC = React.memo(() => {
           <ConfirmModal />
           <PromptModal />
           <ImageLightboxModal />
+          <UpdateModal />
         </React.Suspense>
 
         <ToastNotification />

@@ -96,7 +96,29 @@ sudo dpkg -i flint_*_amd64.deb
 ```
 
 
-## 3. Opening or Creating Your First Hearth
+## 3. Automatic Client Updates & GitHub Releases
+
+---
+
+Flint includes native update verification that fetches published packages and release notes directly from the official [Flint GitHub Releases](https://github.com/yvliet/flint/releases) stream.
+
+### Update Mechanism & Settings
+
+You can customize client update behavior in `Settings` (`Ctrl+,`) under the **General** tab:
+
+- **Check for updates**: Performs an immediate lookup against GitHub Releases. If a newer release is discovered, the Update dialog appears with changelogs and download buttons.
+- **Automatic updates**: Enabled by default. Flint performs a background check 3 seconds after boot with a 4-hour cooldown window between checks, notifying you via toast notification when an update is available.
+- **Receive early access versions**: When enabled, the updater includes pre-release builds and release candidates alongside stable releases.
+
+### Installer Delivery & Package Selection
+
+When an update is detected:
+1. The update dialog displays the new version tag, release title, and full changelog notes.
+2. Flint identifies the matching Windows installer asset (`.exe` setup or `.msi` package) and lets you launch or download the installer directly.
+3. You can click **View on GitHub** to inspect the source commit history or download alternative platform bundles.
+
+
+## 4. Opening or Creating Your First Hearth
 
 ---
 
@@ -106,7 +128,7 @@ When you first launch Flint, the workspace selector greets you:
 2. **Open Existing Folder**: Choose any existing directory containing Markdown notes (such as an existing Obsidian vault, Foam directory, or GitHub documentation repo). Flint scans the directory, populates its SQLite index, and renders your note hierarchy without altering your existing files.
 
 
-## 4. Building From Source
+## 5. Building From Source
 
 ---
 
@@ -168,7 +190,7 @@ src-tauri/target/release/bundle/
 ```
 
 
-## 5. Verification & Type Checking
+## 6. Verification & Type Checking
 
 ---
 
@@ -183,7 +205,7 @@ cd src-tauri && cargo check
 ```
 
 
-## 6. Next Steps
+## 7. Next Steps
 
 ---
 

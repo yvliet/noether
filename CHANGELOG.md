@@ -1,8 +1,23 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to Flint will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [0.4.1] - 2026-09-06
+
+### Added
+- **Automatic Client Updates**: Integrated native GitHub Releases updater subsystem (`updateChecker.ts`, `useAutoUpdater.ts`) with background verification (4-hour cooldown), early access channel support, and direct Windows installer downloading (`.exe`, `.msi`).
+- **Interactive Update Dialog**: Modal dialog (`UpdateModal.tsx`) presenting changelogs, version diffs, installer details, and release highlights.
+- **Direct Turso libSQL Pipeline Fallback**: Global edge database client (`tursoClient.ts`) querying community extensions and compiled bundles via HTTP pipeline (`/v2/pipeline`), enabling zero-downtime extension discovery and direct installation even when central REST APIs are unreachable.
+- **Offline Community Catalogue**: Pre-seeded catalogue containing `flint-cascade`, `flint-copilot`, `quicknote`, and `fsrs-spaced-repetition` for instantaneous cold start rendering.
+
+### Fixed
+- **Community Marketplace Visibility**: Resolved empty marketplace listing by aligning dev registry port (`3001`), adding Turso HTTP fallback query, and mapping extension Hugeicons.
+- **Extension Installation Fallback**: Fixed package download failure by retrieving compiled bundles directly from Turso database when REST endpoints are offline.
+- **Settings Update Checks**: Replaced static toast with reactive GitHub release lookup and dynamic "Update to v..." action button.
+
+---
 
 ## [0.4.0] - 2026-09-06
 
