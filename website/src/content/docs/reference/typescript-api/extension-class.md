@@ -43,8 +43,9 @@ export default class MyExtension extends Extension {
 | `registerPortalSlot`| `(slot: PortalSlotDefinition) => void` | Injects React components into UI portal slots. |
 | `registerTool` | `(tool: McpToolDefinition) => void` | Exposes a Model Context Protocol tool to AI agents. |
 | `registerEditorPlugin` | `(plugin: EditorPluginDefinition) => void` | Bridges ProseMirror / TipTap editor extensions. |
+| `registerDocumentTransformHook` | `(hook: DocumentTransformHook) => Disposable` | Intercepts markdown export and import for clean metadata synchronization. |
 | `defineTable` | `(schema: TableSchema) => Promise<TableHandle>` | Creates declarative SQLite tables with cascade rules. |
 | `registerWorkerTask` | `(taskName, handler) => void` | Offloads CPU tasks to background Web Workers. |
 | `onEvent` / `registerEvent` | `(event, listener) => Disposable` | Listens to EventBus events with auto-cleanup. |
-| `loadData` | `() => Promise<any>` | Loads persisted plugin JSON settings. |
-| `saveData` | `(data: any) => Promise<void>` | Saves updated plugin JSON settings. |
+| `loadData` | `() => Promise<any>` | Loads persisted extension JSON settings. |
+| `saveData` | `(data: any) => Promise<void>` | Saves updated extension JSON settings. |

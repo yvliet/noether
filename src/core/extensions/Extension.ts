@@ -61,6 +61,7 @@ import {
   McpZodToolDefinition,
   PortalSlotDefinition,
   EditorPluginDefinition,
+  DocumentTransformHook,
   TableDefinition,
   ExtensionTable,
   WorkerTaskDefinition,
@@ -622,6 +623,26 @@ export abstract class Extension {
     const d = this.app.editor.registerEditorPlugin({
       ...plugin,
       id: pluginId,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a document transform hook to augment markdown export or clean import.
+   * Enables extensions to cleanly persist custom comments or metadata on disk without core coupling.
+   *
+   * @param hook - Document transform hook definition.
+   * @returns A Disposable to unregister the hook.
+   * @since 0.4.0
+   */
+  public registerDocumentTransformHook(hook: DocumentTransformHook): Disposable {
+    const hookId = hook.id.startsWith(`${this.manifest.id}:`)
+      ? hook.id
+      : `${this.manifest.id}:${hook.id}`;
+
+    const d = this.app.editor.registerDocumentTransformHook({
+      ...hook,
+      id: hookId,
     });
     return this.registerDisposable(d);
   }

@@ -11,6 +11,7 @@ import { TablesExtension, TABLES_MANIFEST } from './tables/TablesExtension';
 import { BookmarksExtension, BOOKMARKS_MANIFEST } from './bookmarks/BookmarksExtension';
 import { MarketplaceExtension, MARKETPLACE_MANIFEST } from './marketplace/MarketplaceExtension';
 import { IconifyExtension, ICONIFY_MANIFEST } from './iconify/IconifyExtension';
+import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
 import { DefaultStatusBarExtension, DEFAULT_STATUS_BAR_MANIFEST } from './defaults/DefaultStatusBarExtension';
 
@@ -29,6 +30,7 @@ export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(OUTLINE_MANIFEST, OutlineExtension);
   app.extensions.registerExtension(PROPERTIES_MANIFEST, PropertiesExtension);
   app.extensions.registerExtension(ICONIFY_MANIFEST, IconifyExtension);
+  app.extensions.registerExtension(SKETCH_MANIFEST, SketchExtension);
 }
 
 // Backwards-compat alias

@@ -137,6 +137,7 @@ export type {
   PortalSlotLocation,
   PortalSlotContext,
   PortalSlotDefinition,
+  DocumentTransformHook,
 } from '../core/extensions/types';
 
 // ── ProseMirror & Editor Plugin Types ──

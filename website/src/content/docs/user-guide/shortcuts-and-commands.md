@@ -91,8 +91,28 @@ The **Command Palette** is your central cockpit in Flint.
 
 ## 6. Window Zoom & Display Scaling
 
+---
+
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
 | **Zoom In** | `Ctrl + +` | `Cmd + +` |
 | **Zoom Out** | `Ctrl + -` | `Cmd + -` |
 | **Reset Zoom (100%)** | `Ctrl + 0` | `Cmd + 0` |
+
+---
+
+## 7. Flint Sketch (Drawing & Markup Overlay)
+
+---
+
+| Action | Windows / Linux | macOS |
+| :--- | :--- | :--- |
+| **Toggle Sketch Overlay** | `Ctrl + Shift + S` | `Cmd + Shift + S` |
+| **Select & Move Mode** | `V` | `V` |
+| **Pen Tool** | `B` or `P` | `B` or `P` |
+| **Highlighter Tool** | `H` | `H` |
+| **Eraser Tool** | `E` | `E` |
+| **Undo Drawing Stroke** | `Ctrl + Z` | `Cmd + Z` |
+| **Redo Drawing Stroke** | `Ctrl + Y` or `Ctrl + Shift + Z` | `Cmd + Y` or `Cmd + Shift + Z` |
+| **Delete Selected Drawings** | `Delete` or `Backspace` | `Delete` or `Backspace` |
+| **Deselect / Close Toolbar** | `Escape` | `Escape` |

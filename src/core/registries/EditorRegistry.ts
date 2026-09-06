@@ -12,6 +12,7 @@ import {
   DocumentTitleDecoratorDefinition,
   EditorPluginDefinition,
   EditorPluginContext,
+  DocumentTransformHook,
 } from '../extensions/types';
 
 export interface CodeBlockRendererDefinition {
@@ -33,6 +34,7 @@ export class EditorRegistry {
   private breadcrumbDecorators: Map<string, BreadcrumbDecoratorDefinition> = new Map();
   private documentTitleDecorators: Map<string, DocumentTitleDecoratorDefinition> = new Map();
   private editorPlugins: Map<string, EditorPluginDefinition> = new Map();
+  private transformHooks: Map<string, DocumentTransformHook> = new Map();
   private listeners: Set<() => void> = new Set();
   private activeEditor: any = null;
 
@@ -45,6 +47,7 @@ export class EditorRegistry {
   private cachedBreadcrumbDecorators: BreadcrumbDecoratorDefinition[] = [];
   private cachedDocumentTitleDecorators: DocumentTitleDecoratorDefinition[] = [];
   private cachedEditorPlugins: EditorPluginDefinition[] = [];
+  private cachedTransformHooks: DocumentTransformHook[] = [];
 
   /**
    * Sets the active rich text editor instance.
@@ -272,6 +275,60 @@ export class EditorRegistry {
 
   public getDocumentTitleDecorators(): DocumentTitleDecoratorDefinition[] {
     return this.cachedDocumentTitleDecorators;
+  }
+
+  public registerDocumentTransformHook(hook: DocumentTransformHook): Disposable {
+    this.transformHooks.set(hook.id, hook);
+    this.cachedTransformHooks = Array.from(this.transformHooks.values());
+    this.notify();
+
+    return {
+      dispose: () => {
+        this.transformHooks.delete(hook.id);
+        this.cachedTransformHooks = Array.from(this.transformHooks.values());
+        this.notify();
+      },
+    };
+  }
+
+  public getTransformHooks(): DocumentTransformHook[] {
+    return this.cachedTransformHooks;
+  }
+
+  public async applyExportTransforms(context: { documentId: string; title: string; markdown: string }): Promise<string> {
+    let result = context.markdown;
+    for (const hook of this.cachedTransformHooks) {
+      if (typeof hook.transformExport === 'function') {
+        try {
+          result = await hook.transformExport({ ...context, markdown: result });
+        } catch (err) {
+          console.error(`[EditorRegistry] Error in transformExport for hook "${hook.id}":`, err);
+        }
+      }
+    }
+    return result;
+  }
+
+  public applyImportTransforms(context: { documentId?: string; title?: string; markdown: string }): { markdown: string; extractedData: Record<string, any> } {
+    let cleanMarkdown = context.markdown;
+    const extractedData: Record<string, any> = {};
+
+    for (const hook of this.cachedTransformHooks) {
+      if (typeof hook.transformImport === 'function') {
+        try {
+          const res = hook.transformImport({ ...context, markdown: cleanMarkdown });
+          if (res) {
+            cleanMarkdown = res.markdown;
+            if (res.data !== undefined) {
+              extractedData[hook.id] = res.data;
+            }
+          }
+        } catch (err) {
+          console.error(`[EditorRegistry] Error in transformImport for hook "${hook.id}":`, err);
+        }
+      }
+    }
+    return { markdown: cleanMarkdown, extractedData };
   }
 
   private recomputeDocumentTitleDecorators(): void {

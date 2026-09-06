@@ -135,6 +135,14 @@ import {
   ArrowExpand01Icon as HugeArrowExpand01Icon,
   RulerIcon as HugeRulerIcon,
   TextUnderlineIcon as HugeTextUnderlineIcon,
+  Eraser01Icon as HugeEraser01Icon,
+  EraserIcon as HugeEraserIcon,
+  TextIcon as HugeTextIcon,
+  FullScreenIcon as HugeFullScreenIcon,
+  Cursor02Icon as HugeCursor02Icon,
+  UndoIcon as HugeUndoIcon,
+  RedoIcon as HugeRedoIcon,
+  PaintBoardIcon as HugePaintBoardIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -314,6 +322,15 @@ export const UserIcon = createIcon(HugeUserIcon);
 export const EyedropperIcon = createIcon(HugeColorPickerIcon);
 export const SplitRightIcon = createIcon(HugeSquareSplitHorizontalIcon);
 export const SplitDownIcon = createIcon(HugeSquareSplitVerticalIcon);
+export const Eraser01Icon = createIcon(HugeEraser01Icon);
+export const EraserIcon = createIcon(HugeEraserIcon);
+export const TextIcon = createIcon(HugeTextIcon);
+export const FullscreenIcon = createIcon(HugeFullScreenIcon);
+export const FullScreenIcon = FullscreenIcon;
+export const Cursor02Icon = createIcon(HugeCursor02Icon);
+export const PaintBoardIcon = createIcon(HugePaintBoardIcon);
+export const UndoIcon = createIcon(HugeUndoIcon);
+export const RedoIcon = createIcon(HugeRedoIcon);
 export const OpenInWindowIcon = createIcon(HugeAppWindowIcon);
 export const PlusCircleIcon = createIcon(HugeAddCircleIcon);
 export const MoveFileIcon = createIcon(HugeFolderTransferIcon);

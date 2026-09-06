@@ -764,8 +764,23 @@ export type PortalSlotLocation =
   | 'editor:floating-toolbar'
   | 'editor:minimap'
   | 'editor:gutter'
+  | 'editor:subheader-actions'
+  | 'editor:content-overlay'
   | 'workspace:root'
   | (string & {});
+
+/**
+ * Hook allowing extensions to intercept and augment markdown export and vault import.
+ * Enables zero-leakage persistence for extensions requiring embedded comments or metadata.
+ * @since 0.4.0
+ */
+export interface DocumentTransformHook {
+  id: string;
+  /** Invoked when exporting note to disk markdown; returns augmented markdown */
+  transformExport?: (context: { documentId: string; title: string; markdown: string }) => string | Promise<string>;
+  /** Invoked when parsing markdown from disk; extracts extension data and cleans markdown */
+  transformImport?: (context: { documentId?: string; title?: string; markdown: string }) => { markdown: string; data?: any };
+}
 
 /**
  * Contextual state provided to Portal Slot render functions.

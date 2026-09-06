@@ -11,7 +11,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { serve } from '@hono/node-server';
 import { initDatabase } from './db/database.js';
-import { pluginRoutes } from './routes/plugins.js';
+import { extensionRoutes } from './routes/extensions.js';
 
 export const app = new Hono();
 
@@ -30,7 +30,7 @@ app.use(
 // Logging middleware for request observability
 app.use('*', logger());
 
-// Initialize database schema and pre-seed on first request or application boot
+// Initialize database schema on first request or application boot
 app.use('*', async (c, next) => {
   await initDatabase();
   await next();
@@ -39,16 +39,19 @@ app.use('*', async (c, next) => {
 // Root metadata endpoint
 app.get('/', (c) => {
   return c.json({
-    name: 'Flint Community Plugin Registry API',
+    name: 'Flint Community Extension Registry API',
     version: '1.0.0',
-    description: 'Serverless REST API providing discovery and distribution for Flint community extensions.',
+    description: 'Serverless REST API providing discovery, distribution, and publishing for Flint community extensions.',
     documentation: 'https://flintnotes.dev/docs/extensions',
     endpoints: {
-      plugins: '/api/v1/plugins',
-      pluginDetail: '/api/v1/plugins/:id',
-      pluginDownload: '/api/v1/plugins/:id/download',
-      publish: 'POST /api/v1/plugins/publish',
+      extensions: '/api/v1/extensions',
+      extensionDetail: '/api/v1/extensions/:id',
+      extensionDownload: '/api/v1/extensions/:id/download',
+      publish: 'POST /api/v1/extensions/publish',
       health: '/health',
+      // Legacy compatibility aliases
+      legacyPlugins: '/api/v1/plugins',
+      legacyPublish: 'POST /api/v1/plugins/publish',
     },
   });
 });
@@ -63,8 +66,9 @@ app.get('/health', async (c) => {
   }
 });
 
-// Mount plugin catalog routes
-app.route('/api/v1/plugins', pluginRoutes);
+// Mount extension catalog routes (primary standard and backward-compatible alias)
+app.route('/api/v1/extensions', extensionRoutes);
+app.route('/api/v1/plugins', extensionRoutes);
 
 // Global 404 handler
 app.notFound((c) => {

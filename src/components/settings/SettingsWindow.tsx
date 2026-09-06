@@ -3485,7 +3485,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               ]);
               if (BUILTIN_TABS.has(activeTab)) return null;
 
-              const currentTab = allSettingTabs.find((t) => isTabMatch(t, activeTab));
+              const currentTab =
+                allSettingTabs.find((t) => isTabMatch(t, activeTab)) ||
+                coreExtensionTabs.find((t) => isTabMatch(t, activeTab)) ||
+                communityExtensionTabs.find((t) => isTabMatch(t, activeTab));
               const candidateId = activeTab.includes(':') ? activeTab.split(':')[0] : activeTab;
               const manifest = currentTab
                 ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.pluginId || currentTab.id.split(':')[0])
@@ -3550,11 +3553,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   </div>
 
                   {/* Extension Setting Content */}
-                  {isEnabled && currentTab ? (
-                    <div className="flex flex-col gap-4">
-                      {currentTab.render()}
-                    </div>
-                  ) : (
+                  {!isEnabled ? (
                     <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
                       <span className="text-xs text-[#888]">
                         {tabName} is currently disabled.
@@ -3569,6 +3568,17 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       >
                         Enable {tabName}
                       </button>
+                    </div>
+                  ) : currentTab?.render ? (
+                    <div className="flex flex-col gap-4">
+                      {currentTab.render()}
+                    </div>
+                  ) : (
+                    <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-2">
+                      <h4 className="text-sm font-semibold text-white">{tabName}</h4>
+                      <p className="text-xs text-[#888] leading-relaxed">
+                        {manifest?.description || `${tabName} is enabled and active.`}
+                      </p>
                     </div>
                   )}
                 </div>

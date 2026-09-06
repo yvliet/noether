@@ -79,7 +79,7 @@ export type ExtensionManifest = z.infer<typeof ExtensionManifestSchema>;
 /**
  * Request payload schema for publishing a new extension version.
  */
-export const PublishPluginSchema = z.object({
+export const PublishExtensionSchema = z.object({
   manifest: ExtensionManifestSchema,
   bundleUrl: z.string().optional(),
   stylesUrl: z.string().optional(),
@@ -87,6 +87,7 @@ export const PublishPluginSchema = z.object({
   stylesCode: z.string().optional(),
   readme: z.string().optional(),
   sha256: z.string().optional(),
+  overwrite: z.boolean().optional().default(false),
   author: z.object({
     githubUsername: z.string().min(1, 'GitHub username is required'),
     displayName: z.string().min(1, 'Display name is required'),
@@ -94,12 +95,18 @@ export const PublishPluginSchema = z.object({
   }),
 });
 
-export type PublishPluginPayload = z.infer<typeof PublishPluginSchema>;
+export type PublishExtensionPayload = z.infer<typeof PublishExtensionSchema>;
 
 /**
- * Formatted plugin summary returned in list queries.
+ * Backward compatibility alias for legacy plugin publishing endpoints.
  */
-export interface PluginSummaryItem {
+export const PublishPluginSchema = PublishExtensionSchema;
+export type PublishPluginPayload = PublishExtensionPayload;
+
+/**
+ * Formatted extension summary returned in list queries.
+ */
+export interface ExtensionSummaryItem {
   id: string;
   name: string;
   description: string;
@@ -122,18 +129,22 @@ export interface PluginSummaryItem {
   updated_at: string;
 }
 
+export type PluginSummaryItem = ExtensionSummaryItem;
+
 /**
- * Paginated plugin listing response.
+ * Paginated extension listing response.
  */
-export interface PluginListResponse {
-  items: PluginSummaryItem[];
+export interface ExtensionListResponse {
+  items: ExtensionSummaryItem[];
   total: number;
   page: number;
   totalPages: number;
 }
 
+export type PluginListResponse = ExtensionListResponse;
+
 /**
- * Plugin version summary for version histories.
+ * Extension version summary for version histories.
  */
 export interface VersionSummary {
   id: string;
@@ -146,9 +157,9 @@ export interface VersionSummary {
 }
 
 /**
- * Full detailed plugin response including complete metadata and version history.
+ * Full detailed extension response including complete metadata and version history.
  */
-export interface PluginDetailResponse {
+export interface ExtensionDetailResponse {
   id: string;
   name: string;
   description: string;
@@ -180,3 +191,5 @@ export interface PluginDetailResponse {
   readme: string;
   versions: VersionSummary[];
 }
+
+export type PluginDetailResponse = ExtensionDetailResponse;

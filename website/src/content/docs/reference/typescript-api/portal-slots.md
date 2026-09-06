@@ -33,8 +33,10 @@ this.registerPortalSlot({
 ---
 
 - `workspace:root`: Full viewport modal overlays, HUD widgets, and floating draw panels.
+- `editor:subheader-actions`: Action button dock in the document subheader immediately to the left of the Reading / Editing view toggle button.
+- `editor:content-overlay`: In-editor canvas overlay mounted inside the scrollable document content column, scrolling naturally with text paragraphs.
+- `editor:viewport-overlay`: In-editor canvas overlay pinned to the screen viewport (fixed HUD glass).
 - `editor:floating-toolbar`: Docked above the active editor selection or floating right.
 - `editor:minimap`: Vertical right-side outline / overview strip next to editor.
-- `editor:viewport-overlay`: In-editor canvas decorations.
 - `sidebar:left:bottom`: Docked below the left file tree.
 - `sidebar:right:bottom`: Docked below the backlinks outline panel.

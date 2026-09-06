@@ -263,7 +263,7 @@ this.registerSlashCommand({
 ```
 
 ### Dynamic React Portal Slots
-Mount arbitrary React components into layout anchor slots (`editor:viewport-overlay`, `editor:floating-toolbar`, `editor:minimap`, `editor:gutter`):
+Mount arbitrary React components into layout anchor slots (`editor:subheader-actions`, `editor:content-overlay`, `editor:viewport-overlay`, `editor:floating-toolbar`, `editor:minimap`, `editor:gutter`):
 ```typescript
 this.registerPortalSlot({
   id: 'editor-word-badge',

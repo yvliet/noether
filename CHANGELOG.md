@@ -4,6 +4,37 @@ All notable changes to Flint will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.6] - 2026-09-06
+
+### Added
+- **Sketch Core Extension**: Built-in freehand vector drawing and markup overlay directly on top of markdown documents without rigid inline bounding blocks.
+- **Native Editor Portal Slots**: Introduced `editor:subheader-actions` (mounted next to the editing view toggle with `PaintBoardIcon`) and `editor:content-overlay` (anchored inside the document column to scroll naturally with text).
+- **Document Transform Hooks**: Added `DocumentTransformHook` interface in `EditorRegistry` and `Extension` base class to intercept document exports and imports for clean external serialization.
+- **Clean Markdown Disk Persistence**: Vector strokes persist in SQLite WASM and synchronize to disk as invisible HTML comments (`<!-- flint-sketch: ... -->`) that stay clean in external markdown readers.
+- **Photoshop-Style Selection & Move Mode**: Added `Cursor02Icon` selection tool supporting marquee drag-to-select, dashed bounding outlines with 8 transform handles, real-time 120 FPS SVG translation, multi-stroke shift selection, and stroke deletion via `Delete` / `Backspace`.
+- **Icon-Only HUD Toolbar**: Floating drawing dock featuring Select, Pen, Highlighter, Eraser, color swatches, visual width dots, and anchoring toggles (Text Flow vs Viewport Screen).
+- **Capture-Phase Keyboard Shortcuts**: Intercepted `Ctrl+Z` (undo) and `Ctrl+Y` / `Ctrl+Shift+Z` (redo) at the window capture phase with `stopImmediatePropagation()` to ensure drawing history is never intercepted by ProseMirror or browser defaults.
+- **Dedicated Sketch Settings Tab**: Added `SketchSettingsTab` to customize default tools, stroke line widths, color palettes, and anchoring modes.
+- **MCP AI Tool Integration**: Registered `sketch_get_document_drawings`, `sketch_export_svg`, and `sketch_clear_layer` for autonomous AI agent inspection and export.
+
+### Fixed
+- **Extension Settings Resolution in Settings Window**: Resolved issue where enabled extensions without registered custom setting tabs falsely displayed "is currently disabled" by querying fallback tabs across `coreExtensionTabs` and `communityExtensionTabs` and decoupling disabled notice checks.
+
+---
+
+## [0.4.5] - 2026-09-06
+
+### Added
+- **Official Publish Extension REST API**: Added `POST /api/v1/extensions/publish` endpoint with Zod schema validation, automatic author profile provisioning, developer ownership verification (403 guard), and duplicate version protection (409 guard with optional `overwrite: true` in-place updates).
+- **Direct Turso Bundle Storage and Serving**: Saved compiled JavaScript bundles, CSS stylesheets, and Markdown READMEs directly into the Turso database, exposing them via dedicated `/bundle`, `/styles`, and `/manifest.json` endpoints.
+- **Dedicated CLI Extension Publisher**: Introduced `scripts/publish-extension.ts` (`npm run extensions:publish`) to inspect extension directories, compute SHA256 integrity hashes, and publish releases to the registry without direct database credentials.
+- **Unified Extension Terminology Across Registry Routes**: Mounted `/api/v1/extensions` as the primary standard route while retaining `/api/v1/plugins` as a transparent backward-compatible alias.
+
+### Removed
+- **Direct Database Seeding Scripts**: Removed legacy `scripts/seed-turso-registry.ts` and `api/src/db/seed.ts` along with the `registry:seed` script, replacing manual raw SQL database insertion with the formal Publish API.
+
+---
+
 ## [0.4.4] - 2026-09-06
 
 ### Added

@@ -143,7 +143,7 @@ function loadSchemaSql(): string {
 }
 
 /**
- * Executes schema migration and pre-seeds the initial community catalogue if empty.
+ * Executes schema migration for the registry database.
  * Guarantees idempotent execution through atomic transaction boundaries.
  */
 export async function initDatabase(): Promise<Client> {

@@ -1063,7 +1063,17 @@ export async function saveDocumentAndSynchronize(
     const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string }>(`SELECT id, parent_id, title, properties FROM documents WHERE id = ?`, [documentId]))[0];
     const docTitle = title || docRecord?.title || 'Untitled';
     const docProps = docRecord?.properties || '{}';
-    const mdContent = jsonToMarkdown(contentJson, docTitle, docProps);
+    let mdContent = jsonToMarkdown(contentJson, docTitle, docProps);
+    try {
+      const { appInstance } = await import('@/core/app/FlintApp');
+      if (appInstance?.editor) {
+        mdContent = await appInstance.editor.applyExportTransforms({
+          documentId,
+          title: docTitle,
+          markdown: mdContent,
+        });
+      }
+    } catch (tErr) {}
     if (platform.isDesktop() && docRecord && !options?.skipDiskExport) {
       const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
       const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
@@ -1409,9 +1419,22 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         continue;
       }
 
+      let cleanFileContent = fileContent;
+      try {
+        const { appInstance } = await import('@/core/app/FlintApp');
+        if (appInstance?.editor) {
+          const transformed = appInstance.editor.applyImportTransforms({
+            documentId: matchedDoc?.id,
+            title: fileName,
+            markdown: cleanFileContent,
+          });
+          cleanFileContent = transformed.markdown;
+        }
+      } catch (tErr) {}
+
       if (!matchedDoc) {
         // Create new document
-        const { properties, bodyText } = parseFrontmatter(fileContent);
+        const { properties, bodyText } = parseFrontmatter(cleanFileContent);
         const contentJson = markdownToTipTapJson(bodyText);
         const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
         const isWelcomeDoc = fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint';
@@ -1433,7 +1456,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         syncedCount++;
       } else {
         // Update modified existing document
-        const { properties, bodyText } = parseFrontmatter(fileContent);
+        const { properties, bodyText } = parseFrontmatter(cleanFileContent);
         const contentJson = markdownToTipTapJson(bodyText);
         const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : (matchedDoc.properties || '{}');
         await dbAdapter.execute(

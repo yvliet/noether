@@ -986,6 +986,13 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
         {/* Right: Reading View, Bookmark, Search & More Options */}
         <div className="relative z-10 flex items-center gap-0.5 shrink-0">
+          {/* Dynamic Extension Subheader Actions Slot (Left of View Mode Toggle) */}
+          <ExtensionPortalSlotHost
+            slot="editor:subheader-actions"
+            context={portalSlotContext}
+            className="flex items-center gap-0.5 shrink-0"
+          />
+
           <button
             onClick={handleViewToggle}
             disabled={!currentDoc}
@@ -1165,10 +1172,16 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             className={`flex-1 overflow-y-auto custom-scrollbar ${isReadingMode ? 'cursor-default' : ''}`}
           >
             <div
-              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full ${
+              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative ${
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
               }`}
             >
+              {/* Dynamic Extension Content Overlay Slot (Moves with text) */}
+              <ExtensionPortalSlotHost
+                slot="editor:content-overlay"
+                context={portalSlotContext}
+                className="absolute inset-0 pointer-events-none z-20 overflow-visible"
+              />
               {isImageDoc ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-4 select-none my-auto">
                   <div className="max-w-full flex items-center justify-center rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#141414] shadow-md p-2">
