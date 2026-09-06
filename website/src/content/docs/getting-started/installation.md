@@ -29,7 +29,7 @@ curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.s
 
 Pre-compiled standalone binaries and installers are available directly on the [Flint Releases page](https://github.com/yvliet/flint/releases/latest).
 
-### Platform Download Matrix
+### Direct Downloads
 
 | Operating System | Package Format | Architecture | Download Link |
 | :--- | :--- | :--- | :--- |

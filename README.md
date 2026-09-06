@@ -51,16 +51,56 @@ irm https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.ps1 | ie
 curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.sh | bash
 ```
 
-### Direct Download Matrix
+### Direct Downloads
 
-| Platform | Format | Architecture | Direct Download |
-| :--- | :--- | :--- | :--- |
-| **Windows** | `.msi` Installer | x64 | [Flint-Setup-x64.msi](https://github.com/yvliet/flint/releases/latest) |
-| **Windows** | `.exe` Standalone | x64 | [Flint-x64.exe](https://github.com/yvliet/flint/releases/latest) |
-| **macOS** | `.dmg` Package | Apple Silicon & Intel | [Flint.dmg](https://github.com/yvliet/flint/releases/latest) |
-| **Linux** | `.AppImage` Portable | x86_64 | [Flint.AppImage](https://github.com/yvliet/flint/releases/latest) |
-| **Linux** | `.deb` Package | x86_64 | [flint_amd64.deb](https://github.com/yvliet/flint/releases/latest) |
-| **Web Preview** | In-Browser (WASM) | Modern Browsers | [Launch Web App →](https://yvliet.github.io/flint/) |
+<table width="100%">
+  <thead>
+    <tr>
+      <th align="left">Platform</th>
+      <th align="left">Format</th>
+      <th align="left">Architecture</th>
+      <th align="left">Direct Download</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Windows</b></td>
+      <td><code>.msi</code> Installer</td>
+      <td>x64</td>
+      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint-Setup-x64.msi</a></td>
+    </tr>
+    <tr>
+      <td><b>Windows</b></td>
+      <td><code>.exe</code> Standalone</td>
+      <td>x64</td>
+      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint-x64.exe</a></td>
+    </tr>
+    <tr>
+      <td><b>macOS</b></td>
+      <td><code>.dmg</code> Package</td>
+      <td>Apple Silicon & Intel</td>
+      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint.dmg</a></td>
+    </tr>
+    <tr>
+      <td><b>Linux</b></td>
+      <td><code>.AppImage</code> Portable</td>
+      <td>x86_64</td>
+      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint.AppImage</a></td>
+    </tr>
+    <tr>
+      <td><b>Linux</b></td>
+      <td><code>.deb</code> Package</td>
+      <td>x86_64</td>
+      <td><a href="https://github.com/yvliet/flint/releases/latest">flint_amd64.deb</a></td>
+    </tr>
+    <tr>
+      <td><b>Web Preview</b></td>
+      <td>In-Browser (WASM)</td>
+      <td>Modern Browsers</td>
+      <td><a href="https://yvliet.github.io/flint/">Launch Web App →</a></td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
@@ -196,7 +236,7 @@ Add Flint to your client's MCP configuration (e.g. `claude_desktop_config.json`)
 
 ---
 
-## Technical Highlights Matrix
+## Technical Highlights
 
 | Dimension | Implementation Details |
 | :--- | :--- |

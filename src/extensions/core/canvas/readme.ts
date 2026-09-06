@@ -48,7 +48,7 @@ this.addActionRailIcon(
 
 ## Spatial Coordinate System
 
-- **Transform State**: Panning translates \`(panX, panY)\` and zooming scales \`scale\` from a unified matrix.
+- **Transform State**: Panning translates \`(panX, panY)\` and zooming scales \`scale\` from a unified coordinate transform.
 - **Node Collision & Virtualization**: Nodes offscreen are culled to maintain steady rendering framerates.
 - **Edge Routing**: Bezier curve algorithms compute connector pathways between dynamic bounding boxes.
 

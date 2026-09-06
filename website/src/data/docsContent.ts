@@ -425,7 +425,7 @@ export const DOCS_TREE: DocNode[] = [
             id: 'versions',
             title: 'Versions',
             slug: 'versions',
-            aliases: ['Versions', 'Compatibility', 'minAppVersion Matrix'],
+            aliases: ['Versions', 'Compatibility', 'minAppVersion Table'],
             content: versionsRaw,
           },
         ],

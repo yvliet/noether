@@ -20,7 +20,7 @@ Extensions specify their minimum required host application version in `manifest.
 - If `minAppVersion` is omitted, Flint defaults to `"0.1.0"`.
 
 
-## 2. API Version Stability Matrix
+## 2. API Version Stability Table
 
 ---
 
