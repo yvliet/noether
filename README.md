@@ -19,8 +19,10 @@
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=61dafb)](package.json)
 [![Database](https://img.shields.io/badge/Database-Native%20Rust%20SQLite%20(rusqlite)%20%2B%20WAL%20%2B%20FTS5-003B57.svg?logo=sqlite&logoColor=white)](src-tauri/src/db.rs)
 [![Protocol](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol%20(MCP)-7c3aed.svg)](bin/flint-mcp-server.cjs)
+[![Docs](https://img.shields.io/badge/Docs-Interactive%20Website-ea580c.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/flint/)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-06b6d4.svg?logo=tailwindcss&logoColor=white)](tailwind.config.js)
 
+[Documentation (Live Website)](https://yvliet.github.io/flint/) •
 [Overview](#overview) •
 [Downloads](#quick-install--downloads) •
 [Architecture](#architectural-overview) •
