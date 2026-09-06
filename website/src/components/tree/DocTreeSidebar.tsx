@@ -8,6 +8,7 @@ export interface DocTreeSidebarProps {
   activeDocId: string;
   onSelectDoc: (node: DocNode) => void;
   className?: string;
+  onClose?: () => void;
 }
 
 const STORAGE_KEY = 'flint_docs_open_folders';
@@ -33,6 +34,7 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
   activeDocId,
   onSelectDoc,
   className = '',
+  onClose,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
@@ -208,6 +210,7 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
         onSelect={() => {
           if (!isFolder) {
             onSelectDoc(node);
+            onClose?.();
           } else {
             toggleFolder(node.id);
           }
@@ -224,13 +227,18 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
       className={`sidebar-container w-[280px] shrink-0 sticky top-0 h-screen max-h-screen flex flex-col bg-transparent select-none pt-2 pl-4 pr-1.5 border-r border-[#363636] overscroll-contain overflow-x-hidden ${className}`}
     >
       {/* Top Header: Brand Lockup with PNG Icon matching Image 1 */}
-      <div className="pt-4 px-3 pb-2.5 flex items-center">
+      <div className="pt-4 px-3 pb-2.5 flex items-center justify-between">
         <a
           href="#docs/home"
           onClick={(e) => {
             e.preventDefault();
-            if (homeNode) onSelectDoc(homeNode);
-            else window.location.hash = '#docs/home';
+            if (homeNode) {
+              onSelectDoc(homeNode);
+              onClose?.();
+            } else {
+              window.location.hash = '#docs/home';
+              onClose?.();
+            }
           }}
           className="flex items-start gap-1.5 text-white hover:text-white cursor-pointer"
         >
@@ -243,6 +251,17 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
             Flint Docs
           </span>
         </a>
+
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="p-1 rounded-md text-[#888888] hover:text-white hover:bg-[#252525] cursor-pointer"
+          >
+            <Cancel01Icon size={16} />
+          </button>
+        )}
       </div>
 
       {/* Obsidian-style Theme Toggle Pill [ 🌙 ⚪ ] / [ ⚪ ☀️ ] */}
@@ -311,7 +330,10 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
           {/* Root Home entry at bottom matching Obsidian layout */}
           {homeNode && !searchQuery && (
             <div
-              onClick={() => onSelectDoc(homeNode)}
+              onClick={() => {
+                onSelectDoc(homeNode);
+                onClose?.();
+              }}
               style={{ paddingLeft: 28 }}
               className={`flex items-center pr-2 py-1 cursor-pointer text-[13.5px] font-normal transition-none bg-transparent ${
                 activeDocId === 'home' || activeDocId === homeNode.slug || activeDocId === homeNode.id

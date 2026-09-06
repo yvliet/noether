@@ -135,6 +135,8 @@ body,
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overscroll-behavior: none;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
 }
 
 /* Ensure numbers in text and UI use proportional digits matching Flint desktop */

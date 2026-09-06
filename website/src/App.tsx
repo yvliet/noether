@@ -5,6 +5,9 @@ import { DocTreeSidebar } from './components/tree/DocTreeSidebar';
 import { DocsReader, extractTocItems, computeBacklinks } from './components/docs/DocsReader';
 import { InteractiveGraphWidget } from './components/graph/InteractiveGraphWidget';
 import { OnThisPageOutline } from './components/docs/OnThisPageOutline';
+import { Menu01Icon, Sun01Icon, Moon02Icon } from './components/common/Icons';
+
+const THEME_STORAGE_KEY = 'flint_docs_theme';
 
 export const App: React.FC = () => {
   // Find doc recursively by slug or id
@@ -34,9 +37,248 @@ export const App: React.FC = () => {
     return DOCS_TREE[0];
   });
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isRightRailOpen, setIsRightRailOpen] = useState(true);
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const mobileDrawerRef = useRef<HTMLDivElement>(null);
+  const mobileBackdropRef = useRef<HTMLDivElement>(null);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    return window.matchMedia('(min-width: 1024px)').matches;
+  });
   const [activeHeadingId, setActiveHeadingId] = useState<string>('');
+
+  // Track viewport breakpoint to completely unmount graph physics on mobile
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      setIsDesktop(e.matches);
+      if (e.matches) {
+        setIsMobileNavOpen(false);
+      }
+    };
+    setIsDesktop(mql.matches);
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  // Close mobile drawer on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileNavOpen) {
+        setIsMobileNavOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileNavOpen]);
+
+  // Interactive direct touch manipulation: hardware-accelerated direct DOM translation (zero React re-renders while dragging)
+  useEffect(() => {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isTracking = false;
+    let isDragging = false;
+    let rAFId: number | null = null;
+    let pendingTx: number | null = null;
+    let pendingProgress: number | null = null;
+
+    const getDrawerWidth = () => {
+      if (typeof window === 'undefined') return 320;
+      return Math.min(window.innerWidth * 0.85, 320);
+    };
+
+    const updateDOM = () => {
+      rAFId = null;
+      if (mobileDrawerRef.current && pendingTx !== null) {
+        mobileDrawerRef.current.style.transform = `translate3d(${pendingTx}px, 0, 0)`;
+      }
+      if (mobileBackdropRef.current && pendingProgress !== null) {
+        mobileBackdropRef.current.style.opacity = `${pendingProgress}`;
+      }
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      touchStartTime = Date.now();
+      isDragging = false;
+
+      // When closed, track swipes beginning near left screen edge (<= 100px)
+      // When open, track swipes anywhere on screen
+      if (!isMobileNavOpen) {
+        isTracking = touchStartX <= 100;
+      } else {
+        isTracking = true;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isTracking || e.touches.length !== 1) return;
+      const currentX = e.touches[0].clientX;
+      const currentY = e.touches[0].clientY;
+      const deltaX = currentX - touchStartX;
+      const deltaY = currentY - touchStartY;
+
+      // Lock gesture to horizontal axis once initiated
+      if (!isDragging) {
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 8) {
+          isTracking = false;
+          return;
+        }
+        if (Math.abs(deltaX) > 8) {
+          isDragging = true;
+          // Prepare elements for GPU drag layer
+          if (mobileBackdropRef.current) {
+            mobileBackdropRef.current.style.visibility = 'visible';
+            mobileBackdropRef.current.style.pointerEvents = 'auto';
+            mobileBackdropRef.current.style.willChange = 'opacity';
+          }
+          if (mobileDrawerRef.current) {
+            mobileDrawerRef.current.style.visibility = 'visible';
+            mobileDrawerRef.current.style.pointerEvents = 'auto';
+            mobileDrawerRef.current.style.willChange = 'transform';
+          }
+        } else {
+          return;
+        }
+      }
+
+      // Prevent browser default history swipe-back navigation bubble
+      if (e.cancelable) {
+        e.preventDefault();
+      }
+
+      const drawerWidth = getDrawerWidth();
+
+      if (!isMobileNavOpen) {
+        // Dragging to open (stick to finger moving right)
+        if (deltaX > 0) {
+          const visibleWidth = Math.min(drawerWidth, deltaX);
+          pendingTx = -drawerWidth + visibleWidth;
+          pendingProgress = Math.max(0, Math.min(1, visibleWidth / drawerWidth));
+        } else {
+          pendingTx = -drawerWidth;
+          pendingProgress = 0;
+        }
+      } else {
+        // Dragging to close (stick to finger moving left)
+        if (deltaX < 0) {
+          pendingTx = Math.max(-drawerWidth, deltaX);
+          pendingProgress = Math.max(0, Math.min(1, (drawerWidth + pendingTx) / drawerWidth));
+        } else {
+          pendingTx = 0;
+          pendingProgress = 1;
+        }
+      }
+
+      if (rAFId === null) {
+        rAFId = requestAnimationFrame(updateDOM);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (!isTracking) return;
+      isTracking = false;
+
+      if (rAFId !== null) {
+        cancelAnimationFrame(rAFId);
+        rAFId = null;
+      }
+
+      // Clean up GPU drag willChange styles and direct DOM overrides
+      if (mobileBackdropRef.current) {
+        mobileBackdropRef.current.style.willChange = '';
+        mobileBackdropRef.current.style.opacity = '';
+        mobileBackdropRef.current.style.visibility = '';
+        mobileBackdropRef.current.style.pointerEvents = '';
+      }
+      if (mobileDrawerRef.current) {
+        mobileDrawerRef.current.style.willChange = '';
+        mobileDrawerRef.current.style.transform = '';
+        mobileDrawerRef.current.style.visibility = '';
+        mobileDrawerRef.current.style.pointerEvents = '';
+      }
+
+      if (isDragging && e.changedTouches.length === 1) {
+        const touchEndX = e.changedTouches[0].clientX;
+        const deltaX = touchEndX - touchStartX;
+        const elapsedTime = Date.now() - touchStartTime;
+        const drawerWidth = getDrawerWidth();
+
+        if (!isMobileNavOpen) {
+          const isFlick = deltaX > 45 && elapsedTime < 300;
+          const isPassedThreshold = deltaX > drawerWidth * 0.35;
+          if (isFlick || isPassedThreshold) {
+            setIsMobileNavOpen(true);
+          } else {
+            setIsMobileNavOpen(false);
+          }
+        } else {
+          const isFlick = deltaX < -45 && elapsedTime < 300;
+          const isPassedThreshold = deltaX < -drawerWidth * 0.35;
+          if (isFlick || isPassedThreshold) {
+            setIsMobileNavOpen(false);
+          } else {
+            setIsMobileNavOpen(true);
+          }
+        }
+      }
+
+      isDragging = false;
+      pendingTx = null;
+      pendingProgress = null;
+    };
+
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+
+    return () => {
+      if (rAFId !== null) cancelAnimationFrame(rAFId);
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
+    };
+  }, [isMobileNavOpen]);
+
+  // Theme management shared with mobile top bar
+  const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem(THEME_STORAGE_KEY);
+      if (saved) return saved === 'dark';
+    } catch {}
+    return !document.documentElement.classList.contains('theme-light');
+  });
+
+  const toggleTheme = useCallback(() => {
+    setIsDarkTheme((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, next ? 'dark' : 'light');
+      } catch {}
+      if (next) {
+        document.documentElement.classList.remove('theme-light', 'light');
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('theme-light', 'light');
+      }
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isDarkTheme) {
+      document.documentElement.classList.remove('theme-light', 'light');
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('theme-light', 'light');
+    }
+  }, [isDarkTheme]);
 
   // Extract table of content items for active document
   const tocItems = useMemo(() => {
@@ -172,32 +414,126 @@ export const App: React.FC = () => {
     };
   }, [tocItems, activeDoc.id]);
 
+  const homeNode = useMemo(() => {
+    return DOCS_TREE.find((n) => n.id === 'home' || n.slug === 'home') || DOCS_TREE[0];
+  }, []);
+
   return (
     <div
       ref={scrollContainerRef}
-      className="w-full h-screen overflow-y-auto custom-scrollbar bg-[#151515] text-[#dadada] overscroll-none"
+      className="w-full h-screen overflow-y-auto custom-scrollbar bg-[#151515] text-[#dadada] overscroll-none touch-pan-y flex flex-col"
     >
-      <div className="w-full flex items-start min-h-full justify-between px-4 sm:px-8 lg:pl-[124px] lg:pr-[6vw]">
-        {/* Column 1: Left Navigation Sidebar (pinned with sticky top-0 and its own tree scrollbar) */}
-        {isSidebarOpen && (
+      {/* Mobile Top Navigation Header (< 1024px) */}
+      <header className="sticky top-0 z-30 flex lg:hidden items-center justify-between px-4 py-2.5 bg-[#151515] border-b border-[#2e2e2e] select-none w-full shrink-0">
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen(true)}
+            aria-label="Open navigation menu"
+            className="p-1.5 -ml-1 rounded-md text-[#999999] hover:text-white hover:bg-[#202020] cursor-pointer"
+          >
+            <Menu01Icon size={18} />
+          </button>
+
+          <a
+            href="#docs/home"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSelectDoc(homeNode);
+            }}
+            className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer"
+          >
+            <img
+              src="./flint-icon.png"
+              alt="Flint"
+              className="h-[18px] w-auto object-contain shrink-0"
+            />
+            <span className="text-[17px] font-bold tracking-tight text-white leading-none">
+              Flint Docs
+            </span>
+          </a>
+        </div>
+
+        {/* Mobile Theme Toggle */}
+        <div className="flex items-center">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+            className={`flex items-center justify-between w-[44px] h-[22px] px-1.5 rounded-full cursor-pointer select-none transition-none ${
+              isDarkTheme
+                ? 'bg-[#1e1e1e] border border-[#2b2b2b] hover:border-[#3a3a3a]'
+                : 'bg-[#e4e4e7] border border-[#d4d4d8] hover:border-[#a1a1aa]'
+            }`}
+          >
+            {isDarkTheme ? (
+              <>
+                <Moon02Icon size={12} className="text-[#999999] shrink-0" />
+                <div className="w-3 h-3 rounded-full bg-white shrink-0 shadow-sm" />
+              </>
+            ) : (
+              <>
+                <div className="w-3 h-3 rounded-full bg-white shrink-0 shadow-sm" />
+                <Sun01Icon size={12} className="text-[#52525b] shrink-0" />
+              </>
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Drawer Backdrop */}
+      <div
+        ref={mobileBackdropRef}
+        onClick={() => setIsMobileNavOpen(false)}
+        className={`fixed inset-0 bg-black/65 z-40 lg:hidden transition-none ${
+          isMobileNavOpen ? 'visible pointer-events-auto opacity-100' : 'invisible pointer-events-none opacity-0'
+        }`}
+      />
+
+      {/* Mobile Navigation Drawer */}
+      <div
+        ref={mobileDrawerRef}
+        className={`fixed inset-y-0 left-0 w-[290px] sm:w-[320px] max-w-[85vw] bg-[#151515] border-r border-[#363636] z-50 flex flex-col shadow-2xl lg:hidden transition-none ${
+          isMobileNavOpen
+            ? 'visible pointer-events-auto translate-x-0'
+            : 'invisible pointer-events-none -translate-x-full'
+        }`}
+      >
+        <DocTreeSidebar
+          nodes={DOCS_TREE}
+          activeDocId={activeDoc.id}
+          onSelectDoc={(doc) => {
+            handleSelectDoc(doc);
+            setIsMobileNavOpen(false);
+          }}
+          onClose={() => setIsMobileNavOpen(false)}
+          className="w-full h-full border-r-0"
+        />
+      </div>
+
+      {/* Main Multi-Column Content Area */}
+      <div className="w-full flex items-start flex-1 justify-between px-2 sm:px-6 lg:pl-[124px] lg:pr-[6vw]">
+        {/* Column 1: Left Navigation Sidebar (pinned desktop sidebar, hidden on mobile) */}
+        <div className="hidden lg:flex shrink-0 sticky top-0 h-screen">
           <DocTreeSidebar
             nodes={DOCS_TREE}
             activeDocId={activeDoc.id}
             onSelectDoc={handleSelectDoc}
           />
-        )}
+        </div>
 
-        {/* Column 2: Center Reading Canvas (natural content height, no inner scrollbar) */}
+        {/* Column 2: Center Reading Canvas */}
         <DocsReader
           doc={activeDoc}
           allDocs={DOCS_TREE}
           onSelectDoc={handleSelectDoc}
+          backlinks={backlinks}
         />
 
-        {/* Column 3: Right Panel (Interactive Graph Widget + Outline, sticky top-0, unaffected by page scrolling) */}
-        {isRightRailOpen && (
+        {/* Column 3: Right Panel (Interactive Graph Widget + Outline, desktop only) */}
+        {isDesktop && (
           <aside className="w-[260px] xl:w-[280px] shrink-0 sticky top-0 h-screen hidden lg:flex flex-col bg-transparent select-none pt-[35px] pb-6 overflow-hidden">
-            {/* Interactive Graph View Canvas */}
+            {/* Interactive Graph View Canvas (Unmounted on mobile for zero physics overhead) */}
             <InteractiveGraphWidget
               nodes={DOCS_TREE}
               activeDocId={activeDoc.id}
@@ -220,3 +556,4 @@ export const App: React.FC = () => {
     </div>
   );
 };
+

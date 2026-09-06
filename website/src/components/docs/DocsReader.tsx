@@ -22,6 +22,7 @@ export interface DocsReaderProps {
   doc: DocNode;
   allDocs: DocNode[];
   onSelectDoc: (doc: DocNode) => void;
+  backlinks?: DocNode[];
 }
 
 // Generate URL slug from heading text
@@ -226,6 +227,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
   doc,
   allDocs,
   onSelectDoc,
+  backlinks = [],
 }) => {
   const [copiedCodeIndex, setCopiedCodeIndex] = useState<number | null>(null);
   const [copiedHeadingId, setCopiedHeadingId] = useState<string | null>(null);
@@ -1306,8 +1308,33 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
           {elements}
         </div>
 
+        {/* Mobile Backlinks: "Links to this page" (rendered on mobile when backlinks exist) */}
+        {backlinks && backlinks.length > 0 && (
+          <div className="mt-10 pt-6 border-t border-[#2e2e2e] block lg:hidden select-none">
+            <div className="text-[11px] font-semibold text-[#cccccc] uppercase tracking-wider mb-3">
+              Links to this page
+            </div>
+            <nav className="flex flex-col space-y-1.5">
+              {backlinks.map((b) => (
+                <a
+                  key={b.id}
+                  href={`#docs/${b.slug || b.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    onSelectDoc(b);
+                  }}
+                  title={b.title}
+                  className="text-left text-[13.5px] text-[#ea580c] hover:text-[#f97316] underline underline-offset-2 font-normal cursor-pointer py-0.5 leading-snug transition-none"
+                >
+                  {b.title}
+                </a>
+              ))}
+            </nav>
+          </div>
+        )}
+
         {/* Previous / Next Footer Navigation */}
-        <div className="mt-12 pt-6 border-t border-[#363636] flex items-center justify-between gap-4 select-none">
+        <div className="mt-10 pt-6 border-t border-[#363636] flex items-center justify-between gap-4 select-none">
           {prevDoc ? (
             <button
               type="button"
