@@ -67,7 +67,17 @@ export class CanvasExtension extends Extension {
       (app) => {
         app.workspace.setMainViewMode('canvas');
       },
-      40
+      40,
+      (app) => {
+        const tabs = app.workspace.getTabs();
+        const activeTabId = app.workspace.activeTabId;
+        const currentTab = tabs.find((t) => t.id === activeTabId);
+        return (
+          currentTab?.view_type === 'canvas' ||
+          currentTab?.view_mode === 'canvas' ||
+          app.workspace.mainViewMode === 'canvas'
+        );
+      }
     );
 
     // 3. Register Command

@@ -61,7 +61,17 @@ export class TasksExtension extends Extension {
       (app) => {
         app.workspace.setMainViewMode('tasks');
       },
-      60
+      60,
+      (app) => {
+        const tabs = app.workspace.getTabs();
+        const activeTabId = app.workspace.activeTabId;
+        const currentTab = tabs.find((t) => t.id === activeTabId);
+        return (
+          currentTab?.view_type === 'tasks' ||
+          currentTab?.view_mode === 'tasks' ||
+          app.workspace.mainViewMode === 'tasks'
+        );
+      }
     );
 
     // 3. Register Command

@@ -63,7 +63,17 @@ export class GraphExtension extends Extension {
       (app) => {
         app.workspace.setMainViewMode('graph');
       },
-      50
+      50,
+      (app) => {
+        const tabs = app.workspace.getTabs();
+        const activeTabId = app.workspace.activeTabId;
+        const currentTab = tabs.find((t) => t.id === activeTabId);
+        return (
+          currentTab?.view_type === 'graph' ||
+          currentTab?.view_mode === 'graph' ||
+          app.workspace.mainViewMode === 'graph'
+        );
+      }
     );
 
     // 3. Register Command

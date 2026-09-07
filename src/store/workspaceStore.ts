@@ -460,6 +460,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   mainViewMode: 'document',
   setMainViewMode: (mode) => {
     if (mode !== 'document') {
+      set({ mainViewMode: mode });
       get().openCustomTab({
         viewType: mode,
         title: mode.charAt(0).toUpperCase() + mode.slice(1),
@@ -703,7 +704,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   openCustomTab: (options: OpenCustomTabOptions) => {
-    const targetPaneId = get().focusedPaneId || 'main';
+    const { panes, layoutTree, focusedPaneId } = get();
+    const allValidPaneIds = getAllPaneIds(layoutTree);
+    const targetPaneId =
+      panes[focusedPaneId] && allValidPaneIds.includes(focusedPaneId)
+        ? focusedPaneId
+        : (panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
+
     get().openCustomTabInPane(targetPaneId, options);
     get().recordNavigation({
       viewType: options.viewType,
@@ -857,6 +864,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const mainModel = newPanes['main'] || newPanes[remainingIds[0]];
     const splitModel = isNowSplit ? newPanes[remainingIds[1]] : undefined;
 
+    const mainActiveTab = mainModel?.tabs.find((t) => t.id === mainModel.activeTabId);
+    const resolvedMainViewMode: MainViewMode =
+      (mainActiveTab?.view_type && mainActiveTab.view_type !== 'document')
+        ? (mainActiveTab.view_type as any)
+        : (mainActiveTab?.view_mode && mainActiveTab.view_mode !== 'document')
+        ? (mainActiveTab.view_mode as any)
+        : 'document';
+
     set({
       layoutTree: newLayoutTree,
       panes: newPanes,
@@ -865,6 +880,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activePane: nextFocusedId === 'main' ? 'main' : 'split',
       tabs: mainModel?.tabs || [],
       activeTabId: mainModel?.activeTabId || null,
+      mainViewMode: resolvedMainViewMode,
       splitTabs: isNowSplit ? splitModel?.tabs || [] : [],
       splitActiveTabId: isNowSplit ? splitModel?.activeTabId || null : null,
       splitActiveDocumentId: isNowSplit ? splitModel?.activeDocumentId || null : null,
@@ -1105,6 +1121,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       console.error('[workspaceStore] Error restoring dock session:', dockErr);
     }
 
+    const validInitialPaneIds = Object.keys(initialPanes);
+    const resolvedFocusedPaneId = (isSplit && saved.focusedPaneId && initialPanes[saved.focusedPaneId])
+      ? saved.focusedPaneId
+      : (initialPanes['main'] ? 'main' : validInitialPaneIds[0] || 'main');
+
     set({
       tabs: validTabs,
       activeTabId: nextActiveTabId,
@@ -1114,10 +1135,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       splitTabs: isSplit ? validSplitTabs : [],
       splitActiveTabId: isSplit ? nextSplitActiveTabId : null,
       splitActiveDocumentId: isSplit ? (validSplitTabs.find((t) => t.id === nextSplitActiveTabId)?.document_id || null) : null,
-      activePane: saved.activePane || 'main',
+      activePane: (isSplit && saved.activePane === 'split') ? 'split' : 'main',
       layoutTree: initialTree,
       panes: initialPanes,
-      focusedPaneId: saved.focusedPaneId || (saved.activePane === 'split' ? 'split' : 'main'),
+      focusedPaneId: resolvedFocusedPaneId,
       ...(saved.isLeftSidebarOpen !== undefined ? { isLeftSidebarOpen: saved.isLeftSidebarOpen } : {}),
       ...(saved.isRightSidebarOpen !== undefined ? { isRightSidebarOpen: saved.isRightSidebarOpen } : {}),
       activeLeftView: saved.activeLeftView || saved.dockActiveItemByZone?.['left-top'] || 'files',
@@ -1127,6 +1148,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...(typeof saved.leftSidebarWidth === 'number' ? { leftSidebarWidth: saved.leftSidebarWidth } : {}),
       ...(typeof saved.rightSidebarWidth === 'number' ? { rightSidebarWidth: saved.rightSidebarWidth } : {}),
     });
+
+    // Immediately persist sanitized clean state to overwrite any stale/desynced split sessions
+    saveTabsSession(activePath);
 
     return true;
   },
@@ -1309,16 +1333,22 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setFocusedPane: (paneId: PaneId) => {
     if (paneId.startsWith('sidebar:')) return;
-    const { panes } = get();
-    const currentPane = panes[paneId] || panes['main'];
+    const { panes, layoutTree } = get();
+    const allValidPaneIds = getAllPaneIds(layoutTree);
+    const targetPaneId =
+      panes[paneId] && allValidPaneIds.includes(paneId)
+        ? paneId
+        : (panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
+
+    const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
     const activeTab = currentPane.tabs.find((t) => t.id === currentPane.activeTabId);
     const docId = activeTab?.document_id || currentPane.activeDocumentId;
 
-    const isMain = paneId === 'main';
+    const isMain = targetPaneId === 'main';
     set({
-      focusedPaneId: paneId,
+      focusedPaneId: targetPaneId,
       activePane: isMain ? 'main' : 'split',
       ...(isMain
         ? {}
@@ -1456,11 +1486,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           activePane: 'main',
           tabs: [fallbackTab],
           activeTabId: fallbackTab.id,
+          mainViewMode: 'document',
           splitTabs: [],
           splitActiveTabId: null,
           splitActiveDocumentId: null,
         });
         useDocumentStore.setState({ activeDocument: null });
+        emitBridgeAppEvent('tab:changed', { activeTabId: fallbackTab.id });
         saveTabsSession(get().vaultPath);
         return;
       }
@@ -1511,9 +1543,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     };
 
     const isMain = paneId === 'main';
+    const nextViewType =
+      nextTab?.view_type ||
+      nextTab?.view_mode ||
+      (nextTab?.document_id?.startsWith('__') ? nextTab.document_id.replace(/^__/, '').replace(/__$/, '') : 'document');
+
     set({
       panes: newPanes,
-      ...(isMain ? { tabs: remainingTabs, activeTabId: nextActiveTabId } : {}),
+      ...(isMain ? { tabs: remainingTabs, activeTabId: nextActiveTabId, mainViewMode: (nextViewType as any) || 'document' } : {}),
       ...(paneId === get().focusedPaneId && !isMain
         ? { splitTabs: remainingTabs, splitActiveTabId: nextActiveTabId, splitActiveDocumentId: nextTab?.document_id || null }
         : {}),
@@ -1525,6 +1562,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 
+    emitBridgeAppEvent('tab:changed', { activeTabId: nextActiveTabId });
     saveTabsSession(get().vaultPath);
   },
 
@@ -1589,6 +1627,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const isNowSplit = newTree.type === 'split';
 
+    const mainActiveTab = mainModel?.tabs.find((t) => t.id === mainModel.activeTabId);
+    const resolvedMainView =
+      mainActiveTab?.view_type ||
+      mainActiveTab?.view_mode ||
+      (mainActiveTab?.document_id?.startsWith('__') ? mainActiveTab.document_id.replace(/^__/, '').replace(/__$/, '') : 'document');
+
     set({
       layoutTree: newTree,
       panes: newPanes,
@@ -1597,6 +1641,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activePane: nextFocusedId === 'main' ? 'main' : 'split',
       tabs: mainModel?.tabs || [],
       activeTabId: mainModel?.activeTabId || null,
+      mainViewMode: (resolvedMainView as any) || 'document',
       splitTabs: isNowSplit ? newPanes[remainingPaneIds[1]]?.tabs || [] : [],
       splitActiveTabId: isNowSplit ? newPanes[remainingPaneIds[1]]?.activeTabId || null : null,
       splitActiveDocumentId: isNowSplit ? newPanes[remainingPaneIds[1]]?.activeDocumentId || null : null,
@@ -1606,12 +1651,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.getState().setActiveDocumentById(activeDocId, { preserveViewMode: true });
     }
 
+    emitBridgeAppEvent('tab:changed', { activeTabId: mainModel?.activeTabId || '' });
     saveTabsSession(get().vaultPath);
   },
 
   openTabInPane: (paneId, docId, title = 'Untitled', options?: OpenTabOptions) => {
     const { panes } = get();
-    const currentPane = panes[paneId] || panes['main'];
+    const targetPaneId = panes[paneId] ? paneId : (panes['main'] ? 'main' : Object.keys(panes)[0] || 'main');
+    const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
     const explicitTabId = options?.id;
@@ -1642,7 +1689,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       !currentTab?.is_pinned;
 
     if (isCurrentTabEmpty) {
-      nextTabId = explicitTabId || currentTab.id;
+      nextTabId = explicitTabId || (currentTab.id.startsWith('tab-empty') ? `tab-${docId}-${Date.now()}` : currentTab.id);
       newTabs = currentPane.tabs.map((t) =>
         t.id === currentTab.id
           ? {
@@ -1732,16 +1779,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const newPanes = {
       ...panes,
-      [paneId]: updatedPane,
+      [targetPaneId]: updatedPane,
     };
 
-    const isMain = paneId === 'main';
+    const isMain = targetPaneId === 'main';
     set({
       panes: newPanes,
-      focusedPaneId: paneId,
+      focusedPaneId: targetPaneId,
       activePane: isMain ? 'main' : 'split',
       ...(isMain ? { tabs: newTabs, activeTabId: nextTabId, mainViewMode: (options?.viewType as any) || 'document' } : {}),
-      ...(paneId === get().focusedPaneId && !isMain
+      ...(targetPaneId === get().focusedPaneId && !isMain
         ? { splitTabs: newTabs, splitActiveTabId: nextTabId, splitActiveDocumentId: docId }
         : {}),
     });
@@ -1756,7 +1803,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   openEmptyTabInPane: (paneId) => {
     const { panes } = get();
-    const currentPane = panes[paneId] || panes['main'];
+    const targetPaneId = panes[paneId] ? paneId : (panes['main'] ? 'main' : Object.keys(panes)[0] || 'main');
+    const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
     const newTab: TabItem = {
@@ -1776,21 +1824,21 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const newPanes = {
       ...panes,
-      [paneId]: updatedPane,
+      [targetPaneId]: updatedPane,
     };
 
-    const isMain = paneId === 'main';
+    const isMain = targetPaneId === 'main';
     set({
       panes: newPanes,
-      focusedPaneId: paneId,
+      focusedPaneId: targetPaneId,
       activePane: isMain ? 'main' : 'split',
-      ...(isMain ? { tabs: updatedPane.tabs, activeTabId: newTab.id } : {}),
-      ...(paneId === get().focusedPaneId && !isMain
+      ...(isMain ? { tabs: updatedPane.tabs, activeTabId: newTab.id, mainViewMode: 'document' } : {}),
+      ...(targetPaneId === get().focusedPaneId && !isMain
         ? { splitTabs: updatedPane.tabs, splitActiveTabId: newTab.id, splitActiveDocumentId: null }
         : {}),
     });
 
-    if (isMain || paneId === get().focusedPaneId) {
+    if (isMain || targetPaneId === get().focusedPaneId) {
       useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 
@@ -1799,8 +1847,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   openCustomTabInPane: (paneId, options) => {
-    const { panes } = get();
-    const currentPane = panes[paneId] || panes['main'];
+    const { panes, layoutTree } = get();
+    const allValidPaneIds = getAllPaneIds(layoutTree);
+    const targetPaneId =
+      panes[paneId] && allValidPaneIds.includes(paneId)
+        ? paneId
+        : (panes[get().focusedPaneId] && allValidPaneIds.includes(get().focusedPaneId))
+        ? get().focusedPaneId
+        : (panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
+
+    const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
     const targetDocId = options.documentId || `__${options.viewType}__`;
@@ -1813,24 +1869,26 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     );
 
     if (existing) {
-      get().setActiveTabInPane(paneId, existing.id);
+      get().setActiveTabInPane(targetPaneId, existing.id);
       return;
     }
 
     const currentTab = currentPane.tabs.find((t) => t.id === currentPane.activeTabId);
     let newTabs = [...currentPane.tabs];
-    let newTabId = options.id || `tab-${options.viewType}-${Date.now()}`;
+    const newTabId = options.id || `tab-${options.viewType}-${Date.now()}`;
+    let finalTabId = newTabId;
 
     if (
       currentTab &&
       (!currentTab.document_id || currentTab.document_id === '') &&
       (!currentTab.view_type || currentTab.view_type === 'document')
     ) {
-      newTabId = currentTab.id;
+      finalTabId = options.id || (currentTab.id.startsWith('tab-empty') ? newTabId : currentTab.id);
       newTabs = currentPane.tabs.map((t) =>
         t.id === currentTab.id
           ? {
               ...t,
+              id: finalTabId,
               document_id: targetDocId,
               title: options.title,
               view_type: options.viewType,
@@ -1841,7 +1899,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       );
     } else {
       const newTab: TabItem = {
-        id: newTabId,
+        id: finalTabId,
         document_id: targetDocId,
         title: options.title,
         view_type: options.viewType,
@@ -1854,26 +1912,31 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const updatedPane: PaneModel = {
       ...currentPane,
       tabs: newTabs,
-      activeTabId: newTabId,
+      activeTabId: finalTabId,
       activeDocumentId: targetDocId,
     };
 
     const newPanes = {
       ...panes,
-      [paneId]: updatedPane,
+      [targetPaneId]: updatedPane,
     };
 
-    const isMain = paneId === 'main';
+    const isMain = targetPaneId === 'main';
     set({
       panes: newPanes,
-      focusedPaneId: paneId,
+      focusedPaneId: targetPaneId,
       activePane: isMain ? 'main' : 'split',
-      ...(isMain ? { tabs: newTabs, activeTabId: newTabId } : {}),
-      ...(paneId === get().focusedPaneId && !isMain
-        ? { splitTabs: newTabs, splitActiveTabId: newTabId, splitActiveDocumentId: targetDocId }
+      ...(isMain ? { tabs: newTabs, activeTabId: finalTabId, mainViewMode: (options.viewType as any) || 'document' } : {}),
+      ...(targetPaneId === get().focusedPaneId && !isMain
+        ? { splitTabs: newTabs, splitActiveTabId: finalTabId, splitActiveDocumentId: targetDocId }
         : {}),
     });
 
+    if (isMain || targetPaneId === get().focusedPaneId) {
+      useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
+    }
+
+    emitBridgeAppEvent('tab:changed', { activeTabId: finalTabId });
     saveTabsSession(get().vaultPath);
   },
 
@@ -2033,7 +2096,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setActiveTabInPane: (paneId, tabId) => {
     const { panes } = get();
-    const currentPane = panes[paneId];
+    const targetPaneId = panes[paneId] ? paneId : (panes['main'] ? 'main' : Object.keys(panes)[0] || 'main');
+    const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
     const tab = currentPane.tabs.find((t) => t.id === tabId);
@@ -2051,22 +2115,27 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeDocumentId: docId,
       tabHistory: nextTabHistory,
     };
-    const newPanes = { ...panes, [paneId]: updatedPane };
+    const newPanes = { ...panes, [targetPaneId]: updatedPane };
 
-    const isMain = paneId === 'main';
+    const isMain = targetPaneId === 'main';
+    const targetViewType =
+      tab?.view_type ||
+      tab?.view_mode ||
+      (docId?.startsWith('__') ? docId.replace(/^__/, '').replace(/__$/, '') : 'document');
+
     set({
       panes: newPanes,
-      focusedPaneId: paneId,
+      focusedPaneId: targetPaneId,
       activePane: isMain ? 'main' : 'split',
-      ...(isMain ? { activeTabId: tabId } : {}),
-      ...(paneId === get().focusedPaneId && !isMain
+      ...(isMain ? { activeTabId: tabId, tabs: updatedPane.tabs, mainViewMode: (targetViewType as any) || 'document' } : {}),
+      ...(targetPaneId === get().focusedPaneId && !isMain
         ? { splitActiveTabId: tabId, splitActiveDocumentId: docId }
         : {}),
     });
 
     if (docId && !docId.startsWith('__')) {
       useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
-    } else if (!docId && (isMain || paneId === get().focusedPaneId)) {
+    } else if (isMain || targetPaneId === get().focusedPaneId) {
       useDocumentStore.setState({ activeDocument: null, selectedDocIds: [] });
     }
 

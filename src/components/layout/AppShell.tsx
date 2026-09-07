@@ -51,6 +51,8 @@ const DynamicModalHost: React.FC = React.memo(() => {
 
 const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
   const app = useFlintApp();
+  useViews();
+  useExtensionList();
   const panes = useWorkspaceStore((s) => s.panes);
   const paneModel = panes[paneId];
   const tabs = useMemo(() => paneModel?.tabs || [], [paneModel?.tabs]);
@@ -67,10 +69,11 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
 
   // If the extension has been completely deleted from files, automatically delete the tab
   useEffect(() => {
-    if (extensionState.state === 'deleted' && currentTab) {
+    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'plugin-doc'].includes(currentViewType || '');
+    if (!isBuiltinCore && app.extensions.isReady && extensionState.state === 'deleted' && currentTab) {
       closeTabInPane(paneId, currentTab.id);
     }
-  }, [extensionState.state, currentTab, closeTabInPane, paneId]);
+  }, [extensionState.state, currentTab, closeTabInPane, paneId, app.extensions.isReady, currentViewType]);
 
   if (extensionState.state === 'active') {
     return (

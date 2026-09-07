@@ -23,6 +23,9 @@ export const ActionRail: React.FC = React.memo(() => {
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);
+  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
+  const mainViewMode = useWorkspaceStore((s) => s.mainViewMode);
+  const tabs = useWorkspaceStore((s) => s.tabs);
 
   const createNewNote = useDocumentStore((s) => s.createNewNote);
 
@@ -47,7 +50,7 @@ export const ActionRail: React.FC = React.memo(() => {
         {/* Flint Blaze Logo */}
         <div
           onClick={() => setMainViewMode('document')}
-          className="w-8 h-8 rounded-lg flex items-center justify-center mb-1 cursor-pointer hover:bg-[var(--flint-bg-card-hover)] transition-colors"
+          className="w-8 h-8 rounded-lg flex items-center justify-center mb-1 cursor-pointer hover:bg-[var(--flint-bg-card-hover)]"
           title="Flint"
         >
           <FlintLogoIcon size={20} className="text-[var(--flint-text-primary)]" />
@@ -57,26 +60,42 @@ export const ActionRail: React.FC = React.memo(() => {
         <button
           onClick={handleCreateNewNote}
           title="Create new note (Ctrl+N)"
-          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
         >
           <FileAddIcon size={16} />
         </button>
 
         {/* Dynamic Registered Items from Built-in & Community Extensions */}
         {ribbonItems.map((item) => {
-          const isActive =
-            typeof item.isActive === 'function'
-              ? item.isActive(app)
-              : typeof item.isActive === 'boolean'
-              ? item.isActive
-              : false;
+          let isActive = false;
+          if (typeof item.isActive === 'function') {
+            try {
+              isActive = item.isActive(app);
+            } catch {
+              isActive = false;
+            }
+          } else if (typeof item.isActive === 'boolean') {
+            isActive = item.isActive;
+          } else {
+            const currentTab = tabs.find((t) => t.id === activeTabId);
+            const currentType = currentTab?.view_type || currentTab?.view_mode || mainViewMode;
+            if (currentType && currentType !== 'document') {
+              isActive = item.id.includes(currentType) || (item as any).extensionId === currentType;
+            }
+          }
 
           return (
             <button
               key={item.id}
-              onClick={() => item.onClick(app)}
+              onClick={() => {
+                try {
+                  item.onClick(app);
+                } catch (err) {
+                  console.error('[ActionRail] Failed to handle icon click:', item.id, err);
+                }
+              }}
               title={item.title}
-              className={`relative w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer ${
+              className={`relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
                 isActive
                   ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]'
                   : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
@@ -94,7 +113,7 @@ export const ActionRail: React.FC = React.memo(() => {
         <button
           onClick={() => setIsCommandPaletteOpen(true)}
           title="Quick Open & commands (Ctrl+K)"
-          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
         >
           <CommandIcon size={16} />
         </button>
@@ -107,7 +126,7 @@ export const ActionRail: React.FC = React.memo(() => {
           <button
             onClick={() => setIsHearthModalOpen(true)}
             title="Hearth switcher (Ctrl+Shift+O)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
           >
             <ArrowUpDownIcon size={15} />
           </button>
@@ -116,7 +135,7 @@ export const ActionRail: React.FC = React.memo(() => {
           <button
             onClick={() => setIsHelpModalOpen(true)}
             title="Help & shortcuts (F1)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
           >
             <HelpCircleIcon size={16} />
           </button>
@@ -125,7 +144,7 @@ export const ActionRail: React.FC = React.memo(() => {
           <button
             onClick={handleOpenSettings}
             title="Settings (Ctrl+,)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
           >
             <Settings02Icon size={16} />
           </button>

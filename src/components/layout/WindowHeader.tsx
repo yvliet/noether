@@ -518,6 +518,8 @@ export const WindowHeader: React.FC = React.memo(() => {
 
   // Automatically delete tabs whose extension has been deleted from disk/system
   useEffect(() => {
+    if (!app.extensions.isReady) return;
+    const CORE_VIEWS = new Set(['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'plugin-doc']);
     for (const [paneId, model] of Object.entries(panes)) {
       for (const tab of model.tabs) {
         const viewType =
@@ -530,7 +532,7 @@ export const WindowHeader: React.FC = React.memo(() => {
             : tab.document_id === '__tasks__'
             ? 'tasks'
             : '');
-        if (viewType && viewType !== 'document') {
+        if (viewType && viewType !== 'document' && !CORE_VIEWS.has(viewType)) {
           const state = app.extensions.getViewExtensionState(viewType);
           if (state.state === 'deleted') {
             closeTabInPane(paneId, tab.id);
@@ -538,7 +540,7 @@ export const WindowHeader: React.FC = React.memo(() => {
         }
       }
     }
-  }, [panes, app.extensions, closeTabInPane]);
+  }, [panes, app.extensions, app.extensions.isReady, closeTabInPane]);
 
   const dockItems = useSidebarDockStore((s) => s.items);
   const syncExtensionTabs = useSidebarDockStore((s) => s.syncExtensionTabs);

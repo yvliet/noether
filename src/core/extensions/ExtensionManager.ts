@@ -29,6 +29,10 @@ export class ExtensionManager {
   private disabledCoreExtensionIds: Set<string> = new Set();
   private listeners: Set<() => void> = new Set();
   private isInitialized = false;
+
+  public get isReady(): boolean {
+    return this.isInitialized;
+  }
   public externalLoader: ExternalExtensionLoader;
   private syncTimer: any = null;
   private pendingSyncResolvers: Array<() => void> = [];
@@ -496,6 +500,17 @@ export class ExtensionManager {
     const regView = this.app.views.getView(viewType);
     if (regView) {
       return { state: 'active', view: regView };
+    }
+
+    // Core built-in views are permanent and must never be marked as deleted or trigger tab removal
+    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'plugin-doc'].includes(viewType);
+    if (isBuiltinCore) {
+      return { state: 'not_plugin' };
+    }
+
+    // Guard against marking views as deleted while extensions are still booting up asynchronously
+    if (!this.isInitialized) {
+      return { state: 'not_plugin' };
     }
 
     const info = this.app.views.getViewPluginInfo(viewType);
