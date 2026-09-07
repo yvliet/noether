@@ -2,6 +2,8 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import katex from 'katex';
 import { setupMathLive } from './mathlive-setup';
 import { buildPlaceholderLatex } from './math-snippets';
+import { useContextMenuStore } from '@/store/contextMenuStore';
+import { useSettingsStore } from '@/store/settingsStore';
 
 export interface MathChipOptions {
   HTMLAttributes: Record<string, any>;
@@ -74,7 +76,7 @@ export const MathChip = Node.create<MathChipOptions>({
           const latex = rawLatex.includes('‹') ? buildPlaceholderLatex(rawLatex, selectedText) : rawLatex;
 
           return commands.insertContent({
-            type: this.name,
+            type: 'mathChip',
             attrs: {
               latex,
               display: options.display || 'inline',
@@ -96,6 +98,7 @@ export const MathChip = Node.create<MathChipOptions>({
 
       let isEditing = false;
       let currentLatex = node.attrs.latex || '';
+      let currentDisplay: 'inline' | 'block' = node.attrs.display === 'block' ? 'block' : 'inline';
       let activeMf: any = null;
       let lastCursorPos = editor.state.selection.from;
 
@@ -107,24 +110,93 @@ export const MathChip = Node.create<MathChipOptions>({
       };
       editor.on('selectionUpdate', onSelectionUpdate);
 
+      function openMathContextMenu(e: MouseEvent) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        useContextMenuStore.getState().openContextMenu(e, [
+          {
+            type: 'item',
+            title: 'Copy LaTeX',
+            onClick: () => {
+              const latexToCopy = isEditing && activeMf ? activeMf.value : currentLatex;
+              navigator.clipboard.writeText(latexToCopy);
+            },
+          },
+          {
+            type: 'item',
+            title: 'Copy MathML',
+            onClick: () => {
+              const mathml = activeMf?.getValue?.('math-ml') || '';
+              if (mathml) {
+                navigator.clipboard.writeText(mathml);
+              }
+            },
+          },
+          {
+            type: 'item',
+            title: currentDisplay === 'block' ? 'Convert to Inline Math ($)' : 'Convert to Block Math ($$)',
+            onClick: () => {
+              if (typeof getPos === 'function') {
+                const pos = getPos();
+                if (typeof pos === 'number') {
+                  const nextDisplay = currentDisplay === 'block' ? 'inline' : 'block';
+                  currentDisplay = nextDisplay;
+                  dom.setAttribute('data-display', nextDisplay);
+                  if (nextDisplay === 'block') {
+                    dom.classList.add('wce-block');
+                  } else {
+                    dom.classList.remove('wce-block');
+                  }
+                  editor.commands.updateAttributes('mathChip', { display: nextDisplay });
+                }
+              }
+            },
+          },
+          {
+            type: 'separator',
+          },
+          {
+            type: 'item',
+            title: 'Delete Formula',
+            isDanger: true,
+            onClick: () => {
+              if (typeof getPos === 'function') {
+                const pos = getPos();
+                if (typeof pos === 'number') {
+                  editor.commands.deleteRange({ from: pos, to: pos + 1 });
+                }
+              }
+            },
+          },
+        ]);
+      }
+
       function renderStaticView() {
         isEditing = false;
         activeMf = null;
         dom.classList.remove('wce-editing');
+        if (currentDisplay === 'block') {
+          dom.classList.add('wce-block');
+        } else {
+          dom.classList.remove('wce-block');
+        }
+        dom.setAttribute('data-display', currentDisplay);
         dom.innerHTML = '';
 
         const renderSpan = document.createElement('span');
         renderSpan.className = 'wce-math-render';
         const latex = currentLatex.trim();
+        const delim = currentDisplay === 'block' ? '$$' : '$';
 
         if (latex) {
           try {
-            const formattedLatex = node.attrs.display === 'block' || latex.startsWith('\\displaystyle')
+            const formattedLatex = currentDisplay === 'block' || latex.startsWith('\\displaystyle')
               ? latex
               : `\\displaystyle ${latex}`;
 
             renderSpan.innerHTML = katex.renderToString(formattedLatex, {
-              displayMode: node.attrs.display === 'block',
+              displayMode: currentDisplay === 'block',
               throwOnError: false,
             });
           } catch (e) {
@@ -132,22 +204,31 @@ export const MathChip = Node.create<MathChipOptions>({
             renderSpan.textContent = latex;
           }
         } else {
-          renderSpan.innerHTML = '<span class="md-syntax-dimmed flint-math-delim">$</span><span class="md-syntax-dimmed flint-math-delim">$</span>';
+          renderSpan.innerHTML = `<span class="md-syntax-dimmed flint-math-delim">${delim}</span><span class="md-syntax-dimmed flint-math-delim">${delim}</span>`;
         }
 
         dom.appendChild(renderSpan);
       }
 
       function enterEditMode(opts: { selectAll?: boolean; fromArrow?: 'left' | 'right' | boolean } = {}) {
-        if (isEditing || !editor.isEditable) return;
+        if (isEditing && activeMf) return;
         isEditing = true;
+        const mountedTime = Date.now();
         dom.classList.add('wce-editing');
+        if (currentDisplay === 'block') {
+          dom.classList.add('wce-block');
+        } else {
+          dom.classList.remove('wce-block');
+        }
+        dom.setAttribute('data-display', currentDisplay);
         dom.innerHTML = '';
+
+        const delim = currentDisplay === 'block' ? '$$' : '$';
 
         // Left dimmed dollar
         const leftDollar = document.createElement('span');
         leftDollar.className = 'md-syntax-dimmed flint-math-delim';
-        leftDollar.textContent = '$';
+        leftDollar.textContent = delim;
         dom.appendChild(leftDollar);
 
         const mf = document.createElement('math-field') as any;
@@ -157,15 +238,18 @@ export const MathChip = Node.create<MathChipOptions>({
         mf.setAttribute('math-virtual-keyboard-policy', 'manual');
         mf.setAttribute('menu-items', 'none');
         mf.setAttribute('smart-mode', 'false');
-        mf.setAttribute('default-mode', node.attrs.display === 'block' ? 'math' : 'inline-math');
+        mf.setAttribute('default-mode', currentDisplay === 'block' ? 'math' : 'inline-math');
         mf.value = currentLatex;
         dom.appendChild(mf);
 
         // Right dimmed dollar
         const rightDollar = document.createElement('span');
         rightDollar.className = 'md-syntax-dimmed flint-math-delim';
-        rightDollar.textContent = '$';
+        rightDollar.textContent = delim;
         dom.appendChild(rightDollar);
+
+        // Intercept right click on math-field to suppress MathLive's menu and show Flint's native context menu
+        mf.addEventListener('contextmenu', openMathContextMenu, true);
 
         const commit = () => {
           if (!isEditing) return;
@@ -216,13 +300,26 @@ export const MathChip = Node.create<MathChipOptions>({
           }
         });
 
+        let lastKeyWasBackslash = false;
+
         mf.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') {
+            return;
+          }
+
+          if (e.key === '\\') {
+            lastKeyWasBackslash = true;
+            return;
+          }
+
           if (e.key === 'Escape') {
+            lastKeyWasBackslash = false;
             e.preventDefault();
             e.stopPropagation();
             commit();
             editor.commands.focus();
           } else if (e.key === 'Enter') {
+            lastKeyWasBackslash = false;
             e.preventDefault();
             e.stopPropagation();
             commit();
@@ -232,7 +329,73 @@ export const MathChip = Node.create<MathChipOptions>({
                 editor.chain().focus().setTextSelection(pos + 1).run();
               }
             }
+          } else if (e.key === '$') {
+            const val = (mf.value || '').trim();
+
+            // 1. Literal dollar inside math:
+            // Case 1A: If preceded by backslash (\$), or in latex command mode,
+            // switch mode back to math and insert \$ into the formula
+            if (lastKeyWasBackslash || mf.mode === 'latex' || mf.mode === 'command') {
+              lastKeyWasBackslash = false;
+              e.preventDefault();
+              e.stopPropagation();
+              mf.executeCommand(['deleteBackward']);
+              mf.executeCommand(['switchMode', 'math']);
+              mf.executeCommand(['insert', '\\$']);
+              return;
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
+            lastKeyWasBackslash = false;
+
+            // Case 1B: If Alt+$ was pressed, or cursor is positioned inside the formula (before the end),
+            // insert \$ into the math formula so users can add currency/dollars within math.
+            if (e.altKey || (val && typeof mf.position === 'number' && typeof mf.lastOffset === 'number' && mf.position < mf.lastOffset)) {
+              mf.executeCommand(['insert', '\\$']);
+              return;
+            }
+
+            // 2. Excess dollar escalation when field is empty:
+            // Case A: If empty and inline ($), typing a second $ escalates to block mode ($$)
+            if (!val && currentDisplay !== 'block') {
+              currentDisplay = 'block';
+              dom.classList.add('wce-block');
+              dom.setAttribute('data-display', 'block');
+              if (typeof getPos === 'function') {
+                const pos = getPos();
+                if (typeof pos === 'number') {
+                  editor.commands.updateAttributes('mathChip', { display: 'block' });
+                }
+              }
+              leftDollar.textContent = '$$';
+              rightDollar.textContent = '$$';
+              mf.setAttribute('default-mode', 'math');
+              return;
+            }
+
+            // Case B: If empty and block ($$), typing another $ de-escalates out of math and replaces with literal text
+            if (!val && currentDisplay === 'block') {
+              if (typeof getPos === 'function') {
+                const pos = getPos();
+                if (typeof pos === 'number') {
+                  const replacement = useSettingsStore.getState().autoPairMath ? '$$$' : '$$$$';
+                  editor.chain().focus().deleteRange({ from: pos, to: pos + 1 }).insertContentAt(pos, replacement).run();
+                }
+              }
+              return;
+            }
+
+            // 3. Otherwise, closing $ at the end of a non-empty formula commits and steps out after chip
+            commit();
+            if (typeof getPos === 'function') {
+              const pos = getPos();
+              if (typeof pos === 'number') {
+                editor.chain().focus().setTextSelection(pos + 1).run();
+              }
+            }
           } else if (e.key === 'Backspace') {
+            lastKeyWasBackslash = false;
             const val = (mf.value || '').trim();
             if (!val || val === '\\placeholder{}' || val === '\\square' || val === '') {
               e.preventDefault();
@@ -240,11 +403,26 @@ export const MathChip = Node.create<MathChipOptions>({
               if (typeof getPos === 'function') {
                 const pos = getPos();
                 if (typeof pos === 'number') {
+                  if (currentDisplay === 'block') {
+                    // Backspacing an empty block de-escalates to inline ($)
+                    currentDisplay = 'inline';
+                    dom.classList.remove('wce-block');
+                    dom.setAttribute('data-display', 'inline');
+                    editor.commands.updateAttributes('mathChip', { display: 'inline' });
+                    leftDollar.textContent = '$';
+                    rightDollar.textContent = '$';
+                    mf.setAttribute('default-mode', 'inline-math');
+                    return;
+                  }
                   editor.chain().focus().deleteRange({ from: pos, to: pos + 1 }).insertContentAt(pos, '$').run();
                 }
               }
             }
-          } else if (e.key === 'ArrowLeft' && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
+          } else {
+            lastKeyWasBackslash = false;
+          }
+
+          if (e.key === 'ArrowLeft' && !e.shiftKey && !e.altKey && !e.ctrlKey && !e.metaKey) {
             const beforePos = mf.position;
             setTimeout(() => {
               if (isEditing && mf.position === beforePos) {
@@ -299,31 +477,48 @@ export const MathChip = Node.create<MathChipOptions>({
               }
             }
           }
-        });
+        }, true);
 
         mf.addEventListener('blur', () => {
+          if (Date.now() - mountedTime < 250) return;
           setTimeout(() => {
             if (dom.contains(document.activeElement)) return;
             commit();
           }, 80);
         });
 
-        setTimeout(() => {
-          mf.focus();
-          if (opts.selectAll) {
-            mf.executeCommand('selectAll');
-          } else if (opts.fromArrow === 'left') {
-            mf.executeCommand('moveToMathFieldEnd');
-          } else if (opts.fromArrow === 'right') {
-            mf.executeCommand('moveToMathFieldStart');
-          } else if (/\\placeholder\{\}/.test(currentLatex)) {
-            mf.executeCommand('moveToNextPlaceholder');
-          }
-        }, 10);
+        let focusRetries = 0;
+        const focusField = () => {
+          try {
+            if (!mf.isConnected && focusRetries < 20) {
+              focusRetries++;
+              requestAnimationFrame(focusField);
+              return;
+            }
+            mf.focus();
+            if (opts.selectAll) {
+              mf.executeCommand('selectAll');
+            } else if (opts.fromArrow === 'left') {
+              mf.executeCommand('moveToMathFieldEnd');
+            } else if (opts.fromArrow === 'right') {
+              mf.executeCommand('moveToMathFieldStart');
+            } else if (/\\placeholder\{\}/.test(currentLatex)) {
+              mf.executeCommand('moveToNextPlaceholder');
+            }
+          } catch {}
+        };
+        requestAnimationFrame(focusField);
       }
 
-      // Initial render
-      renderStaticView();
+      // Initial render: immediately enter edit mode if newly inserted with empty latex or placeholder
+      if (!currentLatex || currentLatex.includes('\\placeholder')) {
+        enterEditMode();
+      } else {
+        renderStaticView();
+      }
+
+      // Right-click context menu on static chip view
+      dom.addEventListener('contextmenu', openMathContextMenu, true);
 
       // Click to edit
       dom.addEventListener('click', (e) => {
@@ -364,13 +559,6 @@ export const MathChip = Node.create<MathChipOptions>({
         }
       });
 
-      // Auto-enter edit mode if newly inserted with placeholder or empty
-      if (node.attrs.latex.includes('\\placeholder') || !node.attrs.latex) {
-        setTimeout(() => {
-          enterEditMode();
-        }, 20);
-      }
-
       return {
         dom,
         selectNode: () => {
@@ -393,6 +581,16 @@ export const MathChip = Node.create<MathChipOptions>({
         ignoreMutation: () => true,
         update: (updatedNode) => {
           if (updatedNode.type.name !== 'mathChip') return false;
+          node = updatedNode;
+          if (updatedNode.attrs.display && updatedNode.attrs.display !== currentDisplay) {
+            currentDisplay = updatedNode.attrs.display;
+            dom.setAttribute('data-display', currentDisplay);
+            if (currentDisplay === 'block') {
+              dom.classList.add('wce-block');
+            } else {
+              dom.classList.remove('wce-block');
+            }
+          }
           if (updatedNode.attrs.latex !== currentLatex && !isEditing) {
             currentLatex = updatedNode.attrs.latex;
             renderStaticView();

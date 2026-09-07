@@ -1656,6 +1656,8 @@ const EditorTab: React.FC = React.memo(() => {
   const setAccentListPrefixes = useSettingsStore((s) => s.setAccentListPrefixes);
   const autoPairing = useSettingsStore((s) => s.autoPairing);
   const setAutoPairing = useSettingsStore((s) => s.setAutoPairing);
+  const autoPairMath = useSettingsStore((s) => s.autoPairMath);
+  const setAutoPairMath = useSettingsStore((s) => s.setAutoPairMath);
   const tabSize = useSettingsStore((s) => s.tabSize);
   const setTabSize = useSettingsStore((s) => s.setTabSize);
   const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
@@ -1687,6 +1689,7 @@ const EditorTab: React.FC = React.memo(() => {
     indentationGuides !== DEFAULT_SETTINGS.indentationGuides ||
     accentListPrefixes !== DEFAULT_SETTINGS.accentListPrefixes ||
     autoPairing !== DEFAULT_SETTINGS.autoPairing ||
+    autoPairMath !== DEFAULT_SETTINGS.autoPairMath ||
     tabSize !== DEFAULT_SETTINGS.tabSize ||
     showExternalLinkIcon !== DEFAULT_SETTINGS.showExternalLinkIcon ||
     spellcheck !== DEFAULT_SETTINGS.spellcheck ||
@@ -1978,6 +1981,24 @@ const EditorTab: React.FC = React.memo(() => {
                 title="Restore default (Enabled)"
               />
               <ToggleSwitch checked={autoPairing} onChange={setAutoPairing} />
+            </div>
+          </div>
+
+          {/* Auto-pair math formulas */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Auto-pair math formulas</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Automatically wrap selections in math or open the math editor when typing $. When disabled, typing $ inserts a literal dollar sign, but typing double dollars ($$) will still open a math formula.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FieldResetButton
+                isModified={autoPairMath !== DEFAULT_SETTINGS.autoPairMath}
+                onReset={() => setAutoPairMath(DEFAULT_SETTINGS.autoPairMath)}
+                title="Restore default (Disabled)"
+              />
+              <ToggleSwitch checked={autoPairMath} onChange={setAutoPairMath} />
             </div>
           </div>
 
@@ -3104,7 +3125,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     { id: 'general', label: 'General', icon: <Settings02Icon size={14} />, keywords: ['general', 'updates', 'language', 'startup'] },
     { id: 'appearance', label: 'Appearance', icon: <PaletteIcon size={14} />, keywords: ['appearance', 'theme', 'color', 'accent', 'font', 'dark', 'light'] },
     { id: 'interface', label: 'Interface', icon: <MonitorIcon size={14} />, keywords: ['interface', 'zoom', 'ribbon', 'window', 'tab', 'action rail'] },
-    { id: 'editor', label: 'Editor', icon: <Edit02Icon size={14} />, keywords: ['editor', 'line', 'preview', 'indent', 'heading', 'pairing', 'properties', 'reading'] },
+    { id: 'editor', label: 'Editor', icon: <Edit02Icon size={14} />, keywords: ['editor', 'line', 'preview', 'indent', 'heading', 'pairing', 'properties', 'reading', 'math', 'formulas', 'dollar', 'auto-pair'] },
     { id: 'files', label: 'Files and links', icon: <Folder01Icon size={14} />, keywords: ['files and links', 'files', 'links', 'trash', 'deleted', 'delete', 'hearth', 'vault', 'wikilink'] },
     { id: 'hotkeys', label: 'Hotkeys', icon: <KeyIcon size={14} />, keywords: ['hotkeys', 'shortcuts', 'keys', 'commands'] },
     { id: 'core-extensions', label: 'Built-in extensions', icon: <PackageIcon size={14} />, keywords: ['built-in extensions', 'core extensions', 'core plugins', 'plugins', 'modules', 'extensions'] },

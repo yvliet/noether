@@ -33,6 +33,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
 }) => {
   const lineNumbers = useSettingsStore((s) => s.lineNumbers);
   const autoPairing = useSettingsStore((s) => s.autoPairing);
+  const autoPairMath = useSettingsStore((s) => s.autoPairMath);
   const spellcheck = useSettingsStore((s) => s.spellcheck);
   const tabSizeSetting = useSettingsStore((s) => s.tabSize);
   const tabSize = typeof tabSizeSetting === 'number' ? tabSizeSetting : parseInt(String(tabSizeSetting || 2), 10) || 2;
@@ -352,6 +353,9 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
 
     // 6. Smart auto-pairing and autowrapping
     if (autoPairing && !isCtrlOrMeta && !e.altKey) {
+      if (e.key === '$' && !autoPairMath) {
+        return;
+      }
       if (selectionStart !== selectionEnd) {
         const selFrom = selectionStart;
         const selTo = selectionEnd;

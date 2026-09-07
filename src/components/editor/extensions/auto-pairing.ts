@@ -15,6 +15,7 @@ export const AutoPairingPluginKey = new PluginKey('autoPairing');
 
 export interface AutoPairingStorage {
   autoPairing: boolean;
+  autoPairMath: boolean;
   unsubscribe: (() => void) | null;
 }
 
@@ -37,14 +38,17 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
   addStorage() {
     return {
       autoPairing: useSettingsStore.getState().autoPairing ?? true,
+      autoPairMath: useSettingsStore.getState().autoPairMath ?? false,
       unsubscribe: null,
     };
   },
 
   onCreate() {
     this.storage.autoPairing = useSettingsStore.getState().autoPairing ?? true;
+    this.storage.autoPairMath = useSettingsStore.getState().autoPairMath ?? false;
     this.storage.unsubscribe = useSettingsStore.subscribe((state) => {
       this.storage.autoPairing = state.autoPairing ?? true;
+      this.storage.autoPairMath = state.autoPairMath ?? false;
     });
   },
 
@@ -66,12 +70,58 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
           handleDOMEvents: {
             keydown(view, event) {
               if (event.ctrlKey || event.metaKey || event.altKey) return false;
-              if (!extensionThis.storage.autoPairing) return false;
 
               const key = event.key;
               const { state } = view;
               const { selection } = state;
               const { from, to, empty } = selection;
+
+              // 0. Dollar ($) handling:
+              if (key === '$') {
+                const autoPairMath = useSettingsStore.getState().autoPairMath ?? false;
+                const $from = state.doc.resolve(from);
+                const parentType = $from.parent?.type?.name;
+                const isCodeBlock = parentType === 'codeBlock';
+                const isInlineCode = state.schema.marks.code ? Boolean(state.doc.rangeHasMark(from, to, state.schema.marks.code)) : false;
+
+                if (state.schema.nodes.mathChip && !isCodeBlock && !isInlineCode) {
+                  // If autoPairMath is disabled (default), single $ types literal $,
+                  // but typing double dollars ($$) creates a math chip
+                  if (!autoPairMath) {
+                    if (empty && $from.parentOffset > 0 && state.doc.textBetween(from - 1, from) === '$') {
+                      const isTriple = $from.parentOffset > 1 && state.doc.textBetween(from - 2, from - 1) === '$';
+                      if (!isTriple) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        lastAutoPair = null;
+                        extensionThis.editor
+                          .chain()
+                          .focus()
+                          .deleteRange({ from: from - 1, to: from })
+                          .insertMathChip({ latex: '', display: 'inline', startEditing: true })
+                          .run();
+                        return true;
+                      }
+                    }
+                    return false;
+                  }
+
+                  event.preventDefault();
+                  event.stopPropagation();
+                  lastAutoPair = null;
+
+                  if (!empty) {
+                    const selectedText = state.doc.textBetween(from, to);
+                    extensionThis.editor.commands.insertMathChip({ latex: selectedText, startEditing: false });
+                  } else {
+                    extensionThis.editor.commands.insertMathChip({ latex: '', startEditing: true });
+                  }
+                  return true;
+                }
+              }
+
+              const isAutoPairing = useSettingsStore.getState().autoPairing ?? true;
+              if (!isAutoPairing) return false;
 
               // 1. Text is selected: wrap or unwrap via smart selection wrapping
               if (!empty) {

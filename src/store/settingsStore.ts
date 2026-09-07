@@ -55,6 +55,7 @@ export interface SettingsState {
   indentationGuides: boolean;
   accentListPrefixes: boolean;
   autoPairing: boolean;
+  autoPairMath: boolean;
   tabSize: TabSize;
   showExternalLinkIcon: boolean;
   spellcheck: boolean;
@@ -111,6 +112,7 @@ export interface SettingsState {
   setIndentationGuides: (val: boolean) => void;
   setAccentListPrefixes: (val: boolean) => void;
   setAutoPairing: (val: boolean) => void;
+  setAutoPairMath: (val: boolean) => void;
   setTabSize: (val: TabSize) => void;
   setShowExternalLinkIcon: (val: boolean) => void;
   setSpellcheck: (val: boolean) => void;
@@ -172,6 +174,7 @@ export const DEFAULT_SETTINGS = {
   indentationGuides: true,
   accentListPrefixes: false,
   autoPairing: true,
+  autoPairMath: false,
   tabSize: '5' as TabSize,
   showExternalLinkIcon: false,
   spellcheck: true,
@@ -532,6 +535,7 @@ export const useSettingsStore = create<SettingsState>()(
       setIndentationGuides: (indentationGuides) => set({ indentationGuides }),
       setAccentListPrefixes: (accentListPrefixes) => set({ accentListPrefixes }),
       setAutoPairing: (autoPairing) => set({ autoPairing }),
+      setAutoPairMath: (autoPairMath) => set({ autoPairMath }),
       setTabSize: (tabSize) => set({ tabSize }),
       setShowExternalLinkIcon: (showExternalLinkIcon) => set({ showExternalLinkIcon }),
       setSpellcheck: (spellcheck) => set({ spellcheck }),
@@ -640,6 +644,7 @@ export const useSettingsStore = create<SettingsState>()(
             indentationGuides: DEFAULT_SETTINGS.indentationGuides,
             accentListPrefixes: DEFAULT_SETTINGS.accentListPrefixes,
             autoPairing: DEFAULT_SETTINGS.autoPairing,
+            autoPairMath: DEFAULT_SETTINGS.autoPairMath,
             tabSize: DEFAULT_SETTINGS.tabSize,
             showExternalLinkIcon: DEFAULT_SETTINGS.showExternalLinkIcon,
             spellcheck: DEFAULT_SETTINGS.spellcheck,

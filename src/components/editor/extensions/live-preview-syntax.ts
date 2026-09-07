@@ -25,8 +25,8 @@ const MD_LINK_REGEX = /\[([^\]\n]+)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
 const MD_EMBED_REGEX = /!\[([^\]\n]*)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
 const TAG_REGEX = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_\-\/]*)/g;
 const HEX_COLOR_REGEX = /^[0-9a-fA-F]{3,6}$/;
-const BLOCK_MATH_REGEX = /\$\$([\s\S]*?)\$\$/g;
-const INLINE_MATH_REGEX = /(?:^|[^\$])\$([^\$\n]*)\$(?:[^\$]|$)/g;
+const BLOCK_MATH_REGEX = /\$\$([\s\S]+?)\$\$/g;
+const INLINE_MATH_REGEX = /(?<![\$\\])\$(?!\s)([^\$\n]+?)(?<!\s)\$(?![\$0-9])/g;
 
 // Fast in-memory cache for rendered KaTeX formulas to guarantee 0ms keystroke latency on scale
 const katexHtmlCache = new Map<string, { html: string; isError: boolean }>();
@@ -851,13 +851,14 @@ function scanBlockDecorations(
       const contentEnd = matchEnd - 2;
       const latex = match[1];
 
+      if (!latex || !latex.trim()) continue;
+
       const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
 
-      if (isMatchFocused || !latex || !latex.trim()) {
-        const syntaxClass = isMatchFocused ? 'md-syntax-dimmed' : 'md-syntax-hidden';
+      if (isMatchFocused) {
         decorations.push(
           Decoration.inline(matchStart, contentStart, {
-            class: syntaxClass,
+            class: 'md-syntax-dimmed',
           })
         );
         decorations.push(
@@ -867,7 +868,7 @@ function scanBlockDecorations(
         );
         decorations.push(
           Decoration.inline(contentEnd, matchEnd, {
-            class: syntaxClass,
+            class: 'md-syntax-dimmed',
           })
         );
       } else {
@@ -897,25 +898,23 @@ function scanBlockDecorations(
     // I. Inline Math: $latex$
     INLINE_MATH_REGEX.lastIndex = 0;
     while ((match = INLINE_MATH_REGEX.exec(text)) !== null) {
-      const fullMatch = match[0];
-      const offset = fullMatch.startsWith('$') ? 0 : 1;
-      const endOffset = fullMatch.endsWith('$') ? 0 : 1;
-      const matchStart = blockStart + match.index + offset;
-      const matchEnd = matchStart + fullMatch.length - offset - endOffset;
+      const matchStart = blockStart + match.index;
+      const matchEnd = matchStart + match[0].length;
       const contentStart = matchStart + 1;
       const contentEnd = matchEnd - 1;
       const latex = match[1];
 
       // Avoid matching empty $$ or block math
-      if (fullMatch.includes('$$')) continue;
+      if (match[0].includes('$$')) continue;
+
+      if (!latex || !latex.trim()) continue;
 
       const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
 
-      if (isMatchFocused || !latex || !latex.trim()) {
-        const syntaxClass = isMatchFocused ? 'md-syntax-dimmed' : 'md-syntax-hidden';
+      if (isMatchFocused) {
         decorations.push(
           Decoration.inline(matchStart, contentStart, {
-            class: syntaxClass,
+            class: 'md-syntax-dimmed',
           })
         );
         decorations.push(
@@ -925,7 +924,7 @@ function scanBlockDecorations(
         );
         decorations.push(
           Decoration.inline(contentEnd, matchEnd, {
-            class: syntaxClass,
+            class: 'md-syntax-dimmed',
           })
         );
       } else {

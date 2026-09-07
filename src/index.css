@@ -2442,8 +2442,8 @@ math-field.flint-live-math-field,
   box-shadow: none !important;
   caret-color: var(--flint-text-primary, #ffffff) !important;
   --caret-color: var(--flint-text-primary, #ffffff);
-  --selection-background-color: transparent !important;
-  --selection-color: inherit !important;
+  --selection-background-color: var(--flint-selection-bg, #4a4e57) !important;
+  --selection-color: var(--flint-selection-text, #ffffff) !important;
   --primary: var(--flint-text-primary, #ffffff);
   --contains-highlight-background-color: transparent !important;
   --contains-highlight-border-color: transparent !important;
@@ -2502,8 +2502,8 @@ math-field::part(content) {
   color: var(--flint-text-primary, #0f172a) !important;
   caret-color: var(--flint-text-primary, #0f172a) !important;
   --caret-color: var(--flint-text-primary, #0f172a);
-  --selection-background-color: transparent !important;
-  --selection-color: inherit !important;
+  --selection-background-color: var(--flint-selection-bg, #bae6fd) !important;
+  --selection-color: var(--flint-selection-text, #09090b) !important;
   --primary: var(--flint-text-primary, #0f172a);
   --contains-highlight-background-color: transparent !important;
   --contains-highlight-border-color: transparent !important;
@@ -2529,8 +2529,14 @@ math-field::part(content) {
 .flint-math-node.ProseMirror-selectednode,
 .ProseMirror-selectednode {
   outline: none !important;
-  background: transparent !important;
+  background: var(--flint-selection-bg, #4a4e57) !important;
+  border-radius: 4px;
   box-shadow: none !important;
+}
+
+.theme-light .wce-chip.ProseMirror-selectednode,
+.theme-light .flint-math-node.ProseMirror-selectednode {
+  background: var(--flint-selection-bg, #bae6fd) !important;
 }
 
 .wce-math {
@@ -2568,6 +2574,53 @@ math-field::part(content) {
 
 .wce-chip.wce-editing .flint-math-delim {
   opacity: 0.6;
+}
+
+.wce-chip.wce-editing .flint-live-math-field {
+  min-width: 2.2em;
+  border-bottom: 1px dashed rgba(156, 163, 175, 0.6) !important;
+  margin: 0 1px !important;
+}
+
+.theme-light .wce-chip.wce-editing .flint-live-math-field {
+  border-bottom: 1px dashed rgba(107, 114, 128, 0.6) !important;
+}
+
+/* Block Math display and edit modes - centered in the middle of the page */
+.flint-math-node.wce-block,
+.wce-math.wce-block {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0.75rem 0;
+  text-align: center;
+}
+
+.flint-math-node.wce-block.wce-editing {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 0.75rem 0;
+  text-align: center;
+}
+
+.flint-math-node.wce-block .wce-math-render {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  text-align: center;
+}
+
+.flint-math-node.wce-block .wce-math-render .katex-display {
+  margin: 0 !important;
+}
+
+.flint-math-node.wce-block .flint-live-math-field {
+  text-align: center;
+  margin: 0 4px !important;
 }
 
 /* MathLive Virtual Keyboard Theming to match Flint */

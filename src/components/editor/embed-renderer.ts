@@ -235,7 +235,7 @@ function renderInlineFormatting(text: string): string {
         return `$$${tex}$$`;
       }
     })
-    .replace(/\$([^\$\n]+)\$/g, (_m, tex) => {
+    .replace(/(?<![\$\\])\$(?!\s)([^\$\n]+?)(?<!\s)\$(?![\$0-9])/g, (_m, tex) => {
       try {
         return katex.renderToString(tex.trim(), { displayMode: false, throwOnError: false });
       } catch {

@@ -51,6 +51,11 @@ Flint supports standard CommonMark syntax and intuitive desktop shortcuts:
 ### Auto-Pairing
 Typing opening characters like `(`, `[`, `{`, `"`, `'`, or `` ` `` around an active text selection automatically wraps the selection without overwriting it.
 
+- **Brackets and Quotes**: Enabled by default under **Settings → Editor → Auto-pair brackets and quotes**.
+- **Math Formulas**: Disabled by default under **Settings → Editor → Auto-pair math formulas**. When disabled, typing a single `$` inserts a literal dollar sign so currency and prices like `$100` or `$50/mo` never accidentally trigger math mode, while typing double dollars (`$$`) still creates a math formula. When enabled, typing a single `$` immediately wraps selections or opens interactive math editing.
+- **Dollars Inside Math**: When inside a math formula, typing `\$` or pressing `Alt+$` inserts a literal dollar sign (`\$`) directly into the formula without exiting. Typing `$` while the cursor is positioned inside existing formula content also inserts `\$`.
+- **Excess Dollars**: Typing `$` repeatedly escalates from inline math (`$`) to block math (`$$`), and typing a third `$` de-escalates out of math back into literal `$$$` text.
+
 ### Smart Indentation
 - Pressing `Tab` inside a bullet or numbered list nests the item under its parent.
 - Pressing `Shift+Tab` unindents the list item.

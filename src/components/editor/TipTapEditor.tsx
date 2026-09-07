@@ -175,7 +175,13 @@ const baseSlashItems: SlashItem[] = [
     description: 'Display LaTeX equation block',
     icon: 'quote',
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).insertContent('$$\n\n$$').setTextSelection(range.from + 3).run();
+      const $from = editor.state.doc.resolve(range.from);
+      const isStartOfLine = $from.parentOffset === 0;
+      if (!isStartOfLine) {
+        editor.chain().focus().deleteRange(range).splitBlock().insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
+      } else {
+        editor.chain().focus().deleteRange(range).insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
+      }
     },
   },
   {
@@ -183,7 +189,7 @@ const baseSlashItems: SlashItem[] = [
     description: 'Inline LaTeX formula',
     icon: 'quote',
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).insertContent('$$').setTextSelection(range.from + 1).run();
+      editor.chain().focus().deleteRange(range).insertMathChip({ latex: '', display: 'inline', startEditing: true }).run();
     },
   },
   {
@@ -926,6 +932,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       ...app.editor.getExtensions(),
       SlashCommands.configure({
         suggestion: {
+          allowSpaces: true,
           allow: ({ editor }) => {
             const isEditorFocused = editor.isFocused || editor.view.hasFocus();
             if (isEditorFocused) return true;
@@ -940,12 +947,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           },
           items: ({ query }) => {
             const currentSlashItems = getSlashItemsRef.current();
-            return currentSlashItems.filter(
-              (item) =>
-                (!item.isEnabled || item.isEnabled()) &&
-                (item.title.toLowerCase().includes(query.toLowerCase()) ||
-                  item.description.toLowerCase().includes(query.toLowerCase()))
-            );
+            const q = query.trim().toLowerCase();
+            const normQ = q.replace(/\s+/g, '');
+            return currentSlashItems.filter((item) => {
+              if (item.isEnabled && !item.isEnabled()) return false;
+              const title = item.title.toLowerCase();
+              const desc = item.description.toLowerCase();
+              const normTitle = title.replace(/\s+/g, '');
+              const normDesc = desc.replace(/\s+/g, '');
+              return (
+                title.includes(q) ||
+                desc.includes(q) ||
+                (normQ.length > 0 && (normTitle.includes(normQ) || normDesc.includes(normQ)))
+              );
+            });
           },
           render: () => {
             return {
@@ -1770,7 +1785,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
               title: 'Math block',
               icon: <SigmaIcon size={14} />,
               onClick: () => {
-                editor.chain().focus().insertContent('\n$$\n\n$$\n').run();
+                editor.chain().focus().insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
               },
             },
             {

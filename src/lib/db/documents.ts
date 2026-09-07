@@ -622,7 +622,7 @@ export function jsonToMarkdown(
 
       if (node.type === 'mathChip') {
         const latex = node.attrs?.latex || '';
-        return node.attrs?.display === 'block' ? `\n$$\n${latex}\n$$\n` : `$${latex}$`;
+        return node.attrs?.display === 'block' ? `$$\n${latex}\n$$` : `$${latex}$`;
       }
 
       if (node.type === 'iconChip' || node.type === 'icon') {
@@ -752,44 +752,81 @@ function isTableDelimiterRow(line: string): boolean {
   return cells.every((c) => /^:?-+:?$/.test(c.trim()));
 }
 
+interface InlineMatchedToken {
+  index: number;
+  length: number;
+  node: any;
+}
+
 /**
  * Converts a raw Markdown body string into TipTap JSON string
  * In Flint Live Preview, each line is stored as a paragraph so that LivePreviewSyntax
  * can perform high-performance, real-time token rendering.
  */
 function parseInlineMarkdownTokens(line: string): any[] {
+  if (!line) return [];
+
+  const tokens: InlineMatchedToken[] = [];
+
+  // 1. Match inline math tokens: $latex$ (CommonMark syntax with flanking guards)
+  const mathRegex = /(?<![\$\\])\$(?!\s)([^\$\n]+?)(?<!\s)\$(?![\$0-9])/g;
+  let mMatch: RegExpExecArray | null;
+  while ((mMatch = mathRegex.exec(line)) !== null) {
+    tokens.push({
+      index: mMatch.index,
+      length: mMatch[0].length,
+      node: {
+        type: 'mathChip',
+        attrs: {
+          latex: mMatch[1],
+          display: 'inline',
+        },
+      },
+    });
+  }
+
+  // 2. Match icon tokens: :pack:id:
   const iconRegex = /:([a-zA-Z0-9_-]+):([a-zA-Z0-9_-]+):/g;
-  if (!iconRegex.test(line)) {
+  let iMatch: RegExpExecArray | null;
+  while ((iMatch = iconRegex.exec(line)) !== null) {
+    const startIndex = iMatch.index;
+    const tokenLength = iMatch[0].length;
+    const overlaps = tokens.some(
+      (t) => Math.max(t.index, startIndex) < Math.min(t.index + t.length, startIndex + tokenLength)
+    );
+    if (!overlaps) {
+      tokens.push({
+        index: startIndex,
+        length: tokenLength,
+        node: {
+          type: 'iconChip',
+          attrs: {
+            pack: iMatch[1],
+            iconId: iMatch[2],
+          },
+        },
+      });
+    }
+  }
+
+  if (tokens.length === 0) {
     return [{ type: 'text', text: line }];
   }
 
-  iconRegex.lastIndex = 0;
+  tokens.sort((a, b) => a.index - b.index);
+
   const inlineNodes: any[] = [];
   let lastIndex = 0;
-  let match: RegExpExecArray | null;
 
-  while ((match = iconRegex.exec(line)) !== null) {
-    const start = match.index;
-    const end = iconRegex.lastIndex;
-
-    if (start > lastIndex) {
+  for (const token of tokens) {
+    if (token.index > lastIndex) {
       inlineNodes.push({
         type: 'text',
-        text: line.slice(lastIndex, start),
+        text: line.slice(lastIndex, token.index),
       });
     }
-
-    const pack = match[1];
-    const iconId = match[2];
-    inlineNodes.push({
-      type: 'iconChip',
-      attrs: {
-        pack,
-        iconId,
-      },
-    });
-
-    lastIndex = end;
+    inlineNodes.push(token.node);
+    lastIndex = token.index + token.length;
   }
 
   if (lastIndex < line.length) {
@@ -818,6 +855,49 @@ export function markdownToTipTapJson(md: string): string {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    const trimmed = line.trim();
+
+    // 1. Single-line block math: $$formula$$
+    if (trimmed.startsWith('$$') && trimmed.endsWith('$$') && trimmed.length > 4) {
+      const latex = trimmed.slice(2, -2).trim();
+      content.push({
+        type: 'paragraph',
+        content: [
+          {
+            type: 'mathChip',
+            attrs: {
+              latex,
+              display: 'block',
+            },
+          },
+        ],
+      });
+      continue;
+    }
+
+    // 2. Multi-line block math fence: $$ ... $$
+    if (trimmed === '$$') {
+      const mathLines: string[] = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== '$$') {
+        mathLines.push(lines[i]);
+        i++;
+      }
+      content.push({
+        type: 'paragraph',
+        content: [
+          {
+            type: 'mathChip',
+            attrs: {
+              latex: mathLines.join('\n').trim(),
+              display: 'block',
+            },
+          },
+        ],
+      });
+      continue;
+    }
+
     if (!line) {
       content.push({
         type: 'paragraph',
