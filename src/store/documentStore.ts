@@ -147,6 +147,9 @@ export function resetTabsRestoreFlag(): void {
   hasRestoredInitialTabsSession = false;
 }
 
+/** Request sequence token to discard stale async backlinks/metadata resolution when switching documents rapidly */
+let currentActivationEpoch = 0;
+
 export const useDocumentStore = create<DocumentState>((set, get) => ({
   documents: [],
   trashItems: [],
@@ -343,6 +346,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     id: string,
     options?: { preserveViewMode?: boolean; replaceCurrentTab?: boolean; newTab?: boolean }
   ) => {
+    const activationEpoch = ++currentActivationEpoch;
     try {
       // 1. Fetch full document record from SQLite (sub-millisecond in-memory WASM)
       const doc = (await getDocumentById(id)) || get().documents.find((d) => d.id === id);
@@ -372,6 +376,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         getOutgoingLinksWithDetails(id),
         shouldCheckUnlinkedMentions ? getUnlinkedMentionsForDocument(id, doc.title) : Promise.resolve([]),
       ]);
+
+      if (activationEpoch !== currentActivationEpoch) {
+        // Discard stale resolution if another document activation started in the interim
+        return;
+      }
 
       let parsedProps: DocumentProperties = {};
       if (doc.properties) {
@@ -418,24 +427,27 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           existing.parent_id !== doc.parent_id ||
           existing.doc_type !== doc.doc_type;
 
+        let nextDocs = state.documents;
+        if (!existing) {
+          nextDocs = [doc, ...state.documents];
+        } else if (docsNeedUpdate) {
+          nextDocs = state.documents.map((d) =>
+            d.id === doc.id
+              ? {
+                  ...d,
+                  title: doc.title,
+                  parent_id: doc.parent_id,
+                  doc_type: doc.doc_type,
+                  properties: doc.properties,
+                  updated_at: doc.updated_at,
+                  ...(doc.doc_type === 'canvas' ? { content_json: doc.content_json } : {}),
+                }
+              : d
+          );
+        }
+
         return {
-          ...(docsNeedUpdate
-            ? {
-                documents: state.documents.map((d) =>
-                  d.id === doc.id
-                    ? {
-                        ...d,
-                        title: doc.title,
-                        parent_id: doc.parent_id,
-                        doc_type: doc.doc_type,
-                        properties: doc.properties,
-                        updated_at: doc.updated_at,
-                        ...(doc.doc_type === 'canvas' ? { content_json: doc.content_json } : {}),
-                      }
-                    : d
-                ),
-              }
-            : {}),
+          documents: nextDocs,
           activeDocument: doc,
           selectedDocIds: state.selectedDocIds.length <= 1 ? [doc.id] : state.selectedDocIds,
           lastSelectedDocId: state.selectedDocIds.length <= 1 ? doc.id : state.lastSelectedDocId,

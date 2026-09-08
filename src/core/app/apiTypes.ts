@@ -460,10 +460,27 @@ export interface HearthAPI {
    *
    * @param title - Initial title for the note (default: 'Untitled').
    * @param parentId - Optional parent folder ID for nesting.
+   * @param docType - Optional document type identifier.
+   * @param autoOpenInMain - Whether to open the note immediately in the main editor (default: true).
    * @returns The created document, or `undefined` if creation failed.
    * @since 0.1.0
    */
-  createNewNote(title?: string, parentId?: string | null): Promise<DocumentItem | undefined>;
+  createNewNote(
+    title?: string,
+    parentId?: string | null,
+    docType?: string,
+    autoOpenInMain?: boolean
+  ): Promise<DocumentItem | undefined>;
+
+  /**
+   * Creates a new folder in the Hearth.
+   *
+   * @param name - Initial folder name (default: 'Untitled').
+   * @param parentId - Optional parent folder ID for nesting.
+   * @returns The created folder document, or `undefined` if creation failed.
+   * @since 0.2.0
+   */
+  createNewFolder(name?: string, parentId?: string | null): Promise<DocumentItem | undefined>;
 
   /**
    * Creates a new document of any archetype (note, canvas, custom extension document).

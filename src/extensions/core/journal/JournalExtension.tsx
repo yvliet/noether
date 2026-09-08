@@ -15,7 +15,7 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { Calendar01Icon } from '@/components/common/Icons';
 import { DocumentItem } from '@/types';
-import { getDocumentById } from '@/lib/db/documents';
+import { getDocumentById, getAllDocuments } from '@/lib/db/documents';
 import { useJournalSettings } from './journalSettings';
 import { journalReadme } from './readme';
 
@@ -86,11 +86,13 @@ export class JournalExtension extends Extension {
     const format = dailyFormat || 'YYYY-MM-DD';
     const folder = (dailyFolder || '').trim();
     const dateFormatted = formatDailyDate(date, format);
-    const dateTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
+    const dateTitle = dateFormatted;
+    const legacyTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
 
     const docs = this.app.hearth.documents;
     let targetFolderId: string | null = null;
     if (folder) {
+      const cleanFolder = folder.replace(/^\/+|\/+$/g, '');
       const getPath = (d: any): string => {
         const parts = [d.title];
         let curr = d.parent_id;
@@ -105,26 +107,43 @@ export class JournalExtension extends Extension {
         return parts.join('/');
       };
 
-      const existingFolder = docs.find(
+      let existingFolder = docs.find(
         (d) =>
           d.is_folder &&
-          (d.title.toLowerCase() === folder.toLowerCase() ||
-            getPath(d).toLowerCase() === folder.toLowerCase())
+          (d.title.toLowerCase() === cleanFolder.toLowerCase() ||
+            getPath(d).toLowerCase() === cleanFolder.toLowerCase())
       );
+      if (!existingFolder) {
+        // Automatically create the folder if it does not yet exist
+        existingFolder = await this.app.hearth.createNewFolder(cleanFolder);
+      }
       if (existingFolder) {
         targetFolderId = existingFolder.id;
       }
     }
 
-    const existingNote = docs.find(
-      (d) => !d.is_folder && d.title === dateTitle && (targetFolderId ? d.parent_id === targetFolderId : true)
+    let existingNote = docs.find(
+      (d) =>
+        !d.is_folder &&
+        (d.title === dateTitle || d.title === legacyTitle) &&
+        (targetFolderId ? d.parent_id === targetFolderId : true)
     );
+
+    if (!existingNote) {
+      const allDocs = await getAllDocuments();
+      existingNote = allDocs.find(
+        (d) =>
+          !d.is_folder &&
+          (d.title === dateTitle || d.title === legacyTitle) &&
+          (targetFolderId ? d.parent_id === targetFolderId : true)
+      );
+    }
 
     if (existingNote) {
       return existingNote;
     }
 
-    const newDoc = await this.app.hearth.createNewNote(dateTitle, targetFolderId);
+    const newDoc = await this.app.hearth.createNewNote(dateTitle, targetFolderId, 'base', false);
     if (!newDoc) {
       throw new Error(`Failed to create daily journal note: "${dateTitle}"`);
     }
@@ -134,7 +153,21 @@ export class JournalExtension extends Extension {
   public async openJournalNote(date: Date = new Date()): Promise<DocumentItem> {
     const doc = await this.getOrCreateJournalNote(date);
     this.app.workspace.setMainViewMode('document');
-    this.app.hearth.openDocument(doc.id);
+
+    const tabs = this.app.workspace.getTabs();
+    const existingTab = tabs.find((t) => t.document_id === doc.id);
+    if (existingTab) {
+      this.app.workspace.setActiveTab(existingTab.id);
+    } else {
+      this.app.workspace.openTab(doc.id, doc.title, {
+        viewType: 'document',
+        newTab: true,
+        replaceCurrentEmpty: true,
+        replaceCurrentTab: false,
+      });
+    }
+
+    await this.app.hearth.openDocument(doc.id);
     return doc;
   }
 
@@ -147,7 +180,16 @@ export class JournalExtension extends Extension {
       async () => {
         await this.openJournalNote();
       },
-      40
+      40,
+      (app) => {
+        const activeDoc = app.hearth.activeDocument;
+        if (!activeDoc) return false;
+        const { dailyFormat } = useJournalSettings.getState();
+        const format = dailyFormat || 'YYYY-MM-DD';
+        const dateFormatted = formatDailyDate(new Date(), format);
+        const legacyTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
+        return activeDoc.title === dateFormatted || activeDoc.title === legacyTitle;
+      }
     );
 
     // 2. Register Command
@@ -174,12 +216,24 @@ export class JournalExtension extends Extension {
       ),
     });
 
-    // 4. Open on startup if configured
+    // 4. Open on startup if configured (waits deterministically for vault hydration)
     const { openOnStartup } = useJournalSettings.getState();
     if (openOnStartup) {
-      setTimeout(() => {
-        this.openJournalNote();
-      }, 300);
+      let opened = false;
+      const tryOpen = async () => {
+        if (opened) return;
+        opened = true;
+        await this.openJournalNote();
+      };
+
+      if (this.app.hearth.documents.length > 0) {
+        tryOpen();
+      } else {
+        const sub = this.onEvent('vault:loaded', async () => {
+          sub.dispose();
+          await tryOpen();
+        });
+      }
     }
 
     // 5. Register MCP Tools

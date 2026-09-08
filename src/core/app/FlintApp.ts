@@ -406,9 +406,17 @@ export class FlintApp {
       },
       createNewNote: async (
         title?: string,
-        parentId?: string | null
+        parentId?: string | null,
+        docType?: string,
+        autoOpenInMain?: boolean
       ): Promise<DocumentItem | undefined> => {
-        return storeRefs.document?.getState()?.createNewNote(title, parentId);
+        return storeRefs.document?.getState()?.createNewNote(title, parentId, docType, autoOpenInMain);
+      },
+      createNewFolder: async (
+        name = 'Untitled',
+        parentId: string | null = null
+      ): Promise<DocumentItem | undefined> => {
+        return storeRefs.document?.getState()?.createNewFolder(name, parentId);
       },
       createNewDocument: async (
         title?: string,

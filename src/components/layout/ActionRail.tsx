@@ -26,6 +26,7 @@ export const ActionRail: React.FC = React.memo(() => {
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const mainViewMode = useWorkspaceStore((s) => s.mainViewMode);
   const tabs = useWorkspaceStore((s) => s.tabs);
+  const showToast = useWorkspaceStore((s) => s.showToast);
 
   const createNewNote = useDocumentStore((s) => s.createNewNote);
 
@@ -87,11 +88,12 @@ export const ActionRail: React.FC = React.memo(() => {
           return (
             <button
               key={item.id}
-              onClick={() => {
+              onClick={async () => {
                 try {
-                  item.onClick(app);
+                  await Promise.resolve(item.onClick(app));
                 } catch (err) {
                   console.error('[ActionRail] Failed to handle icon click:', item.id, err);
+                  showToast(`Failed to open ${item.title || 'item'}`, 'warning');
                 }
               }}
               title={item.title}
