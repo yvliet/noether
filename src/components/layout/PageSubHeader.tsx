@@ -172,7 +172,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             type="button"
             onClick={onToggleFind}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find (Ctrl+F)'}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-1.5 rounded-md ${
               isFindOpen
                 ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]'
                 : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
@@ -204,7 +204,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canBack}
           data-tooltip="Navigate back"
           data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-          className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer disabled:cursor-default"
+          className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer disabled:cursor-default"
         >
           <ArrowLeft01Icon size={14} />
         </button>
@@ -214,7 +214,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canForward}
           data-tooltip="Navigate forward"
           data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-          className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer disabled:cursor-default"
+          className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer disabled:cursor-default"
         >
           <ArrowRight01Icon size={14} />
         </button>
@@ -265,7 +265,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
                 ? 'Reading view\n(Ctrl+Click to split)'
                 : 'Editing view\n(Ctrl+Click to split)'
             }
-            className={`p-1 rounded transition-colors ${
+            className={`p-1 rounded ${
               !onToggleReadingMode
                 ? 'opacity-20 cursor-default text-[var(--flint-text-muted)]'
                 : isLocked
@@ -288,7 +288,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
                 ? 'Remove bookmark'
                 : 'Bookmark note'
             }
-            className={`p-1 rounded transition-colors ${
+            className={`p-1 rounded ${
               onToggleBookmark || document
                 ? document?.is_bookmarked || isBookmarked
                   ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
@@ -310,7 +310,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             onClick={onToggleFind}
             disabled={!onToggleFind}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
-            className={`p-1 rounded transition-colors ${
+            className={`p-1 rounded ${
               onToggleFind
                 ? isFindOpen
                   ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] cursor-pointer'

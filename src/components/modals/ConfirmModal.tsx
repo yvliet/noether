@@ -67,7 +67,7 @@ export const ConfirmModal: React.FC = React.memo(() => {
           </h3>
           <button
             onClick={closeConfirmDialog}
-            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
           >
             <Cancel01Icon size={14} />
           </button>

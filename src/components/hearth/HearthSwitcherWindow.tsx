@@ -143,9 +143,9 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
   }, [currentHearthPath]);
 
   return (
-    <div className="relative w-full h-full flex flex-row bg-[#181818] text-[#dcddde] select-none font-sans overflow-hidden">
-      {/* LEFT COLUMN: Clean Hearths List (Full 100% height #141414) */}
-      <div className="w-[280px] bg-[#141414] border-r border-[#242424] h-full flex flex-col pt-7 px-3 pb-4 shrink-0 overflow-hidden relative">
+    <div className="relative w-full h-full flex flex-row bg-[var(--flint-bg-app)] text-[var(--flint-text-primary)] select-none font-sans overflow-hidden">
+      {/* LEFT COLUMN: Clean Hearths List */}
+      <div className="w-[280px] bg-[var(--flint-bg-sidebar)] border-r border-[var(--flint-border-base)] h-full flex flex-col pt-7 px-3 pb-4 shrink-0 overflow-hidden relative">
         {/* Drag handle at top of left column */}
         <div
           className="absolute top-0 left-0 right-0 h-7 cursor-default"
@@ -164,7 +164,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                   onClick={() => {
                     if (!isEditing) handleOpenRecent(rv.path);
                   }}
-                  className="group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors bg-transparent text-[#999] hover:bg-[#202020] hover:text-[#e0e0e0]"
+                  className="group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer bg-transparent text-[var(--flint-text-muted)] hover:bg-[var(--flint-bg-sidebar-hover)] hover:text-[var(--flint-text-primary)]"
                 >
                   <div className="flex flex-col min-w-0 pr-2 flex-1 overflow-visible">
                     {isEditing ? (
@@ -186,14 +186,14 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                         }}
                         onBlur={() => handleSaveRename(rv.path)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-white font-normal caret-white selection:bg-[#505560] selection:text-white leading-tight"
+                        className="w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-[var(--flint-text-primary)] font-normal caret-white selection:bg-[#505560] selection:text-white leading-tight"
                       />
                     ) : (
-                      <span className="text-[13px] text-white font-normal tracking-tight truncate">
+                      <span className="text-[13px] text-[var(--flint-text-primary)] font-normal tracking-tight truncate">
                         {rv.name || 'Hearth'}
                       </span>
                     )}
-                    <span className="text-[11px] text-[#777] font-normal truncate mt-0.5 select-text">
+                    <span className="text-[11px] text-[var(--flint-text-muted)] font-normal truncate mt-0.5 select-text">
                       {rv.path}
                     </span>
                   </div>
@@ -222,7 +222,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                             setActiveMenuPath(rv.path);
                           }
                         }}
-                        className="p-1 rounded text-[#777] hover:text-white hover:bg-[#333] transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                        className="p-1 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer opacity-0 group-hover:opacity-100"
                         title="Options"
                       >
                         <MoreVerticalIcon size={14} />
@@ -239,16 +239,16 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                               right: menuPos.right !== undefined ? `${menuPos.right}px` : undefined,
                               zIndex: 99999,
                             }}
-                            className="w-[230px] bg-[#1e1e1e] border border-[#333] rounded-lg shadow-2xl p-1 text-xs text-[#dcddde] select-none flex flex-col font-sans"
+                            className="w-[230px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-2xl p-1 text-xs text-[var(--flint-text-primary)] select-none flex flex-col font-sans"
                           >
                             <button
                               onClick={() => {
                                 navigator.clipboard.writeText(rv.path);
                                 setActiveMenuPath(null);
                               }}
-                              className="w-full text-left px-2.5 py-1.5 hover:bg-[#2c2c2c] rounded-md text-[#dcddde] hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                              className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--flint-bg-card-hover)] rounded-md text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer"
                             >
-                              <Copy01Icon size={14} className="text-[#888]" />
+                              <Copy01Icon size={14} className="text-[var(--flint-text-muted)]" />
                               <span>Copy Hearth path</span>
                             </button>
 
@@ -258,9 +258,9 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                                 setEditingHearthPath(rv.path);
                                 setEditHearthName(rv.name || 'Hearth');
                               }}
-                              className="w-full text-left px-2.5 py-1.5 hover:bg-[#2c2c2c] rounded-md text-[#dcddde] hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                              className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--flint-bg-card-hover)] rounded-md text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer"
                             >
-                              <Edit02Icon size={14} className="text-[#888]" />
+                              <Edit02Icon size={14} className="text-[var(--flint-text-muted)]" />
                               <span>Rename Hearth...</span>
                             </button>
 
@@ -269,13 +269,13 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                               setActiveMenuPath(null);
                               await platform.selectParentFolder();
                             }}
-                            className="w-full text-left px-2.5 py-1.5 hover:bg-[#2c2c2c] rounded-md text-[#dcddde] hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--flint-bg-card-hover)] rounded-md text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer"
                           >
-                            <MoveFileIcon size={14} className="text-[#888]" />
+                            <MoveFileIcon size={14} className="text-[var(--flint-text-muted)]" />
                             <span>Move Hearth...</span>
                           </button>
 
-                          <div className="h-[1px] bg-[#2a2a2a] my-1" />
+                          <div className="h-[1px] bg-[var(--flint-border-subtle)] my-1" />
 
                           <button
                             onClick={() => {
@@ -283,22 +283,22 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                               const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
                               openFn(rv.path);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 hover:bg-[#2c2c2c] rounded-md text-[#dcddde] hover:text-white flex items-center gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--flint-bg-card-hover)] rounded-md text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer"
                           >
-                            <FolderOpenIcon size={14} className="text-[#888]" />
+                            <FolderOpenIcon size={14} className="text-[var(--flint-text-muted)]" />
                             <span>Reveal Hearth in file explorer</span>
                           </button>
 
-                          <div className="h-[1px] bg-[#2a2a2a] my-1" />
+                          <div className="h-[1px] bg-[var(--flint-border-subtle)] my-1" />
 
                           <button
                             onClick={() => {
                               setActiveMenuPath(null);
                               handleRemoveRecent(rv.path);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 hover:bg-[#2c2c2c] rounded-md text-[#e05252] hover:text-red-400 flex items-center gap-2.5 transition-colors cursor-pointer"
+                            className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--flint-bg-card-hover)] rounded-md text-[var(--flint-danger,#ef4444)] hover:text-red-400 flex items-center gap-2.5 cursor-pointer"
                           >
-                            <Cancel01Icon size={14} className="text-[#e05252]" />
+                            <Cancel01Icon size={14} className="text-[var(--flint-danger,#ef4444)]" />
                             <span>Remove from list</span>
                           </button>
                         </div>,
@@ -310,15 +310,15 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
               );
             })
           ) : (
-            <div className="text-center py-10 text-[11px] text-[#555]">
+            <div className="text-center py-10 text-[11px] text-[var(--flint-text-muted)]">
               No recent Hearths found.
             </div>
           )}
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Full 100% height #181818 with Fixed Header & Slide Transition */}
-      <div className="flex-1 bg-[#181818] h-full flex flex-col items-center justify-center p-8 overflow-hidden relative">
+      {/* RIGHT COLUMN: Full 100% height */}
+      <div className="flex-1 bg-[var(--flint-bg-app)] h-full flex flex-col items-center justify-center p-8 overflow-hidden relative">
         {/* Drag handle across top of right column */}
         <div
           className="absolute top-0 left-0 right-28 h-8 z-40 cursor-default"
@@ -334,7 +334,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
         >
           <button
             onClick={handleMinimize}
-            className="h-full w-10 hover:bg-[#282828] text-[#888] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="h-full w-10 hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer"
             title="Minimize"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
@@ -342,7 +342,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
           </button>
           <button
             onClick={handleMaximize}
-            className="h-full w-10 hover:bg-[#282828] text-[#888] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="h-full w-10 hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer"
             title={isMaximized ? 'Restore' : 'Maximize'}
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
@@ -350,7 +350,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
           </button>
           <button
             onClick={handleClose}
-            className="h-full w-10 hover:bg-[#e81123] text-[#888] hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="h-full w-10 hover:bg-[#e81123] text-[var(--flint-text-muted)] hover:text-white flex items-center justify-center cursor-pointer"
             title="Close"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
@@ -361,24 +361,20 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
         {/* PERMANENT STATIONARY BRANDING (Size and position never change) */}
         <div className="flex flex-col items-center mb-7 shrink-0 select-none">
           <FlintLogoIcon size={100} className="mb-3" />
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans">Flint</h1>
-          <span className="text-xs text-[#777] mt-1">Version {APP_VERSION}</span>
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--flint-text-primary)] font-sans">Flint</h1>
+          <span className="text-xs text-[var(--flint-text-muted)] mt-1">Version {APP_VERSION}</span>
         </div>
 
-        {/* SLIDING VIEWPORT CONTAINER */}
-        <div className="w-full max-w-[480px] overflow-hidden relative">
-          <div
-            className={`w-full flex flex-row transition-transform duration-300 ease-in-out ${
-              view === 'create' ? '-translate-x-full' : 'translate-x-0'
-            }`}
-          >
-            {/* SLIDE 1: MAIN ACTION CARDS */}
-            <div className="w-full shrink-0 flex flex-col gap-3 px-1">
+        {/* VIEWPORT CONTAINER */}
+        <div className="w-full max-w-[480px] relative">
+          {view === 'main' ? (
+            /* VIEW 1: MAIN ACTION CARDS */
+            <div className="w-full flex flex-col gap-3 px-1">
               {/* Card 1: Create new Hearth */}
-              <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-[var(--flint-bg-card)] border border-[var(--flint-border-base)] rounded-xl p-4 flex items-center justify-between">
                 <div className="flex flex-col pr-3">
-                  <span className="font-semibold text-xs text-white">Create new Hearth</span>
-                  <span className="text-[11px] text-[#888] mt-0.5">
+                  <span className="font-semibold text-xs text-[var(--flint-text-primary)]">Create new Hearth</span>
+                  <span className="text-[11px] text-[var(--flint-text-muted)] mt-0.5">
                     Create a new Flint Hearth under a folder.
                   </span>
                 </div>
@@ -395,10 +391,10 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
               </div>
 
               {/* Card 2: Open folder as Hearth */}
-              <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl p-4 flex items-center justify-between">
+              <div className="bg-[var(--flint-bg-card)] border border-[var(--flint-border-base)] rounded-xl p-4 flex items-center justify-between">
                 <div className="flex flex-col pr-3">
-                  <span className="font-semibold text-xs text-white">Open folder as Hearth</span>
-                  <span className="text-[11px] text-[#888] mt-0.5">
+                  <span className="font-semibold text-xs text-[var(--flint-text-primary)]">Open folder as Hearth</span>
+                  <span className="text-[11px] text-[var(--flint-text-muted)] mt-0.5">
                     Choose an existing folder of Markdown files.
                   </span>
                 </div>
@@ -413,10 +409,10 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
 
               {/* Card 3: Open in Explorer */}
               {currentHearthPath && (
-                <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl p-4 flex items-center justify-between">
+                <div className="bg-[var(--flint-bg-card)] border border-[var(--flint-border-base)] rounded-xl p-4 flex items-center justify-between">
                   <div className="flex flex-col pr-3">
-                    <span className="font-semibold text-xs text-white">Open in File Explorer</span>
-                    <span className="text-[11px] text-[#888] mt-0.5">
+                    <span className="font-semibold text-xs text-[var(--flint-text-primary)]">Open in File Explorer</span>
+                    <span className="text-[11px] text-[var(--flint-text-muted)] mt-0.5">
                       View currently opened Hearth files on disk.
                     </span>
                   </div>
@@ -429,28 +425,28 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                 </div>
               )}
             </div>
-
-            {/* SLIDE 2: CREATE LOCAL HEARTH VIEW */}
-            <div className="w-full shrink-0 flex flex-col px-1">
+          ) : (
+            /* VIEW 2: CREATE LOCAL HEARTH VIEW */
+            <div className="w-full flex flex-col px-1">
               {/* Back button & Title aligned with card content */}
               <div className="px-4 flex flex-col">
                 <button
                   onClick={() => setView('main')}
-                  className="flex items-center gap-1.5 text-xs text-[#888] hover:text-white transition-colors mb-1 w-fit cursor-pointer -ml-0.5"
+                  className="flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] mb-1 w-fit cursor-pointer -ml-0.5"
                 >
                   <ArrowLeft01Icon size={13} />
                   <span>Back</span>
                 </button>
-                <h2 className="text-sm font-bold text-white mb-3">Create local Hearth</h2>
+                <h2 className="text-sm font-bold text-[var(--flint-text-primary)] mb-3">Create local Hearth</h2>
               </div>
 
               {/* Form Card */}
-              <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl p-4 flex flex-col">
+              <div className="bg-[var(--flint-bg-card)] border border-[var(--flint-border-base)] rounded-xl p-4 flex flex-col">
                 {/* Row 1: Hearth Name */}
                 <div className="flex items-center justify-between pb-3.5">
                   <div className="flex flex-col pr-4">
-                    <span className="font-semibold text-xs text-white">Hearth name</span>
-                    <span className="text-[11px] text-[#888] mt-0.5">
+                    <span className="font-semibold text-xs text-[var(--flint-text-primary)]">Hearth name</span>
+                    <span className="text-[11px] text-[var(--flint-text-muted)] mt-0.5">
                       Pick a name for your Hearth.
                     </span>
                   </div>
@@ -459,18 +455,18 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                     value={newHearthName}
                     onChange={(e) => setNewHearthName(e.target.value)}
                     placeholder="Hearth name"
-                    className="w-48 bg-[#161616] border border-[#333] focus:border-[#555] rounded-[5px] px-3 py-1.5 text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors"
+                    className="w-48 bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus:border-[var(--flint-border-focus,var(--flint-accent))] rounded-[5px] px-3 py-1.5 text-xs text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
                   />
                 </div>
 
                 {/* Divider Line */}
-                <div className="border-t border-[#2a2a2a] w-full" />
+                <div className="border-t border-[var(--flint-border-subtle)] w-full" />
 
                 {/* Row 2: Location */}
                 <div className="flex items-center justify-between pt-3.5">
                   <div className="flex flex-col pr-4 min-w-0">
-                    <span className="font-semibold text-xs text-white">Location</span>
-                    <span className="text-[11px] text-[#888] mt-0.5 truncate">
+                    <span className="font-semibold text-xs text-[var(--flint-text-primary)]">Location</span>
+                    <span className="text-[11px] text-[var(--flint-text-muted)] mt-0.5 truncate">
                       Pick a location for your new Hearth.
                     </span>
                     {newHearthLocation && (
@@ -499,7 +495,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                 </button>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
       <TooltipProvider />

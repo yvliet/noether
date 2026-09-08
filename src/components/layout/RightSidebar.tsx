@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSidebarDockStore } from '@/store/sidebarDockStore';
 import { SidebarDockPane } from './SidebarDockPane';
@@ -43,6 +43,16 @@ export const RightSidebar: React.FC = React.memo(() => {
     );
   }, [activeRightTab, dockItems]);
 
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resizeCleanupRef.current) {
+        resizeCleanupRef.current();
+      }
+    };
+  }, []);
+
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -51,19 +61,25 @@ export const RightSidebar: React.FC = React.memo(() => {
     const startX = e.clientX;
     const startWidth = rightSidebarWidth;
 
+    const cleanup = () => {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      resizeCleanupRef.current = null;
+    };
+
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const delta = startX - moveEvent.clientX;
       setRightSidebarWidth(startWidth + delta);
     };
 
     const handleMouseUp = () => {
-      setIsResizing(false);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      cleanup();
     };
 
+    resizeCleanupRef.current = cleanup;
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
   }, [rightSidebarWidth, setRightSidebarWidth]);
@@ -81,6 +97,15 @@ export const RightSidebar: React.FC = React.memo(() => {
       const sidebarRect = sidebarEl.getBoundingClientRect();
       const totalHeight = sidebarRect.height;
 
+      const cleanup = () => {
+        setIsVerticalSplitResizing(false);
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        window.removeEventListener('mousemove', handleMouseMove);
+        window.removeEventListener('mouseup', handleMouseUp);
+        resizeCleanupRef.current = null;
+      };
+
       const handleMouseMove = (moveEvent: MouseEvent) => {
         const relativeY = moveEvent.clientY - sidebarRect.top;
         const newRatio = relativeY / totalHeight;
@@ -88,13 +113,10 @@ export const RightSidebar: React.FC = React.memo(() => {
       };
 
       const handleMouseUp = () => {
-        setIsVerticalSplitResizing(false);
-        document.body.style.cursor = '';
-        document.body.style.userSelect = '';
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        cleanup();
       };
 
+      resizeCleanupRef.current = cleanup;
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
     },

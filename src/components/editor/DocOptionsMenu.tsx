@@ -541,7 +541,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title="More options"
-        className={`p-1 rounded hover:bg-[var(--flint-bg-sidebar-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer ${
+        className={`p-1 rounded hover:bg-[var(--flint-bg-sidebar-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer ${
           isOpen ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]' : ''
         }`}
       >
@@ -579,7 +579,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                         action.onClick(app, doc);
                         setIsOpen(false);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2.5 cursor-pointer group"
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         {action.icon}
@@ -595,7 +595,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleToggleReadingView}
                   title={isLocked ? 'Note is locked (Read-only)\nUnlock in Properties to enable Editing view' : undefined}
-                  className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs transition-colors flex items-center justify-between gap-2.5 group ${
+                  className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 group ${
                     isLocked
                       ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted)] hover:bg-transparent'
                       : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer'
@@ -625,7 +625,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     showToast(`Switched to ${next}`, 'info');
                   }}
                   title={isLocked ? 'Note is locked (Read-only)' : undefined}
-                  className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs transition-colors flex items-center justify-between gap-2.5 group ${
+                  className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 group ${
                     isLocked
                       ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted)] hover:bg-transparent'
                       : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer'
@@ -649,7 +649,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               type="button"
               onMouseEnter={() => setActiveSubmenu(null)}
               onClick={handleSplitRight}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
             >
               <SplitRightIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
               <span>Split right</span>
@@ -659,7 +659,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               type="button"
               onMouseEnter={() => setActiveSubmenu(null)}
               onClick={handleSplitDown}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
             >
               <SplitDownIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
               <span>Split down</span>
@@ -669,7 +669,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               type="button"
               onMouseEnter={() => setActiveSubmenu(null)}
               onClick={handleOpenInNewWindow}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
             >
               <OpenInWindowIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
               <span>Open in new window</span>
@@ -680,7 +680,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               <button
                 type="button"
                 onMouseEnter={() => setActiveSubmenu('zoomLevel')}
-                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2.5 cursor-pointer group"
+                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 truncate">
                   <ZoomInIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
@@ -703,7 +703,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   <button
                     type="button"
                     onClick={handleZoomIn}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
                   >
                     <span>Zoom in</span>
                     <span className="text-[10px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">Ctrl +</span>
@@ -711,7 +711,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   <button
                     type="button"
                     onClick={handleZoomOut}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
                   >
                     <span>Zoom out</span>
                     <span className="text-[10px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">Ctrl -</span>
@@ -719,7 +719,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   <button
                     type="button"
                     onClick={handleResetZoom}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
                   >
                     <span>Reset zoom (100%)</span>
                     <span className="text-[10px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">Ctrl 0</span>
@@ -734,7 +734,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                         key={level}
                         type="button"
                         onClick={() => handleSetZoom(level)}
-                        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs transition-colors flex items-center justify-between gap-2.5 cursor-pointer group ${
+                        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 cursor-pointer group ${
                           isCurrent
                             ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)] font-medium'
                             : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
@@ -759,7 +759,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   action.onClick(app, doc);
                   setIsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
               >
                 {action.icon}
                 <span>{action.title}</span>
@@ -775,7 +775,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleRename}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <Edit02Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Rename...</span>
@@ -785,7 +785,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleMoveFile}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <MoveFileIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Move file to...</span>
@@ -795,7 +795,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleMergeFile}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <GitForkIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Merge entire file with...</span>
@@ -810,7 +810,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       action.onClick(app, doc);
                       setIsOpen(false);
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                   >
                     {action.icon}
                     <span>{action.title}</span>
@@ -821,7 +821,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleExportPDF}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <Download01Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Export to PDF...</span>
@@ -835,7 +835,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     type="button"
                     onMouseEnter={() => setActiveSubmenu('copyPath')}
                     onClick={() => handleCopyPath('relative')}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                   >
                     <div className="flex items-center gap-2.5 truncate">
                       <Copy01Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
@@ -853,21 +853,21 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       <button
                         type="button"
                         onClick={() => handleCopyPath('relative')}
-                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer"
                       >
                         Copy relative path
                       </button>
                       <button
                         type="button"
                         onClick={() => handleCopyPath('absolute')}
-                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer"
                       >
                         Copy absolute path
                       </button>
                       <button
                         type="button"
                         onClick={() => handleCopyPath('markdown')}
-                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer"
                       >
                         Copy Markdown link
                       </button>
@@ -882,7 +882,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleOpenVersionHistory}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <Clock01Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Open version history</span>
@@ -894,7 +894,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     <button
                       type="button"
                       onMouseEnter={() => setActiveSubmenu('linkedView')}
-                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center justify-between gap-2.5 cursor-pointer group"
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         <LinkSquare02Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
@@ -918,7 +918,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                               setIsOpen(false);
                               setActiveSubmenu(null);
                             }}
-                            className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2 cursor-pointer"
+                            className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2 cursor-pointer"
                           >
                             {action.icon}
                             <span>{action.title}</span>
@@ -939,7 +939,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       action.onClick(app, doc);
                       setIsOpen(false);
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                   >
                     {action.icon}
                     <span>{action.title}</span>
@@ -953,7 +953,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleOpenInDefaultApp}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <ExternalLinkIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Open in default app</span>
@@ -963,7 +963,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleShowInExplorer}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <FolderOpenIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Show in system explorer</span>
@@ -973,7 +973,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleRevealInNavigation}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
                   <FolderTreeIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
                   <span>Reveal file in navigation</span>
@@ -986,7 +986,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleDelete}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition-colors flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 flex items-center gap-2.5 cursor-pointer group"
                 >
                   <Delete02Icon size={14} className="text-rose-500 group-hover:text-rose-600 shrink-0" />
                   <span>Delete file</span>
@@ -1001,7 +1001,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       action.onClick(app, doc);
                       setIsOpen(false);
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 transition-colors flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 flex items-center gap-2.5 cursor-pointer group"
                   >
                     {action.icon}
                     <span>{action.title}</span>

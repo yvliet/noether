@@ -195,6 +195,16 @@ export const LeftSidebar: React.FC = React.memo(() => {
     [setSplitRatio]
   );
 
+  const resizeCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (resizeCleanupRef.current) {
+        resizeCleanupRef.current();
+      }
+    };
+  }, []);
+
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsResizing(true);
@@ -203,19 +213,25 @@ export const LeftSidebar: React.FC = React.memo(() => {
     const startX = e.clientX;
     const startWidth = leftSidebarWidth;
 
+    const cleanup = () => {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      resizeCleanupRef.current = null;
+    };
+
     const handleMouseMove = (moveEvent: MouseEvent) => {
       const delta = moveEvent.clientX - startX;
       setLeftSidebarWidth(startWidth + delta);
     };
 
     const handleMouseUp = () => {
-      setIsResizing(false);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
+      cleanup();
     };
 
+    resizeCleanupRef.current = cleanup;
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
   }, [leftSidebarWidth, setLeftSidebarWidth]);

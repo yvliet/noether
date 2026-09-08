@@ -150,7 +150,7 @@ export const HearthModal: React.FC = React.memo(() => {
         {/* Top Right Close Button */}
         <button
           onClick={() => setIsHearthModalOpen(false)}
-          className="absolute top-3 right-3 z-30 p-1.5 rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+          className="absolute top-3 right-3 z-30 p-1.5 rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
           title="Close"
         >
           <Cancel01Icon size={14} />
@@ -173,7 +173,7 @@ export const HearthModal: React.FC = React.memo(() => {
                       e.stopPropagation();
                       showContextMenu(e, getMenuItems(rv));
                     }}
-                    className="group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer transition-colors bg-transparent text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#e0e0e0)]"
+                    className="group relative flex items-center justify-between px-3 py-2.5 rounded-lg cursor-pointer bg-transparent text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#e0e0e0)]"
                   >
                     <div className="flex flex-col min-w-0 pr-2 flex-1 select-none overflow-visible">
                       {isEditing ? (
@@ -216,7 +216,7 @@ export const HearthModal: React.FC = React.memo(() => {
                             const rect = e.currentTarget.getBoundingClientRect();
                             showContextMenu({ x: rect.right, y: rect.bottom + 4 }, getMenuItems(rv));
                           }}
-                          className="p-1 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+                          className="p-1 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer opacity-0 group-hover:opacity-100"
                           title="Options"
                         >
                           <MoreVerticalIcon size={14} />
@@ -246,7 +246,7 @@ export const HearthModal: React.FC = React.memo(() => {
           {/* Action Cards Container */}
           <div className="w-full max-w-[420px] flex flex-col gap-3">
             {/* Card 1: Create new Hearth */}
-            <div className="bg-[var(--flint-bg-card,#202020)] border border-[var(--flint-border-subtle,#2c2c2c)] rounded-xl p-4 transition-all shadow-xs">
+            <div className="bg-[var(--flint-bg-card,#202020)] border border-[var(--flint-border-subtle,#2c2c2c)] rounded-xl p-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col pr-3">
                   <span className="font-semibold text-xs text-[var(--flint-text-primary)]">Create new Hearth</span>
@@ -276,7 +276,7 @@ export const HearthModal: React.FC = React.memo(() => {
                       value={newHearthName}
                       onChange={(e) => setNewHearthName(e.target.value)}
                       placeholder="My Notes"
-                      className="w-full bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus:border-[var(--flint-border-strong)] rounded-[5px] px-2.5 py-1.5 text-xs text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] transition-colors"
+                      className="w-full bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus:border-[var(--flint-border-strong)] rounded-[5px] px-2.5 py-1.5 text-xs text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
                     />
                   </div>
 

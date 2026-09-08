@@ -49,7 +49,7 @@ export const HelpModal: React.FC = React.memo(() => {
         <div className="flex items-center gap-2 px-5 pt-3 border-b border-[var(--flint-border-subtle,#262626)] bg-[var(--flint-bg-sidebar,#1a1a1a)] shrink-0">
           <button
             onClick={() => setTab('shortcuts')}
-            className={`pb-2 px-1 font-medium transition-colors border-b-2 cursor-pointer ${
+            className={`pb-2 px-1 font-medium border-b-2 cursor-pointer ${
               tab === 'shortcuts'
                 ? 'border-[var(--flint-accent)] text-[var(--flint-text-primary)]'
                 : 'border-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-secondary)]'
@@ -59,7 +59,7 @@ export const HelpModal: React.FC = React.memo(() => {
           </button>
           <button
             onClick={() => setTab('markdown')}
-            className={`pb-2 px-1 font-medium transition-colors border-b-2 cursor-pointer ${
+            className={`pb-2 px-1 font-medium border-b-2 cursor-pointer ${
               tab === 'markdown'
                 ? 'border-[var(--flint-accent)] text-[var(--flint-text-primary)]'
                 : 'border-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-secondary)]'

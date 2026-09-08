@@ -55,7 +55,7 @@ export const PromptModal: React.FC = React.memo(() => {
           <button
             type="button"
             onClick={closeInputDialog}
-            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer"
+            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
           >
             <Cancel01Icon size={14} />
           </button>
@@ -70,7 +70,7 @@ export const PromptModal: React.FC = React.memo(() => {
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={inputDialog.placeholder || 'Enter value...'}
-            className="w-full bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus:border-[var(--flint-border-strong)] rounded-[5px] px-3 py-2 text-xs text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)] transition-colors"
+            className="w-full bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus:border-[var(--flint-border-strong)] rounded-[5px] px-3 py-2 text-xs text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
           />
         </div>
 

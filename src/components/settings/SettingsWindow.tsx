@@ -78,7 +78,7 @@ const FieldResetButton: React.FC<{
         onReset();
       }}
       title={title}
-      className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+      className="p-1 rounded-md text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer shrink-0 flex items-center justify-center"
     >
       <RotateCcwIcon size={13} />
     </button>
@@ -268,7 +268,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
       <div className="px-4 flex items-center justify-between">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-xs text-[#888] hover:text-white cursor-pointer -ml-1 w-fit transition-colors"
+          className="flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer -ml-1 w-fit"
         >
           <ArrowLeft01Icon size={14} />
           <span className="font-medium">Files and links / Trash</span>
@@ -353,10 +353,10 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 hover:bg-[#242424]/60 transition-colors group"
+                  className="flex items-center justify-between p-3 hover:bg-[var(--flint-bg-card-hover)] group"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
-                    <div className="w-7 h-7 rounded-lg bg-[#282828] flex items-center justify-center text-[#999] shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-[var(--flint-bg-card)] flex items-center justify-center text-[var(--flint-text-muted)] shrink-0">
                       {item.is_folder ? (
                         <Folder01Icon size={15} />
                       ) : isCanvas ? (
@@ -368,21 +368,21 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
 
                     <div className="flex flex-col min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-white truncate">
+                        <span className="text-xs font-medium text-[var(--flint-text-primary)] truncate">
                           {item.title}
                         </span>
                         {isCanvas && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#333] text-[#aaa] uppercase font-semibold">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] uppercase font-semibold">
                             Canvas
                           </span>
                         )}
                         {item.is_folder ? (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#333] text-[#aaa] uppercase font-semibold">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] uppercase font-semibold">
                             Folder
                           </span>
                         ) : null}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-[#666] mt-0.5 truncate">
+                      <div className="flex items-center gap-2 text-[10px] text-[var(--flint-text-muted)] mt-0.5 truncate">
                         <span>{formatRelativeTime(item.deleted_at)}</span>
                         <span>•</span>
                         <span className="text-amber-500/80 font-medium">
@@ -417,7 +417,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                         });
                       }}
                       title="Delete permanently"
-                      className="p-1.5 text-[#777] hover:text-rose-400 hover:bg-[#2a2a2a] rounded-[5px] cursor-pointer transition-colors"
+                      className="p-1.5 text-[var(--flint-text-muted)] hover:text-rose-400 hover:bg-[var(--flint-bg-card-hover)] rounded-[5px] cursor-pointer"
                     >
                       <Delete02Icon size={14} />
                     </button>
@@ -708,7 +708,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   key={swatch.color}
                   onClick={() => setAccentColor(swatch.color)}
                   title={swatch.name}
-                  className={`w-5 h-5 rounded-full border transition-transform cursor-pointer ${
+                  className={`w-5 h-5 rounded-full border cursor-pointer ${
                     accentColor.toLowerCase() === swatch.color.toLowerCase()
                       ? 'scale-125 border-white ring-2 ring-white/20'
                       : 'border-black/30 hover:scale-110'
@@ -806,7 +806,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 <button
                   key={tab.id}
                   onClick={() => setThemeFilter(tab.id as any)}
-                  className={`px-2.5 py-1 text-xs rounded-[5px] transition-all cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
+                  className={`px-2.5 py-1 text-xs rounded-[5px] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
                     isSelected
                       ? 'bg-[#2a2a2a] text-white font-medium border border-[#383838]'
                       : 'bg-[#181818] text-[#888] hover:text-[#dcddde] hover:bg-[#222222] border border-[#282828] hover:border-[#333]'
@@ -842,7 +842,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   setActiveTheme(theme.id);
                   showToast(`Applied "${theme.name}" theme`, 'info');
                 }}
-                className={`group relative flex flex-col rounded-xl overflow-hidden border transition-all cursor-pointer select-none ${
+                className={`group relative flex flex-col rounded-xl overflow-hidden border cursor-pointer select-none ${
                   isActive
                     ? 'bg-[#242424] border-[var(--flint-accent)] ring-1 ring-[var(--flint-accent)] shadow-md'
                     : 'bg-[#1e1e1e] border-[#2a2a2a] hover:border-[#3a3a3a] hover:bg-[#222222]'
@@ -901,7 +901,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 <div className="p-3 flex flex-col justify-between flex-1 gap-2">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-white group-hover:text-[var(--flint-accent)] transition-colors">
+                      <span className="text-xs font-semibold text-white group-hover:text-[var(--flint-accent)]">
                         {theme.name}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -948,7 +948,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                             }
                           }}
                           title="Delete custom theme"
-                          className="p-1 text-[#777] hover:text-rose-400 hover:bg-[#2a2a2a] rounded cursor-pointer transition-colors"
+                          className="p-1 text-[#777] hover:text-rose-400 hover:bg-[#2a2a2a] rounded cursor-pointer"
                         >
                           <Delete02Icon size={13} />
                         </button>
@@ -960,7 +960,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                           <span>Active</span>
                         </span>
                       ) : (
-                        <span className="text-[11px] text-[#777] group-hover:text-[#ccc] transition-colors">
+                        <span className="text-[11px] text-[#777] group-hover:text-[#ccc]">
                           Click to apply
                         </span>
                       )}
@@ -1071,7 +1071,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   <button
                     type="button"
                     onClick={() => setNewThemeType('dark')}
-                    className={`flex-1 py-1.5 rounded border text-xs cursor-pointer transition-colors ${
+                    className={`flex-1 py-1.5 rounded border text-xs cursor-pointer ${
                       newThemeType === 'dark'
                         ? 'bg-[#2a2a2a] border-[var(--flint-accent)] text-white font-medium'
                         : 'bg-[#141414] border-[#282828] text-[#777]'
@@ -1082,7 +1082,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   <button
                     type="button"
                     onClick={() => setNewThemeType('light')}
-                    className={`flex-1 py-1.5 rounded border text-xs cursor-pointer transition-colors ${
+                    className={`flex-1 py-1.5 rounded border text-xs cursor-pointer ${
                       newThemeType === 'light'
                         ? 'bg-[#2a2a2a] border-[var(--flint-accent)] text-white font-medium'
                         : 'bg-[#141414] border-[#282828] text-[#777]'
@@ -2287,7 +2287,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveHearthName();
                 }}
-                className="bg-[#2a2a2a] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none w-44 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors"
+                className="bg-[#2a2a2a] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none w-44 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
               />
               {tempHearthName !== hearthName && (
                 <button
@@ -2510,7 +2510,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               await loadTrash();
               onOpenTrash();
             }}
-            className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40 transition-colors"
+            className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
           >
             <div className="flex flex-col pr-4">
               <span className="text-[13px] font-normal text-[#dcddde]">Open trash</span>
@@ -2805,7 +2805,7 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
                       }
                     }}
                     title={`View ${ext.name} README`}
-                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
                   >
                     <BookOpen01Icon size={14} />
                   </button>
@@ -2814,7 +2814,7 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
                   <button
                     onClick={() => onNavigateTab(settingsTab.id)}
                     title={`${ext.name} options`}
-                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
                   >
                     <Settings02Icon size={15} />
                   </button>
@@ -3301,7 +3301,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   e.stopPropagation();
                   handleMinimize();
                 }}
-                className="h-full w-11 hover:bg-[var(--flint-bg-card-hover,#252525)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer transition-colors"
+                className="h-full w-11 hover:bg-[var(--flint-bg-card-hover,#252525)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer"
                 title="Minimize"
               >
                 <WindowMinimizeIcon />
@@ -3313,7 +3313,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   e.stopPropagation();
                   handleMaximize();
                 }}
-                className="h-full w-11 hover:bg-[var(--flint-bg-card-hover,#252525)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer transition-colors"
+                className="h-full w-11 hover:bg-[var(--flint-bg-card-hover,#252525)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer"
                 title={isMaximized ? 'Restore' : 'Maximize'}
               >
                 {isMaximized ? <WindowRestoreIcon /> : <WindowMaximizeIcon />}
@@ -3327,7 +3327,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               e.stopPropagation();
               handleClose();
             }}
-            className="h-full w-11 hover:bg-[#e81123] text-[var(--flint-text-muted,#888)] hover:text-white flex items-center justify-center cursor-pointer transition-colors"
+            className="h-full w-11 hover:bg-[#e81123] text-[var(--flint-text-muted,#888)] hover:text-white flex items-center justify-center cursor-pointer"
             title="Close"
           >
             <WindowCloseIcon />
@@ -3367,7 +3367,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         setIsTrashViewOpen(false);
                         setActiveTab(item.id);
                       }}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
                           ? 'bg-[var(--flint-bg-sidebar-active,#252525)] text-[var(--flint-text-primary)] font-medium shadow-xs'
                           : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
@@ -3395,7 +3395,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         setIsTrashViewOpen(false);
                         setActiveTab(item.id);
                       }}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
                           ? 'bg-[var(--flint-bg-sidebar-active,#252525)] text-[var(--flint-text-primary)] font-medium shadow-xs'
                           : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
@@ -3423,7 +3423,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         setIsTrashViewOpen(false);
                         setActiveTab(tab.id);
                       }}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer transition-colors ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
                           ? 'bg-[var(--flint-bg-sidebar-active,#252525)] text-[var(--flint-text-primary)] font-medium shadow-xs'
                           : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
@@ -3445,7 +3445,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                 restoreAllDefaults();
                 showToast('Restored all settings to default values', 'info');
               }}
-              className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--flint-text-muted,#777)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] transition-colors cursor-pointer border border-transparent hover:border-[var(--flint-border-base)]"
+              className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--flint-text-muted,#777)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] cursor-pointer border border-transparent hover:border-[var(--flint-border-base)]"
               title="Restore all settings across all tabs to default"
             >
               <RotateCcwIcon size={12} />

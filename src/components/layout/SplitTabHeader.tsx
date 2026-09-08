@@ -466,7 +466,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                     e.stopPropagation();
                     closeTabInPane(targetPaneId, tab.id);
                   }}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center transition-colors cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
                 >
                   <Cancel01Icon size={13} />
                 </button>
@@ -489,7 +489,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
             openEmptyTabInPane(targetPaneId);
           }}
           title="New split tab"
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors shrink-0 self-center ml-1.5 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
         >
           <PlusSignIcon size={14} />
         </button>

@@ -448,7 +448,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                       e.stopPropagation();
                       closeTabInPane(paneId, tab.id);
                     }}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center transition-colors cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
                   >
                     <Cancel01Icon size={13} />
                   </button>
@@ -472,7 +472,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             openEmptyTabInPane(paneId);
           }}
           title="New tab (Ctrl+T)"
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors shrink-0 self-center ml-1.5 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
         >
           <PlusSignIcon size={14} />
         </button>
@@ -1005,7 +1005,7 @@ export const WindowHeader: React.FC = React.memo(() => {
         <button
           onClick={toggleLeftSidebar}
           title="Toggle left sidebar (Ctrl+\)"
-          className="w-7 h-7 rounded-md flex items-center justify-center transition-colors text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
         >
           {isLeftSidebarOpen ? <LayoutLeftIcon size={16} /> : <LayoutAlignLeftIcon size={16} />}
         </button>
@@ -1129,7 +1129,7 @@ export const WindowHeader: React.FC = React.memo(() => {
           type="button"
           onClick={toggleRightSidebar}
           title="Toggle right sidebar (Ctrl+Shift+\)"
-          className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer shrink-0 ${
+          className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer shrink-0 ${
             !isRightSidebarOpen ? 'mr-[14px]' : ''
           }`}
         >
@@ -1228,7 +1228,7 @@ export const WindowHeader: React.FC = React.memo(() => {
                 handleMinimize();
               }}
               title="Minimize"
-              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
             >
               <WindowMinimizeIcon />
             </button>
@@ -1241,7 +1241,7 @@ export const WindowHeader: React.FC = React.memo(() => {
                 handleMaximize();
               }}
               title={isMaximized ? 'Restore' : 'Maximize'}
-              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
             >
               {isMaximized ? <WindowRestoreIcon /> : <WindowMaximizeIcon />}
             </button>
@@ -1254,7 +1254,7 @@ export const WindowHeader: React.FC = React.memo(() => {
                 handleClose();
               }}
               title="Close"
-              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-white hover:bg-[#e81123] transition-colors cursor-pointer"
+              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-white hover:bg-[#e81123] cursor-pointer"
             >
               <WindowCloseIcon />
             </button>

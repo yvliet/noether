@@ -198,22 +198,15 @@ textarea,
 }
 
 /* ==========================================================================
-   Comprehensive Semantic Utility Redirects (Guarantees 100% Theme Reactivity)
-   TODO: Retained because arbitrary hex utility classes (e.g., bg-[#1e1e1e]) 
-   are still referenced across JSX components. Refactor JSX to semantic theme 
-   tokens before removing these overrides.
+   Semantic Surface & Component Tokens (Theme Reactivity & Native Architecture)
    ========================================================================== */
 
 /* Top bar surfaces */
-.bg-\[\#0f0f0f\],
-.bg-\[\#0d0d0d\],
 [data-top-bar="true"] {
   background: var(--flint-bg-topbar-gradient, var(--flint-bg-topbar)) !important;
 }
 
 /* Sidebars & Ribbon */
-.bg-\[\#141414\],
-.bg-\[\#151515\],
 [data-sidebar="true"] {
   background: var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar)) !important;
 }
@@ -223,33 +216,16 @@ textarea,
 }
 
 /* Main workspace & canvas */
-.bg-\[\#181818\],
-.bg-\[\#1c1c1c\],
 [data-main="true"] {
   background: var(--flint-bg-main-gradient, var(--flint-bg-main)) !important;
 }
 
 /* Cards, Modals, Panels */
-.bg-\[\#1e1e1e\],
-.bg-\[\#202020\],
-.bg-\[\#222222\],
-.bg-\[\#232323\],
 [data-card="true"] {
   background-color: var(--flint-bg-card) !important;
 }
 
-/* Hover & Active Surfaces */
-.bg-\[\#242424\],
-.bg-\[\#252525\],
-.bg-\[\#262626\],
-.bg-\[\#282828\],
-.bg-\[\#2a2a2a\] {
-  background-color: var(--flint-bg-card-hover) !important;
-}
-
 /* Inputs & Form Controls */
-.bg-\[\#161616\],
-.bg-\[\#1a1a1a\],
 input:not([type="checkbox"]):not([type="radio"]):not(.bg-transparent),
 select,
 textarea {
@@ -263,62 +239,6 @@ input.bg-transparent,
 textarea.bg-transparent {
   background-color: transparent !important;
   background: transparent !important;
-}
-
-/* Text Colors */
-.text-\[\#dcddde\],
-.text-\[\#d4d4d4\],
-.text-\[\#c5c6c8\],
-.text-\[\#cdd6f4\],
-.text-\[\#e0e0e0\] {
-  color: var(--flint-text-secondary) !important;
-}
-
-.text-\[\#888\],
-.text-\[\#888888\],
-.text-\[\#777\],
-.text-\[\#777777\],
-.text-\[\#666\],
-.text-\[\#666666\],
-.text-\[\#999\],
-.text-\[\#999999\] {
-  color: var(--flint-text-muted) !important;
-}
-
-.text-\[\#555\],
-.text-\[\#555555\],
-.text-\[\#4e4e4e\],
-.text-\[\#444\],
-.text-\[\#444444\] {
-  color: var(--flint-text-faint) !important;
-}
-
-/* Borders & Dividers */
-.border-\[\#202020\],
-.border-\[\#222\],
-.border-\[\#232323\],
-.border-\[\#242424\],
-.border-\[\#262626\],
-.border-\[\#282828\],
-.border-\[\#2a2a2a\],
-.border-\[\#2c2c2c\],
-.border-\[\#313244\],
-.border-\[\#333\],
-.border-\[\#333333\],
-.border-\[\#383838\],
-.border-\[\#3b4252\] {
-  border-color: var(--flint-border-base) !important;
-}
-
-.divide-\[\#202020\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#222\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#242424\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#262626\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#282828\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#2a2a2a\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#333\] > :not([hidden]) ~ :not([hidden]),
-.divide-\[\#383838\] > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--flint-border-subtle) !important;
 }
 
 /* ==========================================================================
@@ -370,90 +290,14 @@ textarea.bg-transparent {
   opacity: 0.8 !important;
 }
 
-/* Light hover & active state redirects for arbitrary utility classes */
-.theme-light .hover\:bg-\[\#161616\]:hover,
-.theme-light .hover\:bg-\[\#1a1a1a\]:hover,
-.theme-light .hover\:bg-\[\#1c1c1c\]:hover,
-.theme-light .hover\:bg-\[\#1e1e1e\]:hover,
-.theme-light .hover\:bg-\[\#202020\]:hover,
-.theme-light .hover\:bg-\[\#222222\]:hover,
-.theme-light .hover\:bg-\[\#242424\]:hover,
-.theme-light .hover\:bg-\[\#252525\]:hover,
-.theme-light .hover\:bg-\[\#262626\]:hover,
-.theme-light .hover\:bg-\[\#282828\]:hover,
-.theme-light .hover\:bg-\[\#2a2a2a\]:hover,
-.theme-light .hover\:bg-\[\#2c2c2c\]:hover,
-.theme-light .hover\:bg-\[\#323232\]:hover,
-.theme-light .hover\:bg-\[\#333333\]:hover,
-.theme-light .hover\:bg-\[\#383838\]:hover,
-.theme-light .hover\:bg-\[\#404040\]:hover,
-.theme-light .hover\:bg-\[\#484848\]:hover {
-  background-color: var(--flint-bg-card-hover) !important;
-}
-
-.theme-light .active\:bg-\[\#1e1e1e\]:active,
-.theme-light .active\:bg-\[\#202020\]:active,
-.theme-light .active\:bg-\[\#222222\]:active,
-.theme-light .active\:bg-\[\#242424\]:active,
-.theme-light .active\:bg-\[\#262626\]:active,
-.theme-light .active\:bg-\[\#282828\]:active,
-.theme-light .active\:bg-\[\#2a2a2a\]:active {
-  background-color: var(--flint-bg-sidebar-active) !important;
-}
-
-.theme-light .hover\:text-white:hover,
-.theme-light .hover\:text-\[\#ffffff\]:hover,
-.theme-light .hover\:text-\[\#dcddde\]:hover,
-.theme-light .hover\:text-\[\#e0e0e0\]:hover,
-.theme-light .hover\:text-\[\#ccc\]:hover,
-.theme-light .hover\:text-\[\#c5c6c8\]:hover,
-.theme-light .hover\:text-\[\#d4d4d4\]:hover,
-.theme-light .hover\:text-\[\#f3f4f6\]:hover,
-.theme-light .hover\:text-\[\#e5e7eb\]:hover,
-.theme-light .group:hover .group-hover\:text-white,
-.theme-light .group:hover .group-hover\:text-\[\#ffffff\],
-.theme-light .group:hover .group-hover\:text-\[\#dcddde\],
-.theme-light .group:hover .group-hover\:text-\[\#e0e0e0\],
-.theme-light .group:hover .group-hover\:text-\[\#ccc\],
-.theme-light .group:hover .group-hover\:text-\[\#c5c6c8\],
-.theme-light .group:hover .group-hover\:text-\[\#aaaaaa\],
-.theme-light .group:hover .group-hover\:text-\[\#d4d4d4\] {
-  color: var(--flint-text-primary) !important;
-}
-
-.theme-light .hover\:border-\[\#383838\]:hover,
-.theme-light .hover\:border-\[\#404040\]:hover,
-.theme-light .hover\:border-\[\#444\]:hover,
-.theme-light .hover\:border-\[\#444444\]:hover,
-.theme-light .hover\:border-\[\#484848\]:hover,
-.theme-light .hover\:border-\[\#4c4c4c\]:hover,
-.theme-light .hover\:border-\[\#555\]:hover,
-.theme-light .hover\:border-\[\#555555\]:hover {
-  border-color: var(--flint-border-strong) !important;
-}
-
 /* Light mode subtle in-between dividers */
-.theme-light .divide-\[\#202020\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#222\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#242424\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#262626\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#282828\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#2a2a2a\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#333\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-\[\#383838\] > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-zinc-800 > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-neutral-800 > :not([hidden]) ~ :not([hidden]),
-.theme-light .divide-gray-800 > :not([hidden]) ~ :not([hidden]),
 .theme-light .divide-y > :not([hidden]) ~ :not([hidden]),
 .theme-light .divide-x > :not([hidden]) ~ :not([hidden]) {
   border-color: var(--flint-border-subtle, #f0f0f2) !important;
 }
 
 /* Light Mode Softened Optical Elevations (Cards, Popovers, Dropdowns, Context Menus, Modals) */
-.theme-light [data-card="true"],
-.theme-light .bg-\[\#202020\],
-.theme-light .bg-\[\#1e1e1e\],
-.theme-light .bg-\[\#222222\] {
+.theme-light [data-card="true"] {
   background-color: var(--flint-bg-card) !important;
   border-color: var(--flint-border-base, #e4e4e7) !important;
   box-shadow: var(--flint-shadow-1, 0 1px 2px 0 rgba(0, 0, 0, 0.03)) !important;

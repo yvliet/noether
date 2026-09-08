@@ -38,6 +38,16 @@ export const Slider: React.FC<SliderProps> = React.memo(({
     lastEmitted: number;
   } | null>(null);
 
+  const dragCleanupRef = React.useRef<(() => void) | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (dragCleanupRef.current) {
+        dragCleanupRef.current();
+      }
+    };
+  }, []);
+
   // Clamp value within bounds
   const numericValue = typeof value === 'number' && !isNaN(value) ? value : min;
   const clampedValue = Math.min(max, Math.max(min, numericValue));
@@ -93,18 +103,24 @@ export const Slider: React.FC<SliderProps> = React.memo(({
       }
     };
 
+    const cleanup = () => {
+      dragSessionRef.current = null;
+      dragCleanupRef.current = null;
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointercancel', handlePointerUp);
+    };
+
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (container && container.hasPointerCapture(upEvent.pointerId)) {
         try {
           container.releasePointerCapture(upEvent.pointerId);
         } catch (err) {}
       }
-      dragSessionRef.current = null;
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', handlePointerUp);
+      cleanup();
     };
 
+    dragCleanupRef.current = cleanup;
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
     window.addEventListener('pointerup', handlePointerUp, { passive: true });
     window.addEventListener('pointercancel', handlePointerUp, { passive: true });

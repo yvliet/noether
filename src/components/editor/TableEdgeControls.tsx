@@ -51,13 +51,19 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
     };
   }, [editor]);
 
-  // Track mouse movements with 0ms instantaneous exit
+  // Track mouse movements throttled via requestAnimationFrame
   useEffect(() => {
     if (!editor || !editor.view || !editor.isEditable) return;
 
     const editorDom = editor.view.dom;
+    let rafId: number | null = null;
+    let pendingEvent: MouseEvent | null = null;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const processMouseMove = () => {
+      rafId = null;
+      const e = pendingEvent;
+      if (!e) return;
+
       const target = e.target as HTMLElement | null;
 
       // 1. If mouse is directly over the button itself, keep active
@@ -102,6 +108,13 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
       }
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      pendingEvent = e;
+      if (rafId === null) {
+        rafId = window.requestAnimationFrame(processMouseMove);
+      }
+    };
+
     const handleScroll = () => {
       updateTableRect();
     };
@@ -110,6 +123,9 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
     window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
 
     return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('scroll', handleScroll, { capture: true });
     };
@@ -171,9 +187,9 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
           type="button"
           onClick={handleAddColumn}
           title="Add column"
-          className="w-[22px] h-[22px] rounded-full bg-[var(--flint-bg-card,#222222)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] active:bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-base,#333333)] hover:border-[var(--flint-border-strong,#555555)] text-[var(--flint-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer transition-colors group outline-none"
+          className="w-[22px] h-[22px] rounded-full bg-[var(--flint-bg-card,#222222)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] active:bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-base,#333333)] hover:border-[var(--flint-border-strong,#555555)] text-[var(--flint-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
         >
-          <PlusSignIcon size={12} className="group-hover:text-white transition-colors" />
+          <PlusSignIcon size={12} className="group-hover:text-white" />
         </button>
       </div>
 
@@ -191,9 +207,9 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
           type="button"
           onClick={handleAddRow}
           title="Add row"
-          className="w-[22px] h-[22px] rounded-full bg-[var(--flint-bg-card,#222222)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] active:bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-base,#333333)] hover:border-[var(--flint-border-strong,#555555)] text-[var(--flint-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer transition-colors group outline-none"
+          className="w-[22px] h-[22px] rounded-full bg-[var(--flint-bg-card,#222222)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] active:bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-base,#333333)] hover:border-[var(--flint-border-strong,#555555)] text-[var(--flint-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
         >
-          <PlusSignIcon size={12} className="group-hover:text-white transition-colors" />
+          <PlusSignIcon size={12} className="group-hover:text-white" />
         </button>
       </div>
     </>
