@@ -107,18 +107,42 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
     }
   }, [pushHistory]);
 
-  // Handle changes and sync back to Flint document models
-  const handleChange = useCallback((newText: string) => {
-    setText(newText);
+  const parseTimerRef = useRef<any>(null);
 
-    // Parse YAML frontmatter and markdown body
-    const { properties: parsedProps, bodyText } = parseFrontmatter(newText);
-
-    // Convert body text to TipTap JSON AST
+  const syncToAst = useCallback((rawText: string) => {
+    const { properties: parsedProps, bodyText } = parseFrontmatter(rawText);
     const newContentJson = markdownToTipTapJson(bodyText);
-
     onChange(newContentJson, undefined, parsedProps);
   }, [onChange]);
+
+  // Handle changes and sync back to Flint document models
+  const handleChange = useCallback((newText: string, immediate = false) => {
+    setText(newText);
+
+    if (parseTimerRef.current) {
+      clearTimeout(parseTimerRef.current);
+      parseTimerRef.current = null;
+    }
+
+    if (immediate) {
+      syncToAst(newText);
+    } else {
+      parseTimerRef.current = setTimeout(() => {
+        parseTimerRef.current = null;
+        syncToAst(newText);
+      }, 200);
+    }
+  }, [syncToAst]);
+
+  // Flush pending AST conversions on unmount
+  useEffect(() => {
+    return () => {
+      if (parseTimerRef.current) {
+        clearTimeout(parseTimerRef.current);
+        parseTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Soft-undo tracking for immediate backspace after auto-pair
   const lastAutoPairRef = useRef<{ pos: number; char: string } | null>(null);
@@ -162,6 +186,11 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
     // 1. Explicit Save: Ctrl + S / Cmd + S
     if ((e.key === 's' || e.key === 'S') && isCtrlOrMeta && !e.altKey && !e.shiftKey) {
       e.preventDefault();
+      if (parseTimerRef.current) {
+        clearTimeout(parseTimerRef.current);
+        parseTimerRef.current = null;
+        syncToAst(text);
+      }
       onSave?.();
       return;
     }
@@ -174,7 +203,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
         historyRef.current.index = nextIdx;
         const prevText = historyRef.current.stack[nextIdx];
         setText(prevText);
-        handleChange(prevText);
+        handleChange(prevText, true);
       }
       return;
     }
@@ -190,7 +219,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
         historyRef.current.index = nextIdx;
         const nextText = historyRef.current.stack[nextIdx];
         setText(nextText);
-        handleChange(nextText);
+        handleChange(nextText, true);
       }
       return;
     }
@@ -547,6 +576,13 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
         }}
         onKeyDown={handleKeyDown}
         onPaste={handlePaste}
+        onBlur={() => {
+          if (parseTimerRef.current) {
+            clearTimeout(parseTimerRef.current);
+            parseTimerRef.current = null;
+            syncToAst(text);
+          }
+        }}
         spellCheck={spellcheck}
         autoCapitalize="off"
         autoCorrect="off"

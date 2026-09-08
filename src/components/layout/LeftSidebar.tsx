@@ -344,6 +344,57 @@ export const LeftSidebar: React.FC = React.memo(() => {
     openConfirmDialog,
   ]);
 
+  // Centralized tree-level event listener: replaces per-node window listeners across the tree
+  useEffect(() => {
+    const handleExpandFolder = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id?: string }>;
+      const targetId = customEvent.detail?.id;
+      if (targetId) {
+        useWorkspaceStore.getState().setFolderOpen(targetId, true);
+      }
+    };
+
+    const handleRevealTreeItem = (e: Event) => {
+      const customEvent = e as CustomEvent<{ id?: string }>;
+      const targetId = customEvent.detail?.id;
+      if (!targetId) return;
+
+      const ws = useWorkspaceStore.getState();
+      ws.setActiveLeftView('files');
+      ws.setIsLeftSidebarOpen(true);
+
+      const docs = useDocumentStore.getState().documents;
+      let curr = docs.find((d) => d.id === targetId);
+      const ancestors: string[] = [];
+      while (curr && curr.parent_id) {
+        ancestors.push(curr.parent_id);
+        curr = docs.find((d) => d.id === curr?.parent_id);
+      }
+      for (const parentFolderId of ancestors) {
+        ws.setFolderOpen(parentFolderId, true);
+      }
+
+      setTimeout(() => {
+        const domNode = document.getElementById(`flint-tree-item-${targetId}`);
+        if (domNode) {
+          domNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          domNode.classList.add('!bg-[#82691b]', '!text-white');
+          setTimeout(() => {
+            domNode.classList.remove('!bg-[#82691b]', '!text-white');
+          }, 1800);
+        }
+      }, 80);
+    };
+
+    window.addEventListener('flint:expand-folder', handleExpandFolder);
+    window.addEventListener('flint:reveal-tree-item', handleRevealTreeItem);
+
+    return () => {
+      window.removeEventListener('flint:expand-folder', handleExpandFolder);
+      window.removeEventListener('flint:reveal-tree-item', handleRevealTreeItem);
+    };
+  }, []);
+
   // Filter root documents (parent_id === null)
   const rootDocs = useMemo(() => {
     return sortDocuments(

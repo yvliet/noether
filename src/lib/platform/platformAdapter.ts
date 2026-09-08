@@ -24,6 +24,7 @@ export interface IPlatformAdapter {
   onMaximizedChange(callback: (isMaximized: boolean) => void): () => void;
   isMinimized(): Promise<boolean>;
   onMinimizedChange(callback: (isMinimized: boolean) => void): () => void;
+  getCurrentWindowLabel(): Promise<string | null>;
 
   // Multi-window / Modals
   openHearthWindow(): Promise<{ success: boolean }>;
@@ -71,6 +72,10 @@ export interface IPlatformAdapter {
   emptyTrashFolder(): Promise<{ success: boolean; error?: string }>;
 
   // Database
+  dbInit(vaultPath?: string): Promise<{ success: boolean; path?: string }>;
+  dbQuery<T = any>(sql: string, params?: any[]): Promise<T[]>;
+  dbExecute(sql: string, params?: any[]): Promise<number>;
+  dbTransaction(queries: Array<{ sql: string; params?: any[] }>): Promise<boolean>;
   saveDatabase(bytes: Uint8Array, customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null>;
 
@@ -301,6 +306,29 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       if (unlistenResize) unlistenResize();
       if (unlistenVis) unlistenVis();
     };
+  }
+
+  public async getCurrentWindowLabel(): Promise<string | null> {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlWindow = params.get('window');
+      if (urlWindow) return urlWindow;
+    }
+
+    if (this.isTauri()) {
+      try {
+        const currentWin = getCurrentWindow();
+        if (currentWin?.label) return currentWin.label;
+      } catch {}
+
+      try {
+        const internals = (window as any).__TAURI_INTERNALS__;
+        const label = internals?.metadata?.currentWindow?.label;
+        if (label) return label;
+      } catch {}
+    }
+
+    return null;
   }
 
   // Multi-window / Modal management
@@ -613,6 +641,41 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       return await invoke('empty_trash_folder');
     }
     return { success: false, error: 'Desktop mode only' };
+  }
+
+  // Database operations
+  public async dbInit(vaultPath?: string): Promise<{ success: boolean; path?: string }> {
+    if (this.isTauri()) {
+      return await invoke('flint_db_init', { vaultPath: vaultPath || null });
+    }
+    return { success: false };
+  }
+
+  public async dbQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
+    if (this.isTauri()) {
+      const cleanParams = params.map((p) => (p === undefined ? null : p));
+      return await invoke<T[]>('flint_db_query', { sql, params: cleanParams });
+    }
+    return [];
+  }
+
+  public async dbExecute(sql: string, params: any[] = []): Promise<number> {
+    if (this.isTauri()) {
+      const cleanParams = params.map((p) => (p === undefined ? null : p));
+      return await invoke<number>('flint_db_execute', { sql, params: cleanParams });
+    }
+    return 0;
+  }
+
+  public async dbTransaction(queries: Array<{ sql: string; params?: any[] }>): Promise<boolean> {
+    if (this.isTauri()) {
+      const cleanQueries = queries.map((q) => ({
+        sql: q.sql,
+        params: (q.params || []).map((p) => (p === undefined ? null : p)),
+      }));
+      return await invoke<boolean>('flint_db_transaction', { queries: cleanQueries });
+    }
+    return false;
   }
 
   // Database persistence (Legacy: Native SQLite WAL persistence is managed page-by-page by the Rust core)

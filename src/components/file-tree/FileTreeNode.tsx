@@ -86,7 +86,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const toggleDocSelection = useDocumentStore((s) => s.toggleDocSelection);
   const selectDocRange = useDocumentStore((s) => s.selectDocRange);
   const showBrokenEmbedIndicators = useSettingsStore((s) => s.showBrokenEmbedIndicators);
-  const brokenEmbedCounts = useDocumentStore((s) => s.brokenEmbedCounts);
+  const brokenEmbedCounts = useDocumentStore((s) => (isFolder && showBrokenEmbedIndicators ? s.brokenEmbedCounts : null));
+  const fileBrokenCount = useDocumentStore((s) => (!isFolder && showBrokenEmbedIndicators ? (s.brokenEmbedCounts[item.id] || 0) : 0));
 
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
@@ -99,9 +100,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const { showContextMenu } = useAppContextMenu();
 
-  const folderOpenState = useWorkspaceStore((s) => s.folderOpenState);
+  const isOpen = useWorkspaceStore((s) => (isFolder ? (s.folderOpenState[item.id] !== undefined ? s.folderOpenState[item.id] : true) : true));
   const setFolderOpen = useWorkspaceStore((s) => s.setFolderOpen);
-  const isOpen = isFolder ? (folderOpenState[item.id] !== undefined ? folderOpenState[item.id] : true) : true;
 
   const setIsOpen = useCallback(
     (openOrUpdater: boolean | ((prev: boolean) => boolean)) => {
@@ -113,7 +113,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const [localIsEditing, setLocalIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(item.title);
-  const [isHighlighted, setIsHighlighted] = useState(false);
   const saveTimerRef = useRef<any>(null);
   const originalTitleRef = useRef(item.title);
   const prevIsEditingRef = useRef(false);
@@ -193,7 +192,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   }, [decorators, item, activeTab, app, isOpen]);
 
   const folderBrokenDocCount = useMemo(() => {
-    if (!isFolder || !showBrokenEmbedIndicators) return 0;
+    if (!isFolder || !showBrokenEmbedIndicators || !brokenEmbedCounts) return 0;
     let count = 0;
     for (const brokenId of Object.keys(brokenEmbedCounts)) {
       if (brokenEmbedCounts[brokenId] > 0 && isDescendant(brokenId, item.id, allDocs)) {
@@ -202,11 +201,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     }
     return count;
   }, [isFolder, showBrokenEmbedIndicators, brokenEmbedCounts, item.id, allDocs]);
-
-  const fileBrokenCount = useMemo(() => {
-    if (isFolder || !showBrokenEmbedIndicators) return 0;
-    return brokenEmbedCounts[item.id] || 0;
-  }, [isFolder, showBrokenEmbedIndicators, brokenEmbedCounts, item.id]);
 
   const hasBrokenEmbed = isFolder ? folderBrokenDocCount > 0 : fileBrokenCount > 0;
 
@@ -298,55 +292,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     prevIsEditingRef.current = isEditing;
   }, [isEditing, item.title]);
 
-  // Expand on external event
-  useEffect(() => {
-    if (!isFolder) return;
-    const handleExpand = (e: any) => {
-      if (e.detail?.id === item.id) {
-        setIsOpen(true);
-      }
-    };
-    window.addEventListener('flint:expand-folder', handleExpand);
-    return () => window.removeEventListener('flint:expand-folder', handleExpand);
-  }, [isFolder, item.id]);
-
-  // Reveal tree item event
-  useEffect(() => {
-    const handleReveal = (e: any) => {
-      const targetId = e.detail?.id;
-      if (!targetId) return;
-
-      if (targetId === item.id) {
-        setIsOpen(true);
-        setIsHighlighted(true);
-        setTimeout(() => {
-          const domNode = document.getElementById(`flint-tree-item-${item.id}`);
-          if (domNode) {
-            domNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 60);
-        setTimeout(() => {
-          setIsHighlighted(false);
-        }, 1800);
-      } else if (isFolder) {
-        let curr = allDocs.find((d) => d.id === targetId);
-        let isAncestor = false;
-        while (curr) {
-          if (curr.parent_id === item.id) {
-            isAncestor = true;
-            break;
-          }
-          curr = allDocs.find((d) => d.id === curr?.parent_id);
-        }
-        if (isAncestor) {
-          setIsOpen(true);
-        }
-      }
-    };
-
-    window.addEventListener('flint:reveal-tree-item', handleReveal as EventListener);
-    return () => window.removeEventListener('flint:reveal-tree-item', handleReveal as EventListener);
-  }, [item.id, isFolder, allDocs]);
 
   // Auto-expand folder only when active document explicitly changes during user navigation
   const prevActiveDocIdRef = useRef<string | null>(activeDocId || null);
@@ -924,7 +869,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       isSelected={isHighlightSuppressed ? false : isSelected}
       isMultiSelected={isHighlightSuppressed ? false : isMultiSelected}
       isActive={isActive}
-      isHighlighted={isHighlighted}
+      isHighlighted={false}
       isBeingDragged={isBeingDragged}
       isDropTarget={isDropTarget}
       isEditing={isEditing}

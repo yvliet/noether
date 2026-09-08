@@ -12,7 +12,6 @@ import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, 
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import type { PortalSlotContext } from '@/core/extensions/types';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
-import { dbAdapter } from '@/lib/db/adapter';
 import { DocumentProperties } from '@/types';
 import { useAppContextMenu } from '@/components/common/ContextMenu';
 import {
@@ -89,6 +88,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const updateDocumentTitleInMemory = useDocumentStore((s) => s.updateDocumentTitleInMemory);
   const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
   const renameDocument = useDocumentStore((s) => s.renameDocument);
+  const updateProperties = useDocumentStore((s) => s.updateProperties);
 
   const app = useFlintApp();
   useExtensionList(); // Subscribe to reactive extension state changes
@@ -563,36 +563,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
     if (docId && contentToSave !== null) {
       pendingContentRef.current = null;
-
-      const currentContent = contentToSave;
-
-      // Synchronously execute into in-memory WASM SQLite table so beforeunload exports the latest content
-      dbAdapter.executeSync(
-        `UPDATE documents SET content_json = ?, updated_at = ? WHERE id = ?`,
-        [currentContent, Date.now(), docId]
-      );
-
-      useDocumentStore.setState((s) => ({
-        documents: s.documents.map((d) =>
-          d.id === docId
-            ? {
-                ...d,
-                content_json: currentContent,
-                ...(committedTitle ? { title: committedTitle } : {}),
-              }
-            : d
-        ),
-        activeDocument:
-          s.activeDocument && s.activeDocument.id === docId
-            ? {
-                ...s.activeDocument,
-                content_json: currentContent,
-                ...(committedTitle ? { title: committedTitle } : {}),
-              }
-            : s.activeDocument,
-      }));
-
-      saveDocumentById(docId, currentContent, committedTitle);
+      saveDocumentById(docId, contentToSave, committedTitle);
     }
   }, [saveDocumentById, renameDocument, documents]);
 
@@ -716,10 +687,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       // If update belongs to a previous or different document instance (e.g. unmount cleanup),
       // flush it directly to that document without corrupting active document state.
       if (sourceDocId && activeDocIdRef.current && sourceDocId !== activeDocIdRef.current) {
-        dbAdapter.executeSync(
-          `UPDATE documents SET content_json = ?, updated_at = ? WHERE id = ?`,
-          [newJson, Date.now(), sourceDocId]
-        );
         saveDocumentById(sourceDocId, newJson);
         return;
       }
@@ -737,20 +704,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         commitTitleRename(newTitle);
       }
       if (newProps && currentDoc) {
-        useDocumentStore.setState((s) => ({
-          documentProperties: newProps,
-          documents: s.documents.map((d) =>
-            d.id === currentDoc.id ? { ...d, properties: JSON.stringify(newProps) } : d
-          ),
-          activeDocument:
-            s.activeDocument && s.activeDocument.id === currentDoc.id
-              ? { ...s.activeDocument, properties: JSON.stringify(newProps) }
-              : s.activeDocument,
-        }));
+        updateProperties(currentDoc.id, newProps);
       }
       scheduleDebouncedSave(newContentJson);
     },
-    [isLocked, title, currentDoc, commitTitleRename, scheduleDebouncedSave]
+    [isLocked, title, currentDoc, commitTitleRename, updateProperties, scheduleDebouncedSave]
   );
 
   const handleBack = useCallback(async () => {

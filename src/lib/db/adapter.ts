@@ -15,7 +15,7 @@
  * @since 0.2.0
  */
 
-import { invoke } from '@tauri-apps/api/core';
+import { platform } from '@/lib/platform/platformAdapter';
 
 export interface QueryResult<T = any> {
   rows: T[];
@@ -76,8 +76,8 @@ class NativeSqliteAdapter {
     if (!this.readyPromise) {
       this.readyPromise = (async () => {
         try {
-          if (typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window)) {
-            await invoke('flint_db_init', { vaultPath: this.activeHearthPath || null });
+          if (platform.isTauri()) {
+            await platform.dbInit(this.activeHearthPath || undefined);
             console.log('[Flint Native DB] Connected to native rusqlite engine for Hearth:', this.activeHearthPath || 'default');
           }
           this.isInitialized = true;
@@ -115,7 +115,7 @@ class NativeSqliteAdapter {
   }
 
   private isTauriEnvironment(): boolean {
-    return typeof window !== 'undefined' && ('__TAURI_INTERNALS__' in window || '__TAURI__' in window);
+    return platform.isTauri();
   }
 
   public async query<T = any>(sql: string, params: any[] = []): Promise<T[]> {
@@ -125,7 +125,7 @@ class NativeSqliteAdapter {
     await this.ensureReady();
     try {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
-      return await invoke<T[]>('flint_db_query', { sql, params: cleanParams });
+      return await platform.dbQuery<T>(sql, cleanParams);
     } catch (err) {
       console.error('[Flint Native DB] Query error:', sql, params, err);
       throw err;
@@ -145,7 +145,7 @@ class NativeSqliteAdapter {
     await this.ensureReady();
     try {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
-      await invoke<number>('flint_db_execute', { sql, params: cleanParams });
+      await platform.dbExecute(sql, cleanParams);
     } catch (err) {
       console.error('[Flint Native DB] Execute error:', sql, params, err);
       throw err;
@@ -162,7 +162,7 @@ class NativeSqliteAdapter {
         sql: q.sql,
         params: (q.params || []).map((p) => (p === undefined ? null : p)),
       }));
-      await invoke<boolean>('flint_db_transaction', { queries: cleanQueries });
+      await platform.dbTransaction(cleanQueries);
     } catch (err) {
       console.error('[Flint Native DB] Transaction error:', err);
       throw err;

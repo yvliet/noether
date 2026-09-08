@@ -599,6 +599,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new note:', err);
+        set((state) => ({
+          documents: state.documents.filter((d) => d.id !== id),
+          activeDocument: state.activeDocument?.id === id ? null : state.activeDocument,
+          selectedDocIds: state.selectedDocIds.filter((docId) => docId !== id),
+          lastSelectedDocId: state.lastSelectedDocId === id ? null : state.lastSelectedDocId,
+          editingDocId: state.editingDocId === id ? null : state.editingDocId,
+        }));
+        if (autoOpenInMain) {
+          useWorkspaceStore.getState().closeTab(id);
+        }
+        useWorkspaceStore.getState().showToast('Failed to save new note to disk', 'warning');
       }
     })();
 
@@ -684,6 +695,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new folder:', err);
+        set((state) => ({
+          documents: state.documents.filter((d) => d.id !== id),
+          editingDocId: state.editingDocId === id ? null : state.editingDocId,
+        }));
+        useWorkspaceStore.getState().showToast('Failed to create folder on disk', 'warning');
       }
     })();
 
@@ -764,6 +780,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         await dbAdapter.persist();
       } catch (err) {
         console.error('[DocumentStore] Failed to persist attachment document:', err);
+        set((state) => ({
+          documents: state.documents.filter((d) => d.id !== id),
+        }));
+        useWorkspaceStore.getState().showToast('Failed to save attachment', 'warning');
       }
     })();
 
@@ -895,50 +915,63 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const oldRel = getDocumentPath(docToMove, docs);
     const newRel = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, docs);
 
-    const success = await dbMoveDocument(id, targetParentId, wasRenamed ? finalTitle : undefined);
-    if (success) {
-      if (platform.isDesktop()) {
-        try {
-          if (oldRel !== newRel || wasRenamed) {
-            await platform.renameMarkdownFile(oldTitle, finalTitle, oldRel, newRel);
+    let diskMoved = false;
+    if (platform.isDesktop() && (oldRel !== newRel || wasRenamed)) {
+      try {
+        await platform.renameMarkdownFile(oldTitle, finalTitle, oldRel, newRel);
+        diskMoved = true;
+      } catch (e) {
+        console.error('[DocumentStore] Failed to move file on disk:', e);
+        useWorkspaceStore.getState().showToast('Failed to move file on disk', 'warning');
+        return { success: false, error: 'Failed to move file on disk' };
+      }
+    }
 
-            const oldNorm = (oldRel || oldTitle).replace(/\\/g, '/').toLowerCase();
-            const oldKey = oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`;
-            const newNorm = (newRel || finalTitle).replace(/\\/g, '/').toLowerCase();
-            const newKey = newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`;
-            try {
-              await dbAdapter.execute(
-                `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
-                [newKey, oldKey]
-              );
-            } catch (mErr) {}
-          }
-        } catch (e) {
-          console.error('[DocumentStore] Failed to move file on disk:', e);
+    const success = await dbMoveDocument(id, targetParentId, wasRenamed ? finalTitle : undefined);
+    if (!success) {
+      if (diskMoved) {
+        try {
+          await platform.renameMarkdownFile(finalTitle, oldTitle, newRel, oldRel);
+        } catch (rollbackErr) {
+          console.error('[DocumentStore] Failed to rollback disk move:', rollbackErr);
         }
       }
-
-      if (recordHistory) {
-        useFileHistoryStore.getState().recordMove(id, oldParentId, targetParentId, finalTitle, oldTitle, finalTitle);
-      }
-
-      set((state) => ({
-        documents: state.documents.map((d) =>
-          d.id === id ? { ...d, parent_id: targetParentId, title: finalTitle } : d
-        ),
-        activeDocument:
-          state.activeDocument && state.activeDocument.id === id
-            ? { ...state.activeDocument, parent_id: targetParentId, title: finalTitle }
-            : state.activeDocument,
-      }));
-
-      if (wasRenamed) {
-        useWorkspaceStore.getState().updateTabTitle(id, finalTitle);
-      }
-
-      return { success: true, newTitle: finalTitle };
+      useWorkspaceStore.getState().showToast('Failed to update database', 'warning');
+      return { success: false, error: 'Database update failed' };
     }
-    return { success: false, error: 'Database update failed' };
+
+    if (diskMoved) {
+      const oldNorm = (oldRel || oldTitle).replace(/\\/g, '/').toLowerCase();
+      const oldKey = oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`;
+      const newNorm = (newRel || finalTitle).replace(/\\/g, '/').toLowerCase();
+      const newKey = newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`;
+      try {
+        await dbAdapter.execute(
+          `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
+          [newKey, oldKey]
+        );
+      } catch (mErr) {}
+    }
+
+    if (recordHistory) {
+      useFileHistoryStore.getState().recordMove(id, oldParentId, targetParentId, finalTitle, oldTitle, finalTitle);
+    }
+
+    set((state) => ({
+      documents: state.documents.map((d) =>
+        d.id === id ? { ...d, parent_id: targetParentId, title: finalTitle } : d
+      ),
+      activeDocument:
+        state.activeDocument && state.activeDocument.id === id
+          ? { ...state.activeDocument, parent_id: targetParentId, title: finalTitle }
+          : state.activeDocument,
+    }));
+
+    if (wasRenamed) {
+      useWorkspaceStore.getState().updateTabTitle(id, finalTitle);
+    }
+
+    return { success: true, newTitle: finalTitle };
   },
 
   moveDocuments: async (ids: string[], targetParentId: string | null) => {

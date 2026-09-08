@@ -119,7 +119,9 @@ export function savePersistedFileSortOrder(sortOrder: FileSortOrder, vaultPath?:
   } catch {}
 }
 
-export function saveTabsSession(vaultPath?: string) {
+let saveTabsSessionTimer: any = null;
+
+function performSaveTabsSession(vaultPath?: string) {
   if (typeof window === 'undefined') return;
   const { restoreTabs } = useSettingsStore.getState();
   const vPath = (vaultPath || useWorkspaceStore.getState().hearthPath || useWorkspaceStore.getState().vaultPath || '').trim();
@@ -184,6 +186,31 @@ export function saveTabsSession(vaultPath?: string) {
   } catch (e) {
     console.error('[workspaceStore] Failed to save tabs session:', e);
   }
+}
+
+export function saveTabsSessionImmediate(vaultPath?: string) {
+  if (saveTabsSessionTimer) {
+    clearTimeout(saveTabsSessionTimer);
+    saveTabsSessionTimer = null;
+  }
+  performSaveTabsSession(vaultPath);
+}
+
+export function saveTabsSession(vaultPath?: string) {
+  if (typeof window === 'undefined') return;
+  if (saveTabsSessionTimer) {
+    clearTimeout(saveTabsSessionTimer);
+  }
+  saveTabsSessionTimer = setTimeout(() => {
+    saveTabsSessionTimer = null;
+    performSaveTabsSession(vaultPath);
+  }, 400);
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    saveTabsSessionImmediate();
+  });
 }
 
 export function loadSavedTabsSession(vaultPath?: string): PersistedTabsState | null {

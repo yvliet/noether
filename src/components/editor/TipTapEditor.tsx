@@ -2029,7 +2029,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   // Notify parent of editor instance and sync active editor registry
   useEffect(() => {
     if (editor) {
-      (window as any).__flintEditor = editor;
       app.editor.setActiveEditor(editor);
       if (onEditorReady) {
         onEditorReady(editor);

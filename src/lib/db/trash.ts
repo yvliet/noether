@@ -22,7 +22,9 @@ export async function cleanExpiredTrash(): Promise<number> {
         for (const item of expired) {
           try {
             await platform.deleteTrashFile(item.original_path || item.title);
-          } catch (e) {}
+          } catch (e) {
+            console.error('[Flint Trash] Failed to delete expired trash file:', e);
+          }
         }
       }
       await dbAdapter.execute(`DELETE FROM trash_items WHERE deleted_at < ?`, [cutoff]);
@@ -174,7 +176,9 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
             await platform.saveTrashFile(item.title, md, path || item.title);
           }
           await platform.deleteMarkdownFile(path || item.title);
-        } catch (e) {}
+        } catch (e) {
+          console.error(`[Flint Trash] Failed to move physical file to trash: ${item.title}`, e);
+        }
       })
     );
   }
@@ -365,7 +369,9 @@ export async function permanentlyDeleteTrashItem(trashOrOriginalId: string): Pro
     if (platform.isDesktop()) {
       try {
         await platform.deleteTrashFile(item.original_path || item.title);
-      } catch (e) {}
+      } catch (e) {
+        console.error('[Flint Trash] Failed to delete trash file:', e);
+      }
     }
     await dbAdapter.execute(`DELETE FROM trash_items WHERE id = ?`, [item.id]);
     try {
@@ -384,7 +390,9 @@ export async function emptyTrash(): Promise<void> {
   if (platform.isDesktop()) {
     try {
       await platform.emptyTrashFolder();
-    } catch (e) {}
+    } catch (e) {
+      console.error('[Flint Trash] Failed to empty trash folder:', e);
+    }
   }
   await dbAdapter.execute(`DELETE FROM trash_items`);
   await dbAdapter.persist();

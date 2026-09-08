@@ -201,6 +201,55 @@ const MainViewport: React.FC = React.memo(() => {
   );
 });
 
+const WindowTitleSync: React.FC = React.memo(() => {
+  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
+  const tabs = useWorkspaceStore((s) => s.tabs);
+  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
+  const isSplitView = useWorkspaceStore((s) => s.isSplitView);
+  const activePane = useWorkspaceStore((s) => s.activePane);
+  const splitTabs = useWorkspaceStore((s) => s.splitTabs);
+  const splitActiveTabId = useWorkspaceStore((s) => s.splitActiveTabId);
+  const activeDocument = useDocumentStore((s) => s.activeDocument);
+
+  // Dynamic window title format: Tabname﹕Hearthname﹕Flint
+  useEffect(() => {
+    const currentTabs = activePane === 'split' && isSplitView ? splitTabs : tabs;
+    const currentActiveId = activePane === 'split' && isSplitView ? splitActiveTabId : activeTabId;
+    const currentTab = currentTabs.find((t) => t.id === currentActiveId) || currentTabs[0] || tabs[0];
+
+    const effectiveHearth = hearthName || 'Hearth';
+
+    if (currentTab) {
+      let tabTitle = currentTab.title;
+      if (activeDocument && currentTab.document_id === activeDocument.id && activeDocument.title) {
+        tabTitle = activeDocument.title;
+      } else if (!tabTitle && currentTab.document_id && !currentTab.document_id.startsWith('__')) {
+        const doc = useDocumentStore.getState().documents.find((d) => d.id === currentTab.document_id);
+        if (doc?.title) tabTitle = doc.title;
+      }
+      if (!tabTitle) {
+        const viewType =
+          currentTab.view_type ||
+          currentTab.view_mode ||
+          (currentTab.document_id?.startsWith('__')
+            ? currentTab.document_id.replace(/^__/, '').replace(/__$/, '')
+            : '');
+        if (viewType && viewType !== 'document') {
+          const regView = appInstance.views.getView(viewType);
+          tabTitle = regView?.title || (viewType.charAt(0).toUpperCase() + viewType.slice(1));
+        } else {
+          tabTitle = 'Untitled';
+        }
+      }
+      platform.setWindowTitle(`${tabTitle}﹕${effectiveHearth}﹕Flint`);
+    } else {
+      platform.setWindowTitle(`${effectiveHearth}﹕Flint`);
+    }
+  }, [hearthName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, activeDocument]);
+
+  return null;
+});
+WindowTitleSync.displayName = 'WindowTitleSync';
 
 export const AppShell: React.FC = React.memo(() => {
   useKeyboardShortcuts();
@@ -311,52 +360,6 @@ export const AppShell: React.FC = React.memo(() => {
     };
   }, [initHearthInfo, loadInitialData]);
 
-  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
-  const tabs = useWorkspaceStore((s) => s.tabs);
-  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
-  const isSplitView = useWorkspaceStore((s) => s.isSplitView);
-  const activePane = useWorkspaceStore((s) => s.activePane);
-  const splitTabs = useWorkspaceStore((s) => s.splitTabs);
-  const splitActiveTabId = useWorkspaceStore((s) => s.splitActiveTabId);
-  const documents = useDocumentStore((s) => s.documents);
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-
-  // Dynamic window title format: Tabname﹕Hearthname﹕Flint
-  useEffect(() => {
-    const currentTabs = activePane === 'split' && isSplitView ? splitTabs : tabs;
-    const currentActiveId = activePane === 'split' && isSplitView ? splitActiveTabId : activeTabId;
-    const currentTab = currentTabs.find((t) => t.id === currentActiveId) || currentTabs[0] || tabs[0];
-
-    const effectiveHearth = hearthName || 'Hearth';
-
-    if (currentTab) {
-      let tabTitle = currentTab.title;
-      if (activeDocument && currentTab.document_id === activeDocument.id && activeDocument.title) {
-        tabTitle = activeDocument.title;
-      } else if (!tabTitle && currentTab.document_id && !currentTab.document_id.startsWith('__')) {
-        const doc = documents.find((d) => d.id === currentTab.document_id);
-        if (doc?.title) tabTitle = doc.title;
-      }
-      if (!tabTitle) {
-        const viewType =
-          currentTab.view_type ||
-          currentTab.view_mode ||
-          (currentTab.document_id?.startsWith('__')
-            ? currentTab.document_id.replace(/^__/, '').replace(/__$/, '')
-            : '');
-        if (viewType && viewType !== 'document') {
-          const regView = appInstance.views.getView(viewType);
-          tabTitle = regView?.title || (viewType.charAt(0).toUpperCase() + viewType.slice(1));
-        } else {
-          tabTitle = 'Untitled';
-        }
-      }
-      platform.setWindowTitle(`${tabTitle}﹕${effectiveHearth}﹕Flint`);
-    } else {
-      platform.setWindowTitle(`${effectiveHearth}﹕Flint`);
-    }
-  }, [hearthName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, documents, activeDocument]);
-
   const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
   const cancelFolderSelection = useWorkspaceStore((s) => s.cancelFolderSelection);
 
@@ -424,7 +427,7 @@ export const AppShell: React.FC = React.memo(() => {
           <FlintLogoIcon size={36} className="animate-pulse text-[var(--flint-accent)]" />
         </div>
         <div className="text-sm font-medium text-[var(--flint-text-primary)]">Initializing Flint...</div>
-        <div className="text-xs text-[var(--flint-text-muted)] mt-1">Booting SQLite relational store & Modular Plugins</div>
+        <div className="text-xs text-[var(--flint-text-muted)] mt-1">Booting SQLite relational store & Modular Extensions</div>
       </div>
     );
   }
@@ -435,6 +438,7 @@ export const AppShell: React.FC = React.memo(() => {
         style={{ background: 'var(--flint-bg-app)', color: 'var(--flint-text-secondary)' }}
         className="flint-app-shell w-full h-full flex flex-col select-none overflow-hidden font-sans"
       >
+        <WindowTitleSync />
         {/* Top Window Bar */}
         <WindowHeader />
 
