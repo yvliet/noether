@@ -615,23 +615,12 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: false, error: 'Desktop mode only' };
   }
 
-  // Database persistence
-  public async saveDatabase(bytes: Uint8Array, customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
-    if (this.isTauri()) {
-      return await invoke('save_database', { bytes, vaultPath: customVaultPath || null });
-    }
-    return { success: false, error: 'Desktop mode only' };
+  // Database persistence (Legacy: Native SQLite WAL persistence is managed page-by-page by the Rust core)
+  public async saveDatabase(_bytes: Uint8Array, _customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
+    return { success: true };
   }
 
-  public async loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null> {
-    if (this.isTauri()) {
-      const raw: any = await invoke('load_database', { vaultPath: customVaultPath || null });
-      if (raw) {
-        if (raw instanceof Uint8Array) return raw;
-        if (Array.isArray(raw)) return new Uint8Array(raw);
-        if (raw instanceof ArrayBuffer) return new Uint8Array(raw);
-      }
-    }
+  public async loadDatabase(_customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null> {
     return null;
   }
 

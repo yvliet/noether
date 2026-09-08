@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Mutex;
+use parking_lot::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -40,7 +40,10 @@ fn strip_unc_prefix(path_str: &str) -> String {
 
 /// Normalizes path components and resolves relative traversals lexically without disk lookups
 fn normalize_path(p: &Path) -> PathBuf {
+    #[cfg(windows)]
     let s = p.to_string_lossy().replace('/', "\\");
+    #[cfg(not(windows))]
+    let s = p.to_string_lossy().replace('\\', "/");
     let stripped = strip_unc_prefix(&s);
     let path = PathBuf::from(stripped);
     let mut normalized = PathBuf::new();
@@ -112,7 +115,6 @@ pub fn is_safe_vault_path(target_vault: &Path, candidate: &Path) -> bool {
     };
 
     check_starts_with(&candidate_canonical, &vault_canonical)
-        || check_starts_with(&normalize_path(candidate), &normalize_path(target_vault))
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -206,16 +208,9 @@ pub fn save_config(cfg: &FlintConfig) {
     }
 }
 
-fn get_vault_db_path(vault_path: &str) -> PathBuf {
-    let base = Path::new(vault_path);
-    let flint_dir = base.join(".flint");
-    let _ = fs::create_dir_all(&flint_dir);
-    flint_dir.join("flint.sqlite")
-}
-
 #[tauri::command]
 pub fn get_current_vault(state: tauri::State<AppState>) -> Value {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let vault_name = Path::new(&cfg.current_vault_path)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
@@ -238,7 +233,7 @@ pub fn set_current_vault(app: AppHandle, state: tauri::State<AppState>, vault_pa
 
     let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
 
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock();
     cfg.current_vault_path = vault_path.clone();
     cfg.recent_vaults.retain(|v| v.path != vault_path);
     cfg.recent_vaults.insert(0, RecentVaultItem {
@@ -300,7 +295,7 @@ pub fn rename_hearth(
     }
 
     let target = if target_path.trim().is_empty() {
-        let cfg = state.config.lock().unwrap();
+        let cfg = state.config.lock();
         cfg.current_vault_path.clone()
     } else {
         target_path.clone()
@@ -349,7 +344,7 @@ pub fn rename_hearth(
         }
     }
 
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock();
     let is_current = cfg.current_vault_path == target || target.is_empty();
     if is_current {
         cfg.current_vault_path = final_path.clone();
@@ -389,7 +384,7 @@ pub fn rename_vault(
 
 #[tauri::command]
 pub fn remove_recent_vault(state: tauri::State<AppState>, vault_path: String) -> Value {
-    let mut cfg = state.config.lock().unwrap();
+    let mut cfg = state.config.lock();
     cfg.recent_vaults.retain(|v| v.path != vault_path);
     save_config(&cfg);
 
@@ -402,14 +397,22 @@ pub fn remove_recent_vault(state: tauri::State<AppState>, vault_path: String) ->
 #[tauri::command]
 pub fn open_vault_in_explorer(state: tauri::State<AppState>, vault_path: Option<String>) -> Value {
     let target = match vault_path {
-        Some(p) if !p.is_empty() => p,
+        Some(p) if !p.is_empty() => {
+            let cfg = state.config.lock();
+            if cfg.current_vault_path == p || cfg.recent_vaults.iter().any(|v| v.path == p) {
+                p
+            } else {
+                return json!({ "success": false, "error": "Invalid vault path" });
+            }
+        }
         _ => {
-            let cfg = state.config.lock().unwrap();
+            let cfg = state.config.lock();
             cfg.current_vault_path.clone()
         }
     };
 
-    if Path::new(&target).exists() {
+    let target_path = Path::new(&target);
+    if target_path.exists() && target_path.is_dir() {
         #[cfg(target_os = "windows")]
         let _ = std::process::Command::new("explorer").arg(&target).spawn();
 
@@ -421,16 +424,26 @@ pub fn open_vault_in_explorer(state: tauri::State<AppState>, vault_path: Option<
 
         json!({ "success": true })
     } else {
-        json!({ "success": false, "error": "Folder does not exist" })
+        json!({ "success": false, "error": "Folder does not exist or is not a directory" })
     }
 }
 
 #[tauri::command]
 pub fn scan_vault_files(state: tauri::State<AppState>, custom_vault_path: Option<String>) -> Vec<VaultDiskItem> {
     let target_dir = match custom_vault_path {
-        Some(p) if !p.is_empty() => PathBuf::from(p),
+        Some(p) if !p.is_empty() => {
+            let cfg = state.config.lock();
+            let p_buf = PathBuf::from(&p);
+            let is_known = cfg.current_vault_path == p
+                || cfg.recent_vaults.iter().any(|v| v.path == p)
+                || is_safe_vault_path(Path::new(&cfg.current_vault_path), &p_buf);
+            if !is_known {
+                return Vec::new();
+            }
+            p_buf
+        }
         _ => {
-            let cfg = state.config.lock().unwrap();
+            let cfg = state.config.lock();
             PathBuf::from(&cfg.current_vault_path)
         }
     };
@@ -488,7 +501,7 @@ pub fn save_markdown_file(
     relative_path: Option<String>,
 ) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
     let _ = fs::create_dir_all(&target_vault);
 
@@ -561,10 +574,11 @@ pub fn set_file_attributes(
     _modified_time: Option<u64>,
 ) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
 
     let clean = filename_or_path.replace('\\', "/");
+    let trimmed = clean.trim_matches(|c| c == '.' || c == '/' || c == '\\');
     let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
     let mut file_path = target_vault.join(&file_with_ext);
     if !file_path.exists() {
@@ -574,7 +588,10 @@ pub fn set_file_attributes(
         }
     }
 
-    if clean.is_empty() || clean == "." || clean == "/" || clean == "\\" || file_path == target_vault {
+    let normalized_vault = normalize_path(&target_vault);
+    let normalized_file = normalize_path(&file_path);
+
+    if trimmed.is_empty() || normalized_file == normalized_vault {
         return json!({ "success": false, "error": "Cannot modify vault root directory attributes" });
     }
 
@@ -599,20 +616,24 @@ pub fn set_file_attributes(
 #[tauri::command]
 pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: String) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
 
     let clean = filename_or_path.replace('\\', "/");
+    let trimmed = clean.trim_matches(|c| c == '.' || c == '/' || c == '\\');
     let direct_path = target_vault.join(&clean);
+    let normalized_vault = normalize_path(&target_vault);
+    let normalized_direct = normalize_path(&direct_path);
 
-    if clean.is_empty() || clean == "." || clean == "/" || clean == "\\" || direct_path == target_vault {
+    if trimmed.is_empty() || normalized_direct == normalized_vault {
         return json!({ "success": false, "error": "Cannot delete vault root directory" });
     }
 
     let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
     let file_path = target_vault.join(&file_with_ext);
+    let normalized_file = normalize_path(&file_path);
 
-    if file_path == target_vault {
+    if normalized_file == normalized_vault {
         return json!({ "success": false, "error": "Cannot delete vault root directory" });
     }
 
@@ -650,7 +671,7 @@ pub fn rename_markdown_file(
     new_relative_path: Option<String>,
 ) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
 
     let (old_path, new_path) = match (old_relative_path, new_relative_path) {
@@ -706,36 +727,8 @@ pub fn rename_markdown_file(
 }
 
 #[tauri::command]
-pub fn save_database(state: tauri::State<AppState>, bytes: Vec<u8>) -> Value {
-    mark_internal_write();
-    let cfg = state.config.lock().unwrap();
-    let db_file = get_vault_db_path(&cfg.current_vault_path);
-    let temp_file = db_file.with_extension(format!("tmp.{}", std::process::id()));
-
-    match fs::write(&temp_file, bytes) {
-        Ok(_) => {
-            let _ = fs::rename(&temp_file, &db_file);
-            json!({ "success": true, "path": db_file.to_string_lossy() })
-        }
-        Err(e) => json!({ "success": false, "error": e.to_string() }),
-    }
-}
-
-#[tauri::command]
-pub fn load_database(state: tauri::State<AppState>) -> Option<Vec<u8>> {
-    let cfg = state.config.lock().unwrap();
-    let db_file = get_vault_db_path(&cfg.current_vault_path);
-
-    if db_file.exists() {
-        fs::read(db_file).ok()
-    } else {
-        None
-    }
-}
-
-#[tauri::command]
 pub fn open_plugins_folder(state: tauri::State<AppState>) -> Value {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let plugins_dir = Path::new(&cfg.current_vault_path).join(".flint").join("plugins");
     let _ = fs::create_dir_all(&plugins_dir);
 
@@ -753,7 +746,7 @@ pub fn open_plugins_folder(state: tauri::State<AppState>) -> Value {
 
 #[tauri::command]
 pub fn open_trash_folder(state: tauri::State<AppState>) -> Value {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let trash_dir = Path::new(&cfg.current_vault_path).join(".trash");
     let _ = fs::create_dir_all(&trash_dir);
 
@@ -777,7 +770,7 @@ pub fn save_trash_file(
     relative_path: Option<String>,
 ) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let trash_dir = PathBuf::from(&cfg.current_vault_path).join(".trash");
     let _ = fs::create_dir_all(&trash_dir);
 
@@ -810,20 +803,24 @@ pub fn save_trash_file(
 #[tauri::command]
 pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let trash_dir = PathBuf::from(&cfg.current_vault_path).join(".trash");
 
     let clean = filename_or_path.replace('\\', "/");
+    let trimmed = clean.trim_matches(|c| c == '.' || c == '/' || c == '\\');
     let direct_path = trash_dir.join(&clean);
+    let normalized_trash = normalize_path(&trash_dir);
+    let normalized_direct = normalize_path(&direct_path);
 
-    if clean.is_empty() || clean == "." || clean == "/" || clean == "\\" || direct_path == trash_dir {
+    if trimmed.is_empty() || normalized_direct == normalized_trash {
         return json!({ "success": false, "error": "Cannot delete trash root directory" });
     }
 
     let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
     let file_path = trash_dir.join(&file_with_ext);
+    let normalized_file = normalize_path(&file_path);
 
-    if file_path == trash_dir {
+    if normalized_file == normalized_trash {
         return json!({ "success": false, "error": "Cannot delete trash root directory" });
     }
 
@@ -855,7 +852,7 @@ pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String
 #[tauri::command]
 pub fn empty_trash_folder(state: tauri::State<AppState>) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let trash_dir = PathBuf::from(&cfg.current_vault_path).join(".trash");
 
     if trash_dir.exists() {
@@ -867,7 +864,7 @@ pub fn empty_trash_folder(state: tauri::State<AppState>) -> Value {
 
 #[tauri::command]
 pub fn list_installed_plugins(state: tauri::State<AppState>) -> Vec<PluginManifest> {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = Path::new(&cfg.current_vault_path);
     let plugins_dir = target_vault.join(".flint").join("plugins");
     let extensions_dir = target_vault.join(".flint").join("extensions");
@@ -936,10 +933,11 @@ pub fn list_installed_plugins(state: tauri::State<AppState>) -> Vec<PluginManife
 
 #[tauri::command]
 pub fn read_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) -> PluginBundle {
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
 
-    if plugin_folder.trim().is_empty() {
+    let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
+    if safe_folder.trim().is_empty() {
         return PluginBundle {
             success: false,
             js_code: None,
@@ -948,8 +946,8 @@ pub fn read_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) 
         };
     }
 
-    let plugins_dir = target_vault.join(".flint").join("plugins").join(&plugin_folder);
-    let extensions_dir = target_vault.join(".flint").join("extensions").join(&plugin_folder);
+    let plugins_dir = target_vault.join(".flint").join("plugins").join(&safe_folder);
+    let extensions_dir = target_vault.join(".flint").join("extensions").join(&safe_folder);
 
     if !is_safe_vault_path(&target_vault, &plugins_dir) || !is_safe_vault_path(&target_vault, &extensions_dir) {
         return PluginBundle {
@@ -994,7 +992,7 @@ pub fn install_plugin_bundle(
     styles_css: Option<String>,
 ) -> Value {
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
     let plugins_dir = target_vault.join(".flint").join("plugins");
     let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
@@ -1032,7 +1030,7 @@ pub fn uninstall_plugin_bundle(state: tauri::State<AppState>, plugin_folder: Str
     }
 
     mark_internal_write();
-    let cfg = state.config.lock().unwrap();
+    let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
     let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
 

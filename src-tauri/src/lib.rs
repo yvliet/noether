@@ -3,7 +3,7 @@ mod icon_tint;
 mod db;
 
 use std::path::Path;
-use std::sync::Mutex;
+use parking_lot::Mutex;
 use std::time::Duration;
 use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use tauri::{Emitter, Manager};
@@ -43,8 +43,6 @@ pub fn run() {
             vault::set_file_attributes,
             vault::delete_markdown_file,
             vault::rename_markdown_file,
-            vault::save_database,
-            vault::load_database,
             vault::open_plugins_folder,
             vault::open_trash_folder,
             vault::save_trash_file,

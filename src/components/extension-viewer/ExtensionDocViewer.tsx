@@ -429,12 +429,29 @@ function formatHeadingTitle(title: string): React.ReactNode {
   return title;
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function isSafeUrl(url: string): boolean {
+  const trimmed = url.trim().toLowerCase();
+  if (trimmed.startsWith('javascript:') || trimmed.startsWith('vbscript:') || trimmed.startsWith('data:text/html')) {
+    return false;
+  }
+  return true;
+}
+
 // Helper for inline markdown bold, italic, code, kbd, links, wikilinks, and embeds
 function renderInlineMarkdown(text: string): string {
   if (!text) return '';
-  return text
+  return escapeHtml(text)
     // Keyboard tags: <kbd>Key</kbd>
-    .replace(/<kbd>(.*?)<\/kbd>/g, '<kbd class="px-1.5 py-0.5 text-[0.75em] font-mono bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] rounded text-[var(--flint-text-secondary)] shadow-xs">$1</kbd>')
+    .replace(/&lt;kbd&gt;(.*?)&lt;\/kbd&gt;/gi, '<kbd class="px-1.5 py-0.5 text-[0.75em] font-mono bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] rounded text-[var(--flint-text-secondary)] shadow-xs">$1</kbd>')
     // Inline code: `code`
     .replace(/`([^`]+)`/g, '<code class="px-1.5 py-0.5 text-[0.875em] font-mono bg-[var(--flint-code-bg,var(--flint-bg-card))] border border-[var(--flint-border-subtle)] rounded text-[var(--flint-code-text,var(--flint-text-primary))]">$1</code>')
     // Bold: **text**
@@ -445,20 +462,25 @@ function renderInlineMarkdown(text: string): string {
     .replace(/~~([^~]+)~~/g, '<del class="line-through text-[var(--flint-text-muted)]">$1</del>')
     // Markdown Embeds: ![alt](url)
     .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_m, alt, url) => {
-      return `<img src="${url}" alt="${alt || ''}" class="flint-media-image rounded-md border border-[var(--flint-border-subtle)] max-w-full my-3 block" loading="lazy" />`;
+      const trimmedUrl = url.trim();
+      if (!isSafeUrl(trimmedUrl)) return '';
+      return `<img src="${trimmedUrl}" alt="${alt || ''}" class="flint-media-image rounded-md border border-[var(--flint-border-subtle)] max-w-full my-3 block" loading="lazy" />`;
     })
     // Wikilink Embeds: ![[target|alias/size]]
     .replace(/!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
-      const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(target.trim());
+      const cleanTarget = target.trim();
+      const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(cleanTarget);
       if (isImg) {
-        return `<img src="${target.trim()}" alt="${alias || target.trim()}" class="flint-media-image rounded-md border border-[var(--flint-border-subtle)] max-w-full my-3 block" loading="lazy" />`;
+        if (!isSafeUrl(cleanTarget)) return '';
+        return `<img src="${cleanTarget}" alt="${alias || cleanTarget}" class="flint-media-image rounded-md border border-[var(--flint-border-subtle)] max-w-full my-3 block" loading="lazy" />`;
       }
-      const label = alias || target;
-      return `<div class="flint-embed-card flint-note-embed rounded-lg border border-[var(--flint-border-subtle)] bg-[var(--flint-bg-card)]/90 p-3 my-3 text-[0.9em] text-[var(--flint-text-secondary)]"><div class="flex items-center gap-1.5 text-xs font-semibold text-[var(--flint-accent)] mb-1"><span>📄 Embedded: ${target}</span></div><div class="italic text-[var(--flint-text-muted)]">${label}</div></div>`;
+      const label = alias || cleanTarget;
+      return `<div class="flint-embed-card flint-note-embed rounded-lg border border-[var(--flint-border-subtle)] bg-[var(--flint-bg-card)]/90 p-3 my-3 text-[0.9em] text-[var(--flint-text-secondary)]"><div class="flex items-center gap-1.5 text-xs font-semibold text-[var(--flint-accent)] mb-1"><span>📄 Embedded: ${cleanTarget}</span></div><div class="italic text-[var(--flint-text-muted)]">${label}</div></div>`;
     })
     // Standard Markdown links: [text](url) or [text]([[target]]) or [text](target)
     .replace(/(?<!\!)\[([^\]]+)\]\(([^)]+)\)/g, (_m, text, url) => {
       const trimmed = url.trim();
+      if (!isSafeUrl(trimmed)) return text;
       let wikiTarget: string | null = null;
       if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
         let inner = trimmed.slice(2, -2).trim();
