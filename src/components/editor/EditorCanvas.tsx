@@ -497,40 +497,49 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const saveTimerRef = useRef<any>(null);
   const pendingContentRef = useRef<string | null>(null);
   const isEditingTitleRef = useRef(false);
+  const pendingTitleEditRef = useRef<{ docId: string; title: string } | null>(null);
 
-  const commitTitleRename = useCallback(async (newVal: string) => {
+  const commitTitleRename = useCallback(async (newVal: string, targetDocId?: string) => {
     isEditingTitleRef.current = false;
-    if (!currentDoc || isLocked) return;
+    pendingTitleEditRef.current = null;
+    const docId = targetDocId || currentDoc?.id;
+    if (!docId || isLocked) return;
+    const targetDoc = documents.find((d) => d.id === docId);
+    if (!targetDoc) return;
     const trimmed = newVal.trim();
-    if (!trimmed || trimmed === currentDoc.title) {
-      setTitle(currentDoc.title);
-      titleRef.current = currentDoc.title;
+    if (!trimmed || trimmed === targetDoc.title) {
+      if (currentDoc && currentDoc.id === docId) {
+        setTitle(targetDoc.title);
+        titleRef.current = targetDoc.title;
+      }
       return;
     }
     const hasCollision = documents.some(
       (d) =>
-        d.id !== currentDoc.id &&
+        d.id !== docId &&
         !d.is_folder &&
-        (d.parent_id || null) === (currentDoc.parent_id || null) &&
+        (d.parent_id || null) === (targetDoc.parent_id || null) &&
         d.title.trim().toLowerCase() === trimmed.toLowerCase()
     );
     if (hasCollision) {
-      setTitle(currentDoc.title);
-      titleRef.current = currentDoc.title;
+      if (currentDoc && currentDoc.id === docId) {
+        setTitle(targetDoc.title);
+        titleRef.current = targetDoc.title;
+      }
       return;
     }
-    await renameDocument(currentDoc.id, trimmed);
+    await renameDocument(docId, trimmed);
     if (isSidebarMode) {
       useSidebarDockStore.setState((s) => ({
         items: s.items.map((it) =>
-          it.documentId === currentDoc.id ? { ...it, title: trimmed } : it
+          it.documentId === docId ? { ...it, title: trimmed } : it
         ),
       }));
     }
   }, [currentDoc, isLocked, documents, renameDocument, isSidebarMode]);
 
   // Helper to flush any pending save immediately
-  const flushPendingSave = useCallback((overrideDocId?: string, overrideTitle?: string) => {
+  const flushPendingSave = useCallback((overrideDocId?: string) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
@@ -538,14 +547,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     const docId = overrideDocId || activeDocIdRef.current;
     const contentToSave = pendingContentRef.current;
 
-    const shouldCommitTitle = isEditingTitleRef.current;
-    const pendingTitle = overrideTitle || (shouldCommitTitle ? titleRef.current?.trim() : undefined);
-    if (shouldCommitTitle && docId && pendingTitle) {
+    // Only commit title rename if a title edit was explicitly in progress for THIS document
+    let committedTitle: string | undefined = undefined;
+    const pendingTitleEdit = pendingTitleEditRef.current;
+    if (docId && pendingTitleEdit && pendingTitleEdit.docId === docId) {
+      const trimmed = pendingTitleEdit.title.trim();
       const targetDoc = documents.find((d) => d.id === docId);
-      if (targetDoc && pendingTitle !== targetDoc.title) {
-        renameDocument(docId, pendingTitle);
+      if (trimmed && targetDoc && trimmed !== targetDoc.title) {
+        renameDocument(docId, trimmed);
+        committedTitle = trimmed;
       }
       isEditingTitleRef.current = false;
+      pendingTitleEditRef.current = null;
     }
 
     if (docId && contentToSave !== null) {
@@ -561,15 +574,25 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
       useDocumentStore.setState((s) => ({
         documents: s.documents.map((d) =>
-          d.id === docId ? { ...d, content_json: currentContent } : d
+          d.id === docId
+            ? {
+                ...d,
+                content_json: currentContent,
+                ...(committedTitle ? { title: committedTitle } : {}),
+              }
+            : d
         ),
         activeDocument:
           s.activeDocument && s.activeDocument.id === docId
-            ? { ...s.activeDocument, content_json: currentContent }
+            ? {
+                ...s.activeDocument,
+                content_json: currentContent,
+                ...(committedTitle ? { title: committedTitle } : {}),
+              }
             : s.activeDocument,
       }));
 
-      saveDocumentById(docId, currentContent, pendingTitle);
+      saveDocumentById(docId, currentContent, committedTitle);
     }
   }, [saveDocumentById, renameDocument, documents]);
 
@@ -581,10 +604,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       if (docChanged) {
         // 1. Immediately flush pending save for the OLD document before loading the new one!
         if (activeDocIdRef.current) {
-          flushPendingSave(activeDocIdRef.current, titleRef.current);
+          flushPendingSave(activeDocIdRef.current);
         }
 
         isEditingTitleRef.current = false;
+        pendingTitleEditRef.current = null;
         activeDocIdRef.current = currentDoc.id;
         setTitle(currentDoc.title);
         titleRef.current = currentDoc.title;
@@ -618,9 +642,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       }
     } else {
       if (activeDocIdRef.current) {
-        flushPendingSave(activeDocIdRef.current, titleRef.current);
+        flushPendingSave(activeDocIdRef.current);
       }
       isEditingTitleRef.current = false;
+      pendingTitleEditRef.current = null;
       activeDocIdRef.current = null;
       setTitle('');
       titleRef.current = '';
@@ -677,6 +702,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     titleRef.current = val;
     isEditingTitleRef.current = true;
     if (currentDoc) {
+      pendingTitleEditRef.current = { docId: currentDoc.id, title: val };
       const trimmed = val.trim();
       if (trimmed) {
         updateTabTitle(currentDoc.id, trimmed);

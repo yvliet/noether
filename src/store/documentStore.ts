@@ -1165,19 +1165,25 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       title
     );
     const currentActive = get().activeDocument;
-    const currentTitle = title || currentActive?.title || '';
+    const existingDoc = get().documents.find((d) => d.id === id);
+    const resolvedTitle =
+      title !== undefined
+        ? title
+        : (currentActive?.id === id ? currentActive?.title : existingDoc?.title) ||
+          existingDoc?.title ||
+          'Untitled';
 
     const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
       getBacklinksForDocument(id),
       getOutgoingLinksWithDetails(id),
-      getUnlinkedMentionsForDocument(id, currentTitle),
+      getUnlinkedMentionsForDocument(id, resolvedTitle),
     ]);
 
     const updatedDocs = get().documents.map((d) =>
       d.id === id
         ? {
             ...d,
-            title: currentTitle,
+            ...(title !== undefined ? { title } : {}),
             content_json: contentJson,
           }
         : d
@@ -1187,7 +1193,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (activeNow && activeNow.id === id) {
       set({
         documents: updatedDocs,
-        activeDocument: { ...activeNow, title: currentTitle, content_json: contentJson },
+        activeDocument: {
+          ...activeNow,
+          ...(title !== undefined ? { title } : {}),
+          content_json: contentJson,
+        },
         headings,
         backlinks,
         outgoingLinks,
@@ -1202,11 +1212,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       set({ documents: updatedDocs });
     }
 
-    emitBridgeAppEvent('document:saved', { id, title: currentTitle });
+    emitBridgeAppEvent('document:saved', { id, title: resolvedTitle });
     get().recomputeBrokenEmbeds();
 
-    if (title) {
-      useWorkspaceStore.getState().updateTabTitle(id, title);
+    if (title !== undefined && title.trim()) {
+      useWorkspaceStore.getState().updateTabTitle(id, title.trim());
     }
   },
 
