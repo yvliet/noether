@@ -59,7 +59,12 @@ export class TasksExtension extends Extension {
       <CheckmarkSquare02Icon size={16} />,
       'Open tasks center',
       (app) => {
-        app.workspace.setMainViewMode('tasks');
+        app.workspace.openCustomTab({
+          viewType: 'tasks',
+          title: 'Tasks Center',
+          documentId: '__tasks__',
+          icon: <CheckmarkSquare02Icon size={14} />,
+        });
       },
       60,
       (app) => {
@@ -81,7 +86,12 @@ export class TasksExtension extends Extension {
       section: 'Navigation',
       icon: <CheckmarkSquare02Icon size={16} />,
       action: (app) => {
-        app.workspace.setMainViewMode('tasks');
+        app.workspace.openCustomTab({
+          viewType: 'tasks',
+          title: 'Tasks Center',
+          documentId: '__tasks__',
+          icon: <CheckmarkSquare02Icon size={14} />,
+        });
       },
     });
 

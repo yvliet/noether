@@ -359,6 +359,8 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           return (
             <div
               key={tab.id}
+              data-tab-id={tab.id}
+              data-tab-doc-id={tab.document_id || ''}
               ref={(el) => splitTabReorder.registerTabRef(index, el)}
               onPointerDown={(e) => splitTabReorder.handlePointerDown(index, e)}
               onClick={(e) => {

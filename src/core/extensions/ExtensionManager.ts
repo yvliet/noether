@@ -44,11 +44,11 @@ export class ExtensionManager {
     this.externalLoader = new ExternalExtensionLoader(app);
   }
 
-  public async init(): Promise<void> {
-    if (this.isInitialized) return;
+  public async initCore(): Promise<void> {
     this.loadConfig();
 
-    // 1. Initialize registered bundled extensions immediately
+    // Initialize registered bundled core extensions immediately in parallel
+    const coreInitPromises: Promise<boolean>[] = [];
     for (const [id, manifest] of this.manifests.entries()) {
       const isCore = manifest.isCore === true;
       const isEnabled = isCore
@@ -56,14 +56,21 @@ export class ExtensionManager {
         : this.enabledExtensionIds.has(id);
 
       if (isEnabled && !this.instances.has(id)) {
-        await this.enableExtension(id);
+        coreInitPromises.push(this.enableExtension(id));
       }
     }
+    await Promise.all(coreInitPromises);
+  }
+
+  public async init(): Promise<void> {
+    if (this.isInitialized) return;
+    await this.initCore();
 
     // 2. Discover external extensions from disk
     await this.externalLoader.discoverAndLoadExtensions();
 
     // 3. Initialize any newly discovered external extensions
+    const externalPromises: Promise<boolean>[] = [];
     for (const [id, manifest] of this.manifests.entries()) {
       const isCore = manifest.isCore === true;
       const isEnabled = isCore
@@ -71,11 +78,12 @@ export class ExtensionManager {
         : this.enabledExtensionIds.has(id);
 
       if (isEnabled && !this.instances.has(id)) {
-        await this.enableExtension(id);
+        externalPromises.push(this.enableExtension(id));
       }
     }
+    await Promise.all(externalPromises);
 
-    // 3. Listen for changes from other windows (e.g., Settings window)
+    // 4. Listen for changes from other windows (e.g., Settings window)
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
         if (e.key === 'flint_plugins_config' || e.key === 'flint_extensions_config') {
@@ -500,6 +508,35 @@ export class ExtensionManager {
     const regView = this.app.views.getView(viewType);
     if (regView) {
       return { state: 'active', view: regView };
+    }
+
+    const CORE_VIEW_TO_EXTENSION: Record<string, string> = {
+      graph: 'graph-view',
+      'graph-view': 'graph-view',
+      marketplace: 'plugin-marketplace',
+      'plugin-marketplace': 'plugin-marketplace',
+      canvas: 'canvas',
+      'canvas-view': 'canvas',
+      tasks: 'tasks',
+      'tasks-view': 'tasks',
+    };
+
+    const coreExtensionId = CORE_VIEW_TO_EXTENSION[viewType];
+    if (coreExtensionId) {
+      const manifest = this.getExtensionManifest(coreExtensionId);
+      if (manifest && this.disabledCoreExtensionIds.has(coreExtensionId)) {
+        return {
+          state: 'disabled',
+          extensionId: coreExtensionId,
+          pluginId: coreExtensionId,
+          manifest,
+          viewTitle: manifest.name || viewType,
+        };
+      }
+      const secondaryLookup = this.app.views.getView(coreExtensionId);
+      if (secondaryLookup) {
+        return { state: 'active', view: secondaryLookup };
+      }
     }
 
     // Core built-in views are permanent and must never be marked as deleted or trigger tab removal

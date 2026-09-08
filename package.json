@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "test:e2e": "node scripts/run-e2e-tests.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "app": "tauri dev",

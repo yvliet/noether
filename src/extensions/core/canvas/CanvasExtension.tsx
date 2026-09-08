@@ -65,7 +65,12 @@ export class CanvasExtension extends Extension {
       <Layout01Icon size={16} />,
       'Open spatial canvas',
       (app) => {
-        app.workspace.setMainViewMode('canvas');
+        app.workspace.openCustomTab({
+          viewType: 'canvas',
+          title: 'Canvas',
+          documentId: '__canvas__',
+          icon: <Layout01Icon size={14} />,
+        });
       },
       40,
       (app) => {
@@ -87,7 +92,12 @@ export class CanvasExtension extends Extension {
       section: 'Navigation',
       icon: <Layout01Icon size={16} />,
       action: (app) => {
-        app.workspace.setMainViewMode('canvas');
+        app.workspace.openCustomTab({
+          viewType: 'canvas',
+          title: 'Canvas',
+          documentId: '__canvas__',
+          icon: <Layout01Icon size={14} />,
+        });
       },
     });
 

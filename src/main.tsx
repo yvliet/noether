@@ -21,6 +21,7 @@ bindFlintStores({
 
 // Register and initialize core extensions across all window modes
 registerAllCoreExtensions(appInstance);
+await appInstance.extensions.initCore();
 appInstance.extensions.init();
 
 if (typeof window !== 'undefined') {

@@ -339,6 +339,8 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             return (
               <div
                 key={tab.id}
+                data-tab-id={tab.id}
+                data-tab-doc-id={tab.document_id || ''}
                 ref={(el) => tabReorder.registerTabRef(index, el)}
                 data-no-drag="true"
                 onPointerDown={(e) => tabReorder.handlePointerDown(index, e)}

@@ -469,8 +469,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       return;
     }
     if (mode === 'document') {
-      const { tabs, activeTabId } = get();
-      const currentTab = tabs.find((t) => t.id === activeTabId);
+      const { tabs, activeTabId, panes, focusedPaneId, layoutTree } = get();
+      const allValidPaneIds = getAllPaneIds(layoutTree);
+      const targetPaneId =
+        panes[focusedPaneId] && allValidPaneIds.includes(focusedPaneId)
+          ? focusedPaneId
+          : (allValidPaneIds.includes('main') && panes['main'] ? 'main' : allValidPaneIds[0] || 'main');
+
+      const currentPane = panes[targetPaneId] || panes['main'];
+      const paneTabs = currentPane?.tabs || tabs;
+      const currentTab = paneTabs.find((t) => t.id === currentPane?.activeTabId) || tabs.find((t) => t.id === activeTabId);
       const activeDoc = useDocumentStore.getState().activeDocument;
 
       // If the currently active tab is already a document tab (including an empty tab), keep it
@@ -486,12 +494,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
       // If activeTabId is a custom view (or null), activate the tab for the currently active document
       if (activeDoc) {
-        const existingDocTab = tabs.find((t) => t.document_id === activeDoc.id);
+        const existingDocTab = paneTabs.find((t) => t.document_id === activeDoc.id);
         if (existingDocTab) {
-          set({ mainViewMode: 'document', activeTabId: existingDocTab.id });
+          get().setActiveTabInPane(targetPaneId, existingDocTab.id);
+          set({ mainViewMode: 'document' });
           return;
         } else {
-          get().openTab(activeDoc.id, activeDoc.title);
+          get().openTabInPane(targetPaneId, activeDoc.id, activeDoc.title);
+          set({ mainViewMode: 'document' });
           return;
         }
       }
@@ -502,19 +512,22 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         return;
       }
 
-      // If no active document, find any existing document tab
-      const lastDocTab = [...tabs].reverse().find(
+      // If no active document, find any existing document tab in this pane
+      const lastDocTab = [...paneTabs].reverse().find(
         (t) =>
           (!t.view_type || t.view_type === 'document') &&
           t.document_id &&
           !t.document_id.startsWith('__')
       );
       if (lastDocTab) {
-        set({ mainViewMode: 'document', activeTabId: lastDocTab.id });
+        get().setActiveTabInPane(targetPaneId, lastDocTab.id);
+        set({ mainViewMode: 'document' });
         useDocumentStore.getState().setActiveDocumentById(lastDocTab.document_id);
         return;
       }
 
+      // If no document tab exists at all in the pane, open an empty tab so the viewport renders EditorCanvas cleanly
+      get().openEmptyTabInPane(targetPaneId);
       set({ mainViewMode: 'document' });
       return;
     }
@@ -709,7 +722,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const targetPaneId =
       panes[focusedPaneId] && allValidPaneIds.includes(focusedPaneId)
         ? focusedPaneId
-        : (panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
+        : (allValidPaneIds.includes('main') && panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
 
     get().openCustomTabInPane(targetPaneId, options);
     get().recordNavigation({
@@ -1854,7 +1867,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         ? paneId
         : (panes[get().focusedPaneId] && allValidPaneIds.includes(get().focusedPaneId))
         ? get().focusedPaneId
-        : (panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
+        : (allValidPaneIds.includes('main') && panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
 
     const currentPane = panes[targetPaneId];
     if (!currentPane) return;

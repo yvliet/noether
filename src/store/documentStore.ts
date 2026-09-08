@@ -348,8 +348,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   ) => {
     const activationEpoch = ++currentActivationEpoch;
     try {
-      // 1. Fetch full document record from SQLite (sub-millisecond in-memory WASM)
-      const doc = (await getDocumentById(id)) || get().documents.find((d) => d.id === id);
+      // 1. Fetch full document record from memory or SQLite
+      const inMemoryDoc = get().documents.find((d) => d.id === id);
+      const doc = (inMemoryDoc?.content_json ? inMemoryDoc : await getDocumentById(id)) || inMemoryDoc;
       if (!doc) return;
 
       emitBridgeAppEvent('document:opened', { id, title: doc.title });

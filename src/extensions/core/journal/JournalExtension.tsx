@@ -16,6 +16,7 @@ import { FlintApp } from '@/core/app/FlintApp';
 import { Calendar01Icon } from '@/components/common/Icons';
 import { DocumentItem } from '@/types';
 import { getDocumentById, getAllDocuments } from '@/lib/db/documents';
+import { useDocumentStore } from '@/store/documentStore';
 import { useJournalSettings } from './journalSettings';
 import { journalReadme } from './readme';
 
@@ -89,7 +90,7 @@ export class JournalExtension extends Extension {
     const dateTitle = dateFormatted;
     const legacyTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
 
-    const docs = this.app.hearth.documents;
+    let docs = this.app.hearth.documents;
     let targetFolderId: string | null = null;
     if (folder) {
       const cleanFolder = folder.replace(/^\/+|\/+$/g, '');
@@ -116,6 +117,7 @@ export class JournalExtension extends Extension {
       if (!existingFolder) {
         // Automatically create the folder if it does not yet exist
         existingFolder = await this.app.hearth.createNewFolder(cleanFolder);
+        docs = this.app.hearth.documents;
       }
       if (existingFolder) {
         targetFolderId = existingFolder.id;
@@ -140,6 +142,13 @@ export class JournalExtension extends Extension {
     }
 
     if (existingNote) {
+      // Ensure existing note retrieved from SQLite is immediately hydrated into documentStore memory
+      const currentDocs = useDocumentStore.getState().documents;
+      if (!currentDocs.some((d) => d.id === existingNote!.id)) {
+        useDocumentStore.setState((state) => ({
+          documents: [existingNote!, ...state.documents],
+        }));
+      }
       return existingNote;
     }
 
@@ -152,8 +161,24 @@ export class JournalExtension extends Extension {
 
   public async openJournalNote(date: Date = new Date()): Promise<DocumentItem> {
     const doc = await this.getOrCreateJournalNote(date);
+
+    // 1. Ensure the note is immediately present in in-memory documentStore
+    useDocumentStore.setState((state) => {
+      const exists = state.documents.some((d) => d.id === doc.id);
+      return exists
+        ? { activeDocument: doc, selectedDocIds: [doc.id], lastSelectedDocId: doc.id }
+        : {
+            documents: [doc, ...state.documents],
+            activeDocument: doc,
+            selectedDocIds: [doc.id],
+            lastSelectedDocId: doc.id,
+          };
+    });
+
+    // 2. Synchronize workspace view mode to document
     this.app.workspace.setMainViewMode('document');
 
+    // 3. Open or focus the tab
     const tabs = this.app.workspace.getTabs();
     const existingTab = tabs.find((t) => t.document_id === doc.id);
     if (existingTab) {
@@ -167,7 +192,9 @@ export class JournalExtension extends Extension {
       });
     }
 
-    await this.app.hearth.openDocument(doc.id);
+    // 4. Force immediate synchronous activation in documentStore so EditorCanvas has the note without waiting for any async ticks
+    await useDocumentStore.getState().setActiveDocumentById(doc.id, { preserveViewMode: true });
+
     return doc;
   }
 

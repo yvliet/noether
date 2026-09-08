@@ -823,8 +823,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     if (!activeTab) return false;
     const tabDocId = activeTab.document_id;
     if (!tabDocId || tabDocId.startsWith('__')) return false;
+    if (activeDocument && activeDocument.id === tabDocId) return false;
     return !documents.some((d) => d.id === tabDocId);
-  }, [activeTab, documents]);
+  }, [activeTab, documents, activeDocument]);
 
   if (isDeadTab && activeTab) {
     return (

@@ -32,17 +32,33 @@ export class ViewRegistry {
    * @since 0.1.0
    */
   public registerView(view: ViewDefinition): Disposable {
-    this.views.set(view.type, view);
-    const extId = view.extensionId || view.pluginId;
+    const raw = view as any;
+    const typeKey = view.type || raw.id;
+    const title = view.title || raw.name || typeKey;
+    const normalizedView: ViewDefinition = {
+      ...view,
+      type: typeKey,
+      title,
+    };
+
+    this.views.set(typeKey, normalizedView);
+    if (raw.id && raw.id !== typeKey) {
+      this.views.set(raw.id, normalizedView);
+    }
+
+    const extId = view.extensionId || view.pluginId || raw.extensionId || raw.pluginId;
     if (extId) {
-      this.viewTypeToExtension.set(view.type, { extensionId: extId, pluginId: extId, title: view.title });
+      this.viewTypeToExtension.set(typeKey, { extensionId: extId, pluginId: extId, title });
+      if (raw.id && raw.id !== typeKey) {
+        this.viewTypeToExtension.set(raw.id, { extensionId: extId, pluginId: extId, title });
+      }
     }
     this.recomputeCache();
     this.notify();
 
     return {
       dispose: () => {
-        this.unregisterView(view.type);
+        this.unregisterView(typeKey);
       },
     };
   }
@@ -54,7 +70,14 @@ export class ViewRegistry {
    * @since 0.1.0
    */
   public unregisterView(type: string): void {
-    if (this.views.delete(type)) {
+    let changed = this.views.delete(type);
+    for (const [key, v] of Array.from(this.views.entries())) {
+      if (v.type === type || (v as any).id === type) {
+        this.views.delete(key);
+        changed = true;
+      }
+    }
+    if (changed) {
       this.recomputeCache();
       this.notify();
     }
@@ -105,7 +128,30 @@ export class ViewRegistry {
    * @since 0.1.0
    */
   public getView(type: string): ViewDefinition | undefined {
-    return this.views.get(type);
+    if (!type) return undefined;
+    const direct = this.views.get(type);
+    if (direct) return direct;
+
+    // View type alias resolution for core and legacy extension view types
+    const VIEW_ALIASES: Record<string, string[]> = {
+      marketplace: ['plugin-marketplace', 'extensions-marketplace'],
+      'plugin-marketplace': ['marketplace'],
+      graph: ['graph-view'],
+      'graph-view': ['graph'],
+      tasks: ['tasks-view'],
+      'tasks-view': ['tasks'],
+      canvas: ['canvas-view'],
+      'canvas-view': ['canvas'],
+    };
+
+    const aliases = VIEW_ALIASES[type];
+    if (aliases) {
+      for (const alias of aliases) {
+        const found = this.views.get(alias);
+        if (found) return found;
+      }
+    }
+    return undefined;
   }
 
   /**

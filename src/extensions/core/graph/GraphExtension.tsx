@@ -61,7 +61,12 @@ export class GraphExtension extends Extension {
       <NeuralNetworkIcon size={16} />,
       'Open graph view (Ctrl+G)',
       (app) => {
-        app.workspace.setMainViewMode('graph');
+        app.workspace.openCustomTab({
+          viewType: 'graph',
+          title: 'Graph View',
+          documentId: '__graph__',
+          icon: <NeuralNetworkIcon size={14} />,
+        });
       },
       50,
       (app) => {
@@ -84,7 +89,12 @@ export class GraphExtension extends Extension {
       icon: <NeuralNetworkIcon size={16} />,
       hotkey: 'Ctrl+G',
       action: (app) => {
-        app.workspace.setMainViewMode('graph');
+        app.workspace.openCustomTab({
+          viewType: 'graph',
+          title: 'Graph View',
+          documentId: '__graph__',
+          icon: <NeuralNetworkIcon size={14} />,
+        });
       },
     });
 

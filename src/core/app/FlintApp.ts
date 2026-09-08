@@ -191,13 +191,19 @@ export class FlintApp {
     return {
       // ── Tab State ──
       get activeTabId(): string | null {
-        return storeRefs.workspace?.getState()?.activeTabId ?? null;
+        const ws = storeRefs.workspace?.getState();
+        if (!ws) return null;
+        const focusedPane = ws.panes?.[ws.focusedPaneId] || ws.panes?.['main'];
+        return focusedPane?.activeTabId ?? ws.activeTabId ?? null;
       },
       get mainViewMode(): string {
         return storeRefs.workspace?.getState()?.mainViewMode ?? 'document';
       },
       getTabs(): readonly TabItem[] {
-        return storeRefs.workspace?.getState()?.tabs ?? [];
+        const ws = storeRefs.workspace?.getState();
+        if (!ws) return [];
+        const focusedPane = ws.panes?.[ws.focusedPaneId] || ws.panes?.['main'];
+        return focusedPane?.tabs ?? ws.tabs ?? [];
       },
       setActiveTab: (tabId: string): void => {
         storeRefs.workspace?.getState()?.setActiveTabId(tabId);
