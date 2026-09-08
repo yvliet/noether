@@ -365,6 +365,33 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         });
       }
 
+      // Immediately activate document and cache content_json in memory so tab switches have instant content
+      set((state) => {
+        const existing = state.documents.find((d) => d.id === doc.id);
+        const nextDocs = existing
+          ? state.documents.map((d) =>
+              d.id === doc.id
+                ? {
+                    ...d,
+                    title: doc.title,
+                    parent_id: doc.parent_id,
+                    doc_type: doc.doc_type,
+                    properties: doc.properties,
+                    updated_at: doc.updated_at,
+                    content_json: doc.content_json,
+                  }
+                : d
+            )
+          : [doc, ...state.documents];
+
+        return {
+          documents: nextDocs,
+          activeDocument: doc,
+          selectedDocIds: state.selectedDocIds.length <= 1 ? [doc.id] : state.selectedDocIds,
+          lastSelectedDocId: state.selectedDocIds.length <= 1 ? doc.id : state.lastSelectedDocId,
+        };
+      });
+
       // 2. Fetch secondary metadata in background
       const shouldCheckUnlinkedMentions =
         doc.title &&
@@ -420,37 +447,25 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
       set((state) => {
         const existing = state.documents.find((d) => d.id === doc.id);
-        const docsNeedUpdate =
-          !existing ||
-          existing.title !== doc.title ||
-          existing.updated_at !== doc.updated_at ||
-          existing.parent_id !== doc.parent_id ||
-          existing.doc_type !== doc.doc_type;
-
-        let nextDocs = state.documents;
-        if (!existing) {
-          nextDocs = [doc, ...state.documents];
-        } else if (docsNeedUpdate) {
-          nextDocs = state.documents.map((d) =>
-            d.id === doc.id
-              ? {
-                  ...d,
-                  title: doc.title,
-                  parent_id: doc.parent_id,
-                  doc_type: doc.doc_type,
-                  properties: doc.properties,
-                  updated_at: doc.updated_at,
-                  ...(doc.doc_type === 'canvas' ? { content_json: doc.content_json } : {}),
-                }
-              : d
-          );
-        }
+        const nextDocs = existing
+          ? state.documents.map((d) =>
+              d.id === doc.id
+                ? {
+                    ...d,
+                    title: doc.title,
+                    parent_id: doc.parent_id,
+                    doc_type: doc.doc_type,
+                    properties: doc.properties,
+                    updated_at: doc.updated_at,
+                    content_json: doc.content_json,
+                  }
+                : d
+            )
+          : [doc, ...state.documents];
 
         return {
           documents: nextDocs,
-          activeDocument: doc,
-          selectedDocIds: state.selectedDocIds.length <= 1 ? [doc.id] : state.selectedDocIds,
-          lastSelectedDocId: state.selectedDocIds.length <= 1 ? doc.id : state.lastSelectedDocId,
+          activeDocument: state.activeDocument?.id === doc.id ? { ...state.activeDocument, ...doc } : state.activeDocument,
           headings,
           backlinks,
           outgoingLinks,
@@ -1163,7 +1178,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         ? {
             ...d,
             title: currentTitle,
-            ...(d.doc_type === 'canvas' ? { content_json: contentJson } : {}),
+            content_json: contentJson,
           }
         : d
     );

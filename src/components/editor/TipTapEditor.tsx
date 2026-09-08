@@ -742,7 +742,7 @@ interface TipTapEditorProps {
   documentId?: string;
   content: string;
   editable?: boolean;
-  onChange: (jsonString: string) => void;
+  onChange: (jsonString: string, documentId?: string) => void;
   onSave?: () => void;
   onEditorReady?: (editor: any) => void;
 }
@@ -769,7 +769,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const slashMenuRef = useRef<any>(null);
   const wikiPopupRef = useRef<any>(null);
   const savedSelectionRef = useRef<{ from: number; to: number } | null>(null);
-  const lastEmittedJsonRef = useRef<string | null>(null);
+  const lastEmittedJsonRef = useRef<string | null>(
+    typeof content === 'string' ? content : (content ? JSON.stringify(content) : null)
+  );
   const updateTimerRef = useRef<NodeJS.Timeout | null>(null);
   const slashExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInternalUpdateRef = useRef(false);
@@ -1404,7 +1406,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         isInternalUpdateRef.current = true;
         const jsonStr = JSON.stringify(editor.getJSON());
         lastEmittedJsonRef.current = jsonStr;
-        onChange(jsonStr);
+        onChange(jsonStr, documentId);
       }, 150);
     },
   });
@@ -1970,6 +1972,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   // Flush any pending debounced update when unmounting or switching editor
   useEffect(() => {
     return () => {
+      const hasPendingDebounce = updateTimerRef.current !== null;
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current);
         updateTimerRef.current = null;
@@ -1978,18 +1981,21 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         clearTimeout(slashExitTimerRef.current);
         slashExitTimerRef.current = null;
       }
-      if (editor && !editor.isDestroyed) {
-          try {
-            const jsonStr = JSON.stringify(editor.getJSON());
-            if (jsonStr !== lastEmittedJsonRef.current) {
-              isInternalUpdateRef.current = true;
-              lastEmittedJsonRef.current = jsonStr;
-              onChange(jsonStr);
-            }
-          } catch (e) {}
-        }
-      };
-    }, [editor, onChange]);
+      // Only flush if there was an active pending edit queued in the debounce timer
+      if (hasPendingDebounce && editor && !editor.isDestroyed) {
+        try {
+          const jsonStr = JSON.stringify(editor.getJSON());
+          if (jsonStr !== lastEmittedJsonRef.current) {
+            isInternalUpdateRef.current = true;
+            lastEmittedJsonRef.current = jsonStr;
+            onChange(jsonStr, documentId);
+          }
+        } catch (e) {}
+      }
+    };
+  }, [editor, onChange, documentId]);
+
+  const prevDocIdRef = useRef<string | undefined>(documentId);
 
   // Keep editor content in sync when active document switches or updates externally
   useEffect(() => {
@@ -2003,11 +2009,14 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     }
     try {
       const currentJson = JSON.stringify(editor.getJSON());
-      if (currentJson !== content) {
+      const docChanged = prevDocIdRef.current !== documentId;
+      prevDocIdRef.current = documentId;
+
+      if (currentJson !== content || docChanged) {
         // ProseMirror Authority Invariant:
-        // If editor is currently focused with active typing in progress, preserve ProseMirror's buffer.
-        // Otherwise (e.g. document switch, tab restore, or external sync), apply incoming content cleanly.
-        if (editor.isFocused) {
+        // If the same document is currently focused with active typing in progress, preserve ProseMirror's buffer.
+        // When switching documents (docChanged is true), bypass focus guard and apply incoming content cleanly.
+        if (!docChanged && editor.isFocused) {
           return;
         }
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);
@@ -2015,7 +2024,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         editor.commands.setContent(parsed, false);
       }
     } catch (e) {}
-  }, [content, editor]);
+  }, [content, editor, documentId]);
 
   // Notify parent of editor instance and sync active editor registry
   useEffect(() => {

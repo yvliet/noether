@@ -206,9 +206,35 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     return defaultParts;
   }, [currentDoc, documents, matchedBreadcrumbProvider, activeTab, app]);
 
+  const [activeDocStateId, setActiveDocStateId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [isReadingMode, setIsReadingMode] = useState(defaultTabMode === 'Reading view');
+
+  const titleRef = useRef<string>(title);
+  titleRef.current = title;
+
+  // Synchronous document state derivation during render:
+  // When currentDoc switches, immediately align title and content state before child components render.
+  // This guarantees TipTapEditor never mounts with a previous document's stale content string.
+  if (currentDoc && activeDocStateId !== currentDoc.id) {
+    setActiveDocStateId(currentDoc.id);
+    setTitle(currentDoc.title);
+    titleRef.current = currentDoc.title;
+    const initialContent =
+      currentDoc.content_json && currentDoc.content_json !== '{}'
+        ? currentDoc.content_json
+        : JSON.stringify({
+            type: 'doc',
+            content: [{ type: 'paragraph', content: [] }],
+          });
+    setContent(initialContent);
+  } else if (!currentDoc && activeDocStateId !== null) {
+    setActiveDocStateId(null);
+    setTitle('');
+    titleRef.current = '';
+    setContent('');
+  }
 
   const breadcrumbTitleOverride = useMemo(() => {
     if (!currentDoc || !matchedBreadcrumbProvider?.getTitleOverride) return undefined;
@@ -470,8 +496,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const activeDocIdRef = useRef<string | null>(null);
   const saveTimerRef = useRef<any>(null);
   const pendingContentRef = useRef<string | null>(null);
-  const titleRef = useRef<string>(title);
-  titleRef.current = title;
   const isEditingTitleRef = useRef(false);
 
   const commitTitleRename = useCallback(async (newVal: string) => {
@@ -506,18 +530,22 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   }, [currentDoc, isLocked, documents, renameDocument, isSidebarMode]);
 
   // Helper to flush any pending save immediately
-  const flushPendingSave = useCallback(() => {
+  const flushPendingSave = useCallback((overrideDocId?: string, overrideTitle?: string) => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
-    const docId = activeDocIdRef.current;
+    const docId = overrideDocId || activeDocIdRef.current;
     const contentToSave = pendingContentRef.current;
 
     const shouldCommitTitle = isEditingTitleRef.current;
-    const pendingTitle = shouldCommitTitle ? titleRef.current?.trim() : undefined;
-    if (shouldCommitTitle && currentDoc && pendingTitle && pendingTitle !== currentDoc.title) {
-      commitTitleRename(pendingTitle);
+    const pendingTitle = overrideTitle || (shouldCommitTitle ? titleRef.current?.trim() : undefined);
+    if (shouldCommitTitle && docId && pendingTitle) {
+      const targetDoc = documents.find((d) => d.id === docId);
+      if (targetDoc && pendingTitle !== targetDoc.title) {
+        renameDocument(docId, pendingTitle);
+      }
+      isEditingTitleRef.current = false;
     }
 
     if (docId && contentToSave !== null) {
@@ -543,7 +571,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
       saveDocumentById(docId, currentContent, pendingTitle);
     }
-  }, [saveDocumentById, currentDoc, commitTitleRename]);
+  }, [saveDocumentById, renameDocument, documents]);
 
   // Sync state when active document changes
   useEffect(() => {
@@ -552,25 +580,14 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
       if (docChanged) {
         // 1. Immediately flush pending save for the OLD document before loading the new one!
-        flushPendingSave();
+        if (activeDocIdRef.current) {
+          flushPendingSave(activeDocIdRef.current, titleRef.current);
+        }
 
         isEditingTitleRef.current = false;
         activeDocIdRef.current = currentDoc.id;
         setTitle(currentDoc.title);
         titleRef.current = currentDoc.title;
-        const safeContent =
-          currentDoc.content_json && currentDoc.content_json !== '{}'
-            ? currentDoc.content_json
-            : JSON.stringify({
-                type: 'doc',
-                content: [
-                  {
-                    type: 'paragraph',
-                    content: [],
-                  },
-                ],
-              });
-        setContent(safeContent);
         setIsEditingSubheader(false);
 
         // If content was omitted to preserve memory (e.g. split pane note), fetch on demand from SQLite
@@ -600,7 +617,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         }
       }
     } else {
-      flushPendingSave();
+      if (activeDocIdRef.current) {
+        flushPendingSave(activeDocIdRef.current, titleRef.current);
+      }
       isEditingTitleRef.current = false;
       activeDocIdRef.current = null;
       setTitle('');
@@ -608,7 +627,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       setContent('');
       setIsEditingSubheader(false);
     }
-  }, [currentDoc?.id, currentDoc?.title, currentDoc?.content_json, saveDocumentById, isEditingSubheader, isMainTitleFocused]);
+  }, [currentDoc?.id, currentDoc?.title, currentDoc?.content_json, flushPendingSave, isEditingSubheader, isMainTitleFocused]);
 
   // Flush on unmount (e.g. switching views, closing pane)
   useEffect(() => {
@@ -665,11 +684,24 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }
   }, [isLocked, currentDoc, updateTabTitle]);
 
-  const handleContentChange = useCallback((newJson: string) => {
-    if (isLocked) return;
-    pendingContentRef.current = newJson;
-    scheduleDebouncedSave(newJson);
-  }, [scheduleDebouncedSave, isLocked]);
+  const handleContentChange = useCallback(
+    (newJson: string, sourceDocId?: string) => {
+      if (isLocked) return;
+      // If update belongs to a previous or different document instance (e.g. unmount cleanup),
+      // flush it directly to that document without corrupting active document state.
+      if (sourceDocId && activeDocIdRef.current && sourceDocId !== activeDocIdRef.current) {
+        dbAdapter.executeSync(
+          `UPDATE documents SET content_json = ?, updated_at = ? WHERE id = ?`,
+          [newJson, Date.now(), sourceDocId]
+        );
+        saveDocumentById(sourceDocId, newJson);
+        return;
+      }
+      pendingContentRef.current = newJson;
+      scheduleDebouncedSave(newJson);
+    },
+    [scheduleDebouncedSave, isLocked, saveDocumentById]
+  );
 
   const handleSourceModeChange = useCallback(
     (newContentJson: string, newTitle?: string, newProps?: DocumentProperties) => {
@@ -1387,7 +1419,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                     }`}
                   >
                     <TipTapEditor
-                      key={currentDoc.id}
+                      key={`${currentPaneId}-${currentDoc.id}`}
                       documentId={currentDoc.id}
                       content={content}
                       editable={isEditable}
