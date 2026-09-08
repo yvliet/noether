@@ -186,9 +186,9 @@ export class JournalExtension extends Extension {
     } else {
       this.app.workspace.openTab(doc.id, doc.title, {
         viewType: 'document',
-        newTab: true,
+        newTab: false,
         replaceCurrentEmpty: true,
-        replaceCurrentTab: false,
+        replaceCurrentTab: true,
       });
     }
 

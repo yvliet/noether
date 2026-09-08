@@ -25,13 +25,23 @@ async function runTests() {
   page.on('console', (msg) => {
     console.log(`[Browser Console ${msg.type()}]:`, msg.text());
   });
+  page.on('requestfailed', (req) => {
+    console.error(`❌ [Request Failed]: ${req.url()} (${req.failure()?.errorText})`);
+  });
+  page.on('response', (res) => {
+    if (res.status() >= 400) {
+      console.error(`❌ [HTTP ${res.status()}]: ${res.url()}`);
+    } else if (res.url().includes('main.tsx') || res.url().includes('App.tsx')) {
+      console.log(`📥 [Loaded]: ${res.status()} ${res.url()}`);
+    }
+  });
 
   try {
     console.log(`🧭 Navigating to ${url}...`);
-    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
 
     // Wait for the app shell to render
-    await page.waitForSelector('[data-action-rail="true"]', { timeout: 15000 });
+    await page.waitForSelector('[data-action-rail="true"]', { timeout: 30000 });
     console.log('✅ AppShell and ActionRail rendered successfully');
 
     // Wait for stores and extensions to hydrate

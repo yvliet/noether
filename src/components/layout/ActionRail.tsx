@@ -105,23 +105,6 @@ export const ActionRail: React.FC = React.memo(() => {
 
         {/* Dynamic Registered Items from Built-in & Community Extensions */}
         {ribbonItems.map((item) => {
-          let isActive = false;
-          if (typeof item.isActive === 'function') {
-            try {
-              isActive = item.isActive(app);
-            } catch {
-              isActive = false;
-            }
-          } else if (typeof item.isActive === 'boolean') {
-            isActive = item.isActive;
-          } else {
-            const currentTab = tabs.find((t) => t.id === activeTabId);
-            const currentType = currentTab?.view_type || currentTab?.view_mode || mainViewMode;
-            if (currentType && currentType !== 'document') {
-              isActive = item.id.includes(currentType) || (item as any).extensionId === currentType;
-            }
-          }
-
           return (
             <button
               key={item.id}
@@ -129,20 +112,11 @@ export const ActionRail: React.FC = React.memo(() => {
               data-tooltip={item.title}
               data-no-drag="true"
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-              onMouseDown={(e) => {
-                if (e.button === 0) {
-                  handleItemTrigger(item);
-                }
-              }}
               onClick={() => {
                 handleItemTrigger(item);
               }}
               title={item.title}
-              className={`no-drag relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer ${
-                isActive
-                  ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]'
-                  : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
-              }`}
+              className="no-drag relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
             >
               {item.icon}
               {item.badge != null && (
