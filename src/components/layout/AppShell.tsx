@@ -42,7 +42,9 @@ const DynamicModalHost: React.FC = React.memo(() => {
   return (
     <>
       {modals.map((m) => (
-        <React.Fragment key={m.id}>{m.render(app)}</React.Fragment>
+        <div key={m.id} className="flint-modal-host">
+          {m.render(app)}
+        </div>
       ))}
     </>
   );

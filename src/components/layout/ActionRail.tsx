@@ -112,6 +112,13 @@ export const ActionRail: React.FC = React.memo(() => {
               data-tooltip={item.title}
               data-no-drag="true"
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+              onPointerDown={(event) => {
+                if (event.button === 0) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleItemTrigger(item);
+                }
+              }}
               onClick={() => {
                 handleItemTrigger(item);
               }}

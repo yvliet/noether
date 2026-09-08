@@ -652,6 +652,17 @@ textarea::selection {
   -webkit-app-region: no-drag;
 }
 
+/* Quicknote is a floating card, so its full-screen backdrop must not block Flint controls. */
+.flint-modal-host:has(.quicknote-prosemirror) > div {
+  pointer-events: none !important;
+  background: transparent !important;
+}
+
+.flint-modal-host:has(.quicknote-prosemirror) > div .quicknote-prosemirror,
+.flint-modal-host:has(.quicknote-prosemirror) > div:has(.quicknote-prosemirror) > div {
+  pointer-events: auto;
+}
+
 /* TipTap Editor Prose Custom Styles & Markdown Prose Renderers */
 .ProseMirror,
 .markdown-prose {

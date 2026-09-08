@@ -22,7 +22,7 @@ export interface FlintStoreRefs {
   appInstance: any | null;
 }
 
-const defaultRefs: FlintStoreRefs = {
+const internalStores: FlintStoreRefs = {
   workspace: null,
   sidebarDock: null,
   document: null,
@@ -32,14 +32,61 @@ const defaultRefs: FlintStoreRefs = {
   appInstance: null,
 };
 
+const STORE_KEYS: Array<keyof FlintStoreRefs> = [
+  'workspace',
+  'sidebarDock',
+  'document',
+  'contextMenu',
+  'settings',
+  'fileHistory',
+  'appInstance',
+];
+
+const createProtectedStoreRefs = (): FlintStoreRefs => {
+  const target = {} as FlintStoreRefs;
+
+  for (const key of STORE_KEYS) {
+    Object.defineProperty(target, key, {
+      get() {
+        return internalStores[key];
+      },
+      set(val) {
+        if (internalStores[key] !== null && val !== null && val !== internalStores[key]) {
+          console.warn(`[storeBridge] Blocked external overwrite of host store "${String(key)}". Host stores are immutable once bound.`);
+          return;
+        }
+        internalStores[key] = val;
+      },
+      enumerable: true,
+      configurable: false,
+    });
+  }
+
+  return target;
+};
+
 // Global-safe singleton object that survives circular imports without TDZ
-export var storeRefs: FlintStoreRefs =
-  typeof globalThis !== 'undefined'
-    ? ((globalThis as any).__flintStoreRefs = (globalThis as any).__flintStoreRefs || defaultRefs)
-    : defaultRefs;
+export var storeRefs: FlintStoreRefs = createProtectedStoreRefs();
+
+if (typeof globalThis !== 'undefined') {
+  try {
+    Object.defineProperty(globalThis, '__flintStoreRefs', {
+      get: () => storeRefs,
+      set: (_val) => {
+        // Silently preserve host store container against global reassignments
+      },
+      configurable: false,
+      enumerable: false,
+    });
+  } catch {
+    // If already defined or non-configurable in some test runner environments
+    (globalThis as any).__flintStoreRefs = storeRefs;
+  }
+}
 
 /**
  * Connects internal Zustand state stores to the FlintApp bridge.
+ * Host stores become immutable once bound to prevent third-party extension hijacking.
  *
  * @param stores - Map of store getters.
  * @since 0.1.0
