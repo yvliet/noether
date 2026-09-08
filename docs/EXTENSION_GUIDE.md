@@ -312,9 +312,13 @@ Extensions can be placed in either `.flint/extensions/<id>` or `.flint/plugins/<
 
 In Flint, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension SDK. You can review their implementation in `src/extensions/core/`.
 
-To build your own standalone community extension, clone the official template repository:
+To build your own standalone community extension, generate your project from the official template repository:
 ```bash
-git clone https://github.com/yvliet/flint-extension-starter.git
+# Using GitHub CLI
+gh repo create my-extension --template yvliet/flint-extension-starter --public --clone
+
+# Or via Git
+git clone https://github.com/yvliet/flint-extension-starter.git my-extension
 ```
 
 

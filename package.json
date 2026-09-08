@@ -18,7 +18,6 @@
     "tauri:build": "tauri build",
     "docs:build": "npm --prefix website run build",
     "docs:deploy": "npm --prefix website run deploy",
-    "extensions:build": "npx tsx scripts/build-community-extensions.ts",
     "extensions:publish": "npx tsx scripts/publish-extension.ts",
     "registry:publish": "npx tsx scripts/publish-extension.ts",
     "registry:dev": "npm --prefix api run dev",

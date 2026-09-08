@@ -7,10 +7,14 @@ Kickstart your Flint extension or theme with production-ready, copyable starter 
 
 ---
 
-The quickest way to build a Flint extension is using the official standalone starter template repository (`templates/flint-extension-starter`):
+The quickest way to build a Flint extension is using the official standalone starter template repository at [yvliet/flint-extension-starter](https://github.com/yvliet/flint-extension-starter):
 
 ```bash
-# Clone the official starter template
+# Option 1: Create directly from GitHub's template engine
+gh repo create my-flint-extension --template yvliet/flint-extension-starter --public --clone
+cd my-flint-extension
+
+# Option 2: Clone directly via Git
 git clone https://github.com/yvliet/flint-extension-starter.git my-flint-extension
 cd my-flint-extension
 
