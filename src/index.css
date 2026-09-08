@@ -216,7 +216,8 @@ textarea,
 }
 
 /* Main workspace & canvas */
-[data-main="true"] {
+[data-main="true"],
+.flint-doc-wrapper:not([data-sidebar-mode="true"]) {
   background: var(--flint-bg-main-gradient, var(--flint-bg-main)) !important;
 }
 

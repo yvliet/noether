@@ -85,7 +85,7 @@ export const TasksView: React.FC = React.memo(() => {
   const pendingCount = useMemo(() => totalCount - completedCount, [totalCount, completedCount]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#181818] select-none">
+    <div data-main="true" className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--flint-bg-main)] select-none">
       {/* 1. Modular Sub-Header */}
       <PageSubHeader
         title="Tasks"

@@ -566,7 +566,8 @@ export const CanvasView: React.FC = React.memo(() => {
     <div
       data-pinchable="true"
       data-canvas-view="true"
-      className="flint-canvas-view flint-pinchable relative flex-1 h-full w-full overflow-hidden bg-[#181818] text-[var(--flint-text-primary)] select-none"
+      data-main="true"
+      className="flint-canvas-view flint-pinchable relative flex-1 h-full w-full overflow-hidden bg-[var(--flint-bg-main)] text-[var(--flint-text-primary)] select-none"
     >
       {/* 100% Consistent Page Subheader */}
       <PageSubHeader
@@ -660,9 +661,10 @@ export const CanvasView: React.FC = React.memo(() => {
         ref={containerRef}
         data-pinchable="true"
         data-canvas-view="true"
+        data-main="true"
         onPointerDown={handlePointerDown}
         style={{ touchAction: 'none' }}
-        className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[#181818] overflow-hidden select-none touch-none ${
+        className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none ${
           isPanningState ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >

@@ -805,9 +805,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         }
       }}
       data-doc-view="true"
+      data-main={isSidebarMode ? undefined : 'true'}
+      data-sidebar-mode={isSidebarMode ? 'true' : undefined}
       style={{ touchAction: 'pan-x pan-y' }}
       className={`flint-doc-wrapper editor-canvas flex-1 flex flex-col h-full overflow-hidden ${
-        isSidebarMode ? 'bg-transparent' : 'bg-[#181818]'
+        isSidebarMode ? 'bg-transparent' : 'bg-[var(--flint-bg-tab-active,var(--flint-bg-main))]'
       }`}
     >
 
@@ -1084,7 +1086,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
       {/* Main Body: Minimal Empty State or Document Prose Editor */}
       {!currentDoc ? (
-        <div className={`flex-1 flex flex-col items-center justify-center select-none p-8 ${isSidebarMode ? 'bg-transparent' : 'bg-[#181818]'}`}>
+        <div
+          data-main={isSidebarMode ? undefined : 'true'}
+          className={`flex-1 flex flex-col items-center justify-center select-none p-8 ${
+            isSidebarMode ? 'bg-transparent' : 'bg-[var(--flint-bg-tab-active,var(--flint-bg-main))]'
+          }`}
+        >
           <div className="flex flex-col items-center max-w-sm w-full text-center">
             <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2e2e2e] flex items-center justify-center mb-3 shadow-sm">
               <FlintLogoIcon size={26} />

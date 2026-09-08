@@ -182,7 +182,7 @@ export const MarketplaceView: React.FC = () => {
   }, [extensions, searchQuery, selectedCategory, sortBy, sortOrder, extensionList]);
 
   return (
-    <div className="flex-1 h-full flex flex-col overflow-hidden bg-[#181818] text-[var(--flint-text-primary)] select-none">
+    <div data-main="true" className="flex-1 h-full flex flex-col overflow-hidden bg-[var(--flint-bg-main)] text-[var(--flint-text-primary)] select-none">
       {/* 100% Consistent Page Subheader */}
       <PageSubHeader
         title="Marketplace"

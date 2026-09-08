@@ -3009,14 +3009,15 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       data-pinchable="true"
       data-graph-view="true"
       data-is-sidebar={isSidebar ? 'true' : undefined}
+      data-main={isSidebar ? undefined : 'true'}
       style={{
         touchAction: 'none',
         background: isSidebar
           ? 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar, #151515))'
-          : '#181818',
+          : 'var(--flint-bg-main-gradient, var(--flint-bg-main, #1c1c1c))',
       }}
       className={`flint-graph-view flint-pinchable relative flex-1 h-full w-full overflow-hidden select-none touch-none ${
-        isSidebar ? 'bg-transparent' : 'bg-[#181818]'
+        isSidebar ? 'bg-transparent' : 'bg-[var(--flint-bg-main)]'
       }`}
     >
       {/* Shared Modular Document Sub-Header */}
