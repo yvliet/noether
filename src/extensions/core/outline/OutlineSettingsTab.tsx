@@ -3,6 +3,7 @@ import { useOutlineSettings, DEFAULT_OUTLINE_SETTINGS } from './outlineSettings'
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 export const OutlineSettingsTab: React.FC = () => {
   const {
@@ -58,7 +59,7 @@ export const OutlineSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setCollapseOutlineByDefault(DEFAULT_OUTLINE_SETTINGS.collapseOutlineByDefault)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -81,7 +82,7 @@ export const OutlineSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setShowHeadingNumbers(DEFAULT_OUTLINE_SETTINGS.showHeadingNumbers)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -98,21 +99,29 @@ export const OutlineSettingsTab: React.FC = () => {
               Only show headings up to this depth in the outline panel.
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4, 5, 6].map((lvl) => (
+          <div className="flex items-center gap-2">
+            {maxHeadingLevel !== DEFAULT_OUTLINE_SETTINGS.maxHeadingLevel && (
               <button
-                key={lvl}
                 type="button"
-                onClick={() => setMaxHeadingLevel(lvl)}
-                className={`w-7 h-7 text-xs rounded-[5px] border transition-all cursor-pointer flex items-center justify-center ${
-                  maxHeadingLevel === lvl
-                    ? 'bg-[var(--flint-accent)] border-transparent text-white font-medium shadow-xs'
-                    : 'bg-[#181818] border-[#333] text-[#888] hover:text-white hover:border-[#444]'
-                }`}
+                onClick={() => setMaxHeadingLevel(DEFAULT_OUTLINE_SETTINGS.maxHeadingLevel)}
+                title="Restore default (H6)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
-                H{lvl}
+                <RotateCcwIcon size={13} />
               </button>
-            ))}
+            )}
+            <CustomSelect<number>
+              value={maxHeadingLevel}
+              onChange={setMaxHeadingLevel}
+              options={[
+                { value: 1, label: 'H1' },
+                { value: 2, label: 'H2' },
+                { value: 3, label: 'H3' },
+                { value: 4, label: 'H4' },
+                { value: 5, label: 'H5' },
+                { value: 6, label: 'H6 (All levels)' },
+              ]}
+            />
           </div>
         </div>
       </div>

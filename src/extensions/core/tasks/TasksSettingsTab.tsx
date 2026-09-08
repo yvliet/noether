@@ -3,6 +3,7 @@ import { useTasksSettings, DEFAULT_TASKS_SETTINGS, TaskSortBy } from './tasksSet
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 export const TasksSettingsTab: React.FC = () => {
   const {
@@ -61,7 +62,7 @@ export const TasksSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setAutoCompleteSubtasks(DEFAULT_TASKS_SETTINGS.autoCompleteSubtasks)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -100,25 +101,26 @@ export const TasksSettingsTab: React.FC = () => {
               Order tasks by their containing document order, alphabetical text, or completion status.
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            {([
-              { key: 'document', label: 'Document Order' },
-              { key: 'title', label: 'Alphabetical' },
-              { key: 'status', label: 'Status' },
-            ] as { key: TaskSortBy; label: string }[]).map((opt) => (
+          <div className="flex items-center gap-2">
+            {sortBy !== DEFAULT_TASKS_SETTINGS.sortBy && (
               <button
-                key={opt.key}
                 type="button"
-                onClick={() => setSortBy(opt.key)}
-                className={`px-3 py-1 text-xs rounded-[5px] border transition-all cursor-pointer ${
-                  sortBy === opt.key
-                    ? 'bg-[var(--flint-accent)] border-transparent text-white font-medium shadow-xs'
-                    : 'bg-[#181818] border-[#333] text-[#888] hover:text-white hover:border-[#444]'
-                }`}
+                onClick={() => setSortBy(DEFAULT_TASKS_SETTINGS.sortBy)}
+                title="Restore default (Document Order)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
-                {opt.label}
+                <RotateCcwIcon size={13} />
               </button>
-            ))}
+            )}
+            <CustomSelect<TaskSortBy>
+              value={sortBy}
+              onChange={setSortBy}
+              options={[
+                { value: 'document', label: 'Document Order' },
+                { value: 'title', label: 'Alphabetical' },
+                { value: 'status', label: 'Status' },
+              ]}
+            />
           </div>
         </div>
       </div>

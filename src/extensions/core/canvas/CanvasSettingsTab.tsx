@@ -4,6 +4,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { ColorPicker } from '@/components/common/ColorPicker';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 export const CanvasSettingsTab: React.FC = () => {
   const {
@@ -59,7 +60,7 @@ export const CanvasSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setCanvasSnapGrid(DEFAULT_CANVAS_SETTINGS.canvasSnapGrid)}
                 title="Restore default (Enabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -76,21 +77,27 @@ export const CanvasSettingsTab: React.FC = () => {
               Pixel dimension for spatial snap intervals.
             </span>
           </div>
-          <div className="flex items-center gap-1.5">
-            {[16, 20, 24, 32].map((size) => (
+          <div className="flex items-center gap-2">
+            {gridSize !== DEFAULT_CANVAS_SETTINGS.gridSize && (
               <button
-                key={size}
                 type="button"
-                onClick={() => setGridSize(size)}
-                className={`px-3 py-1 text-xs rounded-[5px] border transition-all cursor-pointer ${
-                  gridSize === size
-                    ? 'bg-[var(--flint-accent)] border-transparent text-white font-medium shadow-xs'
-                    : 'bg-[#181818] border-[#333] text-[#888] hover:text-white hover:border-[#444]'
-                }`}
+                onClick={() => setGridSize(DEFAULT_CANVAS_SETTINGS.gridSize)}
+                title="Restore default grid size (20px)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
-                {size}px
+                <RotateCcwIcon size={13} />
               </button>
-            ))}
+            )}
+            <CustomSelect<number>
+              value={gridSize}
+              onChange={setGridSize}
+              options={[
+                { value: 16, label: '16px' },
+                { value: 20, label: '20px' },
+                { value: 24, label: '24px' },
+                { value: 32, label: '32px' },
+              ]}
+            />
           </div>
         </div>
 
@@ -108,7 +115,7 @@ export const CanvasSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setDefaultNodeColor(DEFAULT_CANVAS_SETTINGS.defaultNodeColor)}
                 title="Restore default card color"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>

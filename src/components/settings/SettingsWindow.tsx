@@ -1067,30 +1067,16 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
               <div className="flex flex-col gap-1">
                 <label className="text-[11px] text-[#888]">Base Mode</label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewThemeType('dark')}
-                    className={`flex-1 py-1.5 rounded border text-xs cursor-pointer ${
-                      newThemeType === 'dark'
-                        ? 'bg-[#2a2a2a] border-[var(--flint-accent)] text-white font-medium'
-                        : 'bg-[#141414] border-[#282828] text-[#777]'
-                    }`}
-                  >
-                    Dark
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewThemeType('light')}
-                    className={`flex-1 py-1.5 rounded border text-xs cursor-pointer ${
-                      newThemeType === 'light'
-                        ? 'bg-[#2a2a2a] border-[var(--flint-accent)] text-white font-medium'
-                        : 'bg-[#141414] border-[#282828] text-[#777]'
-                    }`}
-                  >
-                    Light
-                  </button>
-                </div>
+                <CustomSelect
+                  value={newThemeType}
+                  onChange={(val) => setNewThemeType(val as 'dark' | 'light')}
+                  options={[
+                    { value: 'dark', label: 'Dark' },
+                    { value: 'light', label: 'Light' },
+                  ]}
+                  className="w-full"
+                  buttonClassName="w-full justify-between"
+                />
               </div>
             </div>
 

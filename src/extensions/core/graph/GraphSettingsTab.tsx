@@ -3,6 +3,7 @@ import { useGraphSettings, DEFAULT_GRAPH_SETTINGS, GraphColorMode } from './grap
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
+import { CustomSelect } from '@/components/common/CustomSelect';
 
 const SPEED_PRESETS = [
   { label: 'Fast (40ms)', value: 40 },
@@ -113,53 +114,37 @@ export const GraphSettingsTab: React.FC = () => {
         </div>
 
         {/* Node appearance rate */}
-        <div className="flex flex-col p-4 gap-3">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Node appearance rate</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                How fast each node appears during time-lapse playback ({timelapseSpeed}ms per node).
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {timelapseSpeed !== DEFAULT_GRAPH_SETTINGS.timelapseSpeed && (
-                <button
-                  type="button"
-                  onClick={() => setTimelapseSpeed(DEFAULT_GRAPH_SETTINGS.timelapseSpeed)}
-                  title="Restore default speed (120ms)"
-                  className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0"
-                >
-                  <RotateCcwIcon size={13} />
-                </button>
-              )}
-              <input
-                type="number"
-                min={20}
-                max={2000}
-                step={10}
-                value={timelapseSpeed}
-                onChange={(e) => setTimelapseSpeed(Math.max(20, parseInt(e.target.value) || 20))}
-                className="w-24 bg-[#181818] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none font-mono shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] transition-colors text-right"
-              />
-            </div>
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Node appearance rate</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              How fast each node appears during time-lapse playback.
+            </span>
           </div>
-
-          {/* Quick Presets */}
-          <div className="flex items-center gap-1.5 flex-wrap pt-1">
-            {SPEED_PRESETS.map((preset) => (
+          <div className="flex items-center gap-2">
+            {timelapseSpeed !== DEFAULT_GRAPH_SETTINGS.timelapseSpeed && (
               <button
-                key={preset.value}
                 type="button"
-                onClick={() => setTimelapseSpeed(preset.value)}
-                className={`px-2.5 py-1 text-[11px] rounded-[5px] border transition-all cursor-pointer ${
-                  timelapseSpeed === preset.value
-                    ? 'bg-[var(--flint-accent)] border-transparent text-white font-medium shadow-xs'
-                    : 'bg-[#181818] border-[#333] text-[#888] hover:text-white hover:border-[#444]'
-                }`}
+                onClick={() => setTimelapseSpeed(DEFAULT_GRAPH_SETTINGS.timelapseSpeed)}
+                title="Restore default speed (120ms)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
-                {preset.label}
+                <RotateCcwIcon size={13} />
               </button>
-            ))}
+            )}
+            <CustomSelect<number>
+              value={timelapseSpeed}
+              onChange={setTimelapseSpeed}
+              options={[
+                ...SPEED_PRESETS.map((preset) => ({
+                  value: preset.value,
+                  label: preset.label,
+                })),
+                ...(!SPEED_PRESETS.some((preset) => preset.value === timelapseSpeed)
+                  ? [{ value: timelapseSpeed, label: `Custom (${timelapseSpeed}ms)` }]
+                  : []),
+              ]}
+            />
           </div>
         </div>
 
@@ -459,21 +444,26 @@ export const GraphSettingsTab: React.FC = () => {
                 Color notes by their folder hierarchy, tags, or theme accent.
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              {(['default', 'folder', 'tag'] as GraphColorMode[]).map((mode) => (
+            <div className="flex items-center gap-2">
+              {colorMode !== DEFAULT_GRAPH_SETTINGS.colorMode && (
                 <button
-                  key={mode}
                   type="button"
-                  onClick={() => setColorMode(mode)}
-                  className={`px-3 py-1 text-xs capitalize rounded-[5px] border transition-all cursor-pointer ${
-                    colorMode === mode
-                      ? 'bg-[var(--flint-accent)] border-transparent text-white font-medium shadow-xs'
-                      : 'bg-[#181818] border-[#333] text-[#888] hover:text-white hover:border-[#444]'
-                  }`}
+                  onClick={() => setColorMode(DEFAULT_GRAPH_SETTINGS.colorMode)}
+                  title="Restore default color scheme"
+                  className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
                 >
-                  {mode}
+                  <RotateCcwIcon size={13} />
                 </button>
-              ))}
+              )}
+              <CustomSelect<GraphColorMode>
+                value={colorMode}
+                onChange={setColorMode}
+                options={[
+                  { value: 'default', label: 'Default' },
+                  { value: 'folder', label: 'Folder hierarchy' },
+                  { value: 'tag', label: 'First tag' },
+                ]}
+              />
             </div>
           </div>
         </div>

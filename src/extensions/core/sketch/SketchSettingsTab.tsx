@@ -1,14 +1,9 @@
 import React from 'react';
 import { useSketchStore } from './sketchStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import {
-  PaintBrush01Icon,
-  HighlighterIcon,
-  Cursor02Icon,
-  TextIcon,
-  FullscreenIcon,
-  Delete02Icon,
-} from '@/components/common/Icons';
+import { Delete02Icon } from '@/components/common/Icons';
+import { CustomSelect } from '@/components/common/CustomSelect';
+import { SketchToolType, SketchAnchoringMode } from './types';
 
 const COLOR_OPTIONS = [
   { label: 'Flint Accent', value: '#3b82f6' },
@@ -60,43 +55,16 @@ export const SketchSettingsTab: React.FC = () => {
               Initial tool selected when activating the sketch overlay.
             </span>
           </div>
-          <div className="flex items-center gap-1 bg-[#161616] p-0.5 rounded-lg border border-[#2a2a2a]">
-            <button
-              type="button"
-              onClick={() => setTool('pen')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md cursor-pointer ${
-                activeTool === 'pen'
-                  ? 'bg-[#2a2a2a] text-white font-medium'
-                  : 'text-[#888] hover:text-[#dcddde]'
-              }`}
-            >
-              <PaintBrush01Icon size={13} />
-              <span>Pen</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTool('highlighter')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md cursor-pointer ${
-                activeTool === 'highlighter'
-                  ? 'bg-[#2a2a2a] text-white font-medium'
-                  : 'text-[#888] hover:text-[#dcddde]'
-              }`}
-            >
-              <HighlighterIcon size={13} />
-              <span>Highlighter</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setTool('select')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md cursor-pointer ${
-                activeTool === 'select'
-                  ? 'bg-[#2a2a2a] text-white font-medium'
-                  : 'text-[#888] hover:text-[#dcddde]'
-              }`}
-            >
-              <Cursor02Icon size={13} />
-              <span>Select</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <CustomSelect<SketchToolType>
+              value={activeTool}
+              onChange={setTool}
+              options={[
+                { value: 'pen', label: 'Pen' },
+                { value: 'highlighter', label: 'Highlighter' },
+                { value: 'select', label: 'Select' },
+              ]}
+            />
           </div>
         </div>
 
@@ -108,21 +76,12 @@ export const SketchSettingsTab: React.FC = () => {
               Vector stroke line thickness for pen and markup tools.
             </span>
           </div>
-          <div className="flex items-center gap-1 bg-[#161616] p-0.5 rounded-lg border border-[#2a2a2a]">
-            {WIDTH_OPTIONS.map((w) => (
-              <button
-                key={w.value}
-                type="button"
-                onClick={() => setWidth(w.value)}
-                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer ${
-                  activeWidth === w.value
-                    ? 'bg-[#2a2a2a] text-white font-medium'
-                    : 'text-[#888] hover:text-[#dcddde]'
-                }`}
-              >
-                {w.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2">
+            <CustomSelect<number>
+              value={activeWidth}
+              onChange={setWidth}
+              options={WIDTH_OPTIONS}
+            />
           </div>
         </div>
 
@@ -163,31 +122,15 @@ export const SketchSettingsTab: React.FC = () => {
               Choose whether drawings scroll naturally with markdown text or pin to screen glass.
             </span>
           </div>
-          <div className="flex items-center gap-1 bg-[#161616] p-0.5 rounded-lg border border-[#2a2a2a]">
-            <button
-              type="button"
-              onClick={() => setAnchoring('content')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md cursor-pointer ${
-                activeAnchoring === 'content'
-                  ? 'bg-[#2a2a2a] text-white font-medium'
-                  : 'text-[#888] hover:text-[#dcddde]'
-              }`}
-            >
-              <TextIcon size={13} />
-              <span>Note Text Flow</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setAnchoring('viewport')}
-              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md cursor-pointer ${
-                activeAnchoring === 'viewport'
-                  ? 'bg-[#2a2a2a] text-white font-medium'
-                  : 'text-[#888] hover:text-[#dcddde]'
-              }`}
-            >
-              <FullscreenIcon size={13} />
-              <span>Screen Viewport</span>
-            </button>
+          <div className="flex items-center gap-2">
+            <CustomSelect<SketchAnchoringMode>
+              value={activeAnchoring}
+              onChange={setAnchoring}
+              options={[
+                { value: 'content', label: 'Note Text Flow' },
+                { value: 'viewport', label: 'Screen Viewport' },
+              ]}
+            />
           </div>
         </div>
 
