@@ -3,46 +3,30 @@
 Flint is distributed as a lightweight, cross-platform native desktop application built with Rust and Tauri. You can install pre-compiled binaries or build directly from source.
 
 
-## 1. Quick Install via One-Liner
+## 1. Availability & Version 1.0.0 Roadmap
 
 ---
 
-You can install Flint instantly from your terminal with a single command:
+Official pre-compiled desktop binaries and one-click installers will be available soon once **version 1.0.0** is officially released and reaches stable status.
 
-### Windows (PowerShell)
+Until the stable 1.0.0 release is available, you can try Flint directly in your browser or compile and run the native desktop application locally from source:
 
-```powershell
-irm https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.ps1 | iex
-```
+- **Web Preview**: Experience Flint directly in your browser powered by WebAssembly SQLite: [Launch Web App →](https://yvliet.github.io/flint/)
+- **Build from Source**: Clone the repository and compile or run the desktop app locally (see [Building From Source](#3-building-from-source)).
 
-### macOS & Linux (Bash)
+### Upcoming Platform Support for v1.0.0
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.sh | bash
-```
+When version 1.0.0 launches, standalone installers and packages will be released for all major platforms:
 
----
-
-## 2. Desktop Binaries & Direct Download
+- **Windows**: `.msi` Windows Installer and `.exe` standalone packages (x64, ARM64)
+- **macOS**: `.dmg` package (Universal binary for Apple Silicon and Intel)
+- **Linux**: `.AppImage` portable package and `.deb` Debian/Ubuntu package (x86_64, ARM64)
 
 ---
 
-Pre-compiled standalone binaries and installers are available directly on the [Flint Releases page](https://github.com/yvliet/flint/releases/latest).
-
-### Direct Downloads
-
-| Operating System | Package Format | Architecture | Download Link |
-| :--- | :--- | :--- | :--- |
-| **Windows** | `.msi` (Installer) | x64 | [Flint-Setup-x64.msi](https://github.com/yvliet/flint/releases/latest) |
-| **Windows** | `.exe` (Standalone) | x64 | [Flint-x64.exe](https://github.com/yvliet/flint/releases/latest) |
-| **macOS** | `.dmg` (Universal) | Apple Silicon & Intel | [Flint.dmg](https://github.com/yvliet/flint/releases/latest) |
-| **Linux** | `.AppImage` (Portable) | x86_64 | [Flint.AppImage](https://github.com/yvliet/flint/releases/latest) |
-| **Linux** | `.deb` (Debian/Ubuntu) | x86_64 | [flint_amd64.deb](https://github.com/yvliet/flint/releases/latest) |
-| **Web Preview** | Browser (WASM SQLite) | Any modern browser | [yvliet.github.io/flint](https://yvliet.github.io/flint/) |
+## 2. System Requirements
 
 ---
-
-### System Requirements
 
 | Operating System | Supported Versions | Architecture |
 | :--- | :--- | :--- |
@@ -52,82 +36,7 @@ Pre-compiled standalone binaries and installers are available directly on the [F
 
 ---
 
-### macOS Manual Installation
-
-1. Download the latest `.dmg` release from the [Flint Releases page](https://github.com/yvliet/flint/releases/latest).
-2. Open the downloaded `.dmg` disk image.
-3. Drag **Flint.app** into your `/Applications` folder.
-4. Launch Flint from Spotlight (`Cmd + Space`) or Launchpad.
-
-> [!NOTE]
-> On initial launch, macOS Gatekeeper may prompt for confirmation if the binary was downloaded directly via browser. You can permit launch via **System Settings > Privacy & Security > Open Anyway**.
-
----
-
-### Windows Manual Installation
-
-1. Download the Windows installer (`Flint-Setup-x64.msi` or `.exe`) from the [Releases page](https://github.com/yvliet/flint/releases/latest).
-2. Run the installer wizard to install Flint into your user profile (`%LOCALAPPDATA%\Programs\Flint`).
-3. Launch Flint via the Start Menu or desktop shortcut.
-
-> [!TIP]
-> Flint requires **Microsoft Edge WebView2 Runtime**, which is pre-installed on all Windows 11 and modern Windows 10 installations. If missing, the installer will automatically download the evergreen runtime bootstrapper from Microsoft.
-
----
-
-### Linux Manual Installation
-
-Flint provides both portable AppImage packages and native Debian packages:
-
-#### AppImage (Universal)
-```bash
-# Make the AppImage executable
-chmod +x Flint.AppImage
-
-# Launch Flint
-./Flint.AppImage
-```
-
-#### Debian / Ubuntu (`.deb`)
-```bash
-sudo apt update
-sudo apt install -y libwebkit2gtk-4.1-0 libssl3 libappindicator3-1
-sudo dpkg -i flint_*_amd64.deb
-```
-
-
-## 3. Automatic Client Updates & GitHub Releases
-
----
-
-Flint includes native update verification that fetches published packages and release notes directly from the official [Flint GitHub Releases](https://github.com/yvliet/flint/releases) stream.
-
-### Update Mechanism & Settings
-
-You can customize client update behavior in `Settings` (`Ctrl+,`) under the **General** tab:
-
-- **Check for updates**: Performs an immediate lookup against GitHub Releases. If a newer release is discovered, the Update dialog appears with changelogs and download buttons.
-- **Automatic updates**: Enabled by default. Flint performs a background check 3 seconds after boot with a 4-hour cooldown window between checks, notifying you via toast notification when an update is available.
-
-### Installer Delivery & Package Selection
-
-When an update is detected:
-1. The update dialog displays the new version tag, release title, and full changelog notes.
-2. Flint identifies the matching Windows installer asset (`.exe` setup or `.msi` package) and lets you launch or download the installer directly.
-3. You can click **View on GitHub** to inspect the source commit history or download alternative platform bundles.
-
-
-## 4. Opening or Creating Your First Hearth
-
----
-
-When you first launch Flint, the workspace selector greets you:
-
-1. **Create New Hearth**: Select an empty directory on your machine. Flint will initialize the `.flint/` metadata folder and create a starter note.
-2. **Open Existing Folder**: Choose any existing directory containing Markdown notes (such as an existing Obsidian vault, Foam directory, or GitHub documentation repo). Flint scans the directory, populates its SQLite index, and renders your note hierarchy without altering your existing files.
-
-
-## 5. Building From Source
+## 3. Building From Source
 
 ---
 
@@ -189,7 +98,7 @@ src-tauri/target/release/bundle/
 ```
 
 
-## 6. Verification & Type Checking
+## 4. Verification & Type Checking
 
 ---
 
@@ -204,12 +113,12 @@ cd src-tauri && cargo check
 ```
 
 
-## 7. Next Steps
+## 5. Next Steps
 
 ---
 
 Once your environment is set up:
 - Read [[Introduction to Flint]] to understand the Hearth model and data sovereignty.
 - Check [[Dual-Storage Architecture]] to explore disk sync and SQLite caching.
-- Build your first custom plugin with [[Plugin Quick Start]].
+- Build your first custom extension with [[Extension Quick Start]].
 - Learn how to customize colors with [[Build Your First Theme]] and [[CSS Variables & Design Tokens]].

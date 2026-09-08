@@ -12,6 +12,8 @@
     \  \:\       \__\/         \__\/      \  \:\           \__\/
      \__\/                                 \__\/                " width="502"/>
 
+# Flint
+
 ### A fast, local-first note-taking app and personal knowledge engine that respects your plain text.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
@@ -23,81 +25,37 @@
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%203.4-06b6d4.svg?logo=tailwindcss&logoColor=white)](tailwind.config.js)
 
 [Documentation](https://yvliet.github.io/flint/) •
-[Downloads](#quick-install--downloads) •
-[Why Flint?](#why-flint) •
-[Features](#key-capabilities) •
-[Developer Quickstart](#developer-quickstart)
+[Downloads](#1-downloads--availability) •
+[Why Flint?](#2-why-flint) •
+[Features](#3-key-capabilities) •
+[Developer Quickstart](#4-developer-quickstart)
 
 </div>
 
-## Quick Install & Downloads
+## 1. Downloads & Availability
 
-Install Flint directly from the terminal or download the standalone desktop installer for your platform:
+---
 
-### Terminal One-Liners
+Official pre-compiled desktop binaries and one-click installers will be available soon once **version 1.0.0** is officially released and reaches stable status.
 
-#### Windows (PowerShell)
-```powershell
-irm https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.ps1 | iex
-```
+Until the stable 1.0.0 release is available, you can try Flint directly in your browser or compile and run the native desktop application locally from source:
 
-#### macOS & Linux (Bash)
-```bash
-curl -fsSL https://raw.githubusercontent.com/yvliet/flint/main/scripts/install.sh | bash
-```
+- **Web Preview**: Experience Flint directly in your browser powered by WebAssembly SQLite: [Launch Web App →](https://yvliet.github.io/flint/)
+- **Build from Source**: Clone the repository and run the desktop app locally with `npm run app` (see [Developer Quickstart](#4-developer-quickstart)).
 
-### Direct Downloads
+### Upcoming Platform Support for v1.0.0
 
-<table width="100%">
-  <thead>
-    <tr>
-      <th align="left">Platform</th>
-      <th align="left">Format</th>
-      <th align="left">Architecture</th>
-      <th align="left">Download</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><b>Windows</b></td>
-      <td><code>.msi</code> Installer</td>
-      <td>x64</td>
-      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint-Setup-x64.msi</a></td>
-    </tr>
-    <tr>
-      <td><b>Windows</b></td>
-      <td><code>.exe</code> Standalone</td>
-      <td>x64</td>
-      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint-x64.exe</a></td>
-    </tr>
-    <tr>
-      <td><b>macOS</b></td>
-      <td><code>.dmg</code> Package</td>
-      <td>Apple Silicon & Intel</td>
-      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint.dmg</a></td>
-    </tr>
-    <tr>
-      <td><b>Linux</b></td>
-      <td><code>.AppImage</code> Portable</td>
-      <td>x86_64</td>
-      <td><a href="https://github.com/yvliet/flint/releases/latest">Flint.AppImage</a></td>
-    </tr>
-    <tr>
-      <td><b>Linux</b></td>
-      <td><code>.deb</code> Package</td>
-      <td>x86_64</td>
-      <td><a href="https://github.com/yvliet/flint/releases/latest">flint_amd64.deb</a></td>
-    </tr>
-    <tr>
-      <td><b>Web Preview</b></td>
-      <td>In-Browser (WASM)</td>
-      <td>Modern Browsers</td>
-      <td><a href="https://yvliet.github.io/flint/">Launch Web App →</a></td>
-    </tr>
-  </tbody>
-</table>
+When version 1.0.0 launches, pre-built standalone packages and installers will be released for all major platforms:
 
-## Why Flint?
+- **Windows**: `.msi` Windows Installer and `.exe` standalone packages (x64, ARM64)
+- **macOS**: `.dmg` package (Universal binary for Apple Silicon and Intel)
+- **Linux**: `.AppImage` portable package and `.deb` Debian/Ubuntu package (x86_64, ARM64)
+
+---
+
+## 2. Why Flint?
+
+---
 
 Flint gives you the durability of plain Markdown files on your own computer, combined with the speed of a native Rust backend (Tauri v2), an embedded SQLite database (`rusqlite` with WAL and FTS5), and a built-in Model Context Protocol (MCP) server for local AI coding assistants.
 
@@ -109,16 +67,24 @@ Flint gives you the durability of plain Markdown files on your own computer, com
 - **Crash-Resilient Atomic Saves**: Saves write to temporary files first before executing atomic OS rename operations (`fs::rename`). If your computer loses power mid-save, your notes are never left half-written.
 - **100% Free & Open Source (GPLv3)**: Transparent codebase, zero telemetry, zero paywalled tiers, and no cloud dependencies.
 
-## Key Capabilities
+---
+
+## 3. Key Capabilities
+
+---
 
 - **Live Preview Editor**: TipTap 2.x and ProseMirror with $O(1)$ transaction decoration mapping, dirty-range AST scanning, MathLive formula chips, and KaTeX compilation caching for snappy typing even on 100,000-word notes.
 - **2D Knowledge Graph**: Interactive force-directed physics graph with customizable node repulsion, link distance controls, and real-time backlink and reference resolution.
 - **Infinite 2D Spatial Canvas**: Visual whiteboard supporting note cards, text blocks, group containers, and connector lines stored directly in `.flint/canvas`.
 - **Embedded FSRS-4.5 Spaced Repetition**: Modern flashcard scheduling (`ts-fsrs`) generated directly from Markdown notes using basic (`::`), bi-directional (`;;`), and cloze (`{...}`) syntax.
 - **Centralized Tasks & Daily Journal**: Aggregates all `- [ ]` and `- [x]` checklist items across your entire vault into an actionable kanban board, paired with one-click daily scratchpad notes.
-- **Modular Extension SDK**: Build custom plugins with dynamic React portal slots, declarative SQLite tables with automatic migrations, background Web Workers, and auto-generated MCP tools.
+- **Modular Extension SDK**: Build custom extensions with dynamic React portal slots, declarative SQLite tables with automatic migrations, background Web Workers, and auto-generated MCP tools.
 
-## Developer Quickstart
+---
+
+## 4. Developer Quickstart
+
+---
 
 ### Prerequisites
 - **Node.js**: `v18.0.0` or higher
@@ -152,7 +118,11 @@ npm run build
 npm run tauri:build
 ```
 
-## Documentation
+---
+
+## 5. Documentation
+
+---
 
 Comprehensive architecture specifications, user manuals, and developer guides are available at **[yvliet.github.io/flint](https://yvliet.github.io/flint/)**:
 
@@ -163,6 +133,10 @@ Comprehensive architecture specifications, user manuals, and developer guides ar
 - **[Keyboard Shortcuts](https://yvliet.github.io/flint/)** (`docs/KEYBOARD_SHORTCUTS.md`): Complete reference table of all hotkeys and commands.
 - **[Contributing Guidelines](https://yvliet.github.io/flint/)** (`docs/CONTRIBUTING.md`): Codebase standards, core isolation rules, and pull request verification.
 
-## License
+---
+
+## 6. License
+
+---
 
 Flint is free and open-source software licensed under the **[GNU General Public License v3.0 (GPLv3)](LICENSE)**.
