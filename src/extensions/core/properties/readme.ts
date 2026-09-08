@@ -6,13 +6,13 @@ Manage structured YAML frontmatter and document metadata properties directly ins
 
 ## Overview
 
-The **Note Properties** plugin delivers Obsidian-compatible frontmatter metadata management. It parses standard YAML blocks (\`--- ... ---\`) from note content and presents them as interactive, reactive property widgets both in the note editor header and in the right sidebar.
+The **Note Properties** extension delivers Obsidian-compatible frontmatter metadata management. It parses standard YAML blocks (\`--- ... ---\`) from note content and presents them as interactive, reactive property widgets both in the note editor header and in the right sidebar.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin demonstrates how to register document header items, sidebar panels, setting tabs, and command palette actions.
+This extension demonstrates how to register document header items, sidebar panels, setting tabs, and command palette actions.
 
 ### 1. Document Header Registration
 Flint's \`app.editor.registerDocumentHeader\` API allows extensions to inject custom UI at the top of note documents:

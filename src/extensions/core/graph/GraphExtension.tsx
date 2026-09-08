@@ -116,6 +116,7 @@ export class GraphExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {
@@ -176,6 +177,7 @@ export class GraphExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {
@@ -238,6 +240,7 @@ export class GraphExtension extends Extension {
             description: 'Degrees of separation to traverse: 1 for immediate neighbors, 2 for second-degree connections (default: 1)',
           },
         },
+        required: [],
       },
       handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {
@@ -365,6 +368,7 @@ export class GraphExtension extends Extension {
             description: 'Maximum number of related notes to return (default: 5)',
           },
         },
+        required: [],
       },
       handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {
@@ -708,6 +712,7 @@ export class GraphExtension extends Extension {
             description: 'Maximum number of hub notes to return (default: 10, max: 50)',
           },
         },
+        required: [],
       },
       handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {

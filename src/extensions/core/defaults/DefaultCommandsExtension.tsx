@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import {
   FileAddIcon,
@@ -285,7 +285,93 @@ export class DefaultCommandsExtension extends Extension {
       },
     });
 
-    // 16. Register Extension Settings Tab
+    // 16. Register MCP Tools
+    this.registerTool({
+      name: 'create_note',
+      description: 'Create a new markdown note in the active Hearth.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            description: 'The title or filename of the new note (defaults to "Untitled")',
+          },
+        },
+        required: ['title'],
+      },
+      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+        try {
+          const title = (args.title as string) || 'Untitled';
+          app.workspace.setMainViewMode('document');
+          const doc = await app.vault.createNewNote(title);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  id: doc?.id,
+                  title: doc?.title || title,
+                }),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    this.registerTool({
+      name: 'toggle_sidebar',
+      description: 'Toggle the left or right sidebar visibility in the workspace.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          side: {
+            type: 'string',
+            enum: ['left', 'right'],
+            description: 'Which sidebar to toggle (left or right)',
+          },
+        },
+        required: ['side'],
+      },
+      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+        const side = args.side === 'right' ? 'right' : 'left';
+        if (side === 'right') {
+          app.workspace.toggleRightSidebar();
+        } else {
+          app.workspace.toggleLeftSidebar();
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, side }) }],
+        };
+      },
+    });
+
+    this.registerTool({
+      name: 'toggle_split_view',
+      description: 'Toggle the split editor pane in the active workspace.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+      handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+        app.workspace.toggleSplitView();
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, splitViewToggled: true }) }],
+        };
+      },
+    });
+
+    // 17. Register Extension Settings Tab
     this.registerSettingTab({
       id: 'commands-settings',
       name: 'Default commands',

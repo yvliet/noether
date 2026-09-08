@@ -195,7 +195,7 @@ export class SketchExtension extends Extension {
     });
 
     this.registerTool({
-      name: 'clear_layer',
+      name: 'delete_drawings',
       description: 'Clears all freehand vector drawings from a note',
       category: 'sketch',
       isDestructive: true,

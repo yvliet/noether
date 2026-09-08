@@ -18,11 +18,10 @@ import {
   Folder01Icon,
   StickyNote02Icon,
   Brain02Icon,
+  Tag01Icon,
 } from '@/components/common/Icons';
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
-import { renderPropertyIcon } from '@/extensions/core/properties/propertyIcons';
-import { usePropertiesSettings } from '@/extensions/core/properties/propertiesSettings';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { platform } from '@/lib/platform/platformAdapter';
 import type { ExtensionManifest } from '@/core/extensions/types';
@@ -53,11 +52,8 @@ export const MarketplaceView: React.FC = () => {
     showToast,
   } = useWorkspaceStore();
 
-  const { propertyIcons, showInDocument: showPropsInDoc, startFolded: startPropsFolded } = usePropertiesSettings();
   const {
     readableLineLength,
-    propertiesInDoc,
-    foldHeading,
     fontSize,
   } = useSettingsStore();
 
@@ -69,7 +65,6 @@ export const MarketplaceView: React.FC = () => {
   const [sortBy, setSortBy] = useState<'popular' | 'rating' | 'name'>('popular');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isFindOpen, setIsFindOpen] = useState(false);
-  const [isPropertiesFolded, setIsPropertiesFolded] = useState(startPropsFolded);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [installingIds, setInstallingIds] = useState<Set<string>>(new Set());
@@ -236,27 +231,9 @@ export const MarketplaceView: React.FC = () => {
             readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
           }`}
         >
-          {/* Document Header: Note Title + In-Document Properties */}
-          <div className="relative group/title mb-4">
-            {/* Note Title Header */}
-            <div className={`${showPropsInDoc && propertiesInDoc !== 'Hidden' && !isPropertiesFolded ? 'mb-3' : 'mb-4'} relative`}>
-              {/* Fold button on Document Title Header */}
-              {foldHeading && showPropsInDoc && propertiesInDoc !== 'Hidden' && (
-                <button
-                  type="button"
-                  onClick={() => setIsPropertiesFolded((prev) => !prev)}
-                  title={isPropertiesFolded ? 'Unfold properties' : 'Fold properties'}
-                  className={`absolute -left-[36px] top-[calc(50%-4px)] -translate-y-1/2 w-[36px] h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] cursor-pointer z-10 ${
-                    isPropertiesFolded ? 'opacity-100 text-[#aaa]' : 'opacity-0 group-hover/title:opacity-100'
-                  }`}
-                >
-                  <ChevronDownIcon
-                    size={18}
-                    className={isPropertiesFolded ? '-rotate-90' : 'rotate-0'}
-                  />
-                </button>
-              )}
-
+          {/* Page Header */}
+          <div className="relative mb-4">
+            <div className="mb-3 relative">
               <h1
                 style={{ fontSize: `calc(${fontSize || 12}px * 2.3)` }}
                 className="w-full font-bold text-[#e5e7eb] pb-2 font-text tracking-tight leading-tight select-text"
@@ -265,36 +242,32 @@ export const MarketplaceView: React.FC = () => {
               </h1>
             </div>
 
-            {/* Frontmatter Properties */}
-            {showPropsInDoc && propertiesInDoc !== 'Hidden' && (
-              <div className={isPropertiesFolded ? 'hidden' : 'block'}>
-                <div className="flex flex-col gap-1 text-xs mb-3">
-                  {/* Category */}
-                  <div className="flex items-center gap-2 group/prop hover:bg-[#202020]/40 rounded px-1.5 py-0.5 -mx-1.5">
-                    <div className="w-24 text-[11px] text-[#777] flex items-center gap-1.5 shrink-0">
-                      {renderPropertyIcon('category', propertyIcons)}
-                      <span>Category</span>
-                    </div>
-                    <div className="text-xs text-[#b0b0b0]">
-                      {selectedCategory}
-                    </div>
-                  </div>
-
-                  {/* Filter Count */}
-                  <div className="flex items-center gap-2 group/prop hover:bg-[#202020]/40 rounded px-1.5 py-0.5 -mx-1.5">
-                    <div className="w-24 text-[11px] text-[#777] flex items-center gap-1.5 shrink-0">
-                      {renderPropertyIcon('count', propertyIcons)}
-                      <span>Extensions</span>
-                    </div>
-                    <div className="text-xs text-[#b0b0b0]">
-                      {filteredExtensions.length} of {extensions.length}
-                    </div>
-                  </div>
+            {/* Header Metadata */}
+            <div className="flex flex-col gap-1 text-xs mb-3">
+              {/* Category */}
+              <div className="flex items-center gap-2 px-1.5 py-0.5 -mx-1.5">
+                <div className="w-24 text-[11px] text-[#777] flex items-center gap-1.5 shrink-0">
+                  <Tag01Icon size={12} className="text-[#888]" />
+                  <span>Category</span>
+                </div>
+                <div className="text-xs text-[#b0b0b0]">
+                  {selectedCategory}
                 </div>
               </div>
-            )}
 
-            {/* Subtle Divider under Properties Header */}
+              {/* Filter Count */}
+              <div className="flex items-center gap-2 px-1.5 py-0.5 -mx-1.5">
+                <div className="w-24 text-[11px] text-[#777] flex items-center gap-1.5 shrink-0">
+                  <Store01Icon size={12} className="text-[#888]" />
+                  <span>Extensions</span>
+                </div>
+                <div className="text-xs text-[#b0b0b0]">
+                  {filteredExtensions.length} of {extensions.length}
+                </div>
+              </div>
+            </div>
+
+            {/* Subtle Divider under Header */}
             <div className="border-b border-[#282828] mb-4" />
           </div>
 

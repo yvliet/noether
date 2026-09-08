@@ -6,13 +6,13 @@ An infinite 2D spatial canvas to map out notes, ideas, media cards, connections,
 
 ## Overview
 
-The **Infinite Canvas** plugin provides an infinite 2D workspace to organize knowledge spatially. It renders Markdown note cards, connection arrows, sticky notes, and media elements with 60fps pan and zoom performance.
+The **Infinite Canvas** extension provides an infinite 2D workspace to organize knowledge spatially. It renders Markdown note cards, connection arrows, sticky notes, and media elements with 60fps pan and zoom performance.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin showcases how to build full-page custom views, register action rail entries, and manage custom tab types in Flint.
+This extension showcases how to build full-page custom views, register action rail entries, and manage custom tab types in Flint.
 
 ### 1. Registering Custom Main Views
 Flint allows custom view types to be registered in the central view registry:

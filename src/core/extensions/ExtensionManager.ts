@@ -513,8 +513,8 @@ export class ExtensionManager {
     const CORE_VIEW_TO_EXTENSION: Record<string, string> = {
       graph: 'graph-view',
       'graph-view': 'graph-view',
-      marketplace: 'plugin-marketplace',
-      'plugin-marketplace': 'plugin-marketplace',
+      marketplace: 'marketplace',
+      'plugin-marketplace': 'marketplace',
       canvas: 'canvas',
       'canvas-view': 'canvas',
       tasks: 'tasks',

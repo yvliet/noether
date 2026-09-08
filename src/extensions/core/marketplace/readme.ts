@@ -1,18 +1,18 @@
-export const marketplaceReadme = `# Plugin Marketplace
+export const marketplaceReadme = `# Community Extensions Marketplace
 
-Discover, browse, install, and update Flint community plugins and themes.
+Discover, browse, install, and update Flint community extensions and themes.
 
 ---
 
 ## Overview
 
-The **Plugin Marketplace** provides an in-app catalog to discover community plugins and themes. Users can search by keyword, view ratings, inspect documentation READMEs, and install extensions with one click.
+The **Community Extensions Marketplace** provides an in-app catalog to discover community extensions and themes. Users can search by keyword, view ratings, inspect documentation READMEs, and install extensions with one click.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin demonstrates how to build an in-app extension ecosystem using Flint's Plugin Manager and custom view engine.
+This extension demonstrates how to build an in-app extension ecosystem using Flint's Extension Manager and custom view engine.
 
 ### 1. View & Ribbon Registration
 \`\`\`tsx
@@ -25,7 +25,7 @@ this.app.views.registerView({
 
 this.app.ribbon.registerRibbonAction({
   id: 'open-marketplace-view',
-  title: 'Plugin Marketplace',
+  title: 'Community Extensions',
   icon: <ShoppingBag01Icon size={16} />,
   onClick: () => {
     this.app.workspace.openCustomTab({

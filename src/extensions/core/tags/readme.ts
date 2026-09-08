@@ -6,13 +6,13 @@ Hierarchical nested tags tree view and vault-wide hashtag indexing.
 
 ## Overview
 
-The **Tags Explorer** plugin scans all notes across the vault for hashtag tokens (\`#tag\`, \`#project/phase-1\`, \`#work/client/spec\`) and frontmatter tags. It organizes them into a collapsible, hierarchical navigation tree in the left sidebar.
+The **Tags Explorer** extension scans all notes across the vault for hashtag tokens (\`#tag\`, \`#project/phase-1\`, \`#work/client/spec\`) and frontmatter tags. It organizes them into a collapsible, hierarchical navigation tree in the left sidebar.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin demonstrates how to register Left Sidebar tabs and interact with vault search filters.
+This extension demonstrates how to register Left Sidebar tabs and interact with vault search filters.
 
 ### 1. Left Sidebar Tab Registration
 Registers a primary navigation panel in the left sidebar:

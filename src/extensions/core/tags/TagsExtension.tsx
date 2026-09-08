@@ -73,6 +73,7 @@ export class TagsExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (): Promise<McpToolResult> => {
         try {
@@ -105,6 +106,7 @@ export class TagsExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (): Promise<McpToolResult> => {
         try {

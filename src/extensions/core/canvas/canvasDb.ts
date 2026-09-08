@@ -111,3 +111,16 @@ export async function deleteCanvasEdge(edgeId: string): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(`DELETE FROM canvas_edges WHERE id = ?`, [edgeId]);
 }
+
+export async function purgeCanvasNodesForDocument(documentId: string): Promise<void> {
+  await initCanvasTables();
+  const nodes = await dbAdapter.query<{ id: string }>(
+    `SELECT id FROM canvas_nodes WHERE document_id = ?`,
+    [documentId]
+  );
+  if (nodes.length > 0) {
+    for (const node of nodes) {
+      await deleteCanvasNode(node.id);
+    }
+  }
+}

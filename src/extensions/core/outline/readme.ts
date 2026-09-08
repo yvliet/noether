@@ -6,13 +6,13 @@ Interactive table of contents and document heading tree navigation.
 
 ## Overview
 
-The **Outline** plugin generates a real-time table of contents for the active note. It extracts Markdown headings (\`# H1\` through \`###### H6\`), renders an indentation tree, and provides smooth scroll navigation to any heading anchor.
+The **Outline** extension generates a real-time table of contents for the active note. It extracts Markdown headings (\`# H1\` through \`###### H6\`), renders an indentation tree, and provides smooth scroll navigation to any heading anchor.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin showcases real-time editor AST synchronization and sidebar tab registration.
+This extension showcases real-time editor AST synchronization and sidebar tab registration.
 
 ### 1. Registering the Right Sidebar Outline Panel
 \`\`\`tsx

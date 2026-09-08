@@ -25,13 +25,13 @@ const LazyMarketplaceSettingsTab = React.lazy(() =>
 );
 
 export const MARKETPLACE_MANIFEST: ExtensionManifest = {
-  id: 'plugin-marketplace',
+  id: 'marketplace',
   name: 'Community Extensions Marketplace',
   version: '1.0.0',
   description: 'Browse, discover, and install community extensions into your Hearth.',
   author: 'Yuliet Li',
   isCore: true,
-  tags: ['marketplace', 'extensions', 'community', 'plugins', 'themes'],
+  tags: ['marketplace', 'extensions', 'community', 'themes'],
   readme: marketplaceReadme,
 };
 
@@ -114,6 +114,7 @@ export class MarketplaceExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (): Promise<McpToolResult> => {
         try {
@@ -153,7 +154,7 @@ export class MarketplaceExtension extends Extension {
     // ── Tool: search ──
     this.registerTool({
       name: 'search',
-      description: 'Search the community extension marketplace catalogue for available plugins and extensions.',
+      description: 'Search the community extension marketplace catalogue for available extensions and themes.',
       parameters: {
         type: 'object',
         properties: {

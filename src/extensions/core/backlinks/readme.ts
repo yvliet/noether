@@ -6,13 +6,13 @@ Discover incoming bidirectional backlinks and unlinked document mentions across 
 
 ## Overview
 
-The **Backlinks & Unlinked Mentions** plugin analyzes internal WikiLinks (\`[[Note Title]]\`) throughout the vault. It discovers which notes link to the active note and extracts unlinked mentions where note titles appear in plain text.
+The **Backlinks & Unlinked Mentions** extension analyzes internal WikiLinks (\`[[Note Title]]\`) throughout the vault. It discovers which notes link to the active note and extracts unlinked mentions where note titles appear in plain text.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin demonstrates document footers, status bar metrics, and sidebar tabs.
+This extension demonstrates document footers, status bar metrics, and sidebar tabs.
 
 ### 1. Document Footer Injection
 Extensions can render widgets at the bottom of notes using \`app.editor.registerDocumentFooter\`:

@@ -459,6 +459,7 @@ export class IconifyExtension extends Extension {
             enum: ['all', 'folder', 'file'],
           },
         },
+        required: [],
       },
       handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
         try {
@@ -577,9 +578,9 @@ export class IconifyExtension extends Extension {
       },
     });
 
-    // ── Tool: set ──
+    // ── Tool: update_icon ──
     this.registerTool({
-      name: 'set',
+      name: 'update_icon',
       description: 'Assign a custom icon to a folder or file by its document ID.',
       parameters: {
         type: 'object',
@@ -644,9 +645,9 @@ export class IconifyExtension extends Extension {
       },
     });
 
-    // ── Tool: remove ──
+    // ── Tool: delete_icon ──
     this.registerTool({
-      name: 'remove',
+      name: 'delete_icon',
       description: 'Remove custom icon from a folder or file, reverting it to the default icon.',
       isDestructive: true,
       parameters: {

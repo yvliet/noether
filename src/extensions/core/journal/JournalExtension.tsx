@@ -271,6 +271,7 @@ export class JournalExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (): Promise<McpToolResult> => {
         try {

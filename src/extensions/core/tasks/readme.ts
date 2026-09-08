@@ -6,13 +6,13 @@ Vault-wide interactive task extraction, completion tracking, and checklist manag
 
 ## Overview
 
-The **Tasks** plugin aggregates checklist items (\`- [ ]\`, \`- [x]\`) from all notes across your vault into a centralized task dashboard and right sidebar panel.
+The **Tasks** extension aggregates checklist items (\`- [ ]\`, \`- [x]\`) from all notes across your vault into a centralized task dashboard and right sidebar panel.
 
 ---
 
 ## Architecture & Flint APIs
 
-This plugin showcases custom main view registration, bidirectional text updates, and sidebar integration.
+This extension showcases custom main view registration, bidirectional text updates, and sidebar integration.
 
 ### 1. Registering the Main Tasks View
 Registers a dedicated full-window custom workspace tab:

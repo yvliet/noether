@@ -99,6 +99,7 @@ export class BookmarksExtension extends Extension {
       parameters: {
         type: 'object',
         properties: {},
+        required: [],
       },
       handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {

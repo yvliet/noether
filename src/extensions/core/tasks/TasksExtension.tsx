@@ -127,6 +127,7 @@ export class TasksExtension extends Extension {
             description: 'Search term to filter tasks by text content or document title',
           },
         },
+        required: [],
       },
       handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
         try {

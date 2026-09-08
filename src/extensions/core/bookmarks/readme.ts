@@ -1,4 +1,4 @@
-﻿export const bookmarksReadme = `# Bookmarks Plugin
+export const bookmarksReadme = `# Bookmarks Extension
 
 Organize and quickly access your most important files, searches, and bookmarks in Flint.
 

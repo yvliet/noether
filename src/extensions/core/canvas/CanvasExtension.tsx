@@ -24,6 +24,7 @@ import {
   saveCanvasNode,
   deleteCanvasNode,
   saveCanvasEdge,
+  purgeCanvasNodesForDocument,
 } from './canvasDb';
 
 const LazyCanvasView = React.lazy(() =>
@@ -121,6 +122,17 @@ export class CanvasExtension extends Extension {
       },
     });
 
+    // Clean up canvas nodes when documents are deleted
+    this.onEvent('document:deleted', async ({ id }) => {
+      if (id) {
+        try {
+          await purgeCanvasNodesForDocument(id);
+        } catch (err) {
+          console.error('[CanvasExtension] Error purging nodes for deleted document:', err);
+        }
+      }
+    });
+
     // ── MCP Tools Registration ──
 
     // 6. Tool: canvas_create_board
@@ -136,6 +148,7 @@ export class CanvasExtension extends Extension {
             description: 'Optional display title for the new canvas board (defaults to "Untitled Canvas")',
           },
         },
+        required: [],
       },
       handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
         try {
@@ -212,9 +225,9 @@ export class CanvasExtension extends Extension {
       },
     });
 
-    // 8. Tool: canvas_add_node
+    // 8. Tool: canvas_create_node
     this.registerTool({
-      name: 'add_node',
+      name: 'create_node',
       description: 'Add a new visual node (note card, text sticky, or web link) onto a canvas board.',
       category: 'canvas',
       parameters: {
@@ -299,9 +312,9 @@ export class CanvasExtension extends Extension {
       },
     });
 
-    // 9. Tool: canvas_add_edge
+    // 9. Tool: canvas_create_edge
     this.registerTool({
-      name: 'add_edge',
+      name: 'create_edge',
       description: 'Connect two nodes on a canvas board with a directional connection line.',
       category: 'canvas',
       parameters: {
