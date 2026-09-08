@@ -7,6 +7,7 @@ import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextM
 import { useTabReorder } from '@/hooks/useTabReorder';
 import { TabItem } from '@/types';
 import { getDocumentPath } from '@/lib/db/documents';
+import { useContentScrolled } from '@/hooks/useContentScrolled';
 import {
   Cancel01Icon,
   PlusSignIcon,
@@ -63,6 +64,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
   });
 
   const isFocused = focusedPaneId === targetPaneId;
+  const isContentScrolled = useContentScrolled(targetPaneId);
 
   const renderTabIcon = useCallback(
     (tab: TabItem, isActive: boolean, isDimmed = false) => {
@@ -387,7 +389,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
               } as React.CSSProperties}
               className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[34px] shrink border-0 ${
                 isTabActive
-                  ? 'rounded-t-[7px] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs'
+                  ? 'rounded-t-[7px] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs overflow-visible'
                   : 'bg-transparent font-normal hover:z-30'
               }`}
             >
@@ -443,7 +445,25 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 </>
               )}
 
-              <div className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-6">
+              {/*
+               * Scroll-triggered shadow on the active tab icon + title.
+               *
+               * INTENTIONAL ANIMATION EXCEPTION: This 150ms opacity transition is explicitly
+               * allowed despite the zero-animation rule. Without it, the shadow pops in/out
+               * abruptly when elements are dragged across or content scrolls behind the tab
+               * header, creating a choppy visual artifact. The short fade keeps it smooth
+               * without feeling sluggish or "animated" in the UI sense.
+               */}
+              <div
+                className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-6"
+                style={{
+                  filter: isTabActive && isContentScrolled
+                    ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))'
+                    : 'none',
+                  // Intentional transition exception: prevents choppy pop when elements move behind the tab
+                  transition: 'filter 150ms ease',
+                }}
+              >
                 {renderTabIcon(tab, isTabActive, isInactiveActive)}
                 <span
                   className={`truncate flex-1 min-w-0 text-[12px] ${
