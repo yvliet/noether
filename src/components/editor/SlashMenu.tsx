@@ -13,9 +13,14 @@ import {
   TableIcon,
   Link04Icon,
   ChevronRightIcon,
+  InformationCircleIcon,
+  BulbIcon,
+  AlertTriangleIcon,
+  AlertDiamondIcon,
 } from '@/components/common/Icons';
 import { SlashItem } from './extensions/slash-command';
 import { TableGridPicker, TableGridPickerHandle } from './TableGridPicker';
+import { CalloutPicker, CalloutPickerHandle } from './CalloutPicker';
 
 interface SlashMenuProps {
   items: SlashItem[];
@@ -33,6 +38,7 @@ export const SlashMenu = React.memo(
       activeSubmenuRef.current = activeSubmenu;
 
       const gridPickerRef = useRef<TableGridPickerHandle>(null);
+      const calloutPickerRef = useRef<CalloutPickerHandle>(null);
       const submenuRef = useRef<{ onKeyDown: (e: KeyboardEvent) => boolean } | null>(null);
       const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
@@ -55,6 +61,14 @@ export const SlashMenu = React.memo(
             if (activeSubmenuRef.current) {
               if (activeSubmenuRef.current === 'table') {
                 const handled = gridPickerRef.current?.onKeyDown(event);
+                if (handled) return true;
+                if (event.key === 'Escape' || event.key === 'ArrowLeft') {
+                  setActiveSubmenu(null);
+                  activeSubmenuRef.current = null;
+                  return true;
+                }
+              } else if (activeSubmenuRef.current === 'callout') {
+                const handled = calloutPickerRef.current?.onKeyDown(event);
                 if (handled) return true;
                 if (event.key === 'Escape' || event.key === 'ArrowLeft') {
                   setActiveSubmenu(null);
@@ -94,8 +108,9 @@ export const SlashMenu = React.memo(
 
             const currentItem = items[selectedIndexRef.current];
             const isTable = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
-            const hasSubmenu = Boolean(currentItem?.submenu) || Boolean(isTable);
-            const subId = currentItem?.submenu?.id || (isTable ? 'table' : null);
+            const isCallout = currentItem && (currentItem.icon === 'callout' || currentItem.title.toLowerCase() === 'callout');
+            const hasSubmenu = Boolean(currentItem?.submenu) || Boolean(isTable) || Boolean(isCallout);
+            const subId = currentItem?.submenu?.id || (isTable ? 'table' : (isCallout ? 'callout' : null));
 
             if (event.key === 'ArrowRight' && hasSubmenu && subId) {
               setActiveSubmenu(subId);
@@ -142,6 +157,7 @@ export const SlashMenu = React.memo(
 
       const currentItem = items[selectedIndex];
       const isTableItem = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
+      const isCalloutItem = currentItem && (currentItem.icon === 'callout' || currentItem.title.toLowerCase() === 'callout');
 
       return (
         <div className="relative flex items-start gap-2 pointer-events-none">
@@ -162,8 +178,9 @@ export const SlashMenu = React.memo(
             {items.map((item, index) => {
               const isSelected = index === selectedIndex;
               const isTable = item.icon === 'table' || item.title.toLowerCase() === 'table';
-              const hasSub = Boolean(item.submenu) || isTable;
-              const itemSubId = item.submenu?.id || (isTable ? 'table' : null);
+              const isCallout = item.icon === 'callout' || item.title.toLowerCase() === 'callout';
+              const hasSub = Boolean(item.submenu) || isTable || isCallout;
+              const itemSubId = item.submenu?.id || (isTable ? 'table' : (isCallout ? 'callout' : null));
 
               return (
                 <button
@@ -231,7 +248,7 @@ export const SlashMenu = React.memo(
             })}
           </div>
 
-          {/* Submenu Flyout (Table Grid, Icon Picker, or Extension Submenu) */}
+          {/* Submenu Flyout (Table Grid, Callout Picker, Icon Picker, or Extension Submenu) */}
           {activeSubmenu && currentItem && (
             <div data-flint-suggestion-popup="true" className="pointer-events-auto">
               {activeSubmenu === 'table' && isTableItem ? (
@@ -242,6 +259,21 @@ export const SlashMenu = React.memo(
                       setActiveSubmenu(null);
                       activeSubmenuRef.current = null;
                       command(currentItem, dimensions);
+                    }
+                  }}
+                  onClose={() => {
+                    setActiveSubmenu(null);
+                    activeSubmenuRef.current = null;
+                  }}
+                />
+              ) : activeSubmenu === 'callout' && isCalloutItem ? (
+                <CalloutPicker
+                  ref={calloutPickerRef}
+                  onSelect={(calloutDef) => {
+                    if (currentItem) {
+                      setActiveSubmenu(null);
+                      activeSubmenuRef.current = null;
+                      command(currentItem, calloutDef);
                     }
                   }}
                   onClose={() => {
@@ -298,6 +330,15 @@ function renderIcon(name: string | React.ReactNode) {
       return <CheckmarkSquare02Icon size={16} />;
     case 'quote':
       return <QuoteDownIcon size={16} />;
+    case 'callout':
+    case 'info':
+      return <InformationCircleIcon size={16} />;
+    case 'tip':
+      return <BulbIcon size={16} />;
+    case 'warning':
+      return <AlertTriangleIcon size={16} />;
+    case 'danger':
+      return <AlertDiamondIcon size={16} />;
     case 'code':
       return <CodeIcon size={16} />;
     case 'divider':

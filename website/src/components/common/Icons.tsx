@@ -46,6 +46,8 @@ import {
   BulbIcon as HugeBulbIcon,
   AlertDiamondIcon as HugeAlertDiamondIcon,
   QuoteUpIcon as HugeQuoteUpIcon,
+  CheckmarkSquare02Icon as HugeCheckmarkSquare02Icon,
+  Bug01Icon as HugeBug01Icon,
   Sun01Icon as HugeSun01Icon,
   Moon02Icon as HugeMoon02Icon,
 } from '@hugeicons/core-free-icons';
@@ -117,6 +119,8 @@ export const BulbIcon = createIcon(HugeBulbIcon);
 export const AlertDiamondIcon = createIcon(HugeAlertDiamondIcon);
 export const QuoteUpIcon = createIcon(HugeQuoteUpIcon);
 export const QuoteIcon = QuoteUpIcon;
+export const CheckmarkSquare02Icon = createIcon(HugeCheckmarkSquare02Icon);
+export const Bug01Icon = createIcon(HugeBug01Icon);
 export const Sun01Icon = createIcon(HugeSun01Icon);
 export const Moon02Icon = createIcon(HugeMoon02Icon);
 

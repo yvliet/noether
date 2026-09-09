@@ -15,6 +15,15 @@ import {
   AlertDiamondIcon,
   QuoteUpIcon,
   QuoteIcon,
+  File01Icon,
+  CheckmarkCircle02Icon,
+  CheckmarkSquare02Icon,
+  HelpCircleIcon,
+  CancelCircleIcon,
+  CodeIcon,
+  Bug01Icon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '../common/Icons';
 import { ComponentPreviewMap } from './ComponentPreview';
 
@@ -222,6 +231,74 @@ function renderInlineMarkdown(text: string): string {
 
   return processed;
 }
+
+interface DocsCalloutItemProps {
+  calloutType: string;
+  foldMarker: '+' | '-' | '';
+  inlineTitle: string;
+  rawBodyLinesCount: number;
+  paragraphs: string[];
+  style: {
+    border: string;
+    bg: string;
+    text: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+  };
+}
+
+const DocsCalloutItem: React.FC<DocsCalloutItemProps> = ({
+  calloutType,
+  foldMarker,
+  inlineTitle,
+  rawBodyLinesCount,
+  paragraphs,
+  style,
+}) => {
+  const isFoldable = foldMarker === '+' || foldMarker === '-';
+  const [isCollapsed, setIsCollapsed] = useState(foldMarker === '-');
+  const CalloutIcon = style.icon;
+  const displayTitle = inlineTitle || (calloutType.charAt(0).toUpperCase() + calloutType.slice(1).toLowerCase());
+
+  return (
+    <div
+      className={`my-3 p-3.5 border-l-[3px] ${style.border} ${style.bg} rounded-r-md text-[14px]`}
+    >
+      <div
+        className={`font-semibold ${style.text} flex items-center justify-between text-sm ${paragraphs.length > 0 && !isCollapsed ? 'mb-1.5' : ''} ${isFoldable ? 'cursor-pointer select-none' : ''}`}
+        onClick={isFoldable ? () => setIsCollapsed(!isCollapsed) : undefined}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <CalloutIcon size={14} className="shrink-0 relative -top-px" />
+          <span className="truncate">{displayTitle}</span>
+        </div>
+        {isFoldable && (
+          <button
+            type="button"
+            className="text-[var(--flint-text-muted,#888)] hover:text-white p-0.5 rounded transition-none"
+            aria-label={isCollapsed ? 'Expand callout' : 'Collapse callout'}
+          >
+            {isCollapsed ? <ChevronRightIcon size={14} /> : <ChevronDownIcon size={14} />}
+          </button>
+        )}
+      </div>
+      {!isCollapsed && paragraphs.length > 0 && (
+        <div className="text-[#dadada] leading-[1.7] space-y-2">
+          {paragraphs.map((p, pIdx) => {
+            if (p.startsWith('- ') || p.startsWith('* ')) {
+              return (
+                <div key={pIdx} className="flex items-start gap-2 pl-1">
+                  <span className="text-[#888888] select-none">•</span>
+                  <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(p.slice(2)) }} />
+                </div>
+              );
+            }
+            return <p key={pIdx} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(p) }} />;
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
   doc,
@@ -680,11 +757,12 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
         });
 
         const firstLine = strippedLines[0].trim();
-        const calloutMatch = firstLine.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|QUOTE)\](?:\s*(.*))?$/i);
+        const calloutMatch = firstLine.match(/^\[!([a-zA-Z0-9_\-]+)\]([+-])?(?:\s*(.*))?$/i);
 
         if (calloutMatch) {
           const calloutType = calloutMatch[1].toUpperCase();
-          const inlineTitle = calloutMatch[2]?.trim() || '';
+          const foldMarker = (calloutMatch[2] as '+' | '-' | undefined) || '';
+          const inlineTitle = calloutMatch[3]?.trim() || '';
 
           const calloutColors: Record<
             string,
@@ -696,72 +774,70 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
             }
           > = {
             NOTE: { border: 'border-blue-500/50', bg: 'bg-blue-500/10', text: 'text-blue-400', icon: InformationCircleIcon },
+            ABSTRACT: { border: 'border-cyan-500/50', bg: 'bg-cyan-500/10', text: 'text-cyan-400', icon: File01Icon },
+            SUMMARY: { border: 'border-cyan-500/50', bg: 'bg-cyan-500/10', text: 'text-cyan-400', icon: File01Icon },
+            TLDR: { border: 'border-cyan-500/50', bg: 'bg-cyan-500/10', text: 'text-cyan-400', icon: File01Icon },
+            INFO: { border: 'border-sky-500/50', bg: 'bg-sky-500/10', text: 'text-sky-400', icon: InformationCircleIcon },
+            TODO: { border: 'border-sky-500/50', bg: 'bg-sky-500/10', text: 'text-sky-400', icon: CheckmarkSquare02Icon },
             TIP: { border: 'border-emerald-500/50', bg: 'bg-emerald-500/10', text: 'text-emerald-400', icon: BulbIcon },
-            IMPORTANT: { border: 'border-purple-500/50', bg: 'bg-purple-500/10', text: 'text-purple-400', icon: Alert02Icon },
+            HINT: { border: 'border-emerald-500/50', bg: 'bg-emerald-500/10', text: 'text-emerald-400', icon: BulbIcon },
+            IMPORTANT: { border: 'border-emerald-500/50', bg: 'bg-emerald-500/10', text: 'text-emerald-400', icon: BulbIcon },
+            SUCCESS: { border: 'border-green-500/50', bg: 'bg-green-500/10', text: 'text-green-400', icon: CheckmarkCircle02Icon },
+            CHECK: { border: 'border-green-500/50', bg: 'bg-green-500/10', text: 'text-green-400', icon: CheckmarkCircle02Icon },
+            DONE: { border: 'border-green-500/50', bg: 'bg-green-500/10', text: 'text-green-400', icon: CheckmarkCircle02Icon },
+            QUESTION: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: HelpCircleIcon },
+            HELP: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: HelpCircleIcon },
+            FAQ: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: HelpCircleIcon },
             WARNING: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: AlertTriangleIcon },
-            CAUTION: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400', icon: AlertDiamondIcon },
+            CAUTION: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: AlertTriangleIcon },
+            ATTENTION: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: AlertTriangleIcon },
+            FAILURE: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400', icon: CancelCircleIcon },
+            FAIL: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400', icon: CancelCircleIcon },
+            MISSING: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400', icon: CancelCircleIcon },
+            DANGER: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400', icon: AlertDiamondIcon },
+            ERROR: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400', icon: AlertDiamondIcon },
+            BUG: { border: 'border-orange-500/50', bg: 'bg-orange-500/10', text: 'text-orange-400', icon: Bug01Icon },
+            EXAMPLE: { border: 'border-purple-500/50', bg: 'bg-purple-500/10', text: 'text-purple-400', icon: CodeIcon },
             QUOTE: { border: 'border-[#555555]', bg: 'bg-[#1e1e1e]/90', text: 'text-[#aaaaaa]', icon: QuoteUpIcon },
+            CITE: { border: 'border-[#555555]', bg: 'bg-[#1e1e1e]/90', text: 'text-[#aaaaaa]', icon: QuoteUpIcon },
           };
           const style = calloutColors[calloutType] || calloutColors.NOTE;
           const CalloutIcon = style.icon;
 
           const rawBodyLines = strippedLines.slice(1);
-          let paragraphs: string[] = [];
-
-          if (rawBodyLines.length === 0 && inlineTitle) {
-            paragraphs = [inlineTitle];
-          } else {
-            let currentPara: string[] = [];
-            for (const bl of rawBodyLines) {
-              const trimmed = bl.trim();
-              if (!trimmed) {
-                if (currentPara.length > 0) {
-                  paragraphs.push(currentPara.join(' '));
-                  currentPara = [];
-                }
-              } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                if (currentPara.length > 0) {
-                  paragraphs.push(currentPara.join(' '));
-                  currentPara = [];
-                }
-                paragraphs.push(trimmed);
-              } else {
-                currentPara.push(trimmed);
+          const paragraphs: string[] = [];
+          let currentPara: string[] = [];
+          for (const bl of rawBodyLines) {
+            const trimmed = bl.trim();
+            if (!trimmed) {
+              if (currentPara.length > 0) {
+                paragraphs.push(currentPara.join(' '));
+                currentPara = [];
               }
+            } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+              if (currentPara.length > 0) {
+                paragraphs.push(currentPara.join(' '));
+                currentPara = [];
+              }
+              paragraphs.push(trimmed);
+            } else {
+              currentPara.push(trimmed);
             }
-            if (currentPara.length > 0) {
-              paragraphs.push(currentPara.join(' '));
-            }
+          }
+          if (currentPara.length > 0) {
+            paragraphs.push(currentPara.join(' '));
           }
 
           nodes.push(
-            <div
+            <DocsCalloutItem
               key={`callout-${key}`}
-              className={`my-3 p-3.5 border-l-[3px] ${style.border} ${style.bg} rounded-r-md text-[14px]`}
-            >
-              <div className={`font-semibold ${style.text} flex items-center gap-1.5 uppercase tracking-wide text-xs ${paragraphs.length > 0 ? 'mb-1.5' : ''}`}>
-                <CalloutIcon size={14} className="shrink-0" />
-                <span>{calloutType}</span>
-                {inlineTitle && rawBodyLines.length > 0 && (
-                  <span className="text-white/90 normal-case font-medium ml-1">• {inlineTitle}</span>
-                )}
-              </div>
-              {paragraphs.length > 0 && (
-                <div className="text-[#dadada] leading-[1.7] space-y-2">
-                  {paragraphs.map((p, pIdx) => {
-                    if (p.startsWith('- ') || p.startsWith('* ')) {
-                      return (
-                        <div key={pIdx} className="flex items-start gap-2 pl-1">
-                          <span className="text-[#888888] select-none">•</span>
-                          <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(p.slice(2)) }} />
-                        </div>
-                      );
-                    }
-                    return <p key={pIdx} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(p) }} />;
-                  })}
-                </div>
-              )}
-            </div>
+              calloutType={calloutType}
+              foldMarker={foldMarker}
+              inlineTitle={inlineTitle}
+              rawBodyLinesCount={rawBodyLines.length}
+              paragraphs={paragraphs}
+              style={style}
+            />
           );
         } else {
           // Standard Blockquote

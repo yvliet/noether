@@ -136,6 +136,27 @@ export const NumberedListBehavior = Extension.create({
         const lineText = blockText.slice(lineStartOffset, lineEndOffset);
         const col = parentOffset - lineStartOffset;
 
+        // Check for Blockquote or Callout indentation with Tab: > -> >>
+        const blockquoteInfo = matchBlockquoteLine(lineText);
+        if (blockquoteInfo && (col <= blockquoteInfo.marker.length + 1 || blockquoteInfo.isEmpty)) {
+          const linePosStart = blockStart + lineStartOffset;
+          const linePosEnd = blockStart + lineEndOffset;
+          const newMarker = `>${blockquoteInfo.marker.trim()}`;
+          const newPrefix = `${newMarker} `;
+          const newFullLine = `${newPrefix}${blockquoteInfo.content}`;
+
+          let tr = state.tr;
+          if (linePosEnd > linePosStart) {
+            tr = tr.replaceWith(linePosStart, linePosEnd, state.schema.text(newFullLine));
+          } else {
+            tr = tr.insert(linePosStart, state.schema.text(newFullLine));
+          }
+
+          const targetPos = linePosStart + newPrefix.length;
+          view.dispatch(tr.setSelection(TextSelection.create(tr.doc, targetPos)).scrollIntoView());
+          return true;
+        }
+
         // Check for List item (Number, Letter a./aa., or Dash/Bullet):
         const listInfo = matchLineListPrefix(lineText);
         if (listInfo) {
@@ -200,6 +221,29 @@ export const NumberedListBehavior = Extension.create({
         const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
         const lineText = blockText.slice(lineStartOffset, lineEndOffset);
         const col = parentOffset - lineStartOffset;
+
+        // Check for Nested Blockquote / Callout to outdent: >> -> >
+        const blockquoteInfo = matchBlockquoteLine(lineText);
+        if (blockquoteInfo && blockquoteInfo.marker.trim().length > 1) {
+          const markerTrimmed = blockquoteInfo.marker.trim();
+          const newMarker = markerTrimmed.slice(0, -1);
+          const newPrefix = `${newMarker} `;
+          const newFullLine = `${newPrefix}${blockquoteInfo.content}`;
+
+          const linePosStart = blockStart + lineStartOffset;
+          const linePosEnd = blockStart + lineEndOffset;
+
+          let tr = state.tr;
+          if (linePosEnd > linePosStart) {
+            tr = tr.replaceWith(linePosStart, linePosEnd, state.schema.text(newFullLine));
+          } else {
+            tr = tr.insert(linePosStart, state.schema.text(newFullLine));
+          }
+
+          const targetPos = linePosStart + newPrefix.length;
+          view.dispatch(tr.setSelection(TextSelection.create(tr.doc, targetPos)).scrollIntoView());
+          return true;
+        }
 
         // Check for List item with leading indent to outdent
         const listInfo = matchLineListPrefix(lineText);
@@ -281,10 +325,23 @@ export const NumberedListBehavior = Extension.create({
         // 0B. Check for Blockquote continuation & clean exit: > quote
         const blockquote = matchBlockquoteLine(lineText);
         if (blockquote) {
-          // Case A: Empty blockquote line (e.g. "> ") -> clear prefix to exit blockquote
+          // Case A: Empty blockquote line (e.g. "> " or ">> ")
           if (blockquote.isEmpty) {
             const linePosStart = blockStart + lineStartOffset;
             const linePosEnd = blockStart + lineEndOffset;
+
+            // If nested (e.g. ">> "), outdent by one level to "> "
+            const markerTrimmed = blockquote.marker.trim();
+            if (markerTrimmed.length > 1 && markerTrimmed.startsWith('>')) {
+              const newMarker = markerTrimmed.slice(0, -1);
+              const newPrefix = `${newMarker} `;
+              const tr = state.tr.replaceWith(linePosStart, linePosEnd, state.schema.text(newPrefix));
+              const targetPos = linePosStart + newPrefix.length;
+              view.dispatch(tr.setSelection(TextSelection.create(tr.doc, targetPos)).scrollIntoView());
+              return true;
+            }
+
+            // At single level "> ": clear prefix to exit blockquote/callout cleanly
             const tr = state.tr.delete(linePosStart, linePosEnd);
             view.dispatch(tr.scrollIntoView());
             return true;

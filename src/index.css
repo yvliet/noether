@@ -2626,3 +2626,431 @@ math-field::part(content) {
 .flint-embed-wrapper + .ProseMirror-trailingBreak {
   display: none !important;
 }
+
+/* ==========================================================================
+   Flint Obsidian-Compatible Callouts & Blockquotes
+   Matches website documentation theme (3px solid colored border, 10% subtle tint background,
+   uppercase badge, icons, custom titles, collapsible toggles, nested support).
+   Zero micro-interaction latency (snappy native desktop feel).
+   ========================================================================== */
+
+/* Base Callout Container & Paragraph Lines */
+.flint-callout {
+  position: relative;
+  box-sizing: border-box;
+  border-left: 3px solid var(--callout-border, rgba(59, 130, 246, 0.5));
+  background-color: var(--callout-bg, rgba(59, 130, 246, 0.1));
+  padding-left: 0.875rem !important;
+  padding-right: 0.875rem !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--flint-text-primary, #ffffff);
+}
+
+.flint-callout-first {
+  margin-top: 0.75rem !important;
+  padding-top: 0.75rem !important;
+  border-top-right-radius: 6px;
+}
+
+.flint-callout-last {
+  margin-bottom: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  border-bottom-right-radius: 6px;
+}
+
+.flint-callout-first.flint-callout-last {
+  border-top-right-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
+.flint-callout-collapsed {
+  display: none !important;
+}
+
+.flint-callout-body {
+  color: var(--flint-text-secondary, #dadada);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+/* Callout Header & Integrated Widget Bar */
+.flint-callout-header {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--flint-text-primary, #ffffff);
+}
+
+.flint-callout-header-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 14px;
+  user-select: none;
+  vertical-align: middle;
+  color: var(--callout-text, #60a5fa);
+  margin-right: 0.35rem;
+}
+
+.flint-callout-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--callout-text, #60a5fa);
+  flex-shrink: 0;
+  position: relative;
+  top: -1px;
+}
+
+.flint-callout-icon svg {
+  display: block;
+  width: 14px;
+  height: 14px;
+}
+
+.flint-callout-badge {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--callout-text, #60a5fa);
+  text-transform: none;
+}
+
+.flint-callout-title-text {
+  font-weight: 600;
+  color: var(--callout-text, #60a5fa);
+  text-transform: none;
+  font-size: 14px;
+}
+
+.flint-callout-fold-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 0.25rem;
+  padding: 1px 3px;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: var(--callout-text, #60a5fa);
+  cursor: pointer;
+  opacity: 0.75;
+  transition: none !important;
+}
+
+.flint-callout-fold-toggle:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.flint-callout-fold-toggle svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.flint-callout-raw-prefix {
+  opacity: 0.45;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+.flint-callout-quote-marker {
+  opacity: 0.35;
+  font-family: var(--font-monospace);
+  font-size: 0.9em;
+}
+
+/* Callout Nested Depths */
+.flint-callout-nested {
+  margin-left: 0.75rem;
+}
+
+.flint-callout-depth-2 {
+  margin-left: 0.75rem;
+}
+
+.flint-callout-depth-3 {
+  margin-left: 1.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Callout Palettes (13 Canonical Types & Custom Snippet Overrides)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1. Note (Blue) */
+.flint-callout-type-note,
+[data-callout="note"] {
+  --callout-border: rgba(59, 130, 246, 0.5);
+  --callout-bg: rgba(59, 130, 246, 0.1);
+  --callout-text: #60a5fa;
+}
+
+/* 2. Abstract / Summary / TL;DR (Cyan) */
+.flint-callout-type-abstract,
+[data-callout="abstract"],
+[data-callout="summary"],
+[data-callout="tldr"] {
+  --callout-border: rgba(6, 182, 212, 0.5);
+  --callout-bg: rgba(6, 182, 212, 0.1);
+  --callout-text: #22d3ee;
+}
+
+/* 3. Info (Sky Blue) */
+.flint-callout-type-info,
+[data-callout="info"] {
+  --callout-border: rgba(2, 132, 199, 0.5);
+  --callout-bg: rgba(2, 132, 199, 0.1);
+  --callout-text: #38bdf8;
+}
+
+/* 4. Todo (Sky Blue / Slate Accent) */
+.flint-callout-type-todo,
+[data-callout="todo"] {
+  --callout-border: rgba(14, 165, 233, 0.5);
+  --callout-bg: rgba(14, 165, 233, 0.1);
+  --callout-text: #38bdf8;
+}
+
+/* 5. Tip / Hint / Important (Emerald) */
+.flint-callout-type-tip,
+[data-callout="tip"],
+[data-callout="hint"],
+[data-callout="important"] {
+  --callout-border: rgba(16, 185, 129, 0.5);
+  --callout-bg: rgba(16, 185, 129, 0.1);
+  --callout-text: #34d399;
+}
+
+/* 6. Success / Check / Done (Green) */
+.flint-callout-type-success,
+[data-callout="success"],
+[data-callout="check"],
+[data-callout="done"] {
+  --callout-border: rgba(34, 197, 94, 0.5);
+  --callout-bg: rgba(34, 197, 94, 0.1);
+  --callout-text: #4ade80;
+}
+
+/* 7. Question / Help / FAQ (Amber) */
+.flint-callout-type-question,
+[data-callout="question"],
+[data-callout="help"],
+[data-callout="faq"] {
+  --callout-border: rgba(245, 158, 11, 0.5);
+  --callout-bg: rgba(245, 158, 11, 0.1);
+  --callout-text: #fbbf24;
+}
+
+/* 8. Warning / Caution / Attention (Amber / Gold) */
+.flint-callout-type-warning,
+[data-callout="warning"],
+[data-callout="caution"],
+[data-callout="attention"] {
+  --callout-border: rgba(245, 158, 11, 0.5);
+  --callout-bg: rgba(245, 158, 11, 0.1);
+  --callout-text: #fbbf24;
+}
+
+/* 9. Failure / Fail / Missing (Rose) */
+.flint-callout-type-failure,
+[data-callout="failure"],
+[data-callout="fail"],
+[data-callout="missing"] {
+  --callout-border: rgba(244, 63, 94, 0.5);
+  --callout-bg: rgba(244, 63, 94, 0.1);
+  --callout-text: #fb7185;
+}
+
+/* 10. Danger / Error (Red) */
+.flint-callout-type-danger,
+[data-callout="danger"],
+[data-callout="error"] {
+  --callout-border: rgba(239, 68, 68, 0.5);
+  --callout-bg: rgba(239, 68, 68, 0.1);
+  --callout-text: #f87171;
+}
+
+/* 11. Bug (Orange) */
+.flint-callout-type-bug,
+[data-callout="bug"] {
+  --callout-border: rgba(249, 115, 22, 0.5);
+  --callout-bg: rgba(249, 115, 22, 0.1);
+  --callout-text: #fb923c;
+}
+
+/* 12. Example (Purple) */
+.flint-callout-type-example,
+[data-callout="example"] {
+  --callout-border: rgba(139, 92, 246, 0.5);
+  --callout-bg: rgba(139, 92, 246, 0.1);
+  --callout-text: #a78bfa;
+}
+
+/* 13. Quote / Cite (Muted Neutral) */
+.flint-callout-type-quote,
+[data-callout="quote"],
+[data-callout="cite"] {
+  --callout-border: #555555;
+  --callout-bg: rgba(30, 30, 30, 0.9);
+  --callout-text: #aaaaaa;
+}
+
+/* Light Theme Callout Palettes */
+.theme-light .flint-callout {
+  color: #18181b;
+}
+
+.theme-light .flint-callout-body {
+  color: #3f3f46;
+}
+
+.theme-light .flint-callout-type-note,
+.theme-light [data-callout="note"] {
+  --callout-border: rgba(59, 130, 246, 0.6);
+  --callout-bg: rgba(59, 130, 246, 0.08);
+  --callout-text: #2563eb;
+}
+
+.theme-light .flint-callout-type-abstract,
+.theme-light [data-callout="abstract"],
+.theme-light [data-callout="summary"],
+.theme-light [data-callout="tldr"] {
+  --callout-border: rgba(6, 182, 212, 0.6);
+  --callout-bg: rgba(6, 182, 212, 0.08);
+  --callout-text: #0891b2;
+}
+
+.theme-light .flint-callout-type-info,
+.theme-light [data-callout="info"] {
+  --callout-border: rgba(2, 132, 199, 0.6);
+  --callout-bg: rgba(2, 132, 199, 0.08);
+  --callout-text: #0284c7;
+}
+
+.theme-light .flint-callout-type-todo,
+.theme-light [data-callout="todo"] {
+  --callout-border: rgba(14, 165, 233, 0.6);
+  --callout-bg: rgba(14, 165, 233, 0.08);
+  --callout-text: #0284c7;
+}
+
+.theme-light .flint-callout-type-tip,
+.theme-light [data-callout="tip"],
+.theme-light [data-callout="hint"],
+.theme-light [data-callout="important"] {
+  --callout-border: rgba(16, 185, 129, 0.6);
+  --callout-bg: rgba(16, 185, 129, 0.08);
+  --callout-text: #059669;
+}
+
+.theme-light .flint-callout-type-success,
+.theme-light [data-callout="success"],
+.theme-light [data-callout="check"],
+.theme-light [data-callout="done"] {
+  --callout-border: rgba(34, 197, 94, 0.6);
+  --callout-bg: rgba(34, 197, 94, 0.08);
+  --callout-text: #16a34a;
+}
+
+.theme-light .flint-callout-type-question,
+.theme-light [data-callout="question"],
+.theme-light [data-callout="help"],
+.theme-light [data-callout="faq"] {
+  --callout-border: rgba(245, 158, 11, 0.6);
+  --callout-bg: rgba(245, 158, 11, 0.08);
+  --callout-text: #d97706;
+}
+
+.theme-light .flint-callout-type-warning,
+.theme-light [data-callout="warning"],
+.theme-light [data-callout="caution"],
+.theme-light [data-callout="attention"] {
+  --callout-border: rgba(245, 158, 11, 0.6);
+  --callout-bg: rgba(245, 158, 11, 0.08);
+  --callout-text: #d97706;
+}
+
+.theme-light .flint-callout-type-failure,
+.theme-light [data-callout="failure"],
+.theme-light [data-callout="fail"],
+.theme-light [data-callout="missing"] {
+  --callout-border: rgba(244, 63, 94, 0.6);
+  --callout-bg: rgba(244, 63, 94, 0.08);
+  --callout-text: #e11d48;
+}
+
+.theme-light .flint-callout-type-danger,
+.theme-light [data-callout="danger"],
+.theme-light [data-callout="error"] {
+  --callout-border: rgba(239, 68, 68, 0.6);
+  --callout-bg: rgba(239, 68, 68, 0.08);
+  --callout-text: #dc2626;
+}
+
+.theme-light .flint-callout-type-bug,
+.theme-light [data-callout="bug"] {
+  --callout-border: rgba(249, 115, 22, 0.6);
+  --callout-bg: rgba(249, 115, 22, 0.08);
+  --callout-text: #ea580c;
+}
+
+.theme-light .flint-callout-type-example,
+.theme-light [data-callout="example"] {
+  --callout-border: rgba(139, 92, 246, 0.6);
+  --callout-bg: rgba(139, 92, 246, 0.08);
+  --callout-text: #7c3aed;
+}
+
+.theme-light .flint-callout-type-quote,
+.theme-light [data-callout="quote"],
+.theme-light [data-callout="cite"] {
+  --callout-border: #d4d4d8;
+  --callout-bg: #f4f4f5;
+  --callout-text: #52525b;
+}
+
+/* ==========================================================================
+   Standard Blockquotes (.flint-blockquote)
+   ========================================================================== */
+
+.flint-blockquote {
+  position: relative;
+  box-sizing: border-box;
+  border-left: 3px solid var(--flint-border-strong, #484848);
+  background-color: var(--flint-bg-card, #1e1e1e);
+  padding-left: 0.875rem !important;
+  padding-right: 0.875rem !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--flint-text-secondary, #cccccc);
+  font-style: italic;
+}
+
+.flint-blockquote-first {
+  margin-top: 0.75rem !important;
+  padding-top: 0.5rem !important;
+  border-top-right-radius: 4px;
+}
+
+.flint-blockquote-last {
+  margin-bottom: 0.75rem !important;
+  padding-bottom: 0.5rem !important;
+  border-bottom-right-radius: 4px;
+}
+
+.flint-blockquote-first.flint-blockquote-last {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.theme-light .flint-blockquote {
+  border-left-color: #d4d4d8;
+  background-color: #f4f4f5;
+  color: #52525b;
+}
+

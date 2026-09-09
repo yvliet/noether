@@ -9,6 +9,8 @@ import {
 } from '@hugeicons/core-free-icons';
 import { renderHugeIconSvg } from '@/components/common/Icons';
 
+import { parseCalloutHeader, ParsedCalloutHeader } from '@/lib/editor/callouts';
+
 export const FoldPluginKey = new PluginKey('foldPlugin');
 /** Backward compatibility alias */
 export const FoldHeadingPluginKey = FoldPluginKey;
@@ -36,12 +38,16 @@ const CHEVRON_RIGHT_SVG = renderHugeIconSvg(HugeChevronRightDef, {
 export interface FoldPluginState {
   foldedHeadings: Set<number>;
   foldedIndents: Set<number>;
+  foldedCallouts: Set<number>;
+  unfoldedCallouts: Set<number>;
   decorations: DecorationSet;
 }
 
 interface PersistedFoldState {
   headingKeys: string[];
   indentKeys: string[];
+  foldedCalloutKeys?: string[];
+  unfoldedCalloutKeys?: string[];
 }
 
 function getHeadingKey(node: any, idx: number): string {
@@ -55,19 +61,37 @@ function getIndentKey(node: any, idx: number): string {
   return `l:${text || idx}`;
 }
 
+function getCalloutKey(node: any, idx: number): string {
+  const text = (node.textContent || '').trim();
+  const header = parseCalloutHeader(text);
+  const type = header?.canonicalType || 'note';
+  const title = header?.title || text || idx;
+  return `c:${type}:${title}`;
+}
+
 function getFoldStorageKey(docId?: string): string {
   const id = docId || useDocumentStore.getState().activeDocument?.id || 'default';
   return `flint_fold_state_${id}`;
 }
 
-function saveFoldState(doc: any, foldedHeadings: Set<number>, foldedIndents: Set<number>, docId?: string) {
+function saveFoldState(
+  doc: any,
+  foldedHeadings: Set<number>,
+  foldedIndents: Set<number>,
+  foldedCallouts: Set<number>,
+  unfoldedCallouts: Set<number>,
+  docId?: string
+) {
   try {
     const key = getFoldStorageKey(docId);
     const headingKeys: string[] = [];
     const indentKeys: string[] = [];
+    const foldedCalloutKeys: string[] = [];
+    const unfoldedCalloutKeys: string[] = [];
 
     let headingIdx = 0;
     let listIdx = 0;
+    let calloutIdx = 0;
 
     doc.descendants((node: any, pos: number) => {
       if (!node.isBlock) return;
@@ -80,7 +104,29 @@ function saveFoldState(doc: any, foldedHeadings: Set<number>, foldedIndents: Set
           headingKeys.push(getHeadingKey(node, headingIdx));
         }
         headingIdx++;
-      } else if (node.type.name === 'paragraph' || node.type.name === 'listItem' || node.type.name === 'taskItem') {
+      } else if (node.type.name === 'paragraph') {
+        const text = node.textContent || '';
+        const header = parseCalloutHeader(text);
+        if (header && header.foldable) {
+          const isFolded = Array.from<number>(foldedCallouts as any).some(
+            (p) => p === pos || (p >= pos && p < pos + node.nodeSize)
+          );
+          const isUnfolded = Array.from<number>(unfoldedCallouts as any).some(
+            (p) => p === pos || (p >= pos && p < pos + node.nodeSize)
+          );
+          if (isFolded) foldedCalloutKeys.push(getCalloutKey(node, calloutIdx));
+          if (isUnfolded) unfoldedCalloutKeys.push(getCalloutKey(node, calloutIdx));
+          calloutIdx++;
+        } else {
+          const isFolded = Array.from<number>(foldedIndents as any).some(
+            (p) => p === pos || (p >= pos && p < pos + node.nodeSize)
+          );
+          if (isFolded) {
+            indentKeys.push(getIndentKey(node, listIdx));
+          }
+          listIdx++;
+        }
+      } else if (node.type.name === 'listItem' || node.type.name === 'taskItem') {
         const isFolded = Array.from<number>(foldedIndents as any).some(
           (p) => p === pos || (p >= pos && p < pos + node.nodeSize)
         );
@@ -91,28 +137,38 @@ function saveFoldState(doc: any, foldedHeadings: Set<number>, foldedIndents: Set
       }
     });
 
-    const data: PersistedFoldState = { headingKeys, indentKeys };
+    const data: PersistedFoldState = { headingKeys, indentKeys, foldedCalloutKeys, unfoldedCalloutKeys };
     localStorage.setItem(key, JSON.stringify(data));
   } catch (err) {
     console.error('Failed to save fold state to localStorage:', err);
   }
 }
 
-function loadFoldState(doc: any, docId?: string): { foldedHeadings: Set<number>; foldedIndents: Set<number> } {
+function loadFoldState(doc: any, docId?: string): {
+  foldedHeadings: Set<number>;
+  foldedIndents: Set<number>;
+  foldedCallouts: Set<number>;
+  unfoldedCallouts: Set<number>;
+} {
   const foldedHeadings = new Set<number>();
   const foldedIndents = new Set<number>();
+  const foldedCallouts = new Set<number>();
+  const unfoldedCallouts = new Set<number>();
 
   try {
     const key = getFoldStorageKey(docId);
     const raw = localStorage.getItem(key);
-    if (!raw) return { foldedHeadings, foldedIndents };
+    if (!raw) return { foldedHeadings, foldedIndents, foldedCallouts, unfoldedCallouts };
 
     const data: PersistedFoldState = JSON.parse(raw);
     const savedHeadingKeys = new Set(data.headingKeys || []);
     const savedIndentKeys = new Set(data.indentKeys || []);
+    const savedFoldedCalloutKeys = new Set(data.foldedCalloutKeys || []);
+    const savedUnfoldedCalloutKeys = new Set(data.unfoldedCalloutKeys || []);
 
     let headingIdx = 0;
     let listIdx = 0;
+    let calloutIdx = 0;
 
     doc.descendants((node: any, pos: number) => {
       if (!node.isBlock) return;
@@ -123,7 +179,22 @@ function loadFoldState(doc: any, docId?: string): { foldedHeadings: Set<number>;
           foldedHeadings.add(pos);
         }
         headingIdx++;
-      } else if (node.type.name === 'paragraph' || node.type.name === 'listItem' || node.type.name === 'taskItem') {
+      } else if (node.type.name === 'paragraph') {
+        const text = node.textContent || '';
+        const header = parseCalloutHeader(text);
+        if (header && header.foldable) {
+          const cKey = getCalloutKey(node, calloutIdx);
+          if (savedFoldedCalloutKeys.has(cKey)) foldedCallouts.add(pos);
+          if (savedUnfoldedCalloutKeys.has(cKey)) unfoldedCallouts.add(pos);
+          calloutIdx++;
+        } else {
+          const lKey = getIndentKey(node, listIdx);
+          if (savedIndentKeys.has(lKey)) {
+            foldedIndents.add(pos);
+          }
+          listIdx++;
+        }
+      } else if (node.type.name === 'listItem' || node.type.name === 'taskItem') {
         const lKey = getIndentKey(node, listIdx);
         if (savedIndentKeys.has(lKey)) {
           foldedIndents.add(pos);
@@ -135,7 +206,7 @@ function loadFoldState(doc: any, docId?: string): { foldedHeadings: Set<number>;
     console.error('Failed to load fold state from localStorage:', err);
   }
 
-  return { foldedHeadings, foldedIndents };
+  return { foldedHeadings, foldedIndents, foldedCallouts, unfoldedCallouts };
 }
 
 interface BlockInfo {
@@ -365,14 +436,69 @@ function createFoldPlaceholder(onClick: () => void, onDelete?: () => void): HTML
   return container;
 }
 
+function extractCalloutBlocks(doc: any): {
+  headerPos: number;
+  headerNode: any;
+  header: ParsedCalloutHeader;
+  bodyBlocks: BlockInfo[];
+}[] {
+  const callouts: { headerPos: number; headerNode: any; header: ParsedCalloutHeader; bodyBlocks: BlockInfo[] }[] = [];
+  const blocks: BlockInfo[] = [];
+
+  doc.descendants((node: any, pos: number) => {
+    if (!node.isBlock) return;
+    if (node.type.name === 'paragraph') {
+      blocks.push({
+        pos,
+        nodeSize: node.nodeSize,
+        node,
+        indent: 0,
+        isList: false,
+        isHeading: false,
+        leadingLen: 0,
+      });
+    }
+  });
+
+  for (let i = 0; i < blocks.length; i++) {
+    const text = blocks[i].node.textContent || '';
+    const header = parseCalloutHeader(text);
+    if (header) {
+      const bodyBlocks: BlockInfo[] = [];
+      for (let j = i + 1; j < blocks.length; j++) {
+        const nextText = blocks[j].node.textContent || '';
+        const match = nextText.match(/^([ \t]*>+)/);
+        if (match) {
+          const nextDepth = (match[1].match(/>/g) || []).length;
+          if (nextDepth < header.depth) break;
+          // If a new callout starts at same depth, break
+          const nextHeader = parseCalloutHeader(nextText);
+          if (nextHeader && nextHeader.depth <= header.depth) break;
+          bodyBlocks.push(blocks[j]);
+        } else {
+          break;
+        }
+      }
+      callouts.push({
+        headerPos: blocks[i].pos,
+        headerNode: blocks[i].node,
+        header,
+        bodyBlocks,
+      });
+    }
+  }
+
+  return callouts;
+}
+
 function buildFoldDecorations(
   doc: any,
   foldedHeadings: Set<number>,
-  foldedIndents: Set<number>
+  foldedIndents: Set<number>,
+  foldedCallouts: Set<number> = new Set<number>(),
+  unfoldedCallouts: Set<number> = new Set<number>()
 ): DecorationSet {
   const { foldHeading, foldIndent } = useSettingsStore.getState();
-  if (!foldHeading && !foldIndent) return DecorationSet.empty;
-
   const decorations: Decoration[] = [];
 
   // 1. Fold Headings
@@ -612,6 +738,51 @@ function buildFoldDecorations(
     });
   }
 
+  // 3. Fold Foldable Callouts ([!type]+ and [!type]-)
+  const callouts = extractCalloutBlocks(doc);
+  callouts.forEach((c) => {
+    if (!c.header.foldable) return;
+    const isExplicitlyFolded = Array.from<number>(foldedCallouts as any).some(
+      (p) => p === c.headerPos || Math.abs(p - c.headerPos) <= 2
+    );
+    const isExplicitlyUnfolded = Array.from<number>(unfoldedCallouts as any).some(
+      (p) => p === c.headerPos || Math.abs(p - c.headerPos) <= 2
+    );
+
+    const isFolded = isExplicitlyFolded || (c.header.defaultCollapsed && !isExplicitlyUnfolded);
+
+    if (isFolded && c.bodyBlocks.length > 0) {
+      c.bodyBlocks.forEach((child) => {
+        decorations.push(
+          Decoration.node(child.pos, child.pos + child.nodeSize, {
+            class: 'flint-folded-node flint-callout-collapsed',
+          })
+        );
+      });
+
+      // Clickable ellipsis placeholder at the end of folded callout header
+      decorations.push(
+        Decoration.widget(
+          c.headerPos + c.headerNode.nodeSize - 1,
+          (view) =>
+            createFoldPlaceholder(
+              () => {
+                view.dispatch(view.state.tr.setMeta('toggleFoldCallout', c.headerPos));
+              },
+              () => {
+                const firstChild = c.bodyBlocks[0];
+                const lastChild = c.bodyBlocks[c.bodyBlocks.length - 1];
+                let tr = view.state.tr.delete(firstChild.pos, lastChild.pos + lastChild.nodeSize);
+                tr = tr.setMeta('unfoldCallout', c.headerPos);
+                view.dispatch(tr);
+              }
+            ),
+          { side: 1, ignoreSelection: false }
+        )
+      );
+    }
+  });
+
   return DecorationSet.create(doc, decorations);
 }
 
@@ -636,15 +807,22 @@ export const Fold = Extension.create<FoldOptions>({
         key: FoldPluginKey,
         state: {
           init(config, instance) {
-            const { foldedHeadings, foldedIndents } = instance
+            const { foldedHeadings, foldedIndents, foldedCallouts, unfoldedCallouts } = instance
               ? loadFoldState(instance.doc, documentId)
-              : { foldedHeadings: new Set<number>(), foldedIndents: new Set<number>() };
+              : {
+                  foldedHeadings: new Set<number>(),
+                  foldedIndents: new Set<number>(),
+                  foldedCallouts: new Set<number>(),
+                  unfoldedCallouts: new Set<number>(),
+                };
             const decorations = instance
-              ? buildFoldDecorations(instance.doc, foldedHeadings, foldedIndents)
+              ? buildFoldDecorations(instance.doc, foldedHeadings, foldedIndents, foldedCallouts, unfoldedCallouts)
               : DecorationSet.empty;
             return {
               foldedHeadings,
               foldedIndents,
+              foldedCallouts,
+              unfoldedCallouts,
               decorations,
             };
           },
@@ -653,6 +831,9 @@ export const Fold = Extension.create<FoldOptions>({
             const unfoldHeadingPos = tr.getMeta('unfoldHeading');
             const toggleIndentPos = tr.getMeta('toggleFoldIndent');
             const unfoldIndentPos = tr.getMeta('unfoldIndent');
+            const toggleCalloutPos = tr.getMeta('toggleFoldCallout');
+            const unfoldCalloutPos = tr.getMeta('unfoldCallout');
+            const foldCalloutPos = tr.getMeta('foldCallout');
             const reloadFoldState = tr.getMeta('reloadFoldState');
 
             if (
@@ -660,6 +841,9 @@ export const Fold = Extension.create<FoldOptions>({
               unfoldHeadingPos === undefined &&
               toggleIndentPos === undefined &&
               unfoldIndentPos === undefined &&
+              toggleCalloutPos === undefined &&
+              unfoldCalloutPos === undefined &&
+              foldCalloutPos === undefined &&
               reloadFoldState === undefined &&
               !tr.docChanged
             ) {
@@ -668,12 +852,22 @@ export const Fold = Extension.create<FoldOptions>({
 
             let nextFoldedHeadings = new Set<number>();
             let nextFoldedIndents = new Set<number>();
+            let nextFoldedCallouts = new Set<number>();
+            let nextUnfoldedCallouts = new Set<number>();
 
             // Restore saved fold state only on reload, init, or when state was completely uninitialized
-            if (reloadFoldState || (oldState.foldedHeadings.size === 0 && oldState.foldedIndents.size === 0 && !tr.docChanged)) {
+            if (
+              reloadFoldState ||
+              (oldState.foldedHeadings.size === 0 &&
+                oldState.foldedIndents.size === 0 &&
+                oldState.foldedCallouts.size === 0 &&
+                !tr.docChanged)
+            ) {
               const loaded = loadFoldState(tr.doc, documentId);
               nextFoldedHeadings = loaded.foldedHeadings;
               nextFoldedIndents = loaded.foldedIndents;
+              nextFoldedCallouts = loaded.foldedCallouts;
+              nextUnfoldedCallouts = loaded.unfoldedCallouts;
             } else if (tr.docChanged) {
               oldState.foldedHeadings.forEach((pos: number) => {
                 const mapped = tr.mapping.map(pos, -1);
@@ -683,9 +877,19 @@ export const Fold = Extension.create<FoldOptions>({
                 const mapped = tr.mapping.map(pos, -1);
                 nextFoldedIndents.add(mapped);
               });
+              oldState.foldedCallouts.forEach((pos: number) => {
+                const mapped = tr.mapping.map(pos, -1);
+                nextFoldedCallouts.add(mapped);
+              });
+              oldState.unfoldedCallouts.forEach((pos: number) => {
+                const mapped = tr.mapping.map(pos, -1);
+                nextUnfoldedCallouts.add(mapped);
+              });
             } else {
               oldState.foldedHeadings.forEach((pos: number) => nextFoldedHeadings.add(pos));
               oldState.foldedIndents.forEach((pos: number) => nextFoldedIndents.add(pos));
+              oldState.foldedCallouts.forEach((pos: number) => nextFoldedCallouts.add(pos));
+              oldState.unfoldedCallouts.forEach((pos: number) => nextUnfoldedCallouts.add(pos));
             }
 
             if (unfoldHeadingPos !== undefined) {
@@ -709,6 +913,32 @@ export const Fold = Extension.create<FoldOptions>({
               });
               if (existingMatch !== null) {
                 nextFoldedIndents.delete(existingMatch);
+              }
+            }
+
+            if (unfoldCalloutPos !== undefined) {
+              let existingMatch: number | null = null;
+              nextFoldedCallouts.forEach((pos) => {
+                if (pos === unfoldCalloutPos || Math.abs(pos - unfoldCalloutPos) <= 2) {
+                  existingMatch = pos;
+                }
+              });
+              if (existingMatch !== null) {
+                nextFoldedCallouts.delete(existingMatch);
+              }
+              nextUnfoldedCallouts.add(unfoldCalloutPos);
+            }
+
+            if (foldCalloutPos !== undefined) {
+              nextFoldedCallouts.add(foldCalloutPos);
+              let existingUnfolded: number | null = null;
+              nextUnfoldedCallouts.forEach((pos) => {
+                if (pos === foldCalloutPos || Math.abs(pos - foldCalloutPos) <= 2) {
+                  existingUnfolded = pos;
+                }
+              });
+              if (existingUnfolded !== null) {
+                nextUnfoldedCallouts.delete(existingUnfolded);
               }
             }
 
@@ -742,15 +972,62 @@ export const Fold = Extension.create<FoldOptions>({
               }
             }
 
+            if (toggleCalloutPos !== undefined) {
+              // Find if this callout is default collapsed by looking at its header text in tr.doc
+              let isDefaultCollapsed = false;
+              tr.doc.descendants((node: any, pos: number) => {
+                if (pos === toggleCalloutPos || Math.abs(pos - toggleCalloutPos) <= 2) {
+                  const parsed = parseCalloutHeader(node.textContent || '');
+                  if (parsed) isDefaultCollapsed = parsed.defaultCollapsed;
+                  return false;
+                }
+              });
+
+              let isExplicitlyFolded: number | null = null;
+              nextFoldedCallouts.forEach((pos) => {
+                if (pos === toggleCalloutPos || Math.abs(pos - toggleCalloutPos) <= 2) {
+                  isExplicitlyFolded = pos;
+                }
+              });
+
+              let isExplicitlyUnfolded: number | null = null;
+              nextUnfoldedCallouts.forEach((pos) => {
+                if (pos === toggleCalloutPos || Math.abs(pos - toggleCalloutPos) <= 2) {
+                  isExplicitlyUnfolded = pos;
+                }
+              });
+
+              const isCurrentlyFolded =
+                isExplicitlyFolded !== null || (isDefaultCollapsed && isExplicitlyUnfolded === null);
+
+              if (isCurrentlyFolded) {
+                if (isExplicitlyFolded !== null) nextFoldedCallouts.delete(isExplicitlyFolded);
+                if (isDefaultCollapsed) nextUnfoldedCallouts.add(toggleCalloutPos);
+              } else {
+                if (isExplicitlyUnfolded !== null) nextUnfoldedCallouts.delete(isExplicitlyUnfolded);
+                nextFoldedCallouts.add(toggleCalloutPos);
+              }
+            }
+
             const isFoldAction =
               toggleHeadingPos !== undefined ||
               unfoldHeadingPos !== undefined ||
               toggleIndentPos !== undefined ||
-              unfoldIndentPos !== undefined;
+              unfoldIndentPos !== undefined ||
+              toggleCalloutPos !== undefined ||
+              unfoldCalloutPos !== undefined ||
+              foldCalloutPos !== undefined;
 
             // Save folded state for cross-session persistence on user fold actions
             if (isFoldAction) {
-              saveFoldState(tr.doc, nextFoldedHeadings, nextFoldedIndents, documentId);
+              saveFoldState(
+                tr.doc,
+                nextFoldedHeadings,
+                nextFoldedIndents,
+                nextFoldedCallouts,
+                nextUnfoldedCallouts,
+                documentId
+              );
             }
 
             let needsRebuild =
@@ -760,7 +1037,7 @@ export const Fold = Extension.create<FoldOptions>({
               oldState.decorations === DecorationSet.empty;
 
             if (!needsRebuild && tr.docChanged) {
-              // Check if any step in tr changed block structure or touched headings/lists
+              // Check if any step in tr changed block structure or touched headings/lists/callouts
               for (const step of tr.steps) {
                 const s = step as any;
                 // 1. If slice contains block nodes (e.g. Enter pressed, new paragraph/list inserted)
@@ -832,12 +1109,14 @@ export const Fold = Extension.create<FoldOptions>({
             }
 
             const decorations = needsRebuild
-              ? buildFoldDecorations(tr.doc, nextFoldedHeadings, nextFoldedIndents)
+              ? buildFoldDecorations(tr.doc, nextFoldedHeadings, nextFoldedIndents, nextFoldedCallouts, nextUnfoldedCallouts)
               : oldState.decorations.map(tr.mapping, tr.doc);
 
             return {
               foldedHeadings: nextFoldedHeadings,
               foldedIndents: nextFoldedIndents,
+              foldedCallouts: nextFoldedCallouts,
+              unfoldedCallouts: nextUnfoldedCallouts,
               decorations,
             };
           },

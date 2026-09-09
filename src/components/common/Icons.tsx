@@ -143,6 +143,11 @@ import {
   UndoIcon as HugeUndoIcon,
   RedoIcon as HugeRedoIcon,
   PaintBoardIcon as HugePaintBoardIcon,
+  InformationCircleIcon as HugeInformationCircleIcon,
+  BulbIcon as HugeBulbIcon,
+  AlertDiamondIcon as HugeAlertDiamondIcon,
+  QuoteUpIcon as HugeQuoteUpIcon,
+  Bug01Icon as HugeBug01Icon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -374,6 +379,30 @@ export const ArrowExpandIcon = ArrowExpand01Icon;
 export const ArrowExpand02Icon = ArrowExpand01Icon;
 export const RulerIcon = createIcon(HugeRulerIcon);
 export const TextUnderlineIcon = createIcon(HugeTextUnderlineIcon);
+export const InformationCircleIcon = createIcon(HugeInformationCircleIcon);
+export const BulbIcon = createIcon(HugeBulbIcon);
+export const AlertDiamondIcon = createIcon(HugeAlertDiamondIcon);
+export const QuoteUpIcon = createIcon(HugeQuoteUpIcon);
+export const Bug01Icon = createIcon(HugeBug01Icon);
+
+// Export Huge Icon definitions for standalone SVG rendering (ProseMirror widgets, canvas, tooltips)
+export {
+  HugeInformationCircleIcon,
+  HugeBulbIcon,
+  HugeAlert01Icon,
+  HugeAlert02Icon,
+  HugeAlertDiamondIcon,
+  HugeQuoteUpIcon,
+  HugeQuoteDownIcon,
+  HugeBug01Icon,
+  HugeHelpCircleIcon,
+  HugeCheckmarkCircle02Icon,
+  HugeCheckmarkSquare02Icon,
+  HugeCancelCircleIcon,
+  HugeCodeIcon,
+  HugeFile01Icon,
+  HugeStickyNote02Icon,
+};
 
 /**
  * Custom dual-stacked chevrons indicator.

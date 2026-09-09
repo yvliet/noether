@@ -1158,6 +1158,8 @@ export function matchBlockquoteLine(lineText: string): BlockquoteLineResult | nu
   return null;
 }
 
+export { parseCalloutHeader, type ParsedCalloutHeader } from '@/lib/editor/callouts';
+
 export interface ListPrefixInfo {
   leadingIndent: string;
   openDelim: string;

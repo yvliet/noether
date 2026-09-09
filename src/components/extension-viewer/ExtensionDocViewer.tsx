@@ -13,12 +13,15 @@ import {
   LeftToRightListBulletIcon,
   LinkSquare02Icon,
   Download01Icon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { DocLayoutWrapper } from '@/components/layout/DocLayoutWrapper';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { platform } from '@/lib/platform/platformAdapter';
 import { highlightCode } from './syntaxHighlighter';
+import { parseCalloutHeader, getCalloutTypeInfo } from '@/lib/editor/callouts';
 import {
   resolveExtensionMetadata,
   fetchGitHubReadme,
@@ -38,6 +41,51 @@ export interface ExtensionDocViewerProps {
   app?: any;
 }
 
+const ViewerCallout: React.FC<{
+  typeInfo: any;
+  headerMeta: any;
+  bodyLines: string[];
+}> = ({ typeInfo, headerMeta, bodyLines }) => {
+  const [isCollapsed, setIsCollapsed] = useState(headerMeta.defaultCollapsed);
+  const IconComp = typeInfo.iconComponent;
+  const isFoldable = headerMeta.foldable;
+
+  const displayTitle = headerMeta.title || typeInfo.title;
+
+  return (
+    <div
+      className={`my-3 p-3.5 border-l-[3px] ${typeInfo.borderColor} ${typeInfo.bgColor} rounded-r-lg text-[var(--editor-font-size,16px)]`}
+      data-callout={headerMeta.type}
+    >
+      <div
+        className={`font-semibold text-sm ${typeInfo.textColor} flex items-center justify-between ${bodyLines.length > 0 && !isCollapsed ? 'mb-1.5' : ''} ${isFoldable ? 'cursor-pointer select-none' : ''}`}
+        onClick={isFoldable ? () => setIsCollapsed(!isCollapsed) : undefined}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <IconComp size={14} className="shrink-0 relative -top-px" />
+          <span className="truncate">{displayTitle}</span>
+        </div>
+        {isFoldable && (
+          <button
+            type="button"
+            className="text-[var(--flint-text-muted)] hover:text-white p-0.5 rounded transition-none"
+            aria-label={isCollapsed ? 'Expand callout' : 'Collapse callout'}
+          >
+            {isCollapsed ? <ChevronRightIcon size={14} /> : <ChevronDownIcon size={14} />}
+          </button>
+        )}
+      </div>
+      {!isCollapsed && bodyLines.length > 0 && (
+        <div className="text-[var(--flint-text-secondary)] leading-[1.75] space-y-1.5">
+          {bodyLines.map((line, lIdx) => (
+            <div key={lIdx} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Resilient, pure Markdown renderer conforming 100% to Flint document styling and typography rules
 export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ content }) => {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -53,6 +101,9 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
 
     let tableBuffer: string[] = [];
     let inTable = false;
+
+    let quoteBuffer: string[] = [];
+    let inQuote = false;
 
     type ListItem = {
       type: 'bullet' | 'ordered' | 'task';
@@ -171,6 +222,40 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       }
     };
 
+    const flushQuote = (key: number) => {
+      if (quoteBuffer.length > 0) {
+        const header = quoteBuffer[0];
+        const headerMeta = parseCalloutHeader(header);
+
+        if (headerMeta) {
+          const typeInfo = getCalloutTypeInfo(headerMeta.type);
+          const bodyLines = quoteBuffer.slice(1).map((l) => l.replace(/^[ \t]*>[ \t]?/, ''));
+          nodes.push(
+            <ViewerCallout
+              key={`callout-${key}`}
+              typeInfo={typeInfo}
+              headerMeta={headerMeta}
+              bodyLines={bodyLines}
+            />
+          );
+        } else {
+          const bodyLines = quoteBuffer.map((l) => l.replace(/^[ \t]*>[ \t]?/, ''));
+          nodes.push(
+            <div
+              key={`quote-${key}`}
+              className="my-3 pl-4 pr-3 py-1.5 border-l-[3px] border-[var(--flint-border-strong)] bg-[var(--flint-bg-card)]/40 text-[var(--flint-text-muted)] italic text-[var(--editor-font-size,16px)] leading-[1.75] rounded-r space-y-1.5"
+            >
+              {bodyLines.map((line, lIdx) => (
+                <div key={lIdx} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }} />
+              ))}
+            </div>
+          );
+        }
+        quoteBuffer = [];
+        inQuote = false;
+      }
+    };
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
@@ -207,6 +292,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         } else {
           flushList(i);
           flushTable(i);
+          flushQuote(i);
           inCodeBlock = true;
           codeLanguage = line.trim().slice(3).trim();
         }
@@ -221,6 +307,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       // Tables (| Col 1 | Col 2 |)
       if (line.trim().startsWith('|') && line.trim().endsWith('|')) {
         flushList(i);
+        flushQuote(i);
         inTable = true;
         tableBuffer.push(line.trim());
         continue;
@@ -232,6 +319,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       const taskMatch = line.match(/^(\s*)[-*+]\s+\[([ xX])\]\s+(.*)$/);
       if (taskMatch) {
         flushTable(i);
+        flushQuote(i);
         inList = true;
         const indent = Math.floor(taskMatch[1].length / 2);
         const checked = taskMatch[2].toLowerCase() === 'x';
@@ -243,6 +331,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       const orderedMatch = line.match(/^(\s*)(\d+\.|\w+\.)\s+(.*)$/);
       if (orderedMatch) {
         flushTable(i);
+        flushQuote(i);
         inList = true;
         const indent = Math.floor(orderedMatch[1].length / 2);
         listBuffer.push({ type: 'ordered', marker: orderedMatch[2], text: orderedMatch[3], indent });
@@ -253,6 +342,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       const bulletMatch = line.match(/^(\s*)[-*+]\s+(.*)$/);
       if (bulletMatch) {
         flushTable(i);
+        flushQuote(i);
         inList = true;
         const indent = Math.floor(bulletMatch[1].length / 2);
         listBuffer.push({ type: 'bullet', marker: '•', text: bulletMatch[2], indent });
@@ -268,17 +358,24 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
 
       // Empty lines
       if (!line.trim()) {
+        flushQuote(i);
         continue;
       }
 
       // Horizontal rules (--- or *** or ___)
       if (/^---+$/.test(line.trim()) || /^\*\*\*+$/.test(line.trim()) || /^___+$/.test(line.trim())) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         nodes.push(<hr key={`hr-${i}`} className="my-6 border-0 border-t border-[var(--flint-border-subtle)]" />);
         continue;
       }
 
       // Headings
       if (line.startsWith('# ')) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         const title = line.slice(2);
         nodes.push(
           <h1
@@ -292,6 +389,9 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         continue;
       }
       if (line.startsWith('## ')) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         const title = line.slice(3);
         nodes.push(
           <h2
@@ -305,6 +405,9 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         continue;
       }
       if (line.startsWith('### ')) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         const title = line.slice(4);
         nodes.push(
           <h3
@@ -318,6 +421,9 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         continue;
       }
       if (line.startsWith('#### ')) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         const title = line.slice(5);
         nodes.push(
           <h4
@@ -331,6 +437,9 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         continue;
       }
       if (line.startsWith('##### ')) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         const title = line.slice(6);
         nodes.push(
           <h5
@@ -344,6 +453,9 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
         continue;
       }
       if (line.startsWith('###### ')) {
+        flushList(i);
+        flushTable(i);
+        flushQuote(i);
         const title = line.slice(7);
         nodes.push(
           <h6
@@ -358,39 +470,14 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
       }
 
       // Blockquotes & Callouts
-      if (line.startsWith('> ')) {
-        const quoteText = line.slice(2);
-        const isCallout = quoteText.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/i);
-
-        if (isCallout) {
-          const calloutType = isCallout[1].toUpperCase();
-          const cleanText = quoteText.replace(/^\[![^\]]+\]\s*/i, '');
-          const calloutColors: Record<string, { border: string; bg: string; text: string }> = {
-            NOTE: { border: 'border-blue-500/50', bg: 'bg-blue-500/10', text: 'text-blue-400' },
-            TIP: { border: 'border-emerald-500/50', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
-            IMPORTANT: { border: 'border-purple-500/50', bg: 'bg-purple-500/10', text: 'text-purple-400' },
-            WARNING: { border: 'border-amber-500/50', bg: 'bg-amber-500/10', text: 'text-amber-400' },
-            CAUTION: { border: 'border-rose-500/50', bg: 'bg-rose-500/10', text: 'text-rose-400' },
-          };
-          const style = calloutColors[calloutType] || calloutColors.NOTE;
-
-          nodes.push(
-            <div key={`callout-${i}`} className={`my-3 p-3.5 border-l-[3px] ${style.border} ${style.bg} rounded-r-lg text-[var(--editor-font-size,16px)]`}>
-              <div className={`font-semibold text-xs uppercase tracking-wider ${style.text} mb-1 flex items-center gap-1.5`}>
-                {calloutType}
-              </div>
-              {cleanText && <div className="text-[var(--flint-text-secondary)] leading-[1.75]" dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(cleanText) }} />}
-            </div>
-          );
-          continue;
-        }
-
-        nodes.push(
-          <div key={`quote-${i}`} className="my-3 pl-4 pr-3 py-1.5 border-l-[3px] border-[var(--flint-border-strong)] bg-[var(--flint-bg-card)]/40 text-[var(--flint-text-muted)] italic text-[var(--editor-font-size,16px)] leading-[1.75] rounded-r">
-            <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(quoteText) }} />
-          </div>
-        );
+      if (line.trim().startsWith('>')) {
+        flushList(i);
+        flushTable(i);
+        inQuote = true;
+        quoteBuffer.push(line);
         continue;
+      } else if (inQuote) {
+        flushQuote(i);
       }
 
       // Standard Paragraph
@@ -406,6 +493,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
 
     flushList(lines.length);
     flushTable(lines.length);
+    flushQuote(lines.length);
 
     return nodes;
   }, [content, copiedIndex]);

@@ -147,11 +147,21 @@ const baseSlashItems: SlashItem[] = [
     },
   },
   {
+    title: 'Callout',
+    description: 'Obsidian callout box (> [!note])',
+    icon: 'callout',
+    command: ({ editor, range, extra }) => {
+      const type = extra?.id || 'note';
+      const capTitle = type.charAt(0).toUpperCase() + type.slice(1);
+      editor.chain().focus().deleteRange(range).insertContent(`> [!${type}] ${capTitle}\n> `).run();
+    },
+  },
+  {
     title: 'Quote Block',
-    description: 'Capture a quotation or callout',
+    description: 'Capture a quotation (> quote)',
     icon: 'quote',
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).toggleBlockquote().run();
+      editor.chain().focus().deleteRange(range).insertContent('> ').run();
     },
   },
   {

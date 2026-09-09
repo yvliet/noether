@@ -10,8 +10,43 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isLinkVisited } from '@/lib/visitedLinks';
 import { matchLineListPrefix } from './smart-pairing-utils';
+import {
+  parseCalloutHeader,
+  getCalloutTypeInfo,
+  CalloutTypeDefinition,
+  ParsedCalloutHeader,
+} from '@/lib/editor/callouts';
+import { renderHugeIconSvg } from '@/components/common/Icons';
+import {
+  ChevronDownIcon as HugeChevronDownDef,
+  ChevronRightIcon as HugeChevronRightDef,
+} from '@hugeicons/core-free-icons';
+import { FoldPluginKey } from './fold';
 
 export const LivePreviewSyntaxPluginKey = new PluginKey('livePreviewSyntax');
+
+const CALLOUT_CHEVRON_DOWN_SVG = renderHugeIconSvg(HugeChevronDownDef, {
+  size: 13,
+  color: 'currentColor',
+  strokeWidth: 2,
+});
+const CALLOUT_CHEVRON_RIGHT_SVG = renderHugeIconSvg(HugeChevronRightDef, {
+  size: 13,
+  color: 'currentColor',
+  strokeWidth: 2,
+});
+
+export interface BlockCalloutMeta {
+  isCallout: boolean;
+  isHeader: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  typeInfo: CalloutTypeDefinition;
+  headerMeta: ParsedCalloutHeader;
+  isFolded: boolean;
+  depth: number;
+  isStandardBlockquote?: boolean;
+}
 
 // Hoisted RegExp patterns for markdown syntax
 const BOLD_REGEX = /\*\*([^*\n]+)\*\*/g;
@@ -171,7 +206,8 @@ function scanBlockDecorations(
    * where a guide may be drawn (must have a list-marker ancestor).
    */
   listGuideColumns: Set<number> | Map<number, 'bullet' | 'number'>[] | null = null,
-  editor: any = null
+  editor: any = null,
+  calloutMeta: BlockCalloutMeta | null = null
 ): Decoration[] {
 
   const decorations: Decoration[] = [];
@@ -201,7 +237,7 @@ function scanBlockDecorations(
     }
   }
 
-  // 2. Blockquote Live Preview Indicator
+  // 2. Blockquote Live Preview Indicator (Native blockquote nodes)
   if (node.type.name === 'blockquote' && isBlockFocused) {
     decorations.push(
       Decoration.node(pos, pos + node.nodeSize, {
@@ -210,10 +246,54 @@ function scanBlockDecorations(
     );
   }
 
-  // 2b. Live Preview Hanging Indent for List Paragraphs (Google Docs style)
+  // 2b. Callout & Standard Blockquote Paragraph Node Decorations
+  if (calloutMeta) {
+    if (calloutMeta.isCallout) {
+      const { typeInfo, headerMeta, isHeader, isFirst, isLast, isFolded, depth } = calloutMeta;
+      const classes = [
+        'flint-callout',
+        isHeader ? 'flint-callout-header' : 'flint-callout-body',
+        isFirst ? 'flint-callout-first' : '',
+        isLast ? 'flint-callout-last' : '',
+        `flint-callout-type-${typeInfo.canonicalType}`,
+        isFolded && !isHeader ? 'flint-callout-collapsed' : '',
+        depth > 1 ? `flint-callout-nested flint-callout-depth-${depth}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      decorations.push(
+        Decoration.node(pos, pos + node.nodeSize, {
+          class: classes,
+          'data-callout': headerMeta.type,
+          'data-callout-canonical': typeInfo.canonicalType,
+          'data-callout-depth': `${depth}`,
+        })
+      );
+    } else if (calloutMeta.isStandardBlockquote) {
+      const { isFirst, isLast, depth } = calloutMeta;
+      const classes = [
+        'flint-blockquote',
+        'flint-blockquote-line',
+        isFirst ? 'flint-blockquote-first' : '',
+        isLast ? 'flint-blockquote-last' : '',
+        depth > 1 ? `flint-blockquote-depth-${depth}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      decorations.push(
+        Decoration.node(pos, pos + node.nodeSize, {
+          class: classes,
+        })
+      );
+    }
+  }
+
+  // 2c. Live Preview Hanging Indent for List Paragraphs (Google Docs style)
   // Ensures wrapped lines align flush beneath the start of the list item text,
   // even when indented with Tab, preserving clean markdown without modifying document content.
-  if (node.type.name === 'paragraph' && text) {
+  if (node.type.name === 'paragraph' && text && !calloutMeta?.isHeader) {
     const firstLine = text.includes('\n') ? text.slice(0, text.indexOf('\n')) : text;
     const listInfo = matchLineListPrefix(firstLine);
     if (listInfo) {
@@ -241,6 +321,104 @@ function scanBlockDecorations(
           })
         );
       }
+    }
+  }
+
+  // 2d. Callout Header / Body Prefix Concealing & Widget Rendering
+  let skipListDimming = false;
+  if (calloutMeta?.isCallout && calloutMeta.isHeader) {
+    skipListDimming = true;
+    const { typeInfo, headerMeta, isFolded } = calloutMeta;
+    const headerPrefixMatch = text.match(/^([ \t]*>+\s*\[![a-zA-Z0-9_\-]+\][+-]?(?:[ \t]+|$))/i);
+    const prefixLen = headerPrefixMatch ? headerPrefixMatch[1].length : 0;
+    const isPrefixFocused = isFocused && selFrom <= blockStart + prefixLen && selTo >= blockStart;
+
+    if (isPrefixFocused) {
+      decorations.push(
+        Decoration.inline(blockStart, blockStart + prefixLen, {
+          class: 'md-syntax-dimmed flint-callout-raw-prefix',
+        })
+      );
+    } else {
+      decorations.push(
+        Decoration.inline(blockStart, blockStart + prefixLen, {
+          class: 'md-syntax-hidden',
+        })
+      );
+
+      const dom = document.createElement('span');
+      dom.className = `flint-callout-header-bar flint-callout-header-${typeInfo.canonicalType}`;
+      dom.contentEditable = 'false';
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'flint-callout-icon';
+      iconSpan.innerHTML = renderHugeIconSvg(typeInfo.iconDef, {
+        size: 14,
+        color: 'currentColor',
+        strokeWidth: 2,
+      });
+      dom.appendChild(iconSpan);
+
+      if (!headerMeta.title) {
+        const badgeSpan = document.createElement('span');
+        badgeSpan.className = 'flint-callout-badge';
+        badgeSpan.textContent = typeInfo.title;
+        dom.appendChild(badgeSpan);
+      }
+
+      if (headerMeta.foldable) {
+        const foldBtn = document.createElement('button');
+        foldBtn.type = 'button';
+        foldBtn.className = `flint-callout-fold-toggle ${isFolded ? 'is-folded' : 'is-unfolded'}`;
+        foldBtn.innerHTML = isFolded ? CALLOUT_CHEVRON_RIGHT_SVG : CALLOUT_CHEVRON_DOWN_SVG;
+        foldBtn.setAttribute('data-tooltip', isFolded ? 'Expand callout' : 'Collapse callout');
+        foldBtn.removeAttribute('title');
+        foldBtn.onmousedown = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (editor?.view) {
+            editor.view.dispatch(editor.view.state.tr.setMeta('toggleFoldCallout', pos));
+          }
+        };
+        dom.appendChild(foldBtn);
+      }
+
+      decorations.push(
+        Decoration.widget(blockStart, dom, {
+          side: -1,
+          stopEvent: () => false,
+        })
+      );
+    }
+
+    if (headerMeta.title) {
+      decorations.push(
+        Decoration.inline(blockStart + prefixLen, blockEnd - 1, {
+          class: 'flint-callout-title-text',
+        })
+      );
+    }
+  } else if (calloutMeta?.isCallout && !calloutMeta.isHeader) {
+    const quoteMatch = text.match(/^([ \t]*>+[ \t]?)/);
+    if (quoteMatch) {
+      const quoteLen = quoteMatch[1].length;
+      const isQuoteFocused = isFocused && selFrom <= blockStart + quoteLen && selTo >= blockStart;
+      decorations.push(
+        Decoration.inline(blockStart, blockStart + quoteLen, {
+          class: isQuoteFocused ? 'md-syntax-dimmed flint-callout-quote-marker' : 'md-syntax-hidden',
+        })
+      );
+    }
+  } else if (calloutMeta?.isStandardBlockquote) {
+    const quoteMatch = text.match(/^([ \t]*>+[ \t]?)/);
+    if (quoteMatch) {
+      const quoteLen = quoteMatch[1].length;
+      const isQuoteFocused = isFocused && selFrom <= blockStart + quoteLen && selTo >= blockStart;
+      decorations.push(
+        Decoration.inline(blockStart, blockStart + quoteLen, {
+          class: isQuoteFocused ? 'md-syntax-dimmed' : 'md-syntax-hidden',
+        })
+      );
     }
   }
 
@@ -349,21 +527,23 @@ function scanBlockDecorations(
 
       // List Prefix Dimming (e.g., "1. ", "2. ", "a. ", "aa. ", "- ", "* ", "+ ", "  - ", "**1. ", "**- ")
       // Only dims when there is a space after the marker
-      const listInfo = matchLineListPrefix(lineStr);
-      if (listInfo) {
-        const markerStart = blockStart + lineOffset + listInfo.markerStartInLine;
-        const markerEnd = blockStart + lineOffset + listInfo.markerEndInLine;
-        // Bullet markers (-, *, +) get an extra class so CSS can visually replace them with a centered dot.
-        // When the caret enters or touches the bullet marker, reveal the actual markdown character (e.g. '-')
-        // with full caret visibility instead of hiding it behind a 0-font-size pseudo-element dot.
-        const isBullet = listInfo.isBullet;
-        const isMarkerFocused = isFocused && selFrom <= markerEnd && selTo >= markerStart;
-        const showBulletGlyph = isBullet && !isMarkerFocused;
-        decorations.push(
-          Decoration.inline(markerStart, markerEnd, {
-            class: `flint-numbered-prefix flint-list-prefix${showBulletGlyph ? ' flint-bullet-marker' : ''}`,
-          })
-        );
+      if (!skipListDimming) {
+        const listInfo = matchLineListPrefix(lineStr);
+        if (listInfo) {
+          const markerStart = blockStart + lineOffset + listInfo.markerStartInLine;
+          const markerEnd = blockStart + lineOffset + listInfo.markerEndInLine;
+          // Bullet markers (-, *, +) get an extra class so CSS can visually replace them with a centered dot.
+          // When the caret enters or touches the bullet marker, reveal the actual markdown character (e.g. '-')
+          // with full caret visibility instead of hiding it behind a 0-font-size pseudo-element dot.
+          const isBullet = listInfo.isBullet;
+          const isMarkerFocused = isFocused && selFrom <= markerEnd && selTo >= markerStart;
+          const showBulletGlyph = isBullet && !isMarkerFocused;
+          decorations.push(
+            Decoration.inline(markerStart, markerEnd, {
+              class: `flint-numbered-prefix flint-list-prefix${showBulletGlyph ? ' flint-bullet-marker' : ''}`,
+            })
+          );
+        }
       }
 
       lineOffset += lineStr.length + 1;
@@ -1126,6 +1306,194 @@ function buildAllDecorations(
     }
   }
 
+  // 3b. Classify multi-line callouts and standard blockquotes
+  const calloutMetaMap = new Map<number, BlockCalloutMeta>();
+  const foldPluginState = editor?.state ? FoldPluginKey.getState(editor.state) : null;
+  const foldedCallouts = foldPluginState?.foldedCallouts || new Set<number>();
+  const unfoldedCallouts = foldPluginState?.unfoldedCallouts || new Set<number>();
+
+  let activeCallout: {
+    headerBlockIdx: number;
+    headerPos: number;
+    typeInfo: CalloutTypeDefinition;
+    headerMeta: ParsedCalloutHeader;
+    depth: number;
+    isFolded: boolean;
+    bodyBlockIndices: number[];
+  } | null = null;
+
+  let activeQuote: {
+    startIdx: number;
+    bodyIndices: number[];
+  } | null = null;
+
+  for (let b = 0; b < blocks.length; b++) {
+    const { node, pos } = blocks[b];
+    if (node.type.name !== 'paragraph') {
+      if (activeCallout) {
+        const lastIdx = activeCallout.bodyBlockIndices.length > 0
+          ? activeCallout.bodyBlockIndices[activeCallout.bodyBlockIndices.length - 1]
+          : activeCallout.headerBlockIdx;
+        const meta = calloutMetaMap.get(lastIdx);
+        if (meta) meta.isLast = true;
+        activeCallout = null;
+      }
+      if (activeQuote) {
+        const lastIdx = activeQuote.bodyIndices.length > 0
+          ? activeQuote.bodyIndices[activeQuote.bodyIndices.length - 1]
+          : activeQuote.startIdx;
+        const meta = calloutMetaMap.get(lastIdx);
+        if (meta) meta.isLast = true;
+        activeQuote = null;
+      }
+      continue;
+    }
+
+    const text = node.textContent || '';
+    const header = parseCalloutHeader(text);
+
+    if (header) {
+      if (activeQuote) {
+        const lastIdx = activeQuote.bodyIndices.length > 0
+          ? activeQuote.bodyIndices[activeQuote.bodyIndices.length - 1]
+          : activeQuote.startIdx;
+        const meta = calloutMetaMap.get(lastIdx);
+        if (meta) meta.isLast = true;
+        activeQuote = null;
+      }
+      if (activeCallout) {
+        const lastIdx = activeCallout.bodyBlockIndices.length > 0
+          ? activeCallout.bodyBlockIndices[activeCallout.bodyBlockIndices.length - 1]
+          : activeCallout.headerBlockIdx;
+        const meta = calloutMetaMap.get(lastIdx);
+        if (meta) meta.isLast = true;
+      }
+
+      const isExplicitlyFolded = Array.from<number>(foldedCallouts as any).some(
+        (p) => p === pos || Math.abs(p - pos) <= 2
+      );
+      const isExplicitlyUnfolded = Array.from<number>(unfoldedCallouts as any).some(
+        (p) => p === pos || Math.abs(p - pos) <= 2
+      );
+      const isFolded = isExplicitlyFolded || (header.defaultCollapsed && !isExplicitlyUnfolded);
+      const typeInfo = getCalloutTypeInfo(header.type);
+
+      activeCallout = {
+        headerBlockIdx: b,
+        headerPos: pos,
+        typeInfo,
+        headerMeta: header,
+        depth: header.depth,
+        isFolded,
+        bodyBlockIndices: [],
+      };
+
+      calloutMetaMap.set(b, {
+        isCallout: true,
+        isHeader: true,
+        isFirst: true,
+        isLast: false,
+        typeInfo,
+        headerMeta: header,
+        isFolded,
+        depth: header.depth,
+      });
+    } else if (activeCallout) {
+      const quoteMatch = text.match(/^([ \t]*>+)/);
+      const depth = quoteMatch ? (quoteMatch[1].match(/>/g) || []).length : 0;
+      if (quoteMatch && depth >= activeCallout.depth) {
+        activeCallout.bodyBlockIndices.push(b);
+        calloutMetaMap.set(b, {
+          isCallout: true,
+          isHeader: false,
+          isFirst: false,
+          isLast: false,
+          typeInfo: activeCallout.typeInfo,
+          headerMeta: activeCallout.headerMeta,
+          isFolded: activeCallout.isFolded,
+          depth,
+        });
+      } else {
+        const lastIdx = activeCallout.bodyBlockIndices.length > 0
+          ? activeCallout.bodyBlockIndices[activeCallout.bodyBlockIndices.length - 1]
+          : activeCallout.headerBlockIdx;
+        const meta = calloutMetaMap.get(lastIdx);
+        if (meta) meta.isLast = true;
+        activeCallout = null;
+
+        if (quoteMatch) {
+          activeQuote = { startIdx: b, bodyIndices: [] };
+          calloutMetaMap.set(b, {
+            isCallout: false,
+            isHeader: false,
+            isFirst: true,
+            isLast: false,
+            typeInfo: getCalloutTypeInfo('quote'),
+            headerMeta: {} as any,
+            isFolded: false,
+            depth,
+            isStandardBlockquote: true,
+          });
+        }
+      }
+    } else {
+      const quoteMatch = text.match(/^([ \t]*>+)/);
+      if (quoteMatch) {
+        const depth = (quoteMatch[1].match(/>/g) || []).length;
+        if (!activeQuote) {
+          activeQuote = { startIdx: b, bodyIndices: [] };
+          calloutMetaMap.set(b, {
+            isCallout: false,
+            isHeader: false,
+            isFirst: true,
+            isLast: false,
+            typeInfo: getCalloutTypeInfo('quote'),
+            headerMeta: {} as any,
+            isFolded: false,
+            depth,
+            isStandardBlockquote: true,
+          });
+        } else {
+          activeQuote.bodyIndices.push(b);
+          calloutMetaMap.set(b, {
+            isCallout: false,
+            isHeader: false,
+            isFirst: false,
+            isLast: false,
+            typeInfo: getCalloutTypeInfo('quote'),
+            headerMeta: {} as any,
+            isFolded: false,
+            depth,
+            isStandardBlockquote: true,
+          });
+        }
+      } else if (activeQuote) {
+        const lastIdx = activeQuote.bodyIndices.length > 0
+          ? activeQuote.bodyIndices[activeQuote.bodyIndices.length - 1]
+          : activeQuote.startIdx;
+        const meta = calloutMetaMap.get(lastIdx);
+        if (meta) meta.isLast = true;
+        activeQuote = null;
+      }
+    }
+  }
+
+  if (activeCallout) {
+    const lastIdx = activeCallout.bodyBlockIndices.length > 0
+      ? activeCallout.bodyBlockIndices[activeCallout.bodyBlockIndices.length - 1]
+      : activeCallout.headerBlockIdx;
+    const meta = calloutMetaMap.get(lastIdx);
+    if (meta) meta.isLast = true;
+  }
+
+  if (activeQuote) {
+    const lastIdx = activeQuote.bodyIndices.length > 0
+      ? activeQuote.bodyIndices[activeQuote.bodyIndices.length - 1]
+      : activeQuote.startIdx;
+    const meta = calloutMetaMap.get(lastIdx);
+    if (meta) meta.isLast = true;
+  }
+
   // 4. Scan decorations for each block using exact line indices
   let lineCursor = 0;
   for (let b = 0; b < blocks.length; b++) {
@@ -1151,7 +1519,8 @@ function buildAllDecorations(
       activeLineGuides,
       nextBlockLeadingLen,
       lineGuideColumns,
-      editor
+      editor,
+      calloutMetaMap.get(b) || null
     );
 
     for (let i = 0; i < blockDecos.length; i++) {

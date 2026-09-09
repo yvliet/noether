@@ -136,27 +136,92 @@ Flint features a fully visual table editing engine that eliminates the friction 
 ---
 
 ## 7. Callouts & Alerts
+---
 
-Emphasize critical ideas, warnings, and implementation notes using GitHub-style callouts:
+Flint delivers native support for Obsidian-compatible callouts, allowing you to highlight, organize, and fold structured information directly within your notes. Callouts render with crisp left borders (`border-l-[3px]`), subtle 10% tinted background fills, uppercase badges, icons, and interactive collapsible fold toggles.
+
+### Basic Syntax
+
+A callout begins with a standard Markdown blockquote prefix (`> `), followed immediately by `[!type]` on the first line:
 
 ```markdown
-> [!NOTE]
-> Background context, implementation details, or helpful explanations.
+> [!note]
+> This is a general informational callout box.
 
-> [!TIP]
-> Practical suggestions, keyboard shortcuts, or performance best practices.
-
-> [!IMPORTANT]
-> Essential steps, requirements, or must-know concepts.
-
-> [!WARNING]
-> Critical warnings, potential data pitfalls, or compatibility notices.
-
-> [!CAUTION]
-> High-risk actions, destructive operations, or permanent deletion warnings.
+> [!tip] Custom Title Here
+> Callouts support optional custom titles on the header line.
 ```
 
-Callouts render with crisp colored borders, thematic background fills, and distinct icons, while remaining completely standard CommonMark blockquotes on disk.
+When editing in Live Preview, Flint smoothly conceals the raw `> [!type]` markers and displays the themed badge and icon widget. Placing your cursor directly on the header reveals the dimmed Markdown syntax for inline editing.
+
+### Built-in Callout Types
+
+Flint supports all 13 canonical Obsidian callout types and their recognized aliases:
+
+| Callout Type | Aliases | Accent Color | Intended Usage |
+| :--- | :--- | :--- | :--- |
+| `note` | | Blue (`#3b82f6`) | General contextual notes and informational summaries |
+| `abstract` | `summary`, `tldr` | Cyan (`#06b6d4`) | Executive summaries, abstracts, and TL;DR overviews |
+| `info` | | Sky Blue (`#0284c7`) | Supplemental reference details and background facts |
+| `todo` | | Sky Blue (`#0ea5e9`) | Checklists, next steps, and action items |
+| `tip` | `hint`, `important` | Emerald (`#10b981`) | Helpful advice, optimization tips, and best practices |
+| `success` | `check`, `done` | Green (`#22c55e`) | Positive outcomes, verified steps, and completed goals |
+| `question` | `help`, `faq` | Amber (`#f59e0b`) | Open inquiries, FAQs, and items requiring clarification |
+| `warning` | `caution`, `attention` | Amber (`#f59e0b`) | Potential pitfalls, risks, and breaking changes to avoid |
+| `failure` | `fail`, `missing` | Rose (`#f43f5e`) | Unmet criteria, failed tests, or missing dependencies |
+| `danger` | `error` | Red (`#ef4444`) | Destructive operations, data loss risks, and errors |
+| `bug` | | Orange (`#f97316`) | Software defects, regressions, and unintended behavior |
+| `example` | | Purple (`#8b5cf6`) | Practical examples, sample code, and walkthroughs |
+| `quote` | `cite` | Slate (`#9ca3af`) | Highlighted citations, quotes, and excerpts |
+
+### Collapsible Callouts
+
+Add a `+` or `-` modifier directly after the callout type identifier to make it collapsible:
+
+- `> [!type]+ Title`: Foldable callout that is **expanded** by default.
+- `> [!type]- Title`: Foldable callout that is **collapsed** by default.
+
+```markdown
+> [!tip]+ Expandable Performance Tip
+> This content is open on initial document load.
+> Click the fold chevron in the header to collapse it.
+
+> [!danger]- Hidden High-Risk Operations
+> This content is collapsed by default to save vertical space.
+> Click the fold chevron to reveal the dangerous commands.
+```
+
+Fold states toggle instantly with zero animation delay to ensure a snappy, unbloated desktop experience.
+
+### Nested Callouts
+
+Nest callouts inside other callouts or blockquotes by increasing the blockquote depth (`>> `):
+
+```markdown
+> [!note] Parent Architecture Plan
+> High-level system overview.
+>
+>> [!warning] Security Boundary
+>> Do not expose internal port 8080 directly to public networks.
+```
+
+### Keyboard & Slash Commands
+
+- **Slash Command**: Type `/callout` in the editor to insert a callout or press `ArrowRight` to open the Callout Types submenu.
+- **Enter Continuation**: Pressing `Enter` inside a callout automatically continues the `>` prefix on the next line. Pressing `Enter` on an empty `>` line cleanly exits the callout.
+- **Tab Indentation**: Pressing `Tab` at the beginning of a callout line increases nesting (`>` → `>>`), while `Shift+Tab` decreases nesting (`>>` → `>`).
+
+### Custom CSS Theming
+
+You can customize individual callout types or create custom types using CSS snippets in your vault:
+
+```css
+[data-callout="my-custom-type"] {
+  --callout-border: #8b5cf6;
+  --callout-bg: rgba(139, 92, 246, 0.1);
+  --callout-text: #a78bfa;
+}
+```
 
 ---
 
