@@ -148,6 +148,7 @@ import {
   AlertDiamondIcon as HugeAlertDiamondIcon,
   QuoteUpIcon as HugeQuoteUpIcon,
   Bug01Icon as HugeBug01Icon,
+  TerminalIcon as HugeTerminalIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -262,6 +263,7 @@ export const Brain02Icon = createIcon(HugeBrain02Icon);
 
 export const Calendar01Icon = createIcon(HugeCalendar01Icon);
 export const CommandIcon = createIcon(HugeCommandIcon);
+export const TerminalIcon = createIcon(HugeTerminalIcon);
 export const HelpCircleIcon = createIcon(HugeHelpCircleIcon);
 export const Settings02Icon = createIcon(HugeSettings02Icon);
 export const Database01Icon = createIcon(HugeDatabase01Icon);

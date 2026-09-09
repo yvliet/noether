@@ -1,14 +1,11 @@
 import React, { useCallback } from 'react';
 import {
-  FlintLogoIcon,
-  FileAddIcon,
-  CommandIcon,
+  TerminalIcon,
   HelpCircleIcon,
   Settings02Icon,
   ArrowUpDownIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useDocumentStore } from '@/store/documentStore';
 import { useFlintApp, useRibbonItems } from '@/core/app/AppContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -17,27 +14,12 @@ export const ActionRail: React.FC = React.memo(() => {
   const app = useFlintApp();
   const ribbonItems = useRibbonItems();
 
-  const setMainViewMode = useWorkspaceStore((s) => s.setMainViewMode);
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);
-  const panes = useWorkspaceStore((s) => s.panes);
-  const focusedPaneId = useWorkspaceStore((s) => s.focusedPaneId);
-  const rootActiveTabId = useWorkspaceStore((s) => s.activeTabId);
-  const rootTabs = useWorkspaceStore((s) => s.tabs);
-  const activePaneModel = panes[focusedPaneId] || panes['main'];
-  const activeTabId = activePaneModel?.activeTabId || rootActiveTabId;
-  const tabs = activePaneModel?.tabs || rootTabs;
-  const mainViewMode = useWorkspaceStore((s) => s.mainViewMode);
   const showToast = useWorkspaceStore((s) => s.showToast);
-
-  const createNewNote = useDocumentStore((s) => s.createNewNote);
-
-  const handleCreateNewNote = useCallback(async () => {
-    await createNewNote('Untitled');
-  }, [createNewNote]);
 
   const handleOpenSettings = useCallback(() => {
     setIsSettingsOpen(true);
@@ -77,30 +59,17 @@ export const ActionRail: React.FC = React.memo(() => {
     >
       {/* Top Action Icons */}
       <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full">
-        {/* Flint Blaze Logo */}
-        <div
-          data-action-rail-id="core:home"
-          data-no-drag="true"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          onClick={() => setMainViewMode('document')}
-          className="no-drag w-8 h-8 rounded-lg flex items-center justify-center mb-1 cursor-pointer hover:bg-[var(--flint-bg-card-hover)]"
-          title="Flint"
-          data-tooltip="Flint"
-        >
-          <FlintLogoIcon size={20} className="text-[var(--flint-text-primary)]" />
-        </div>
-
-        {/* Quick New Note */}
+        {/* Command Palette Button (Topmost) */}
         <button
-          data-action-rail-id="core:create-note"
+          data-action-rail-id="core:command-palette"
           data-no-drag="true"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          onClick={handleCreateNewNote}
-          title="Create new note (Ctrl+N)"
-          data-tooltip="Create new note (Ctrl+N)"
+          onClick={() => setIsCommandPaletteOpen(true)}
+          title="Command palette (Ctrl+K)"
+          data-tooltip="Command palette (Ctrl+K)"
           className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
         >
-          <FileAddIcon size={16} />
+          <TerminalIcon size={16} />
         </button>
 
         {/* Dynamic Registered Items from Built-in & Community Extensions */}
@@ -132,19 +101,6 @@ export const ActionRail: React.FC = React.memo(() => {
             </button>
           );
         })}
-
-        {/* Quick Open & Command Palette Button */}
-        <button
-          data-action-rail-id="core:command-palette"
-          data-no-drag="true"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          onClick={() => setIsCommandPaletteOpen(true)}
-          title="Quick Open & commands (Ctrl+K)"
-          data-tooltip="Quick Open & commands (Ctrl+K)"
-          className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
-        >
-          <CommandIcon size={16} />
-        </button>
       </div>
 
       {/* Bottom Group (Hearth, Help, Settings) - Only visible when Left Sidebar is collapsed */}
