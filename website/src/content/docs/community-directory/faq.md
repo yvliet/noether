@@ -17,7 +17,7 @@ Extensions are typically written in TypeScript or JavaScript. They are compiled 
 Not yet. An official community extension marketplace and registry is currently in active development. In the current version of Flint, extensions and themes are loaded and tested locally from `.flint/plugins/` and `.flint/themes/`, and shared via GitHub repositories.
 
 ### Where can I ask technical questions or report bugs?
-Join technical discussions and report issues on the official [Flint GitHub Repository](https://github.com/yvliet/flint/discussions).
+Join technical discussions and report issues on the official [Flint GitHub Repository](https://github.com/yvliet/Flint/discussions).
 
 ### How do I expose my extension to AI agents?
 Flint includes native support for the Model Context Protocol (MCP). In your extension's `onload()` method, call `this.registerTool(...)`. See [[Model Context Protocol (MCP) Tools]].

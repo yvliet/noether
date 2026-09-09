@@ -1,102 +1,102 @@
-# Flint Systems Architecture & Technical Specification
+# Flint Architecture
 
-This document provides an exhaustive technical specification of Flint's systems engineering, internal micro-kernel design, dual-track storage engine, and platform runtime invariants.
-
----
-
-## 1. Architectural Principles & Stack Overview
+A pragmatic look at how Flint works under the hood: how we keep plain Markdown files fast and durable, our SQLite indexing strategy, and how our extension system stays out of the way of core performance.
 
 ---
 
-Flint pairs the durability of plain-text Markdown files with the fast query performance of an embedded database. To keep the codebase clean, fast, and modular, Flint organizes responsibilities across a **4-tier stack**:
+## 1. Stack Overview
 
-| Architecture Tier | Core Technologies | Scope & Purpose |
+---
+
+Flint pairs the durability of plain-text Markdown files with the speed of an embedded database. To keep the codebase clean and modular, responsibilities are split across four layers:
+
+| Layer | Technologies | What It Does |
 | :--- | :--- | :--- |
-| **Tier 1: Presentation & Workspace** | TipTap 2.x, ProseMirror, Force Graph, Canvas | Live Preview editing, force graph physics, infinite spatial boards |
-| **Tier 2: Micro-Kernel & State** | Typed EventBus, Micro-Kernel Registries, Zustand | Decoupled pub/sub messaging, dynamic tool/view registration, state isolation |
-| **Tier 3: Platform Bridge & Rust** | Tauri v2 Host, `rusqlite` (WAL/FTS5), Memory Optimizer | Compiled Rust core, atomic page transactions, RAM working set trimming |
-| **Tier 4: Local Storage** | Plain Markdown (`.md`), `.flint/` Engine, `.trash/` | Plain text `.md` files, SQLite cache/FTS5 index, soft-delete safety folder |
+| **UI & Workspace** | TipTap 2.x, ProseMirror, Force Graph, Canvas | Live Preview editor, force graph, freeform visual canvas |
+| **State & Extensions** | Typed EventBus, Extension Registries, Zustand | Event dispatching, extension registries, and UI state |
+| **Rust & Platform Bridge** | Tauri v2, `rusqlite` (WAL/FTS5), Memory Trimmer | Native backend, SQLite transactions, and idle memory trimming |
+| **Storage on Disk** | Plain Markdown (`.md`), `.flint/`, `.trash/` | Your notes on disk, local SQLite index, and recovery trash folder |
 
 ---
 
-## 2. Dual-Track Storage & Synchronization Pipeline
+## 2. Storage & Sync: Files on Disk + SQLite Index
 
 ---
 
-Flint keeps your notes as clean Markdown files on disk while maintaining a fast relational database for instant searches, backlinks, and graph queries. It does this through a concurrent **dual-track pipeline**:
+Flint keeps your notes as clean Markdown files on disk while maintaining a fast relational database for instant searches, backlinks, and graph queries. Every save updates both in parallel:
 
-| Track | Mechanism | Execution Pipeline |
+| Target | Mechanism | How It Executes |
 | :--- | :--- | :--- |
-| **Track A: Plain Markdown File** | Atomic Temp-and-Rename Writes | 1. Serialize Markdown AST<br />2. Write to `<file>.tmp.<pid>`<br />3. Atomic OS rename (`fs::rename`)<br />4. Record signature in `LAST_INTERNAL_WRITE` |
-| **Track B: Relational SQLite Index** | Native `rusqlite` WAL Transactions | 1. Direct Tauri IPC dispatch to compiled Rust<br />2. Atomic page commit (WAL mode)<br />3. Update FTS5 BM25 virtual table & links<br />4. Emit `document:saved` on EventBus |
+| **Plain Markdown File** | Safe Temp-and-Rename Writes | 1. Serialize editor state to Markdown<br />2. Write to `<file>.tmp.<pid>`<br />3. Atomically rename into place (`fs::rename`)<br />4. Record write timestamp |
+| **Relational SQLite Index** | Native `rusqlite` WAL Transactions | 1. Send extracted metadata over Tauri IPC to Rust<br />2. Commit transaction to SQLite WAL<br />3. Update FTS5 search index and backlinks<br />4. Emit `document:saved` on EventBus |
 
-### Track A: Physical File Persistence
-- **Active Buffer Protection**: Keystrokes update in-memory document state immediately. Active typing buffers are protected from background file reloads.
-- **Debounced Saves**: File writes are debounced (300ms) to eliminate disk thrashing during fast typing bursts.
-- **Safe Atomic Saves (Temp-and-Rename)**: Note changes write to a temporary file first (`<target>.tmp.<pid>`), then atomically replace the target file via OS primitives (`fs::rename`). This prevents file corruption if the application or computer suddenly loses power.
-- **Echo Suppression (Write Timestamps)**: Before writing to disk, Flint records an internal write timestamp (`LAST_INTERNAL_WRITE`). The file watcher inspects this timestamp to ignore its own saves, preventing reload loops while immediately picking up external changes (e.g. Git checkouts).
+### Saving Plain Markdown Files
+- **Active buffer protection**: Keystrokes update memory immediately. The active note you are editing is protected from being overwritten by background file reloads.
+- **Debounced saves (300ms)**: Writes wait 300ms after you stop typing to avoid hammering the disk while you write.
+- **Crash-safe atomic saves**: Flint writes note changes to a temporary file first (`<target>.tmp.<pid>`), then renames it over the target file. If power cuts out mid-save, your original note is never left corrupted or half-written.
+- **Ignoring our own saves**: Before writing to disk, Flint records an internal write timestamp (`LAST_INTERNAL_WRITE`). When the file watcher notices a change, it checks this timestamp to avoid reloading a file Flint just saved, while still catching external edits (like Git branches or external editors) right away.
 
-### Track B: Relational Metadata & Query Index (`rusqlite`)
-- **Direct Tauri IPC**: Extracted AST nodes, YAML frontmatter, tags, `[[wikilinks]]`, and `- [ ]` tasks serialize across Tauri IPC directly into compiled Rust.
-- **Compiled Native SQLite**: Eliminates WebAssembly (`sql.js`) memory dumps and exports. Transactions commit page-level diffs directly to `flint.sqlite` and the Write-Ahead Log (`flint.sqlite-wal`) with `PRAGMA synchronous = NORMAL;` and 256MB memory mapping (`PRAGMA mmap_size = 268435456;`).
-- **FTS5 Full-Text Retrieval**: Block-level tokenization with `unicode61 remove_diacritics 1` and BM25 relevance ranking keeps search responsive across tens of thousands of notes.
+### Fast Search & Relational Index (`rusqlite`)
+- **Native Rust SQLite over Tauri IPC**: Extracted frontmatter, tags, `[[wikilinks]]`, and tasks are sent directly to compiled Rust. Running SQLite natively eliminates sluggish WebAssembly exports and RAM dumps.
+- **WAL Mode & Memory Mapping**: Transactions write directly to `flint.sqlite` with WAL mode and memory-mapped I/O, keeping read and write operations concurrent and fast.
+- **Instant full-text search (FTS5)**: SQLite's FTS5 engine handles full-text search with BM25 ranking and automatic diacritics removal, so searching 20,000+ notes feels instant.
 
-### Differential Synchronization (`file_manifest`)
-- On startup, Flint compares filesystem modification timestamps (`mtime`), file sizes, and SHA-256 content hashes against the `file_manifest` table.
-- Unchanged files skip AST re-parsing entirely, allowing cold-start vault validation to finish in milliseconds.
-
----
-
-## 3. Strict Core Isolation (IoC Pattern)
+### Fast Vault Startup Scanning
+- On startup, Flint compares file timestamps, sizes, and content hashes against the `file_manifest` table.
+- Unchanged files skip re-parsing completely, so opening even large vaults takes just a few milliseconds.
 
 ---
 
-To keep the codebase maintainable and prevent plugins from tangling with core logic, Flint enforces **strict core isolation**:
-
-1. **Zero Extension Leakage**: Core directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) must never import code, types, or models from extension folders (`src/extensions/*`).
-2. **Universal SDK Surface**: Built-in features (Graph, Canvas, FSRS, Tasks, Journal, Backlinks) and community extensions build on the identical public Flint SDK (`src/sdk`).
-3. **Inversion of Control (IoC) Registries**:
-   - `SlotRegistry`: Dynamic React portal mounting into host layout slots (`workspace:root`, `editor:floating-toolbar`, `editor:minimap`).
-   - `EditorRegistry`: Transaction-mapped ProseMirror plugins, input rules, and paste rules.
-   - `ToolRegistry`: Model Context Protocol (MCP) AI tool registration with Zod validation.
-   - `DatabaseManager`: Declarative SQLite table creation (`this.defineTable()`) with automated column diffing and cascade cleanup on note deletion.
-   - `WorkerPool`: Off-thread Web Worker execution for heavy CPU-bound algorithms.
+## 3. Keeping Core Code Clean & Modular
 
 ---
 
-## 4. Live Preview Performance Engineering
+To keep the codebase maintainable and prevent extensions from tangling with core editor logic, Flint enforces clear boundaries:
+
+1. **No extension imports in core**: Core folders (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import anything from `src/extensions/*`. Core knows nothing about specific extensions.
+2. **Built-ins use the public SDK**: Built-in features (Graph, Canvas, Tasks, Flashcards) use the exact same Flint SDK (`src/sdk`) that community extensions use.
+3. **Extension Registries**: Extensions plug into the application through dedicated registries:
+   - `SlotRegistry`: Mounts React UI into designated layout slots (toolbars, minimap, modals).
+   - `EditorRegistry`: Adds ProseMirror decorations, keyboard shortcuts, and input rules.
+   - `ToolRegistry`: Exposes AI tools to MCP with typed Zod schemas.
+   - `DatabaseManager`: Creates custom SQLite tables with automatic column migrations and cascade cleanup on note deletion.
+   - `WorkerPool`: Runs heavy background calculations in Web Workers without stalling UI typing.
 
 ---
 
-TipTap 2.x and ProseMirror maintain a **sub-8ms input latency** on documents exceeding 100,000 words through explicit performance practices:
-
-- **Incremental Decoration Mapping**: Instead of re-parsing whole-document ASTs on every keystroke, existing decorations are mapped across transaction steps using position arithmetic (`DecorationSet.map`).
-- **Dirty-Range Re-scanning**: Only modified textblocks and immediate parent containers are re-scanned for inline markdown tokens, wikilinks, and syntax chips.
-- **Formula Memoization**: KaTeX compilation HTML strings are cached in memory keyed by raw formula strings.
-- **Bounded Undo History**: ProseMirror history depth is capped at 50 snapshots to prevent unbounded memory growth.
+## 4. Editor Performance on Large Notes (100k+ Words)
 
 ---
 
-## 5. Host Runtime & Memory Optimization
+Typing in a note should always feel instantaneous. To keep input latency under 8ms even on massive documents, we avoid common editor bottlenecks:
+
+- **Map decorations instead of reparsing**: When you type, ProseMirror maps existing syntax chips and highlights forward with position math (`DecorationSet.map`) rather than re-parsing the whole document.
+- **Only scan changed paragraphs**: Flint only checks modified blocks and their immediate parents for wikilinks and markdown tokens.
+- **Cache KaTeX formulas**: Rendered math equations are memoized in memory so the editor doesn't recompile unchanged formulas on every keystroke.
+- **Cap undo history**: History depth is capped at 50 snapshots so undo stacks never leak memory.
 
 ---
 
-Flint runs in a compiled native Rust container (Tauri v2) paired with WebView2 runtime optimizations:
-
-- **Hardware Acceleration**: Leverages native DirectX and DirectComposition hardware acceleration for smooth 60 FPS rendering.
-- **Working Set RAM Trimming**: When the user is idle for 120 seconds, the background host process invokes the Win32 API `SetProcessWorkingSetSize` across the WebView2 process tree, returning standby memory pages back to the operating system.
+## 5. Desktop Runtime & Memory Usage
 
 ---
 
-## 6. Standalone Model Context Protocol (MCP) Server
+Flint runs as a lightweight native desktop app via Tauri v2, using the OS webview rather than bundling a full copy of Chromium:
+
+- **Hardware acceleration**: GPU acceleration is enabled for smooth canvas panning and graph physics.
+- **Idle memory cleanup**: When Flint sits idle for two minutes, Rust triggers an OS-level working set trim on the webview process tree, releasing standby RAM back to your system.
 
 ---
 
-Flint includes an out-of-the-box stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`):
+## 6. Built-in MCP Server for AI Assistants
 
-- **Zero-Config Discovery**: Automatically discovers Hearth locations from system app data and recent vault registries.
-- **JSON-RPC 2.0 Compliance**: Implements the official MCP specification for AI tool calling.
-- **Direct Stdio Transport**: External AI assistants (Claude Desktop, Google Antigravity, Cursor) spawn the server process and communicate via standard input/output streams with sub-millisecond RPC execution.
+---
+
+Flint includes a lightweight stdio server script (`bin/flint-mcp-server.cjs`) that lets AI assistants interact directly with your notes:
+
+- **Finds vaults automatically**: Reads recent vault locations from your local app data so you don't need manual path configuration.
+- **Standard MCP protocol**: Speaks standard JSON-RPC over stdio, compatible with Claude Desktop, Cursor, and Antigravity.
+- **Fast local execution**: Tool calls run locally against your SQLite index and markdown files with sub-millisecond response times.
 
 ---
 

@@ -7,12 +7,9 @@ Flint is distributed as a lightweight, cross-platform native desktop application
 
 ---
 
-Official pre-compiled desktop binaries and one-click installers will be available soon once **version 1.0.0** is officially released and reaches stable status.
+Official pre-compiled desktop binaries and one-click installers will be available once **version 1.0.0** reaches stable release status.
 
-Until the stable 1.0.0 release is available, you can try Flint directly in your browser or compile and run the native desktop application locally from source:
-
-- **Web Preview**: Experience Flint directly in your browser powered by WebAssembly SQLite: [Launch Web App →](https://yvliet.github.io/flint/)
-- **Build from Source**: Clone the repository and compile or run the desktop app locally (see [Building From Source](#3-building-from-source)).
+Until pre-built binaries are published, you can compile and run Flint locally from source (see [Building From Source](#3-building-from-source)).
 
 ### Upcoming Platform Support for v1.0.0
 
@@ -64,7 +61,7 @@ Developers wishing to contribute to Flint core or test unreleased features can c
 
 #### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/yvliet/flint.git
+git clone https://github.com/yvliet/Flint.git
 cd flint
 ```
 
@@ -80,12 +77,12 @@ npm run tauri dev
 ```
 Flint's Vite dev server will start at `http://localhost:1420`, and Tauri will spawn the native desktop window.
 
-#### Step 4: Run Headless Web Preview
-To preview the web frontend in your browser without compiling the Rust desktop container:
+#### Step 4: Run Frontend Development Server
+To work on the frontend UI in your browser without compiling the Rust desktop container:
 ```bash
 npm run dev
 ```
-Open `http://localhost:5173` in your browser. Web mode uses the WebAssembly SQLite fallback engine and mock platform adapters.
+Open `http://localhost:5173` in your browser. This mode uses mock platform adapters for rapid UI layout iteration.
 
 #### Step 5: Compile Production Binary
 To generate an optimized, stripped standalone installer for your current operating system:

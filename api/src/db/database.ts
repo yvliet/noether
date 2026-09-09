@@ -105,6 +105,16 @@ function normalizeDatabaseUrl(rawUrl: string): string {
   return url;
 }
 
+function getDefaultSqlitePath(): string {
+  try {
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = path.dirname(__filename);
+    return path.resolve(__dirname, '../../flint_registry.db');
+  } catch {
+    return 'flint_registry.db';
+  }
+}
+
 /**
  * Resolves or initializes the global libSQL client.
  * Configured via `DATABASE_URL` (e.g. `file:flint_registry.db` or Turso `libsql://...`)
@@ -113,7 +123,7 @@ function normalizeDatabaseUrl(rawUrl: string): string {
 export function getDb(): Client {
   if (!dbInstance) {
     tryLoadEnv();
-    const rawUrl = process.env.DATABASE_URL || 'file:flint_registry.db';
+    const rawUrl = process.env.DATABASE_URL || `file:${getDefaultSqlitePath()}`;
     const url = normalizeDatabaseUrl(rawUrl);
     const authToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
 

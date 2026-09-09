@@ -16,4 +16,4 @@ Flint is engineered with explicit performance invariants designed to maintain fl
 | **Working Set Trimming** | Win32 Memory Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory after 120s of idle time. |
 | **Startup Differential Sync** | Manifest Tracking | `file_manifest` compares timestamps and hashes to skip AST re-indexing on unchanged notes. |
 | **Echo Suppression** | Signature-Based Write Tracking | Records internal save signatures to prevent file watchers from triggering recursive reload loops. |
-| **Instant UI Snappiness** | Zero Transition Delay | Micro-interactions execute instantly with zero artificial transition delays or visual smearing. |
+| **Native Desktop Feel** | Zero Decorative Delays | UI controls (menus, toggles, buttons) respond immediately without sluggish fade or slide transitions. |

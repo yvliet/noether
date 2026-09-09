@@ -79,7 +79,7 @@ Flint resolves this tension through a **Dual-Storage Architecture**:
   │  Continuous Transaction Indexing (Tauri IPC)
   ▼
 [ Embedded SQLite Engine ]
-  Native SQLite (Tauri/WAL rusqlite) / In-Memory WASM Fallback
+  Native SQLite (Tauri/WAL rusqlite)
   • documents: file metadata & hierarchy
   • document_links: Wikilink graph edges
   • document_tags: indexed tag taxonomies
@@ -88,9 +88,7 @@ Flint resolves this tension through a **Dual-Storage Architecture**:
 
 - **Source of Truth**: The `.md` markdown files on your drive remain the immutable source of truth.
 - **Query Accelerator**: An embedded SQLite database (`.flint/flint.sqlite`) maintains a real-time relational model of note titles, forward links, backlinks, tags, properties, and full-text search tokens.
-- **Engine Implementations**:
-  - In the **Desktop App**, Flint communicates with a native compiled SQLite engine running in Rust via Tauri IPC. Transactions use Write-Ahead Logging (WAL) mode for atomic, sub-millisecond commits without WebAssembly memory overhead.
-  - In **Web Previews and Browser Environments**, Flint switches to an in-memory WebAssembly SQLite (`sql.js`) engine with debounced binary serialization.
+- **Engine Implementation**: Flint communicates with a native compiled SQLite engine running in Rust via Tauri IPC. Transactions use Write-Ahead Logging (WAL) mode for atomic, sub-millisecond commits without WebAssembly memory overhead.
 
 
 ## 4. Native Extensibility & AI Copilot Integration

@@ -34,7 +34,7 @@ Before publishing your extension, verify that your package satisfies the followi
   - Core dependencies (`flint`, `@flint/api`, `@flint/sdk`, `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`) must be marked as **external** so duplicate runtimes are not bundled.
 - [ ] **Optional `styles.css`**: Scoped styles prefixed with your extension identifier to avoid polluting host styling.
 - [ ] **`README.md`**: Clear documentation detailing features, keyboard shortcuts, and registered Model Context Protocol (MCP) tools.
-- [ ] **Desktop Responsiveness**: Verified that UI elements respond instantly with zero artificial animation delays.
+- [ ] **Native Desktop Feel**: Verified that custom settings, buttons, and menus open and respond immediately without slow cosmetic transitions.
 
 
 ## 3. Publishing to the Turso Registry

@@ -1,6 +1,6 @@
 # Flint UI Components
 
-Flint provides a suite of native UI primitives and setting builders directly via the Flint Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components are styled with Flint's design tokens and follow the native desktop responsiveness standard. They render, hover, and toggle instantly with zero artificial transition delays.
+Flint provides a suite of native UI primitives and setting builders directly via the Flint Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components use Flint's design tokens and are designed to feel like native desktop controls: clean, tactile, and responding instantly to clicks and keyboard navigation without cosmetic animation delays.
 
 Extension authors should use these components to build custom settings tabs, modal dialogs, status bar widgets, and workspace panels that seamlessly blend with the host application.
 
@@ -124,7 +124,7 @@ export const SearchField: React.FC = () => {
 
 ---
 
-The `Toggle` component provides instant, accessible boolean switches. In accordance with Flint's desktop feel, toggles transition state immediately without sluggish frame animations.
+The `Toggle` component provides clean, accessible boolean switches. Like other native desktop controls in Flint, toggles flip state immediately on click.
 
 :::preview toggle
 

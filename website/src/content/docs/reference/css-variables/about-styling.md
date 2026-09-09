@@ -66,11 +66,11 @@ A standard theme stylesheet defines rules for both appearance modes:
 ```
 
 
-## 4. Instant UI Responsiveness
+## 4. Native Desktop Responsiveness
 
 ---
 
-All micro-interactions in Flint (buttons, toggles, menus, tabs) render with zero artificial transition delays for an instant desktop feel.
+Flint is designed to feel like a classic desktop utility: buttons, toggles, menus, and tabs respond immediately without decorative CSS transition delays.
 
 
 ## 5. Related Reading

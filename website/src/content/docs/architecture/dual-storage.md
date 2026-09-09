@@ -151,22 +151,16 @@ When a document is renamed from `Project Alpha` to `Project Beta`:
 3. Flint triggers an automated link refactoring pass, updating all referencing Markdown files and relational rows within the same atomic operation.
 
 
-## 5. Storage Engine Implementations
+## 5. Storage Engine Implementation
 
 ---
 
-Flint supports two runtime execution targets for SQLite:
+Flint runs on a native compiled SQLite engine (`rusqlite`) communicating directly with the Tauri host:
 
-### A. Desktop Mode: Native Rusqlite (Tauri IPC)
 - Uses native C/Rust SQLite compiled directly into the Tauri binary.
 - Configured with `PRAGMA journal_mode = WAL;` (Write-Ahead Logging) and `PRAGMA synchronous = NORMAL;`.
-- Eliminates the ~100MB memory footprint of WebAssembly runtimes.
+- Eliminates the memory footprint and slow binary dumps of WebAssembly runtimes.
 - Page commits execute on disk in microseconds on background worker threads, guaranteeing that typing in the UI thread never drops frames.
-
-### B. Web Mode: WebAssembly SQLite (`sql.js`)
-- Runs when previewing Flint in standard browsers or web playgrounds.
-- In-memory execution using WebAssembly with debounced IndexedDB binary dumps.
-- Full SQL compatibility ensures extensions run without code changes between desktop and web builds.
 
 
 ## 6. Related Reading & References

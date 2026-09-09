@@ -57,6 +57,6 @@ While the centralized marketplace registry is in development:
 
 1. Push your theme repository to GitHub.
 2. Tag your repository with the topics `flint-theme` and `flint-notes`.
-3. Share your theme in the [Flint GitHub Discussions Showcase](https://github.com/yvliet/flint/discussions) with a screenshot and installation steps.
+3. Share your theme in the [Flint GitHub Discussions Showcase](https://github.com/yvliet/Flint/discussions) with a screenshot and installation steps.
 
 To learn more about developer standards, read [[Developer Policies & Guidelines]].

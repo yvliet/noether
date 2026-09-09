@@ -478,7 +478,7 @@ const GeneralTab: React.FC = React.memo(() => {
             <div className="text-sm font-medium text-white">Version {APP_VERSION}</div>
             <div className="text-xs text-[#888] mt-0.5">Installer version: {APP_VERSION}</div>
             <a
-              href="https://github.com/yvliet/flint/releases"
+              href="https://github.com/yvliet/Flint/releases"
               target="_blank"
               rel="noreferrer"
               className="text-xs text-[#38bdf8] hover:underline mt-0.5 inline-block w-fit"

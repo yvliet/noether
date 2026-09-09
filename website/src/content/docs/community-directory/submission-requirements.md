@@ -35,4 +35,4 @@ If you accept donations or patronage for your open-source work:
 - You may include a `fundingUrl` in your `manifest.json` linking to services like GitHub Sponsors, Buy Me a Coffee, or Patreon.
 - Extensions must not display unsolicited intrusive popups requesting donations.
 
-For questions, open a discussion in the [Flint GitHub Discussions](https://github.com/yvliet/flint/discussions).
+For questions, open a discussion in the [Flint GitHub Discussions](https://github.com/yvliet/Flint/discussions).

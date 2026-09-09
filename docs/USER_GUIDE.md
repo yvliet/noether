@@ -1,6 +1,6 @@
-# Flint User Guide & Reference Manual
+# Flint User Guide
 
-Welcome to the **Flint User Guide**! This manual covers everything you need to know to organize your thinking, build a personal knowledge graph, study with active recall, brainstorm visually, and collaborate with AI assistants using Flint.
+Welcome to Flint! This guide walks you through organizing your notes, building a personal knowledge graph, reviewing flashcards, brainstorming on an infinite canvas, and connecting local AI assistants.
 
 ---
 
@@ -26,12 +26,12 @@ Welcome to the **Flint User Guide**! This manual covers everything you need to k
 
 ---
 
-Flint is an open-source, local-first note-taking app and knowledge engine built around four principles:
+Flint is an open-source, local-first note-taking app built around four simple principles:
 
-- **Plain Markdown on Disk**: Your notes exist as standard, human-readable CommonMark `.md` files on your local hard drive. There are no proprietary database locks or encrypted blobs. If you ever stop using Flint, your notes remain completely accessible in any text editor forever.
-- **Fast Rust SQLite Index (`rusqlite` + WAL)**: Note metadata, tags, block nodes, forward links, and backlinks are indexed into a local SQLite database (`.flint/flint.sqlite`) running directly in the native Tauri Rust host. This delivers sub-millisecond query execution without WebAssembly memory overhead.
-- **Fast, Fluid Typing**: The Live Preview editor uses transaction decoration mapping, dirty-range AST scanning, and formula caching to keep typing responsive (sub-8ms latency) even on documents exceeding 100,000 words.
-- **AI-Ready via MCP**: Flint includes an out-of-the-box Model Context Protocol (MCP) stdio server allowing Claude Desktop, Google Antigravity, Cursor, and Gemini to query, read, and write notes securely.
+- **Plain Markdown on disk**: Your notes are standard `.md` files on your computer. No vendor lock-in, proprietary database wrappers, or encrypted blobs. You can open, edit, or back up your files with any text editor at any time.
+- **Fast native search & links**: Notes, tags, and links are indexed into a local SQLite database in Rust. Search and backlink lookups are instant without any laggy WebAssembly overhead.
+- **Fast, fluid typing**: The Live Preview editor stays snappy and responsive even when writing long notes with thousands of words, complex tables, and math formulas.
+- **AI-ready when you want it**: Flint includes a local Model Context Protocol (MCP) server so AI assistants like Claude Desktop, Antigravity, and Cursor can read or update your notes safely if you choose to connect them.
 
 ---
 
@@ -49,7 +49,7 @@ In Flint, individual note vaults are called **Hearths**.
 ### File Safety & The `.trash/` Folder
 When you delete a note, Flint never immediately destroys the file on disk. Instead:
 - The `.md` file is moved into the hidden `.trash/` directory inside your Hearth.
-- Original paths and deletion timestamps are logged in the `trash_items` SQLite table.
+- Flint remembers where the file came from and when it was deleted, so you can restore it anytime.
 - Files can be restored to their exact prior location at any time from *Settings → File Safety*.
 
 ---
@@ -119,7 +119,7 @@ Located in the right sidebar, the Backlinks Pane displays:
 - Press `Ctrl+G` to open the full force-directed knowledge graph.
 - Adjust repulsion physics, spring tension, and link distance.
 - Nodes automatically scale based on link count and color-code by folder or tag.
-- **Kinematic Sleep**: The physics simulation automatically pauses when minimized or idle, saving GPU and battery power.
+- **Pauses when idle**: The graph physics automatically pauses when you are not interacting with it, saving battery and GPU power.
 
 ---
 
@@ -127,14 +127,14 @@ Located in the right sidebar, the Backlinks Pane displays:
 
 ---
 
-For visual brainstorming, concept mapping, and system architecture design:
+For visual brainstorming, concept maps, flowcharts, and moodboards:
 
 - Click **Canvas** on the Action Rail or run `Ctrl+K` → *Open Canvas*.
 - **Note Cards**: Drag documents from the file tree directly onto the canvas plane.
 - **Sticky Text Nodes**: Double-click anywhere to create free-form sticky cards.
 - **Group Containers**: Select cards and press `Ctrl+G` to encase them in colored, titled container frames.
 - **Connectors**: Drag connection handles from card borders to create Bezier curve arrows with custom labels.
-- **Ergonomics**: Hold `Spacebar` to pan, use `Ctrl+Wheel` or `Ctrl++`/`Ctrl+-` to zoom, and toggle snap-to-grid for tidy alignment.
+- **Navigation**: Hold `Spacebar` to pan, scroll with `Ctrl+Wheel` to zoom, and use snap-to-grid for tidy alignment.
 
 ---
 
@@ -153,10 +153,10 @@ Create flashcards directly in your notes:
 ### Review Deck Modal
 - Click **Flashcards** on the Action Rail or run `Ctrl+Alt+F`.
 - Grade recall difficulty:
-  - `1` (Again): Reset card interval.
-  - `2` (Hard): Conservative interval progression.
-  - `3` (Good): Standard target retention progression.
-  - `4` (Easy): Accelerated interval expansion.
+  - `1` (Again): Failed recall, repeat soon.
+  - `2` (Hard): Remembered with effort, shorter interval next time.
+  - `3` (Good): Correct recall, standard review schedule.
+  - `4` (Easy): Effortless recall, push the review further out.
 - View stability ($S$), difficulty ($D$), and upcoming review heatmaps in *Settings → Extensions → Spaced Repetition*.
 
 ---
@@ -171,7 +171,7 @@ Never lose track of action items scattered across project notes:
 - Open the **Tasks Dashboard** from the Action Rail (`Ctrl+Alt+T`).
 - **Kanban Board**: Drag task cards between *To Do*, *In Progress*, and *Completed*.
 - **Checklist Mode**: Group tasks by file, priority, or tag.
-- **Atomic Two-Way Sync**: Checking a task off in the dashboard immediately updates the source `.md` file on disk atomically.
+- **Instant two-way sync**: Checking off a task in the dashboard immediately checks the box in your markdown file, and editing the note updates the dashboard.
 
 ---
 
@@ -228,7 +228,7 @@ Add to your client configuration file:
 
 Open **Settings** (`Ctrl+,`) → **Appearance**:
 - **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Flint Dark/Light, Forest Emerald, and Minimal.
-- **Tactile 3D Buttons**: Flint uses physical button styling (`flint-btn`) with crisp borders and instant zero-delay interactions.
+- **Tactile buttons**: Clean physical button styling with crisp borders and snappy, instant feedback.
 - **Link Styling**: Choose between theme accent, classic browser blue/purple, or neutral link palettes.
 
 ---

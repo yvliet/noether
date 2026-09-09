@@ -68,12 +68,12 @@ A comprehensive, categorized reference for all keyboard shortcuts and commands i
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
-| **Open 2D Knowledge Graph** | `Ctrl + G` | `Cmd + G` |
-| **Open Infinite 2D Spatial Canvas** | `Ctrl + Alt + C` | `Cmd + Alt + C` |
-| **Open Centralized Tasks Dashboard** | `Ctrl + Alt + T` | `Cmd + Alt + T` |
-| **Open Today's Journal Scratchpad** | `Ctrl + Alt + J` | `Cmd + Alt + J` |
-| **Open FSRS Spaced Repetition Review** | `Ctrl + Alt + F` | `Cmd + Alt + F` |
-| **Open Quicknote HUD Scratchpad** | `Ctrl + Alt + N` | `Cmd + Alt + N` |
+| **Open Knowledge Graph** | `Ctrl + G` | `Cmd + G` |
+| **Open Canvas** | `Ctrl + Alt + C` | `Cmd + Alt + C` |
+| **Open Tasks Dashboard** | `Ctrl + Alt + T` | `Cmd + Alt + T` |
+| **Open Today's Journal** | `Ctrl + Alt + J` | `Cmd + Alt + J` |
+| **Open Flashcard Review** | `Ctrl + Alt + F` | `Cmd + Alt + F` |
+| **Open Quicknote Scratchpad** | `Ctrl + Alt + N` | `Cmd + Alt + N` |
 
 ---
 

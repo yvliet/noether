@@ -1,5 +1,7 @@
 # Flint MCP Setup Guide
 
+How to connect AI assistants like Claude Desktop, Cursor, and Antigravity directly to your Flint notes and tasks.
+
 ---
 
 ## 1. What is MCP?
@@ -25,7 +27,7 @@ Flint exposes tools at two levels:
 
 ---
 
-Tools are available in-process with zero serialization overhead:
+If you are writing an extension or internal feature, you can call tools directly in-process:
 
 ```typescript
 import { appInstance } from 'flint';
@@ -44,11 +46,11 @@ const schemas = appInstance.tools.getMcpToolSchemas();
 
 ---
 
-## 4. Multi-Hearth Workspace Auto-Discovery
+## 4. Automatic Vault Discovery
 
 ---
 
-Flint automatically auto-discovers all your Hearths without requiring you to configure hardcoded file paths in your agent settings.
+Flint discovers all your Hearths automatically without requiring you to hardcode folder paths in your AI client settings.
 
 When an AI agent connects to Flint:
 1. It automatically attaches to the currently active Hearth.
@@ -62,7 +64,7 @@ When an AI agent connects to Flint:
 
 ---
 
-Because Flint auto-discovers your Hearths, you can connect external agents with zero configuration flags:
+Because Flint finds your active vault on its own, connecting external assistants only requires pointing them to the Flint MCP server script:
 
 ### Claude Desktop
 
@@ -127,17 +129,17 @@ Flint tools are auto-discovered when the MCP server is configured in your agent 
 
 ---
 
-## 7. Native MCP Prompts
+## 7. Built-in MCP Prompts
 
 ---
 
-Flint exposes built-in MCP prompts that external clients and in-app agents can evaluate dynamically:
+Flint includes ready-to-use prompts to help AI models understand your notes and workflows right away:
 
 | Prompt Name | Description | Arguments |
 |:---|:---|:---|
-| `flint_system_instructions` | Domain instructions for the AI on Flint's mental model, wikilinks, and FSRS syntax | `mode?: "concise" \| "comprehensive"` |
-| `flint_daily_review` | Gathers today's journal note, pending tasks, and due flashcards for daily synthesis | `date?: string` (YYYY-MM-DD) |
-| `flint_synthesize_topic` | Searches notes and backlinks to generate a synthesis context for any topic | `topic: string` (required) |
+| `flint_system_instructions` | Teaches the AI model about Flint's formatting, wikilink syntax, and flashcards | `mode?: "concise" \| "comprehensive"` |
+| `flint_daily_review` | Pulls together today's journal entry, open tasks, and due flashcards for a morning or evening review | `date?: string` (YYYY-MM-DD) |
+| `flint_synthesize_topic` | Collects relevant notes and backlinks on a subject to provide context for summaries or research | `topic: string` (required) |
 
 ---
 

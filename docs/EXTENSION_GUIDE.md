@@ -1,6 +1,6 @@
 # Flint Extension Developer Guide
 
-Welcome to the **Flint Extension Ecosystem**! Flint is built with a micro-kernel architecture where both internal features and community additions are structured as modular extensions.
+Flint is built to be easily extended. In fact, most of Flint's built-in features (like Canvas, Tasks, and Flashcards) are built as extensions using the exact same APIs available to third-party developers.
 
 ---
 
@@ -202,7 +202,7 @@ this.registerContextMenuItem({
 });
 ```
 
-### H. Dynamic React Portal Slots
+### H. UI Layout Slots (React Portals)
 Mount React components into built-in layout slots (`workspace:root`, `editor:minimap`, `editor:viewport-overlay`, `editor:floating-toolbar`):
 
 ```javascript
@@ -217,8 +217,8 @@ this.registerPortalSlot({
 });
 ```
 
-### I. Native ProseMirror & TipTap Extensions
-Register transaction-mapped ProseMirror decorators, input rules, paste rules, or custom shortcuts without degrading typing latency:
+### I. Editor Plugins (ProseMirror & TipTap)
+Add custom syntax decorations, markdown shortcuts, input rules, or paste handlers without slowing down keystrokes:
 
 ```javascript
 this.registerEditorPlugin({
@@ -236,8 +236,8 @@ this.registerEditorPlugin({
 });
 ```
 
-### J. Declarative SQLite Tables & Dynamic Migrations
-Define typed SQLite tables with automatic column migrations, version tracking, and cascade deletions when notes are deleted:
+### J. Custom SQLite Tables & Auto-Migrations
+Store structured data in your own SQLite tables with automatic migrations and automatic cleanup when a note is deleted:
 
 ```javascript
 this.myTable = await this.defineTable({
@@ -257,8 +257,8 @@ await this.myTable.insert({ documentId: 'note-1', score: 9.5, metadata: '{}' });
 const rows = await this.myTable.select({ where: { documentId: 'note-1' } });
 ```
 
-### K. Type-Safe Zod-to-MCP Tool Automation
-Register AI tools using Zod schemas for automated validation:
+### K. Registering AI Tools (MCP with Zod)
+Expose tools to AI assistants with typed Zod parameter validation:
 
 ```javascript
 const { z } = require('flint');
@@ -278,8 +278,8 @@ this.registerTool({
 });
 ```
 
-### L. Off-Thread Web Worker Pipeline
-Run CPU-intensive tasks in a Web Worker off the main UI thread with live EventBus telemetry:
+### L. Background Web Workers (Heavy Tasks)
+Run CPU-intensive calculations in a background Web Worker so the main UI stays smooth, sending progress events back as needed:
 
 ```javascript
 // Register the worker task
@@ -292,8 +292,8 @@ this.registerWorkerTask('heavy-calculation', (input, emitEvent) => {
 const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] });
 ```
 
-### M. Available Host Dependencies & Subpath Aliases
-The Flint extension sandbox forwards essential host dependencies to your extension's `require()` environment so you do not need to bundle large duplicate runtimes:
+### M. Shared Host Dependencies & Subpaths
+Flint shares common libraries with extensions so your bundles stay small and you don't have to package duplicate copies of React or Zustand:
 
 - **SDK Aliases**: `require('flint')`, `require('flint/sdk')`, `require('@flint')`, `require('@flint/core')`, `require('flint-sdk')`
 - **UI & React**: `require('react')`, `require('react/jsx-runtime')`, `require('react-dom')`, `require('react-dom/client')`
@@ -302,7 +302,7 @@ The Flint extension sandbox forwards essential host dependencies to your extensi
 - **State Management**: `require('zustand')`, `require('zustand/vanilla')`
 - **Icon System**: `require('@hugeicons/react')`, `require('@hugeicons/core-free-icons')`
 
-Extensions can be placed in either `.flint/extensions/<id>` or `.flint/plugins/<id>`. Both directories are automatically discovered and loaded on launch.
+Extensions live in your Hearth's `.flint/extensions/<id>/` directory and are loaded automatically when Flint opens.
 
 ---
 

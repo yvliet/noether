@@ -11,11 +11,11 @@ Flint is committed to providing a secure, private, and distraction-free knowledg
 - **Local-First by Default**: If an extension integrates with an external cloud service (such as an LLM provider or cloud backup), all API keys must be entered by the user (Bring Your Own Key) and stored locally.
 
 
-## 2. Snappy Desktop Performance
+## 2. Responsive Native Performance
 
 ---
 
-- **Zero Artificial Latency**: UI components must render, toggle, and open immediately. Never introduce artificial delay animations or slow CSS transitions on micro-interactions (see [[Flint UI Components]]).
+- **Instant Desktop UI**: Flint is built to feel like a classic, responsive desktop utility. Avoid adding artificial animation delays or slow CSS fade transitions to buttons, toggles, or menus (see [[Flint UI Components]]).
 - **Non-Blocking Main Thread**: Heavy operations (text embeddings, graph physics, large PDF parsing) must be offloaded to Web Workers via `app.workerPool` or debounced. The editor input latency must remain under 8ms.
 - **Fast Activation**: Extensions must activate in less than 50ms. Dynamic imports should be used for heavy submodules. Read [[Optimizing Extension Load Time]].
 

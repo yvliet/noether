@@ -13,7 +13,7 @@ Flint is designed around four core pillars:
 
 - **Local-First & Plain Text**: Every note in Flint is a standard, human-readable CommonMark `.md` file stored in your local directory. There are no proprietary file formats or cloud lock-ins. Explore the [[Dual-Storage Architecture]] to see how disk text files sync with embedded databases.
 - **Micro-Kernel & Strict Isolation**: The host application internals are strictly separated from extensions. Core directories never leak into plugins, and extensions integrate exclusively through the [[Flint SDK API Reference]] and typed events. Learn more in [[Micro-Kernel & Extension Architecture]].
-- **Fast Desktop Snappiness**: Built with React 19, TipTap/ProseMirror, and Tailwind CSS inside a lightweight Tauri Rust container, all micro-interactions execute instantly with zero artificial animation lag.
+- **Native Desktop Feel**: Built with React 19, TipTap/ProseMirror, and Tailwind CSS inside a lightweight Tauri Rust container. Controls snap into place immediately without decorative transition delays.
 - **Native AI Tooling (MCP)**: Every extension can register structured tools and prompts via the Model Context Protocol. AI agents can safely query your local notes and trigger actions. See [[Model Context Protocol (MCP) Tools]].
 
 
@@ -63,8 +63,8 @@ You can install community extensions locally by dropping their compiled folder i
 
 Flint is open source under the GPLv3 license. I welcome contributions, bug reports, and extension showcases:
 
-- **Source Code & Issue Tracker**: [github.com/yvliet/flint](https://github.com/yvliet/flint)
-- **Feature Requests & Technical Discussions**: [GitHub Discussions](https://github.com/yvliet/flint/discussions)
+- **Source Code & Issue Tracker**: [github.com/yvliet/Flint](https://github.com/yvliet/Flint)
+- **Feature Requests & Technical Discussions**: [GitHub Discussions](https://github.com/yvliet/Flint/discussions)
 - **Submitting Pull Requests**: Please read the repository contributing guide before submitting PRs.
 
 > [!NOTE]

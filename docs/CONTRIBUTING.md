@@ -1,118 +1,88 @@
 # Contributing to Flint
 
-Thank you for your interest in contributing to **Flint**! We are building a fast, local-first note-taking app that pairs the simplicity of plain-text Markdown files with native desktop speed, an embedded SQLite database in Rust, and native AI tool integration.
+Thanks for taking a look at contributing! Flint is an open-source, local-first note-taking app. It's built with React and TypeScript on the frontend, and Tauri v2 with Rust SQLite on the backend.
 
----
+Whether you're fixing a bug, improving the docs, or adding an extension, any help is appreciated.
 
-## 1. Prerequisites & Environment Setup
+## Getting Set Up
 
----
-
-Before compiling or developing Flint, ensure you have the following installed:
+Here's what you need to build and run Flint locally:
 
 - **Node.js**: `v18.0.0` or higher
 - **npm** or **pnpm**
-- **Rust Toolchain**: `cargo >= 1.75` (required to build the Tauri v2 native desktop application)
+- **Rust Toolchain**: `cargo >= 1.75` (for compiling the desktop app)
   - Windows: Visual Studio C++ Build Tools
-  - macOS: Xcode Command Line Tools
-  - Linux: Standard webkit2gtk development packages (`libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `libssl-dev`, `libgtk-3-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`)
+  - macOS: Xcode Command Line Tools (`xcode-select --install`)
+  - Linux: Standard WebKit packages (`libwebkit2gtk-4.1-dev`, `build-essential`, `curl`, `wget`, `libssl-dev`, `libgtk-3-dev`)
 
-### Clone & Install Dependencies
+Clone the repo and install dependencies:
+
 ```bash
-git clone https://github.com/yvliet/flint.git
+git clone https://github.com/yvliet/Flint.git
 cd flint
 npm install
 ```
 
----
+## Running the App
 
-## 2. Development Workflow & Commands
-
----
-
-### Running the Desktop Application (Rust Native + Tauri v2)
-This is the primary development environment with the compiled `rusqlite` WAL engine:
+To run the desktop app with the Rust backend:
 ```bash
 npm run app
-# Equivalent to: npm run tauri:dev
 ```
 
-### Running the Web Development Server (Browser Mode)
-For rapid frontend UI layout development without compiling Rust:
+If you just want to tweak UI components quickly in your browser without compiling Rust, you can run the Vite dev server:
 ```bash
 npm run dev
 # Accessible at http://localhost:5173
 ```
 
-### Building Production Distributables
+To build production installers:
 ```bash
 # Frontend build & typecheck
 npm run build
 
-# Native desktop binary & installer package
+# Native desktop binary & installer (.msi / .dmg / .AppImage)
 npm run tauri:build
 ```
 
----
+## A Few Guidelines
 
-## 3. Engineering Guidelines & Invariants
+To keep Flint fast and pleasant to work on, here are a few things to keep in mind:
 
----
+### 1. Keep core code separate from extensions
+Core folders (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) should never import anything from `src/extensions/*`. Built-in features like Canvas or Tasks talk to the core through the Flint SDK (`src/sdk`), event bus, and extension registries, just like community extensions do.
 
-To keep the codebase maintainable and lightning-fast, we follow these core guidelines:
+### 2. Don't call platform APIs directly in UI code
+Avoid calling Tauri or Node APIs directly inside React components or stores. Instead, route them through [`src/lib/platform/platformAdapter.ts`](../src/lib/platform/platformAdapter.ts) so things stay clean and testable.
 
-### 1. Strict Native Core Isolation
-- **Never import extension code into native core directories**: Core folders (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) must remain strictly isolated from plugin code (`src/extensions/*`).
-- Features must integrate exclusively through the Flint SDK (`src/sdk`), Inversion of Control (IoC) registries (`SlotRegistry`, `EditorRegistry`, `ToolRegistry`, `DatabaseManager`), and the typed `EventBus`.
+### 3. Native desktop feel
+I want Flint to feel like a true native desktop tool. Classic desktop apps don't make you wait around for a button to fade in or a menu to slowly drop down, so we keep controls instant. Clicks, toggles, and menus should snap into place immediately. The only animations that make sense are continuous spatial interactions like zooming on the canvas or force layout in the knowledge graph.
 
-### 2. Cross-Platform Bridge
-- Never invoke runtime-specific host primitives (e.g. Tauri API, Node `fs`, or Electron) directly inside React components or stores.
-- Always route system operations through [`src/lib/platform/platformAdapter.ts`](../src/lib/platform/platformAdapter.ts).
+### 4. Type checking
+Make sure `npx tsc --noEmit` runs with zero errors before opening a PR.
 
-### 3. Type Safety & Verification
-- Always run `npx tsc --noEmit` before opening pull requests to verify zero TypeScript type regressions.
+## Documentation Site
 
-### 4. Zero Animation Delay & Instant UI Snappiness
-- Do not add artificial transitions or delays (`transition-all`, `duration-200`, `fade-in`, etc.) to micro-interactions such as toggle switches, buttons, menus, dropdowns, or file tree items.
-- UI elements must toggle and respond instantly to preserve a crisp, responsive native desktop feel. Continuous spatial simulations (such as Knowledge Graph physics and Canvas pan/zoom) retain mathematical easing where appropriate.
+The documentation website lives in the `website/` directory.
 
-### 5. MCP Tool Registration for Extensions
-- Every extension managing queryable data or user actions must register at least one Model Context Protocol tool via `this.registerTool()`.
-- Use snake_case action verbs (`get_`, `list_`, `create_`, `update_`, `delete_`, `search_`).
-
----
-
-## 4. Documentation & Developer Portal
-
----
-
-The Flint developer and user documentation site lives in the `website/` directory.
-
-### Running the Documentation Site Locally
+To run it locally:
 ```bash
 cd website
 npm install
 npm run dev
-# Open http://localhost:5173
 ```
 
-### Building the Documentation Site
+To build it:
 ```bash
 cd website
 npm run build
 ```
 
----
+## Pull Request Checklist
 
-## 5. Pull Request Verification Checklist
-
----
-
-Before submitting a pull request, verify the following:
-
-- [ ] `npx tsc --noEmit` passes with 0 errors in the repository root.
-- [ ] `npm run build` succeeds without bundling errors.
-- [ ] In `website/`, `npx tsc --noEmit` and `npm run build` pass with 0 errors.
-- [ ] Native core directories have zero imports from `src/extensions/*`.
-- [ ] All new UI components respond instantly with zero artificial transition delays on hover and toggle.
-- [ ] Non-obvious architecture and performance invariants are clearly documented with natural JSDoc comments.
+Before submitting:
+- [ ] `npx tsc --noEmit` passes with 0 errors in the project root.
+- [ ] `npm run build` succeeds.
+- [ ] Core folders don't import from `src/extensions/*`.
+- [ ] UI controls (buttons, menus, tabs) snap into place immediately without decorative fade or slide delays.
+- [ ] New features or non-obvious code have brief, clear comments explaining why they work the way they do.

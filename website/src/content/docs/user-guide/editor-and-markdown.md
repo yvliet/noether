@@ -191,7 +191,7 @@ Add a `+` or `-` modifier directly after the callout type identifier to make it 
 > Click the fold chevron to reveal the dangerous commands.
 ```
 
-Fold states toggle instantly with zero animation delay to ensure a snappy, unbloated desktop experience.
+Fold states expand and collapse immediately on click, keeping note navigation fast and responsive.
 
 ### Nested Callouts
 
