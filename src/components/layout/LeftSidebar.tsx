@@ -690,8 +690,13 @@ export const LeftSidebar: React.FC = React.memo(() => {
               ))}
             </div>
             {rootDocs.length === 0 && fileTreeSections.length === 0 && (
-              <div className="text-center py-8 text-xs text-[var(--flint-text-muted)]">
-                No files in Hearth. Click <span className="text-[var(--flint-text-primary)] font-medium">+</span> above to create one.
+              <div className="text-center py-8 text-xs text-[var(--flint-text-muted)] leading-relaxed">
+                No files in Hearth. Click{' '}
+                <FileAddIcon
+                  size={14}
+                  className="inline-block align-[-2.5px]"
+                />{' '}
+                above to create one.
               </div>
             )}
           </div>
