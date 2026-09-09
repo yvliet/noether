@@ -149,7 +149,10 @@ function normalizePluginItem(
   raw: RawRegistryPlugin,
   catalogueMap: Map<string, MarketplaceExtensionItem>
 ): MarketplaceExtensionItem {
-  const localItem = catalogueMap.get(raw.id);
+  const localItem =
+    catalogueMap.get(raw.id) ||
+    catalogueMap.get(raw.id.replace(/^flint-/, '')) ||
+    catalogueMap.get(`flint-${raw.id}`);
 
   const rawDownloads = raw.downloads;
   let formattedDownloads = '0';
@@ -250,6 +253,10 @@ function mergeCatalogue(remoteItems: RawRegistryPlugin[]): MarketplaceExtensionI
   const catalogueMap = new Map<string, MarketplaceExtensionItem>();
   for (const item of COMMUNITY_MARKETPLACE_CATALOGUE) {
     catalogueMap.set(item.id, item);
+    catalogueMap.set(item.id.replace(/^flint-/, ''), item);
+    if (!item.id.startsWith('flint-')) {
+      catalogueMap.set(`flint-${item.id}`, item);
+    }
   }
 
   const seenIds = new Set<string>();

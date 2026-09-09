@@ -67,6 +67,7 @@ pub fn run() {
             vault::focus_main_window,
             vault::register_global_shortcut,
             vault::unregister_global_shortcut,
+            vault::download_remote_text,
             set_accent_icon,
             db::flint_db_init,
             db::flint_db_query,

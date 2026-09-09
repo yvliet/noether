@@ -1309,6 +1309,35 @@ pub fn unregister_global_shortcut(id: String) -> Value {
     json!({ "success": true })
 }
 
+#[tauri::command]
+pub async fn download_remote_text(url: String) -> Value {
+    let client = match reqwest::Client::builder()
+        .user_agent("Flint-Desktop/0.4.6")
+        .timeout(std::time::Duration::from_secs(12))
+        .build()
+    {
+        Ok(c) => c,
+        Err(e) => return json!({ "success": false, "error": format!("HTTP client error: {}", e) }),
+    };
+
+    match client.get(&url).send().await {
+        Ok(resp) => {
+            if !resp.status().is_success() {
+                return json!({
+                    "success": false,
+                    "status": resp.status().as_u16(),
+                    "error": format!("HTTP request failed with status {}", resp.status())
+                });
+            }
+            match resp.text().await {
+                Ok(text) => json!({ "success": true, "content": text }),
+                Err(e) => json!({ "success": false, "error": format!("Failed to read response body: {}", e) }),
+            }
+        }
+        Err(e) => json!({ "success": false, "error": format!("Network request failed: {}", e) }),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -96,8 +96,18 @@ export function compareSemVer(v1: string, v2: string): number {
 
 /**
  * Executes a network fetch request with an explicit timeout.
+ * On desktop, automatically routes via the native Rust HTTP client to bypass WebView2 CORS restrictions.
  */
 async function fetchWithTimeout(url: string, timeoutMs = 6000): Promise<Response | null> {
+  if (platform.isDesktop()) {
+    try {
+      const nativeRes = await platform.downloadRemoteText(url);
+      if (nativeRes && nativeRes.success && nativeRes.content !== undefined) {
+        return new Response(nativeRes.content, { status: 200, statusText: 'OK' });
+      }
+    } catch {}
+  }
+
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -121,12 +131,25 @@ function resolveGitHubRepo(target: ExtensionDownloadTarget): { owner: string; re
     }
   }
 
+  // Lookup in static KNOWN_COMMUNITY_EXTENSIONS catalog
+  const cleanId = target.id.trim();
+  const known = KNOWN_COMMUNITY_EXTENSIONS.find(
+    (e) =>
+      e.id === cleanId ||
+      e.id === `flint-${cleanId}` ||
+      e.id.replace(/^flint-/, '') === cleanId
+  );
+  if (known?.repoUrl) {
+    const match = known.repoUrl.match(/github\.com\/([^/]+)\/([^/?#]+)/i);
+    if (match && match[1] && match[2]) {
+      return { owner: match[1], repo: match[2].replace(/\.git$/, '') };
+    }
+  }
+
   // Author-based inference
   const authorMatch = target.author?.match(/github\.com\/([^/]+)/i);
   const authorName = authorMatch ? authorMatch[1] : 'yvliet';
 
-  // ID normalization
-  const cleanId = target.id.trim();
   return { owner: authorName, repo: cleanId };
 }
 
@@ -149,11 +172,13 @@ export async function downloadExtensionBundle(
     `${registryBase}/api/v1/extensions/${target.id}/download`,
     `${registryBase}/api/v1/plugins/${target.id}/download`,
     `https://api.flintnotes.dev/api/v1/extensions/${target.id}/download`,
-  ].filter(Boolean) as string[];
+  ]
+    .filter(Boolean)
+    .filter((url, idx, arr) => arr.indexOf(url) === idx) as string[];
 
   for (const endpoint of candidateApiEndpoints) {
     try {
-      const res = await fetchWithTimeout(endpoint, timeoutMs);
+      const res = await fetchWithTimeout(endpoint, 2500);
       if (res && res.ok) {
         const data = await res.json();
         if (data.bundleCode) {
@@ -272,45 +297,63 @@ export async function downloadExtensionBundle(
   // -------------------------------------------------------------
   if (ghRepo) {
     const { owner, repo } = ghRepo;
-    const rawUrls = [
-      `https://raw.githubusercontent.com/${owner}/${repo}/main/dist/main.js`,
-      `https://raw.githubusercontent.com/${owner}/${repo}/main/main.js`,
-      `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest/dist/main.js`,
+    const repoCandidates = [
+      repo,
+      repo.startsWith('flint-') ? repo.replace(/^flint-/, '') : `flint-${repo}`,
     ];
 
-    for (const rawMainJsUrl of rawUrls) {
-      try {
-        const res = await fetchWithTimeout(rawMainJsUrl, timeoutMs);
-        if (res && res.ok) {
-          const mainJs = await res.text();
-          if (mainJs && mainJs.trim().length > 100) {
-            const manifestRawUrl = rawMainJsUrl
-              .replace(/\/dist\/main\.js$/, '/manifest.json')
-              .replace(/\/main\.js$/, '/manifest.json');
+    for (const candidateRepo of repoCandidates) {
+      const rawUrls = [
+        `https://raw.githubusercontent.com/${owner}/${candidateRepo}/main/dist/main.js`,
+        `https://cdn.jsdelivr.net/gh/${owner}/${candidateRepo}@main/dist/main.js`,
+        `https://raw.githubusercontent.com/${owner}/${candidateRepo}/main/main.js`,
+      ];
 
-            let manifestObj: any = null;
-            try {
-              const mRes = await fetchWithTimeout(manifestRawUrl, timeoutMs);
-              if (mRes && mRes.ok) manifestObj = await mRes.json();
-            } catch {}
+      for (const rawMainJsUrl of rawUrls) {
+        try {
+          const res = await fetchWithTimeout(rawMainJsUrl, timeoutMs);
+          if (res && res.ok) {
+            const mainJs = await res.text();
+            if (mainJs && mainJs.trim().length > 100) {
+              const manifestRawUrl = rawMainJsUrl
+                .replace(/\/dist\/main\.js$/, '/manifest.json')
+                .replace(/\/main\.js$/, '/manifest.json');
 
-            const finalManifest: ExtensionManifest = manifestObj || {
-              id: target.id,
-              name: target.name || target.id,
-              version: target.version || '1.0.0',
-              author: owner,
-              isCore: false,
-            };
+              let manifestObj: any = null;
+              try {
+                const mRes = await fetchWithTimeout(manifestRawUrl, timeoutMs);
+                if (mRes && mRes.ok) manifestObj = await mRes.json();
+              } catch {}
 
-            return {
-              manifestJson: JSON.stringify(finalManifest, null, 2),
-              manifest: finalManifest,
-              mainJs,
-              source: 'github-raw',
-            };
+              let stylesCss: string | undefined;
+              try {
+                const stylesRawUrl = rawMainJsUrl
+                  .replace(/\/dist\/main\.js$/, '/styles.css')
+                  .replace(/\/main\.js$/, '/styles.css');
+                const sRes = await fetchWithTimeout(stylesRawUrl, timeoutMs);
+                if (sRes && sRes.ok) stylesCss = await sRes.text();
+              } catch {}
+
+              const finalManifest: ExtensionManifest = manifestObj || {
+                id: target.id,
+                name: target.name || target.id,
+                version: target.version || '1.0.0',
+                description: target.name || target.id,
+                author: owner,
+                isCore: false,
+              };
+
+              return {
+                manifestJson: JSON.stringify(finalManifest, null, 2),
+                manifest: finalManifest,
+                mainJs,
+                stylesCss: stylesCss?.trim() ? stylesCss : undefined,
+                source: 'github-raw',
+              };
+            }
           }
-        }
-      } catch {}
+        } catch {}
+      }
     }
   }
 

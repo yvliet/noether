@@ -323,7 +323,7 @@ export async function fetchTursoPluginBundle(pluginId: string): Promise<TursoBun
     LIMIT 1
   `;
 
-  const rows = await executeTursoQuery(sql, [pluginId], 15000);
+  const rows = await executeTursoQuery(sql, [pluginId], 3500);
   if (!rows || rows.length === 0) {
     return null;
   }

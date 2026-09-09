@@ -96,6 +96,7 @@ export interface IPlatformAdapter {
   readExtensionBundle(extensionFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }>;
   installExtensionBundle(extensionFolder: string, manifestJson: string, mainJs: string, stylesCss?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   uninstallExtensionBundle(extensionFolder: string): Promise<{ success: boolean; error?: string }>;
+  downloadRemoteText(url: string): Promise<{ success: boolean; content?: string; error?: string; status?: number }>;
   openPluginsFolder(): Promise<{ success: boolean; path?: string; error?: string }>;
   listInstalledPlugins(): Promise<Array<{ id: string; name: string; version: string; description: string; author: string; folder: string; isCore: boolean }>>;
   readPluginBundle(pluginFolder: string): Promise<{ success: boolean; jsCode?: string; cssCode?: string; error?: string }>;
@@ -815,6 +816,13 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async uninstallPluginBundle(pluginFolder: string): Promise<{ success: boolean; error?: string }> {
     if (this.isTauri()) {
       return await invoke('uninstall_plugin_bundle', { pluginFolder });
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public async downloadRemoteText(url: string): Promise<{ success: boolean; content?: string; error?: string; status?: number }> {
+    if (this.isTauri()) {
+      return await invoke('download_remote_text', { url });
     }
     return { success: false, error: 'Desktop mode only' };
   }
