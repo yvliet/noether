@@ -218,6 +218,26 @@ function normalizePluginItem(
   };
 }
 
+const CORE_EXTENSION_IDS = new Set([
+  'universal-sync',
+  'flint-universal-sync',
+  'graph',
+  'canvas',
+  'tasks',
+  'journal',
+  'backlinks',
+  'tags',
+  'outline',
+  'properties',
+  'tables',
+  'bookmarks',
+  'marketplace',
+  'iconify',
+  'sketch',
+  'default-commands',
+  'default-status-bar',
+]);
+
 /**
  * Merges a list of remote registry plugins with the built-in offline catalogue,
  * ensuring all first-party extensions remain accessible even if omitted from the remote response.
@@ -232,14 +252,14 @@ function mergeCatalogue(remoteItems: RawRegistryPlugin[]): MarketplaceExtensionI
   const merged: MarketplaceExtensionItem[] = [];
 
   for (const raw of remoteItems) {
-    if (!raw.id || seenIds.has(raw.id)) continue;
+    if (!raw.id || seenIds.has(raw.id) || CORE_EXTENSION_IDS.has(raw.id)) continue;
     seenIds.add(raw.id);
     merged.push(normalizePluginItem(raw, catalogueMap));
   }
 
   // Ensure built-in offline items are never lost
   for (const item of COMMUNITY_MARKETPLACE_CATALOGUE) {
-    if (!seenIds.has(item.id)) {
+    if (!seenIds.has(item.id) && !CORE_EXTENSION_IDS.has(item.id)) {
       merged.push(item);
       seenIds.add(item.id);
     }
