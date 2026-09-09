@@ -15,7 +15,6 @@ import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDo
 import { DocumentProperties } from '@/types';
 import { useAppContextMenu } from '@/components/common/ContextMenu';
 import {
-  FlintLogoIcon,
   FileAddIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -135,7 +134,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const closeSplitTab = useWorkspaceStore((s) => s.closeSplitTab);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const panes = useWorkspaceStore((s) => s.panes);
-  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
   const paneModel = panes[currentPaneId];
   const breadcrumbProviders = useBreadcrumbProviders();
   const breadcrumbDecorators = useBreadcrumbDecorators();
@@ -1088,74 +1086,57 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       {!currentDoc ? (
         <div
           data-main={isSidebarMode ? undefined : 'true'}
-          className={`flex-1 flex flex-col items-center justify-center select-none p-8 ${
+          className={`flex-1 flex flex-col items-center justify-center select-none p-6 gap-3 ${
             isSidebarMode ? 'bg-transparent' : 'bg-[var(--flint-bg-tab-active,var(--flint-bg-main))]'
           }`}
         >
-          <div className="flex flex-col items-center max-w-sm w-full text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2e2e2e] flex items-center justify-center mb-3 shadow-sm">
-              <FlintLogoIcon size={26} />
-            </div>
-            <div className="text-[15px] font-medium text-[#e0e0e0] mb-0.5">
-              {hearthName || 'Flint Hearth'}
-            </div>
-            <p className="text-[12px] text-[#707070] mb-5">
-              No document is currently open
-            </p>
 
-            <div className="flex flex-col w-full gap-1.5 bg-[#1c1c1c] border border-[#282828] rounded-lg p-2">
-              <button
-                type="button"
-                onClick={async () => {
-                  const newDoc = await createNewNote('Untitled', null, 'base', false);
-                  if (newDoc) {
-                    openTabInPane(currentPaneId, newDoc.id, newDoc.title);
-                  }
-                }}
-                className="flex items-center justify-between w-full px-3 py-1.5 rounded text-[13px] text-[#c0c0c0] hover:text-[#ffffff] hover:bg-[#262626] cursor-pointer"
-              >
-                <span>Create new note</span>
-                <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-[#141414] border border-[#303030] text-[#888888] rounded">Ctrl + N</kbd>
-              </button>
+          <button
+            type="button"
+            onClick={async () => {
+              const newDoc = await createNewNote('Untitled', null, 'base', false);
+              if (newDoc) {
+                openTabInPane(currentPaneId, newDoc.id, newDoc.title);
+              }
+            }}
+            className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
+          >
+            Create new note <span className="text-[#555] ml-1">Ctrl + N</span>
+          </button>
 
-              <button
-                type="button"
-                onClick={() => setIsCommandPaletteOpen(true)}
-                className="flex items-center justify-between w-full px-3 py-1.5 rounded text-[13px] text-[#c0c0c0] hover:text-[#ffffff] hover:bg-[#262626] cursor-pointer"
-              >
-                <span>Quick open file</span>
-                <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-[#141414] border border-[#303030] text-[#888888] rounded">Ctrl + O</kbd>
-              </button>
+          <button
+            type="button"
+            onClick={() => setIsCommandPaletteOpen(true)}
+            className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
+          >
+            Go to file <span className="text-[#555] ml-1">Ctrl + O</span>
+          </button>
 
-              <button
-                type="button"
-                onClick={() => setIsHelpModalOpen(true)}
-                className="flex items-center justify-between w-full px-3 py-1.5 rounded text-[13px] text-[#c0c0c0] hover:text-[#ffffff] hover:bg-[#262626] cursor-pointer"
-              >
-                <span>Syntax & Help Guide</span>
-                <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-[#141414] border border-[#303030] text-[#888888] rounded">F1</kbd>
-              </button>
+          <button
+            type="button"
+            onClick={() => setIsHelpModalOpen(true)}
+            className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
+          >
+            Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>
+          </button>
 
-              {(activeTab || activeTabId || splitActiveTabId) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (activeTab) {
-                      closeTabInPane(currentPaneId, activeTab.id);
-                    } else if (pane === 'split' && splitActiveTabId) {
-                      closeSplitTab(splitActiveTabId);
-                    } else if (activeTabId) {
-                      closeTab(activeTabId);
-                    }
-                  }}
-                  className="flex items-center justify-between w-full px-3 py-1.5 rounded text-[13px] text-[#888888] hover:text-[#dcddde] hover:bg-[#262626] cursor-pointer border-t border-[#262626] mt-0.5 pt-1.5"
-                >
-                  <span>Close tab</span>
-                  <kbd className="px-1.5 py-0.5 text-[11px] font-mono bg-[#141414] border border-[#303030] text-[#888888] rounded">Ctrl + W</kbd>
-                </button>
-              )}
-            </div>
-          </div>
+          {(activeTab || activeTabId || splitActiveTabId) && (
+            <button
+              type="button"
+              onClick={() => {
+                if (activeTab) {
+                  closeTabInPane(currentPaneId, activeTab.id);
+                } else if (pane === 'split' && splitActiveTabId) {
+                  closeSplitTab(splitActiveTabId);
+                } else if (activeTabId) {
+                  closeTab(activeTabId);
+                }
+              }}
+              className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
+            >
+              Close
+            </button>
+          )}
         </div>
       ) : (
         <div className="flex-1 overflow-hidden relative flex flex-col min-w-0">
