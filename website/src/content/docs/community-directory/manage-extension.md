@@ -70,4 +70,15 @@ export default class SyncExtension extends Extension {
 }
 ```
 
+## 4. Native Extension Updates & Automatic Synchronisation
+
+---
+
+Flint features an autonomous multi-tier update manager (`app.extensions.updater`) that keeps community extensions synchronized with remote repositories and registries:
+
+- **Resilient 5-Tier Fallback Pipeline**: Flint queries distribution bundles in deterministic order: (1) Official registry endpoints, (2) Turso edge replicas, (3) GitHub Releases (`releases/latest/download/main.js`), (4) Raw GitHub CDNs, and (5) Local Hearth caches.
+- **In-App Checking & Updates**: Users can trigger "Check for updates" or "Update all" from Settings → Community Extensions, or upgrade directly via the Community Marketplace.
+- **Zero Restart Required**: Flint automatically invokes the extension unload lifecycle, writes the updated bundle to `.flint/extensions/<id>/`, evaluates the new bundle in memory, and re-enables the extension seamlessly.
+
 For more lifecycle details, read [[Flint SDK API Reference]] and [[Developer Policies & Guidelines]].
+

@@ -21,6 +21,8 @@ export interface FlintApp {
   events: EventBus;
   /** Application settings manager */
   settings: SettingsAPI;
+  /** Extension runtime lifecycle, registry, and update manager */
+  extensions: ExtensionManager;
 }
 ```
 
@@ -44,3 +46,16 @@ export interface FlintApp {
 - `app.vault.write(path: string, content: string): Promise<void>`: Atomically writes a note to disk.
 - `app.vault.delete(path: string): Promise<void>`: Moves a note to the `.trash/` safety folder.
 - `app.vault.readNote(documentId: string)`: Retrieves note content and parsed frontmatter.
+
+
+## 4. Extension Manager API (`app.extensions`)
+
+---
+
+- `app.extensions.updater.checkForUpdates()`: Asynchronously checks remote registry, Turso, and GitHub Releases for new extension versions.
+- `app.extensions.updater.updateExtension(id: string)`: Downloads the bundle through the 5-tier pipeline, saves to `.flint/extensions/<id>/`, and hot-reloads in memory.
+- `app.extensions.updater.updateAll()`: Sequentially updates all community extensions with available upgrades.
+- `app.extensions.reloadExtension(id: string)`: Unloads an extension, flushes cached constructors and styles, and reloads from disk.
+- `app.extensions.enableExtension(id: string)`: Instantiates and executes the extension `onload()` lifecycle.
+- `app.extensions.disableExtension(id: string)`: Safely tears down the extension through `onunload()`.
+

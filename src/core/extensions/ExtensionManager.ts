@@ -2,6 +2,7 @@ import type { FlintApp } from '../app/FlintApp';
 import { Extension } from './Extension';
 import { ExtensionManifest, ViewDefinition } from './types';
 import { ExternalExtensionLoader } from './ExternalExtensionLoader';
+import { ExtensionUpdateManager } from './ExtensionUpdateManager';
 import { platform } from '@/lib/platform/platformAdapter';
 
 export type ExtensionConstructor = new (app: FlintApp, manifest: ExtensionManifest) => Extension;
@@ -34,6 +35,11 @@ export class ExtensionManager {
     return this.isInitialized;
   }
   public externalLoader: ExternalExtensionLoader;
+  public updateManager: ExtensionUpdateManager;
+
+  public get updater(): ExtensionUpdateManager {
+    return this.updateManager;
+  }
   private syncTimer: any = null;
   private pendingSyncResolvers: Array<() => void> = [];
 
@@ -42,6 +48,7 @@ export class ExtensionManager {
   constructor(app: FlintApp) {
     this.app = app;
     this.externalLoader = new ExternalExtensionLoader(app);
+    this.updateManager = new ExtensionUpdateManager(app);
   }
 
   public async initCore(): Promise<void> {
@@ -109,6 +116,9 @@ export class ExtensionManager {
     this.isInitialized = true;
     this.recomputeSnapshot();
     this.notify();
+
+    // Check for community extension updates in background shortly after boot
+    this.updateManager.startAutoUpdateCheck(6000);
   }
 
   public syncFromStorage(): Promise<void> {
@@ -329,6 +339,78 @@ export class ExtensionManager {
 
   public async disablePlugin(pluginId: string): Promise<boolean> {
     return this.disableExtension(pluginId);
+  }
+
+  /**
+   * Hot-reloads an individual extension from disk or registered constructor:
+   * 1. Unloads the running instance if active.
+   * 2. Cleans up injected styles and cached constructor.
+   * 3. Re-discovers bundle files from Hearth `.flint/extensions/<id>/` on desktop.
+   * 4. Re-enables the extension if it was previously enabled.
+   */
+  public async reloadExtension(extensionId: string): Promise<boolean> {
+    const manifest = this.getExtensionManifest(extensionId);
+    const targetId = manifest?.id || extensionId;
+    const wasEnabled = this.isExtensionEnabled(targetId);
+
+    try {
+      if (this.instances.has(targetId) || this.instances.has(extensionId)) {
+        await this.disableExtension(targetId);
+      }
+
+      this.externalLoader.removeExtensionStyle(targetId);
+      if (targetId !== extensionId) {
+        this.externalLoader.removeExtensionStyle(extensionId);
+      }
+
+      this.constructors.delete(targetId);
+      this.constructors.delete(extensionId);
+      if (targetId.startsWith('flint-')) {
+        this.constructors.delete(targetId.slice(6));
+      } else {
+        this.constructors.delete(`flint-${targetId}`);
+      }
+
+      let loaded = false;
+      if (platform.isDesktop()) {
+        const installed = await platform.listInstalledExtensions();
+        const found = installed.find(
+          (item) => item.id === targetId || item.folder === targetId || item.id === extensionId || item.folder === extensionId
+        );
+        if (found) {
+          const freshManifest: ExtensionManifest = {
+            id: found.id,
+            name: found.name,
+            version: found.version,
+            description: found.description,
+            author: found.author,
+            isCore: found.isCore,
+          };
+          this.manifests.set(found.id, freshManifest);
+          this.manifests.set(found.folder, freshManifest);
+          loaded = await this.externalLoader.loadSingleExtension(found.folder, freshManifest);
+        }
+      }
+
+      if (!loaded && manifest) {
+        loaded = await this.externalLoader.loadSingleExtension(targetId, manifest);
+      }
+
+      if (loaded && wasEnabled) {
+        await this.enableExtension(targetId);
+      }
+
+      this.recomputeSnapshot();
+      this.notify();
+      return loaded;
+    } catch (err) {
+      console.error(`[ExtensionManager] Error reloading extension "${targetId}":`, err);
+      return false;
+    }
+  }
+
+  public async reloadPlugin(pluginId: string): Promise<boolean> {
+    return this.reloadExtension(pluginId);
   }
 
   /**

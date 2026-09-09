@@ -994,30 +994,37 @@ pub fn install_plugin_bundle(
     mark_internal_write();
     let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
-    let plugins_dir = target_vault.join(".flint").join("plugins");
+    let extensions_dir = target_vault.join(".flint").join("extensions");
     let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
-    let target_dir = plugins_dir.join(&safe_folder);
+    let target_dir = extensions_dir.join(&safe_folder);
 
     if !is_safe_vault_path(&target_vault, &target_dir) {
-        return json!({ "success": false, "error": "Security: Plugin path escapes vault boundary" });
+        return json!({ "success": false, "error": "Security: Extension path escapes vault boundary" });
     }
 
     if let Err(e) = fs::create_dir_all(&target_dir) {
-        return json!({ "success": false, "error": format!("Failed to create plugin directory: {}", e) });
+        return json!({ "success": false, "error": format!("Failed to create extension directory: {}", e) });
     }
 
-    if let Err(e) = fs::write(target_dir.join("manifest.json"), manifest_json) {
+    if let Err(e) = fs::write(target_dir.join("manifest.json"), &manifest_json) {
         return json!({ "success": false, "error": format!("Failed to write manifest.json: {}", e) });
     }
 
-    if let Err(e) = fs::write(target_dir.join("main.js"), main_js) {
+    if let Err(e) = fs::write(target_dir.join("main.js"), &main_js) {
         return json!({ "success": false, "error": format!("Failed to write main.js: {}", e) });
     }
 
-    if let Some(css) = styles_css {
+    if let Some(css) = &styles_css {
         if !css.trim().is_empty() {
             let _ = fs::write(target_dir.join("styles.css"), css);
         }
+    }
+
+    // Clean up legacy .flint/plugins location if it exists
+    let legacy_plugins_dir = target_vault.join(".flint").join("plugins");
+    let legacy_target = legacy_plugins_dir.join(&safe_folder);
+    if legacy_target.exists() && legacy_target != legacy_plugins_dir && is_safe_vault_path(&target_vault, &legacy_target) {
+        let _ = fs::remove_dir_all(&legacy_target);
     }
 
     json!({ "success": true, "path": target_dir.to_string_lossy() })

@@ -33,6 +33,7 @@ import {
 import { useMarketplaceQuery, getRegistryUrl } from './useMarketplaceQuery';
 import { fetchTursoPluginBundle } from './tursoClient';
 import { installMarketplaceExtension } from './extensionInstaller';
+import { compareSemVer } from '@/core/extensions/ExtensionUpdateManager';
 
 // Re-export catalogue and models for consumers
 export {
@@ -359,7 +360,13 @@ export const MarketplaceView: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {filteredExtensions.map((ext) => {
                 const isInstalled = isExtensionInstalled(ext.id);
-                const isInstalling = installingIds.has(ext.id);
+                const installedManifest = app.extensions.getExtensionManifest(ext.id);
+                const hasUpdate =
+                  isInstalled &&
+                  installedManifest &&
+                  compareSemVer(ext.version, installedManifest.version || '0.0.0') > 0;
+                const isInstalling =
+                  installingIds.has(ext.id) || app.extensions.updater.isUpdating(ext.id);
 
                 return (
                   <div
@@ -432,7 +439,18 @@ export const MarketplaceView: React.FC = () => {
                           </button>
                         )}
 
-                        {isInstalled ? (
+                        {hasUpdate ? (
+                          <button
+                            type="button"
+                            onClick={() => handleInstallExtension(ext)}
+                            disabled={isInstalling}
+                            title={`Update from v${installedManifest?.version} to v${ext.version}`}
+                            className="flint-btn flint-btn-primary text-[11px] !py-1 !px-3 min-w-[78px] disabled:opacity-50 flex items-center gap-1.5"
+                          >
+                            <Download01Icon size={11} className={isInstalling ? 'animate-bounce' : ''} />
+                            <span>{isInstalling ? 'Updating...' : `Update v${ext.version}`}</span>
+                          </button>
+                        ) : isInstalled ? (
                           <button
                             type="button"
                             onClick={() => handleUninstallExtension(ext)}

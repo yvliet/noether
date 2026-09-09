@@ -25,6 +25,7 @@ import {
   StickyNote02Icon,
   Brain02Icon,
   DatabaseSync01Icon,
+  BookOpen02Icon,
 } from '@/components/common/Icons';
 import { fetchTursoPlugins } from './tursoClient';
 
@@ -111,6 +112,9 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
     const lower = iconUrl.toLowerCase().trim();
     if (lower === 'motion' || lower === 'motion-01' || lower === 'motion01') {
       return React.createElement(Motion01Icon, { size: 18, className: 'text-[#38bdf8]' });
+    }
+    if (lower === 'book-open' || lower === 'book' || lower === 'bookopen02' || lower === 'book-open-02' || lower === 'cascade') {
+      return React.createElement(BookOpen02Icon, { size: 18, className: 'text-[#38bdf8]' });
     }
     if (lower === 'sparkles' || lower === 'sparkle') {
       return React.createElement(SparklesIcon, { size: 18, className: 'text-[#a855f7]' });

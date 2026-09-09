@@ -2884,6 +2884,44 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
     showToast('Reloaded extensions from disk', 'success');
   }, [app, showToast]);
 
+  const [updaterTick, setUpdaterTick] = useState(0);
+  useEffect(() => {
+    return app.extensions.updater.subscribe(() => {
+      setUpdaterTick((t) => t + 1);
+    });
+  }, [app]);
+
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
+  const availableUpdates = app.extensions.updater.getAvailableUpdates();
+
+  const handleCheckUpdates = useCallback(async () => {
+    setIsCheckingUpdates(true);
+    try {
+      const updates = await app.extensions.updater.checkForUpdates();
+      if (updates.length > 0) {
+        showToast(`Found ${updates.length} extension update${updates.length > 1 ? 's' : ''}`, 'info');
+      } else {
+        showToast('All community extensions are up to date', 'success');
+      }
+    } catch (err) {
+      console.error('[CommunityExtensionsTab] Failed to check for updates:', err);
+      showToast('Failed to check for extension updates', 'warning');
+    } finally {
+      setIsCheckingUpdates(false);
+    }
+  }, [app, showToast]);
+
+  const handleUpdateAll = useCallback(async () => {
+    await app.extensions.updater.updateAll();
+  }, [app]);
+
+  const handleUpdateExtension = useCallback(
+    async (id: string) => {
+      await app.extensions.updater.updateExtension(id);
+    },
+    [app]
+  );
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between px-4">
@@ -2894,6 +2932,26 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {availableUpdates.length > 0 && (
+            <button
+              onClick={handleUpdateAll}
+              className="flint-btn flint-btn-primary flex items-center gap-1.5"
+            >
+              <Download01Icon size={12} />
+              <span>Update all ({availableUpdates.length})</span>
+            </button>
+          )}
+          <button
+            onClick={handleCheckUpdates}
+            disabled={isCheckingUpdates || app.extensions.updater.checking}
+            className="flint-btn flex items-center gap-1.5 disabled:opacity-50"
+          >
+            <RotateCcwIcon
+              size={12}
+              className={isCheckingUpdates || app.extensions.updater.checking ? 'animate-spin' : ''}
+            />
+            <span>{isCheckingUpdates || app.extensions.updater.checking ? 'Checking...' : 'Check for updates'}</span>
+          </button>
           <button
             onClick={handleReloadExtensions}
             className="flint-btn flex items-center gap-1.5"
@@ -2916,6 +2974,8 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
           {extensionList.community.map((ext) => {
             const isEnabled = app.extensions.isExtensionEnabled(ext.id);
             const communityTab = communityExtensionTabs.find((t) => isTabMatch(t, ext.id));
+            const updateInfo = app.extensions.updater.getUpdate(ext.id);
+            const isUpdating = app.extensions.updater.isUpdating(ext.id);
             return (
               <div
                 key={ext.id}
@@ -2933,6 +2993,17 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {updateInfo && (
+                    <button
+                      type="button"
+                      onClick={() => handleUpdateExtension(ext.id)}
+                      disabled={isUpdating}
+                      className="flint-btn flint-btn-primary text-[11px] !py-1 !px-2.5 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <Download01Icon size={12} className={isUpdating ? 'animate-bounce' : ''} />
+                      <span>{isUpdating ? 'Updating...' : `Update to v${updateInfo.latestVersion}`}</span>
+                    </button>
+                  )}
                   {ext.readme && (
                     <button
                       type="button"
