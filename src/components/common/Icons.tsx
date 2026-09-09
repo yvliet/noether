@@ -16,6 +16,7 @@ import {
   ArrowDown01Icon as HugeArrowDown01Icon,
   ArrowUp01Icon as HugeArrowUp01Icon,
   BookOpen01Icon as HugeBookOpen01Icon,
+  BookOpen02Icon as HugeBookOpen02Icon,
   MoreVerticalIcon as HugeMoreVerticalIcon,
   LinkSquare02Icon as HugeLinkSquare02Icon,
   Tag01Icon as HugeTag01Icon,
@@ -248,6 +249,7 @@ export const ArrowUp01Icon = createIcon(HugeArrowUp01Icon);
 export const ChevronRightIcon = createIcon(HugeChevronRightIcon);
 export const ChevronDownIcon = createIcon(HugeChevronDownIcon);
 export const BookOpen01Icon = createIcon(HugeBookOpen01Icon);
+export const BookOpen02Icon = createIcon(HugeBookOpen02Icon);
 export const MoreVerticalIcon = createIcon(HugeMoreVerticalIcon);
 export const LinkSquare02Icon = createIcon(HugeLinkSquare02Icon);
 export const Tag01Icon = createIcon(HugeTag01Icon);
@@ -404,6 +406,7 @@ export {
   HugeCodeIcon,
   HugeFile01Icon,
   HugeStickyNote02Icon,
+  HugeBookOpen02Icon,
 };
 
 /**

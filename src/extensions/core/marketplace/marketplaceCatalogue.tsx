@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Motion01Icon,
+  BookOpen02Icon,
   SparklesIcon,
   StickyNote02Icon,
   Brain02Icon,
@@ -38,7 +38,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
   {
     id: 'flint-cascade',
     name: 'Cascade',
-    version: '1.0.0',
+    version: '1.0.1',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
     repoUrl: 'https://github.com/yvliet/flint-cascade',
@@ -47,7 +47,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     downloads: '128',
     stars: 5,
     category: 'Productivity',
-    icon: <Motion01Icon size={18} className="text-[#38bdf8]" />,
+    icon: <BookOpen02Icon size={18} className="text-[#38bdf8]" />,
     featured: true,
   },
   {
