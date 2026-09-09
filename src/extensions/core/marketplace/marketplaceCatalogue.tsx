@@ -4,7 +4,6 @@ import {
   SparklesIcon,
   StickyNote02Icon,
   Brain02Icon,
-  DatabaseSync01Icon,
 } from '@/components/common/Icons';
 
 export interface MarketplaceExtensionItem {
@@ -36,21 +35,6 @@ export type MarketplacePluginItem = MarketplaceExtensionItem;
  * Provides instant 0ms offline availability while SWR revalidates live updates.
  */
 export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
-  {
-    id: 'flint-universal-sync',
-    name: 'Universal External Sync',
-    version: '1.0.0',
-    author: 'Yuliet Li',
-    authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-universal-sync',
-    description:
-      'Cross-device note synchronization supporting Supabase (free tier with guided setup), Turso, Cloudflare D1, and Custom REST databases.',
-    downloads: '256',
-    stars: 5,
-    category: 'Integration',
-    icon: <DatabaseSync01Icon size={18} className="text-[#3ecf8e]" />,
-    featured: true,
-  },
   {
     id: 'flint-cascade',
     name: 'Cascade',

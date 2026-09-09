@@ -1,6 +1,6 @@
-# Universal External Sync (`flint-universal-sync`)
+# Universal External Sync (`universal-sync`)
 
-Synchronize your Flint notes, knowledge graph, and canvases across desktop and mobile machines using your own free cloud database, with zero user tracking and zero recurring subscriptions. Authored by Yuliet Li.
+Synchronize your Flint notes, knowledge graph, and canvases across desktop and mobile machines using your own free cloud database, with zero user tracking and zero recurring subscriptions.
 
 ---
 
@@ -147,9 +147,9 @@ CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
 
 ### Model Context Protocol (MCP) AI Tools
 The extension exposes the following tools to in-app AI copilots and external desktop agents:
-- `flint-universal-sync_sync_now`: Triggers an immediate sync cycle and returns telemetry.
-- `flint-universal-sync_get_sync_status`: Inspects telemetry, database status, and pending change counts.
-- `flint-universal-sync_test_connection`: Verifies database reachability and table readiness.
+- `universal-sync_sync_now`: Triggers an immediate sync cycle and returns telemetry.
+- `universal-sync_get_sync_status`: Inspects telemetry, database status, and pending change counts.
+- `universal-sync_test_connection`: Verifies database reachability and table readiness.
 
 ---
 

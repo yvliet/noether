@@ -290,23 +290,6 @@ export function resolveExtensionMetadata(
     } catch {}
   }
 
-  // Built-in fallback metadata for first-party community extensions
-  if (targetExtensionId === 'flint-universal-sync') {
-    return {
-      id: 'flint-universal-sync',
-      name: 'Universal External Sync',
-      version: '1.0.0',
-      author: 'Yuliet Li',
-      authorUrl: 'https://github.com/yvliet',
-      repoUrl: 'https://github.com/yvliet/flint-universal-sync',
-      description:
-        'Cross-device note synchronization supporting Supabase (free tier with guided setup), Turso, Cloudflare D1, and Custom REST databases.',
-      tags: ['integration', 'sync', 'cloud', 'supabase', 'database'],
-      isInstalled: false,
-      isCore: false,
-    };
-  }
-
   return {
     id: targetExtensionId,
     name: targetExtensionId,

@@ -48,6 +48,8 @@ export interface ExtensionManifest {
   authorUrl?: string;
   /** Whether this extension is bundled as a built-in core extension. */
   isCore?: boolean;
+  /** Whether a core extension should default to disabled on fresh installations. */
+  defaultDisabled?: boolean;
   /** Icon identifier or custom React node for the extension card. */
   icon?: string | React.ReactNode;
   /** Full Markdown readme documentation content. */

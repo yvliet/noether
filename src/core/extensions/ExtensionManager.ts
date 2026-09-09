@@ -51,9 +51,16 @@ export class ExtensionManager {
     const coreInitPromises: Promise<boolean>[] = [];
     for (const [id, manifest] of this.manifests.entries()) {
       const isCore = manifest.isCore === true;
-      const isEnabled = isCore
-        ? !this.disabledCoreExtensionIds.has(id)
-        : this.enabledExtensionIds.has(id);
+      let isEnabled = false;
+      if (isCore) {
+        if (manifest.defaultDisabled) {
+          isEnabled = this.enabledExtensionIds.has(id) && !this.disabledCoreExtensionIds.has(id);
+        } else {
+          isEnabled = !this.disabledCoreExtensionIds.has(id);
+        }
+      } else {
+        isEnabled = this.enabledExtensionIds.has(id);
+      }
 
       if (isEnabled && !this.instances.has(id)) {
         coreInitPromises.push(this.enableExtension(id));
@@ -73,9 +80,16 @@ export class ExtensionManager {
     const externalPromises: Promise<boolean>[] = [];
     for (const [id, manifest] of this.manifests.entries()) {
       const isCore = manifest.isCore === true;
-      const isEnabled = isCore
-        ? !this.disabledCoreExtensionIds.has(id)
-        : this.enabledExtensionIds.has(id);
+      let isEnabled = false;
+      if (isCore) {
+        if (manifest.defaultDisabled) {
+          isEnabled = this.enabledExtensionIds.has(id) && !this.disabledCoreExtensionIds.has(id);
+        } else {
+          isEnabled = !this.disabledCoreExtensionIds.has(id);
+        }
+      } else {
+        isEnabled = this.enabledExtensionIds.has(id);
+      }
 
       if (isEnabled && !this.instances.has(id)) {
         externalPromises.push(this.enableExtension(id));
@@ -217,6 +231,10 @@ export class ExtensionManager {
       if (manifest.isCore) {
         this.disabledCoreExtensionIds.delete(targetId);
         this.disabledCoreExtensionIds.delete(extensionId);
+        if (manifest.defaultDisabled) {
+          this.enabledExtensionIds.add(targetId);
+          this.enabledExtensionIds.add(extensionId);
+        }
       } else {
         this.enabledExtensionIds.add(targetId);
         this.enabledExtensionIds.add(extensionId);
@@ -287,6 +305,10 @@ export class ExtensionManager {
       if (manifest?.isCore) {
         this.disabledCoreExtensionIds.add(targetId);
         this.disabledCoreExtensionIds.add(extensionId);
+        if (manifest.defaultDisabled) {
+          this.enabledExtensionIds.delete(targetId);
+          this.enabledExtensionIds.delete(extensionId);
+        }
       } else {
         this.enabledExtensionIds.delete(targetId);
         this.enabledExtensionIds.delete(extensionId);
@@ -418,6 +440,20 @@ export class ExtensionManager {
     }
 
     if (manifest.isCore) {
+      if (manifest.defaultDisabled) {
+        for (const alias of aliases) {
+          if (this.disabledCoreExtensionIds.has(alias)) {
+            return false;
+          }
+        }
+        for (const alias of aliases) {
+          if (this.enabledExtensionIds.has(alias)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
       for (const alias of aliases) {
         if (this.disabledCoreExtensionIds.has(alias)) {
           return false;

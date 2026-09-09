@@ -15,7 +15,6 @@ import { ExtensionManifest } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import {
   DatabaseSync01Icon,
-  DatabaseIcon,
   Edit02Icon,
   BookOpen01Icon,
   SourceCodeIcon,
@@ -225,30 +224,6 @@ const ModeDropdownMenu: React.FC = () => {
   );
 };
 
-const DatabaseStatusIndicator: React.FC = () => {
-  const isDatabaseActive = useWorkspaceStore((s) => s.isDatabaseActive);
-
-  if (!isDatabaseActive) {
-    return (
-      <div
-        className="p-1 rounded-[4px] flex items-center justify-center text-red-500 hover:text-red-400 cursor-default transition-colors"
-        title="Database sync inactive"
-      >
-        <DatabaseIcon size={12} className="text-red-500" />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className="p-1 rounded-[4px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#242424] cursor-default transition-colors select-none"
-      title="Database sync active"
-    >
-      <DatabaseSync01Icon size={12} />
-    </div>
-  );
-};
-
 const WordCharCountItem: React.FC = () => {
   const wordCount = useWorkspaceStore((s) => s.wordCount);
   const charCount = useWorkspaceStore((s) => s.charCount);
@@ -296,14 +271,6 @@ export class DefaultStatusBarExtension extends Extension {
       alignment: 'right',
       order: 45,
       render: () => <ModeDropdownMenu />,
-    });
-
-    // SQLite / Database sync indicator
-    this.addStatusBarItem({
-      id: 'sqlite-status',
-      alignment: 'right',
-      order: 50,
-      render: () => <DatabaseStatusIndicator />,
     });
 
     // Extension Settings Tab

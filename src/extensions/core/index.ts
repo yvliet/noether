@@ -14,10 +14,12 @@ import { IconifyExtension, ICONIFY_MANIFEST } from './iconify/IconifyExtension';
 import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
 import { DefaultStatusBarExtension, DEFAULT_STATUS_BAR_MANIFEST } from './defaults/DefaultStatusBarExtension';
+import { UniversalSyncExtension, UNIVERSAL_SYNC_MANIFEST } from './universal-sync/UniversalSyncExtension';
 
 export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(DEFAULT_COMMANDS_MANIFEST, DefaultCommandsExtension);
   app.extensions.registerExtension(DEFAULT_STATUS_BAR_MANIFEST, DefaultStatusBarExtension);
+  app.extensions.registerExtension(UNIVERSAL_SYNC_MANIFEST, UniversalSyncExtension);
   app.extensions.registerExtension(BOOKMARKS_MANIFEST, BookmarksExtension);
   app.extensions.registerExtension(MARKETPLACE_MANIFEST, MarketplaceExtension);
   app.extensions.registerExtension(TABLES_MANIFEST, TablesExtension);
