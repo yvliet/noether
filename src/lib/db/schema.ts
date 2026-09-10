@@ -126,9 +126,17 @@ export const INITIAL_DOCUMENTS_SEED = [
         },
         {
           type: 'paragraph',
+          content: []
+        },
+        {
+          type: 'paragraph',
           content: [
             { type: 'text', text: 'Flint is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.' }
           ]
+        },
+        {
+          type: 'paragraph',
+          content: []
         },
         {
           type: 'heading',
@@ -170,6 +178,10 @@ export const INITIAL_DOCUMENTS_SEED = [
           content: [
             { type: 'text', text: '- **Explore connections**: Open the **Graph View** in the ribbon to see your thoughts branch out as your notes grow.' }
           ]
+        },
+        {
+          type: 'paragraph',
+          content: []
         },
         {
           type: 'heading',

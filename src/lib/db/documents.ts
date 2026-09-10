@@ -1384,15 +1384,12 @@ export function computeFastHash(str: string): string {
 }
 
 export const DEFAULT_WELCOME_MARKDOWN = `# Welcome to Flint
-
 Welcome! You're looking at your first note.
 
 Flint is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.
 
 ## Quick Start
-
 Here are a few handy things to try right away:
-
 - **Create a note**: Click the **+** button in the sidebar or press \`Ctrl + N\` (\`Cmd + N\` on macOS).
 - **Find anything**: Press \`Ctrl + K\` (\`Cmd + K\`) to open Quick Search and jump to any note or command.
 - **Link your ideas**: Type \`[[\` to create a bi-directional link to any other note. If the note doesn't exist yet, Flint creates it for you on the fly.
@@ -1400,9 +1397,7 @@ Here are a few handy things to try right away:
 - **Explore connections**: Open the **Graph View** in the ribbon to see your thoughts branch out as your notes grow.
 
 ## Your Notes, Your Machine
-
 There is no proprietary lock-in here. Your notes live in your Hearth folder as standard \`.md\` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.
-
 Feel free to edit this note, delete it, or keep it around as a quick reference. Happy writing!
 `;
 
