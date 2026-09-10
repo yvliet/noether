@@ -117,8 +117,14 @@ Located in the right sidebar, the Backlinks Pane displays:
 
 ### 2D Knowledge Graph (`Ctrl+G`)
 - Press `Ctrl+G` to open the full force-directed knowledge graph.
-- Adjust repulsion physics, spring tension, and link distance.
-- Nodes automatically scale based on link count and color-code by folder or tag.
+- **Color Graph Nodes**: Master toggle in Settings → Graph view → Coloring to switch between classic neutral gray and custom color schemes. When disabled, all subordinate coloring controls are cleanly dimmed and disabled.
+- **Node Coloring Schemes**: Choose between **Random** (default uniform palette cycling), **By File Type**, **By Folder Hierarchy**, or **By First Tag**.
+- **Tactile Aesthetic Palettes**: Select from 6 curated single-word palettes: **Amber**, **Emerald**, **Neon**, **Ocean**, **Sunset**, and **Pastel**, rendered with tactile 3D button styling.
+- **In-App Color Picker**: In **By File Type** mode, click any category swatch (Notes, Canvases, Images, Media, Documents, Tags, Other) to open Flint's custom color picker popover with 2D saturation/brightness spectrum, hue slider, eyedropper, RGB/HEX inputs, and active palette presets.
+- **Display Toggles**:
+  - **Directional link arrows**: Render clean arrowheads along connections indicating wiki link directions.
+  - **Orphan node filter**: Toggle visibility of unconnected notes without links.
+  - **Virtual #tag nodes**: Render tag nodes as virtual hubs connecting tagged notes. Clicking any tag node instantly filters the graph.
 - **Pauses when idle**: The graph physics automatically pauses when you are not interacting with it, saving battery and GPU power.
 
 ---

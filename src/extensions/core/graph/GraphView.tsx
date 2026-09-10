@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useGraphSettings } from './graphSettings';
+import {
+  useGraphSettings,
+  resolveGraphNodeType,
+  getNodeBaseRgb,
+  GraphColorMode,
+  GraphNodeType,
+} from './graphSettings';
 import { dbAdapter } from '@/lib/db/adapter';
 import { getAllDocuments, getDocumentPath } from '@/lib/db/documents';
 import {
@@ -32,6 +38,13 @@ interface GraphNode {
   vy: number;
   radius: number;
   isFolder: boolean;
+  isTag?: boolean;
+  docType?: string;
+  folderName?: string;
+  tags?: string[];
+  colorR?: number;
+  colorG?: number;
+  colorB?: number;
   linkCount: number;
   createdAt: number;
   textOffset?: number;
@@ -147,6 +160,107 @@ function getDeterministicNodePos(docId: string, index = 0): { x: number; y: numb
   };
 }
 
+function createGraphNodeItem(
+  doc: {
+    id: string;
+    title: string;
+    parent_id?: string | null;
+    doc_type?: string;
+    properties?: string;
+    created_at?: number;
+    is_folder?: number | boolean;
+  },
+  allDocs: DocumentItem[],
+  options: {
+    initX: number;
+    initY: number;
+    initVx?: number;
+    initVy?: number;
+    initPopScale?: number;
+    initPopAlpha?: number;
+    isTag?: boolean;
+    tagLabel?: string;
+    linkCount?: number;
+  },
+  settings: {
+    enableNodeColors?: boolean;
+    colorMode: GraphColorMode;
+    paletteId: string;
+    customTypeColors: Record<GraphNodeType, string | null>;
+  }
+): GraphNode {
+  let fullPath = options.isTag
+    ? options.tagLabel || doc.title
+    : getGraphNodeTitle(doc as DocumentItem, allDocs);
+  let displayTitle = fullPath.includes('/') ? fullPath.split('/').pop() || fullPath : fullPath;
+  if (options.isTag && !displayTitle.startsWith('#')) {
+    displayTitle = `#${displayTitle}`;
+    fullPath = displayTitle;
+  }
+
+  let folderName = 'Root';
+  if (!options.isTag) {
+    const parts = fullPath.split('/');
+    if (parts.length > 1) {
+      folderName = parts[0];
+    }
+  }
+
+  let tags: string[] = [];
+  if (doc.properties && !options.isTag) {
+    try {
+      const p = typeof doc.properties === 'string' ? JSON.parse(doc.properties) : doc.properties;
+      if (Array.isArray(p?.tags)) {
+        tags = p.tags.map((t: any) => String(t).replace(/^#/, '').trim()).filter(Boolean);
+      }
+    } catch {}
+  }
+
+  const [colorR, colorG, colorB] = getNodeBaseRgb(
+    {
+      title: fullPath,
+      docType: doc.doc_type,
+      isTag: options.isTag,
+      folderName,
+      tags,
+    },
+    settings
+  );
+
+  const count = options.linkCount || 0;
+  const baseRadius = options.isTag ? 4.5 : Math.min(9, 5.5 + count * 1.4);
+
+  return {
+    id: doc.id,
+    title: fullPath,
+    displayTitle,
+    x: options.initX,
+    y: options.initY,
+    vx: options.initVx ?? 0,
+    vy: options.initVy ?? 0,
+    radius: baseRadius,
+    isFolder: !!doc.is_folder,
+    isTag: !!options.isTag,
+    docType: doc.doc_type,
+    folderName,
+    tags,
+    colorR,
+    colorG,
+    colorB,
+    linkCount: count,
+    createdAt: doc.created_at || Date.now(),
+    textOffset: 14,
+    hoverAlpha: 0,
+    dimAlpha: 0,
+    connectAlpha: 0,
+    popScale: options.initPopScale ?? 1,
+    popAlpha: options.initPopAlpha ?? 1,
+    floatPhaseX: hashStringToUnit(doc.id + ':floatX') * Math.PI * 2,
+    floatPhaseY: hashStringToUnit(doc.id + ':floatY') * Math.PI * 2,
+    floatFreq: 0.00065 + (hashStringToUnit(doc.id + ':freq') - 0.5) * 0.00025,
+  };
+}
+
 export interface GraphViewProps {
   isSidebar?: boolean;
   tabId?: string;
@@ -253,6 +367,14 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     graphFocusCameraRef.current = graphFocusCamera;
   }, [graphFocusCamera]);
 
+  const enableNodeColors = useGraphSettings((s) => s.enableNodeColors);
+  const colorMode = useGraphSettings((s) => s.colorMode);
+  const paletteId = useGraphSettings((s) => s.paletteId);
+  const customTypeColors = useGraphSettings((s) => s.customTypeColors);
+  const showOrphans = useGraphSettings((s) => s.showOrphans);
+  const showArrows = useGraphSettings((s) => s.showArrows);
+  const showTags = useGraphSettings((s) => s.showTags);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [isSidebarDetected, setIsSidebarDetected] = useState(false);
 
@@ -339,6 +461,31 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const nodesRef = useRef<GraphNode[]>([]);
   const linksRef = useRef<GraphLink[]>([]);
   const alphaRef = useRef(0.8); // Energy cooldown
+
+  // Fast color updater that recomputes cached RGB without resetting positions or physics
+  const updateNodeColors = useCallback(() => {
+    const settings = useGraphSettings.getState();
+    for (const n of nodesRef.current) {
+      const [r, g, b] = getNodeBaseRgb(
+        {
+          title: n.title,
+          docType: n.docType,
+          isTag: n.isTag,
+          folderName: n.folderName,
+          tags: n.tags,
+        },
+        settings
+      );
+      n.colorR = r;
+      n.colorG = g;
+      n.colorB = b;
+    }
+    startAnimationRef.current();
+  }, []);
+
+  useEffect(() => {
+    updateNodeColors();
+  }, [enableNodeColors, colorMode, paletteId, customTypeColors, updateNodeColors]);
   const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const pinchStartRef = useRef<{
     dist: number;
@@ -733,9 +880,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const currentDocIds = new Set(docs.map((d) => d.id));
         const prevIds = prevDocIdsRef.current;
 
+        const graphSettings = useGraphSettings.getState();
+        const showTagsSetting = graphSettings.showTags;
+
         // Helper to query and merge links both from in-memory content and SQLite document_links
-        const syncGraphLinks = async () => {
-          const inMemLinks = extractGraphLinksFromDocs(docs);
+        const syncGraphLinks = async (currentDocs: DocumentItem[]) => {
+          const currentSettings = useGraphSettings.getState();
+          const inMemLinks = extractGraphLinksFromDocs(currentDocs);
           let rawLinks: Array<{ source_document_id: string; target_document_id: string }> = [];
           try {
             rawLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
@@ -773,6 +924,35 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             }
           }
 
+          // If showTags is enabled, add virtual links between documents and tag nodes
+          if (currentSettings.showTags) {
+            for (const d of currentDocs) {
+              let tags: string[] = [];
+              try {
+                if (d.properties) {
+                  const p = typeof d.properties === 'string' ? JSON.parse(d.properties) : d.properties;
+                  if (Array.isArray(p?.tags)) {
+                    tags = p.tags.map((t: any) => String(t).replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+                  }
+                }
+              } catch {}
+
+              for (const t of tags) {
+                const tagId = `tag:${t}`;
+                const key = `${d.id}->${tagId}`;
+                if (!seenPair.has(key)) {
+                  seenPair.add(key);
+                  mergedLinks.push({
+                    source: d.id,
+                    target: tagId,
+                    hoverAlpha: 0,
+                    dimAlpha: 0,
+                  });
+                }
+              }
+            }
+          }
+
           const linkCounts: Record<string, number> = {};
           mergedLinks.forEach((l) => {
             linkCounts[l.source] = (linkCounts[l.source] || 0) + 1;
@@ -782,7 +962,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           for (const n of nodesRef.current) {
             const count = linkCounts[n.id] || 0;
             n.linkCount = count;
-            n.radius = Math.min(9, 5.5 + count * 1.4);
+            n.radius = n.isTag ? 4.5 : Math.min(9, 5.5 + count * 1.4);
           }
 
           linksRef.current = mergedLinks;
@@ -815,7 +995,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
               startAnimationRef.current();
             }
             prevDocIdsRef.current = currentDocIds;
-            await syncGraphLinks();
+            await syncGraphLinks(docs);
             persistPositions(false);
             return;
           }
@@ -840,32 +1020,18 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
               for (const d of addedDocs) {
                 if (existingNodeMap.has(d.id)) continue;
 
-                const fullPath = getGraphNodeTitle(d, allDocs);
-                const displayTitle = fullPath.includes('/') ? fullPath.split('/').pop() || fullPath : fullPath;
                 const defaultPos = getDeterministicNodePos(d.id, nodesRef.current.length);
-
-                const newNode: GraphNode = {
-                  id: d.id,
-                  title: fullPath,
-                  displayTitle,
-                  x: 0,
-                  y: 0,
-                  vx: 0,
-                  vy: 0,
-                  radius: 5.5,
-                  isFolder: !!d.is_folder,
-                  linkCount: 0,
-                  createdAt: d.created_at || Date.now(),
-                  textOffset: 14,
-                  hoverAlpha: 0,
-                  dimAlpha: 0,
-                  connectAlpha: 0,
-                  popScale: 0.01,
-                  popAlpha: 0.01,
-                  floatPhaseX: hashStringToUnit(d.id + ':floatX') * Math.PI * 2,
-                  floatPhaseY: hashStringToUnit(d.id + ':floatY') * Math.PI * 2,
-                  floatFreq: 0.00065 + (hashStringToUnit(d.id + ':freq') - 0.5) * 0.00025,
-                };
+                const newNode = createGraphNodeItem(
+                  d,
+                  allDocs,
+                  {
+                    initX: 0,
+                    initY: 0,
+                    initPopScale: 0.01,
+                    initPopAlpha: 0.01,
+                  },
+                  graphSettings
+                );
                 nodesRef.current.push(newNode);
                 existingNodeMap.set(d.id, newNode);
 
@@ -892,8 +1058,6 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
               for (const d of addedDocs) {
                 if (existingNodeMap.has(d.id)) continue;
 
-                const fullPath = getGraphNodeTitle(d, allDocs);
-                const displayTitle = fullPath.includes('/') ? fullPath.split('/').pop() || fullPath : fullPath;
                 const hasSaved = saved[d.id];
                 let initX: number;
                 let initY: number;
@@ -925,28 +1089,19 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   initY = defaultPos.y;
                 }
 
-                const newNode: GraphNode = {
-                  id: d.id,
-                  title: fullPath,
-                  displayTitle,
-                  x: initX,
-                  y: initY,
-                  vx: initVx,
-                  vy: initVy,
-                  radius: 5.5,
-                  isFolder: !!d.is_folder,
-                  linkCount: 0,
-                  createdAt: d.created_at || Date.now(),
-                  textOffset: 14,
-                  hoverAlpha: 0,
-                  dimAlpha: 0,
-                  connectAlpha: 0,
-                  popScale: initPopScale,
-                  popAlpha: initPopAlpha,
-                  floatPhaseX: hashStringToUnit(d.id + ':floatX') * Math.PI * 2,
-                  floatPhaseY: hashStringToUnit(d.id + ':floatY') * Math.PI * 2,
-                  floatFreq: 0.00065 + (hashStringToUnit(d.id + ':freq') - 0.5) * 0.00025,
-                };
+                const newNode = createGraphNodeItem(
+                  d,
+                  allDocs,
+                  {
+                    initX,
+                    initY,
+                    initVx,
+                    initVy,
+                    initPopScale,
+                    initPopAlpha,
+                  },
+                  graphSettings
+                );
                 nodesRef.current.push(newNode);
                 existingNodeMap.set(d.id, newNode);
               }
@@ -970,7 +1125,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           }
 
           // Always synchronize links for added, modified, or removed nodes
-          await syncGraphLinks();
+          await syncGraphLinks(docs);
           persistPositions(false);
           return;
         }
@@ -1014,6 +1169,51 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           }
         }
 
+        // Collect tags for virtual tag nodes if showTags is enabled
+        const tagMap = new Map<string, string>();
+        if (showTagsSetting) {
+          for (const d of docs) {
+            try {
+              if (d.properties) {
+                const p = typeof d.properties === 'string' ? JSON.parse(d.properties) : d.properties;
+                if (Array.isArray(p?.tags)) {
+                  for (const rawTag of p.tags) {
+                    const clean = String(rawTag).replace(/^#/, '').trim();
+                    if (clean) tagMap.set(clean.toLowerCase(), clean);
+                  }
+                }
+              }
+            } catch {}
+          }
+
+          // Connect documents to virtual tag nodes
+          for (const d of docs) {
+            let docTags: string[] = [];
+            try {
+              if (d.properties) {
+                const p = typeof d.properties === 'string' ? JSON.parse(d.properties) : d.properties;
+                if (Array.isArray(p?.tags)) {
+                  docTags = p.tags.map((t: any) => String(t).replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+                }
+              }
+            } catch {}
+
+            for (const t of docTags) {
+              const tagId = `tag:${t}`;
+              const key = `${d.id}->${tagId}`;
+              if (!seenPair.has(key)) {
+                seenPair.add(key);
+                mergedLinks.push({
+                  source: d.id,
+                  target: tagId,
+                  hoverAlpha: 0,
+                  dimAlpha: 0,
+                });
+              }
+            }
+          }
+        }
+
         const linkCounts: Record<string, number> = {};
         mergedLinks.forEach((l) => {
           linkCounts[l.source] = (linkCounts[l.source] || 0) + 1;
@@ -1029,8 +1229,6 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           if (seenInit.has(d.id)) continue;
           seenInit.add(d.id);
 
-          const fullPath = getGraphNodeTitle(d, allDocs);
-          const displayTitle = fullPath.includes('/') ? fullPath.split('/').pop() || fullPath : fullPath;
           const hasSaved = saved[d.id];
           let initX: number;
           let initY: number;
@@ -1082,28 +1280,52 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             }
           }
 
-          graphNodes.push({
-            id: d.id,
-            title: fullPath,
-            displayTitle,
-            x: initX,
-            y: initY,
-            vx: 0,
-            vy: 0,
-            radius: Math.min(9, 5.5 + (linkCounts[d.id] || 0) * 1.4),
-            isFolder: !!d.is_folder,
-            linkCount: linkCounts[d.id] || 0,
-            createdAt: d.created_at || Date.now(),
-            textOffset: 14,
-            hoverAlpha: 0,
-            dimAlpha: 0,
-            connectAlpha: 0,
-            popScale: 1,
-            popAlpha: 1,
-            floatPhaseX: hashStringToUnit(d.id + ':floatX') * Math.PI * 2,
-            floatPhaseY: hashStringToUnit(d.id + ':floatY') * Math.PI * 2,
-            floatFreq: 0.00065 + (hashStringToUnit(d.id + ':freq') - 0.5) * 0.00025,
-          });
+          graphNodes.push(
+            createGraphNodeItem(
+              d,
+              allDocs,
+              {
+                initX,
+                initY,
+                linkCount: linkCounts[d.id] || 0,
+              },
+              graphSettings
+            )
+          );
+        }
+
+        // Add virtual tag nodes
+        if (showTagsSetting) {
+          let tagIdx = 0;
+          for (const [cleanTag, rawTag] of tagMap.entries()) {
+            const tagId = `tag:${cleanTag}`;
+            if (seenInit.has(tagId)) continue;
+            seenInit.add(tagId);
+
+            const defaultPos = getDeterministicNodePos(tagId, docs.length + tagIdx++);
+            const hasSaved = saved[tagId];
+            const initX = hasSaved && Number.isFinite(hasSaved.x) ? hasSaved.x : defaultPos.x;
+            const initY = hasSaved && Number.isFinite(hasSaved.y) ? hasSaved.y : defaultPos.y;
+
+            graphNodes.push(
+              createGraphNodeItem(
+                {
+                  id: tagId,
+                  title: `#${rawTag}`,
+                  is_folder: false,
+                },
+                allDocs,
+                {
+                  initX,
+                  initY,
+                  isTag: true,
+                  tagLabel: `#${rawTag}`,
+                  linkCount: linkCounts[tagId] || 1,
+                },
+                graphSettings
+              )
+            );
+          }
         }
 
         if (disposed || loadSeq !== loadSeqRef.current) return;
@@ -1165,7 +1387,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       persistPositions(true);
       saveTransform(targetTransformRef.current, vaultPath);
     };
-  }, [vaultPath, centerGraph, persistPositions, resizeCanvas]);
+  }, [vaultPath, centerGraph, persistPositions, resizeCanvas, showTags, showOrphans]);
 
   // Fluid High-Performance Physics Step with Inertia, Spring Dynamics & Obstacle Avoidance
   const stepPhysics = useCallback(() => {
@@ -1180,15 +1402,17 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
     const currentAlpha = alphaRef.current;
 
+    const graphSettings = useGraphSettings.getState();
+    const showOrphansSetting = graphSettings.showOrphans;
     const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-    const visibleNodes = currentNodes.slice(0, visibleCount);
+    const baseSlice = currentNodes.slice(0, visibleCount);
+    const visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
     if (visibleNodes.length === 0) return;
 
     const progress = visibleNodes.length / Math.max(1, currentNodes.length);
     const easeProgress = Math.pow(progress, 3);
 
     // Target equilibrium spacing between adjacent nodes
-    const graphSettings = useGraphSettings.getState();
     const desiredDistSetting = graphSettings.linkDistance || 100;
     const repulsionMult = (graphSettings.nodeRepulsion || 150) / 150;
     const linkStrengthMult = graphSettings.linkStrength || 1.0;
@@ -1625,8 +1849,10 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       const currentNodes = nodesRef.current;
       const currentLinks = linksRef.current;
 
+      const showOrphansSetting = useGraphSettings.getState().showOrphans;
       const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-      const visibleNodes = currentNodes.slice(0, visibleCount);
+      const baseSlice = currentNodes.slice(0, visibleCount);
+      const visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
 
       const visibleNodeIds = visibleNodeIdsRef.current;
       visibleNodeIds.clear();
@@ -1731,7 +1957,31 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
       // Layer 1: Draw Background / Passive Links (Batched into <= 2 draw calls for 2,000x faster rendering)
       const linkThicknessMult = useGraphSettings.getState().linkThickness || 1.0;
+      const showArrowsSetting = useGraphSettings.getState().showArrows;
+      const nodeSizeMult = useGraphSettings.getState().nodeSize || 1.0;
       ctx.lineWidth = 1 * linkThicknessMult;
+
+      const drawArrowhead = (sourceNode: GraphNode, targetNode: GraphNode, color: string) => {
+        const dx = targetNode.x - sourceNode.x;
+        const dy = targetNode.y - sourceNode.y;
+        const dist = Math.hypot(dx, dy);
+        const targetR = Math.max(3.5, (targetNode.radius || 5.5) * (targetNode.popScale || 1) * nodeSizeMult);
+        if (dist < targetR + 10) return;
+
+        const ux = dx / dist;
+        const uy = dy / dist;
+        const tipX = targetNode.x - ux * (targetR + 1.5);
+        const tipY = targetNode.y - uy * (targetR + 1.5);
+        const arrowSize = 3.5;
+
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(tipX - ux * arrowSize * 1.5 - uy * arrowSize, tipY - uy * arrowSize * 1.5 + ux * arrowSize);
+        ctx.lineTo(tipX - ux * arrowSize * 1.5 + uy * arrowSize, tipY - uy * arrowSize * 1.5 - ux * arrowSize);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+      };
 
       if (!isAnyHovered && filterText.trim() === '') {
         // Fast-path: 100% of passive links share identical style -> Single draw call!
@@ -1743,6 +1993,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           ctx.lineTo(t.x, t.y);
         }
         ctx.stroke();
+
+        if (showArrowsSetting) {
+          for (let i = 0; i < nonHoveredLinks.length; i++) {
+            const { s, t } = nonHoveredLinks[i];
+            drawArrowhead(s, t, 'rgba(120, 125, 135, 0.450)');
+          }
+        }
       } else {
         // Group into normal and dimmed buckets
         const normalBatch: { s: GraphNode; t: GraphNode }[] = [];
@@ -1767,6 +2024,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             ctx.lineTo(t.x, t.y);
           }
           ctx.stroke();
+
+          if (showArrowsSetting) {
+            for (let i = 0; i < normalBatch.length; i++) {
+              const { s, t } = normalBatch[i];
+              drawArrowhead(s, t, 'rgba(120, 125, 135, 0.450)');
+            }
+          }
         }
 
         if (dimmedBatch.length > 0) {
@@ -1778,6 +2042,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             ctx.lineTo(t.x, t.y);
           }
           ctx.stroke();
+
+          if (showArrowsSetting) {
+            for (let i = 0; i < dimmedBatch.length; i++) {
+              const { s, t } = dimmedBatch[i];
+              drawArrowhead(s, t, 'rgba(65, 65, 70, 0.220)');
+            }
+          }
         }
       }
 
@@ -1820,6 +2091,10 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const activeLinkThicknessMult = useGraphSettings.getState().linkThickness || 1.0;
         ctx.lineWidth = (1 + 0.6 * ha) * activeLinkThicknessMult;
         ctx.stroke();
+
+        if (showArrowsSetting) {
+          drawArrowhead(fromNode, toNode, `rgba(255, 255, 255, ${(0.92 * ha).toFixed(3)})`);
+        }
       }
 
       // Group nodes into passive background nodes, connected neighbor nodes, and hovered node
@@ -1905,9 +2180,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           isLerping = true;
         }
 
-        const baseR = isFilterActive && isMatch ? 235 : 156;
-        const baseG = isFilterActive && isMatch ? 240 : 163;
-        const baseB = isFilterActive && isMatch ? 255 : 175;
+        const nodeBaseR = node.colorR ?? 156;
+        const nodeBaseG = node.colorG ?? 163;
+        const nodeBaseB = node.colorB ?? 175;
+
+        const baseR = isFilterActive && isMatch ? 235 : nodeBaseR;
+        const baseG = isFilterActive && isMatch ? 240 : nodeBaseG;
+        const baseB = isFilterActive && isMatch ? 255 : nodeBaseB;
 
         // Clean transition to pure white (255, 255, 255) on hover or bright search match
         const nr = Math.min(255, Math.max(0, Math.round(baseR * (1 - node.dimAlpha) * (1 - node.hoverAlpha) + 255 * node.hoverAlpha + 45 * node.dimAlpha)));
@@ -2935,6 +3214,14 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
     if (dragNodeRef.current) {
       if (distMoved < 6) {
+        if (dragNodeRef.current.isTag) {
+          const rawTag = dragNodeRef.current.title.replace(/^#/, '');
+          setFilterText(rawTag);
+          setIsSearchOpen(true);
+          startAnimationRef.current();
+          dragNodeRef.current = null;
+          return;
+        }
         const targetId = dragNodeRef.current.id;
         const allDocs = await getAllDocuments();
         const targetDoc = allDocs.find((d) => d.id === targetId);
@@ -2947,6 +3234,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       alphaRef.current = Math.max(alphaRef.current, 0.72);
       dragNodeRef.current = null;
     } else if (distMoved < 6 && targetCandidate) {
+      if (targetCandidate.isTag) {
+        const rawTag = targetCandidate.title.replace(/^#/, '');
+        setFilterText(rawTag);
+        setIsSearchOpen(true);
+        startAnimationRef.current();
+        return;
+      }
       const targetId = targetCandidate.id;
       const allDocs = app.hearth.documents;
       const targetDoc = allDocs.find((d: any) => d.id === targetId);
