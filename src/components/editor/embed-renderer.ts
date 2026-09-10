@@ -541,19 +541,49 @@ export function renderEmbedWidget(
     const img = document.createElement('img');
     img.src = resolvedSrc;
     img.alt = embed.aliasOrDimensions || altText || embed.target;
-    img.className = 'flint-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-zoom-in';
+    img.className = 'flint-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-zoom-in select-none';
     img.loading = 'lazy';
-    const handleOpenLightbox = (e: MouseEvent | PointerEvent) => {
+    img.draggable = false;
+    img.ondragstart = (e) => e.preventDefault();
+
+    let pointerDownPos: { x: number; y: number } | null = null;
+    img.onpointerdown = (e: PointerEvent) => {
       if (e.button !== 0) return;
+      pointerDownPos = { x: e.clientX, y: e.clientY };
+    };
+
+    img.onpointerup = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      if (pointerDownPos) {
+        const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+        pointerDownPos = null;
+        if (dist <= 5) {
+          useWorkspaceStore.getState().openImageLightbox(
+            resolvedSrc || embed.url,
+            embed.aliasOrDimensions || altText || embed.target || ''
+          );
+        }
+      }
+    };
+
+    img.onclick = (e: MouseEvent) => {
+      if (e.button !== 0) return;
+      if (pointerDownPos) {
+        const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+        pointerDownPos = null;
+        if (dist <= 5) {
+          e.preventDefault();
+          e.stopPropagation();
+          useWorkspaceStore.getState().openImageLightbox(
+            resolvedSrc || embed.url,
+            embed.aliasOrDimensions || altText || embed.target || ''
+          );
+          return;
+        }
+      }
       e.preventDefault();
       e.stopPropagation();
-      useWorkspaceStore.getState().openImageLightbox(
-        resolvedSrc || embed.url,
-        embed.aliasOrDimensions || altText || embed.target || ''
-      );
     };
-    img.onpointerdown = handleOpenLightbox;
-    img.onclick = handleOpenLightbox;
 
     if (embed.width) {
       img.style.width = `${embed.width}px`;

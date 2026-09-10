@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { useCanvasSettings } from './canvasSettings';
 import { CanvasNode, CanvasEdge } from './types';
 import {
@@ -12,18 +11,23 @@ import {
 } from './canvasDb';
 import {
   PlusSignIcon,
+  MinusSignIcon,
+  CenterFocusIcon,
+  RotateCcwIcon,
   Cancel01Icon,
   File01Icon,
   Delete02Icon,
   SparklesIcon,
   Layout01Icon,
-  RotateCcwIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'flint';
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
 import { isImageDocument } from './components/CardContentRenderer';
+import { CanvasSettingsRail } from './components/CanvasSettingsRail';
+import { calculateObjectSnap, AlignmentGuide } from './utils/canvasSnapping';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 export interface CanvasViewProps {
   boardId?: string;
@@ -35,9 +39,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
   const showToast = useToast();
   const canvasSnapGrid = useCanvasSettings((s: any) => s.canvasSnapGrid);
+  const canvasSnapObjects = useCanvasSettings((s: any) => s.canvasSnapObjects);
+  const canvasReadOnly = useCanvasSettings((s: any) => s.canvasReadOnly);
   const gridSize = useCanvasSettings((s: any) => s.gridSize);
   const documents = useHearthDocuments();
   const activeDocument = useActiveDocument();
+  const isLightboxOpen = useWorkspaceStore((s) => Boolean(s.imageLightbox?.isOpen));
   const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
 
   const effectiveBoardId =
@@ -54,11 +61,21 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<CanvasEdge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-  const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
-  const addMenuRef = useRef<HTMLButtonElement>(null);
-  const addMenuDropdownRef = useRef<HTMLDivElement>(null);
-  const [addMenuPos, setAddMenuPos] = useState<{ top?: number; left?: number; bottom?: number }>({});
   const [docContentMap, setDocContentMap] = useState<Record<string, string>>({});
+  const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
+
+  const nodesRef = useRef(nodes);
+  const canvasSnapGridRef = useRef(canvasSnapGrid);
+  const canvasSnapObjectsRef = useRef(canvasSnapObjects);
+  const canvasReadOnlyRef = useRef(canvasReadOnly);
+  const gridSizeRef = useRef(gridSize);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { canvasSnapGridRef.current = canvasSnapGrid; }, [canvasSnapGrid]);
+  useEffect(() => { canvasSnapObjectsRef.current = canvasSnapObjects; }, [canvasSnapObjects]);
+  useEffect(() => { canvasReadOnlyRef.current = canvasReadOnly; }, [canvasReadOnly]);
+  useEffect(() => { gridSizeRef.current = gridSize; }, [gridSize]);
 
   // Asynchronously load note content into memory cache for cards that need it
   useEffect(() => {
@@ -98,6 +115,79 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   useEffect(() => {
     triggerDiskSyncRef.current = triggerDiskSync;
   }, [triggerDiskSync]);
+
+  // Canvas Action History (Undo / Redo)
+  const undoStackRef = useRef<CanvasNode[][]>([]);
+  const redoStackRef = useRef<CanvasNode[][]>([]);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+
+  const updateUndoRedoState = useCallback(() => {
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(redoStackRef.current.length > 0);
+  }, []);
+
+  const recordSnapshot = useCallback(() => {
+    const currentSnapshot = nodesRef.current.map((n) => ({ ...n }));
+    undoStackRef.current.push(currentSnapshot);
+    if (undoStackRef.current.length > 50) {
+      undoStackRef.current.shift();
+    }
+    redoStackRef.current = [];
+    updateUndoRedoState();
+  }, [updateUndoRedoState]);
+
+  const handleUndo = useCallback(async () => {
+    if (canvasReadOnlyRef.current || undoStackRef.current.length === 0) return;
+    const previousState = undoStackRef.current.pop();
+    if (!previousState) return;
+
+    const currentSnapshot = nodesRef.current.map((n) => ({ ...n }));
+    redoStackRef.current.push(currentSnapshot);
+
+    const prevIds = new Set(previousState.map((n) => n.id));
+    const currentNodes = nodesRef.current;
+
+    for (const n of currentNodes) {
+      if (!prevIds.has(n.id)) {
+        await deleteCanvasNode(n.id);
+      }
+    }
+    for (const n of previousState) {
+      await saveCanvasNode(n);
+    }
+    triggerDiskSync(effectiveBoardId);
+
+    setNodes(previousState);
+    updateUndoRedoState();
+    showToast('Undo', 'info');
+  }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState, showToast]);
+
+  const handleRedo = useCallback(async () => {
+    if (canvasReadOnlyRef.current || redoStackRef.current.length === 0) return;
+    const nextState = redoStackRef.current.pop();
+    if (!nextState) return;
+
+    const currentSnapshot = nodesRef.current.map((n) => ({ ...n }));
+    undoStackRef.current.push(currentSnapshot);
+
+    const nextIds = new Set(nextState.map((n) => n.id));
+    const currentNodes = nodesRef.current;
+
+    for (const n of currentNodes) {
+      if (!nextIds.has(n.id)) {
+        await deleteCanvasNode(n.id);
+      }
+    }
+    for (const n of nextState) {
+      await saveCanvasNode(n);
+    }
+    triggerDiskSync(effectiveBoardId);
+
+    setNodes(nextState);
+    updateUndoRedoState();
+    showToast('Redo', 'info');
+  }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState, showToast]);
 
   // Debounced save for card text edits with flush on unmount
   const textPendingNodesRef = useRef<Map<string, { timer: any; node: CanvasNode }>>(new Map());
@@ -140,53 +230,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       flushCanvasSaves();
     };
   }, [flushCanvasSaves]);
-
-  const updateAddMenuPos = useCallback(() => {
-    if (!addMenuRef.current) return;
-    const rect = addMenuRef.current.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const targetLeft = Math.max(8, Math.min(window.innerWidth - 232, rect.right - 224));
-    if (spaceBelow < 260 && rect.top > 260) {
-      setAddMenuPos({
-        bottom: window.innerHeight - rect.top + 4,
-        left: targetLeft,
-      });
-    } else {
-      setAddMenuPos({
-        top: rect.bottom + 4,
-        left: targetLeft,
-      });
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!isAddMenuOpen) return;
-
-    updateAddMenuPos();
-
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (
-        addMenuDropdownRef.current &&
-        !addMenuDropdownRef.current.contains(e.target as Node) &&
-        addMenuRef.current &&
-        !addMenuRef.current.contains(e.target as Node)
-      ) {
-        setIsAddMenuOpen(false);
-      }
-    };
-
-    const handleScrollOrResize = () => updateAddMenuPos();
-
-    window.addEventListener('resize', handleScrollOrResize);
-    window.addEventListener('scroll', handleScrollOrResize, true);
-    document.addEventListener('mousedown', handleOutsideClick);
-
-    return () => {
-      window.removeEventListener('resize', handleScrollOrResize);
-      window.removeEventListener('scroll', handleScrollOrResize, true);
-      document.removeEventListener('mousedown', handleOutsideClick);
-    };
-  }, [isAddMenuOpen, updateAddMenuPos]);
 
   // Pan & Zoom (smooth kinematic easing via target/current dual-ref system)
   const [pan, setPan] = useState({ x: 100, y: 100 });
@@ -268,8 +311,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     if (dotPatternRef.current) {
       const step = gridSizeRef.current || 20;
       const cell = step * scale;
-      dotPatternRef.current.setAttribute('x', String(x % cell));
-      dotPatternRef.current.setAttribute('y', String(y % cell));
+      const halfCell = cell / 2;
+      const patternX = (((x - halfCell) % cell) + cell) % cell;
+      const patternY = (((y - halfCell) % cell) + cell) % cell;
+      dotPatternRef.current.setAttribute('x', String(patternX));
+      dotPatternRef.current.setAttribute('y', String(patternY));
     }
   }, []);
 
@@ -335,7 +381,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   // Dragging node
   const draggingNodeIdRef = useRef<string | null>(null);
+  const dragCandidateNodeIdRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+
+  // Cancel any canvas drag immediately if lightbox opens
+  useEffect(() => {
+    if (isLightboxOpen) {
+      dragCandidateNodeIdRef.current = null;
+      draggingNodeIdRef.current = null;
+      dragDidMoveRef.current = false;
+      setActiveGuides([]);
+    }
+  }, [isLightboxOpen]);
 
   // Throttled mouse move via requestAnimationFrame
   const mouseMoveRafRef = useRef<number | null>(null);
@@ -424,6 +481,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, [effectiveBoardId, flushCanvasSaves]);
 
   const handleAddTextCard = useCallback(async () => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
+    recordSnapshot();
     const step = gridSize || 20;
     let initialX = (-pan.x + 300) / zoom;
     let initialY = (-pan.y + 200) / zoom;
@@ -445,11 +507,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     await saveCanvasNode(newNode);
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
-    setIsAddMenuOpen(false);
     showToast('Added note card', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync]);
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, recordSnapshot]);
 
   const handleAddDocCard = useCallback(async (docId: string) => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
+    recordSnapshot();
     const step = gridSize || 20;
     let initialX = (-pan.x + 300) / zoom;
     let initialY = (-pan.y + 200) / zoom;
@@ -476,12 +542,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     await saveCanvasNode(newNode);
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
-    setIsAddMenuOpen(false);
     showToast(isImg ? 'Added image to canvas' : 'Added document to canvas', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, documents]);
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, documents, recordSnapshot]);
 
   const handleColorChange = useCallback(
     (id: string, color: string) => {
+      if (canvasReadOnlyRef.current) return;
+      recordSnapshot();
       setNodes((prev) => {
         const updated = prev.map((n) => (n.id === id ? { ...n, color } : n));
         const target = updated.find((n) => n.id === id);
@@ -492,17 +559,22 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return updated;
       });
     },
-    [triggerDiskSync]
+    [triggerDiskSync, recordSnapshot]
   );
 
   const handleDeleteNode = useCallback(async (id: string, e?: React.MouseEvent) => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
     if (e) e.stopPropagation();
+    recordSnapshot();
     await deleteCanvasNode(id);
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => prev.filter((n) => n.id !== id));
     if (selectedNodeId === id) setSelectedNodeId(null);
     showToast('Removed card', 'info');
-  }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync]);
+  }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync, recordSnapshot]);
 
   const handleOpenDoc = useCallback(
     (docId?: string) => {
@@ -522,18 +594,42 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     return map;
   }, [documents]);
 
-  // Keyboard shortcut to delete selected card (Delete / Backspace when not typing)
+  // Keyboard shortcuts: Delete/Backspace to remove card, Ctrl+Z / Ctrl+Y for Undo/Redo
   useEffect(() => {
     const handleCanvasKeyDown = (e: KeyboardEvent) => {
-      if (!selectedNodeId) return;
       const target = (e.target || document.activeElement) as HTMLElement | null;
       const isInput =
         target?.tagName === 'INPUT' ||
         target?.tagName === 'TEXTAREA' ||
-        Boolean(target?.isContentEditable);
+        Boolean(target?.isContentEditable) ||
+        Boolean(target?.closest('[contenteditable="true"], input, textarea'));
+
+      // If user is editing text inside an input or note card, preserve standard text undo/redo
       if (isInput) return;
 
+      // Ctrl+Z / Cmd+Z: Undo canvas action
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleUndo();
+        return;
+      }
+
+      // Ctrl+Y / Cmd+Y or Ctrl+Shift+Z / Cmd+Shift+Z: Redo canvas action
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleRedo();
+        return;
+      }
+
+      if (!selectedNodeId) return;
+
       if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (canvasReadOnlyRef.current) return;
         e.preventDefault();
         e.stopPropagation();
         handleDeleteNode(selectedNodeId);
@@ -546,7 +642,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     return () => {
       window.removeEventListener('keydown', handleCanvasKeyDown);
     };
-  }, [selectedNodeId, handleDeleteNode]);
+  }, [selectedNodeId, handleDeleteNode, handleUndo, handleRedo]);
 
   const handleTextChange = useCallback((id: string, newText: string) => {
     setNodes((prev) => {
@@ -558,6 +654,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       return updated;
     });
   }, [debouncedSaveNode]);
+
+  const handleDocContentChange = useCallback(
+    async (docId: string, newContentJson: string) => {
+      setDocContentMap((prev) => ({ ...prev, [docId]: newContentJson }));
+      try {
+        await app.hearth.saveDocument(docId, newContentJson);
+      } catch (e) {
+        console.error('Failed to save document from canvas card:', e);
+      }
+    },
+    [app.hearth]
+  );
 
   const handleTaskToggle = useCallback(
     async (nodeId: string, taskText: string, currentChecked: boolean) => {
@@ -640,15 +748,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Refs for real-time reads during continuous drag operations
   const panRef = useRef(pan);
   const zoomRef = useRef(zoom);
-  const canvasSnapGridRef = useRef(canvasSnapGrid);
-  const gridSizeRef = useRef(gridSize);
-  const nodesRef = useRef(nodes);
+  const dragDidMoveRef = useRef(false);
+  const dragStartClientRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const resizeDidMoveRef = useRef(false);
 
   useEffect(() => { panRef.current = pan; }, [pan]);
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
-  useEffect(() => { canvasSnapGridRef.current = canvasSnapGrid; }, [canvasSnapGrid]);
-  useEffect(() => { gridSizeRef.current = gridSize; }, [gridSize]);
-  useEffect(() => { nodesRef.current = nodes; }, [nodes]);
 
   // Background Pan & Drag Handlers with continuous window/pointer capture tracking
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -697,16 +802,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const node = nodesRef.current.find((n) => n.id === id);
     if (!node) return;
     setSelectedNodeId(node.id);
-    draggingNodeIdRef.current = node.id;
+
+    // Read-only mode allows selecting the card, but blocks dragging
+    if (canvasReadOnlyRef.current) return;
+
+    dragDidMoveRef.current = false;
+    dragStartClientRef.current = { x: e.clientX, y: e.clientY };
+    dragCandidateNodeIdRef.current = node.id;
+    draggingNodeIdRef.current = null;
     const mouseCanvasX = (e.clientX - panRef.current.x) / zoomRef.current;
     const mouseCanvasY = (e.clientY - panRef.current.y) / zoomRef.current;
     dragOffsetRef.current = {
       x: mouseCanvasX - node.x,
       y: mouseCanvasY - node.y,
     };
-    try {
-      (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
-    } catch {}
   }, []);
 
   const resizingNodeIdRef = useRef<string | null>(null);
@@ -752,10 +861,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   const handleResizeStart = useCallback(
     (id: string, e: React.PointerEvent, handle: ResizeHandleType) => {
+      if (canvasReadOnlyRef.current) return;
       e.stopPropagation();
       const node = nodesRef.current.find((n) => n.id === id);
       if (!node) return;
       setSelectedNodeId(node.id);
+      resizeDidMoveRef.current = false;
       resizingNodeIdRef.current = id;
       resizeHandleRef.current = handle;
 
@@ -784,7 +895,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   useEffect(() => {
     const handleGlobalPointerMove = (e: PointerEvent) => {
-      if (!isPanningRef.current && !draggingNodeIdRef.current && !resizingNodeIdRef.current) return;
+      if (isLightboxOpen) return;
+      if (!isPanningRef.current && !draggingNodeIdRef.current && !dragCandidateNodeIdRef.current && !resizingNodeIdRef.current) return;
       lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
       if (mouseMoveRafRef.current === null) {
         mouseMoveRafRef.current = requestAnimationFrame(() => {
@@ -809,6 +921,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               });
             }
           } else if (resizingNodeIdRef.current) {
+            if (!resizeDidMoveRef.current) {
+              resizeDidMoveRef.current = true;
+              recordSnapshot();
+            }
             const resizeId = resizingNodeIdRef.current;
             const handle = resizeHandleRef.current;
             const start = resizeStartDimsRef.current;
@@ -895,20 +1011,70 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 return { ...n, x: newX, y: newY, width: newW, height: newH };
               });
             });
-          } else if (draggingNodeIdRef.current) {
-            const dragId = draggingNodeIdRef.current;
-            setNodes((prev) => {
-              const node = prev.find((n) => n.id === dragId);
-              if (!node) return prev;
-              let newX = (pos.clientX - panRef.current.x) / zoomRef.current - dragOffsetRef.current.x;
-              let newY = (pos.clientY - panRef.current.y) / zoomRef.current - dragOffsetRef.current.y;
-              if (canvasSnapGridRef.current) {
-                const step = gridSizeRef.current || 20;
-                newX = Math.round(newX / step) * step;
-                newY = Math.round(newY / step) * step;
-              }
-              return prev.map((n) => (n.id === dragId ? { ...n, x: newX, y: newY } : n));
-            });
+          } else if (dragCandidateNodeIdRef.current || draggingNodeIdRef.current) {
+            const dragId = draggingNodeIdRef.current || dragCandidateNodeIdRef.current;
+            if (!dragId) return;
+
+            if (!dragDidMoveRef.current) {
+              const dx = Math.abs(pos.clientX - dragStartClientRef.current.x);
+              const dy = Math.abs(pos.clientY - dragStartClientRef.current.y);
+              if (dx < 4 && dy < 4) return;
+              dragDidMoveRef.current = true;
+              draggingNodeIdRef.current = dragId;
+              recordSnapshot();
+            }
+            const currentNodes = nodesRef.current;
+            const node = currentNodes.find((n) => n.id === dragId);
+            if (!node) return;
+
+            const rawX = (pos.clientX - panRef.current.x) / zoomRef.current - dragOffsetRef.current.x;
+            const rawY = (pos.clientY - panRef.current.y) / zoomRef.current - dragOffsetRef.current.y;
+
+            const step = gridSizeRef.current || 20;
+            const gridX = canvasSnapGridRef.current ? Math.round(rawX / step) * step : rawX;
+            const gridY = canvasSnapGridRef.current ? Math.round(rawY / step) * step : rawY;
+
+            let finalX = gridX;
+            let finalY = gridY;
+            let newGuides: AlignmentGuide[] = [];
+
+            if (canvasSnapObjectsRef.current) {
+              const threshold = 8 / Math.max(0.2, zoomRef.current);
+              const containerEl = containerRef.current;
+              const cWidth = containerEl?.clientWidth || window.innerWidth;
+              const cHeight = containerEl?.clientHeight || window.innerHeight;
+              const curPan = panRef.current;
+              const curZoom = zoomRef.current;
+
+              const viewport = {
+                left: -curPan.x / curZoom,
+                top: -curPan.y / curZoom,
+                right: (-curPan.x + cWidth) / curZoom,
+                bottom: (-curPan.y + cHeight) / curZoom,
+              };
+
+              const snapResult = calculateObjectSnap(
+                dragId,
+                rawX,
+                rawY,
+                gridX,
+                gridY,
+                node.width || 260,
+                node.height || 180,
+                currentNodes,
+                threshold,
+                viewport
+              );
+
+              finalX = snapResult.x;
+              finalY = snapResult.y;
+              newGuides = snapResult.guides;
+            }
+
+            const nextNodes = currentNodes.map((n) => (n.id === dragId ? { ...n, x: finalX, y: finalY } : n));
+            nodesRef.current = nextNodes;
+            setActiveGuides(newGuides);
+            setNodes(nextNodes);
           }
         });
       }
@@ -919,7 +1085,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         cancelAnimationFrame(mouseMoveRafRef.current);
         mouseMoveRafRef.current = null;
       }
-      if (draggingNodeIdRef.current) {
+      if (draggingNodeIdRef.current && dragDidMoveRef.current) {
         const dragId = draggingNodeIdRef.current;
         const node = nodesRef.current.find((n) => n.id === dragId);
         if (node) {
@@ -937,6 +1103,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         resizingNodeIdRef.current = null;
         resizeHandleRef.current = null;
       }
+      setActiveGuides([]);
+      dragCandidateNodeIdRef.current = null;
+      dragDidMoveRef.current = false;
+      resizeDidMoveRef.current = false;
       isPanningRef.current = false;
       setIsPanningState(false);
       draggingNodeIdRef.current = null;
@@ -951,9 +1121,287 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       window.removeEventListener('pointerup', handleGlobalPointerUp);
       window.removeEventListener('pointercancel', handleGlobalPointerUp);
     };
+  }, [recordSnapshot]);
+
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const updateSize = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setContainerSize({ width: rect.width, height: rect.height });
+      }
+    };
+
+    updateSize();
+    const ro = new ResizeObserver(() => updateSize());
+    ro.observe(el);
+
+    return () => ro.disconnect();
   }, []);
 
-  const containerRef = useRef<HTMLDivElement>(null);
+  // Spatial Viewport Culling Engine (bounds memory & DOM count to O(viewport) cards)
+  const visibleNodes = useMemo(() => {
+    if (containerSize.width === 0 || containerSize.height === 0) {
+      return nodes;
+    }
+
+    const overscan = 400; // px in canvas coordinates
+    const left = -pan.x / zoom - overscan;
+    const top = -pan.y / zoom - overscan;
+    const right = (-pan.x + containerSize.width) / zoom + overscan;
+    const bottom = (-pan.y + containerSize.height) / zoom + overscan;
+
+    return nodes.filter((node) => {
+      // Never cull selected node so focus / active editing is preserved uninterrupted
+      if (node.id === selectedNodeId) return true;
+
+      const nodeWidth = node.width || 260;
+      const nodeHeight = node.height || 180;
+      const nodeRight = node.x + nodeWidth;
+      const nodeBottom = node.y + nodeHeight;
+
+      return (
+        nodeRight >= left &&
+        node.x <= right &&
+        nodeBottom >= top &&
+        node.y <= bottom
+      );
+    });
+  }, [nodes, pan.x, pan.y, zoom, containerSize.width, containerSize.height, selectedNodeId]);
+
+  // Top-Right Camera Controls: Smooth Animated Zoom In, Zoom Out, and Fit to Center
+  const handleZoomIn = useCallback(() => {
+    const el = containerRef.current;
+    const rect = el?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+    const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const currentTarget = targetTransformRef.current;
+    const currentScale = currentTarget.scale;
+    const newScale = Math.min(3.0, currentScale * 1.25);
+
+    if (Math.abs(newScale - currentScale) > 0.0001) {
+      targetTransformRef.current = {
+        x: centerX - ((centerX - currentTarget.x) * (newScale / currentScale)),
+        y: centerY - ((centerY - currentTarget.y) * (newScale / currentScale)),
+        scale: newScale,
+      };
+      runCameraEasing();
+    }
+  }, [containerSize.width, containerSize.height, runCameraEasing]);
+
+  const handleZoomOut = useCallback(() => {
+    const el = containerRef.current;
+    const rect = el?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+    const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const currentTarget = targetTransformRef.current;
+    const currentScale = currentTarget.scale;
+    const newScale = Math.max(0.15, currentScale / 1.25);
+
+    if (Math.abs(newScale - currentScale) > 0.0001) {
+      targetTransformRef.current = {
+        x: centerX - ((centerX - currentTarget.x) * (newScale / currentScale)),
+        y: centerY - ((centerY - currentTarget.y) * (newScale / currentScale)),
+        scale: newScale,
+      };
+      runCameraEasing();
+    }
+  }, [containerSize.width, containerSize.height, runCameraEasing]);
+
+  const handleResetZoom = useCallback(() => {
+    const el = containerRef.current;
+    const rect = el?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+    const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    const currentTarget = targetTransformRef.current;
+    const currentScale = currentTarget.scale;
+    const newScale = 1;
+
+    if (Math.abs(newScale - currentScale) > 0.0001) {
+      targetTransformRef.current = {
+        x: centerX - ((centerX - currentTarget.x) * (newScale / currentScale)),
+        y: centerY - ((centerY - currentTarget.y) * (newScale / currentScale)),
+        scale: newScale,
+      };
+      runCameraEasing();
+    }
+  }, [containerSize.width, containerSize.height, runCameraEasing]);
+
+  const handleFitToCenter = useCallback(() => {
+    const el = containerRef.current;
+    const rect = el?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+    const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+    if (nodes.length === 0) {
+      targetTransformRef.current = { x: 100, y: 100, scale: 1 };
+      runCameraEasing();
+      return;
+    }
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (const node of nodes) {
+      const w = node.width || 260;
+      const h = node.height || 180;
+      if (node.x < minX) minX = node.x;
+      if (node.x + w > maxX) maxX = node.x + w;
+      if (node.y < minY) minY = node.y;
+      if (node.y + h > maxY) maxY = node.y + h;
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) {
+      targetTransformRef.current = { x: 100, y: 100, scale: 1 };
+      runCameraEasing();
+      return;
+    }
+
+    const padding = 80;
+    const contentWidth = Math.max(100, maxX - minX);
+    const contentHeight = Math.max(100, maxY - minY);
+    const contentCenterX = (minX + maxX) / 2;
+    const contentCenterY = (minY + maxY) / 2;
+
+    const availWidth = Math.max(200, width - padding * 2);
+    const availHeight = Math.max(200, height - padding * 2);
+
+    const scaleX = availWidth / contentWidth;
+    const scaleY = availHeight / contentHeight;
+    const fitScale = Math.min(1.25, Math.max(0.2, Math.min(scaleX, scaleY)));
+
+    const targetX = width / 2 - contentCenterX * fitScale;
+    const targetY = height / 2 - contentCenterY * fitScale;
+
+    targetTransformRef.current = {
+      x: Number.isFinite(targetX) ? targetX : 100,
+      y: Number.isFinite(targetY) ? targetY : 100,
+      scale: fitScale,
+    };
+    runCameraEasing();
+  }, [nodes, containerSize.width, containerSize.height, runCameraEasing]);
+
+  // Double-click on empty canvas to quickly place a new text card at cursor
+  const handleCanvasDoubleClick = useCallback(
+    async (e: React.MouseEvent) => {
+      if (canvasReadOnlyRef.current) return;
+      if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea, a')) return;
+      const el = containerRef.current;
+      if (!el) return;
+      recordSnapshot();
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const ct = currentTransformRef.current;
+      let canvasX = (mouseX - ct.x) / ct.scale;
+      let canvasY = (mouseY - ct.y) / ct.scale;
+      const step = gridSizeRef.current || 20;
+      if (canvasSnapGridRef.current) {
+        canvasX = Math.round(canvasX / step) * step;
+        canvasY = Math.round(canvasY / step) * step;
+      }
+      const newNode: CanvasNode = {
+        id: `node-${Date.now()}`,
+        board_id: effectiveBoardId,
+        type: 'text',
+        x: Math.round(canvasX),
+        y: Math.round(canvasY),
+        width: 260,
+        height: 180,
+        text_content: '',
+        color: '#1e1e1e',
+      };
+      await saveCanvasNode(newNode);
+      triggerDiskSync(effectiveBoardId);
+      setNodes((prev) => [...prev, newNode]);
+      setSelectedNodeId(newNode.id);
+    },
+    [effectiveBoardId, triggerDiskSync, recordSnapshot]
+  );
+
+  // Drag and drop documents from navigation tree directly onto canvas
+  useEffect(() => {
+    const handleCustomDrop = async (e: Event) => {
+      if (canvasReadOnlyRef.current) return;
+      const customEvent = e as CustomEvent;
+      const { item, selectedIds, targetEl, clientX, clientY } = customEvent.detail || {};
+      const el = containerRef.current;
+      if (!el || !targetEl || !el.contains(targetEl)) return;
+
+      customEvent.detail.handled = true;
+      const rect = el.getBoundingClientRect();
+      const ct = currentTransformRef.current;
+      let canvasX = (clientX - rect.left - ct.x) / ct.scale;
+      let canvasY = (clientY - rect.top - ct.y) / ct.scale;
+      const step = gridSizeRef.current || 20;
+      if (canvasSnapGridRef.current) {
+        canvasX = Math.round(canvasX / step) * step;
+        canvasY = Math.round(canvasY / step) * step;
+      }
+
+      const idsToInsert: string[] =
+        selectedIds && selectedIds.length > 0 ? selectedIds : item?.id ? [item.id] : [];
+      const newNodes: CanvasNode[] = [];
+
+      let offset = 0;
+      for (const docId of idsToInsert) {
+        const targetDoc = documents.find((d: DocumentItem) => d.id === docId);
+        if (!targetDoc || targetDoc.is_folder || targetDoc.id === effectiveBoardId || targetDoc.doc_type === 'canvas') {
+          continue;
+        }
+        const isImg = isImageDocument(targetDoc);
+        const node: CanvasNode = {
+          id: `node-${Date.now()}-${offset}`,
+          board_id: effectiveBoardId,
+          type: 'note',
+          x: Math.round(canvasX + offset * 24),
+          y: Math.round(canvasY + offset * 24),
+          width: isImg ? 340 : 320,
+          height: isImg ? 260 : 280,
+          document_id: docId,
+          color: '#1e1e1e',
+        };
+        newNodes.push(node);
+        offset++;
+      }
+
+      if (newNodes.length > 0) {
+        recordSnapshot();
+        for (const node of newNodes) {
+          await saveCanvasNode(node);
+        }
+        triggerDiskSync(effectiveBoardId);
+        setNodes((prev) => [...prev, ...newNodes]);
+        showToast(
+          newNodes.length === 1 ? 'Added document to canvas' : `Added ${newNodes.length} documents to canvas`,
+          'success'
+        );
+      }
+    };
+
+    window.addEventListener('flint:custom-drop', handleCustomDrop);
+    return () => {
+      window.removeEventListener('flint:custom-drop', handleCustomDrop);
+    };
+  }, [documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -1194,81 +1642,55 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         showDocOptions={true}
         customRightActions={
           <>
-            {/* Add Card Menu Trigger */}
-            <div className="relative">
-              <button
-                ref={addMenuRef}
-                type="button"
-                onClick={() => setIsAddMenuOpen(!isAddMenuOpen)}
-                title="Add card to canvas"
-                className={`p-1 rounded transition-colors cursor-pointer ${
-                  isAddMenuOpen
-                    ? 'text-white bg-[#282828]'
-                    : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
-                }`}
-              >
-                <PlusSignIcon size={14} />
-              </button>
-
-              {/* Add Menu Dropdown */}
-              {isAddMenuOpen &&
-                createPortal(
-                  <div
-                    ref={addMenuDropdownRef}
-                    style={{
-                      position: 'fixed',
-                      top: addMenuPos.top !== undefined ? `${addMenuPos.top}px` : undefined,
-                      bottom: addMenuPos.bottom !== undefined ? `${addMenuPos.bottom}px` : undefined,
-                      left: addMenuPos.left !== undefined ? `${addMenuPos.left}px` : undefined,
-                      zIndex: 99999,
-                    }}
-                    className="w-56 bg-[#1e1e1e] border border-[#333333] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.6),0_2px_6px_rgba(0,0,0,0.3)] p-1 text-xs flex flex-col gap-0.5 select-none"
-                  >
-                    <button
-                      onClick={handleAddTextCard}
-                      className="flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] hover:bg-[#282828] text-left text-[#c5c6c8] hover:text-white transition-colors cursor-pointer"
-                    >
-                      <SparklesIcon size={14} className="text-[#fbbf24]" />
-                      <span>Text / Sticky Note</span>
-                    </button>
-
-                    <div className="border-t border-[#2a2a2a] my-0.5" />
-                    <div className="px-2.5 py-1 text-[10px] text-[#666] uppercase font-semibold">
-                      Insert Document
-                    </div>
-                    <div className="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
-                      {documents
-                        .filter((d: DocumentItem) => !d.is_folder && d.id !== effectiveBoardId && d.doc_type !== 'canvas')
-                        .map((doc: DocumentItem) => (
-                          <button
-                            key={doc.id}
-                            onClick={() => handleAddDocCard(doc.id)}
-                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] hover:bg-[#282828] text-left text-[#c5c6c8] hover:text-white truncate transition-colors cursor-pointer"
-                          >
-                            <File01Icon size={13} className="shrink-0 text-[#777]" />
-                            <span className="truncate">{doc.title}</span>
-                          </button>
-                        ))}
-                    </div>
-                  </div>,
-                  document.body
-                )}
-            </div>
-
-            {/* Reset View Button */}
+            {/* Zoom In Button */}
             <button
               type="button"
-              onClick={() => {
-                targetTransformRef.current = { x: 100, y: 100, scale: 1 };
-                runCameraEasing();
-              }}
-              title={`Reset view (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] transition-colors cursor-pointer"
+              onClick={handleZoomIn}
+              title={`Zoom in (${Math.round(zoom * 100)}%)`}
+              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+            >
+              <PlusSignIcon size={14} />
+            </button>
+
+            {/* Reset Zoom Button */}
+            <button
+              type="button"
+              onClick={handleResetZoom}
+              title={`Reset zoom (${Math.round(zoom * 100)}%)`}
+              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
             >
               <RotateCcwIcon size={14} />
             </button>
+
+            {/* Fit to Center Button */}
+            <button
+              type="button"
+              onClick={handleFitToCenter}
+              title="Fit to center"
+              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+            >
+              <CenterFocusIcon size={14} />
+            </button>
+
+            {/* Zoom Out Button */}
+            <button
+              type="button"
+              onClick={handleZoomOut}
+              title={`Zoom out (${Math.round(zoom * 100)}%)`}
+              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+            >
+              <MinusSignIcon size={14} />
+            </button>
           </>
         }
+      />
+
+      {/* Vertical Action Rail: Settings (Gear with popover dropdown) & Undo / Redo */}
+      <CanvasSettingsRail
+        canUndo={canUndo}
+        canRedo={canRedo}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
       />
 
       {/* Interactive Spatial Canvas Plane */}
@@ -1276,8 +1698,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         ref={containerRef}
         data-pinchable="true"
         data-canvas-view="true"
+        data-custom-drop-target="true"
         data-main="true"
         onPointerDown={handlePointerDown}
+        onDoubleClick={handleCanvasDoubleClick}
         style={{ touchAction: 'none' }}
         className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none ${
           isPanningState ? 'cursor-grabbing' : isSpacePressedState ? 'cursor-grab' : 'cursor-default'
@@ -1292,8 +1716,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               width={cellSize}
               height={cellSize}
               patternUnits="userSpaceOnUse"
-              x={pan.x % cellSize}
-              y={pan.y % cellSize}
+              x={(((pan.x - cellSize / 2) % cellSize) + cellSize) % cellSize}
+              y={(((pan.y - cellSize / 2) % cellSize) + cellSize) % cellSize}
             >
               <circle
                 cx={cellSize / 2}
@@ -1316,7 +1740,43 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           }}
           className="absolute inset-0 pointer-events-none"
         >
-        {nodes.map((node) => {
+          {/* Object Snapping Alignment Guidelines & Corner / Center Dots */}
+          {activeGuides.length > 0 && (
+            <svg
+              className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-40 transition-none"
+              style={{ transition: 'none' }}
+            >
+              {activeGuides.map((guide, idx) => (
+                <g key={`${guide.type}-${idx}`} className="transition-none" style={{ transition: 'none' }}>
+                  <line
+                    x1={guide.x1}
+                    y1={guide.y1}
+                    x2={guide.x2}
+                    y2={guide.y2}
+                    stroke="rgba(255, 255, 255, 0.55)"
+                    strokeWidth={1 / zoom}
+                    className="transition-none"
+                    style={{ transition: 'none' }}
+                  />
+                  {guide.points.map((pt, pIdx) => (
+                    <circle
+                      key={`${Math.round(pt.x)}-${Math.round(pt.y)}-${pIdx}`}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={3 / Math.min(1.5, Math.max(0.5, zoom))}
+                      fill="#ffffff"
+                      stroke="rgba(0, 0, 0, 0.65)"
+                      strokeWidth={0.75 / zoom}
+                      className="transition-none"
+                      style={{ transition: 'none' }}
+                    />
+                  ))}
+                </g>
+              ))}
+            </svg>
+          )}
+
+        {visibleNodes.map((node) => {
           const doc = node.document_id ? docMap.get(node.document_id) || null : null;
           const isSelected = selectedNodeId === node.id;
           const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
@@ -1330,11 +1790,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               isSelected={isSelected}
               isSpacePressed={isSpacePressedState}
               isPanning={isPanningState}
+              isReadOnly={canvasReadOnly}
               onSelect={handleNodePointerDown}
               onOpenDoc={handleOpenDoc}
               onDelete={handleDeleteNode}
               onColorChange={handleColorChange}
               onTextChange={handleTextChange}
+              onDocContentChange={handleDocContentChange}
               onResizeStart={handleResizeStart}
               onImageDimensions={handleImageDimensions}
               onTaskToggle={handleTaskToggle}

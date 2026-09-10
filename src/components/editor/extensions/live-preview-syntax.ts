@@ -1692,6 +1692,7 @@ export const LivePreviewSyntax = Extension.create({
 
   addProseMirrorPlugins() {
     const extensionThis = this;
+    let mouseDownPos: { x: number; y: number } | null = null;
     return [
       new Plugin<LivePreviewPluginState>({
         key: LivePreviewSyntaxPluginKey,
@@ -1781,6 +1782,13 @@ export const LivePreviewSyntax = Extension.create({
             // 0. Direct Image click action: Open Image Lightbox
             const imgEl = target.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
             if (imgEl && imgEl.src) {
+              if (mouseDownPos) {
+                const dist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
+                mouseDownPos = null;
+                if (dist > 5) {
+                  return true; // Card was dragged, do not open lightbox
+                }
+              }
               useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
               return true;
             }
@@ -1832,6 +1840,28 @@ export const LivePreviewSyntax = Extension.create({
             return false;
           },
           handleDOMEvents: {
+            mousedown(_view, event) {
+              const me = event as MouseEvent;
+              if (me.button === 0) {
+                mouseDownPos = { x: me.clientX, y: me.clientY };
+              }
+              return false;
+            },
+            mouseup(_view, event) {
+              const me = event as MouseEvent;
+              if (me.button !== 0) return false;
+              const target = me.target as HTMLElement | null;
+              const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+              if (imgEl && imgEl.src && mouseDownPos) {
+                const dist = Math.hypot(me.clientX - mouseDownPos.x, me.clientY - mouseDownPos.y);
+                mouseDownPos = null;
+                if (dist <= 5) {
+                  useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+                  return true;
+                }
+              }
+              return false;
+            },
             focus(view) {
               if (!view.editable) return false;
               view.dispatch(view.state.tr.setMeta('livePreviewFocus', true));

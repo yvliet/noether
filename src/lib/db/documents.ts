@@ -662,18 +662,30 @@ export function jsonToMarkdown(
       }
 
       if (node.type === 'bulletList') {
-        return (node.content || []).map((li: any) => `- ${(li.content || []).map(processNode).join('').trim()}\n`).join('');
+        return (node.content || []).map((li: any) => {
+          const lines = (li.content || []).map(processNode).join('').trimEnd().split('\n');
+          const firstLine = `- ${lines[0] || ''}\n`;
+          const restLines = lines.slice(1).map((l: string) => l ? `  ${l}\n` : '\n').join('');
+          return firstLine + restLines;
+        }).join('');
       }
 
       if (node.type === 'orderedList') {
-        return (node.content || []).map((li: any, i: number) => `${i + 1}. ${(li.content || []).map(processNode).join('').trim()}\n`).join('');
+        return (node.content || []).map((li: any, i: number) => {
+          const lines = (li.content || []).map(processNode).join('').trimEnd().split('\n');
+          const firstLine = `${i + 1}. ${lines[0] || ''}\n`;
+          const restLines = lines.slice(1).map((l: string) => l ? `  ${l}\n` : '\n').join('');
+          return firstLine + restLines;
+        }).join('');
       }
 
       if (node.type === 'taskList') {
         return (node.content || []).map((ti: any) => {
           const checked = ti.attrs?.checked ? 'x' : ' ';
-          const text = (ti.content || []).map(processNode).join('').trim();
-          return `- [${checked}] ${text}\n`;
+          const lines = (ti.content || []).map(processNode).join('').trimEnd().split('\n');
+          const firstLine = `- [${checked}] ${lines[0] || ''}\n`;
+          const restLines = lines.slice(1).map((l: string) => l ? `  ${l}\n` : '\n').join('');
+          return firstLine + restLines;
         }).join('');
       }
 
@@ -852,6 +864,57 @@ function parseInlineMarkdownTokens(line: string): any[] {
   return inlineNodes.length > 0 ? inlineNodes : [{ type: 'text', text: line }];
 }
 
+interface ListItemParseResult {
+  listType: 'bulletList' | 'orderedList' | 'taskList';
+  itemType: 'listItem' | 'taskItem';
+  indent: number;
+  checked: boolean;
+  text: string;
+}
+
+function matchListItemLine(line: string): ListItemParseResult | null {
+  // 1. Task list item: [indent]- [ ] or - [x] or 1. [ ] or 1. [x]
+  const taskMatch = line.match(/^([ \t]*)(?:[-*+]|\d+\.)\s+\[([ xX])\]\s+(.*)$/);
+  if (taskMatch) {
+    const indentStr = taskMatch[1].replace(/\t/g, '  ');
+    return {
+      listType: 'taskList',
+      itemType: 'taskItem',
+      indent: indentStr.length,
+      checked: taskMatch[2].toLowerCase() === 'x',
+      text: taskMatch[3],
+    };
+  }
+
+  // 2. Ordered list item: [indent]1. text
+  const olMatch = line.match(/^([ \t]*)(\d+)\.\s+(.*)$/);
+  if (olMatch) {
+    const indentStr = olMatch[1].replace(/\t/g, '  ');
+    return {
+      listType: 'orderedList',
+      itemType: 'listItem',
+      indent: indentStr.length,
+      checked: false,
+      text: olMatch[3],
+    };
+  }
+
+  // 3. Bullet list item: [indent]- text or * text or + text
+  const ulMatch = line.match(/^([ \t]*)[-*+]\s+(.*)$/);
+  if (ulMatch) {
+    const indentStr = ulMatch[1].replace(/\t/g, '  ');
+    return {
+      listType: 'bulletList',
+      itemType: 'listItem',
+      indent: indentStr.length,
+      checked: false,
+      text: ulMatch[2],
+    };
+  }
+
+  return null;
+}
+
 export function markdownToTipTapJson(md: string): string {
   if (!md || !md.trim()) {
     return JSON.stringify({
@@ -947,6 +1010,89 @@ export function markdownToTipTapJson(md: string): string {
         attrs: { level },
         content: headingText ? parseInlineMarkdownTokens(headingText) : [],
       });
+      continue;
+    }
+
+    // 6. Blockquote (> ...)
+    if (trimmed.startsWith('>')) {
+      const quoteLines: string[] = [];
+      while (i < lines.length && lines[i].trim().startsWith('>')) {
+        quoteLines.push(lines[i].trim().replace(/^>+\s?/, ''));
+        i++;
+      }
+      i--;
+      content.push({
+        type: 'blockquote',
+        content: quoteLines.map((ql) => ({
+          type: 'paragraph',
+          content: parseInlineMarkdownTokens(ql),
+        })),
+      });
+      continue;
+    }
+
+    // 7. Lists (ordered lists, bullet lists, task lists with nested hierarchy)
+    const firstListMatch = matchListItemLine(line);
+    if (firstListMatch) {
+      interface ListStackEntry {
+        listType: 'bulletList' | 'orderedList' | 'taskList';
+        indent: number;
+        listNode: any;
+        currentItem: any;
+      }
+      const stack: ListStackEntry[] = [];
+
+      while (i < lines.length) {
+        const currentLine = lines[i];
+        const item = matchListItemLine(currentLine);
+        if (!item) break;
+
+        while (stack.length > 0 && item.indent < stack[stack.length - 1].indent) {
+          stack.pop();
+        }
+
+        if (
+          stack.length > 0 &&
+          item.indent === stack[stack.length - 1].indent &&
+          stack[stack.length - 1].listType !== item.listType
+        ) {
+          stack.pop();
+        }
+
+        const newListItem: any = {
+          type: item.itemType,
+          content: [{ type: 'paragraph', content: item.text ? parseInlineMarkdownTokens(item.text) : [] }],
+        };
+        if (item.listType === 'taskList') {
+          newListItem.attrs = { checked: item.checked };
+        }
+
+        if (stack.length === 0) {
+          const newListNode = { type: item.listType, content: [newListItem] };
+          content.push(newListNode);
+          stack.push({
+            listType: item.listType,
+            indent: item.indent,
+            listNode: newListNode,
+            currentItem: newListItem,
+          });
+        } else if (item.indent > stack[stack.length - 1].indent) {
+          const newListNode = { type: item.listType, content: [newListItem] };
+          stack[stack.length - 1].currentItem.content.push(newListNode);
+          stack.push({
+            listType: item.listType,
+            indent: item.indent,
+            listNode: newListNode,
+            currentItem: newListItem,
+          });
+        } else {
+          stack[stack.length - 1].listNode.content.push(newListItem);
+          stack[stack.length - 1].currentItem = newListItem;
+        }
+
+        i++;
+      }
+      i--;
       continue;
     }
 

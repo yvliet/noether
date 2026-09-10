@@ -826,6 +826,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const slashExitTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isInternalUpdateRef = useRef(false);
   const wasEditableRef = useRef(editable);
+  const imgMouseDownPosRef = useRef<{ x: number; y: number } | null>(null);
   const handleContextMenuRef = useRef<((e: MouseEvent) => void) | null>(null);
   const { showContextMenu } = useAppContextMenu();
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -1325,19 +1326,60 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           const me = event as MouseEvent;
           if (me.button !== 0 && me.button !== 1) return false;
 
-          // Open image lightbox immediately on single click
+          // Track image pointer down coordinate for click vs drag discrimination
           const target = me.target as HTMLElement | null;
           const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
           if (imgEl && imgEl.src && me.button === 0) {
-            me.preventDefault();
-            me.stopPropagation();
-            useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
-            return true;
+            imgMouseDownPosRef.current = { x: me.clientX, y: me.clientY };
+            return false;
           }
 
           const info = extractLinkTargetFromEvent(editor, me);
           if (info) {
             me.preventDefault();
+            return true;
+          }
+          return false;
+        },
+        mouseup: (_view, event) => {
+          const me = event as MouseEvent;
+          if (me.button !== 0) return false;
+
+          const target = me.target as HTMLElement | null;
+          const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+          if (imgEl && imgEl.src) {
+            if (imgMouseDownPosRef.current) {
+              const dist = Math.hypot(me.clientX - imgMouseDownPosRef.current.x, me.clientY - imgMouseDownPosRef.current.y);
+              imgMouseDownPosRef.current = null;
+              if (dist <= 5) {
+                me.preventDefault();
+                me.stopPropagation();
+                useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+                return true;
+              }
+            }
+          }
+          return false;
+        },
+        click: (_view, event) => {
+          const me = event as MouseEvent;
+          if (me.button !== 0) return false;
+
+          const target = me.target as HTMLElement | null;
+          const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+          if (imgEl && imgEl.src) {
+            if (imgMouseDownPosRef.current) {
+              const dist = Math.hypot(me.clientX - imgMouseDownPosRef.current.x, me.clientY - imgMouseDownPosRef.current.y);
+              imgMouseDownPosRef.current = null;
+              if (dist <= 5) {
+                me.preventDefault();
+                me.stopPropagation();
+                useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+                return true;
+              }
+            }
+            me.preventDefault();
+            me.stopPropagation();
             return true;
           }
           return false;

@@ -1,8 +1,15 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import type { DocumentItem } from '@/types';
 import type { CanvasNode } from '../types';
-import { CardContentRenderer } from './CardContentRenderer';
+import {
+  CardContentRenderer,
+  isImageDocument,
+  isAudioDocument,
+  isVideoDocument,
+  isPdfDocument,
+} from './CardContentRenderer';
 import { CardActionPill } from './CardActionPill';
+import { resolveCardColorTheme } from './cardColors';
 
 export type ResizeHandleType = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
 
@@ -16,23 +23,14 @@ export interface CanvasCardProps {
   onDelete: (id: string) => void;
   onColorChange?: (id: string, color: string) => void;
   onTextChange?: (id: string, newText: string) => void;
+  onDocContentChange?: (docId: string, newContent: string) => void;
   onResizeStart?: (id: string, e: React.PointerEvent, handle: ResizeHandleType) => void;
   onImageDimensions?: (id: string, naturalWidth: number, naturalHeight: number) => void;
   onTaskToggle?: (nodeId: string, taskText: string, currentChecked: boolean) => void;
   isSpacePressed?: boolean;
   isPanning?: boolean;
+  isReadOnly?: boolean;
 }
-
-const LEGACY_DEFAULT_COLORS = new Set([
-  '#1a1a1a',
-  '#242424',
-  '#2a2a2a',
-  '#141414',
-  '#161616',
-  '#181818',
-  '#171717',
-  '#121212',
-]);
 
 export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
   ({
@@ -45,44 +43,47 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     onDelete,
     onColorChange,
     onTextChange,
+    onDocContentChange,
     onResizeStart,
     onImageDimensions,
     onTaskToggle,
     isSpacePressed = false,
     isPanning = false,
+    isReadOnly = false,
   }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isEditingText, setIsEditingText] = useState(false);
 
     const isDocBacked = Boolean(doc || node.document_id);
     const showOutsideTitle = isDocBacked && node.type !== 'text';
+    const isMediaDoc =
+      isImageDocument(doc) || isAudioDocument(doc) || isVideoDocument(doc) || isPdfDocument(doc);
+    const canEdit = !isReadOnly && (node.type === 'text' || isDocBacked) && !isMediaDoc && node.type !== 'link';
 
-    const cardBg =
-      !node.color || LEGACY_DEFAULT_COLORS.has(node.color.toLowerCase())
-        ? '#1e1e1e'
-        : node.color;
+    const colorTheme = useMemo(() => resolveCardColorTheme(node.color), [node.color]);
 
     const handlePointerDown = useCallback(
       (e: React.PointerEvent) => {
         if (
           (e.target as HTMLElement).closest(
-            'button, textarea, input, a, .resize-handle, img, .md-wikilink, [data-interactive]'
+            `button, textarea, input, a, .resize-handle, .md-wikilink, [data-interactive]${
+              isEditingText ? ', .ProseMirror, [contenteditable="true"]' : ''
+            }`
           )
         ) {
           return;
         }
         onSelect(node.id, e);
       },
-      [node.id, onSelect]
+      [isEditingText, node.id, onSelect]
     );
 
     const handleDoubleClick = useCallback(() => {
-      if (isDocBacked && onOpenDoc) {
-        onOpenDoc(node.document_id);
-      } else if (node.type === 'text') {
+      // Both regular text cards and doc-backed note cards enter live WYSIWYG editing directly on the canvas
+      if (node.type === 'text' || isDocBacked) {
         setIsEditingText(true);
       }
-    }, [isDocBacked, onOpenDoc, node.type, node.document_id]);
+    }, [isDocBacked, node.type]);
 
     return (
       <div
@@ -95,13 +96,23 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
           top: `${node.y}px`,
           width: `${node.width}px`,
           height: `${node.height}px`,
-          backgroundColor: cardBg,
+          backgroundColor: colorTheme.bg,
+          borderColor: isSelected
+            ? colorTheme.borderActive
+            : isHovered
+            ? colorTheme.borderHover
+            : colorTheme.borderIdle,
+          boxShadow: isSelected
+            ? colorTheme.shadowActive
+            : isHovered
+            ? colorTheme.id !== 'default'
+              ? `0 0 16px ${colorTheme.borderIdle}, 0 0 20px rgba(0,0,0,0.45)`
+              : '0 0 16px rgba(0,0,0,0.45)'
+            : '0 0 14px rgba(0,0,0,0.35)',
         }}
         className={`canvas-card absolute pointer-events-auto rounded-md flex flex-col border transition-none ${
-          isSelected
-            ? 'border-[#888888] ring-1 ring-[#666666] shadow-[0_0_18px_rgba(255,255,255,0.06),0_0_24px_rgba(0,0,0,0.45)] z-20'
-            : 'border-[#2c2c2c] hover:border-[#444444] shadow-[0_0_14px_rgba(0,0,0,0.35)] hover:shadow-[0_0_18px_rgba(0,0,0,0.45)] z-10'
-        } ${isPanning ? 'cursor-grabbing' : isSpacePressed ? 'cursor-grab' : ''}`}
+          isSelected ? 'z-20 ring-1' : 'z-10'
+        } ${isPanning ? 'cursor-grabbing' : isSpacePressed ? 'cursor-grab' : isReadOnly ? 'cursor-default' : ''}`}
       >
         {/* Floating Outside Title (Matching Target img1) */}
         {showOutsideTitle && (
@@ -119,11 +130,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         )}
 
         {/* Floating Contextual Action Pill (Hover / Selected) */}
-        {(isSelected || isHovered) && (
+        {!isReadOnly && (isSelected || isHovered) && (
           <CardActionPill
             onDelete={() => onDelete(node.id)}
             onOpenDoc={isDocBacked && onOpenDoc ? () => onOpenDoc(node.document_id) : undefined}
             onColorChange={onColorChange ? (c) => onColorChange(node.id, c) : undefined}
+            currentColor={node.color}
+            onEdit={canEdit ? () => setIsEditingText(true) : undefined}
             isDocBacked={isDocBacked}
           />
         )}
@@ -136,6 +149,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             contentJson={contentJson}
             isEditingText={isEditingText}
             onTextChange={(val) => onTextChange?.(node.id, val)}
+            onDocContentChange={onDocContentChange}
             onTextBlur={() => setIsEditingText(false)}
             onImageDimensions={onImageDimensions ? (w, h) => onImageDimensions(node.id, w, h) : undefined}
             onTaskToggle={onTaskToggle ? (txt, chk) => onTaskToggle(node.id, txt, chk) : undefined}
@@ -143,7 +157,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         </div>
 
         {/* Interactive 8-Directional Resize Handles (Available on hover and when selected) */}
-        {onResizeStart && (
+        {!isReadOnly && onResizeStart && (
           <div className={!isSpacePressed && (isSelected || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}>
             {/* North (Top edge) */}
             <div

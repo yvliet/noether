@@ -42,6 +42,7 @@ import {
   LayoutAlignLeftIcon as HugeLayoutAlignLeftIcon,
   LayoutAlignRightIcon as HugeLayoutAlignRightIcon,
   Edit02Icon as HugeEdit02Icon,
+  PencilEdit02Icon as HugePencilEdit02Icon,
   Delete02Icon as HugeDelete02Icon,
   SparklesIcon as HugeSparklesIcon,
   Heading01Icon as HugeHeading01Icon,
@@ -150,6 +151,8 @@ import {
   QuoteUpIcon as HugeQuoteUpIcon,
   Bug01Icon as HugeBug01Icon,
   TerminalIcon as HugeTerminalIcon,
+  Grid02Icon as HugeGrid02Icon,
+  LockIcon as HugeLockIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -280,6 +283,7 @@ export const LayoutRightIcon = createIcon(HugeLayoutRightIcon);
 export const LayoutAlignLeftIcon = createIcon(HugeLayoutAlignLeftIcon);
 export const LayoutAlignRightIcon = createIcon(HugeLayoutAlignRightIcon);
 export const Edit02Icon = createIcon(HugeEdit02Icon);
+export const PencilEdit02Icon = createIcon(HugePencilEdit02Icon);
 export const Delete02Icon = createIcon(HugeDelete02Icon);
 export const SparklesIcon = createIcon(HugeSparklesIcon);
 export const Heading101Icon = createIcon(HugeHeading01Icon);
@@ -388,6 +392,8 @@ export const BulbIcon = createIcon(HugeBulbIcon);
 export const AlertDiamondIcon = createIcon(HugeAlertDiamondIcon);
 export const QuoteUpIcon = createIcon(HugeQuoteUpIcon);
 export const Bug01Icon = createIcon(HugeBug01Icon);
+export const Grid02Icon = createIcon(HugeGrid02Icon);
+export const LockIcon = createIcon(HugeLockIcon);
 
 // Export Huge Icon definitions for standalone SVG rendering (ProseMirror widgets, canvas, tooltips)
 export {
