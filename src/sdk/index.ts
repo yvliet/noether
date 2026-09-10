@@ -35,6 +35,7 @@ export { Extension, Plugin } from '../core/extensions/Extension';
 export { ExtensionManager, PluginManager } from '../core/extensions/ExtensionManager';
 export { FlintApp, appInstance } from '../core/app/FlintApp';
 export { SlotRegistry } from '../core/registries/SlotRegistry';
+export { FileTypeRegistry, fileTypeRegistry } from '../core/registries/FileTypeRegistry';
 export { IconRegistry } from '../core/registries/IconRegistry';
 export type { IconPackProvider, IconDescriptor, IconRenderOptions } from '../core/registries/IconRegistry';
 export { ExtensionDatabaseManager } from '../core/database/ExtensionDatabaseManager';
@@ -130,6 +131,7 @@ export type {
   BreadcrumbDecoratorContext,
   DocumentTitleDecoratorDefinition,
   DocumentTitleDecoratorContext,
+  CustomFileTypeDefinition,
 } from '../core/extensions/types';
 
 // ── Portal Slot Types ──

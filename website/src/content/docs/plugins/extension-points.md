@@ -281,7 +281,29 @@ this.registerPortalSlot({
 ```
 
 
-## 7. Related Reading & References
+## 9. Custom File Types (`registerFileType`)
+
+---
+
+Flint allows extensions to register custom file extensions (such as `.canvas`, `.excalidraw`, `.sheet`, or `.mindmap`). When registered, Flint automatically:
+- Scans and indexes the file extension during vault synchronization.
+- Displays the custom badge (e.g. `CANVAS`) next to the file title in the navigation tree.
+- Routes opening the file directly to your custom registered view.
+- Isolates title conflict checks between standard markdown notes and custom file types.
+
+```typescript
+this.registerFileType({
+  extension: 'canvas',
+  docType: 'canvas',
+  badgeLabel: 'CANVAS',
+  viewType: 'canvas',
+  defaultContent: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+  isRawContent: true,
+});
+```
+
+
+## 10. Related Reading & References
 
 ---
 

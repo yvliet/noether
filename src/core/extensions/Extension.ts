@@ -66,6 +66,7 @@ import {
   ExtensionTable,
   WorkerTaskDefinition,
   RunTaskOptions,
+  CustomFileTypeDefinition,
 } from './types';
 import type { IconPackProvider } from '../registries/IconRegistry';
 
@@ -272,6 +273,22 @@ export abstract class Extension {
       ...view,
       extensionId: this.manifest.id,
       pluginId: this.manifest.id,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a custom file type and extension mapping with the Flint host.
+   * Enables native file tree badges, disk synchronization, and automatic view routing.
+   *
+   * @param def - Custom file type configuration.
+   * @returns A Disposable to unregister the file type.
+   * @since 0.5.0
+   */
+  public registerFileType(def: CustomFileTypeDefinition): Disposable {
+    const d = this.app.fileTypes.registerFileType({
+      ...def,
+      extensionId: this.manifest.id,
     });
     return this.registerDisposable(d);
   }

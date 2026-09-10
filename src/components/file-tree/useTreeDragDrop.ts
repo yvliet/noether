@@ -7,6 +7,7 @@ import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
 import { computeDragTargets, broadcastDragState } from '@/hooks/useTabReorder';
 import { isDescendant } from '@/lib/db/documents';
 import { dragTooltipManager, STICKY_NOTE_02_SVG, FOLDER_SVG } from '@/lib/dragTooltip';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 
 export interface UseTreeDragDropOptions {
   item: DocumentItem | { id: string; title: string; is_folder?: boolean; parent_id?: string | null; doc_type?: string };
@@ -87,12 +88,11 @@ export function useTreeDragDrop({
         if (!hasStartedDrag) {
           if (dist > 5) {
             hasStartedDrag = true;
+            const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(item.title);
             const displayTitle = getDisplayTitle
               ? getDisplayTitle()
-              : item.doc_type === 'canvas' || item.title.toLowerCase().endsWith('.canvas')
-              ? item.title.toLowerCase().endsWith('.canvas')
-                ? item.title
-                : `${item.title}.canvas`
+              : customType
+              ? fileTypeRegistry.cleanTitle(item.title)
               : item.title || 'Untitled';
             const iconSvg = getIconSvg ? getIconSvg() : isFolder ? FOLDER_SVG : STICKY_NOTE_02_SVG;
 

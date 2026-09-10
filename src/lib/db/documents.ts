@@ -2,12 +2,13 @@ import { dbAdapter } from './adapter';
 import { DocumentItem, BlockItem, HeadingItem, GlobalTaskItem, DocumentProperties } from '@/types';
 import { moveToTrash, moveDocumentsToTrash } from './trash';
 import { platform } from '@/lib/platform/platformAdapter';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 
 
 export async function getAllDocuments(options?: { includeContent?: boolean }): Promise<DocumentItem[]> {
   const contentExpr = options?.includeContent
     ? 'content_json'
-    : `CASE WHEN doc_type IN ('image', 'audio', 'video', 'canvas') THEN content_json ELSE '' END AS content_json`;
+    : `CASE WHEN doc_type != 'base' THEN content_json ELSE '' END AS content_json`;
 
   try {
     const docs = await dbAdapter.query<DocumentItem>(
@@ -186,6 +187,8 @@ export async function createDocument(
   const now = Date.now();
   const defaultContent = isFolder
     ? '{}'
+    : docType === 'canvas'
+    ? JSON.stringify({ nodes: [], edges: [] }, null, 2)
     : JSON.stringify({
         type: 'doc',
         content: [
@@ -227,21 +230,27 @@ export async function createDocument(
     }
   }
 
-  // Persist raw markdown file to disk if not a folder
+  // Persist raw file to disk if not a folder
   if (!isFolder && platform.isDesktop()) {
     try {
       const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
       const relPath = getDocumentPath({ id, title, parent_id: parentId }, allDocs);
-      const md = jsonToMarkdown(defaultContent, title);
-      await platform.saveMarkdownFile(title, md, relPath);
+      const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(title);
+      const targetRelPath = customType
+        ? (relPath.endsWith(`.${customType.extension}`) ? relPath : `${relPath}.${customType.extension}`)
+        : relPath;
+      const diskContent = customType?.isRawContent ? defaultContent : jsonToMarkdown(defaultContent, title);
+      await platform.saveMarkdownFile(title, diskContent, targetRelPath);
 
-      const normRel = (relPath || title).replace(/\\/g, '/').toLowerCase();
-      const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
-      const contentHash = computeFastHash(md);
+      const normRel = (targetRelPath || title).replace(/\\/g, '/').toLowerCase();
+      const manifestKey = customType
+        ? (normRel.endsWith(`.${customType.extension}`) ? normRel : `${normRel}.${customType.extension}`)
+        : (normRel.endsWith('.md') ? normRel : `${normRel}.md`);
+      const contentHash = computeFastHash(diskContent);
       try {
         await dbAdapter.execute(
           `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
-          [manifestKey, now, md.length, contentHash, now]
+          [manifestKey, now, diskContent.length, contentHash, now]
         );
       } catch (mErr) {}
     } catch (e) {}
@@ -340,22 +349,26 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
 export async function updateDocumentTitle(id: string, newTitle: string): Promise<{ oldTitle?: string }> {
   const doc = await getDocumentById(id);
   const oldTitle = doc?.title;
+  const customType = doc ? (fileTypeRegistry.getByDocType(doc.doc_type) || (oldTitle ? fileTypeRegistry.getByPath(oldTitle) : undefined)) : undefined;
+  const cleanNewTitle = customType ? fileTypeRegistry.cleanTitle(newTitle) : newTitle;
   const now = Date.now();
   await dbAdapter.execute(
     `UPDATE documents SET title = ?, updated_at = ? WHERE id = ?`,
-    [newTitle, now, id]
+    [cleanNewTitle, now, id]
   );
-  if (oldTitle && oldTitle !== newTitle && platform.isDesktop() && doc) {
+  if (oldTitle && oldTitle !== cleanNewTitle && platform.isDesktop() && doc) {
     try {
       const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
       const oldRelPath = getDocumentPath({ id, title: oldTitle, parent_id: doc.parent_id }, allDocs);
-      const newRelPath = getDocumentPath({ id, title: newTitle, parent_id: doc.parent_id }, allDocs);
-      await platform.renameMarkdownFile(oldTitle, newTitle, oldRelPath, newRelPath);
+      const newRelPath = getDocumentPath({ id, title: cleanNewTitle, parent_id: doc.parent_id }, allDocs);
+      const oldFile = customType ? (oldRelPath.endsWith(`.${customType.extension}`) ? oldRelPath : `${oldRelPath}.${customType.extension}`) : oldRelPath;
+      const newFile = customType ? (newRelPath.endsWith(`.${customType.extension}`) ? newRelPath : `${newRelPath}.${customType.extension}`) : newRelPath;
+      await platform.renameMarkdownFile(oldTitle, cleanNewTitle, oldFile, newFile);
 
-      const oldNorm = (oldRelPath || oldTitle).replace(/\\/g, '/').toLowerCase();
-      const oldKey = oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`;
-      const newNorm = (newRelPath || newTitle).replace(/\\/g, '/').toLowerCase();
-      const newKey = newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`;
+      const oldNorm = (oldFile || oldTitle).replace(/\\/g, '/').toLowerCase();
+      const oldKey = customType ? (oldNorm.endsWith(`.${customType.extension}`) ? oldNorm : `${oldNorm}.${customType.extension}`) : (oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`);
+      const newNorm = (newFile || cleanNewTitle).replace(/\\/g, '/').toLowerCase();
+      const newKey = customType ? (newNorm.endsWith(`.${customType.extension}`) ? newNorm : `${newNorm}.${customType.extension}`) : (newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`);
       try {
         await dbAdapter.execute(
           `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
@@ -1303,12 +1316,14 @@ export function isDescendant(
 export function getUniqueTitleForMove(
   title: string,
   targetParentId: string | null,
-  docs: Array<{ id: string; title: string; parent_id?: string | null; is_folder?: number | boolean }>,
-  excludeDocId?: string
+  docs: Array<{ id: string; title: string; parent_id?: string | null; is_folder?: number | boolean; doc_type?: string }>,
+  excludeDocId?: string,
+  docType?: string
 ): string {
+  const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(title);
   const existingTitles = new Set(
     docs
-      .filter((d) => d.id !== excludeDocId && (d.parent_id || null) === (targetParentId || null))
+      .filter((d) => d.id !== excludeDocId && (d.parent_id || null) === (targetParentId || null) && ((d.doc_type || 'base') === (docType || 'base')))
       .map((d) => d.title.trim().toLowerCase())
   );
 
@@ -1317,10 +1332,12 @@ export function getUniqueTitleForMove(
     return trimmedTitle;
   }
 
-  // Handle extension if present (e.g., .canvas or .md)
+  // Handle extension if present
   let nameWithoutExt = trimmedTitle;
   let ext = '';
-  const extMatch = trimmedTitle.match(/^(.+?)(\.(?:canvas|md|markdown|txt|json))$/i);
+  const registeredExts = fileTypeRegistry.getAllExtensions();
+  const allExtPattern = new RegExp(`^(.+?)(\\.(?:${['md', 'markdown', 'txt', 'json', ...registeredExts].join('|')}))\$`, 'i');
+  const extMatch = trimmedTitle.match(allExtPattern);
   if (extMatch) {
     nameWithoutExt = extMatch[1];
     ext = extMatch[2];
@@ -1411,7 +1428,9 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
   }
 
   try {
-    let diskItems = await platform.scanVaultFiles();
+    const customExts = fileTypeRegistry.getAllExtensions();
+    const allowedExtensions = Array.from(new Set(['md', ...customExts]));
+    let diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
     const existingDocs = await getAllDocuments();
 
     // Check if the initial welcome note has ever been seeded
@@ -1430,7 +1449,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       if ((!diskItems || diskItems.length === 0) && existingDocs.length === 0) {
         try {
           await platform.saveMarkdownFile('Welcome to Flint', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Flint.md');
-          diskItems = await platform.scanVaultFiles();
+          diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
         } catch (seedErr) {
           console.error('[Flint Docs] Failed to auto-seed Welcome note to disk:', seedErr);
         }
@@ -1503,7 +1522,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       }
     }
 
-    // 2. Process markdown files differentially
+    // 2. Process files differentially (.md notes and registered custom file types)
     const diskFiles = diskItems.filter((i) => !i.isFolder);
     let syncedCount = 0;
     const modifiedOrAddedDocIds: string[] = [];
@@ -1511,12 +1530,17 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     for (const file of diskFiles) {
       const relPath = file.relativePath.replace(/\\/g, '/');
       const parts = relPath.split('/');
-      const fileName = file.name; // without .md
+      const customType = fileTypeRegistry.getByPath(relPath);
+      let fileName = file.name;
+      if (customType) {
+        fileName = fileTypeRegistry.cleanTitle(fileName);
+      }
       const parentRelPath = parts.slice(0, -1).join('/');
       const parentId = parentRelPath ? folderMapByPath.get(parentRelPath.toLowerCase()) || null : null;
 
       const pathKey = (parentRelPath ? `${parentRelPath}/${fileName}` : fileName).toLowerCase();
-      const normKey = pathKey.endsWith('.md') ? pathKey : `${pathKey}.md`;
+      const ext = customType ? customType.extension : 'md';
+      const normKey = pathKey.endsWith(`.${ext}`) ? pathKey : `${pathKey}.${ext}`;
 
       // If a file actively exists on disk, clean up any stale trash record referencing this path
       if (trashSet.has(pathKey) || trashSet.has(normKey)) {
@@ -1528,10 +1552,14 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       let matchedDoc = docMapByPath.get(pathKey);
       if (!matchedDoc) {
         matchedDoc = existingDocs.find(
-          (d) => !d.is_folder && d.title.toLowerCase() === fileName.toLowerCase() && (d.parent_id || null) === (parentId || null)
+          (d) =>
+            !d.is_folder &&
+            d.title.toLowerCase() === fileName.toLowerCase() &&
+            (d.parent_id || null) === (parentId || null) &&
+            (d.doc_type || 'base') === (customType ? customType.docType : 'base')
         );
       }
-      if (!matchedDoc && (fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint')) {
+      if (!matchedDoc && !customType && (fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint')) {
         matchedDoc = existingDocs.find((d) => d.id === 'welcome-to-flint');
       }
 
@@ -1553,32 +1581,45 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       }
 
       let cleanFileContent = fileContent;
-      try {
-        const { appInstance } = await import('@/core/app/FlintApp');
-        if (appInstance?.editor) {
-          const transformed = appInstance.editor.applyImportTransforms({
-            documentId: matchedDoc?.id,
-            title: fileName,
-            markdown: cleanFileContent,
-          });
-          cleanFileContent = transformed.markdown;
-        }
-      } catch (tErr) {}
+      if (!customType || !customType.isRawContent) {
+        try {
+          const { appInstance } = await import('@/core/app/FlintApp');
+          if (appInstance?.editor) {
+            const transformed = appInstance.editor.applyImportTransforms({
+              documentId: matchedDoc?.id,
+              title: fileName,
+              markdown: cleanFileContent,
+            });
+            cleanFileContent = transformed.markdown;
+          }
+        } catch (tErr) {}
+      }
 
       if (!matchedDoc) {
         // Create new document
-        const { properties, bodyText } = parseFrontmatter(cleanFileContent);
-        const contentJson = markdownToTipTapJson(bodyText);
-        const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
-        const isWelcomeDoc = fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint';
-        const newId = isWelcomeDoc ? 'welcome-to-flint' : `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-        const isBookmarked = properties.bookmarked === true || properties.bookmarked === 'true' || properties.bookmarked === 1 || properties.bookmarked === '1' ? 1 : 0;
+        const newId = !customType && (fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint')
+          ? 'welcome-to-flint'
+          : `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
         const now = fileMtime;
-        await dbAdapter.execute(
-          `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
-           VALUES (?, ?, ?, ?, 0, 0, ?, 'base', ?, ?, ?)`,
-          [newId, parentId, fileName, contentJson, isBookmarked, propertiesJson, now, now]
-        );
+
+        if (customType && customType.isRawContent) {
+          const defaultCustomContent = cleanFileContent.trim() ? cleanFileContent : (customType.defaultContent || '{}');
+          await dbAdapter.execute(
+            `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 0, 0, 0, ?, '{}', ?, ?)`,
+            [newId, parentId, fileName, defaultCustomContent, customType.docType, now, now]
+          );
+        } else {
+          const { properties, bodyText } = parseFrontmatter(cleanFileContent);
+          const contentJson = markdownToTipTapJson(bodyText);
+          const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
+          const isBookmarked = properties.bookmarked === true || properties.bookmarked === 'true' || properties.bookmarked === 1 || properties.bookmarked === '1' ? 1 : 0;
+          await dbAdapter.execute(
+            `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 0, 0, ?, 'base', ?, ?, ?)`,
+            [newId, parentId, fileName, contentJson, isBookmarked, propertiesJson, now, now]
+          );
+        }
         try {
           await dbAdapter.execute(
             `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
@@ -1589,13 +1630,20 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         syncedCount++;
       } else {
         // Update modified existing document
-        const { properties, bodyText } = parseFrontmatter(cleanFileContent);
-        const contentJson = markdownToTipTapJson(bodyText);
-        const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : (matchedDoc.properties || '{}');
-        await dbAdapter.execute(
-          `UPDATE documents SET content_json = ?, properties = ?, updated_at = ? WHERE id = ?`,
-          [contentJson, propertiesJson, fileMtime, matchedDoc.id]
-        );
+        if (customType && customType.isRawContent) {
+          await dbAdapter.execute(
+            `UPDATE documents SET content_json = ?, doc_type = ?, updated_at = ? WHERE id = ?`,
+            [cleanFileContent, customType.docType, fileMtime, matchedDoc.id]
+          );
+        } else {
+          const { properties, bodyText } = parseFrontmatter(cleanFileContent);
+          const contentJson = markdownToTipTapJson(bodyText);
+          const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : (matchedDoc.properties || '{}');
+          await dbAdapter.execute(
+            `UPDATE documents SET content_json = ?, properties = ?, updated_at = ? WHERE id = ?`,
+            [contentJson, propertiesJson, fileMtime, matchedDoc.id]
+          );
+        }
         try {
           await dbAdapter.execute(
             `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
@@ -1613,6 +1661,11 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       const relPath = f.relativePath.replace(/\\/g, '/').toLowerCase();
       diskPathSet.add(relPath);
       diskPathSet.add(relPath.endsWith('.md') ? relPath : `${relPath}.md`);
+      for (const ext of customExts) {
+        if (relPath.endsWith(`.${ext}`)) {
+          diskPathSet.add(relPath);
+        }
+      }
     }
 
     const removedDocIds: string[] = [];
@@ -1620,28 +1673,29 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     for (const doc of existingDocs) {
       if (doc.is_folder) continue;
 
-      // Preserve media attachments (images, audio, video, pdf, canvas) stored in SQLite
+      // Preserve media attachments stored in SQLite
       const isMediaOrAttachment =
         doc.doc_type === 'image' ||
         doc.doc_type === 'audio' ||
         doc.doc_type === 'video' ||
         doc.doc_type === 'pdf' ||
-        doc.doc_type === 'canvas' ||
-        /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a|canvas)$/i.test(doc.title);
+        /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a)$/i.test(doc.title);
 
       if (isMediaOrAttachment) {
         continue;
       }
 
+      const docCustomType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
+      const ext = docCustomType ? docCustomType.extension : 'md';
       const docPath = getDocumentPath(doc, existingDocs).replace(/\\/g, '/').toLowerCase();
-      const docPathMd = docPath.endsWith('.md') ? docPath : `${docPath}.md`;
+      const docPathWithExt = docPath.endsWith(`.${ext}`) ? docPath : `${docPath}.${ext}`;
 
-      const existsOnDisk = diskPathSet.has(docPath) || diskPathSet.has(docPathMd);
-      const isTrashed = trashSet.has(docPath) || trashSet.has(docPathMd);
+      const existsOnDisk = diskPathSet.has(docPath) || diskPathSet.has(docPathWithExt);
+      const isTrashed = trashSet.has(docPath) || trashSet.has(docPathWithExt);
 
       if (!existsOnDisk && !isTrashed) {
         removedDocIds.push(doc.id);
-        removedPaths.push(docPath);
+        removedPaths.push(docPathWithExt);
       }
     }
 
@@ -1668,6 +1722,9 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       const allUpdated = await getAllDocuments();
       for (const id of modifiedOrAddedDocIds) {
         const doc = allUpdated.find((d) => d.id === id);
+        if (!doc) continue;
+        const custom = fileTypeRegistry.getByDocType(doc.doc_type);
+        if (custom && custom.isRawContent) continue;
         if (doc && doc.content_json) {
           await saveDocumentAndSynchronize(doc.id, doc.content_json, doc.title, { skipDiskExport: true });
         }

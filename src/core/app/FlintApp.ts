@@ -23,6 +23,7 @@ import { ModalRegistry } from '../registries/ModalRegistry';
 import { PropertyRegistry } from '../registries/PropertyRegistry';
 import { TabDecoratorRegistry } from '../registries/TabDecoratorRegistry';
 import { IconRegistry } from '../registries/IconRegistry';
+import { FileTypeRegistry, fileTypeRegistry } from '../registries/FileTypeRegistry';
 import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
 import { ToolRegistry } from '../registries/ToolRegistry';
@@ -80,6 +81,8 @@ export class FlintApp {
   public tools: ToolRegistry;
   /** UI Portal slot registry managing contextual toolbars, minimaps, and canvas overlays. */
   public slots: SlotRegistry;
+  /** Custom file type registry managing file extensions, view mappings, and badges. */
+  public fileTypes: FileTypeRegistry;
   /** Relational database manager managing extension tables, migrations, and cascade teardown. */
   public dbManager: ExtensionDatabaseManager;
   /** Background Web Worker pool for off-thread CPU-intensive extension operations. */
@@ -114,6 +117,7 @@ export class FlintApp {
     this.icons = new IconRegistry();
     this.tools = new ToolRegistry(this);
     this.slots = new SlotRegistry();
+    this.fileTypes = fileTypeRegistry;
 
     // Register Native Built-in Icon Providers
     this.icons.registerProvider({

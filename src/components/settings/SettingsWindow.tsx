@@ -62,6 +62,7 @@ import { platform } from '@/lib/platform/platformAdapter';
 import { dbAdapter } from '@/lib/db/adapter';
 import { APP_VERSION } from '@/version';
 import { useAutoUpdater } from '@/hooks/useAutoUpdater';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 
 // Individual Field Reset Button (renders subtle undo icon when setting is not default)
 const FieldResetButton: React.FC<{
@@ -348,7 +349,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
               const elapsedMs = Date.now() - item.deleted_at;
               const remainingMs = Math.max(0, 48 * 60 * 60 * 1000 - elapsedMs);
               const remHours = Math.ceil(remainingMs / (60 * 60 * 1000));
-              const isCanvas = item.doc_type === 'canvas' || item.title.toLowerCase().endsWith('.canvas');
+              const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(item.title);
 
               return (
                 <div
@@ -359,7 +360,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                     <div className="w-7 h-7 rounded-lg bg-[var(--flint-bg-card)] flex items-center justify-center text-[var(--flint-text-muted)] shrink-0">
                       {item.is_folder ? (
                         <Folder01Icon size={15} />
-                      ) : isCanvas ? (
+                      ) : customType ? (
                         <Layout01Icon size={15} />
                       ) : (
                         <File01Icon size={15} />
@@ -369,11 +370,11 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                     <div className="flex flex-col min-w-0 flex-1">
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-medium text-[var(--flint-text-primary)] truncate">
-                          {item.title}
+                          {customType ? fileTypeRegistry.cleanTitle(item.title) : item.title}
                         </span>
-                        {isCanvas && (
+                        {customType && (
                           <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] uppercase font-semibold">
-                            Canvas
+                            {customType.badgeLabel || customType.extension}
                           </span>
                         )}
                         {item.is_folder ? (

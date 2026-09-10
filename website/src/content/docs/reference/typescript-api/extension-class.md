@@ -46,6 +46,7 @@ export default class MyExtension extends Extension {
 | `registerDocumentTransformHook` | `(hook: DocumentTransformHook) => Disposable` | Intercepts markdown export and import for clean metadata synchronization. |
 | `defineTable` | `(schema: TableSchema) => Promise<TableHandle>` | Creates declarative SQLite tables with cascade rules. |
 | `registerWorkerTask` | `(taskName, handler) => void` | Offloads CPU tasks to background Web Workers. |
+| `registerFileType` | `(def: CustomFileTypeDefinition) => Disposable` | Registers a custom file format (.canvas, .excalidraw) with sidebar badge and custom view routing. |
 | `onEvent` / `registerEvent` | `(event, listener) => Disposable` | Listens to EventBus events with auto-cleanup. |
 | `loadData` | `() => Promise<any>` | Loads persisted extension JSON settings. |
 | `saveData` | `(data: any) => Promise<void>` | Saves updated extension JSON settings. |

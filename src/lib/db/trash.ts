@@ -3,6 +3,7 @@ import { DocumentItem, TrashItem } from '@/types';
 import { jsonToMarkdown, getDocumentPath, saveDocumentAndSynchronize } from './documents';
 import { platform } from '@/lib/platform/platformAdapter';
 import { appInstance } from '@/core/app/FlintApp';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 
 // 48 hours in milliseconds = 172,800,000 ms
 export const TRASH_RETENTION_MS = 48 * 60 * 60 * 1000;
@@ -150,8 +151,10 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
     });
 
     const path = getDocumentPath(item, allDocs);
+    const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(path || item.title);
+    const ext = customType ? customType.extension : 'md';
     const norm = (path || item.title).replace(/\\/g, '/').toLowerCase();
-    const key = norm.endsWith('.md') ? norm : `${norm}.md`;
+    const key = norm.endsWith(`.${ext}`) ? norm : `${norm}.${ext}`;
     queries.push({
       sql: `DELETE FROM file_manifest WHERE relative_path = ?`,
       params: [key],
@@ -171,11 +174,18 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
       itemsToTrash.map(async (item) => {
         try {
           const path = getDocumentPath(item, allDocs);
+          const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(path || item.title);
+          const ext = customType ? customType.extension : 'md';
+          const targetPath = customType
+            ? (path.endsWith(`.${ext}`) ? path : `${path}.${ext}`)
+            : (path || item.title);
           if (!item.is_folder && item.content_json) {
-            const md = jsonToMarkdown(item.content_json, item.title);
-            await platform.saveTrashFile(item.title, md, path || item.title);
+            const fileContent = customType && customType.isRawContent
+              ? item.content_json
+              : jsonToMarkdown(item.content_json, item.title);
+            await platform.saveTrashFile(item.title, fileContent, targetPath);
           }
-          await platform.deleteMarkdownFile(path || item.title);
+          await platform.deleteMarkdownFile(targetPath);
         } catch (e) {
           console.error(`[Flint Trash] Failed to move physical file to trash: ${item.title}`, e);
         }

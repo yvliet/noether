@@ -565,9 +565,14 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return this.scanVaultFiles(customHearthPath);
   }
 
-  public async scanVaultFiles(customVaultPath?: string): Promise<VaultDiskItem[]> {
+  public async scanVaultFiles(customVaultPath?: string, allowedExtensions?: string[]): Promise<VaultDiskItem[]> {
     if (this.isTauri()) {
-      return (await invoke('scan_vault_files', { customVaultPath: customVaultPath || null })) || [];
+      return (
+        (await invoke('scan_vault_files', {
+          customVaultPath: customVaultPath || null,
+          allowedExtensions: allowedExtensions || null,
+        })) || []
+      );
     }
     return [];
   }

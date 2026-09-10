@@ -429,7 +429,11 @@ pub fn open_vault_in_explorer(state: tauri::State<AppState>, vault_path: Option<
 }
 
 #[tauri::command]
-pub fn scan_vault_files(state: tauri::State<AppState>, custom_vault_path: Option<String>) -> Vec<VaultDiskItem> {
+pub fn scan_vault_files(
+    state: tauri::State<AppState>,
+    custom_vault_path: Option<String>,
+    allowed_extensions: Option<Vec<String>>,
+) -> Vec<VaultDiskItem> {
     let target_dir = match custom_vault_path {
         Some(p) if !p.is_empty() => {
             let cfg = state.config.lock();
@@ -450,6 +454,19 @@ pub fn scan_vault_files(state: tauri::State<AppState>, custom_vault_path: Option
 
     let _ = fs::create_dir_all(&target_dir);
     let mut items = Vec::new();
+
+    let normalized_exts: Vec<String> = allowed_extensions
+        .unwrap_or_else(|| vec!["md".to_string()])
+        .into_iter()
+        .map(|e| {
+            let clean = e.to_lowercase();
+            if clean.starts_with('.') {
+                clean
+            } else {
+                format!(".{}", clean)
+            }
+        })
+        .collect();
 
     for entry in WalkDir::new(&target_dir).into_iter().filter_entry(|e| {
         let name = e.file_name().to_string_lossy();
@@ -476,16 +493,20 @@ pub fn scan_vault_files(state: tauri::State<AppState>, custom_vault_path: Option
                     mtime,
                     content: None,
                 });
-            } else if entry.file_name().to_string_lossy().to_lowercase().ends_with(".md") {
-                let stem = full_path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| "Untitled".to_string());
-                let content = fs::read_to_string(full_path).ok();
-                items.push(VaultDiskItem {
-                    relative_path: rel_str,
-                    name: stem,
-                    is_folder: false,
-                    mtime,
-                    content,
-                });
+            } else {
+                let lower_name = entry.file_name().to_string_lossy().to_lowercase();
+                let is_match = normalized_exts.iter().any(|ext| lower_name.ends_with(ext));
+                if is_match {
+                    let stem = full_path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_else(|| "Untitled".to_string());
+                    let content = fs::read_to_string(full_path).ok();
+                    items.push(VaultDiskItem {
+                        relative_path: rel_str,
+                        name: stem,
+                        is_folder: false,
+                        mtime,
+                        content,
+                    });
+                }
             }
         }
     }
@@ -508,12 +529,20 @@ pub fn save_markdown_file(
     let file_path = match relative_path {
         Some(rel) if !rel.trim().is_empty() => {
             let clean = rel.replace('\\', "/");
-            let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean } else { format!("{}.md", clean) };
+            let file_with_ext = if Path::new(&clean).extension().is_some() {
+                clean
+            } else {
+                format!("{}.md", clean)
+            };
             target_vault.join(file_with_ext)
         }
         _ => {
             let safe_name = filename.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'], "_");
-            target_vault.join(format!("{}.md", safe_name))
+            if Path::new(&safe_name).extension().is_some() {
+                target_vault.join(safe_name)
+            } else {
+                target_vault.join(format!("{}.md", safe_name))
+            }
         }
     };
 
@@ -629,7 +658,11 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
         return json!({ "success": false, "error": "Cannot delete vault root directory" });
     }
 
-    let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
+    let file_with_ext = if Path::new(&clean).extension().is_some() {
+        clean.clone()
+    } else {
+        format!("{}.md", clean)
+    };
     let file_path = target_vault.join(&file_with_ext);
     let normalized_file = normalize_path(&file_path);
 
@@ -680,12 +713,20 @@ pub fn rename_markdown_file(
             let new_clean = new_rel.replace('\\', "/");
 
             let old_dir = target_vault.join(&old_clean);
-            let old_file = target_vault.join(if old_clean.ends_with(".md") { old_clean.clone() } else { format!("{}.md", old_clean) });
+            let old_file = target_vault.join(if Path::new(&old_clean).extension().is_some() {
+                old_clean.clone()
+            } else {
+                format!("{}.md", old_clean)
+            });
 
             if old_dir.exists() && old_dir.is_dir() {
                 (old_dir, target_vault.join(&new_clean))
             } else {
-                let new_file = target_vault.join(if new_clean.ends_with(".md") { new_clean } else { format!("{}.md", new_clean) });
+                let new_file = target_vault.join(if Path::new(&new_clean).extension().is_some() {
+                    new_clean
+                } else {
+                    format!("{}.md", new_clean)
+                });
                 (old_file, new_file)
             }
         }
@@ -696,12 +737,13 @@ pub fn rename_markdown_file(
             let new_safe = new_f.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'], "_");
 
             let old_dir = target_vault.join(&old_safe);
-            let old_file = target_vault.join(format!("{}.md", old_safe));
+            let old_file = target_vault.join(if Path::new(&old_safe).extension().is_some() { old_safe.clone() } else { format!("{}.md", old_safe) });
 
             if old_dir.exists() && old_dir.is_dir() {
                 (old_dir, target_vault.join(&new_safe))
             } else {
-                (old_file, target_vault.join(format!("{}.md", new_safe)))
+                let new_file = target_vault.join(if Path::new(&new_safe).extension().is_some() { new_safe } else { format!("{}.md", new_safe) });
+                (old_file, new_file)
             }
         }
     };
@@ -777,12 +819,20 @@ pub fn save_trash_file(
     let file_path = match relative_path {
         Some(rel) if !rel.trim().is_empty() => {
             let clean = rel.replace('\\', "/");
-            let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean } else { format!("{}.md", clean) };
+            let file_with_ext = if Path::new(&clean).extension().is_some() {
+                clean
+            } else {
+                format!("{}.md", clean)
+            };
             trash_dir.join(file_with_ext)
         }
         _ => {
             let safe_name = filename.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'], "_");
-            trash_dir.join(format!("{}.md", safe_name))
+            if Path::new(&safe_name).extension().is_some() {
+                trash_dir.join(safe_name)
+            } else {
+                trash_dir.join(format!("{}.md", safe_name))
+            }
         }
     };
 
@@ -816,7 +866,11 @@ pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String
         return json!({ "success": false, "error": "Cannot delete trash root directory" });
     }
 
-    let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
+    let file_with_ext = if Path::new(&clean).extension().is_some() {
+        clean.clone()
+    } else {
+        format!("{}.md", clean)
+    };
     let file_path = trash_dir.join(&file_with_ext);
     let normalized_file = normalize_path(&file_path);
 

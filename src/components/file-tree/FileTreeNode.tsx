@@ -26,6 +26,7 @@ import { FileSortOrder, sortDocuments } from '@/components/layout/LeftSidebar';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { platform } from '@/lib/platform/platformAdapter';
 import { useFileTreeDecorators, useFlintApp } from '@/core/app/AppContext';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 import { TreeNodeRow, TreeNodeAction } from './TreeNodeRow';
 import { TreeNodeRenameInput } from './TreeNodeRenameInput';
 import { useTreeDragDrop } from './useTreeDragDrop';
@@ -256,10 +257,21 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     return docId === item.id;
   });
 
-  const isCanvas = item.doc_type === 'canvas' || item.title.toLowerCase().endsWith('.canvas');
-  const fileExtMatch = !isFolder && !isCanvas ? item.title.match(/\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a|canvas)$/i) : null;
-  const typeBadge = isCanvas
-    ? 'CANVAS'
+  const customType = useMemo(() => {
+    if (isFolder) return null;
+    return fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(item.title);
+  }, [isFolder, item.doc_type, item.title]);
+
+  const displayTitle = useMemo(() => {
+    if (customType) {
+      return fileTypeRegistry.cleanTitle(item.title);
+    }
+    return item.title;
+  }, [customType, item.title]);
+
+  const fileExtMatch = !isFolder && !customType ? item.title.match(/\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a)$/i) : null;
+  const typeBadge = customType
+    ? (customType.badgeLabel || customType.extension.toUpperCase())
     : (fileExtMatch ? fileExtMatch[1].toUpperCase() : (item.doc_type && item.doc_type !== 'base' ? item.doc_type.toUpperCase() : null));
 
   const sortedChildren = useMemo(() => {
@@ -275,10 +287,11 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       (d) =>
         d.id !== item.id &&
         !!d.is_folder === isFolder &&
+        ((d.doc_type || 'base') === (item.doc_type || 'base')) &&
         (d.parent_id || null) === (item.parent_id || null) &&
         d.title.trim().toLowerCase() === trimmed
     );
-  }, [isEditing, editTitle, allDocs, item.id, item.parent_id, isFolder]);
+  }, [isEditing, editTitle, allDocs, item.id, item.parent_id, isFolder, item.doc_type]);
 
   // Keep edit title in sync
   useEffect(() => {
@@ -355,10 +368,14 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         }
       } else {
         selectSingleDoc(item.id);
-        openTab(item.id, item.title, { replaceCurrentTab: true });
+        openTab(item.id, displayTitle, {
+          replaceCurrentTab: true,
+          viewType: customType ? customType.viewType : 'document',
+          viewMode: customType ? (customType.viewType as any) : 'document',
+        });
       }
     },
-    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen]
+    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, displayTitle, customType, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen]
   );
 
   const handleAuxClick = useCallback(
@@ -368,11 +385,16 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         // Middle-click: open explicitly in a new tab
         e.preventDefault();
         e.stopPropagation();
-        openTab(item.id, item.title, { newTab: true, replaceCurrentTab: false });
+        openTab(item.id, displayTitle, {
+          newTab: true,
+          replaceCurrentTab: false,
+          viewType: customType ? customType.viewType : 'document',
+          viewMode: customType ? (customType.viewType as any) : 'document',
+        });
         setActiveDocumentById(item.id, { preserveViewMode: true });
       }
     },
-    [isPickingFolder, isFolder, item.id, item.title, openTab, setActiveDocumentById]
+    [isPickingFolder, isFolder, item.id, displayTitle, customType, openTab, setActiveDocumentById]
   );
 
   const handleSaveRename = useCallback(async () => {
@@ -745,7 +767,11 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             title: 'Open',
             icon: <File01Icon size={14} />,
             onClick: () => {
-              openTab(item.id, item.title, { replaceCurrentTab: true });
+              openTab(item.id, displayTitle, {
+                replaceCurrentTab: true,
+                viewType: customType ? customType.viewType : 'document',
+                viewMode: customType ? (customType.viewType as any) : 'document',
+              });
               setActiveDocumentById(item.id, { preserveViewMode: true });
             },
           },
@@ -754,7 +780,12 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             title: 'Open in new tab',
             icon: <ExternalLinkIcon size={14} />,
             onClick: () => {
-              openTab(item.id, item.title, { newTab: true, replaceCurrentTab: false });
+              openTab(item.id, displayTitle, {
+                newTab: true,
+                replaceCurrentTab: false,
+                viewType: customType ? customType.viewType : 'document',
+                viewMode: customType ? (customType.viewType as any) : 'document',
+              });
               setActiveDocumentById(item.id, { preserveViewMode: true });
             },
           },
@@ -763,7 +794,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             title: 'Open to the right',
             icon: <SplitRightIcon size={14} />,
             onClick: () => {
-              openSplitTab(item.id, item.title);
+              openSplitTab(item.id, displayTitle);
             },
           },
           { type: 'separator' },
@@ -847,7 +878,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         showContextMenu(e, items, { scope: 'file-tree', data: item });
       }
     },
-    [allDocs, createNewFolder, createNewNote, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, toggleBookmark, toggleBookmarkDocuments, hearthPath]
+    [allDocs, createNewFolder, createNewNote, customType, displayTitle, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, toggleBookmark, toggleBookmarkDocuments, hearthPath]
   );
 
   return (
@@ -866,7 +897,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       isDisabled={isPickingFolder && !isFolder}
       isFolderPickerTarget={isPickingFolder && isFolder}
       folderName={isFolder ? item.title : undefined}
-      title={item.title}
+      title={displayTitle}
       typeBadge={typeBadge}
       icon={treeNodeIcon}
       prefix={treeNodePrefix}

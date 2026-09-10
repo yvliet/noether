@@ -6,6 +6,7 @@ import { useSidebarDockStore, DockItem, DockZone } from './sidebarDockStore';
 import { dbAdapter } from '@/lib/db/adapter';
 import { platform } from '@/lib/platform/platformAdapter';
 import { bindFlintStores, emitBridgeAppEvent } from '@/core/app/storeBridge';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 import type { OpenTabOptions } from '@/core/extensions/types';
 
 
@@ -725,9 +726,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   openTab: (documentId, title, options?: OpenTabOptions) => {
     const targetPaneId = get().focusedPaneId || 'main';
-    get().openTabInPane(targetPaneId, documentId, title, options);
+    const resolvedDoc = documentId ? useDocumentStore.getState().documents.find((d) => d.id === documentId) : undefined;
+    const customType = resolvedDoc ? (fileTypeRegistry.getByDocType(resolvedDoc.doc_type) || fileTypeRegistry.getByPath(resolvedDoc.title)) : undefined;
+    const resolvedOptions = customType && !options?.viewType
+      ? { ...options, viewType: customType.viewType, viewMode: customType.viewType as any }
+      : options;
+    get().openTabInPane(targetPaneId, documentId, title, resolvedOptions);
     if (!options?.background) {
-      get().recordNavigation({ viewType: options?.viewType || 'document', documentId, title: title || 'Untitled' });
+      get().recordNavigation({ viewType: resolvedOptions?.viewType || 'document', documentId, title: title || 'Untitled' });
     }
   },
 
@@ -1425,13 +1431,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         ? initialTitle
         : (targetTab ? targetTab.title : (useDocumentStore.getState().activeDocument?.title || 'Untitled'));
 
+    const resolvedDoc = activeDocId ? useDocumentStore.getState().documents.find((d) => d.id === activeDocId) : undefined;
+    const customType = resolvedDoc ? (fileTypeRegistry.getByDocType(resolvedDoc.doc_type) || fileTypeRegistry.getByPath(resolvedDoc.title)) : undefined;
+
     const resolvedViewMode =
       initialOptions?.viewMode ||
+      (customType ? customType.viewType : undefined) ||
       targetTab?.view_mode ||
       (activeDocId === '__graph__' ? 'graph' : activeDocId === '__canvas__' ? 'canvas' : activeDocId === '__tasks__' ? 'tasks' : 'document');
 
     const resolvedViewType =
       initialOptions?.viewType ||
+      (customType ? customType.viewType : undefined) ||
       targetTab?.view_type ||
       (activeDocId === '__graph__' ? 'graph' : activeDocId === '__canvas__' ? 'canvas' : activeDocId === '__tasks__' ? 'tasks' : 'document');
 
@@ -1703,6 +1714,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
+    const resolvedDoc = docId ? useDocumentStore.getState().documents.find((d) => d.id === docId) : undefined;
+    const customType = resolvedDoc ? (fileTypeRegistry.getByDocType(resolvedDoc.doc_type) || fileTypeRegistry.getByPath(resolvedDoc.title)) : undefined;
+    const resolvedViewType = options?.viewType || (customType ? customType.viewType : 'document');
+    const resolvedViewMode = (options?.viewMode as any) || (customType ? customType.viewType : 'document');
+
     const explicitTabId = options?.id;
     const metadata = options?.metadata;
 
@@ -1747,8 +1763,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
               id: nextTabId!,
               document_id: docId,
               title: title || 'Untitled',
-              view_mode: (options?.viewMode as any) || 'document',
-              view_type: options?.viewType || 'document',
+              view_mode: resolvedViewMode,
+              view_type: resolvedViewType,
               icon: options?.icon,
               metadata,
             }
@@ -1770,7 +1786,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
       if (existingIndex >= 0) {
         nextTabId = currentPane.tabs[existingIndex].id;
-        if (metadata !== undefined || options?.icon !== undefined || title) {
+        if (metadata !== undefined || options?.icon !== undefined || title || customType) {
           newTabs = currentPane.tabs.map((t, idx) =>
             idx === existingIndex
               ? {
@@ -1778,6 +1794,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
                   title: title || t.title,
                   icon: options?.icon !== undefined ? options.icon : t.icon,
                   metadata: metadata !== undefined ? metadata : t.metadata,
+                  view_type: resolvedViewType,
+                  view_mode: resolvedViewMode,
                 }
               : t
           );
@@ -1797,8 +1815,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
                 id: nextTabId!,
                 document_id: docId,
                 title: title || 'Untitled',
-                view_mode: (options?.viewMode as any) || 'document',
-                view_type: options?.viewType || 'document',
+                view_mode: resolvedViewMode,
+                view_type: resolvedViewType,
                 icon: options?.icon,
                 metadata,
               }
@@ -1809,8 +1827,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           id: explicitTabId || `tab-${docId}-${Date.now()}`,
           document_id: docId,
           title: title || 'Untitled',
-          view_mode: (options?.viewMode as any) || 'document',
-          view_type: options?.viewType || 'document',
+          view_mode: resolvedViewMode,
+          view_type: resolvedViewType,
           icon: options?.icon,
           metadata,
         };
@@ -1845,7 +1863,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             tabs: newTabs,
             ...(isBackground
               ? {}
-              : { activeTabId: nextTabId, mainViewMode: (options?.viewType as any) || 'document' }),
+              : { activeTabId: nextTabId, mainViewMode: (resolvedViewType as any) || 'document' }),
           }
         : {}),
       ...(targetPaneId === get().focusedPaneId && !isMain

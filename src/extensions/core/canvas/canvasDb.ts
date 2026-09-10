@@ -124,3 +124,123 @@ export async function purgeCanvasNodesForDocument(documentId: string): Promise<v
     }
   }
 }
+
+export async function purgeCanvasBoard(boardId: string): Promise<void> {
+  await initCanvasTables();
+  await dbAdapter.execute(`DELETE FROM canvas_nodes WHERE board_id = ?`, [boardId]);
+  await dbAdapter.execute(`DELETE FROM canvas_edges WHERE board_id = ?`, [boardId]);
+}
+
+export async function serializeCanvasBoard(boardId: string): Promise<string> {
+  const [nodes, edges] = await Promise.all([
+    getCanvasNodes(boardId),
+    getCanvasEdges(boardId),
+  ]);
+
+  const canvasNodes = nodes.map((n) => ({
+    id: n.id,
+    type: n.type === 'note' ? 'file' : n.type,
+    x: n.x,
+    y: n.y,
+    width: n.width,
+    height: n.height,
+    file: n.document_id,
+    text: n.text_content,
+    color: n.color,
+  }));
+
+  const canvasEdges = edges.map((e) => ({
+    id: e.id,
+    fromNode: e.from_node_id,
+    toNode: e.to_node_id,
+    label: e.label,
+  }));
+
+  return JSON.stringify({ nodes: canvasNodes, edges: canvasEdges }, null, 2);
+}
+
+export async function importCanvasBoard(boardId: string, json: string): Promise<{ nodes: CanvasNode[]; edges: CanvasEdge[] }> {
+  await initCanvasTables();
+  try {
+    const data = JSON.parse(json);
+    const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
+    const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
+
+    const importedNodes: CanvasNode[] = [];
+    for (const n of rawNodes) {
+      const node: CanvasNode = {
+        id: n.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        board_id: boardId,
+        type: n.type === 'file' ? 'note' : (n.type || 'text'),
+        x: typeof n.x === 'number' ? n.x : 0,
+        y: typeof n.y === 'number' ? n.y : 0,
+        width: typeof n.width === 'number' ? n.width : 240,
+        height: typeof n.height === 'number' ? n.height : 160,
+        document_id: n.file || n.document_id,
+        text_content: n.text || n.text_content,
+        color: n.color,
+      };
+      await saveCanvasNode(node);
+      importedNodes.push(node);
+    }
+
+    const importedEdges: CanvasEdge[] = [];
+    for (const e of rawEdges) {
+      const edge: CanvasEdge = {
+        id: e.id || `edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        board_id: boardId,
+        from_node_id: e.fromNode || e.from_node_id,
+        to_node_id: e.toNode || e.to_node_id,
+        label: e.label,
+      };
+      await saveCanvasEdge(edge);
+      importedEdges.push(edge);
+    }
+
+    return { nodes: importedNodes, edges: importedEdges };
+  } catch (e) {
+    console.error('[CanvasDb] Error importing canvas board JSON:', e);
+    return { nodes: [], edges: [] };
+  }
+}
+
+export async function syncCanvasToDisk(boardId: string): Promise<void> {
+  if (!boardId || boardId === 'default' || boardId.startsWith('__')) return;
+  const { useDocumentStore } = await import('@/store/documentStore');
+  const { platform } = await import('@/lib/platform/platformAdapter');
+  const { getDocumentPath, computeFastHash } = await import('@/lib/db/documents');
+
+  const docs = useDocumentStore.getState().documents;
+  const doc = docs.find((d) => d.id === boardId);
+  if (!doc) return;
+
+  const json = await serializeCanvasBoard(boardId);
+  const now = Date.now();
+
+  // Update in SQLite documents table
+  await dbAdapter.execute(
+    `UPDATE documents SET content_json = ?, updated_at = ? WHERE id = ?`,
+    [json, now, boardId]
+  );
+
+  // Write to disk
+  if (platform.isDesktop()) {
+    try {
+      const relPath = getDocumentPath(doc, docs);
+      const targetRelPath = relPath.endsWith('.canvas') ? relPath : `${relPath}.canvas`;
+      await platform.saveMarkdownFile(doc.title, json, targetRelPath);
+
+      const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel.endsWith('.canvas') ? normRel : `${normRel}.canvas`;
+      const contentHash = computeFastHash(json);
+      try {
+        await dbAdapter.execute(
+          `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+          [manifestKey, now, json.length, contentHash, now]
+        );
+      } catch (mErr) {}
+    } catch (err) {
+      console.error('[CanvasDb] Error syncing canvas file to disk:', err);
+    }
+  }
+}

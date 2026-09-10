@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { emitBridgeAppEvent } from '@/core/app/storeBridge';
+import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 import {
   DocumentItem,
   TrashItem,
@@ -511,12 +512,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     const docs = get().documents;
-    const baseTitle = (title && title.trim()) || 'Untitled';
+    const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(title);
+    let baseTitle = (title && title.trim()) || 'Untitled';
+    if (customType) {
+      baseTitle = fileTypeRegistry.cleanTitle(baseTitle) || 'Untitled';
+    }
     let finalTitle = baseTitle;
     if (baseTitle === 'Untitled') {
+      const targetDocType = customType ? customType.docType : (docType || 'base');
       const existingTitles = new Set(
         docs
-          .filter((d) => !d.is_folder && (d.parent_id || null) === (targetParentId || null))
+          .filter((d) => !d.is_folder && (d.parent_id || null) === (targetParentId || null) && (d.doc_type || 'base') === targetDocType)
           .map((d) => d.title)
       );
       if (existingTitles.has('Untitled')) {
@@ -530,17 +536,20 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     const id = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
     const now = Date.now();
-    const defaultContent = JSON.stringify({
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: []
-        }
-      ]
-    });
+    const defaultContent = customType
+      ? (customType.defaultContent || '{}')
+      : JSON.stringify({
+          type: 'doc',
+          content: [
+            {
+              type: 'paragraph',
+              content: []
+            }
+          ]
+        });
 
     const activeDocBefore = get().activeDocument?.id || null;
+    const resolvedDocType = customType ? customType.docType : (docType || 'base');
     const doc: DocumentItem = {
       id,
       parent_id: targetParentId,
@@ -549,7 +558,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       is_daily_note: 0,
       is_folder: 0,
       is_bookmarked: 0,
-      doc_type: docType,
+      doc_type: resolvedDocType,
       created_at: now,
       updated_at: now,
     };
@@ -581,7 +590,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     useFileHistoryStore.getState().recordCreate(doc, activeDocBefore);
 
     if (autoOpenInMain) {
-      if (isGraphView) {
+      if (customType) {
+        ws.setMainViewMode(customType.viewType as any);
+        ws.openTab(doc.id, doc.title, {
+          newTab: true,
+          replaceCurrentTab: false,
+          viewType: customType.viewType,
+          viewMode: customType.viewType as any,
+        });
+      } else if (isGraphView) {
         // Open the new note in a background tab so the Graph View tab and canvas remain active
         ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false, background: true });
       } else {
@@ -596,21 +613,27 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         await dbAdapter.execute(
           `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
            VALUES (?, ?, ?, ?, 0, 0, 0, ?, '{}', ?, ?)`,
-          [id, targetParentId, finalTitle, defaultContent, docType, now, now]
+          [id, targetParentId, finalTitle, defaultContent, resolvedDocType, now, now]
         );
         if (platform.isDesktop()) {
           const allDocs = get().documents;
           const relPath = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, allDocs);
-          const md = jsonToMarkdown(defaultContent, finalTitle);
-          await platform.saveMarkdownFile(finalTitle, md, relPath);
+          const ext = customType ? customType.extension : 'md';
+          const targetRelPath = customType
+            ? (relPath.endsWith(`.${ext}`) ? relPath : `${relPath}.${ext}`)
+            : relPath;
+          const diskContent = customType && customType.isRawContent
+            ? defaultContent
+            : jsonToMarkdown(defaultContent, finalTitle);
+          await platform.saveMarkdownFile(finalTitle, diskContent, targetRelPath);
 
-          const normRel = (relPath || finalTitle).replace(/\\/g, '/').toLowerCase();
-          const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
-          const contentHash = computeFastHash(md);
+          const normRel = (targetRelPath || finalTitle).replace(/\\/g, '/').toLowerCase();
+          const manifestKey = normRel.endsWith(`.${ext}`) ? normRel : `${normRel}.${ext}`;
+          const contentHash = computeFastHash(diskContent);
           try {
             await dbAdapter.execute(
               `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
-              [manifestKey, now, md.length, contentHash, now]
+              [manifestKey, now, diskContent.length, contentHash, now]
             );
           } catch (mErr) {}
         }
@@ -814,26 +837,32 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     const doc = get().documents.find((d) => d.id === id);
-    const { oldTitle } = await updateDocumentTitle(id, newTitle);
+    const customType = fileTypeRegistry.getByDocType(doc?.doc_type) || fileTypeRegistry.getByPath(newTitle);
+    let cleanNewTitle = newTitle.trim();
+    if (customType) {
+      cleanNewTitle = fileTypeRegistry.cleanTitle(cleanNewTitle) || 'Untitled';
+    }
+    const { oldTitle } = await updateDocumentTitle(id, cleanNewTitle);
     const prevTitle = oldTitle || (doc ? doc.title : '');
 
-    if (recordHistory && prevTitle && prevTitle !== newTitle) {
-      useFileHistoryStore.getState().recordRename(id, prevTitle, newTitle);
+    if (recordHistory && prevTitle && prevTitle !== cleanNewTitle) {
+      useFileHistoryStore.getState().recordRename(id, prevTitle, cleanNewTitle);
     }
 
     const { autoUpdateLinks } = useSettingsStore.getState();
-    if (autoUpdateLinks && prevTitle && prevTitle !== newTitle && !doc?.is_folder) {
-      await updateInternalLinksAcrossDocuments(prevTitle, newTitle);
+    const isMarkdownDoc = !customType || !customType.isRawContent;
+    if (autoUpdateLinks && prevTitle && prevTitle !== cleanNewTitle && !doc?.is_folder && isMarkdownDoc) {
+      await updateInternalLinksAcrossDocuments(prevTitle, cleanNewTitle);
     }
 
     set((state) => ({
-      documents: state.documents.map((d) => (d.id === id ? { ...d, title: newTitle } : d)),
-      activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: newTitle } : state.activeDocument,
+      documents: state.documents.map((d) => (d.id === id ? { ...d, title: cleanNewTitle } : d)),
+      activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: cleanNewTitle } : state.activeDocument,
     }));
 
-    emitBridgeAppEvent('document:renamed', { id, oldTitle: prevTitle, newTitle });
+    emitBridgeAppEvent('document:renamed', { id, oldTitle: prevTitle, newTitle: cleanNewTitle });
 
-    useWorkspaceStore.getState().updateTabTitle(id, newTitle);
+    useWorkspaceStore.getState().updateTabTitle(id, cleanNewTitle);
   },
 
   updateDocumentTitleInMemory: (id: string, newTitle: string) => {

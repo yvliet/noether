@@ -9,6 +9,8 @@ import {
   getCanvasEdges,
   saveCanvasNode,
   deleteCanvasNode,
+  syncCanvasToDisk,
+  importCanvasBoard,
 } from './canvasDb';
 import {
   PlusSignIcon,
@@ -21,13 +23,30 @@ import {
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 
-export const CanvasView: React.FC = React.memo(() => {
+export interface CanvasViewProps {
+  boardId?: string;
+  tabId?: string;
+}
+
+export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabId }) => {
   const setMainViewMode = useWorkspaceStore((s) => s.setMainViewMode);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const canvasSnapGrid = useCanvasSettings((s) => s.canvasSnapGrid);
   const gridSize = useCanvasSettings((s) => s.gridSize);
   const documents = useDocumentStore((s) => s.documents);
+  const activeDocument = useDocumentStore((s) => s.activeDocument);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
+
+  const effectiveBoardId =
+    boardId && !boardId.startsWith('__')
+      ? boardId
+      : activeDocument?.doc_type === 'canvas'
+      ? activeDocument.id
+      : 'default';
+
+  const activeDoc =
+    documents.find((d) => d.id === effectiveBoardId) ||
+    (activeDocument?.id === effectiveBoardId ? activeDocument : null);
 
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<CanvasEdge[]>([]);
@@ -37,18 +56,38 @@ export const CanvasView: React.FC = React.memo(() => {
   const addMenuDropdownRef = useRef<HTMLDivElement>(null);
   const [addMenuPos, setAddMenuPos] = useState<{ top?: number; left?: number; bottom?: number }>({});
 
+  const diskSyncTimerRef = useRef<any>(null);
+
+  const triggerDiskSync = useCallback((targetBoardId: string) => {
+    if (!targetBoardId || targetBoardId === 'default' || targetBoardId.startsWith('__')) return;
+    if (diskSyncTimerRef.current) clearTimeout(diskSyncTimerRef.current);
+    diskSyncTimerRef.current = setTimeout(() => {
+      syncCanvasToDisk(targetBoardId);
+      diskSyncTimerRef.current = null;
+    }, 500);
+  }, []);
+
+  const triggerDiskSyncRef = useRef(triggerDiskSync);
+  useEffect(() => {
+    triggerDiskSyncRef.current = triggerDiskSync;
+  }, [triggerDiskSync]);
+
   // Debounced save for card text edits with flush on unmount
   const textPendingNodesRef = useRef<Map<string, { timer: any; node: CanvasNode }>>(new Map());
 
-  const debouncedSaveNode = useCallback((node: CanvasNode) => {
-    const existing = textPendingNodesRef.current.get(node.id);
-    if (existing) clearTimeout(existing.timer);
-    const timer = setTimeout(() => {
-      saveCanvasNode(node);
-      textPendingNodesRef.current.delete(node.id);
-    }, 300);
-    textPendingNodesRef.current.set(node.id, { timer, node });
-  }, []);
+  const debouncedSaveNode = useCallback(
+    (node: CanvasNode) => {
+      const existing = textPendingNodesRef.current.get(node.id);
+      if (existing) clearTimeout(existing.timer);
+      const timer = setTimeout(() => {
+        saveCanvasNode(node);
+        triggerDiskSync(node.board_id);
+        textPendingNodesRef.current.delete(node.id);
+      }, 300);
+      textPendingNodesRef.current.set(node.id, { timer, node });
+    },
+    [triggerDiskSync]
+  );
 
   const flushCanvasSaves = useCallback(() => {
     textPendingNodesRef.current.forEach(({ timer, node }) => {
@@ -56,7 +95,13 @@ export const CanvasView: React.FC = React.memo(() => {
       saveCanvasNode(node);
     });
     textPendingNodesRef.current.clear();
-  }, []);
+
+    if (diskSyncTimerRef.current) {
+      clearTimeout(diskSyncTimerRef.current);
+      diskSyncTimerRef.current = null;
+      syncCanvasToDisk(effectiveBoardId);
+    }
+  }, [effectiveBoardId]);
 
   useEffect(() => {
     const handleUnload = () => flushCanvasSaves();
@@ -139,47 +184,87 @@ export const CanvasView: React.FC = React.memo(() => {
     };
   }, []);
 
-  // Load Canvas Nodes from SQLite on mount (only once, NOT on every documents update)
+  // Load Canvas Nodes from SQLite on mount or when effectiveBoardId changes
   useEffect(() => {
-    getCanvasNodes('default').then((savedNodes) => {
-      if (savedNodes.length > 0) {
-        setNodes(savedNodes);
-      } else {
-        const currentDocs = useDocumentStore.getState().documents;
-        const welcomeDoc = currentDocs.find((d) => d.id === 'welcome-to-flint') || currentDocs[0];
-        const initialNodes: CanvasNode[] = [
-          {
-            id: `node-${Date.now()}-1`,
-            board_id: 'default',
-            type: 'text',
-            x: 200,
-            y: 150,
-            width: 240,
-            height: 140,
-            text_content: '💡 Welcome to your Infinite Spatial Canvas! You can organize thoughts, drag cards, and connect notes.',
-            color: '#2a2a2a',
-          },
-        ];
-        if (welcomeDoc) {
-          initialNodes.push({
-            id: `node-${Date.now()}-2`,
-            board_id: 'default',
-            type: 'note',
-            x: 500,
-            y: 150,
-            width: 260,
-            height: 160,
-            document_id: welcomeDoc.id,
-            color: '#1a1a1a',
-          });
-        }
-        setNodes(initialNodes);
-        initialNodes.forEach(saveCanvasNode);
-      }
-    });
+    let isMounted = true;
+    flushCanvasSaves();
 
-    getCanvasEdges('default').then(setEdges);
-  }, []);
+    async function loadBoard() {
+      const savedNodes = await getCanvasNodes(effectiveBoardId);
+      const savedEdges = await getCanvasEdges(effectiveBoardId);
+
+      if (!isMounted) return;
+
+      if (savedNodes.length > 0 || savedEdges.length > 0) {
+        setNodes(savedNodes);
+        setEdges(savedEdges);
+      } else {
+        const currentDoc = useDocumentStore.getState().documents.find((d) => d.id === effectiveBoardId);
+        if (currentDoc?.content_json && currentDoc.content_json.trim().length > 0) {
+          try {
+            const { nodes: importedNodes, edges: importedEdges } = await importCanvasBoard(
+              effectiveBoardId,
+              currentDoc.content_json
+            );
+            if (!isMounted) return;
+            setNodes(importedNodes);
+            setEdges(importedEdges);
+            return;
+          } catch (e) {
+            console.error('[CanvasView] Error parsing content_json:', e);
+          }
+        }
+
+        if (effectiveBoardId === 'default') {
+          const currentDocs = useDocumentStore.getState().documents;
+          const welcomeDoc = currentDocs.find((d) => d.id === 'welcome-to-flint') || currentDocs[0];
+          const initialNodes: CanvasNode[] = [
+            {
+              id: `node-${Date.now()}-1`,
+              board_id: effectiveBoardId,
+              type: 'text',
+              x: 200,
+              y: 150,
+              width: 240,
+              height: 140,
+              text_content: '💡 Welcome to your Infinite Spatial Canvas! You can organize thoughts, drag cards, and connect notes.',
+              color: '#2a2a2a',
+            },
+          ];
+          if (welcomeDoc) {
+            initialNodes.push({
+              id: `node-${Date.now()}-2`,
+              board_id: effectiveBoardId,
+              type: 'note',
+              x: 500,
+              y: 150,
+              width: 260,
+              height: 160,
+              document_id: welcomeDoc.id,
+              color: '#1a1a1a',
+            });
+          }
+          if (!isMounted) return;
+          setNodes(initialNodes);
+          setEdges([]);
+          for (const n of initialNodes) {
+            await saveCanvasNode(n);
+          }
+        } else {
+          if (!isMounted) return;
+          setNodes([]);
+          setEdges([]);
+        }
+      }
+    }
+
+    loadBoard();
+
+    return () => {
+      isMounted = false;
+      flushCanvasSaves();
+    };
+  }, [effectiveBoardId, flushCanvasSaves]);
 
   const handleAddTextCard = useCallback(async () => {
     const step = gridSize || 20;
@@ -191,7 +276,7 @@ export const CanvasView: React.FC = React.memo(() => {
     }
     const newNode: CanvasNode = {
       id: `node-${Date.now()}`,
-      board_id: 'default',
+      board_id: effectiveBoardId,
       type: 'text',
       x: initialX,
       y: initialY,
@@ -201,10 +286,11 @@ export const CanvasView: React.FC = React.memo(() => {
       color: '#242424',
     };
     await saveCanvasNode(newNode);
+    triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
     setIsAddMenuOpen(false);
     showToast('Added note card', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast]);
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync]);
 
   const handleAddDocCard = useCallback(async (docId: string) => {
     const step = gridSize || 20;
@@ -216,7 +302,7 @@ export const CanvasView: React.FC = React.memo(() => {
     }
     const newNode: CanvasNode = {
       id: `node-${Date.now()}`,
-      board_id: 'default',
+      board_id: effectiveBoardId,
       type: 'note',
       x: initialX,
       y: initialY,
@@ -226,18 +312,20 @@ export const CanvasView: React.FC = React.memo(() => {
       color: '#1a1a1a',
     };
     await saveCanvasNode(newNode);
+    triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
     setIsAddMenuOpen(false);
     showToast('Added document to canvas', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast]);
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync]);
 
   const handleDeleteNode = useCallback(async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     await deleteCanvasNode(id);
+    triggerDiskSync(effectiveBoardId);
     setNodes((prev) => prev.filter((n) => n.id !== id));
     if (selectedNodeId === id) setSelectedNodeId(null);
     showToast('Removed card', 'info');
-  }, [selectedNodeId, showToast]);
+  }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync]);
 
   // Keyboard shortcut to delete selected card (Delete / Backspace when not typing)
   useEffect(() => {
@@ -361,6 +449,7 @@ export const CanvasView: React.FC = React.memo(() => {
         const node = nodesRef.current.find((n) => n.id === dragId);
         if (node) {
           saveCanvasNode(node);
+          triggerDiskSyncRef.current(node.board_id);
         }
       }
       isPanningRef.current = false;
@@ -571,9 +660,9 @@ export const CanvasView: React.FC = React.memo(() => {
     >
       {/* 100% Consistent Page Subheader */}
       <PageSubHeader
-        title="Canvas"
+        title={activeDoc?.title || 'Canvas'}
         icon={<Layout01Icon size={13} />}
-        document={null}
+        document={activeDoc}
         hideBar={true}
         showReadingToggle={false}
         showBookmark={false}
@@ -624,16 +713,18 @@ export const CanvasView: React.FC = React.memo(() => {
                       Insert Document
                     </div>
                     <div className="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
-                      {documents.filter((d) => !d.is_folder).map((doc) => (
-                        <button
-                          key={doc.id}
-                          onClick={() => handleAddDocCard(doc.id)}
-                          className="flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] hover:bg-[#282828] text-left text-[#c5c6c8] hover:text-white truncate transition-colors cursor-pointer"
-                        >
-                          <File01Icon size={13} className="shrink-0 text-[#777]" />
-                          <span className="truncate">{doc.title}</span>
-                        </button>
-                      ))}
+                      {documents
+                        .filter((d) => !d.is_folder && d.id !== effectiveBoardId && d.doc_type !== 'canvas')
+                        .map((doc) => (
+                          <button
+                            key={doc.id}
+                            onClick={() => handleAddDocCard(doc.id)}
+                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] hover:bg-[#282828] text-left text-[#c5c6c8] hover:text-white truncate transition-colors cursor-pointer"
+                          >
+                            <File01Icon size={13} className="shrink-0 text-[#777]" />
+                            <span className="truncate">{doc.title}</span>
+                          </button>
+                        ))}
                     </div>
                   </div>,
                   document.body

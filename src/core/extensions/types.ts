@@ -985,4 +985,55 @@ export interface RunTaskOptions {
   timeoutMs?: number;
 }
 
+// ── Custom File Type Registry Contracts ──
+
+/**
+ * Defines a custom file type and extension mapping registered by an extension.
+ * Enables native file tree badges, disk synchronization, and automatic view routing.
+ * @since 0.5.0
+ */
+export interface CustomFileTypeDefinition {
+  /**
+   * Primary file extension without leading dot (e.g. 'canvas', 'excalidraw', 'sheet').
+   */
+  extension: string;
+
+  /**
+   * Unique document type identifier stored in SQLite `documents.doc_type` (e.g. 'canvas', 'drawing').
+   */
+  docType: string;
+
+  /**
+   * Display label for badge in file tree (e.g. 'CANVAS', 'DRAW', 'SHEET').
+   */
+  badgeLabel?: string;
+
+  /**
+   * The workspace view type that opens this file (e.g. 'canvas', 'excalidraw').
+   * Corresponds to `ViewDefinition.type` registered in ViewRegistry.
+   */
+  viewType: string;
+
+  /**
+   * Default serialized file content when creating a new document of this type.
+   */
+  defaultContent?: string;
+
+  /**
+   * Whether this file type stores raw text/JSON directly rather than TipTap markdown.
+   * Defaults to true for custom file types.
+   */
+  isRawContent?: boolean;
+
+  /**
+   * Optional custom icon identifier or React node.
+   */
+  icon?: string;
+
+  /**
+   * Owning extension identifier.
+   */
+  extensionId?: string;
+}
+
 

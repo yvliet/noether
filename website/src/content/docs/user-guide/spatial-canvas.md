@@ -9,10 +9,11 @@ Linear text documents are ideal for long-form writing, but creative brainstormin
 The Canvas gives you an unbounded 2D plane where ideas can exist as interactive cards, sticky notes, visual groups, and directional connection pathways.
 
 - **Unified Knowledge**: Canvas items are not isolated drawings; they reference your real notes in the Hearth.
-- **Local-First Storage**: Canvas workspaces serialize into human-readable JSON files saved locally in `.flint/canvas/`.
+- **First-Class File Backing**: Every canvas is its own `.canvas` JSON file saved directly in your Hearth alongside your Markdown notes, with isolated node and edge data.
+- **Sidebar Integration**: Canvases appear alongside notes in your file tree, cleanly displaying their document title with a right-aligned muted `CANVAS` badge.
 - **Hardware-Accelerated 60 FPS**: Utilizes viewport frustum culling and hardware-accelerated transforms to maintain smooth pan and zoom even with hundreds of active cards.
 
-To launch a canvas, click the **Canvas** icon on the left Action Rail or run `Ctrl+K` → *Open Canvas*.
+To create a canvas, click the **Canvas** icon on the left Action Rail, click the **New Canvas** icon in the file tree header, or run `Ctrl+K` → *New spatial canvas*.
 
 ---
 

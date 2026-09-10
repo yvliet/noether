@@ -53,9 +53,9 @@ export class CanvasExtension extends Extension {
       type: 'canvas',
       title: 'Canvas',
       icon: <Layout01Icon size={14} />,
-      render: () => (
+      render: (props?: { tabId?: string; documentId?: string }) => (
         <React.Suspense fallback={<div className="w-full h-full bg-[#181818]" />}>
-          <LazyCanvasView />
+          <LazyCanvasView boardId={props?.documentId} tabId={props?.tabId} />
         </React.Suspense>
       ),
     });
@@ -64,14 +64,9 @@ export class CanvasExtension extends Extension {
     this.addActionRailIcon(
       'open-canvas',
       <Layout01Icon size={16} />,
-      'Open spatial canvas',
-      (app) => {
-        app.workspace.openCustomTab({
-          viewType: 'canvas',
-          title: 'Canvas',
-          documentId: '__canvas__',
-          icon: <Layout01Icon size={14} />,
-        });
+      'Create new spatial canvas',
+      async (app) => {
+        await app.hearth.createNewCanvas();
       },
       40,
       (app) => {
@@ -89,16 +84,11 @@ export class CanvasExtension extends Extension {
     // 3. Register Command
     this.addCommand({
       id: 'cmd-open-canvas',
-      title: 'Open spatial canvas',
+      title: 'New spatial canvas',
       section: 'Navigation',
       icon: <Layout01Icon size={16} />,
-      action: (app) => {
-        app.workspace.openCustomTab({
-          viewType: 'canvas',
-          title: 'Canvas',
-          documentId: '__canvas__',
-          icon: <Layout01Icon size={14} />,
-        });
+      action: async (app) => {
+        await app.hearth.createNewCanvas();
       },
     });
 
@@ -118,17 +108,28 @@ export class CanvasExtension extends Extension {
       order: 20,
       onClick: async (app) => {
         await app.hearth.createNewCanvas();
-        app.workspace.setMainViewMode('canvas');
       },
     });
 
-    // Clean up canvas nodes when documents are deleted
+    // 6. Register Custom File Type (.canvas)
+    this.registerFileType({
+      extension: 'canvas',
+      docType: 'canvas',
+      badgeLabel: 'CANVAS',
+      viewType: 'canvas',
+      defaultContent: JSON.stringify({ nodes: [], edges: [] }, null, 2),
+      isRawContent: true,
+    });
+
+    // Clean up canvas nodes and boards when documents are deleted
     this.onEvent('document:deleted', async ({ id }) => {
       if (id) {
         try {
           await purgeCanvasNodesForDocument(id);
+          const { purgeCanvasBoard } = await import('./canvasDb');
+          await purgeCanvasBoard(id);
         } catch (err) {
-          console.error('[CanvasExtension] Error purging nodes for deleted document:', err);
+          console.error('[CanvasExtension] Error purging nodes for deleted document/board:', err);
         }
       }
     });

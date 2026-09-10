@@ -20,6 +20,7 @@ import { HugeIconRenderer, DynamicHugeIcon } from '@/components/common/IconPicke
 import { EmojiRenderer } from '@/components/common/emoji';
 import { useIconifyStore } from './iconifyStore';
 import { DocumentItem } from '@/types';
+import { fileTypeRegistry } from '@/sdk';
 
 export interface IconifyNodeProps {
   itemId: string;
@@ -85,13 +86,13 @@ export const IconifyNode: React.FC<IconifyNodeProps> = React.memo(({
     return null;
   }
 
-  const isCanvas = docType === 'canvas' || (title && title.toLowerCase().endsWith('.canvas'));
+  const customType = fileTypeRegistry.getByDocType(docType) || (title ? fileTypeRegistry.getByPath(title) : undefined);
   return (
     <span
       className="w-4 h-4 flex items-center justify-center shrink-0 text-[#777777] group-hover:text-[#dcddde] select-none pointer-events-none"
-      title={isCanvas ? 'Canvas' : 'Note'}
+      title={customType ? (customType.badgeLabel || customType.extension.toUpperCase()) : 'Note'}
     >
-      {isCanvas ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
+      {customType ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
     </span>
   );
 });
@@ -140,13 +141,13 @@ export const IconifyFileIconSlot: React.FC<IconifyFileIconSlotProps> = ({ doc })
 
   // 2. Default file icon
   if (showDefaultFileIcons) {
-    const isCanvas = doc.doc_type === 'canvas' || (doc.title && doc.title.toLowerCase().endsWith('.canvas'));
+    const customType = fileTypeRegistry.getByDocType(doc.doc_type) || (doc.title ? fileTypeRegistry.getByPath(doc.title) : undefined);
     return (
       <span
         className="w-4 h-4 flex items-center justify-center shrink-0 text-[#777777] group-hover:text-[#dcddde] select-none pointer-events-none"
-        title={isCanvas ? 'Canvas' : 'Note'}
+        title={customType ? (customType.badgeLabel || customType.extension.toUpperCase()) : 'Note'}
       >
-        {isCanvas ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
+        {customType ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
       </span>
     );
   }
