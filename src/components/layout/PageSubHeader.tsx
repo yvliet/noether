@@ -101,6 +101,28 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   const handleBack = onNavigateBack || storeNavigateBack;
   const handleForward = onNavigateForward || storeNavigateForward;
 
+  const [registeredActions, setRegisteredActions] = React.useState(() =>
+    app.documentHeaderActions?.getActions() ?? []
+  );
+
+  React.useEffect(() => {
+    if (!app.documentHeaderActions) return;
+    setRegisteredActions(app.documentHeaderActions.getActions());
+    return app.documentHeaderActions.subscribe(() => {
+      setRegisteredActions(app.documentHeaderActions.getActions());
+    });
+  }, [app.documentHeaderActions]);
+
+  const activeTab = useMemo(() => {
+    return tabs.find((t) => t.id === activeTabId) ?? null;
+  }, [tabs, activeTabId]);
+
+  const actionContext = useMemo(() => ({
+    document,
+    activeTab,
+    app,
+  }), [document, activeTab, app]);
+
   const resolvedIcon = useMemo(() => {
     if (icon !== undefined) return icon;
 
@@ -277,23 +299,40 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           </button>
         )}
 
-        {/* Bookmark toggle button */}
-        {showBookmark && (
+        {/* Dynamic Registered Extension Header Actions */}
+        {registeredActions.map((action) => {
+          if (action.isVisible && !action.isVisible(actionContext)) return null;
+          const titleStr = typeof action.title === 'function' ? action.title(actionContext) : action.title;
+          const classNameStr = typeof action.className === 'function' ? action.className(actionContext) : action.className;
+          const isEnabled = action.isEnabled ? action.isEnabled(actionContext) : true;
+
+          return (
+            <button
+              key={action.id}
+              type="button"
+              onClick={() => action.onClick(actionContext)}
+              disabled={!isEnabled}
+              title={titleStr}
+              className={`p-1 rounded ${
+                classNameStr ||
+                'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+              }`}
+            >
+              {action.icon(actionContext)}
+            </button>
+          );
+        })}
+
+        {/* Legacy fallback bookmark toggle button (only if explicitly passed as direct prop and not registered dynamically) */}
+        {showBookmark && onToggleBookmark && !registeredActions.some((a) => a.id.includes('bookmark')) && (
           <button
             type="button"
             onClick={handleBookmarkClick}
-            disabled={!onToggleBookmark && !document}
-            title={
-              document?.is_bookmarked || isBookmarked
-                ? 'Remove bookmark'
-                : 'Bookmark note'
-            }
+            title={document?.is_bookmarked || isBookmarked ? 'Remove bookmark' : 'Bookmark note'}
             className={`p-1 rounded ${
-              onToggleBookmark || document
-                ? document?.is_bookmarked || isBookmarked
-                  ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
-                  : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
-                : 'opacity-20 cursor-default text-[var(--flint-text-muted)]'
+              document?.is_bookmarked || isBookmarked
+                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+                : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
             }`}
           >
             <Bookmark01Icon

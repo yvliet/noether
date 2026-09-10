@@ -69,6 +69,8 @@ import {
   CustomFileTypeDefinition,
 } from './types';
 import type { IconPackProvider } from '../registries/IconRegistry';
+import type { DocumentHeaderActionDefinition } from '../registries/DocumentHeaderActionRegistry';
+import type { FileContextMenuActionDefinition } from '../registries/FileContextMenuRegistry';
 
 export abstract class Extension {
   /**
@@ -573,6 +575,34 @@ export abstract class Extension {
     const d = this.app.properties.registerPropertyIcon({
       ...def,
       id: `${this.manifest.id}:${def.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a document header action button displayed in the note sub-header.
+   * @param action - Header action definition.
+   * @returns A Disposable to unregister the action.
+   * @since 0.4.6
+   */
+  public registerDocumentHeaderAction(action: DocumentHeaderActionDefinition): Disposable {
+    const d = this.app.documentHeaderActions.registerAction({
+      ...action,
+      id: `${this.manifest.id}:${action.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a contextual action item in the file explorer and note tree context menu.
+   * @param action - File context menu action definition.
+   * @returns A Disposable to unregister the action.
+   * @since 0.4.6
+   */
+  public registerFileContextMenuAction(action: FileContextMenuActionDefinition): Disposable {
+    const d = this.app.fileContextMenus.registerAction({
+      ...action,
+      id: `${this.manifest.id}:${action.id}`,
     });
     return this.registerDisposable(d);
   }

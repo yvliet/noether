@@ -89,6 +89,61 @@ export class BookmarksExtension extends Extension {
       ),
     });
 
+    // 5. Register Document Header Action Button (Sub-header star icon)
+    this.registerDocumentHeaderAction({
+      id: 'toggle-bookmark',
+      title: (ctx) => (ctx.document?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'),
+      icon: (ctx) => (
+        <Bookmark01Icon
+          size={14}
+          className={ctx.document?.is_bookmarked ? 'fill-current' : ''}
+        />
+      ),
+      className: (ctx) =>
+        ctx.document?.is_bookmarked
+          ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+          : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer',
+      onClick: async (ctx) => {
+        if (ctx.document) {
+          const isNowBookmarked = await ctx.app.hearth.toggleBookmark(ctx.document.id);
+          ctx.app.workspace.showToast(
+            isNowBookmarked ? `Bookmarked "${ctx.document.title}"` : `Removed bookmark for "${ctx.document.title}"`,
+            'info'
+          );
+        }
+      },
+      isVisible: (ctx) => Boolean(ctx.document),
+      order: 10,
+    });
+
+    // 6. Register File Tree Context Menu Action (Bookmark / Remove bookmark)
+    this.registerFileContextMenuAction({
+      id: 'bookmark',
+      title: (ctx) =>
+        ctx.isMulti
+          ? `Bookmark ${ctx.selectedDocIds.length} items`
+          : ctx.item.is_bookmarked
+          ? 'Remove bookmark'
+          : 'Bookmark',
+      icon: () => <Bookmark01Icon size={14} />,
+      section: 'actions',
+      order: 10,
+      onClick: async (ctx) => {
+        if (ctx.isMulti) {
+          for (const id of ctx.selectedDocIds) {
+            await ctx.app.hearth.toggleBookmark(id);
+          }
+          ctx.app.workspace.showToast(`Updated bookmarks for ${ctx.selectedDocIds.length} items`, 'info');
+        } else {
+          const isNow = await ctx.app.hearth.toggleBookmark(ctx.item.id);
+          ctx.app.workspace.showToast(
+            isNow ? `Bookmarked "${ctx.item.title}"` : `Removed bookmark for "${ctx.item.title}"`,
+            'info'
+          );
+        }
+      },
+    });
+
     // ── MCP Tools Registration ──
 
     // 5. Tool: bookmarks_list

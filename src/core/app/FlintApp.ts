@@ -28,6 +28,8 @@ import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
 import { ToolRegistry } from '../registries/ToolRegistry';
 import { SlotRegistry } from '../registries/SlotRegistry';
+import { DocumentHeaderActionRegistry, documentHeaderActionRegistry } from '../registries/DocumentHeaderActionRegistry';
+import { FileContextMenuRegistry, fileContextMenuRegistry } from '../registries/FileContextMenuRegistry';
 import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
 import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
@@ -106,6 +108,10 @@ export class FlintApp {
   public slots: SlotRegistry;
   /** Custom file type registry managing file extensions, view mappings, and badges. */
   public fileTypes: FileTypeRegistry;
+  /** Document header action registry managing extensible buttons in note sub-headers. */
+  public documentHeaderActions: DocumentHeaderActionRegistry;
+  /** File context menu registry managing contextual actions on files and folders. */
+  public fileContextMenus: FileContextMenuRegistry;
   /** Relational database manager managing extension tables, migrations, and cascade teardown. */
   public dbManager: ExtensionDatabaseManager;
   /** Background Web Worker pool for off-thread CPU-intensive extension operations. */
@@ -141,6 +147,8 @@ export class FlintApp {
     this.tools = new ToolRegistry(this);
     this.slots = new SlotRegistry();
     this.fileTypes = fileTypeRegistry;
+    this.documentHeaderActions = documentHeaderActionRegistry;
+    this.fileContextMenus = fileContextMenuRegistry;
 
     // Register Native Built-in Icon Providers
     this.icons.registerProvider({

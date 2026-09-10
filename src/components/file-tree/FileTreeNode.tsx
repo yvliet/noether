@@ -10,7 +10,6 @@ import {
   Folder01Icon,
   SplitRightIcon,
   Copy01Icon,
-  Bookmark01Icon,
   ExternalLinkIcon,
   FolderOpenIcon,
   Download01Icon,
@@ -80,8 +79,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const moveDocuments = useDocumentStore((s) => s.moveDocuments);
   const removeDocument = useDocumentStore((s) => s.removeDocument);
   const removeDocuments = useDocumentStore((s) => s.removeDocuments);
-  const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
-  const toggleBookmarkDocuments = useDocumentStore((s) => s.toggleBookmarkDocuments);
   const setEditingDocId = useDocumentStore((s) => s.setEditingDocId);
   const selectSingleDoc = useDocumentStore((s) => s.selectSingleDoc);
   const toggleDocSelection = useDocumentStore((s) => s.toggleDocSelection);
@@ -650,14 +647,26 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
       const isMulti = currentSelectedIds.includes(item.id) && currentSelectedIds.length > 1;
 
+      const menuContext = {
+        item,
+        selectedDocIds: currentSelectedIds,
+        isMulti,
+        app,
+      };
+
+      const customActions = app.fileContextMenus?.getActions(menuContext) ?? [];
+      const customMenuItems: ContextMenuItem[] = customActions.map((action) => ({
+        id: action.id,
+        title: typeof action.title === 'function' ? action.title(menuContext) : action.title,
+        icon: typeof action.icon === 'function' ? action.icon(menuContext) : action.icon,
+        isDanger: action.isDanger,
+        onClick: () => action.onClick(menuContext),
+      }));
+
       if (isMulti) {
         const items: ContextMenuItem[] = [
-          {
-            id: 'multi-bookmark',
-            title: `Bookmark ${currentSelectedIds.length} items`,
-            icon: <Bookmark01Icon size={14} />,
-            onClick: () => toggleBookmarkDocuments(currentSelectedIds),
-          },
+          ...customMenuItems,
+          ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }] : []),
           {
             id: 'multi-move',
             title: `Move ${currentSelectedIds.length} items to...`,
@@ -744,13 +753,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <Copy01Icon size={14} />,
             onClick: () => handleCopyPath('absolute'),
           },
+          ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }, ...customMenuItems] : []),
           { type: 'separator' },
-          {
-            id: 'bookmark',
-            title: item.is_bookmarked ? 'Remove bookmark' : 'Bookmark',
-            icon: <Bookmark01Icon size={14} />,
-            onClick: () => toggleBookmark(item.id),
-          },
           {
             id: 'delete',
             title: 'Delete',
@@ -816,13 +820,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <Copy01Icon size={14} />,
             onClick: () => handleCopyPath('absolute'),
           },
+          ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }, ...customMenuItems] : []),
           { type: 'separator' },
-          {
-            id: 'bookmark',
-            title: item.is_bookmarked ? 'Remove bookmark' : 'Bookmark',
-            icon: <Bookmark01Icon size={14} />,
-            onClick: () => toggleBookmark(item.id),
-          },
           {
             id: 'move-to',
             title: 'Move file to...',
@@ -878,7 +877,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         showContextMenu(e, items, { scope: 'file-tree', data: item });
       }
     },
-    [allDocs, createNewFolder, createNewNote, customType, displayTitle, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, toggleBookmark, toggleBookmarkDocuments, hearthPath]
+    [allDocs, createNewFolder, createNewNote, customType, displayTitle, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, hearthPath, app]
   );
 
   return (
