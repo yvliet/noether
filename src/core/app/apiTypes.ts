@@ -247,6 +247,15 @@ export interface WorkspaceAPI {
    */
   toggleSplitView(): void;
 
+  /**
+   * Opens a document in the split pane.
+   * @param documentId - The document's unique identifier.
+   * @param title - Optional display title.
+   * @param direction - Optional split direction ('horizontal' | 'vertical').
+   * @since 0.4.6
+   */
+  openSplitTab(documentId: string, title?: string, direction?: 'horizontal' | 'vertical'): void;
+
   // ── Navigation History ──
 
   /**
@@ -593,6 +602,14 @@ export interface HearthAPI {
    * @since 0.2.0
    */
   updateDocumentProperties(docId: string, properties: Partial<DocumentProperties>): Promise<void>;
+
+  /**
+   * Sets document properties for a document, overwriting existing properties with the new set.
+   * @param docId - The document's unique identifier.
+   * @param properties - The complete property map.
+   * @since 0.4.6
+   */
+  setDocumentProperties(docId: string, properties: DocumentProperties): Promise<void>;
  
   // ── Subsystem Queries & Graph ──
 
@@ -643,6 +660,14 @@ export interface HearthAPI {
   convertUnlinkedMention(sourceDocId: string, title: string): Promise<boolean>;
 
   /**
+   * Refreshes backlinks and unlinked mentions for a specific document.
+   * @param docId - The target document ID.
+   * @param title - The document title to search mentions for.
+   * @since 0.4.6
+   */
+  loadLinksAndMentions(docId: string, title: string): Promise<void>;
+
+  /**
    * Retrieves the complete list of unique tags indexed in the Hearth.
    * @since 0.4.6
    */
@@ -669,12 +694,19 @@ export interface HearthAPI {
   getGlobalTasks(filter?: { completed?: boolean; query?: string }): Promise<GlobalTaskItem[]>;
 
   /**
-   * Toggles the completion state of a task item at the given line index.
+   * Toggles the completion state of a task item by line index or task text.
    * @param docId - Document containing the task.
-   * @param lineIndex - Line index of the task.
+   * @param lineIndexOrText - Line index or text matching the task.
+   * @param completed - Optional explicit completed boolean when toggling by text.
    * @since 0.4.6
    */
-  toggleTask(docId: string, lineIndex: number): Promise<boolean>;
+  toggleTask(docId: string, lineIndexOrText: number | string, completed?: boolean): Promise<boolean>;
+
+  /**
+   * Refreshes the cached global tasks across all Hearth documents.
+   * @since 0.4.6
+   */
+  refreshGlobalTasks(): Promise<void>;
 
   /**
    * Retrieves all document links for graph view visualization.

@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useSidebarDockStore } from '@/store/sidebarDockStore';
 import { useGraphSettings } from './graphSettings';
-import { useDocumentStore } from '@/store/documentStore';
 import { dbAdapter } from '@/lib/db/adapter';
 import { getAllDocuments, getDocumentPath } from '@/lib/db/documents';
 import {
@@ -17,8 +14,9 @@ import {
 } from '@/components/common/Icons';
 import { Tooltip } from '@/components/common/Tooltip';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
-import { DocumentItem } from '@/types';
+import type { DocumentItem } from '@/types';
 import { platform } from '@/lib/platform/platformAdapter';
+import { useFlintApp, storeRefs } from 'flint';
 
 function getGraphNodeTitle(doc: DocumentItem, allDocs: DocumentItem[]): string {
   return getDocumentPath(doc, allDocs) || doc.title || 'Untitled';
@@ -65,12 +63,12 @@ function hashStringToUnit(str: string): number {
 }
 
 function getStorageKey(vaultPath?: string): string {
-  const vp = vaultPath || useWorkspaceStore.getState().vaultPath || 'default';
+  const vp = vaultPath || (storeRefs.workspace?.getState?.() as any)?.vaultPath || 'default';
   return `flint_graph_positions_v6:${vp}`;
 }
 
 function getTransformStorageKey(vaultPath?: string): string {
-  const vp = vaultPath || useWorkspaceStore.getState().vaultPath || 'default';
+  const vp = vaultPath || (storeRefs.workspace?.getState?.() as any)?.vaultPath || 'default';
   return `flint_graph_transform_v1:${vp}`;
 }
 
@@ -164,18 +162,20 @@ function isTabFloating(tabId?: string, vaultPath?: string): boolean {
   if (!tabId) return false;
   // 1. Check workspaceStore / sidebarDockStore metadata
   try {
-    const ws = useWorkspaceStore.getState();
-    for (const p of Object.values(ws.panes || {})) {
-      const t = p.tabs.find((tab) => tab.id === tabId);
-      if (t && t.metadata?.isFloating !== undefined) {
-        return !!t.metadata.isFloating;
+    const ws = (storeRefs.workspace?.getState?.()) as any;
+    if (ws) {
+      for (const p of Object.values((ws.panes || {}) as Record<string, any>)) {
+        const t = p?.tabs?.find((tab: any) => tab.id === tabId);
+        if (t && t.metadata?.isFloating !== undefined) {
+          return !!t.metadata.isFloating;
+        }
+      }
+      const mainTab = ws.tabs?.find((t: any) => t.id === tabId);
+      if (mainTab && mainTab.metadata?.isFloating !== undefined) {
+        return !!mainTab.metadata.isFloating;
       }
     }
-    const mainTab = ws.tabs.find((t) => t.id === tabId);
-    if (mainTab && mainTab.metadata?.isFloating !== undefined) {
-      return !!mainTab.metadata.isFloating;
-    }
-    const dockItem = useSidebarDockStore.getState().items.find((it) => it.id === tabId);
+    const dockItem = (storeRefs.sidebarDock?.getState?.() as any)?.items?.find((it: any) => it.id === tabId);
     if (dockItem && dockItem.metadata?.isFloating !== undefined) {
       return !!dockItem.metadata.isFloating;
     }
@@ -216,10 +216,10 @@ function setTabFloatingState(tabId: string | undefined, isFloating: boolean, vau
 
   // 2. Update metadata in workspaceStore / sidebarDockStore
   try {
-    useWorkspaceStore.setState((state) => {
+    (storeRefs.workspace as any)?.setState?.((state: any) => {
       const updateTab = (t: any) => (t.id === tabId ? { ...t, metadata: { ...t.metadata, isFloating } } : t);
       const newPanes: Record<string, any> = {};
-      for (const [pId, pModel] of Object.entries(state.panes || {})) {
+      for (const [pId, pModel] of Object.entries((state.panes || {}) as Record<string, any>)) {
         newPanes[pId] = {
           ...pModel,
           tabs: pModel.tabs.map(updateTab),
@@ -232,18 +232,19 @@ function setTabFloatingState(tabId: string | undefined, isFloating: boolean, vau
       };
     });
 
-    useSidebarDockStore.setState((state) => ({
-      items: state.items.map((it) => (it.id === tabId ? { ...it, metadata: { ...it.metadata, isFloating } } : it)),
+    (storeRefs.sidebarDock as any)?.setState?.((state: any) => ({
+      items: state.items.map((it: any) => (it.id === tabId ? { ...it, metadata: { ...it.metadata, isFloating } } : it)),
     }));
   } catch {}
 }
 
 export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: propIsSidebar, tabId: propTabId, documentId: propDocId }) => {
-  const setMainViewMode = useWorkspaceStore((s) => s.setMainViewMode);
-  const openTab = useWorkspaceStore((s) => s.openTab);
-  const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
-  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
-  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
+  const app = useFlintApp();
+  const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
+  const openTab = useCallback((docId: string, title?: string, opts?: any) => app.workspace.openTab(docId, title, opts), [app]);
+  const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
+  const vaultPath = app.hearth.vaultPath;
+  const activeTabId = app.workspace.activeTabId;
   const resolvedTabId = propTabId || activeTabId || propDocId || 'graph-main';
 
   const graphFocusCamera = useGraphSettings((s) => s.timelapseFocusCamera);
@@ -718,7 +719,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     async function loadData(incomingDocs?: DocumentItem[]) {
       const loadSeq = ++loadSeqRef.current;
       try {
-        const storeDocs = useDocumentStore.getState().documents;
+        const storeDocs = app.hearth.documents;
         const allDocs = Array.isArray(incomingDocs)
           ? incomingDocs
           : Array.isArray(storeDocs)
@@ -1140,11 +1141,11 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       loadData();
     }
 
-    const unsubStore = useDocumentStore.subscribe((state, prevState) => {
-      if (state.documents !== prevState.documents) {
-        loadData(state.documents);
+    const unsubStore = (storeRefs.document as any)?.subscribe?.((state: any, prevState: any) => {
+      if (state?.documents !== prevState?.documents) {
+        loadData(state?.documents);
       }
-    });
+    }) || (() => {});
 
     const unsubscribe = dbAdapter.onStatusChange((isReady) => {
       if (isReady) loadData();
@@ -2947,7 +2948,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       dragNodeRef.current = null;
     } else if (distMoved < 6 && targetCandidate) {
       const targetId = targetCandidate.id;
-      const allDocs = useDocumentStore.getState().documents;
+      const allDocs = app.hearth.documents;
       const targetDoc = allDocs.find((d: any) => d.id === targetId);
       openTab(targetId, targetDoc?.title || targetCandidate.title);
       await setActiveDocumentById(targetId);

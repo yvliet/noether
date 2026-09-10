@@ -261,11 +261,10 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
 
 export async function syncCanvasToDisk(boardId: string): Promise<void> {
   if (!boardId || boardId === 'default' || boardId.startsWith('__')) return;
-  const { useDocumentStore } = await import('@/store/documentStore');
   const { platform } = await import('@/lib/platform/platformAdapter');
-  const { getDocumentPath, computeFastHash } = await import('@/lib/db/documents');
+  const { getAllDocuments, getDocumentPath, computeFastHash } = await import('@/lib/db/documents');
 
-  const docs = useDocumentStore.getState().documents;
+  const docs = await getAllDocuments();
   const doc = docs.find((d) => d.id === boardId);
   if (!doc) return;
 

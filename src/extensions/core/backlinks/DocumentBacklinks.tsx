@@ -1,5 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
+import {
+  useFlintApp,
+  useDocumentBacklinks,
+  useDocumentUnlinkedMentions,
+} from 'flint';
 import { useBacklinksSettings } from './backlinksSettings';
 import { BacklinkItem, UnlinkedMentionItem } from '@/types';
 import {
@@ -34,11 +38,18 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   documentId,
   documentTitle,
 }) => {
-  const backlinks = useDocumentStore((s) => s.backlinks);
-  const unlinkedMentions = useDocumentStore((s) => s.unlinkedMentions);
-  const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
-  const convertUnlinkedMention = useDocumentStore((s) => s.convertUnlinkedMention);
-  const loadLinksAndMentions = useDocumentStore((s) => s.loadLinksAndMentions);
+  const app = useFlintApp();
+  const backlinks = useDocumentBacklinks(documentId);
+  const unlinkedMentions = useDocumentUnlinkedMentions(documentId);
+  const setActiveDocumentById = useCallback((id: string) => {
+    app.hearth.openDocument(id);
+  }, [app]);
+  const convertUnlinkedMention = useCallback((sourceDocId: string, title: string) => {
+    return app.hearth.convertUnlinkedMention(sourceDocId, title);
+  }, [app]);
+  const loadLinksAndMentions = useCallback((docId: string, title: string) => {
+    return app.hearth.loadLinksAndMentions(docId, title);
+  }, [app]);
 
   // Ensure backlinks & mentions are loaded for this document immediately upon mount or prop changes
   useEffect(() => {

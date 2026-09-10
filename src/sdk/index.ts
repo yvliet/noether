@@ -34,6 +34,7 @@
 export { Extension, Plugin } from '../core/extensions/Extension';
 export { ExtensionManager, PluginManager } from '../core/extensions/ExtensionManager';
 export { FlintApp, appInstance } from '../core/app/FlintApp';
+export { storeRefs } from '../core/app/storeBridge';
 export { SlotRegistry } from '../core/registries/SlotRegistry';
 export { DocumentHeaderActionRegistry, documentHeaderActionRegistry } from '../core/registries/DocumentHeaderActionRegistry';
 export type { DocumentHeaderActionDefinition, DocumentHeaderActionContext } from '../core/registries/DocumentHeaderActionRegistry';
@@ -64,6 +65,9 @@ export {
   useDocumentUnlinkedMentions,
   useVaultTags,
   useGlobalTasks,
+  useDocumentProperties,
+  useFlintStore,
+  useToast,
 } from './react';
 export { renderHugeIconSvg } from '../components/common/Icons';
 export type { IconProps, RenderHugeIconSvgOptions } from '../components/common/Icons';

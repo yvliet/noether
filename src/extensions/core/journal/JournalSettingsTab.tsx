@@ -1,6 +1,6 @@
 import React from 'react';
 import { useJournalSettings, DEFAULT_JOURNAL_SETTINGS } from './journalSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useFlintApp, useToast } from 'flint';
 import { RotateCcwIcon, Folder01Icon } from '@/components/common/Icons';
 import { SettingCard, SettingItem, TextInput, Toggle, Button } from '@/components/ui';
 
@@ -17,13 +17,16 @@ export const JournalSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useJournalSettings();
 
-  const { showToast, promptFolderSelection, setIsSettingsOpen } = useWorkspaceStore();
+  const app = useFlintApp();
+  const showToast = useToast();
+  const promptFolderSelection = (opts: any) => (app.workspace as any).promptFolderSelection?.(opts);
+  const setIsSettingsOpen = (open: boolean, tabId?: string) => (app.workspace as any).setIsSettingsOpen?.(open, tabId);
 
   const handlePickFolder = () => {
     promptFolderSelection({
       title: 'Click on a folder',
       allowRoot: true,
-      onSelect: (folderPath) => {
+      onSelect: (folderPath: string) => {
         setDailyFolder(folderPath);
         setIsSettingsOpen(true, 'journal-settings');
         showToast(folderPath ? `Journal location set to "${folderPath}"` : 'Journal location set to Hearth root', 'success');

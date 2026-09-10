@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSketchStore } from './sketchStore';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { Delete02Icon } from '@/components/common/Icons';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { SketchToolType, SketchAnchoringMode } from './types';
@@ -33,7 +33,7 @@ export const SketchSettingsTab: React.FC = () => {
   const setAnchoring = useSketchStore((s) => s.setAnchoring);
   const clearAllStrokes = useSketchStore((s) => s.clearAllStrokes);
 
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const showToast = useToast();
 
   return (
     <div className="flex flex-col gap-5">

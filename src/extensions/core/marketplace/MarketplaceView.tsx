@@ -1,8 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useFlintApp, useExtensionList } from '@/core/app/AppContext';
-import { Extension } from '@/core/extensions/Extension';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import { useFlintStore } from 'flint';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import {
   Search01Icon,
@@ -45,18 +43,15 @@ export {
 export const MarketplaceView: React.FC = () => {
   const app = useFlintApp();
   const extensionList = useExtensionList();
-  const {
-    canGoBack,
-    canGoForward,
-    navigateBack,
-    navigateForward,
-    showToast,
-  } = useWorkspaceStore();
 
-  const {
-    readableLineLength,
-    fontSize,
-  } = useSettingsStore();
+  const canGoBack = useFlintStore('workspace', (s) => s?.canGoBack ?? false);
+  const canGoForward = useFlintStore('workspace', (s) => s?.canGoForward ?? false);
+  const navigateBack = useCallback(() => (app.workspace as any).navigateBack?.(), [app]);
+  const navigateForward = useCallback(() => (app.workspace as any).navigateForward?.(), [app]);
+  const showToast = useCallback((msg: string, type?: any) => app.workspace.showToast(msg, type), [app]);
+
+  const readableLineLength = useFlintStore('settings', (s) => s?.readableLineLength ?? false);
+  const fontSize = useFlintStore('settings', (s) => s?.fontSize ?? 16);
 
   // Dynamic SWR marketplace hook with instant local fallback
   const { extensions, isUpdating, isError, refetch } = useMarketplaceQuery();
@@ -391,7 +386,7 @@ export const MarketplaceView: React.FC = () => {
                           <div className="flex items-baseline gap-1.5 truncate">
                             <button
                               type="button"
-                              onClick={() => useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name)}
+                              onClick={() => app.workspace.openExtensionDocTab(ext.id, ext.name)}
                               className="text-xs font-medium text-white hover:text-[var(--flint-accent)] truncate text-left cursor-pointer"
                             >
                               {ext.name}
@@ -431,7 +426,7 @@ export const MarketplaceView: React.FC = () => {
                         {ext.readme && (
                           <button
                             type="button"
-                            onClick={() => useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name)}
+                            onClick={() => app.workspace.openExtensionDocTab(ext.id, ext.name)}
                             title={`View ${ext.name} documentation`}
                             className="flint-btn w-7 h-7 !p-0 flex items-center justify-center"
                           >

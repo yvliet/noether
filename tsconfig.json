@@ -21,7 +21,10 @@
     "noFallthroughCasesInSwitch": true,
 
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "flint": ["./src/sdk/index.ts"],
+      "flint/*": ["./src/sdk/*"],
+      "@flint/react": ["./src/sdk/react.ts"]
     }
   },
   "include": ["src"]

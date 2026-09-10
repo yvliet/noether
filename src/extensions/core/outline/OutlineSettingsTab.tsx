@@ -1,6 +1,6 @@
 import React from 'react';
 import { useOutlineSettings, DEFAULT_OUTLINE_SETTINGS } from './outlineSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -16,7 +16,7 @@ export const OutlineSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useOutlineSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     collapseOutlineByDefault !== DEFAULT_OUTLINE_SETTINGS.collapseOutlineByDefault ||

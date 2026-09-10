@@ -1,6 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import {
+  useFlintApp,
+  useActiveDocument,
+  useDocumentProperties,
+  useFlintStore,
+} from 'flint';
 import { usePropertiesSettings } from './propertiesSettings';
 import { DocumentProperties } from '@/types';
 import {
@@ -13,11 +17,16 @@ import {
 import { renderPropertyIcon, getPropertyIconName } from './propertyIcons';
 import { PropertyRow } from './PropertyRow';
 import { usePropertyFilters } from '@/core/app/AppContext';
-import { isDocumentLocked } from '@/lib/db/documents';
 
 export const PropertiesView: React.FC = () => {
-  const { activeDocument, documentProperties, updateProperties } = useDocumentStore();
-  const { wordCount, charCount } = useWorkspaceStore();
+  const app = useFlintApp();
+  const activeDocument = useActiveDocument();
+  const documentProperties = useDocumentProperties();
+  const updateProperties = useCallback((docId: string, props: Record<string, any>) => {
+    return app.hearth.setDocumentProperties(docId, props);
+  }, [app]);
+  const wordCount = useFlintStore('workspace', (s) => s?.wordCount ?? 0);
+  const charCount = useFlintStore('workspace', (s) => s?.charCount ?? 0);
   const {
     propertyIcons,
     setPropertyIcon,
@@ -90,7 +99,7 @@ export const PropertiesView: React.FC = () => {
     });
   }, [activeDocument?.updated_at]);
 
-  const isLocked = isDocumentLocked(currentProps);
+  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || (activeDocument ? app.hearth.isDocumentLocked(activeDocument.id) : false);
 
   const customKeys = useMemo(() => {
     const systemKeys = new Set(['tags', 'aliases', 'created', 'modified', 'locked', 'read_only', 'lock', 'readonly', 'updated']);

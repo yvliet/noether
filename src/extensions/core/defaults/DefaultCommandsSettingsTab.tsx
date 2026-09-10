@@ -1,13 +1,13 @@
 import React from 'react';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useFlintApp, useToast } from 'flint';
 import { Search01Icon } from '@/components/common/Icons';
 
 export const DefaultCommandsSettingsTab: React.FC = () => {
-  const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const app = useFlintApp();
+  const showToast = useToast();
 
   const handleOpenPalette = () => {
-    setIsCommandPaletteOpen(true);
+    (app.workspace as any).setIsCommandPaletteOpen?.(true);
     showToast('Opened Command Palette', 'info');
   };
 

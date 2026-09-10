@@ -12,8 +12,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useIconifyStore } from './iconifyStore';
-import { useDocumentStore } from '@/store/documentStore';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useFlintApp, useHearthDocuments } from 'flint';
 import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer, EmojiStyle, EMOJI_STYLE_LABELS } from '@/components/common/emoji';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
@@ -43,8 +42,9 @@ export const IconifySettingsTab: React.FC = () => {
   const removeIcon = useIconifyStore((s) => s.removeIcon);
   const clearAllIcons = useIconifyStore((s) => s.clearAllIcons);
   const openPicker = useIconifyStore((s) => s.openPicker);
-  const documents = useDocumentStore((s) => s.documents);
-  const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
+  const app = useFlintApp();
+  const documents = useHearthDocuments();
+  const openConfirmDialog = (opts: any) => (app.workspace as any).openConfirmDialog?.(opts);
 
   const [filterType, setFilterType] = useState<'all' | 'folder' | 'file'>('all');
   const [searchQuery, setSearchQuery] = useState('');

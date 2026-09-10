@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useCanvasSettings } from './canvasSettings';
-import { useDocumentStore } from '@/store/documentStore';
 import { CanvasNode, CanvasEdge } from './types';
 import {
   getCanvasNodes,
@@ -22,6 +20,8 @@ import {
   RotateCcwIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
+import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'flint';
+import type { DocumentItem } from '@/types';
 
 export interface CanvasViewProps {
   boardId?: string;
@@ -29,13 +29,14 @@ export interface CanvasViewProps {
 }
 
 export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabId }) => {
-  const setMainViewMode = useWorkspaceStore((s) => s.setMainViewMode);
-  const showToast = useWorkspaceStore((s) => s.showToast);
-  const canvasSnapGrid = useCanvasSettings((s) => s.canvasSnapGrid);
-  const gridSize = useCanvasSettings((s) => s.gridSize);
-  const documents = useDocumentStore((s) => s.documents);
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-  const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
+  const app = useFlintApp();
+  const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
+  const showToast = useToast();
+  const canvasSnapGrid = useCanvasSettings((s: any) => s.canvasSnapGrid);
+  const gridSize = useCanvasSettings((s: any) => s.gridSize);
+  const documents = useHearthDocuments();
+  const activeDocument = useActiveDocument();
+  const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
 
   const effectiveBoardId =
     boardId && !boardId.startsWith('__')
@@ -45,7 +46,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       : 'default';
 
   const activeDoc =
-    documents.find((d) => d.id === effectiveBoardId) ||
+    documents.find((d: DocumentItem) => d.id === effectiveBoardId) ||
     (activeDocument?.id === effectiveBoardId ? activeDocument : null);
 
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
@@ -199,7 +200,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         setNodes(savedNodes);
         setEdges(savedEdges);
       } else {
-        const currentDoc = useDocumentStore.getState().documents.find((d) => d.id === effectiveBoardId);
+        const currentDoc = app.hearth.documents.find((d: DocumentItem) => d.id === effectiveBoardId);
         if (currentDoc?.content_json && currentDoc.content_json.trim().length > 0) {
           try {
             const { nodes: importedNodes, edges: importedEdges } = await importCanvasBoard(
@@ -216,8 +217,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
 
         if (effectiveBoardId === 'default') {
-          const currentDocs = useDocumentStore.getState().documents;
-          const welcomeDoc = currentDocs.find((d) => d.id === 'welcome-to-flint') || currentDocs[0];
+          const currentDocs = app.hearth.documents;
+          const welcomeDoc = currentDocs.find((d: DocumentItem) => d.id === 'welcome-to-flint') || currentDocs[0];
           const initialNodes: CanvasNode[] = [
             {
               id: `node-${Date.now()}-1`,
@@ -714,8 +715,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                     </div>
                     <div className="max-h-40 overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
                       {documents
-                        .filter((d) => !d.is_folder && d.id !== effectiveBoardId && d.doc_type !== 'canvas')
-                        .map((doc) => (
+                        .filter((d: DocumentItem) => !d.is_folder && d.id !== effectiveBoardId && d.doc_type !== 'canvas')
+                        .map((doc: DocumentItem) => (
                           <button
                             key={doc.id}
                             onClick={() => handleAddDocCard(doc.id)}
@@ -791,7 +792,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         >
         {nodes.map((node) => {
           const doc = node.document_id
-            ? documents.find((d) => d.id === node.document_id)
+            ? documents.find((d: DocumentItem) => d.id === node.document_id)
             : null;
           const isSelected = selectedNodeId === node.id;
 

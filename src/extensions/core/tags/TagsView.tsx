@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useFlintApp, useVaultTags } from 'flint';
 import { useTagsSettings } from './tagsSettings';
 import { TagItem, TagTreeNode } from '@/types';
 import { buildTagTree } from '@/lib/db/tags';
@@ -129,7 +129,11 @@ const TagTreeRow: React.FC<TagTreeRowProps> = ({
 };
 
 export const TagsView: React.FC = () => {
-  const { vaultTags, setActiveDocumentById } = useDocumentStore();
+  const app = useFlintApp();
+  const vaultTags = useVaultTags();
+  const setActiveDocumentById = useCallback((id: string) => {
+    app.hearth.openDocument(id);
+  }, [app]);
   const { sortTagsBy, showTagsCount, showHashPrefix } = useTagsSettings();
   const [sortMode, setSortMode] = useState<'count' | 'alpha'>(sortTagsBy === 'alphabetical' ? 'alpha' : 'count');
   const [viewMode, setViewMode] = useState<'flat' | 'tree'>('tree');

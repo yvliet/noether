@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTablesSettings, DEFAULT_TABLES_SETTINGS } from './tablesSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 
@@ -15,7 +15,7 @@ export const TablesSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useTablesSettings();
 
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const showToast = useToast();
 
   const isModified =
     defaultRows !== DEFAULT_TABLES_SETTINGS.defaultRows ||

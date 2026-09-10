@@ -1,5 +1,14 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
+import {
+  useFlintApp,
+  useActiveDocument,
+  useDocumentBacklinks,
+  useDocumentOutgoingLinks,
+  useDocumentUnlinkedMentions,
+  type BacklinkItem,
+  type OutgoingLinkItem,
+  type UnlinkedMentionItem,
+} from 'flint';
 import {
   LinkSquare02Icon,
   Link2Icon,
@@ -15,13 +24,21 @@ import { SortDropdown } from '@/components/common/SortDropdown';
 import { FileSortOrder, FILE_SORT_OPTIONS } from '@/lib/sort';
 
 export const BacklinksView: React.FC = React.memo(() => {
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-  const backlinks = useDocumentStore((s) => s.backlinks);
-  const outgoingLinks = useDocumentStore((s) => s.outgoingLinks);
-  const unlinkedMentions = useDocumentStore((s) => s.unlinkedMentions);
-  const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
-  const createNewNote = useDocumentStore((s) => s.createNewNote);
-  const convertUnlinkedMention = useDocumentStore((s) => s.convertUnlinkedMention);
+  const app = useFlintApp();
+  const activeDocument = useActiveDocument();
+  const backlinks = useDocumentBacklinks();
+  const outgoingLinks = useDocumentOutgoingLinks();
+  const unlinkedMentions = useDocumentUnlinkedMentions();
+
+  const setActiveDocumentById = useCallback((id: string) => {
+    app.hearth.openDocument(id);
+  }, [app]);
+  const createNewNote = useCallback((title?: string) => {
+    return app.hearth.createNewNote(title);
+  }, [app]);
+  const convertUnlinkedMention = useCallback((sourceDocId: string, title: string) => {
+    return app.hearth.convertUnlinkedMention(sourceDocId, title);
+  }, [app]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -213,7 +230,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                   </span>
                 </div>
               ) : (
-                filteredBacklinks.map((link, idx) => (
+                filteredBacklinks.map((link: BacklinkItem, idx: number) => (
                   <div
                     key={idx}
                     onClick={() => setActiveDocumentById(link.source_document_id)}
@@ -265,7 +282,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                   </span>
                 </div>
               ) : (
-                filteredOutgoing.map((out, idx) => (
+                filteredOutgoing.map((out: OutgoingLinkItem, idx: number) => (
                   <div
                     key={idx}
                     className="flex items-center justify-between p-1.5 rounded-md bg-[#181818] hover:bg-[#202020] transition-colors border border-[#222]"
@@ -325,7 +342,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                   No unlinked mentions found
                 </div>
               ) : (
-                filteredUnlinked.map((unlinked, idx) => {
+                filteredUnlinked.map((unlinked: UnlinkedMentionItem, idx: number) => {
                   const isLinking = linkingDocId === unlinked.source_document_id;
                   return (
                     <div

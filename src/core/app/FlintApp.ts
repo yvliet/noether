@@ -341,6 +341,13 @@ export class FlintApp {
       toggleSplitView: (): void => {
         storeRefs.workspace?.getState()?.toggleSplitView();
       },
+      openSplitTab: (
+        documentId: string,
+        title?: string,
+        direction?: 'horizontal' | 'vertical'
+      ): void => {
+        storeRefs.workspace?.getState()?.openSplitTab(documentId, title, direction);
+      },
 
       // ── Navigation ──
       navigateBack: async (): Promise<void> => {
@@ -519,6 +526,12 @@ export class FlintApp {
         }
         await storeRefs.document?.getState()?.updateProperties(docId, merged);
       },
+      setDocumentProperties: async (
+        docId: string,
+        properties: DocumentProperties
+      ): Promise<void> => {
+        await storeRefs.document?.getState()?.updateProperties(docId, properties);
+      },
       getDocumentPath: async (docId: string): Promise<string> => {
         const allDocs = storeRefs.document?.getState()?.documents ?? [];
         const doc = allDocs.find((d: DocumentItem) => d.id === docId);
@@ -526,7 +539,8 @@ export class FlintApp {
         return dbGetDocumentPath(doc, allDocs);
       },
       isDocumentLocked: (docId: string): boolean => {
-        return dbIsDocumentLocked(docId);
+        const doc = storeRefs.document?.getState()?.documents.find((d: DocumentItem) => d.id === docId);
+        return dbIsDocumentLocked(doc);
       },
       getBacklinks: async (docId?: string): Promise<BacklinkItem[]> => {
         const targetId = docId || storeRefs.document?.getState()?.activeDocument?.id;
@@ -550,6 +564,12 @@ export class FlintApp {
           return docStore.convertUnlinkedMention(sourceDocId, title);
         }
         return false;
+      },
+      loadLinksAndMentions: async (docId: string, title: string): Promise<void> => {
+        const docStore = storeRefs.document?.getState();
+        if (docStore?.loadLinksAndMentions) {
+          await docStore.loadLinksAndMentions(docId, title);
+        }
       },
       getTags: async (): Promise<TagItem[]> => {
         return getAllVaultTags();
@@ -575,13 +595,27 @@ export class FlintApp {
           return true;
         });
       },
-      toggleTask: async (docId: string, lineIndex: number): Promise<boolean> => {
+      toggleTask: async (
+        docId: string,
+        lineIndexOrText: number | string,
+        completed?: boolean
+      ): Promise<boolean> => {
         const docStore = storeRefs.document?.getState();
-        if (docStore?.updateTaskStatus) {
-          await docStore.updateTaskStatus(docId, lineIndex);
+        if (typeof lineIndexOrText === 'string' && docStore?.toggleGlobalTask) {
+          await docStore.toggleGlobalTask(docId, lineIndexOrText, completed ?? true);
+          return true;
+        }
+        if (typeof lineIndexOrText === 'number' && docStore?.updateTaskStatus) {
+          await docStore.updateTaskStatus(docId, lineIndexOrText);
           return true;
         }
         return false;
+      },
+      refreshGlobalTasks: async (): Promise<void> => {
+        const docStore = storeRefs.document?.getState();
+        if (docStore?.refreshGlobalTasks) {
+          await docStore.refreshGlobalTasks();
+        }
       },
       getDocumentLinks: async (): Promise<Array<{ sourceId: string; targetId: string }>> => {
         try {

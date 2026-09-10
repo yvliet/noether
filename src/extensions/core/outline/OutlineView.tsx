@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
+import { useDocumentHeadings } from 'flint';
 import { useOutlineSettings } from './outlineSettings';
 import { HeadingItem } from '@/types';
 import {
@@ -143,7 +143,7 @@ const OutlineTreeNode: React.FC<OutlineTreeNodeProps> = ({
 };
 
 export const OutlineView: React.FC = () => {
-  const { headings } = useDocumentStore();
+  const headings = useDocumentHeadings();
   const { collapseOutlineByDefault, maxHeadingLevel } = useOutlineSettings();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());

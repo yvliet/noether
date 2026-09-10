@@ -1,6 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import {
+  useFlintApp,
+  useHearthDocuments,
+  useActiveDocument,
+  useActiveTab,
+  useMainViewMode,
+  useFlintStore,
+} from 'flint';
 import {
   Bookmark01Icon,
   File01Icon,
@@ -13,33 +19,35 @@ import { getDocumentPath } from '@/lib/db/documents';
 import { useBookmarksSettings } from './bookmarksSettings';
 
 export const BookmarksView: React.FC = React.memo(() => {
-  const documents = useDocumentStore((s) => s.documents);
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-  const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
-  const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
+  const app = useFlintApp();
+  const documents = useHearthDocuments();
+  const activeDocument = useActiveDocument();
+  const currentTab = useActiveTab();
+  const mainViewMode = useMainViewMode();
 
-  const { autoSortBookmarks, showBookmarkPath } = useBookmarksSettings();
+  const isSplitView = useFlintStore('workspace', (s) => s?.isSplitView ?? false);
+  const activePane = useFlintStore('workspace', (s) => s?.activePane ?? 'main');
+  const splitActiveDocumentId = useFlintStore('workspace', (s) => s?.splitActiveDocumentId);
+  const vaultPath = useFlintStore('workspace', (s) => s?.vaultPath ?? app.hearth.vaultPath);
 
-  const tabs = useWorkspaceStore((s) => s.tabs);
-  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
-  const splitTabs = useWorkspaceStore((s) => s.splitTabs);
-  const splitActiveTabId = useWorkspaceStore((s) => s.splitActiveTabId);
-  const isSplitView = useWorkspaceStore((s) => s.isSplitView);
-  const activePane = useWorkspaceStore((s) => s.activePane);
-  const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
-  const openTab = useWorkspaceStore((s) => s.openTab);
-  const splitActiveDocumentId = useWorkspaceStore((s) => s.splitActiveDocumentId);
-  const mainViewMode = useWorkspaceStore((s) => s.mainViewMode);
-  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const setActiveDocumentById = useCallback((id: string, _opts?: any) => {
+    app.hearth.openDocument(id);
+  }, [app]);
+  const toggleBookmark = useCallback((id: string) => {
+    return app.hearth.toggleBookmark(id);
+  }, [app]);
+  const openTab = useCallback((docId: string, title?: string, opts?: any) => {
+    app.workspace.openTab(docId, title, opts);
+  }, [app]);
+  const openSplitTab = useCallback((docId: string, title?: string, opts?: any) => {
+    app.workspace.openSplitTab(docId, title, opts);
+  }, [app]);
+  const showToast = useCallback((msg: string, type?: any) => {
+    app.workspace.showToast(msg, type);
+  }, [app]);
   const { showContextMenu } = useAppContextMenu();
 
-  const currentTab = useMemo(() => {
-    if (isSplitView && activePane === 'split') {
-      return splitTabs.find((t) => t.id === splitActiveTabId);
-    }
-    return tabs.find((t) => t.id === activeTabId);
-  }, [isSplitView, activePane, splitTabs, splitActiveTabId, tabs, activeTabId]);
+  const { autoSortBookmarks, showBookmarkPath } = useBookmarksSettings();
 
   const currentViewType = currentTab?.view_type || currentTab?.view_mode || mainViewMode;
   const isDocumentMode = (!currentViewType || currentViewType === 'document') && mainViewMode !== 'graph' && mainViewMode !== 'canvas' && mainViewMode !== 'marketplace';

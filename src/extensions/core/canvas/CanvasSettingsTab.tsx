@@ -1,6 +1,6 @@
 import React from 'react';
 import { useCanvasSettings, DEFAULT_CANVAS_SETTINGS } from './canvasSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { ColorPicker } from '@/components/common/ColorPicker';
@@ -17,7 +17,7 @@ export const CanvasSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useCanvasSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     canvasSnapGrid !== DEFAULT_CANVAS_SETTINGS.canvasSnapGrid ||

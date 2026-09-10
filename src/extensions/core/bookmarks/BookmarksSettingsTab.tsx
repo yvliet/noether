@@ -1,16 +1,19 @@
 import React from 'react';
 import { useBookmarksSettings, DEFAULT_BOOKMARKS_SETTINGS } from './bookmarksSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useDocumentStore } from '@/store/documentStore';
+import {
+  useFlintApp,
+  useHearthDocuments,
+  useToast,
+  useFlintStore,
+} from 'flint';
 import { Bookmark01Icon, RotateCcwIcon } from '@/components/common/Icons';
 import { SettingCard, SettingItem, Button, Toggle } from '@/components/ui';
 
 export const BookmarksSettingsTab: React.FC = () => {
-  const documents = useDocumentStore((s) => s.documents);
-  const setActiveLeftView = useWorkspaceStore((s) => s.setActiveLeftView);
-  const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
-  const toggleLeftSidebar = useWorkspaceStore((s) => s.toggleLeftSidebar);
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const app = useFlintApp();
+  const documents = useHearthDocuments();
+  const isLeftSidebarOpen = useFlintStore('workspace', (s) => s?.isLeftSidebarOpen ?? true);
+  const showToast = useToast();
 
   const {
     autoSortBookmarks,
@@ -27,9 +30,9 @@ export const BookmarksSettingsTab: React.FC = () => {
   const bookmarkedDocs = documents.filter((d) => d.is_bookmarked);
 
   const handleOpenBookmarks = () => {
-    setActiveLeftView('bookmarks');
+    (app.workspace as any).setActiveLeftView?.('bookmarks');
     if (!isLeftSidebarOpen) {
-      toggleLeftSidebar();
+      (app.workspace as any).toggleLeftSidebar?.();
     }
     showToast('Opened Bookmarks in left sidebar', 'info');
   };

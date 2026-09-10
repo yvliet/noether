@@ -16,7 +16,7 @@ import { FlintApp } from '@/core/app/FlintApp';
 import { Calendar01Icon } from '@/components/common/Icons';
 import { DocumentItem } from '@/types';
 import { getDocumentById, getAllDocuments } from '@/lib/db/documents';
-import { useDocumentStore } from '@/store/documentStore';
+import { storeRefs } from 'flint';
 import { useJournalSettings } from './journalSettings';
 import { journalReadme } from './readme';
 
@@ -143,10 +143,10 @@ export class JournalExtension extends Extension {
 
     if (existingNote) {
       // Ensure existing note retrieved from SQLite is immediately hydrated into documentStore memory
-      const currentDocs = useDocumentStore.getState().documents;
-      if (!currentDocs.some((d) => d.id === existingNote!.id)) {
-        useDocumentStore.setState((state) => ({
-          documents: [existingNote!, ...state.documents],
+      const currentDocs = this.app.hearth.documents;
+      if (!currentDocs.some((d: DocumentItem) => d.id === existingNote!.id)) {
+        (storeRefs.document as any)?.setState?.((state: any) => ({
+          documents: [existingNote!, ...(state?.documents || [])],
         }));
       }
       return existingNote;
@@ -163,12 +163,12 @@ export class JournalExtension extends Extension {
     const doc = await this.getOrCreateJournalNote(date);
 
     // 1. Ensure the note is immediately present in in-memory documentStore
-    useDocumentStore.setState((state) => {
-      const exists = state.documents.some((d) => d.id === doc.id);
+    (storeRefs.document as any)?.setState?.((state: any) => {
+      const exists = state?.documents?.some((d: any) => d.id === doc.id);
       return exists
         ? { activeDocument: doc, selectedDocIds: [doc.id], lastSelectedDocId: doc.id }
         : {
-            documents: [doc, ...state.documents],
+            documents: [doc, ...(state?.documents || [])],
             activeDocument: doc,
             selectedDocIds: [doc.id],
             lastSelectedDocId: doc.id,
@@ -193,7 +193,7 @@ export class JournalExtension extends Extension {
     }
 
     // 4. Force immediate synchronous activation in documentStore so EditorCanvas has the note without waiting for any async ticks
-    await useDocumentStore.getState().setActiveDocumentById(doc.id, { preserveViewMode: true });
+    await this.app.hearth.openDocument(doc.id);
 
     return doc;
   }

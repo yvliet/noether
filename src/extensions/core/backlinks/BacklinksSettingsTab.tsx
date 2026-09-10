@@ -1,6 +1,6 @@
 import React from 'react';
 import { useBacklinksSettings, DEFAULT_BACKLINKS_SETTINGS } from './backlinksSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 
@@ -17,7 +17,7 @@ export const BacklinksSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useBacklinksSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     showBacklinksInDoc !== DEFAULT_BACKLINKS_SETTINGS.showBacklinksInDoc ||

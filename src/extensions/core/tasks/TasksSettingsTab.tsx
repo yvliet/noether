@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksSettings, DEFAULT_TASKS_SETTINGS, TaskSortBy } from './tasksSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -18,7 +18,7 @@ export const TasksSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useTasksSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     autoCompleteSubtasks !== DEFAULT_TASKS_SETTINGS.autoCompleteSubtasks ||

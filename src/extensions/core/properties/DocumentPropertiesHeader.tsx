@@ -1,5 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useDocumentStore } from '@/store/documentStore';
+import {
+  useFlintApp,
+  useActiveDocument,
+  useHearthDocuments,
+  useDocumentProperties,
+} from 'flint';
 import { usePropertiesSettings } from './propertiesSettings';
 import { DocumentProperties } from '@/types';
 import {
@@ -9,7 +14,6 @@ import {
 import { renderPropertyIcon, getPropertyIconName } from './propertyIcons';
 import { PropertyRow } from './PropertyRow';
 import { usePropertyFilters } from '@/core/app/AppContext';
-import { isDocumentLocked } from '@/lib/db/documents';
 
 export interface DocumentPropertiesHeaderProps {
   documentId: string;
@@ -22,7 +26,14 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
   mode = 'Visible',
   isFolded = false,
 }) => {
-  const { documentProperties, updateProperties } = useDocumentStore();
+  const app = useFlintApp();
+  const documentProperties = useDocumentProperties(documentId);
+  const activeDocument = useActiveDocument();
+  const documents = useHearthDocuments();
+  const updateProperties = useCallback((docId: string, props: Record<string, any>) => {
+    return app.hearth.setDocumentProperties(docId, props);
+  }, [app]);
+
   const { propertyIcons, setPropertyIcon, removePropertyIcon, defaultPropertyType, showInDocument } = usePropertiesSettings();
   const propertyFilters = usePropertyFilters();
 
@@ -31,8 +42,6 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
   const [newTagInput, setNewTagInput] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
 
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-  const documents = useDocumentStore((s) => s.documents);
   const currentDoc = (activeDocument && activeDocument.id === documentId) ? activeDocument : documents.find((d) => d.id === documentId);
 
   const currentProps: DocumentProperties = useMemo(() => {
@@ -176,7 +185,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
     });
   }, [currentDoc?.updated_at]);
 
-  const isLocked = isDocumentLocked(currentProps);
+  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || app.hearth.isDocumentLocked(documentId);
 
   const handleToggleLock = useCallback(async (_key: string, val: any) => {
     const lockKey = currentProps.Locked !== undefined ? 'Locked' : 'locked';

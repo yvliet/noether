@@ -1,6 +1,6 @@
 import React from 'react';
 import { useGraphSettings, DEFAULT_GRAPH_SETTINGS, GraphColorMode } from './graphSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -45,7 +45,7 @@ export const GraphSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useGraphSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     timelapseSpeed !== DEFAULT_GRAPH_SETTINGS.timelapseSpeed ||

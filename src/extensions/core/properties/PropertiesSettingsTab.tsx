@@ -1,6 +1,6 @@
 import React from 'react';
 import { usePropertiesSettings, DEFAULT_PROPERTIES_SETTINGS } from './propertiesSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
@@ -20,7 +20,7 @@ export const PropertiesSettingsTab: React.FC = () => {
     restoreDefaults,
   } = usePropertiesSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     showInDocument !== DEFAULT_PROPERTIES_SETTINGS.showInDocument ||

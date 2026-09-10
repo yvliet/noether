@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTagsSettings, DEFAULT_TAGS_SETTINGS, TagSortBy } from './tagsSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
@@ -18,7 +18,7 @@ export const TagsSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useTagsSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     showTagsCount !== DEFAULT_TAGS_SETTINGS.showTagsCount ||

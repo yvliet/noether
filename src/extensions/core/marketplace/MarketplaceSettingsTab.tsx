@@ -1,17 +1,15 @@
 import React from 'react';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useFlintApp } from '@/core/app/AppContext';
+import { useFlintApp, useToast } from 'flint';
 import { platform } from '@/lib/platform/platformAdapter';
 import { Store01Icon, FolderOpenIcon, RotateCcwIcon } from '@/components/common/Icons';
 
 export const MarketplaceSettingsTab: React.FC = () => {
   const app = useFlintApp();
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const showToast = useToast();
 
   const handleOpenMarketplace = () => {
-    useWorkspaceStore.getState().openCustomTab({
+    app.workspace.openTab('__marketplace__', 'Marketplace', {
       viewType: 'marketplace',
-      title: 'Marketplace',
       icon: <Store01Icon size={14} />,
     });
     showToast('Opened Marketplace', 'info');

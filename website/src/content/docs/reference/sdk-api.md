@@ -175,4 +175,79 @@ const result = await this.app.workerPool.runTask({
 });
 ```
 
+
+## 6. Reactive React Hooks (`@flint/react` and `flint`)
+
+---
+
+Extensions rendering React components can import reactive hooks directly from `flint` or `@flint/react`. These hooks subscribe directly to host state changes using React 18 external store synchronization with zero state leakage:
+
+```typescript
+import React from 'react';
+import {
+  useFlintApp,
+  useActiveDocument,
+  useHearthDocuments,
+  useActiveTab,
+  useWorkspaceTabs,
+  useMainViewMode,
+  useDocumentBacklinks,
+  useDocumentOutgoingLinks,
+  useDocumentUnlinkedMentions,
+  useVaultTags,
+  useGlobalTasks,
+  useDocumentProperties,
+  useFlintStore,
+  useToast,
+} from 'flint';
+
+export const MyExtensionView: React.FC = () => {
+  const app = useFlintApp();
+  const activeDoc = useActiveDocument();
+  const documents = useHearthDocuments();
+  const backlinks = useDocumentBacklinks();
+  const showToast = useToast();
+
+  return (
+    <div className="p-4">
+      <h2 className="text-sm font-semibold">{activeDoc?.title || 'No note open'}</h2>
+      <p className="text-xs text-neutral-400">Total documents: {documents.length}</p>
+      <p className="text-xs text-neutral-400">Incoming backlinks: {backlinks.length}</p>
+    </div>
+  );
+};
+```
+
+### Hook Reference
+
+| Hook | Return Type | Description |
+| :--- | :--- | :--- |
+| `useFlintApp()` | `FlintApp` | Returns the host application instance. |
+| `useActiveDocument()` | `DocumentItem \| null` | Subscribes to the active document in the primary editor. |
+| `useHearthDocuments()` | `DocumentItem[]` | Subscribes to all documents in the active Hearth. |
+| `useActiveTab()` | `TabItem \| null` | Subscribes to the active workspace tab. |
+| `useWorkspaceTabs()` | `readonly TabItem[]` | Subscribes to all open workspace tabs. |
+| `useMainViewMode()` | `string` | Subscribes to the current main view mode (e.g. `'document'`, `'canvas'`). |
+| `useDocumentHeadings(docId?)` | `HeadingItem[]` | Subscribes to outline headings for a note. |
+| `useDocumentBacklinks(docId?)` | `BacklinkItem[]` | Subscribes to incoming backlinks for a note. |
+| `useDocumentOutgoingLinks(docId?)` | `OutgoingLinkItem[]` | Subscribes to outgoing wikilinks from a note. |
+| `useDocumentUnlinkedMentions(docId?)` | `UnlinkedMentionItem[]` | Subscribes to unlinked text mentions of a note title. |
+| `useVaultTags()` | `TagItem[]` | Subscribes to all indexed hashtags across the Hearth. |
+| `useGlobalTasks()` | `GlobalTaskItem[]` | Subscribes to interactive checklist items across all notes. |
+| `useDocumentProperties(docId?)` | `Record<string, any>` | Subscribes to frontmatter properties of a note. |
+| `useFlintStore(key, selector)` | `TSelected` | Subscribes to host store slices with a selector function. |
+| `useToast()` | `(msg, type?) => void` | Returns a toast notification dispatcher. |
+
+
+## 7. Inversion of Control Registries
+
+---
+
+Flint decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:
+
+- **`DocumentHeaderActionRegistry`**: Registers action icons and buttons into the document subheader toolbar (`PageSubHeader`). Used by core extensions like Backlinks and Document Properties.
+- **`FileContextMenuRegistry`**: Injects contextual action items into the file explorer tree context menu (`FileTreeNode`).
+- **`FileTypeRegistry`**: Associates custom file extensions (`.canvas`, `.sketch`, `.table`) with custom document archetypes and view types.
+- **`SlotRegistry`**: Injects arbitrary React components into high-level shell slots.
+
 To learn how extensions store relational data, read [[Database Schema Reference]] and [[Events & Relational Storage]]. To register AI tools, read [[Model Context Protocol (MCP) Tools]].

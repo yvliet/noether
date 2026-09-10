@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useDocumentStore } from '@/store/documentStore';
-import { useSettingsStore } from '@/store/settingsStore';
+import {
+  useFlintApp,
+  useGlobalTasks,
+  useHearthDocuments,
+  useFlintStore,
+} from 'flint';
 import { useTasksSettings } from './tasksSettings';
 import {
   CheckmarkSquare02Icon,
@@ -13,22 +16,35 @@ import {
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 
 export const TasksView: React.FC = React.memo(() => {
-  const openTab = useWorkspaceStore((s) => s.openTab);
-  const showToast = useWorkspaceStore((s) => s.showToast);
+  const app = useFlintApp();
+  const globalTasks = useGlobalTasks();
+  const documents = useHearthDocuments();
 
-  const globalTasks = useDocumentStore((s) => s.globalTasks);
-  const refreshGlobalTasks = useDocumentStore((s) => s.refreshGlobalTasks);
-  const toggleGlobalTask = useDocumentStore((s) => s.toggleGlobalTask);
-  const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
-  const documents = useDocumentStore((s) => s.documents);
+  const openTab = useCallback((docId: string, title?: string, opts?: any) => {
+    app.workspace.openTab(docId, title, opts);
+  }, [app]);
+  const showToast = useCallback((msg: string, type?: any) => {
+    app.workspace.showToast(msg, type);
+  }, [app]);
+  const refreshGlobalTasks = useCallback(() => {
+    return app.hearth.refreshGlobalTasks();
+  }, [app]);
+  const toggleGlobalTask = useCallback((docId: string, taskText: string, completed: boolean) => {
+    return app.hearth.toggleTask(docId, taskText, completed);
+  }, [app]);
+  const setActiveDocumentById = useCallback((id: string, _opts?: any) => {
+    return app.hearth.openDocument(id);
+  }, [app]);
 
   const { showCompletedTasks, sortBy, strikethroughCompleted } = useTasksSettings();
 
-  const inlineTitle = useSettingsStore((s) => s.inlineTitle);
-  const readableLineLength = useSettingsStore((s) => s.readableLineLength);
-  const quickFontSize = useSettingsStore((s) => s.quickFontSize);
-  const fontSize = useSettingsStore((s) => s.fontSize);
-  const setFontSize = useSettingsStore((s) => s.setFontSize);
+  const inlineTitle = useFlintStore('settings', (s) => s?.inlineTitle ?? true);
+  const readableLineLength = useFlintStore('settings', (s) => s?.readableLineLength ?? false);
+  const quickFontSize = useFlintStore('settings', (s) => s?.quickFontSize ?? true);
+  const fontSize = useFlintStore('settings', (s) => s?.fontSize ?? 16);
+  const setFontSize = useCallback((size: number) => {
+    (app.settings as any).setFontSize?.(size);
+  }, [app]);
 
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
   const [search, setSearch] = useState('');

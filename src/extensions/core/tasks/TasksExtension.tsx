@@ -13,7 +13,6 @@ import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
-import { useDocumentStore } from '@/store/documentStore';
 import { CheckmarkSquare02Icon } from '@/components/common/Icons';
 import { tasksReadme } from './readme';
 
@@ -131,23 +130,13 @@ export class TasksExtension extends Extension {
       },
       handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
         try {
-          await useDocumentStore.getState().refreshGlobalTasks();
-          let tasks = useDocumentStore.getState().globalTasks;
           const status = (args.status as string) || 'all';
           const search = (args.search as string) || '';
-
-          if (status === 'pending') {
-            tasks = tasks.filter((t) => !t.completed);
-          } else if (status === 'completed') {
-            tasks = tasks.filter((t) => t.completed);
-          }
-
-          if (search.trim()) {
-            const q = search.toLowerCase();
-            tasks = tasks.filter(
-              (t) => t.text.toLowerCase().includes(q) || t.document_title.toLowerCase().includes(q)
-            );
-          }
+          const completedFilter = status === 'pending' ? false : status === 'completed' ? true : undefined;
+          const tasks = await this.app.hearth.getGlobalTasks({
+            completed: completedFilter,
+            query: search.trim() || undefined,
+          });
 
           return {
             content: [{ type: 'text', text: JSON.stringify({ tasks, total: tasks.length }) }],
@@ -164,7 +153,7 @@ export class TasksExtension extends Extension {
     // 6. Tool: tasks_get_by_document
     this.registerTool({
       name: 'get_by_document',
-      description: 'List all tasks and checklist items within a specific document by its document ID.',
+      description: 'Retrieve all interactive task items associated with a specific note.',
       category: 'tasks',
       parameters: {
         type: 'object',
@@ -185,8 +174,8 @@ export class TasksExtension extends Extension {
               content: [{ type: 'text', text: 'documentId parameter is required' }],
             };
           }
-          await useDocumentStore.getState().refreshGlobalTasks();
-          const tasks = useDocumentStore.getState().globalTasks.filter((t) => t.document_id === documentId);
+          const allTasks = await this.app.hearth.getGlobalTasks();
+          const tasks = allTasks.filter((t: any) => t.document_id === documentId);
           return {
             content: [{ type: 'text', text: JSON.stringify({ documentId, tasks, total: tasks.length }) }],
           };
@@ -234,7 +223,7 @@ export class TasksExtension extends Extension {
               content: [{ type: 'text', text: 'documentId and taskText parameters are required' }],
             };
           }
-          await useDocumentStore.getState().toggleGlobalTask(documentId, taskText, completed);
+          await this.app.hearth.toggleTask(documentId, taskText, completed);
           return {
             content: [{ type: 'text', text: JSON.stringify({ success: true, documentId, taskText, completed }) }],
           };

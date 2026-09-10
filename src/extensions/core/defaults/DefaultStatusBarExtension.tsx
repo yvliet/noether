@@ -8,7 +8,7 @@
  * @since 0.1.0
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest } from '@/core/extensions/types';
@@ -20,10 +20,11 @@ import {
   SourceCodeIcon,
   CheckIcon,
 } from '@/components/common/Icons';
-import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useDocumentStore } from '@/store/documentStore';
-import { useSettingsStore } from '@/store/settingsStore';
-import { isDocumentLocked } from '@/lib/db/documents';
+import {
+  useFlintApp,
+  useActiveDocument,
+  useFlintStore,
+} from 'flint';
 import { useDefaultStatusBarSettings } from './defaultStatusBarSettings';
 import { defaultStatusBarReadme } from './defaultStatusBarReadme';
 
@@ -43,15 +44,20 @@ export const DEFAULT_STATUS_BAR_MANIFEST: ExtensionManifest = {
 };
 
 const ModeDropdownMenu: React.FC = () => {
+  const app = useFlintApp();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ bottom?: number; left?: number; right?: number }>({});
-  const { defaultTabMode, defaultEditingMode, setDefaultTabMode, setDefaultEditingMode } = useSettingsStore();
 
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-  const showToast = useWorkspaceStore((s) => s.showToast);
-  const isLocked = isDocumentLocked(activeDocument);
+  const defaultTabMode = useFlintStore('settings', (s) => s?.defaultTabMode ?? 'Editing view');
+  const defaultEditingMode = useFlintStore('settings', (s) => s?.defaultEditingMode ?? 'Live Preview');
+  const setDefaultTabMode = (mode: any) => (app.settings as any).setDefaultTabMode?.(mode);
+  const setDefaultEditingMode = (mode: any) => (app.settings as any).setDefaultEditingMode?.(mode);
+
+  const activeDocument = useActiveDocument();
+  const showToast = useCallback((msg: string, type?: any) => app.workspace.showToast(msg, type), [app]);
+  const isLocked = activeDocument?.id ? app.hearth.isDocumentLocked(activeDocument.id) : false;
 
   const currentMode: 'Reading' | 'Source mode' | 'Live Preview' =
     isLocked || defaultTabMode === 'Reading view'
@@ -225,8 +231,8 @@ const ModeDropdownMenu: React.FC = () => {
 };
 
 const WordCharCountItem: React.FC = () => {
-  const wordCount = useWorkspaceStore((s) => s.wordCount);
-  const charCount = useWorkspaceStore((s) => s.charCount);
+  const wordCount = useFlintStore('workspace', (s) => s?.wordCount ?? 0);
+  const charCount = useFlintStore('workspace', (s) => s?.charCount ?? 0);
   const { showWordCount, showCharCount, showReadingTime } = useDefaultStatusBarSettings();
 
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));

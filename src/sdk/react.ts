@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module @flint/react
  * @description
  * Official reactive React hooks for Flint extensions.
@@ -210,3 +210,44 @@ export function useVaultTags(): TagItem[] {
 export function useGlobalTasks(): GlobalTaskItem[] {
   return useStoreSlice('document', (s: any) => s?.globalTasks ?? [], []);
 }
+
+/**
+ * Subscribes to the frontmatter properties of the active document or specified docId.
+ * @since 0.4.6
+ */
+export function useDocumentProperties(docId?: string): Record<string, any> {
+  return useStoreSlice(
+    'document',
+    (s: any) => {
+      if (!s) return {};
+      if (!docId || s.activeDocument?.id === docId) {
+        return s.activeDocumentProperties ?? s.activeDocument?.properties ?? {};
+      }
+      return {};
+    },
+    {}
+  );
+}
+
+/**
+ * Generic reactive hook for querying any host store with selector.
+ * Provides safe fallback via useSyncExternalStore in decoupled sandboxes.
+ * @since 0.4.6
+ */
+export function useFlintStore<TSelected = any>(
+  storeKey: 'document' | 'workspace' | 'settings' | 'sidebarDock',
+  selector: (state: any) => TSelected
+): TSelected {
+  return useStoreSlice(storeKey, selector, undefined as any);
+}
+
+/**
+ * Accesses the host notification toast dispatcher.
+ * @since 0.4.6
+ */
+export function useToast(): (message: string, type?: 'info' | 'success' | 'warning' | any) => void {
+  return (message: string, type?: 'info' | 'success' | 'warning' | any) => {
+    appInstance.workspace.showToast(message, type as any);
+  };
+}
+

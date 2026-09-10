@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDefaultStatusBarSettings, DEFAULT_STATUS_BAR_SETTINGS } from './defaultStatusBarSettings';
-import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useToast } from 'flint';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 
@@ -17,7 +17,7 @@ export const DefaultStatusBarSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useDefaultStatusBarSettings();
 
-  const { showToast } = useWorkspaceStore();
+  const showToast = useToast();
 
   const isModified =
     showWordCount !== DEFAULT_STATUS_BAR_SETTINGS.showWordCount ||

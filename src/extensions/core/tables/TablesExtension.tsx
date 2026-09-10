@@ -55,8 +55,11 @@ export class TablesExtension extends Extension {
       icon: <TableIcon size={14} />,
       action: (app) => {
         const { defaultRows, defaultCols } = useTablesSettings.getState();
-        app.events.emit('editor:action', { action: 'insert-table', payload: { rows: defaultRows, cols: defaultCols } });
-        window.dispatchEvent(new CustomEvent('flint:insert-table-command', { detail: { rows: defaultRows, cols: defaultCols } }));
+        const handled = app.editor.dispatchAction('insertTable', { rows: defaultRows, cols: defaultCols, withHeaderRow: true });
+        if (!handled) {
+          app.events.emit('editor:action', { action: 'insert-table', payload: { rows: defaultRows, cols: defaultCols } });
+          window.dispatchEvent(new CustomEvent('flint:insert-table-command', { detail: { rows: defaultRows, cols: defaultCols } }));
+        }
       },
     });
 
@@ -102,17 +105,20 @@ export class TablesExtension extends Extension {
           const rows = Math.max(1, Math.floor(Number(args.rows) || 3));
           const cols = Math.max(1, Math.floor(Number(args.cols) || 3));
 
-          this.app.events.emit('editor:action', {
-            action: 'insert-table',
-            payload: { rows, cols },
-          });
+          const handled = this.app.editor.dispatchAction('insertTable', { rows, cols, withHeaderRow: true });
+          if (!handled) {
+            this.app.events.emit('editor:action', {
+              action: 'insert-table',
+              payload: { rows, cols },
+            });
 
-          if (typeof window !== 'undefined') {
-            window.dispatchEvent(
-              new CustomEvent('flint:insert-table-command', {
-                detail: { rows, cols },
-              })
-            );
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('flint:insert-table-command', {
+                  detail: { rows, cols },
+                })
+              );
+            }
           }
 
           return {
