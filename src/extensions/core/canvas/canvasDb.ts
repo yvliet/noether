@@ -24,6 +24,7 @@ export const CANVAS_NODES_TABLE_DEF: TableDefinition = {
     document_id: { type: 'text', nullable: true },
     text_content: { type: 'text', nullable: true },
     color: { type: 'text', nullable: true },
+    url: { type: 'text', nullable: true },
   },
   indexes: [
     { name: 'idx_canvas_nodes_board', columns: ['board_id'] },
@@ -65,9 +66,14 @@ export async function initCanvasTables(): Promise<void> {
         height REAL NOT NULL,
         document_id TEXT,
         text_content TEXT,
-        color TEXT
+        color TEXT,
+        url TEXT
       );
     `);
+
+    try {
+      await dbAdapter.execute(`ALTER TABLE ext_canvas_nodes ADD COLUMN url TEXT;`);
+    } catch {}
 
     await dbAdapter.execute(`
       CREATE TABLE IF NOT EXISTS ext_canvas_edges (
@@ -127,8 +133,8 @@ export async function getCanvasEdges(boardId = 'default'): Promise<CanvasEdge[]>
 export async function saveCanvasNode(node: CanvasNode): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(
-    `INSERT OR REPLACE INTO ext_canvas_nodes (id, board_id, type, x, y, width, height, document_id, text_content, color)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO ext_canvas_nodes (id, board_id, type, x, y, width, height, document_id, text_content, color, url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       node.id,
       node.board_id || 'default',
@@ -140,6 +146,7 @@ export async function saveCanvasNode(node: CanvasNode): Promise<void> {
       node.document_id || null,
       node.text_content || null,
       node.color || null,
+      node.url || null,
     ]
   );
 }

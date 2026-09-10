@@ -22,6 +22,8 @@ import {
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'flint';
 import type { DocumentItem } from '@/types';
+import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
+import { isImageDocument } from './components/CardContentRenderer';
 
 export interface CanvasViewProps {
   boardId?: string;
@@ -56,6 +58,30 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const addMenuRef = useRef<HTMLButtonElement>(null);
   const addMenuDropdownRef = useRef<HTMLDivElement>(null);
   const [addMenuPos, setAddMenuPos] = useState<{ top?: number; left?: number; bottom?: number }>({});
+  const [docContentMap, setDocContentMap] = useState<Record<string, string>>({});
+
+  // Asynchronously load note content into memory cache for cards that need it
+  useEffect(() => {
+    const missingIds = nodes
+      .filter((n) => n.document_id && docContentMap[n.document_id] === undefined)
+      .map((n) => n.document_id as string);
+
+    if (missingIds.length === 0) return;
+
+    let isMounted = true;
+    missingIds.forEach(async (id) => {
+      try {
+        const doc = await app.hearth.readDocument(id);
+        if (isMounted && doc) {
+          setDocContentMap((prev) => ({ ...prev, [id]: doc.content_json || '' }));
+        }
+      } catch {}
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [nodes, app.hearth, docContentMap]);
 
   const diskSyncTimerRef = useRef<any>(null);
 
@@ -283,10 +309,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               type: 'text',
               x: 200,
               y: 150,
-              width: 240,
-              height: 140,
+              width: 260,
+              height: 160,
               text_content: '💡 Welcome to your Infinite Spatial Canvas! You can organize thoughts, drag cards, and connect notes.',
-              color: '#2a2a2a',
+              color: '#1e1e1e',
             },
           ];
           if (welcomeDoc) {
@@ -294,12 +320,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               id: `node-${Date.now()}-2`,
               board_id: effectiveBoardId,
               type: 'note',
-              x: 500,
+              x: 520,
               y: 150,
-              width: 260,
-              height: 160,
+              width: 320,
+              height: 260,
               document_id: welcomeDoc.id,
-              color: '#1a1a1a',
+              color: '#1e1e1e',
             });
           }
           if (!isMounted) return;
@@ -338,10 +364,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       type: 'text',
       x: initialX,
       y: initialY,
-      width: 240,
-      height: 140,
+      width: 260,
+      height: 180,
       text_content: 'New thought or idea...',
-      color: '#242424',
+      color: '#1e1e1e',
     };
     await saveCanvasNode(newNode);
     triggerDiskSync(effectiveBoardId);
@@ -358,23 +384,43 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       initialX = Math.round(initialX / step) * step;
       initialY = Math.round(initialY / step) * step;
     }
+    const targetDoc = documents.find((d: DocumentItem) => d.id === docId);
+    const isImg = isImageDocument(targetDoc);
+    const initialW = isImg ? 340 : 320;
+    const initialH = isImg ? 260 : 280;
+
     const newNode: CanvasNode = {
       id: `node-${Date.now()}`,
       board_id: effectiveBoardId,
       type: 'note',
       x: initialX,
       y: initialY,
-      width: 260,
-      height: 160,
+      width: initialW,
+      height: initialH,
       document_id: docId,
-      color: '#1a1a1a',
+      color: '#1e1e1e',
     };
     await saveCanvasNode(newNode);
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
     setIsAddMenuOpen(false);
-    showToast('Added document to canvas', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync]);
+    showToast(isImg ? 'Added image to canvas' : 'Added document to canvas', 'success');
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, documents]);
+
+  const handleColorChange = useCallback(
+    (id: string, color: string) => {
+      setNodes((prev) => {
+        const updated = prev.map((n) => (n.id === id ? { ...n, color } : n));
+        const target = updated.find((n) => n.id === id);
+        if (target) {
+          saveCanvasNode(target);
+          triggerDiskSync(target.board_id);
+        }
+        return updated;
+      });
+    },
+    [triggerDiskSync]
+  );
 
   const handleDeleteNode = useCallback(async (id: string, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -422,6 +468,84 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     });
   }, [debouncedSaveNode]);
 
+  const handleTaskToggle = useCallback(
+    async (nodeId: string, taskText: string, currentChecked: boolean) => {
+      const targetNode = nodes.find((n) => n.id === nodeId);
+      if (!targetNode) return;
+
+      const newChecked = !currentChecked;
+
+      // 1. Document-backed note card
+      if (targetNode.document_id) {
+        const docId = targetNode.document_id;
+        const raw = docContentMap[docId];
+        if (!raw) return;
+
+        let updatedContent = raw;
+
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.type === 'doc' && Array.isArray(parsed.content)) {
+            const toggleInList = (items: any[]): boolean => {
+              for (const item of items) {
+                if (item.type === 'taskItem') {
+                  const tText = (item.content || [])
+                    .map((c: any) => (c.content || []).map((t: any) => t.text || '').join(''))
+                    .join('');
+                  if (tText.trim() === taskText.trim()) {
+                    item.attrs = { ...item.attrs, checked: newChecked };
+                    return true;
+                  }
+                }
+                if (Array.isArray(item.content) && toggleInList(item.content)) {
+                  return true;
+                }
+              }
+              return false;
+            };
+            if (toggleInList(parsed.content)) {
+              updatedContent = JSON.stringify(parsed);
+            }
+          }
+        } catch {
+          const lines = raw.split('\n');
+          const updatedLines = lines.map((line) => {
+            const trimmed = line.trim();
+            if (
+              (trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]')) &&
+              trimmed.slice(5).trim() === taskText.trim()
+            ) {
+              return line.replace(/- \[[ xX]\]/, newChecked ? '- [x]' : '- [ ]');
+            }
+            return line;
+          });
+          updatedContent = updatedLines.join('\n');
+        }
+
+        if (updatedContent !== raw) {
+          setDocContentMap((prev) => ({ ...prev, [docId]: updatedContent }));
+          await app.hearth.saveDocument(docId, updatedContent);
+        }
+      } else if (targetNode.type === 'text' && targetNode.text_content) {
+        // 2. Text sticky card
+        const lines = targetNode.text_content.split('\n');
+        const updatedLines = lines.map((line) => {
+          const trimmed = line.trim();
+          if (
+            (trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]')) &&
+            trimmed.slice(5).trim() === taskText.trim()
+          ) {
+            return line.replace(/- \[[ xX]\]/, newChecked ? '- [x]' : '- [ ]');
+          }
+          return line;
+        });
+        const updatedText = updatedLines.join('\n');
+        handleTextChange(nodeId, updatedText);
+      }
+    },
+    [nodes, docContentMap, app.hearth, handleTextChange]
+  );
+
   // Refs for real-time reads during continuous drag operations
   const panRef = useRef(pan);
   const zoomRef = useRef(zoom);
@@ -448,9 +572,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     } catch {}
   }, []);
 
-  const handleNodePointerDown = useCallback((e: React.PointerEvent, node: CanvasNode) => {
-    if ((e.target as HTMLElement).closest('button, textarea, input, a')) return;
+  const handleNodePointerDown = useCallback((id: string, e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, textarea, input, a, .resize-handle')) return;
     e.stopPropagation();
+    const node = nodesRef.current.find((n) => n.id === id);
+    if (!node) return;
     setSelectedNodeId(node.id);
     draggingNodeIdRef.current = node.id;
     const mouseCanvasX = (e.clientX - panRef.current.x) / zoomRef.current;
@@ -464,9 +590,82 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     } catch {}
   }, []);
 
+  const resizingNodeIdRef = useRef<string | null>(null);
+  const resizeHandleRef = useRef<ResizeHandleType | null>(null);
+  const resizeStartDimsRef = useRef<{
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    startX: number;
+    startY: number;
+    isImage?: boolean;
+    aspectRatio?: number;
+  }>({ x: 0, y: 0, width: 0, height: 0, startX: 0, startY: 0 });
+
+  const imageAspectMapRef = useRef<Record<string, number>>({});
+
+  const handleImageDimensions = useCallback(
+    (id: string, naturalWidth: number, naturalHeight: number) => {
+      if (naturalWidth <= 0 || naturalHeight <= 0) return;
+      const aspect = naturalWidth / naturalHeight;
+      imageAspectMapRef.current[id] = aspect;
+
+      // Automatically adjust card height to fit the natural aspect ratio if currently using initial default height
+      setNodes((prev) => {
+        const node = prev.find((n) => n.id === id);
+        if (!node) return prev;
+        const targetH = Math.round(node.width / aspect);
+        if (Math.abs(node.height - targetH) > 4 && node.height === 260) {
+          const updated = prev.map((n) => (n.id === id ? { ...n, height: targetH } : n));
+          const updatedNode = updated.find((n) => n.id === id);
+          if (updatedNode) {
+            saveCanvasNode(updatedNode);
+            triggerDiskSyncRef.current(updatedNode.board_id);
+          }
+          return updated;
+        }
+        return prev;
+      });
+    },
+    []
+  );
+
+  const handleResizeStart = useCallback(
+    (id: string, e: React.PointerEvent, handle: ResizeHandleType) => {
+      e.stopPropagation();
+      const node = nodesRef.current.find((n) => n.id === id);
+      if (!node) return;
+      setSelectedNodeId(node.id);
+      resizingNodeIdRef.current = id;
+      resizeHandleRef.current = handle;
+
+      const doc = node.document_id ? documents.find((d: DocumentItem) => d.id === node.document_id) : null;
+      const isImage = isImageDocument(doc);
+      const aspect =
+        imageAspectMapRef.current[node.id] ||
+        (node.width > 0 && node.height > 0 ? node.width / node.height : 1.33);
+
+      resizeStartDimsRef.current = {
+        x: node.x,
+        y: node.y,
+        width: node.width,
+        height: node.height,
+        startX: e.clientX,
+        startY: e.clientY,
+        isImage,
+        aspectRatio: aspect,
+      };
+      try {
+        (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
+      } catch {}
+    },
+    [documents]
+  );
+
   useEffect(() => {
     const handleGlobalPointerMove = (e: PointerEvent) => {
-      if (!isPanningRef.current && !draggingNodeIdRef.current) return;
+      if (!isPanningRef.current && !draggingNodeIdRef.current && !resizingNodeIdRef.current) return;
       lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
       if (mouseMoveRafRef.current === null) {
         mouseMoveRafRef.current = requestAnimationFrame(() => {
@@ -477,12 +676,98 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           if (isPanningRef.current) {
             const newX = pos.clientX - panStartRef.current.x;
             const newY = pos.clientY - panStartRef.current.y;
-            // Write to both refs directly (panning uses ease=1.0 so no visual lag)
             targetTransformRef.current.x = newX;
             targetTransformRef.current.y = newY;
             currentTransformRef.current.x = newX;
             currentTransformRef.current.y = newY;
             runCameraEasing();
+          } else if (resizingNodeIdRef.current) {
+            const resizeId = resizingNodeIdRef.current;
+            const handle = resizeHandleRef.current;
+            const start = resizeStartDimsRef.current;
+            const deltaX = (pos.clientX - start.startX) / zoomRef.current;
+            const deltaY = (pos.clientY - start.startY) / zoomRef.current;
+            const isImage = Boolean(start.isImage);
+            const aspect = start.aspectRatio || 1.33;
+            const step = canvasSnapGridRef.current ? (gridSizeRef.current || 20) : 1;
+
+            setNodes((prev) => {
+              return prev.map((n) => {
+                if (n.id !== resizeId) return n;
+                let newX = start.x;
+                let newY = start.y;
+                let newW = start.width;
+                let newH = start.height;
+
+                if (isImage) {
+                  // For images: lock aspect ratio on any axis / diagonal resize so no letterbox spaces appear
+                  if (handle === 'se') {
+                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
+                    newW = Math.max(160, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newH = Math.max(100, Math.round(newW / aspect));
+                  } else if (handle === 'sw') {
+                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
+                    newW = Math.max(160, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newH = Math.max(100, Math.round(newW / aspect));
+                    newX = start.x + (start.width - newW);
+                  } else if (handle === 'ne') {
+                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
+                    newW = Math.max(160, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newH = Math.max(100, Math.round(newW / aspect));
+                    newY = start.y + (start.height - newH);
+                  } else if (handle === 'nw') {
+                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
+                    newW = Math.max(160, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newH = Math.max(100, Math.round(newW / aspect));
+                    newX = start.x + (start.width - newW);
+                    newY = start.y + (start.height - newH);
+                  } else if (handle === 'e') {
+                    newW = Math.max(160, start.width + deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newH = Math.max(100, Math.round(newW / aspect));
+                  } else if (handle === 'w') {
+                    newW = Math.max(160, start.width - deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newH = Math.max(100, Math.round(newW / aspect));
+                    newX = start.x + (start.width - newW);
+                  } else if (handle === 's') {
+                    newH = Math.max(100, start.height + deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
+                    newW = Math.max(160, Math.round(newH * aspect));
+                  } else if (handle === 'n') {
+                    newH = Math.max(100, start.height - deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
+                    newW = Math.max(160, Math.round(newH * aspect));
+                    newY = start.y + (start.height - newH);
+                  }
+                } else {
+                  // Standard 8-directional freeform resize for notes and text cards
+                  if (handle === 'e' || handle === 'se' || handle === 'ne') {
+                    newW = Math.max(160, start.width + deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                  } else if (handle === 'w' || handle === 'sw' || handle === 'nw') {
+                    newW = Math.max(160, start.width - deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newX = start.x + (start.width - newW);
+                  }
+
+                  if (handle === 's' || handle === 'se' || handle === 'sw') {
+                    newH = Math.max(100, start.height + deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
+                  } else if (handle === 'n' || handle === 'ne' || handle === 'nw') {
+                    newH = Math.max(100, start.height - deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
+                    newY = start.y + (start.height - newH);
+                  }
+                }
+
+                return { ...n, x: newX, y: newY, width: newW, height: newH };
+              });
+            });
           } else if (draggingNodeIdRef.current) {
             const dragId = draggingNodeIdRef.current;
             setNodes((prev) => {
@@ -514,6 +799,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           saveCanvasNode(node);
           triggerDiskSyncRef.current(node.board_id);
         }
+      }
+      if (resizingNodeIdRef.current) {
+        const resizeId = resizingNodeIdRef.current;
+        const node = nodesRef.current.find((n) => n.id === resizeId);
+        if (node) {
+          saveCanvasNode(node);
+          triggerDiskSyncRef.current(node.board_id);
+        }
+        resizingNodeIdRef.current = null;
+        resizeHandleRef.current = null;
       }
       isPanningRef.current = false;
       setIsPanningState(false);
@@ -853,78 +1148,32 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         >
         {nodes.map((node) => {
           const doc = node.document_id
-            ? documents.find((d: DocumentItem) => d.id === node.document_id)
+            ? documents.find((d: DocumentItem) => d.id === node.document_id) || null
             : null;
           const isSelected = selectedNodeId === node.id;
+          const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
 
           return (
-            <div
+            <CanvasCard
               key={node.id}
-              onPointerDown={(e) => handleNodePointerDown(e, node)}
-              style={{
-                left: `${node.x}px`,
-                top: `${node.y}px`,
-                width: `${node.width}px`,
-                minHeight: `${node.height}px`,
-                backgroundColor: node.color || '#1e1e1e',
+              node={node}
+              doc={doc}
+              contentJson={contentJson}
+              isSelected={isSelected}
+              onSelect={handleNodePointerDown}
+              onOpenDoc={() => {
+                if (node.document_id) {
+                  setActiveDocumentById(node.document_id);
+                  setMainViewMode('document');
+                }
               }}
-              className={`canvas-card absolute pointer-events-auto rounded-md p-3 shadow-2xl flex flex-col justify-between border transition-shadow ${
-                isSelected
-                  ? 'border-[#888] shadow-white/10 ring-1 ring-[#666]'
-                  : 'border-[#2c2c2c] hover:border-[#444]'
-              }`}
-            >
-              {/* Card Header */}
-              <div className="flex items-center justify-between pb-2 border-b border-[#333]/50 cursor-grab active:cursor-grabbing">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#dcddde] truncate">
-                  {node.type === 'note' ? (
-                    <>
-                      <File01Icon size={13} className="text-[#888888]" />
-                      <span className="truncate">{doc?.title || 'Document'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <SparklesIcon size={13} className="text-[#fbbf24]" />
-                      <span>Note Card</span>
-                    </>
-                  )}
-                </div>
-
-                <button
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => handleDeleteNode(node.id, e)}
-                  className="p-1 rounded hover:bg-[#333] text-[#777] hover:text-rose-400 transition-colors"
-                >
-                  <Delete02Icon size={12} />
-                </button>
-              </div>
-
-              {/* Card Body */}
-              <div className="flex-1 py-2 text-xs text-[#bbb] leading-relaxed">
-                {node.type === 'note' ? (
-                  <div
-                    onDoubleClick={() => {
-                      if (node.document_id) {
-                        setActiveDocumentById(node.document_id);
-                        setMainViewMode('document');
-                      }
-                    }}
-                    className="cursor-pointer hover:text-white line-clamp-4 text-[11px] text-[#888888]"
-                  >
-                    <p className="font-medium text-white mb-1">{doc?.title || 'Untitled'}</p>
-                    <p>Double-click to open and edit note in workspace.</p>
-                  </div>
-                ) : (
-                  <textarea
-                    onPointerDown={(e) => e.stopPropagation()}
-                    value={node.text_content || ''}
-                    onChange={(e) => handleTextChange(node.id, e.target.value)}
-                    placeholder="Type note content..."
-                    className="w-full h-20 bg-transparent text-xs text-[#e5e7eb] outline-none resize-none placeholder-[#555]"
-                  />
-                )}
-              </div>
-            </div>
+              onDelete={handleDeleteNode}
+              onColorChange={handleColorChange}
+              onTextChange={handleTextChange}
+              onResizeStart={handleResizeStart}
+              onImageDimensions={handleImageDimensions}
+              onTaskToggle={handleTaskToggle}
+            />
           );
         })}
         </div>

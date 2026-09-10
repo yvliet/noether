@@ -16,6 +16,7 @@ export interface CanvasNode {
   document_id?: string;
   text_content?: string;
   color?: string; // hex or color badge
+  url?: string;
 }
 
 export interface CanvasEdge {
