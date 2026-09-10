@@ -53,11 +53,6 @@ export class ExternalExtensionLoader {
     }
   }
 
-  // Alias for backwards compatibility
-  public async discoverAndLoadPlugins(): Promise<void> {
-    return this.discoverAndLoadExtensions();
-  }
-
   /**
    * Loads and evaluates an individual external extension bundle from disk.
    *
@@ -250,11 +245,6 @@ export class ExternalExtensionLoader {
     }
   }
 
-  // Alias for backwards compatibility
-  public async loadSinglePlugin(folderName: string, manifest: ExtensionManifest): Promise<boolean> {
-    return this.loadSingleExtension(folderName, manifest);
-  }
-
   /**
    * Installs an external community extension:
    * 1. On desktop, saves manifest.json, main.js, and optional styles.css into `.flint/plugins/<id>/`.
@@ -365,13 +355,6 @@ module.exports = class ${cleanClassName} extends Extension {
       }
     }
   }
-
-  // Alias for backwards compatibility
-  public removePluginStyle(pluginId: string): void {
-    this.removeExtensionStyle(pluginId);
-  }
 }
 
-// Backwards compatibility alias
-export const ExternalPluginLoader = ExternalExtensionLoader;
 export default ExternalExtensionLoader;

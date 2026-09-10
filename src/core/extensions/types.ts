@@ -60,9 +60,6 @@ export interface ExtensionManifest {
   tags?: string[];
 }
 
-/** Backwards compatibility alias */
-export type PluginManifest = ExtensionManifest;
-
 /**
  * Defines a custom settings tab rendered in the application settings modal.
  * @since 0.2.0
@@ -74,16 +71,11 @@ export interface ExtensionSettingTab {
   name: string;
   /** Owning extension identifier. */
   extensionId?: string;
-  /** Legacy plugin ID alias */
-  pluginId?: string;
   /** Optional icon displayed next to the tab name. */
   icon?: React.ReactNode;
   /** Render function returning the tab's settings UI panel. */
   render: () => React.ReactNode;
 }
-
-/** Backwards compatibility alias */
-export type PluginSettingTab = ExtensionSettingTab;
 
 /**
  * Defines a command executable via the command palette or keyboard shortcuts.
@@ -129,9 +121,6 @@ export interface ActionRailItem {
   onClick: (app: FlintApp) => void | Promise<void>;
 }
 
-/** Backwards compatibility alias */
-export type RibbonItem = ActionRailItem;
-
 /**
  * Defines a status bar widget rendered in the bottom information bar.
  * @since 0.1.0
@@ -174,10 +163,6 @@ export interface ViewBehaviorPolicy {
   isSpatialSurface?: boolean;
 }
 
-/**
- * Defines a full workspace view type rendered in the main tab area.
- * @since 0.1.0
- */
 export interface ViewDefinition {
   /** Unique view type identifier (e.g., 'graph', 'canvas', 'marketplace'). */
   type: string;
@@ -187,8 +172,6 @@ export interface ViewDefinition {
   icon?: React.ReactNode;
   /** Owning extension identifier. */
   extensionId?: string;
-  /** Legacy owning plugin identifier. */
-  pluginId?: string;
   /** Optional behavioral policies for workspace interactions. */
   behavior?: ViewBehaviorPolicy;
   /** Render function for the view content. */

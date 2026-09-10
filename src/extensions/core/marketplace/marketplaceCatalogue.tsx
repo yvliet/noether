@@ -27,9 +27,6 @@ export interface MarketplaceExtensionItem {
   downloadUrl?: string;
 }
 
-// Backwards compatibility alias
-export type MarketplacePluginItem = MarketplaceExtensionItem;
-
 /**
  * Built-in community marketplace catalogue seeded from the Turso database.
  * Provides instant 0ms offline availability while SWR revalidates live updates.

@@ -258,7 +258,7 @@ export class GraphExtension extends Extension {
             target = docs.find((d) => d.title.toLowerCase() === title || d.title.toLowerCase().includes(title));
           }
           if (!target) {
-            target = app.vault.activeDocument || undefined;
+            target = app.hearth.activeDocument || undefined;
           }
 
           if (!target) {
@@ -386,7 +386,7 @@ export class GraphExtension extends Extension {
             target = docs.find((d) => d.title.toLowerCase() === title || d.title.toLowerCase().includes(title));
           }
           if (!target) {
-            target = app.vault.activeDocument || undefined;
+            target = app.hearth.activeDocument || undefined;
           }
 
           if (!target) {
@@ -776,6 +776,4 @@ export class GraphExtension extends Extension {
   }
 }
 
-// Backwards compatibility alias
-export const GraphPlugin = GraphExtension;
 export default GraphExtension;

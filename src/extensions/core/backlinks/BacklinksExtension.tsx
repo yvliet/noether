@@ -336,6 +336,4 @@ export class BacklinksExtension extends Extension {
   }
 }
 
-// Backwards compatibility alias
-export const BacklinksPlugin = BacklinksExtension;
 export default BacklinksExtension;

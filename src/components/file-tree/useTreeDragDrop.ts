@@ -167,8 +167,8 @@ export function useTreeDragDrop({
           const targetNode = hoveredEl?.closest('[data-tree-item-id], [data-sidebar-root]');
           if (targetNode) {
             if (targetNode.hasAttribute('data-sidebar-root') && !targetNode.hasAttribute('data-tree-item-id')) {
-              const { hearthName, vaultName } = useWorkspaceStore.getState();
-              const currentHearth = hearthName || vaultName || 'Flint Hearth';
+              const { hearthName } = useWorkspaceStore.getState();
+              const currentHearth = hearthName || 'Flint Hearth';
               if (item.parent_id || isMultiDrag) {
                 setDragOverFolder(null, true);
                 dragTooltipManager.updateSubtitle(`Move into “${currentHearth}”`);
@@ -242,8 +242,8 @@ export function useTreeDragDrop({
                     dragTooltipManager.updateSubtitle(null);
                   }
                 } else {
-                  const { hearthName, vaultName } = useWorkspaceStore.getState();
-                  const currentHearth = hearthName || vaultName || 'Flint Hearth';
+                  const { hearthName } = useWorkspaceStore.getState();
+                  const currentHearth = hearthName || 'Flint Hearth';
                   if (item.parent_id || isMultiDrag) {
                     setDragOverFolder(null, true);
                     dragTooltipManager.updateSubtitle(`Move into “${currentHearth}”`);

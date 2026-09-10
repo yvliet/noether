@@ -1,6 +1,6 @@
-import { RibbonItem, Disposable } from '../extensions/types';
+import { ActionRailItem, Disposable } from '../extensions/types';
 
-export type ActionRailItem = RibbonItem;
+export type { ActionRailItem };
 
 export class ActionRailRegistry {
   private items: Map<string, ActionRailItem> = new Map();
@@ -19,21 +19,11 @@ export class ActionRailRegistry {
     };
   }
 
-  // Alias for backwards compatibility with plugins
-  public registerRibbonItem(item: ActionRailItem): Disposable {
-    return this.registerActionRailItem(item);
-  }
-
   public unregisterActionRailItem(id: string): void {
     if (this.items.delete(id)) {
       this.recomputeCache();
       this.notify();
     }
-  }
-
-  // Alias for backwards compatibility
-  public unregisterRibbonItem(id: string): void {
-    this.unregisterActionRailItem(id);
   }
 
   public getItems(): ActionRailItem[] {

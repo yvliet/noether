@@ -51,7 +51,6 @@ import { dbAdapter } from '@/lib/db/adapter';
 import type {
   WorkspaceAPI,
   HearthAPI,
-  VaultAPI,
   SettingsAPI,
   ConfirmDialogConfig,
   InputDialogConfig,
@@ -75,7 +74,6 @@ export { bindFlintStores };
 const LazyExtensionDocViewer = React.lazy(() =>
   import('@/components/extension-viewer/ExtensionDocViewer').then((m) => ({ default: m.ExtensionDocViewer }))
 );
-const LazyPluginDocViewer = LazyExtensionDocViewer;
 
 export class FlintApp {
   /** Command registry managing keyboard hotkeys and command palette actions. */
@@ -120,16 +118,6 @@ export class FlintApp {
   public events: EventBus;
   /** Extensions manager overseeing discovery, loading, enable/disable states, and sandbox. */
   public extensions: ExtensionManager;
-
-  /** Backwards-compatibility alias for actionRail */
-  public get ribbon(): ActionRailRegistry {
-    return this.actionRail;
-  }
-
-  /** Backwards-compatibility alias for extensions */
-  public get plugins(): ExtensionManager {
-    return this.extensions;
-  }
 
   constructor() {
     this.commands = new CommandRegistry();
@@ -196,25 +184,6 @@ export class FlintApp {
           React.createElement(LazyExtensionDocViewer, props)
         ),
     });
-    this.views.registerView({
-      type: 'plugin-doc',
-      title: 'Extension Documentation',
-      icon: React.createElement(BookOpen01Icon, { size: 14 }),
-      render: (props) =>
-        React.createElement(
-          React.Suspense,
-          { fallback: null },
-          React.createElement(LazyExtensionDocViewer, props)
-        ),
-    });
-  }
-
-  /**
-   * Access to settings registry for backwards compatibility.
-   * Plugins should register settings tabs via `this.registerSettingTab()` or `app.settingsRegistry`.
-   */
-  public get settingsTabRegistry(): SettingRegistry {
-    return this.settingsRegistry;
   }
 
   /**
@@ -270,9 +239,6 @@ export class FlintApp {
       },
       openExtensionDocTab: (extensionId: string, title?: string): void => {
         storeRefs.workspace?.getState()?.openExtensionDocTab(extensionId, title);
-      },
-      openPluginDocTab: (pluginId: string, title?: string): void => {
-        storeRefs.workspace?.getState()?.openExtensionDocTab(pluginId, title);
       },
 
       // ── Sidebars ──
@@ -438,12 +404,6 @@ export class FlintApp {
       },
       get hearthPath(): string {
         return storeRefs.workspace?.getState()?.hearthPath ?? storeRefs.workspace?.getState()?.vaultPath ?? '';
-      },
-      get vaultName(): string {
-        return this.hearthName;
-      },
-      get vaultPath(): string {
-        return this.hearthPath;
       },
       getDocumentById: (docId: string): DocumentItem | undefined => {
         return storeRefs.document?.getState()?.documents.find((d: DocumentItem) => d.id === docId);
@@ -628,15 +588,6 @@ export class FlintApp {
         }
       },
     };
-  }
-
-  /**
-   * Backwards-compatibility alias for hearth API.
-   * @see VaultAPI
-   * @since 0.1.0
-   */
-  public get vault(): HearthAPI {
-    return this.hearth;
   }
 
   /**

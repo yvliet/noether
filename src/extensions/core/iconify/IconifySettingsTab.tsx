@@ -122,7 +122,7 @@ export const IconifySettingsTab: React.FC = () => {
       {/* Header section */}
       <div className="flex items-center justify-between px-4">
         <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Iconify</h3>
+          <h3 className="text-sm font-semibold text-white mb-0.5">More icons</h3>
           <p className="text-[11px] text-[#777]">
             Let icons live in all of Flint. Customize folders, files, tabs, and documents with persistent SQLite storage.
           </p>

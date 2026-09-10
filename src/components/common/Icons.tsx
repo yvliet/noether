@@ -132,6 +132,8 @@ import {
   Alert02Icon as HugeAlert02Icon,
   Alert01Icon as HugeAlert01Icon,
   TableIcon as HugeTableIcon,
+  GridTableIcon as HugeGridTableIcon,
+  MaskTheater02Icon as HugeMaskTheater02Icon,
   ChevronDownIcon as HugeChevronDownIcon,
   ChevronRightIcon as HugeChevronRightIcon,
   ArrowExpand01Icon as HugeArrowExpand01Icon,
@@ -382,6 +384,8 @@ export const TextFootnoteIcon = createIcon(HugeTextFootnoteIcon);
 export const TextSelectionIcon = createIcon(HugeTextSelectionIcon);
 export const TextClearIcon = createIcon(HugeTextClearIcon);
 export const TableIcon = createIcon(HugeTableIcon);
+export const GridTableIcon = createIcon(HugeGridTableIcon);
+export const MaskTheater02Icon = createIcon(HugeMaskTheater02Icon);
 export const ArrowExpand01Icon = createIcon(HugeArrowExpand01Icon);
 export const ArrowExpandIcon = ArrowExpand01Icon;
 export const ArrowExpand02Icon = ArrowExpand01Icon;

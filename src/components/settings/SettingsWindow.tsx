@@ -1623,6 +1623,12 @@ const EditorTab: React.FC = React.memo(() => {
   const setDefaultEditingMode = useSettingsStore((s) => s.setDefaultEditingMode);
   const showModeInStatusBar = useSettingsStore((s) => s.showModeInStatusBar);
   const setShowModeInStatusBar = useSettingsStore((s) => s.setShowModeInStatusBar);
+  const showWordCountInStatusBar = useSettingsStore((s) => s.showWordCountInStatusBar);
+  const setShowWordCountInStatusBar = useSettingsStore((s) => s.setShowWordCountInStatusBar);
+  const showCharCountInStatusBar = useSettingsStore((s) => s.showCharCountInStatusBar);
+  const setShowCharCountInStatusBar = useSettingsStore((s) => s.setShowCharCountInStatusBar);
+  const showReadingTimeInStatusBar = useSettingsStore((s) => s.showReadingTimeInStatusBar);
+  const setShowReadingTimeInStatusBar = useSettingsStore((s) => s.setShowReadingTimeInStatusBar);
   const inlineTitle = useSettingsStore((s) => s.inlineTitle);
   const setInlineTitle = useSettingsStore((s) => s.setInlineTitle);
   const readableLineLength = useSettingsStore((s) => s.readableLineLength);
@@ -1666,6 +1672,9 @@ const EditorTab: React.FC = React.memo(() => {
     defaultTabMode !== DEFAULT_SETTINGS.defaultTabMode ||
     defaultEditingMode !== DEFAULT_SETTINGS.defaultEditingMode ||
     showModeInStatusBar !== DEFAULT_SETTINGS.showModeInStatusBar ||
+    showWordCountInStatusBar !== DEFAULT_SETTINGS.showWordCountInStatusBar ||
+    showCharCountInStatusBar !== DEFAULT_SETTINGS.showCharCountInStatusBar ||
+    showReadingTimeInStatusBar !== DEFAULT_SETTINGS.showReadingTimeInStatusBar ||
     inlineTitle !== DEFAULT_SETTINGS.inlineTitle ||
     readableLineLength !== DEFAULT_SETTINGS.readableLineLength ||
     strictLineBreaks !== DEFAULT_SETTINGS.strictLineBreaks ||
@@ -1773,6 +1782,60 @@ const EditorTab: React.FC = React.memo(() => {
               title="Restore default (Enabled)"
             />
             <ToggleSwitch checked={showModeInStatusBar} onChange={setShowModeInStatusBar} />
+          </div>
+        </div>
+
+        {/* Show word count in status bar */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Show word count in status bar</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Show the word count of the current note in the status bar.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FieldResetButton
+              isModified={showWordCountInStatusBar !== DEFAULT_SETTINGS.showWordCountInStatusBar}
+              onReset={() => setShowWordCountInStatusBar(DEFAULT_SETTINGS.showWordCountInStatusBar)}
+              title="Restore default (Enabled)"
+            />
+            <ToggleSwitch checked={showWordCountInStatusBar} onChange={setShowWordCountInStatusBar} />
+          </div>
+        </div>
+
+        {/* Show character count in status bar */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Show character count in status bar</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Show the character count of the current note in the status bar.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FieldResetButton
+              isModified={showCharCountInStatusBar !== DEFAULT_SETTINGS.showCharCountInStatusBar}
+              onReset={() => setShowCharCountInStatusBar(DEFAULT_SETTINGS.showCharCountInStatusBar)}
+              title="Restore default (Disabled)"
+            />
+            <ToggleSwitch checked={showCharCountInStatusBar} onChange={setShowCharCountInStatusBar} />
+          </div>
+        </div>
+
+        {/* Show reading time in status bar */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Show reading time in status bar</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Show estimated reading time of the current note in the status bar.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FieldResetButton
+              isModified={showReadingTimeInStatusBar !== DEFAULT_SETTINGS.showReadingTimeInStatusBar}
+              onReset={() => setShowReadingTimeInStatusBar(DEFAULT_SETTINGS.showReadingTimeInStatusBar)}
+              title="Restore default (Disabled)"
+            />
+            <ToggleSwitch checked={showReadingTimeInStatusBar} onChange={setShowReadingTimeInStatusBar} />
           </div>
         </div>
       </div>
@@ -2160,8 +2223,8 @@ interface FilesTabProps {
 }
 
 const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
-  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+  const hearthName = useWorkspaceStore((s) => s.hearthName);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
   const renameHearth = useWorkspaceStore((s) => s.renameHearth);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
@@ -2702,11 +2765,11 @@ const HotkeysTab: React.FC = React.memo(() => {
   );
 });
 
-// Helper: match tab ID flexibly by exact ID, extensionId, pluginId, subId, or prefix
-export function isTabMatch(tab: { id: string; extensionId?: string; pluginId?: string }, targetTabId: string): boolean {
+// Helper: match tab ID flexibly by exact ID, extensionId, subId, or prefix
+export function isTabMatch(tab: { id: string; extensionId?: string }, targetTabId: string): boolean {
   if (!targetTabId || !tab) return false;
   if (tab.id === targetTabId) return true;
-  const targetId = tab.extensionId || tab.pluginId;
+  const targetId = tab.extensionId;
   if (targetId && targetId === targetTabId) return true;
   const parts = tab.id.split(':');
   const extId = parts[0];
@@ -2734,7 +2797,7 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
 
   const coreExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
-      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const extId = tab.extensionId || tab.id.split(':')[0];
       const manifest = app.extensions.getExtensionManifest(extId);
       return manifest?.isCore === true;
     });
@@ -2780,7 +2843,7 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
                   <button
                     type="button"
                     onClick={() => {
-                      localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: ext.id, title: ext.name, timestamp: Date.now() }));
+                      localStorage.setItem('flint_open_extension_doc', JSON.stringify({ extensionId: ext.id, title: ext.name, timestamp: Date.now() }));
                       useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name);
                       if (onClose) {
                         onClose();
@@ -2819,9 +2882,6 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
   );
 });
 
-// Backwards-compatibility alias
-const CorePluginsTab = CoreExtensionsTab;
-
 // ==========================================
 // TAB: COMMUNITY EXTENSIONS
 // ==========================================
@@ -2839,7 +2899,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
 
   const communityExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
-      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const extId = tab.extensionId || tab.id.split(':')[0];
       const manifest = app.extensions.getExtensionManifest(extId);
       return !manifest || manifest.isCore !== true;
     });
@@ -3009,7 +3069,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                     <button
                       type="button"
                       onClick={() => {
-                        localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: ext.id, title: ext.name, timestamp: Date.now() }));
+                        localStorage.setItem('flint_open_extension_doc', JSON.stringify({ extensionId: ext.id, title: ext.name, timestamp: Date.now() }));
                         useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name);
                         if (onClose) {
                           onClose();
@@ -3092,9 +3152,6 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
   );
 });
 
-// Backwards-compatibility alias
-const CommunityPluginsTab = CommunityExtensionsTab;
-
 export interface SettingsWindowContentProps {
   onClose?: () => void;
   isModal?: boolean;
@@ -3105,7 +3162,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   const app = useFlintApp();
   const allSettingTabs = useSettingTabs();
 
-  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
+  const hearthName = useWorkspaceStore((s) => s.hearthName);
   const setHearthName = useWorkspaceStore((s) => s.setHearthName);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const restoreAllDefaults = useSettingsStore((s) => s.restoreAllDefaults);
@@ -3124,8 +3181,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   }, [initialTab]);
 
   useEffect(() => {
-    const getFn = platform.getCurrentHearth || platform.getCurrentVault;
-    getFn().then((data) => {
+    platform.getCurrentHearth().then((data) => {
       if (data?.name) {
         setHearthName(data.name);
       }
@@ -3137,8 +3193,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   }, [app, setHearthName]);
 
   useEffect(() => {
-    const onFiles = platform.onHearthFilesChanged || platform.onVaultFilesChanged;
-    const unsub = onFiles(async () => {
+    const unsub = platform.onHearthFilesChanged(async () => {
       await dbAdapter.resetAndReload();
       useDocumentStore.getState().loadTrash();
     });
@@ -3195,7 +3250,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   // Dynamic Core & Community Extensions Setting Tabs from Registries + Enabled Extensions Fallback
   const coreExtensionTabs = useMemo(() => {
     const registered = allSettingTabs.filter((tab) => {
-      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const extId = tab.extensionId || tab.id.split(':')[0];
       const manifest = app.extensions.getExtensionManifest(extId);
       return manifest?.isCore === true;
     });
@@ -3209,7 +3264,6 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           id: `${manifest.id}:${manifest.id}-settings`,
           name: manifest.name,
           extensionId: manifest.id,
-          pluginId: manifest.id,
           icon: <PackageIcon size={14} />,
           render: () => (
             <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-3">
@@ -3228,7 +3282,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
   const communityExtensionTabs = useMemo(() => {
     const registered = allSettingTabs.filter((tab) => {
-      const extId = tab.extensionId || tab.pluginId || tab.id.split(':')[0];
+      const extId = tab.extensionId || tab.id.split(':')[0];
       const manifest = app.extensions.getExtensionManifest(extId);
       return !manifest || manifest.isCore !== true;
     });
@@ -3242,7 +3296,6 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           id: `${manifest.id}:${manifest.id}-settings`,
           name: manifest.name,
           extensionId: manifest.id,
-          pluginId: manifest.id,
           icon: <PuzzleIcon size={14} />,
           render: () => (
             <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-3">
@@ -3271,7 +3324,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     return coreExtensionTabs.filter((item) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const extId = item.extensionId || item.pluginId || item.id.split(':')[0];
+        const extId = item.extensionId || item.id.split(':')[0];
         const manifest = app.extensions.getExtensionManifest(extId);
         const nameMatch = item.name.toLowerCase().includes(q);
         const manifestMatch =
@@ -3287,7 +3340,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     return communityExtensionTabs.filter((item) => {
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
-        const extId = item.extensionId || item.pluginId || item.id.split(':')[0];
+        const extId = item.extensionId || item.id.split(':')[0];
         const manifest = app.extensions.getExtensionManifest(extId);
         const nameMatch = item.name.toLowerCase().includes(q);
         const manifestMatch =
@@ -3570,12 +3623,12 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                 communityExtensionTabs.find((t) => isTabMatch(t, activeTab));
               const candidateId = activeTab.includes(':') ? activeTab.split(':')[0] : activeTab;
               const manifest = currentTab
-                ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.pluginId || currentTab.id.split(':')[0])
+                ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.id.split(':')[0])
                 : (app.extensions.getExtensionManifest(candidateId) || app.extensions.getExtensionManifest(activeTab));
 
               if (!currentTab && !manifest) return null;
 
-              const extId = currentTab?.extensionId || currentTab?.pluginId || manifest?.id || candidateId;
+              const extId = currentTab?.extensionId || manifest?.id || candidateId;
               const isEnabled = extId ? app.extensions.isExtensionEnabled(extId) : false;
               const tabName = manifest?.name || currentTab?.name || extId;
 
@@ -3606,7 +3659,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         <button
                           type="button"
                           onClick={() => {
-                            localStorage.setItem('flint_open_plugin_doc', JSON.stringify({ pluginId: extId, title: tabName, timestamp: Date.now() }));
+                            localStorage.setItem('flint_open_extension_doc', JSON.stringify({ extensionId: extId, title: tabName, timestamp: Date.now() }));
                             useWorkspaceStore.getState().openExtensionDocTab(extId, tabName);
                             handleClose();
                           }}

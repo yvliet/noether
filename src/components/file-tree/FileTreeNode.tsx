@@ -89,7 +89,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
   const openTab = useWorkspaceStore((s) => s.openTab);
@@ -850,8 +850,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <FolderOpenIcon size={14} />,
             onClick: () => {
               if (platform.isDesktop()) {
-                const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
-                openFn(hearthPath);
+                platform.openHearthInExplorer(hearthPath);
               } else {
                 showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
               }

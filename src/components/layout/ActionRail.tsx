@@ -6,13 +6,13 @@ import {
   ArrowUpDownIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useFlintApp, useRibbonItems } from '@/core/app/AppContext';
+import { useFlintApp, useActionRailItems } from '@/core/app/AppContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { platform } from '@/lib/platform/platformAdapter';
 
 export const ActionRail: React.FC = React.memo(() => {
   const app = useFlintApp();
-  const ribbonItems = useRibbonItems();
+  const actionRailItems = useActionRailItems();
 
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
@@ -27,7 +27,7 @@ export const ActionRail: React.FC = React.memo(() => {
 
   const lastTriggerTimeRef = React.useRef<number>(0);
   const handleItemTrigger = useCallback(
-    async (item: (typeof ribbonItems)[number]) => {
+    async (item: (typeof actionRailItems)[number]) => {
       const now = Date.now();
       if (now - lastTriggerTimeRef.current < 200) return;
       lastTriggerTimeRef.current = now;
@@ -73,7 +73,7 @@ export const ActionRail: React.FC = React.memo(() => {
         </button>
 
         {/* Dynamic Registered Items from Built-in & Community Extensions */}
-        {ribbonItems.map((item) => {
+        {actionRailItems.map((item) => {
           return (
             <button
               key={item.id}
@@ -150,5 +150,4 @@ export const ActionRail: React.FC = React.memo(() => {
   );
 });
 
-// Alias for backwards compatibility
-export const Ribbon = ActionRail;
+export default ActionRail;

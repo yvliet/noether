@@ -214,6 +214,4 @@ export class MarketplaceExtension extends Extension {
   }
 }
 
-// Backwards-compat alias
-export const MarketplacePlugin = MarketplaceExtension;
 export default MarketplaceExtension;

@@ -35,12 +35,6 @@ export const JOURNAL_MANIFEST: ExtensionManifest = {
   readme: journalReadme,
 };
 
-// Backwards compatibility manifest
-export const DAILY_NOTES_MANIFEST: ExtensionManifest = {
-  ...JOURNAL_MANIFEST,
-  id: 'daily-notes',
-};
-
 function formatDailyDate(date: Date, formatStr: string): string {
   const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -88,7 +82,6 @@ export class JournalExtension extends Extension {
     const folder = (dailyFolder || '').trim();
     const dateFormatted = formatDailyDate(date, format);
     const dateTitle = dateFormatted;
-    const legacyTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
 
     let docs = this.app.hearth.documents;
     let targetFolderId: string | null = null;
@@ -127,7 +120,7 @@ export class JournalExtension extends Extension {
     let existingNote = docs.find(
       (d) =>
         !d.is_folder &&
-        (d.title === dateTitle || d.title === legacyTitle) &&
+        d.title === dateTitle &&
         (targetFolderId ? d.parent_id === targetFolderId : true)
     );
 
@@ -136,7 +129,7 @@ export class JournalExtension extends Extension {
       existingNote = allDocs.find(
         (d) =>
           !d.is_folder &&
-          (d.title === dateTitle || d.title === legacyTitle) &&
+          d.title === dateTitle &&
           (targetFolderId ? d.parent_id === targetFolderId : true)
       );
     }
@@ -214,8 +207,7 @@ export class JournalExtension extends Extension {
         const { dailyFormat } = useJournalSettings.getState();
         const format = dailyFormat || 'YYYY-MM-DD';
         const dateFormatted = formatDailyDate(new Date(), format);
-        const legacyTitle = dateFormatted.startsWith('Daily') ? dateFormatted : `Daily Note ${dateFormatted}`;
-        return activeDoc.title === dateFormatted || activeDoc.title === legacyTitle;
+        return activeDoc.title === dateFormatted;
       }
     );
 
@@ -429,8 +421,4 @@ export class JournalExtension extends Extension {
   }
 }
 
-// Backwards compatibility alias
-export const JournalPlugin = JournalExtension;
-export const DailyNotesPlugin = JournalExtension;
-export const DailyNotesExtension = JournalExtension;
 export default JournalExtension;

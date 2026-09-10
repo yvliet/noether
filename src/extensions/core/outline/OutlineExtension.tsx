@@ -197,6 +197,4 @@ export class OutlineExtension extends Extension {
   }
 }
 
-// Backwards-compat alias
-export const OutlinePlugin = OutlineExtension;
 export default OutlineExtension;

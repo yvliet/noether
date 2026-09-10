@@ -26,7 +26,7 @@ export const TablesSettingsTab: React.FC = () => {
     <div className="flex flex-col gap-5">
       <div className="flex items-center justify-between px-4">
         <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Table Blocks</h3>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Tables</h3>
           <p className="text-[11px] text-[#777]">
             Configure interactive tables, default quick grid dimensions, and column resizing.
           </p>
@@ -60,7 +60,7 @@ export const TablesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setEnableColumnResizing(DEFAULT_TABLES_SETTINGS.enableColumnResizing)}
                 title="Restore default (Enabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -83,7 +83,7 @@ export const TablesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setDefaultCols(DEFAULT_TABLES_SETTINGS.defaultCols)}
                 title="Restore default (3)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -113,7 +113,7 @@ export const TablesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setDefaultRows(DEFAULT_TABLES_SETTINGS.defaultRows)}
                 title="Restore default (3)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>

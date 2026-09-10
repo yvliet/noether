@@ -68,7 +68,7 @@ function parseContentToDocAst(raw: string): any {
 }
 
 /**
- * Normalizes any legacy paragraphs starting with markdown heading tokens into heading nodes.
+ * Normalizes imported paragraphs starting with markdown heading tokens into heading nodes.
  */
 function normalizeHeadings(doc: any): any {
   if (!doc || typeof doc !== 'object' || !Array.isArray(doc.content)) return doc;

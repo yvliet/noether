@@ -425,6 +425,4 @@ export class CanvasExtension extends Extension {
   }
 }
 
-// Backwards compatibility alias
-export const CanvasPlugin = CanvasExtension;
 export default CanvasExtension;

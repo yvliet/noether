@@ -1,5 +1,5 @@
 /**
- * @module UniversalSyncTypes
+ * @module SyncTypes
  * @description
  * Shared type definitions, provider contracts, and configuration schemas
  * for the Flint Universal External Sync extension.
@@ -78,7 +78,7 @@ export interface CustomRestConfig {
   customHeadersJson?: string;
 }
 
-export interface UniversalSyncConfig {
+export interface SyncConfig {
   activeProvider: SyncProviderType;
   autoSyncOnSave: boolean;
   periodicIntervalSeconds: number; // 0 = off, 60 = 1m, 300 = 5m, 900 = 15m
@@ -90,7 +90,7 @@ export interface UniversalSyncConfig {
   customRest: CustomRestConfig;
 }
 
-export const DEFAULT_CONFIG: UniversalSyncConfig = {
+export const DEFAULT_CONFIG: SyncConfig = {
   activeProvider: 'supabase',
   autoSyncOnSave: true,
   periodicIntervalSeconds: 300,

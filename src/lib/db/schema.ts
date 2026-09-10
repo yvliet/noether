@@ -13,7 +13,7 @@
  *    own table schemas, migrations, and indexing lifecycle independently.
  * 3. FTS5 Virtual Tables: Enables sub-millisecond full-text search with BM25
  *    relevance ranking and unicode61 tokenization, with dynamic fallback to FTS4
- *    if running on legacy WASM builds.
+ *    if running on fallback WASM builds.
  *
  * @since 0.1.0
  */

@@ -80,7 +80,7 @@ import {
   TextFootnoteIcon,
   TextSelectionIcon,
   TextClearIcon,
-  TableIcon,
+  GridTableIcon,
   Database01Icon,
   EyedropperIcon,
   MinusSignIcon,
@@ -753,7 +753,7 @@ const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
 
 /**
  * Normalizes incoming TipTap document ASTs.
- * Converts any legacy or imported paragraphs starting with markdown heading tokens
+ * Converts imported paragraphs starting with markdown heading tokens
  * (`# `, `## `, etc.) into native heading nodes with the appropriate level attribute,
  * ensuring proper styling, outline navigation, and code folding.
  */
@@ -1890,7 +1890,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             {
               id: 'ins-table',
               title: 'Table',
-              icon: <TableIcon size={14} />,
+              icon: <GridTableIcon size={14} />,
               onClick: () => {
                 editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
               },
@@ -1946,7 +1946,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           items.push({
             id: 'table-operations',
             title: 'Table Actions',
-            icon: <TableIcon size={14} />,
+            icon: <GridTableIcon size={14} />,
             submenu: [
               {
                 id: 'tbl-add-row-before',

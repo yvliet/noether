@@ -238,6 +238,4 @@ export class TasksExtension extends Extension {
   }
 }
 
-// Backwards compatibility alias
-export const TasksPlugin = TasksExtension;
 export default TasksExtension;

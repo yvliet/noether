@@ -1,24 +1,24 @@
 /**
- * @module universalSyncStore
+ * @module syncStore
  * @description
- * Reactive Zustand store for Universal Sync config and live telemetry.
+ * Reactive Zustand store for Sync config and live telemetry.
  * Powers status bar indicators and settings UI with instant updates.
  */
 
 import { create } from 'zustand';
-import { UniversalSyncConfig, SyncTelemetry, DEFAULT_CONFIG } from './types';
+import { SyncConfig, SyncTelemetry, DEFAULT_CONFIG } from './types';
 import { SyncEngine } from './engine/SyncEngine';
 
-export interface UniversalSyncStoreState {
-  config: UniversalSyncConfig;
+export interface SyncStoreState {
+  config: SyncConfig;
   telemetry: SyncTelemetry;
   engine: SyncEngine | null;
-  setConfig: (config: UniversalSyncConfig) => void;
+  setConfig: (config: SyncConfig) => void;
   setTelemetry: (telemetry: SyncTelemetry) => void;
   setEngine: (engine: SyncEngine | null) => void;
 }
 
-export const useUniversalSyncStore = create<UniversalSyncStoreState>((set) => ({
+export const useSyncStore = create<SyncStoreState>((set) => ({
   config: { ...DEFAULT_CONFIG },
   telemetry: {
     lastSyncedAt: null,

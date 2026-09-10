@@ -24,8 +24,7 @@ export const SKETCH_TABLE_DEFINITION = {
 };
 
 /**
- * Initializes the ext_sketch_document_sketches SQLite table if it does not yet exist,
- * migrating any legacy rows from document_sketches.
+ * Initializes the ext_sketch_document_sketches SQLite table if it does not yet exist.
  */
 export async function initSketchDb(): Promise<void> {
   try {
@@ -40,20 +39,6 @@ export async function initSketchDb(): Promise<void> {
     await dbAdapter.execute(`
       CREATE INDEX IF NOT EXISTS idx_sketches_doc ON ext_sketch_document_sketches (document_id);
     `);
-
-    // Migrate from legacy un-prefixed table if present
-    try {
-      const legacyTable = await dbAdapter.query<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name='document_sketches'`
-      );
-      if (legacyTable.length > 0) {
-        await dbAdapter.execute(
-          `INSERT OR IGNORE INTO ext_sketch_document_sketches SELECT * FROM document_sketches;`
-        );
-      }
-    } catch {
-      // Legacy table missing or incompatible; safe to ignore
-    }
   } catch (err) {
     console.error('[Flint Sketch] Failed to initialize SQLite table:', err);
   }

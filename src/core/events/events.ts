@@ -41,16 +41,6 @@ export interface WorkspaceEvents {
   /** Emitted when an extension is disabled. */
   'extension:disabled': { extensionId: string };
 
-  // ── Legacy Plugin Lifecycle (Backwards Compatibility) ──
-  /** Emitted when a plugin instance has loaded. */
-  'plugin:loaded': { pluginId: string };
-  /** Emitted when a plugin instance has unloaded. */
-  'plugin:unloaded': { pluginId: string };
-  /** Emitted when a plugin is enabled. */
-  'plugin:enabled': { pluginId: string };
-  /** Emitted when a plugin is disabled. */
-  'plugin:disabled': { pluginId: string };
-
   // ── Editor & Inter-Plugin Actions ──
   /**
    * Generic editor action event. Allows plugins to trigger editor-level

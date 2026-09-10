@@ -258,7 +258,7 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
         <div data-sidebar-dock-pane="true" className="flex-1 flex flex-col h-full overflow-hidden relative">
           <React.Suspense fallback={null}>
             <LazyDisabledExtensionView
-              extensionId={extState.extensionId || extState.pluginId}
+              extensionId={extState.extensionId}
               extensionName={extState.manifest.name}
               viewTitle={extState.viewTitle}
               tabId={activeItem.id}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { LeftNavView, SidebarTab, TabItem, MainViewMode, RecentVaultItem, DocumentItem } from '@/types';
+import { LeftNavView, SidebarTab, TabItem, MainViewMode, RecentHearthItem, DocumentItem } from '@/types';
 import { useDocumentStore } from './documentStore';
 import { useSettingsStore } from './settingsStore';
 import { useSidebarDockStore, DockItem, DockZone } from './sidebarDockStore';
@@ -76,36 +76,36 @@ export interface NavigationHistoryItem {
 
 import { FileSortOrder } from '@/lib/sort';
 
-function getFolderOpenStateKey(vaultPath?: string): string {
-  const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.hearthPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
-  return `flint_folder_open_state_v1:${vPath || 'default'}`;
+function getFolderOpenStateKey(hearthPath?: string): string {
+  const hPath = (hearthPath || useWorkspaceStore?.getState?.()?.hearthPath || '').trim();
+  return `flint_folder_open_state_v1:${hPath || 'default'}`;
 }
 
-export function loadPersistedFolderOpenState(vaultPath?: string): Record<string, boolean> {
+export function loadPersistedFolderOpenState(hearthPath?: string): Record<string, boolean> {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(getFolderOpenStateKey(vaultPath));
+    const raw = localStorage.getItem(getFolderOpenStateKey(hearthPath));
     if (raw) return JSON.parse(raw);
   } catch {}
   return {};
 }
 
-export function savePersistedFolderOpenState(state: Record<string, boolean>, vaultPath?: string) {
+export function savePersistedFolderOpenState(state: Record<string, boolean>, hearthPath?: string) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(getFolderOpenStateKey(vaultPath), JSON.stringify(state));
+    localStorage.setItem(getFolderOpenStateKey(hearthPath), JSON.stringify(state));
   } catch {}
 }
 
-function getFileSortOrderKey(vaultPath?: string): string {
-  const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.hearthPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
-  return `flint_file_sort_order_v1:${vPath || 'default'}`;
+function getFileSortOrderKey(hearthPath?: string): string {
+  const hPath = (hearthPath || useWorkspaceStore?.getState?.()?.hearthPath || '').trim();
+  return `flint_file_sort_order_v1:${hPath || 'default'}`;
 }
 
-export function loadPersistedFileSortOrder(vaultPath?: string): FileSortOrder {
+export function loadPersistedFileSortOrder(hearthPath?: string): FileSortOrder {
   if (typeof window === 'undefined') return 'alphabetical';
   try {
-    const raw = localStorage.getItem(getFileSortOrderKey(vaultPath));
+    const raw = localStorage.getItem(getFileSortOrderKey(hearthPath));
     if (raw && ['alphabetical', 'alphabetical-reverse', 'byModifiedTime', 'byModifiedTimeReverse', 'byCreatedTime', 'byCreatedTimeReverse'].includes(raw)) {
       return raw as FileSortOrder;
     }
@@ -113,21 +113,21 @@ export function loadPersistedFileSortOrder(vaultPath?: string): FileSortOrder {
   return 'alphabetical';
 }
 
-export function savePersistedFileSortOrder(sortOrder: FileSortOrder, vaultPath?: string) {
+export function savePersistedFileSortOrder(sortOrder: FileSortOrder, hearthPath?: string) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(getFileSortOrderKey(vaultPath), sortOrder);
+    localStorage.setItem(getFileSortOrderKey(hearthPath), sortOrder);
   } catch {}
 }
 
 let saveTabsSessionTimer: any = null;
 
-function performSaveTabsSession(vaultPath?: string) {
+function performSaveTabsSession(hearthPath?: string) {
   if (typeof window === 'undefined') return;
   const { restoreTabs } = useSettingsStore.getState();
-  const vPath = (vaultPath || useWorkspaceStore.getState().hearthPath || useWorkspaceStore.getState().vaultPath || '').trim();
-  if (!vPath || vPath === 'default') return;
-  const key = `flint_workspace_tabs_v1:${vPath}`;
+  const hPath = (hearthPath || useWorkspaceStore.getState().hearthPath || '').trim();
+  if (!hPath || hPath === 'default') return;
+  const key = `flint_workspace_tabs_v1:${hPath}`;
 
   if (!restoreTabs) {
     localStorage.removeItem(key);
@@ -189,22 +189,22 @@ function performSaveTabsSession(vaultPath?: string) {
   }
 }
 
-export function saveTabsSessionImmediate(vaultPath?: string) {
+export function saveTabsSessionImmediate(hearthPath?: string) {
   if (saveTabsSessionTimer) {
     clearTimeout(saveTabsSessionTimer);
     saveTabsSessionTimer = null;
   }
-  performSaveTabsSession(vaultPath);
+  performSaveTabsSession(hearthPath);
 }
 
-export function saveTabsSession(vaultPath?: string) {
+export function saveTabsSession(hearthPath?: string) {
   if (typeof window === 'undefined') return;
   if (saveTabsSessionTimer) {
     clearTimeout(saveTabsSessionTimer);
   }
   saveTabsSessionTimer = setTimeout(() => {
     saveTabsSessionTimer = null;
-    performSaveTabsSession(vaultPath);
+    performSaveTabsSession(hearthPath);
   }, 400);
 }
 
@@ -214,14 +214,14 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export function loadSavedTabsSession(vaultPath?: string): PersistedTabsState | null {
+export function loadSavedTabsSession(hearthPath?: string): PersistedTabsState | null {
   if (typeof window === 'undefined') return null;
   const { restoreTabs } = useSettingsStore.getState();
   if (!restoreTabs) return null;
 
-  const vPath = (vaultPath || useWorkspaceStore.getState().hearthPath || useWorkspaceStore.getState().vaultPath || '').trim();
-  if (!vPath || vPath === 'default') return null;
-  const key = `flint_workspace_tabs_v1:${vPath}`;
+  const hPath = (hearthPath || useWorkspaceStore.getState().hearthPath || '').trim();
+  if (!hPath || hPath === 'default') return null;
+  const key = `flint_workspace_tabs_v1:${hPath}`;
 
   try {
     const raw = localStorage.getItem(key);
@@ -319,7 +319,6 @@ interface WorkspaceState {
   openCanvasTab: () => void;
   openTasksTab: () => void;
   openExtensionDocTab: (extensionId: string, title?: string) => void;
-  openPluginDocTab: (pluginId: string, title?: string) => void;
   openCustomTab: (options: OpenCustomTabOptions) => void;
   openEmptyTab: () => void;
   closeTab: (tabId: string) => void;
@@ -399,8 +398,6 @@ interface WorkspaceState {
   setIsHelpModalOpen: (open: boolean) => void;
   isHearthModalOpen: boolean;
   setIsHearthModalOpen: (open: boolean) => void;
-  isVaultModalOpen: boolean;
-  setIsVaultModalOpen: (open: boolean) => void;
   isUpdateModalOpen: boolean;
   availableUpdateRelease: any | null;
   setIsUpdateModalOpen: (open: boolean, release?: any | null) => void;
@@ -449,7 +446,7 @@ interface WorkspaceState {
   // Hearth Management
   hearthName: string;
   hearthPath: string;
-  recentHearths: RecentVaultItem[];
+  recentHearths: RecentHearthItem[];
   setHearthName: (name: string) => void;
   setHearthPath: (path: string) => void;
   initHearthInfo: () => Promise<void>;
@@ -460,20 +457,6 @@ interface WorkspaceState {
   removeRecentHearth: (path: string) => Promise<void>;
   switchHearth: (path: string) => Promise<void>;
   openHearthInExplorer: () => Promise<void>;
-
-  // Vault Management (Backwards compatibility)
-  vaultName: string;
-  vaultPath: string;
-  recentVaults: RecentVaultItem[];
-  setVaultName: (name: string) => void;
-  setVaultPath: (path: string) => void;
-  initVaultInfo: () => Promise<void>;
-  selectVaultFolder: () => Promise<void>;
-  createNewVault: (name: string, parentPath: string) => Promise<void>;
-  renameVault: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; error?: string }>;
-  removeRecentVault: (path: string) => Promise<void>;
-  switchVault: (path: string) => Promise<void>;
-  openVaultInExplorer: () => Promise<void>;
 
   // Status bar metrics
   wordCount: number;
@@ -583,7 +566,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         dock.setActiveItemInZone('left-top', view);
       }
     } catch {}
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
   getLastActiveLeftView: (excludeIds = [], preferredIndex?: number) => {
     const { leftSidebarHistory = [], activeLeftView } = get();
@@ -628,17 +611,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((state) => ({
       isLeftSidebarOpen: typeof open === 'function' ? open(state.isLeftSidebarOpen) : open,
     }));
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
   toggleLeftSidebar: () => {
     set((state) => ({ isLeftSidebarOpen: !state.isLeftSidebarOpen }));
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
   leftSidebarWidth: 260,
   setLeftSidebarWidth: (width) => {
     const clamped = Math.max(200, Math.min(width, 450));
     set({ leftSidebarWidth: clamped });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   activeRightTab: 'outline',
@@ -663,7 +646,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         dock.setActiveItemInZone('right-top', tab);
       }
     } catch {}
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
   getLastActiveRightTab: (excludeIds = [], preferredIndex?: number) => {
     const { rightSidebarHistory = [], activeRightTab } = get();
@@ -708,17 +691,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((state) => ({
       isRightSidebarOpen: typeof open === 'function' ? open(state.isRightSidebarOpen) : open,
     }));
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
   toggleRightSidebar: () => {
     set((state) => ({ isRightSidebarOpen: !state.isRightSidebarOpen }));
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
   rightSidebarWidth: 260,
   setRightSidebarWidth: (width) => {
     const clamped = Math.max(200, Math.min(width, 400));
     set({ rightSidebarWidth: clamped });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   tabs: [],
@@ -745,10 +728,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       title: title || extensionId,
       documentId: `__extension_doc:${extensionId}__`,
     });
-  },
-
-  openPluginDocTab: (pluginId: string, title?: string) => {
-    get().openExtensionDocTab(pluginId, title);
   },
 
   openCustomTab: (options: OpenCustomTabOptions) => {
@@ -940,7 +919,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.setState({ activeDocument: null });
     }
 
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   cleanUpDeadTabs: () => {
@@ -998,7 +977,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   restoreTabsSession: (docs: DocumentItem[]) => {
-    const activePath = get().hearthPath || get().vaultPath;
+    const activePath = get().hearthPath;
     if (!activePath) return false;
     const saved = loadSavedTabsSession(activePath);
     if (!saved || !saved.tabs || saved.tabs.length === 0) return false;
@@ -1473,7 +1452,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   closeTabInPane: (paneId, tabId) => {
@@ -1528,7 +1507,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         });
         useDocumentStore.setState({ activeDocument: null });
         emitBridgeAppEvent('tab:changed', { activeTabId: fallbackTab.id });
-        saveTabsSession(get().vaultPath);
+        saveTabsSession(get().hearthPath);
         return;
       }
 
@@ -1598,7 +1577,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: nextActiveTabId });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   togglePinTab: (tabId) => {
@@ -1621,7 +1600,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
     const nextTabs = tabs.map((t) => (t.id === tabId ? { ...t, is_pinned: !t.is_pinned } : t));
     set({ panes: newPanes, tabs: nextTabs });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   closePane: (paneId) => {
@@ -1687,7 +1666,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: mainModel?.activeTabId || '' });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   openTabInPane: (paneId, docId, title = 'Untitled', options?: OpenTabOptions) => {
@@ -1863,7 +1842,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!isBackground) {
       emitBridgeAppEvent('tab:changed', { activeTabId: nextTabId });
     }
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   openEmptyTabInPane: (paneId) => {
@@ -1908,7 +1887,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   openCustomTabInPane: (paneId, options) => {
@@ -2002,7 +1981,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: finalTabId });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   reorderTabsInPane: (paneId, sourceIndex, destinationIndex) => {
@@ -2034,7 +2013,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...(paneId === get().focusedPaneId && !isMain ? { splitTabs: newTabs } : {}),
     });
 
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   moveTabBetweenPanes: (sourcePaneId, sourceIndex, targetPaneId, targetIndex) => {
@@ -2156,7 +2135,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: tabToMove.id });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   setActiveTabInPane: (paneId, tabId) => {
@@ -2205,7 +2184,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: tabId });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   openSplitTab: (documentId: string, title = 'Untitled', direction?: 'horizontal' | 'vertical') => {
@@ -2272,7 +2251,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       splitActiveTabId: null,
       splitActiveDocumentId: null,
     });
-    saveTabsSession(get().vaultPath);
+    saveTabsSession(get().hearthPath);
   },
 
   setSplitActiveDocumentId: (id) => set({ splitActiveDocumentId: id }),
@@ -2291,9 +2270,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   isHelpModalOpen: false,
   setIsHelpModalOpen: (open) => set({ isHelpModalOpen: open }),
   isHearthModalOpen: false,
-  setIsHearthModalOpen: (open) => set({ isHearthModalOpen: open, isVaultModalOpen: open }),
-  isVaultModalOpen: false,
-  setIsVaultModalOpen: (open) => set({ isHearthModalOpen: open, isVaultModalOpen: open }),
+  setIsHearthModalOpen: (open) => set({ isHearthModalOpen: open }),
   isUpdateModalOpen: false,
   availableUpdateRelease: null,
   setIsUpdateModalOpen: (open, release) =>
@@ -2369,13 +2346,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   folderOpenState: loadPersistedFolderOpenState(),
   setFolderOpen: (folderId, isOpen) => {
     const current = { ...get().folderOpenState, [folderId]: isOpen };
-    savePersistedFolderOpenState(current, get().hearthPath || get().vaultPath);
+    savePersistedFolderOpenState(current, get().hearthPath);
     set({ folderOpenState: current });
   },
   toggleFolderOpen: (folderId) => {
     const currentState = get().folderOpenState[folderId] !== undefined ? get().folderOpenState[folderId] : true;
     const current = { ...get().folderOpenState, [folderId]: !currentState };
-    savePersistedFolderOpenState(current, get().hearthPath || get().vaultPath);
+    savePersistedFolderOpenState(current, get().hearthPath);
     set({ folderOpenState: current });
   },
   collapseAllFolders: () => {
@@ -2384,7 +2361,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     docs.filter((d) => d.is_folder).forEach((f) => {
       nextState[f.id] = false;
     });
-    savePersistedFolderOpenState(nextState, get().hearthPath || get().vaultPath);
+    savePersistedFolderOpenState(nextState, get().hearthPath);
     set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
   },
   expandAllFolders: () => {
@@ -2393,7 +2370,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     docs.filter((d) => d.is_folder).forEach((f) => {
       nextState[f.id] = true;
     });
-    savePersistedFolderOpenState(nextState, get().hearthPath || get().vaultPath);
+    savePersistedFolderOpenState(nextState, get().hearthPath);
     set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
   },
   toggleCollapseExpandAll: () => {
@@ -2414,44 +2391,32 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   fileSortOrder: loadPersistedFileSortOrder(),
   setFileSortOrder: (sortOrder) => {
-    savePersistedFileSortOrder(sortOrder, get().hearthPath || get().vaultPath);
+    savePersistedFileSortOrder(sortOrder, get().hearthPath);
     set({ fileSortOrder: sortOrder });
   },
 
-  // Hearth & Vault state
+  // Hearth state
   hearthName: 'Flint Hearth',
   hearthPath: '',
   recentHearths: [],
-  vaultName: 'Flint Hearth',
-  vaultPath: '',
-  recentVaults: [],
-  setHearthName: (name) => set({ hearthName: name, vaultName: name }),
+  setHearthName: (name) => set({ hearthName: name }),
   setHearthPath: (path) => {
     const persisted = loadPersistedFolderOpenState(path);
     const persistedSort = loadPersistedFileSortOrder(path);
-    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
-  },
-  setVaultName: (name) => set({ hearthName: name, vaultName: name }),
-  setVaultPath: (path) => {
-    const persisted = loadPersistedFolderOpenState(path);
-    const persistedSort = loadPersistedFileSortOrder(path);
-    set({ hearthPath: path, vaultPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
+    set({ hearthPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
   },
 
   initHearthInfo: async () => {
     try {
-      const hearth = await (platform.getCurrentHearth ? platform.getCurrentHearth() : platform.getCurrentVault());
+      const hearth = await platform.getCurrentHearth();
       if (hearth && hearth.path) {
-        const recentList = (hearth as any).recentHearths || (hearth as any).recentVaults || [];
+        const recentList = hearth.recentHearths || [];
         const persisted = loadPersistedFolderOpenState(hearth.path);
         const persistedSort = loadPersistedFileSortOrder(hearth.path);
         set({
           hearthPath: hearth.path,
           hearthName: hearth.name || 'Flint Hearth',
           recentHearths: recentList,
-          vaultPath: hearth.path,
-          vaultName: hearth.name || 'Flint Hearth',
-          recentVaults: recentList,
           folderOpenState: persisted,
           fileSortOrder: persistedSort,
         });
@@ -2462,10 +2427,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     // Subscribe to external hearth change notifications
-    const onHearth = platform.onHearthChanged || platform.onVaultChanged;
-    onHearth((hearth) => {
+    platform.onHearthChanged((hearth) => {
       if (hearth?.path) {
-        const currentPath = get().hearthPath || get().vaultPath;
+        const currentPath = get().hearthPath;
         if (currentPath && hearth.path && currentPath.toLowerCase() === hearth.path.toLowerCase()) {
           return;
         }
@@ -2476,19 +2440,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
   },
 
-  initVaultInfo: async () => {
-    return get().initHearthInfo();
-  },
-
   selectHearthFolder: async () => {
     try {
-      const currentPath = get().hearthPath || get().vaultPath;
+      const currentPath = get().hearthPath;
       if (currentPath) {
         saveTabsSession(currentPath);
         await dbAdapter.persist();
       }
       dbAdapter.setSwitchingHearth(true);
-      const res = await (platform.selectHearthFolder ? platform.selectHearthFolder() : platform.selectVaultFolder());
+      const res = await platform.selectHearthFolder();
       if (!res.canceled && res.path) {
         if (typeof window !== 'undefined') {
           window.location.reload();
@@ -2501,10 +2461,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       dbAdapter.setSwitchingHearth(false);
       console.error('Error selecting hearth folder:', e);
     }
-  },
-
-  selectVaultFolder: async () => {
-    return get().selectHearthFolder();
   },
 
   selectParentFolder: async () => {
@@ -2521,7 +2477,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   createNewHearth: async (name: string, parentPath: string) => {
     try {
-      const currentPath = get().hearthPath || get().vaultPath;
+      const currentPath = get().hearthPath;
       if (currentPath) {
         saveTabsSession(currentPath);
         await dbAdapter.persist();
@@ -2542,17 +2498,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
   },
 
-  createNewVault: async (name: string, parentPath: string) => {
-    return get().createNewHearth(name, parentPath);
-  },
-
   renameHearth: async (targetPath: string, newName: string) => {
     try {
       const cleanName = (newName || '').trim();
       if (!cleanName) return { success: false, error: 'Name cannot be empty' };
 
-      const activePath = targetPath || get().hearthPath || get().vaultPath;
-      const isCurrent = !activePath || activePath === get().hearthPath || activePath === get().vaultPath;
+      const activePath = targetPath || get().hearthPath;
+      const isCurrent = !activePath || activePath === get().hearthPath;
 
       // If the active hearth is being renamed, flush pending SQLite writes first
       if (isCurrent) {
@@ -2568,11 +2520,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
         set((state) => ({
           recentHearths: list.length > 0 ? list : state.recentHearths.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
-          recentVaults: list.length > 0 ? list : state.recentVaults.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
           hearthName: isCurrent ? cleanName : state.hearthName,
-          vaultName: isCurrent ? cleanName : state.vaultName,
           hearthPath: isCurrent ? finalPath : state.hearthPath,
-          vaultPath: isCurrent ? finalPath : state.vaultPath,
         }));
 
         if (isCurrent) {
@@ -2596,16 +2545,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
   },
 
-  renameVault: async (targetPath: string, newName: string) => {
-    return get().renameHearth(targetPath, newName);
-  },
-
   removeRecentHearth: async (targetPath: string) => {
     try {
       const res = await platform.removeRecentHearth(targetPath);
       if (res.success) {
-        const list = (res as any).recentHearths || (res as any).recentVaults || [];
-        set({ recentHearths: list, recentVaults: list });
+        const list = res.recentHearths || [];
+        set({ recentHearths: list });
         get().showToast('Removed Hearth from list', 'info');
       }
     } catch (e) {
@@ -2613,13 +2558,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
   },
 
-  removeRecentVault: async (targetPath: string) => {
-    return get().removeRecentHearth(targetPath);
-  },
-
   switchHearth: async (hearthPath: string) => {
     try {
-      const currentPath = get().hearthPath || get().vaultPath;
+      const currentPath = get().hearthPath;
       if (hearthPath && currentPath && hearthPath.toLowerCase() === currentPath.toLowerCase()) {
         get().showToast('This Hearth is already open', 'info');
         return;
@@ -2644,18 +2585,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
   },
 
-  switchVault: async (vaultPath: string) => {
-    return get().switchHearth(vaultPath);
-  },
-
   openHearthInExplorer: async () => {
-    const { hearthPath, vaultPath } = get();
-    const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
-    await openFn(hearthPath || vaultPath);
-  },
-
-  openVaultInExplorer: async () => {
-    return get().openHearthInExplorer();
+    await platform.openHearthInExplorer(get().hearthPath);
   },
 
   wordCount: 0,
@@ -2693,7 +2624,7 @@ if (typeof window !== 'undefined') {
       state.leftSidebarWidth !== prevState.leftSidebarWidth ||
       state.rightSidebarWidth !== prevState.rightSidebarWidth
     ) {
-      saveTabsSession(state.vaultPath);
+      saveTabsSession(state.hearthPath);
     }
   });
 

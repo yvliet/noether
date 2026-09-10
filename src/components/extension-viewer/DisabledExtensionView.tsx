@@ -6,25 +6,21 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 
 export interface DisabledExtensionViewProps {
   extensionId?: string;
-  pluginId?: string;
   extensionName?: string;
-  pluginName?: string;
   viewTitle?: string;
   tabId?: string;
 }
 
 export const DisabledExtensionView: React.FC<DisabledExtensionViewProps> = React.memo(({
   extensionId,
-  pluginId,
   extensionName,
-  pluginName,
   viewTitle,
 }) => {
   const app = useFlintApp();
   const showToast = useWorkspaceStore((s) => s.showToast);
 
-  const targetId = extensionId || pluginId || '';
-  const targetName = extensionName || pluginName || targetId;
+  const targetId = extensionId || '';
+  const targetName = extensionName || targetId;
 
   const handleEnableExtension = useCallback(async (e?: React.MouseEvent) => {
     if (e) {
@@ -58,7 +54,7 @@ export const DisabledExtensionView: React.FC<DisabledExtensionViewProps> = React
               <button
                 type="button"
                 onClick={handleEnableExtension}
-                className="text-[var(--flint-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline"
+                className="text-[var(--flint-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline"
               >
                 Enable it back?
               </button>
@@ -77,7 +73,4 @@ export const DisabledExtensionView: React.FC<DisabledExtensionViewProps> = React
   );
 });
 
-// Backwards compatibility alias
-export const DisabledPluginView = DisabledExtensionView;
-export type DisabledPluginViewProps = DisabledExtensionViewProps;
 export default DisabledExtensionView;

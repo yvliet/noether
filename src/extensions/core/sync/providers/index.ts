@@ -9,7 +9,7 @@ import { SupabaseProvider } from './SupabaseProvider';
 import { TursoProvider } from './TursoProvider';
 import { CloudflareD1Provider } from './CloudflareD1Provider';
 import { CustomRestProvider } from './CustomRestProvider';
-import { UniversalSyncConfig } from '../types';
+import { SyncConfig } from '../types';
 
 export {
   BaseProvider,
@@ -19,7 +19,7 @@ export {
   CustomRestProvider,
 };
 
-export function createProvider(config: UniversalSyncConfig): BaseProvider {
+export function createProvider(config: SyncConfig): BaseProvider {
   switch (config.activeProvider) {
     case 'supabase':
       return new SupabaseProvider(config.supabase, config.deviceId);

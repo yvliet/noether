@@ -13,13 +13,11 @@ import { MarketplaceExtension, MARKETPLACE_MANIFEST } from './marketplace/Market
 import { IconifyExtension, ICONIFY_MANIFEST } from './iconify/IconifyExtension';
 import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
-import { DefaultStatusBarExtension, DEFAULT_STATUS_BAR_MANIFEST } from './defaults/DefaultStatusBarExtension';
-import { UniversalSyncExtension, UNIVERSAL_SYNC_MANIFEST } from './universal-sync/UniversalSyncExtension';
+import { SyncExtension, SYNC_MANIFEST } from './sync/SyncExtension';
 
 export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(DEFAULT_COMMANDS_MANIFEST, DefaultCommandsExtension);
-  app.extensions.registerExtension(DEFAULT_STATUS_BAR_MANIFEST, DefaultStatusBarExtension);
-  app.extensions.registerExtension(UNIVERSAL_SYNC_MANIFEST, UniversalSyncExtension);
+  app.extensions.registerExtension(SYNC_MANIFEST, SyncExtension);
   app.extensions.registerExtension(BOOKMARKS_MANIFEST, BookmarksExtension);
   app.extensions.registerExtension(MARKETPLACE_MANIFEST, MarketplaceExtension);
   app.extensions.registerExtension(TABLES_MANIFEST, TablesExtension);
@@ -34,6 +32,3 @@ export function registerAllCoreExtensions(app: FlintApp): void {
   app.extensions.registerExtension(ICONIFY_MANIFEST, IconifyExtension);
   app.extensions.registerExtension(SKETCH_MANIFEST, SketchExtension);
 }
-
-// Backwards-compat alias
-export const registerAllCorePlugins = registerAllCoreExtensions;

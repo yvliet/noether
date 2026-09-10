@@ -1,16 +1,16 @@
-# Universal External Sync (`universal-sync`)
+# Sync (`sync`)
 
 Synchronize your Flint notes, knowledge graph, and canvases across desktop and mobile machines using your own free cloud database, with zero user tracking and zero recurring subscriptions.
 
 ---
 
-## 1. Why Universal External Sync?
+## 1. Why Sync?
 
 ---
 
 Most proprietary note-taking tools charge monthly recurring subscriptions for cloud synchronization. Because Flint is built on a local-first architecture with plain Markdown files and local SQLite indexes, your notes belong to you.
 
-The Universal External Sync extension connects your local Hearth to your own free cloud database:
+The Sync extension connects your local Hearth to your own free cloud database:
 - **Supabase Free Tier (Recommended)**: 500 MB permanent PostgreSQL database with instant PostgREST HTTP APIs and zero credit card requirements.
 - **Turso libSQL**: Edge SQLite databases running over the Hrana v2 HTTP pipeline.
 - **Cloudflare D1**: Serverless SQL databases running on Cloudflare Workers edge nodes.
@@ -69,7 +69,7 @@ CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
 1. In your Supabase project, go to **Project Settings → API**.
 2. Copy your **Project URL** (for example: `https://abcdefghijkl.supabase.co`).
 3. Copy your **anon public API key** (`eyJhbGci...`).
-4. In Flint, open **Settings → Universal Sync**.
+4. In Flint, open **Settings → Sync**.
 5. Paste the Project URL and Anon Key into the guided wizard.
 6. Click **Test Connection** to verify database connectivity, then click **Sync Now**.
 
@@ -142,14 +142,14 @@ CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
 
 ### Command Palette Shortcuts
 - `Ctrl+Shift+S`: Triggers an immediate bidirectional sync cycle.
-- `Universal Sync: Test Database Connection`: Validates reachability and table status.
-- `Universal Sync: Open Sync Settings & Setup Wizard`: Opens the configuration pane.
+- `Sync: Test Database Connection`: Validates reachability and table status.
+- `Sync: Configure Cloud Provider`: Opens the configuration pane.
 
 ### Model Context Protocol (MCP) AI Tools
 The extension exposes the following tools to in-app AI copilots and external desktop agents:
-- `universal-sync_sync_now`: Triggers an immediate sync cycle and returns telemetry.
-- `universal-sync_get_sync_status`: Inspects telemetry, database status, and pending change counts.
-- `universal-sync_test_connection`: Verifies database reachability and table readiness.
+- `sync_sync_now`: Triggers an immediate sync cycle and returns telemetry.
+- `sync_get_sync_status`: Inspects telemetry, database status, and pending change counts.
+- `sync_test_connection`: Verifies database reachability and table readiness.
 
 ---
 

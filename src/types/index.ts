@@ -143,8 +143,4 @@ export interface RecentHearthItem {
   lastOpened: number;
 }
 
-// Backwards compatibility aliases
-export type VaultDiskItem = HearthDiskItem;
-export type RecentVaultItem = RecentHearthItem;
-
 

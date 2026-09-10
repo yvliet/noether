@@ -298,21 +298,6 @@ export abstract class Extension {
   }
 
   /**
-   * Backwards compatibility alias for addActionRailIcon.
-   * @since 0.1.0
-   */
-  public addRibbonIcon(
-    id: string,
-    icon: React.ReactNode,
-    title: string,
-    onClick: (app: FlintApp) => void | Promise<void>,
-    order?: number,
-    isActive?: boolean | ((app: FlintApp) => boolean)
-  ): Disposable {
-    return this.addActionRailIcon(id, icon, title, onClick, order, isActive);
-  }
-
-  /**
    * Registers a widget in the bottom status bar.
    *
    * @param item - Status bar item configuration.
@@ -338,7 +323,6 @@ export abstract class Extension {
     const d = this.app.views.registerView({
       ...view,
       extensionId: this.manifest.id,
-      pluginId: this.manifest.id,
     });
     return this.registerDisposable(d);
   }
@@ -424,7 +408,7 @@ export abstract class Extension {
     const d = this.app.settingsRegistry.registerSettingTab({
       ...tab,
       id: tabId,
-      pluginId: this.manifest.id,
+      extensionId: this.manifest.id,
     });
     return this.registerDisposable(d);
   }
@@ -871,7 +855,7 @@ export abstract class Extension {
    * @since 0.2.0
    */
   public async loadData<T = unknown>(): Promise<T | null> {
-    return this.app.extensions.loadPluginData(this.manifest.id) as Promise<T | null>;
+    return this.app.extensions.loadExtensionData(this.manifest.id) as Promise<T | null>;
   }
 
   /**
@@ -882,10 +866,8 @@ export abstract class Extension {
    * @since 0.2.0
    */
   public async saveData<T = unknown>(data: T): Promise<void> {
-    return this.app.extensions.savePluginData(this.manifest.id, data);
+    return this.app.extensions.saveExtensionData(this.manifest.id, data);
   }
 }
 
-// Backwards compatibility alias
-export const Plugin = Extension;
-export type PluginClass = typeof Extension;
+export default Extension;

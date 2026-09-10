@@ -26,7 +26,6 @@ import type { ExtensionManifest } from '@/core/extensions/types';
 import {
   COMMUNITY_MARKETPLACE_CATALOGUE,
   MarketplaceExtensionItem,
-  MarketplacePluginItem,
 } from './marketplaceCatalogue';
 import { useMarketplaceQuery, getRegistryUrl } from './useMarketplaceQuery';
 import { fetchTursoPluginBundle } from './tursoClient';
@@ -37,7 +36,6 @@ import { compareSemVer } from '@/core/extensions/ExtensionUpdateManager';
 export {
   COMMUNITY_MARKETPLACE_CATALOGUE,
   type MarketplaceExtensionItem,
-  type MarketplacePluginItem,
 };
 
 export const MarketplaceView: React.FC = () => {

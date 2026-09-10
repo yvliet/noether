@@ -1,9 +1,9 @@
-export const iconifyReadme = `# Iconify: Let Icons Live in All of Flint
+export const iconifyReadme = `# More icons: Let Icons Live in All of Flint
 
 **Version**: 1.1.0  
 **Author**: Yuliet Li
 
-**Iconify** transforms icons into first-class visual citizens across your entire Flint workspace. From folders, files, notes, canvas boards, and tabs to inline rich-text documents and notes, Iconify lets icons live everywhere in Flint with an extensible multi-pack architecture and persistent SQLite storage.
+**More icons** transforms icons into first-class visual citizens across your entire Flint workspace. From folders, files, notes, canvas boards, and tabs to inline rich-text documents and notes, More icons lets icons live everywhere in Flint with an extensible multi-pack architecture and persistent SQLite storage.
 
 ---
 

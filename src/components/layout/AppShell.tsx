@@ -71,7 +71,7 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
 
   // If the extension has been completely deleted from files, automatically delete the tab
   useEffect(() => {
-    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'plugin-doc'].includes(currentViewType || '');
+    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc'].includes(currentViewType || '');
     if (!isBuiltinCore && app.extensions.isReady && extensionState.state === 'deleted' && currentTab) {
       closeTabInPane(paneId, currentTab.id);
     }
@@ -96,7 +96,7 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
       >
         <React.Suspense fallback={null}>
           <LazyDisabledExtensionView
-            extensionId={extensionState.extensionId || extensionState.pluginId}
+            extensionId={extensionState.extensionId}
             extensionName={extensionState.manifest.name}
             viewTitle={extensionState.viewTitle}
             tabId={currentTab?.id}
@@ -202,7 +202,7 @@ const MainViewport: React.FC = React.memo(() => {
 });
 
 const WindowTitleSync: React.FC = React.memo(() => {
-  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
+  const hearthName = useWorkspaceStore((s) => s.hearthName);
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const isSplitView = useWorkspaceStore((s) => s.isSplitView);
@@ -257,8 +257,8 @@ export const AppShell: React.FC = React.memo(() => {
 
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const isRightSidebarOpen = useWorkspaceStore((s) => s.isRightSidebarOpen);
-  const initHearthInfo = useWorkspaceStore((s) => s.initHearthInfo || s.initVaultInfo);
-  const showActionRail = useSettingsStore((s) => s.showActionRail ?? s.showRibbon);
+  const initHearthInfo = useWorkspaceStore((s) => s.initHearthInfo);
+  const showActionRail = useSettingsStore((s) => s.showActionRail);
   const loadInitialData = useDocumentStore((s) => s.loadInitialData);
   const isLoading = useDocumentStore((s) => s.isLoading);
 
@@ -285,8 +285,7 @@ export const AppShell: React.FC = React.memo(() => {
 
     // 2. External Hearth files changed listener (Git pulls, external edits, sync)
     let syncTimeout: any = null;
-    const onFilesChanged = platform.onHearthFilesChanged || platform.onVaultFilesChanged;
-    const unsubFiles = onFilesChanged(() => {
+    const unsubFiles = platform.onHearthFilesChanged(() => {
       // Suppress full hearth reload storm when the change was initiated internally by Flint
       if (platform.isRecentInternalWrite()) {
         return;
@@ -311,10 +310,9 @@ export const AppShell: React.FC = React.memo(() => {
         loadInitialData();
       });
 
-    const onHearth = platform.onHearthChanged || platform.onVaultChanged;
-    const unsubHearth = onHearth(async (data) => {
+    const unsubHearth = platform.onHearthChanged(async (data) => {
       // If the current window state has already updated to the new Hearth path, do not reload
-      const currentPath = useWorkspaceStore.getState().hearthPath || useWorkspaceStore.getState().vaultPath;
+      const currentPath = useWorkspaceStore.getState().hearthPath;
       if (currentPath && data?.path && currentPath.toLowerCase() === data.path.toLowerCase()) {
         return;
       }
@@ -324,11 +322,11 @@ export const AppShell: React.FC = React.memo(() => {
 
     // 4. Cross-window communication listener (e.g. opening tabs from Settings window)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'flint_open_plugin_doc' && e.newValue) {
+      if (e.key === 'flint_open_extension_doc' && e.newValue) {
         try {
-          const { pluginId, title } = JSON.parse(e.newValue);
-          if (pluginId) {
-            useWorkspaceStore.getState().openPluginDocTab(pluginId, title);
+          const { extensionId, title } = JSON.parse(e.newValue);
+          if (extensionId) {
+            useWorkspaceStore.getState().openExtensionDocTab(extensionId, title);
           }
         } catch (err) {
           console.error('Error handling cross-window navigation event', err);

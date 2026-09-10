@@ -201,12 +201,6 @@ export interface WorkspaceAPI {
    */
   openExtensionDocTab(extensionId: string, title?: string): void;
 
-  /**
-   * Backwards-compatibility alias for `openExtensionDocTab`.
-   * @deprecated Use `openExtensionDocTab` instead.
-   */
-  openPluginDocTab(pluginId: string, title?: string): void;
-
   // ── Sidebar Management ──
 
   /**
@@ -407,8 +401,7 @@ export interface WorkspaceAPI {
 /**
  * The Hearth API provides methods for interacting with documents,
  * notes, and the underlying Hearth storage layer.
- *
- * Accessed via `app.hearth` (or legacy `app.vault`) inside any Extension.
+ * Accessed via `app.hearth` inside any Extension.
  *
  * @example
  * ```ts
@@ -445,18 +438,6 @@ export interface HearthAPI {
    * @since 0.1.0
    */
   readonly hearthPath: string;
-
-  /**
-   * Backwards-compatible alias for hearthName.
-   * @since 0.1.0
-   */
-  readonly vaultName: string;
-
-  /**
-   * Backwards-compatible alias for hearthPath.
-   * @since 0.1.0
-   */
-  readonly vaultPath: string;
 
   /**
    * Retrieves a document by its unique ID.
@@ -518,7 +499,7 @@ export interface HearthAPI {
   ): Promise<DocumentItem | undefined>;
 
   /**
-   * Backwards-compatible convenience helper for creating canvas documents.
+   * Convenience helper for creating canvas documents.
    * @since 0.2.0
    */
   createNewCanvas(): Promise<DocumentItem | undefined>;
@@ -775,10 +756,4 @@ export interface SettingsAPI {
    */
   setDefaultEditingMode(mode: string): void;
 }
-
-/**
- * Backwards compatibility alias for HearthAPI.
- * @since 0.1.0
- */
-export type VaultAPI = HearthAPI;
 

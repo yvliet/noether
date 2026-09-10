@@ -43,11 +43,10 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
 
   // Load hearth information on window open
   useEffect(() => {
-    const getFn = platform.getCurrentHearth || platform.getCurrentVault;
-    getFn().then((data) => {
+    platform.getCurrentHearth().then((data) => {
       if (data) {
         setCurrentHearthPath(data.path);
-        setRecentHearths((data as any).recentHearths || (data as any).recentVaults || []);
+        setRecentHearths(data.recentHearths || []);
       }
     });
   }, []);
@@ -69,29 +68,22 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
 
   const handleClose = useCallback(() => {
     platform.close();
-    if (platform.closeHearthWindow) {
-      platform.closeHearthWindow();
-    } else {
-      platform.closeVaultWindow();
-    }
+    platform.closeHearthWindow();
   }, []);
 
   const handleOpenRecent = useCallback(async (targetPath: string) => {
     if (editingHearthPath) return;
     if (targetPath && currentHearthPath && targetPath.toLowerCase() === currentHearthPath.toLowerCase()) {
-      const closeFn = platform.closeHearthWindow || platform.closeVaultWindow;
-      await closeFn?.();
+      await platform.closeHearthWindow();
       return;
     }
-    const switchFn = platform.setCurrentHearth || platform.setCurrentVault;
-    await switchFn(targetPath);
+    await platform.setCurrentHearth(targetPath);
   }, [editingHearthPath, currentHearthPath]);
 
   const handleSaveRename = useCallback(async (targetPath: string) => {
     const trimmed = editHearthName.trim();
     if (trimmed) {
-      const renameFn = platform.renameHearth || platform.renameVault;
-      const res = await renameFn(targetPath, trimmed);
+      const res = await platform.renameHearth(targetPath, trimmed);
       if (res && res.success) {
         const newPath = res.path || targetPath;
         if (targetPath === currentHearthPath) {
@@ -112,16 +104,14 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
   }, [editHearthName, currentHearthPath]);
 
   const handleRemoveRecent = useCallback(async (targetPath: string) => {
-    const removeFn = platform.removeRecentHearth || platform.removeRecentVault;
-    const res = await removeFn(targetPath);
+    const res = await platform.removeRecentHearth(targetPath);
     if (res && res.success) {
-      setRecentHearths((res as any).recentHearths || (res as any).recentVaults || []);
+      setRecentHearths(res.recentHearths || []);
     }
   }, []);
 
   const handleOpenFolderAsHearth = useCallback(async () => {
-    const selectFn = platform.selectHearthFolder || platform.selectVaultFolder;
-    await selectFn();
+    await platform.selectHearthFolder();
   }, []);
 
   const handleBrowseLocation = useCallback(async () => {
@@ -133,13 +123,11 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
 
   const handleCreateHearth = useCallback(async () => {
     if (!newHearthName.trim() || !newHearthLocation.trim()) return;
-    const createFn = platform.createNewHearth || platform.createNewVault;
-    await createFn(newHearthName.trim(), newHearthLocation.trim());
+    await platform.createNewHearth(newHearthName.trim(), newHearthLocation.trim());
   }, [newHearthName, newHearthLocation]);
 
   const handleOpenInExplorer = useCallback(async () => {
-    const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
-    await openFn(currentHearthPath);
+    await platform.openHearthInExplorer(currentHearthPath);
   }, [currentHearthPath]);
 
   return (
@@ -280,8 +268,7 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
                           <button
                             onClick={() => {
                               setActiveMenuPath(null);
-                              const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
-                              openFn(rv.path);
+                              platform.openHearthInExplorer(rv.path);
                             }}
                             className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--flint-bg-card-hover)] rounded-md text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer"
                           >
@@ -503,6 +490,4 @@ export const HearthSwitcherWindow: React.FC = React.memo(() => {
   );
 });
 
-// Alias for backwards compatibility
-export const VaultSwitcherWindow = HearthSwitcherWindow;
 export default HearthSwitcherWindow;

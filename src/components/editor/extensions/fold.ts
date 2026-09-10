@@ -12,8 +12,6 @@ import { renderHugeIconSvg } from '@/components/common/Icons';
 import { parseCalloutHeader, ParsedCalloutHeader } from '@/lib/editor/callouts';
 
 export const FoldPluginKey = new PluginKey('foldPlugin');
-/** Backward compatibility alias */
-export const FoldHeadingPluginKey = FoldPluginKey;
 
 const getHeadingChevronSvg = (level: number, isFolded: boolean) => {
   const size = level === 1 ? 18 : level === 2 ? 16 : level === 3 ? 14 : 13;
@@ -1401,5 +1399,3 @@ export const Fold = Extension.create<FoldOptions>({
   },
 });
 
-/** Backward compatibility alias */
-export const FoldHeading = Fold;

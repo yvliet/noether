@@ -39,7 +39,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
   const setFocusedPane = useWorkspaceStore((s) => s.setFocusedPane);
   const splitPane = useWorkspaceStore((s) => s.splitPane);
 
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const documents = useDocumentStore((s) => s.documents);
   const { showContextMenu } = useAppContextMenu();

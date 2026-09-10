@@ -28,7 +28,7 @@ export interface SidebarDockState {
 
   // Actions
   loadSession: (
-    vaultPath?: string,
+    hearthPath?: string,
     sessionData?: Partial<{
       items: DockItem[];
       activeItemByZone: Record<DockZone, string | null>;
@@ -49,10 +49,10 @@ export interface SidebarDockState {
 
 const GLOBAL_STORAGE_KEY = 'flint_sidebar_dock_state_v1';
 
-export function getDockStorageKey(vaultPath?: string): string {
-  const vp = (vaultPath || '').trim();
-  if (!vp || vp === 'default') return GLOBAL_STORAGE_KEY;
-  return `${GLOBAL_STORAGE_KEY}:${vp}`;
+export function getDockStorageKey(hearthPath?: string): string {
+  const hp = (hearthPath || '').trim();
+  if (!hp || hp === 'default') return GLOBAL_STORAGE_KEY;
+  return `${GLOBAL_STORAGE_KEY}:${hp}`;
 }
 
 export function cleanDockItems(items: any[]): DockItem[] {
@@ -103,14 +103,14 @@ function ensureActiveItemsEnabled(
   });
 }
 
-function loadPersistedState(vaultPath?: string): {
+function loadPersistedState(hearthPath?: string): {
   items: DockItem[];
   activeItemByZone: Record<DockZone, string | null>;
   splitRatioLeft: number;
   splitRatioRight: number;
 } {
   try {
-    const key = getDockStorageKey(vaultPath);
+    const key = getDockStorageKey(hearthPath);
     let raw = localStorage.getItem(key);
     if (!raw && key !== GLOBAL_STORAGE_KEY) {
       raw = localStorage.getItem(GLOBAL_STORAGE_KEY);
@@ -170,7 +170,7 @@ function saveState(
     splitRatioLeft: number;
     splitRatioRight: number;
   },
-  vaultPath?: string
+  hearthPath?: string
 ) {
   try {
     const payload = JSON.stringify({
@@ -179,7 +179,7 @@ function saveState(
       splitRatioLeft: state.splitRatioLeft,
       splitRatioRight: state.splitRatioRight,
     });
-    const key = getDockStorageKey(vaultPath);
+    const key = getDockStorageKey(hearthPath);
     localStorage.setItem(key, payload);
     if (key !== GLOBAL_STORAGE_KEY) {
       localStorage.setItem(GLOBAL_STORAGE_KEY, payload);
@@ -316,7 +316,7 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
   splitRatioLeft: initialPersisted.splitRatioLeft,
   splitRatioRight: initialPersisted.splitRatioRight,
 
-  loadSession: (vaultPath, sessionData) => {
+  loadSession: (hearthPath, sessionData) => {
     let nextState: {
       items: DockItem[];
       activeItemByZone: Record<DockZone, string | null>;
@@ -341,11 +341,11 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
         splitRatioRight: typeof sessionData.splitRatioRight === 'number' ? sessionData.splitRatioRight : 0.5,
       };
     } else {
-      nextState = loadPersistedState(vaultPath);
+      nextState = loadPersistedState(hearthPath);
     }
 
     set(nextState);
-    saveState(nextState, vaultPath);
+    saveState(nextState, hearthPath);
   },
 
   dockTab: (tab, zone, insertIndex) => {

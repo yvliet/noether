@@ -226,8 +226,8 @@ function normalizePluginItem(
 }
 
 const CORE_EXTENSION_IDS = new Set([
-  'universal-sync',
-  'flint-universal-sync',
+  'sync',
+  'flint-sync',
   'graph',
   'canvas',
   'tasks',
@@ -242,7 +242,6 @@ const CORE_EXTENSION_IDS = new Set([
   'iconify',
   'sketch',
   'default-commands',
-  'default-status-bar',
 ]);
 
 /**

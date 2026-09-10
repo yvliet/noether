@@ -82,23 +82,6 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
   },
 ];
 
-const LEGACY_COLOR_MAP: Record<string, string> = {
-  '#261616': 'red',
-  '#272013': 'orange',
-  '#152418': 'green',
-  '#14202d': 'cyan',
-  '#211629': 'purple',
-  '#1a1a1a': 'default',
-  '#242424': 'default',
-  '#2a2a2a': 'default',
-  '#141414': 'default',
-  '#161616': 'default',
-  '#181818': 'default',
-  '#171717': 'default',
-  '#121212': 'default',
-  '#1e1e1e': 'default',
-};
-
 function hexToRgb(hex: string): [number, number, number] | null {
   const clean = hex.replace('#', '').trim();
   if (clean.length === 3) {
@@ -122,10 +105,9 @@ export function resolveCardColorTheme(rawColor?: string): CardColorPreset & { is
   }
 
   const clean = rawColor.toLowerCase().trim();
-  const mappedPresetId = LEGACY_COLOR_MAP[clean] || clean;
 
   const foundPreset = CARD_COLOR_PRESETS.find(
-    (p) => p.id === mappedPresetId || p.swatch.toLowerCase() === clean
+    (p) => p.id === clean || p.swatch.toLowerCase() === clean
   );
   if (foundPreset) {
     return foundPreset;

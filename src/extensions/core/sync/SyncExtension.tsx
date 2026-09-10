@@ -1,5 +1,5 @@
 /**
- * @module UniversalSyncExtension
+ * @module SyncExtension
  * @description
  * First-party core extension providing bidirectional cloud synchronization for Flint.
  * Integrates natively with Supabase, Turso, Cloudflare D1, and Custom REST endpoints.
@@ -11,36 +11,36 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { DatabaseSync01Icon } from '@/components/common/Icons';
-import { UniversalSyncConfig, SyncTelemetry, DEFAULT_CONFIG } from './types';
+import { SyncConfig, SyncTelemetry, DEFAULT_CONFIG } from './types';
 import { SyncEngine, SyncEngineState } from './engine/SyncEngine';
 import { createProvider } from './providers';
-import { UniversalSyncStatusIndicator } from './UniversalSyncStatusIndicator';
-import { UniversalSyncSettingsTab } from './ui/UniversalSyncSettingsTab';
-import { useUniversalSyncStore } from './universalSyncStore';
-import { universalSyncReadme } from './readme';
+import { SyncStatusIndicator } from './SyncStatusIndicator';
+import { SyncSettingsTab } from './ui/SyncSettingsTab';
+import { useSyncStore } from './syncStore';
+import { syncReadme } from './readme';
 
-export const UNIVERSAL_SYNC_MANIFEST: ExtensionManifest = {
-  id: 'universal-sync',
-  name: 'Universal Sync',
+export const SYNC_MANIFEST: ExtensionManifest = {
+  id: 'sync',
+  name: 'Sync',
   version: '1.0.0',
   description: 'Bidirectional cloud sync engine supporting Supabase, Turso, Cloudflare D1, and Custom REST APIs.',
   author: 'Yuliet Li',
   isCore: true,
   defaultDisabled: true,
   tags: ['sync', 'cloud', 'supabase', 'turso', 'd1', 'mobile'],
-  readme: universalSyncReadme,
+  readme: syncReadme,
 };
 
-const UniversalSyncSettingsWrapper: React.FC<{
+const SyncSettingsWrapper: React.FC<{
   app: FlintApp;
-  onSaveConfig: (cfg: UniversalSyncConfig) => void;
+  onSaveConfig: (cfg: SyncConfig) => void;
 }> = ({ app, onSaveConfig }) => {
-  const config = useUniversalSyncStore((s) => s.config);
-  const telemetry = useUniversalSyncStore((s) => s.telemetry);
-  const engine = useUniversalSyncStore((s) => s.engine);
+  const config = useSyncStore((s) => s.config);
+  const telemetry = useSyncStore((s) => s.telemetry);
+  const engine = useSyncStore((s) => s.engine);
 
   return (
-    <UniversalSyncSettingsTab
+    <SyncSettingsTab
       config={config}
       telemetry={telemetry}
       engine={engine}
@@ -50,18 +50,18 @@ const UniversalSyncSettingsWrapper: React.FC<{
   );
 };
 
-export class UniversalSyncExtension extends Extension {
-  private config: UniversalSyncConfig = { ...DEFAULT_CONFIG };
+export class SyncExtension extends Extension {
+  private config: SyncConfig = { ...DEFAULT_CONFIG };
   private engine: SyncEngine | null = null;
 
-  constructor(app: FlintApp, manifest: ExtensionManifest = UNIVERSAL_SYNC_MANIFEST) {
+  constructor(app: FlintApp, manifest: ExtensionManifest = SYNC_MANIFEST) {
     super(app, manifest);
   }
 
   public async onload(): Promise<void> {
     // 1. Load persisted extension configuration and sync metadata
     const savedData = await this.loadData<{
-      config?: UniversalSyncConfig;
+      config?: SyncConfig;
       state?: SyncEngineState;
     }>();
 
@@ -85,7 +85,7 @@ export class UniversalSyncExtension extends Extension {
       savedData?.state?.remoteToLocalMap,
       savedData?.state?.localToRemoteMap,
       (telemetry: SyncTelemetry) => {
-        useUniversalSyncStore.getState().setTelemetry(telemetry);
+        useSyncStore.getState().setTelemetry(telemetry);
       },
       async (engineState: SyncEngineState) => {
         await this.saveData({
@@ -95,9 +95,9 @@ export class UniversalSyncExtension extends Extension {
       }
     );
 
-    useUniversalSyncStore.getState().setConfig(this.config);
-    useUniversalSyncStore.getState().setTelemetry(this.engine.getTelemetry());
-    useUniversalSyncStore.getState().setEngine(this.engine);
+    useSyncStore.getState().setConfig(this.config);
+    useSyncStore.getState().setTelemetry(this.engine.getTelemetry());
+    useSyncStore.getState().setEngine(this.engine);
 
     // 3. Register EventBus listeners
     this.onEvent('document:saved', () => {
@@ -115,19 +115,19 @@ export class UniversalSyncExtension extends Extension {
       id: 'status',
       alignment: 'right',
       order: 50,
-      render: () => <UniversalSyncStatusIndicator app={this.app} />,
+      render: () => <SyncStatusIndicator app={this.app} />,
     });
 
     // 5. Register Commands
     this.addCommand({
-      id: 'universal-sync:sync-now',
-      title: 'Universal Sync: Synchronize Now',
+      id: 'sync:sync-now',
+      title: 'Sync: Synchronize Now',
       action: async (app) => {
         if (!this.engine) {
           app.workspace.showToast('Sync engine is not initialized', 'warning');
           return;
         }
-        app.workspace.showToast('Starting Universal Sync...', 'info');
+        app.workspace.showToast('Starting Sync...', 'info');
         const res = await this.engine.syncNow();
         if (res.success) {
           app.workspace.showToast(res.message, 'success');
@@ -138,29 +138,29 @@ export class UniversalSyncExtension extends Extension {
     });
 
     this.addCommand({
-      id: 'universal-sync:open-settings',
-      title: 'Universal Sync: Configure Cloud Provider',
+      id: 'sync:open-settings',
+      title: 'Sync: Configure Cloud Provider',
       action: (app) => {
-        app.workspace.openSettings('universal-sync:universal-sync-settings');
+        app.workspace.openSettings('sync:sync-settings');
       },
     });
 
     // 6. Register Settings Tab
     this.registerSettingTab({
-      id: 'universal-sync-settings',
-      name: 'Universal Sync',
+      id: 'sync-settings',
+      name: 'Sync',
       icon: <DatabaseSync01Icon size={14} />,
       render: () => (
-        <UniversalSyncSettingsWrapper
+        <SyncSettingsWrapper
           app={this.app}
           onSaveConfig={async (newConfig) => {
             this.config = newConfig;
             this.engine?.updateConfig(newConfig);
-            useUniversalSyncStore.getState().setConfig(newConfig);
+            useSyncStore.getState().setConfig(newConfig);
             await this.saveData({
               config: this.config,
               state: {
-                telemetry: this.engine?.getTelemetry() || useUniversalSyncStore.getState().telemetry,
+                telemetry: this.engine?.getTelemetry() || useSyncStore.getState().telemetry,
                 tombstones: this.engine?.getTombstones() || [],
                 remoteToLocalMap: this.engine?.getRemoteToLocalMap() || [],
                 localToRemoteMap: this.engine?.getLocalToRemoteMap() || [],
@@ -196,13 +196,13 @@ export class UniversalSyncExtension extends Extension {
 
     this.registerTool({
       name: 'get_sync_status',
-      description: 'Returns the current Universal Sync status, active provider, last sync timestamp, and telemetry counts.',
+      description: 'Returns the current Sync status, active provider, last sync timestamp, and telemetry counts.',
       parameters: {
         type: 'object',
         properties: {},
       },
       handler: async () => {
-        const telemetry = this.engine?.getTelemetry() || useUniversalSyncStore.getState().telemetry;
+        const telemetry = this.engine?.getTelemetry() || useSyncStore.getState().telemetry;
         return {
           content: [
             {
@@ -240,6 +240,6 @@ export class UniversalSyncExtension extends Extension {
       this.engine.destroy();
       this.engine = null;
     }
-    useUniversalSyncStore.getState().setEngine(null);
+    useSyncStore.getState().setEngine(null);
   }
 }

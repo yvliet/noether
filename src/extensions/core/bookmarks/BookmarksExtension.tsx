@@ -55,9 +55,9 @@ export class BookmarksExtension extends Extension {
       icon: <Bookmark01Icon size={16} />,
       hotkey: 'Ctrl+Shift+B',
       action: async (app) => {
-        const activeDoc = app.vault.activeDocument;
+        const activeDoc = app.hearth.activeDocument;
         if (activeDoc) {
-          const isNowBookmarked = await app.vault.toggleBookmark(activeDoc.id);
+          const isNowBookmarked = await app.hearth.toggleBookmark(activeDoc.id);
           app.workspace.showToast(
             isNowBookmarked ? `Bookmarked "${activeDoc.title}"` : `Removed bookmark for "${activeDoc.title}"`,
             'info'
@@ -229,5 +229,3 @@ export class BookmarksExtension extends Extension {
   }
 }
 
-// Backwards-compat alias
-export const BookmarksPlugin = BookmarksExtension;

@@ -45,6 +45,9 @@ export interface SettingsState {
   defaultTabMode: DefaultTabMode;
   defaultEditingMode: DefaultEditingMode;
   showModeInStatusBar: boolean;
+  showWordCountInStatusBar: boolean;
+  showCharCountInStatusBar: boolean;
+  showReadingTimeInStatusBar: boolean;
   inlineTitle: boolean;
   readableLineLength: boolean;
   strictLineBreaks: boolean;
@@ -102,6 +105,9 @@ export interface SettingsState {
   setDefaultTabMode: (val: DefaultTabMode) => void;
   setDefaultEditingMode: (val: DefaultEditingMode) => void;
   setShowModeInStatusBar: (val: boolean) => void;
+  setShowWordCountInStatusBar: (val: boolean) => void;
+  setShowCharCountInStatusBar: (val: boolean) => void;
+  setShowReadingTimeInStatusBar: (val: boolean) => void;
   setInlineTitle: (val: boolean) => void;
   setReadableLineLength: (val: boolean) => void;
   setStrictLineBreaks: (val: boolean) => void;
@@ -164,6 +170,9 @@ export const DEFAULT_SETTINGS = {
   defaultTabMode: 'Editing view' as DefaultTabMode,
   defaultEditingMode: 'Live Preview' as DefaultEditingMode,
   showModeInStatusBar: true,
+  showWordCountInStatusBar: true,
+  showCharCountInStatusBar: false,
+  showReadingTimeInStatusBar: false,
   inlineTitle: true,
   readableLineLength: true,
   strictLineBreaks: false,
@@ -525,6 +534,9 @@ export const useSettingsStore = create<SettingsState>()(
       setDefaultTabMode: (defaultTabMode) => set({ defaultTabMode }),
       setDefaultEditingMode: (defaultEditingMode) => set({ defaultEditingMode }),
       setShowModeInStatusBar: (showModeInStatusBar) => set({ showModeInStatusBar }),
+      setShowWordCountInStatusBar: (showWordCountInStatusBar) => set({ showWordCountInStatusBar }),
+      setShowCharCountInStatusBar: (showCharCountInStatusBar) => set({ showCharCountInStatusBar }),
+      setShowReadingTimeInStatusBar: (showReadingTimeInStatusBar) => set({ showReadingTimeInStatusBar }),
       setInlineTitle: (inlineTitle) => set({ inlineTitle }),
       setReadableLineLength: (readableLineLength) => set({ readableLineLength }),
       setStrictLineBreaks: (strictLineBreaks) => set({ strictLineBreaks }),
@@ -634,6 +646,9 @@ export const useSettingsStore = create<SettingsState>()(
             defaultTabMode: DEFAULT_SETTINGS.defaultTabMode,
             defaultEditingMode: DEFAULT_SETTINGS.defaultEditingMode,
             showModeInStatusBar: DEFAULT_SETTINGS.showModeInStatusBar,
+            showWordCountInStatusBar: DEFAULT_SETTINGS.showWordCountInStatusBar,
+            showCharCountInStatusBar: DEFAULT_SETTINGS.showCharCountInStatusBar,
+            showReadingTimeInStatusBar: DEFAULT_SETTINGS.showReadingTimeInStatusBar,
             inlineTitle: DEFAULT_SETTINGS.inlineTitle,
             readableLineLength: DEFAULT_SETTINGS.readableLineLength,
             strictLineBreaks: DEFAULT_SETTINGS.strictLineBreaks,

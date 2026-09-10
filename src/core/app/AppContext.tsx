@@ -2,13 +2,11 @@ import React, { createContext, useContext, useSyncExternalStore, useMemo } from 
 import { FlintApp, appInstance } from './FlintApp';
 import {
   ActionRailItem,
-  RibbonItem,
   CommandItem,
   ViewDefinition,
   SidebarTabDefinition,
   StatusBarItem,
   ExtensionSettingTab,
-  PluginSettingTab,
   DocMenuActionDefinition,
   FileTreeActionDefinition,
   EditorPlaceholderHint,
@@ -30,7 +28,7 @@ import {
   EditorPluginDefinition,
 } from '../extensions/types';
 
-import { ExtensionListSnapshot, PluginListSnapshot } from '../extensions/ExtensionManager';
+import { ExtensionListSnapshot } from '../extensions/ExtensionManager';
 
 const AppContext = createContext<FlintApp | null>(null);
 
@@ -57,10 +55,6 @@ export const useActionRailItems = (): ActionRailItem[] => {
     },
     () => app.actionRail.getItems()
   );
-};
-
-export const useRibbonItems = (): RibbonItem[] => {
-  return useActionRailItems();
 };
 
 export const useCommands = (): CommandItem[] => {
@@ -182,10 +176,6 @@ export const useExtensionList = (): ExtensionListSnapshot => {
     },
     () => app.extensions.getSnapshot()
   );
-};
-
-export const usePluginList = (): PluginListSnapshot => {
-  return useExtensionList();
 };
 
 export const useContextMenuItems = (

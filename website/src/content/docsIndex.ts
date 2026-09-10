@@ -26,7 +26,7 @@ import extensionPointsRaw from './docs/plugins/extension-points.md?raw';
 import mcpToolsRaw from './docs/plugins/mcp-tools.md?raw';
 import eventsStorageRaw from './docs/plugins/events-and-storage.md?raw';
 import publishingRaw from './docs/plugins/publishing.md?raw';
-import universalSyncRaw from './docs/plugins/universal-sync.md?raw';
+import syncRaw from './docs/plugins/sync.md?raw';
 
 export interface DocItem {
   id: string;
@@ -236,15 +236,15 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     path: 'website/src/content/docs/plugins/publishing.md',
     content: publishingRaw,
   },
-  'plugins/universal-sync': {
-    id: 'universal-sync',
-    slug: 'plugins/universal-sync',
-    title: 'Universal External Sync',
+  'plugins/sync': {
+    id: 'sync',
+    slug: 'plugins/sync',
+    title: 'Sync',
     description: 'Sync notes across devices using free cloud databases (Supabase, Turso, Cloudflare D1, REST).',
     category: 'Plugin Development',
     icon: 'DatabaseSync01Icon',
-    path: 'website/src/content/docs/plugins/universal-sync.md',
-    content: universalSyncRaw,
+    path: 'website/src/content/docs/plugins/sync.md',
+    content: syncRaw,
   },
 };
 
@@ -295,7 +295,7 @@ export const docsTree: DocFolder[] = [
       DOC_ITEMS['plugins/mcp-tools'],
       DOC_ITEMS['plugins/events-and-storage'],
       DOC_ITEMS['plugins/publishing'],
-      DOC_ITEMS['plugins/universal-sync'],
+      DOC_ITEMS['plugins/sync'],
     ],
   },
 ];

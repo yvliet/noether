@@ -15,10 +15,10 @@ import { RecentHearthItem } from '@/types';
 import { APP_VERSION } from '@/version';
 
 export const HearthModal: React.FC = React.memo(() => {
-  const isHearthModalOpen = useWorkspaceStore((state) => state.isHearthModalOpen || state.isVaultModalOpen);
+  const isHearthModalOpen = useWorkspaceStore((state) => state.isHearthModalOpen);
   const setIsHearthModalOpen = useWorkspaceStore((state) => state.setIsHearthModalOpen);
-  const hearthPath = useWorkspaceStore((state) => state.hearthPath || state.vaultPath);
-  const recentHearths = useWorkspaceStore((state) => state.recentHearths || state.recentVaults);
+  const hearthPath = useWorkspaceStore((state) => state.hearthPath);
+  const recentHearths = useWorkspaceStore((state) => state.recentHearths);
   const selectHearthFolder = useWorkspaceStore((state) => state.selectHearthFolder);
   const selectParentFolder = useWorkspaceStore((state) => state.selectParentFolder);
   const createNewHearth = useWorkspaceStore((state) => state.createNewHearth);
@@ -361,6 +361,4 @@ export const HearthModal: React.FC = React.memo(() => {
   );
 });
 
-// Alias for backwards compatibility
-export const VaultModal = HearthModal;
 export default HearthModal;

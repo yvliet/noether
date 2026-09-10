@@ -179,6 +179,4 @@ export class TagsExtension extends Extension {
   }
 }
 
-// Backwards compatibility alias
-export const TagsPlugin = TagsExtension;
 export default TagsExtension;

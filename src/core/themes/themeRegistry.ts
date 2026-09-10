@@ -70,7 +70,7 @@ class ThemeRegistry {
       return this.customThemes.get(cleanId)!;
     }
 
-    // Alias matches for standard and legacy theme IDs
+    // Alias matches for standard theme IDs
     const aliasMap: Record<string, string> = {
       default: 'default',
       dark: 'default',

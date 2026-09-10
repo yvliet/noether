@@ -48,7 +48,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
 
   const toggleSplitView = useWorkspaceStore((s) => s.toggleSplitView);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -484,8 +484,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleOpenInDefaultApp = () => {
     setIsOpen(false);
     if (platform.isDesktop()) {
-      const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
-      openFn(hearthPath);
+      platform.openHearthInExplorer(hearthPath);
     }
     showToast('Opening file in default application', 'info');
   };
@@ -494,8 +493,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleShowInExplorer = () => {
     setIsOpen(false);
     if (platform.isDesktop()) {
-      const openFn = platform.openHearthInExplorer || platform.openVaultInExplorer;
-      openFn(hearthPath);
+      platform.openHearthInExplorer(hearthPath);
     } else {
       showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
     }

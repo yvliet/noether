@@ -31,8 +31,8 @@
  */
 
 // ── Core Classes & Singletons ──
-export { Extension, Plugin } from '../core/extensions/Extension';
-export { ExtensionManager, PluginManager } from '../core/extensions/ExtensionManager';
+export { Extension } from '../core/extensions/Extension';
+export { ExtensionManager } from '../core/extensions/ExtensionManager';
 export { FlintApp, appInstance } from '../core/app/FlintApp';
 export { storeRefs } from '../core/app/storeBridge';
 export { SlotRegistry } from '../core/registries/SlotRegistry';
@@ -118,7 +118,6 @@ export type { DocumentViewProps } from '../components/editor/DocumentView';
 export type {
   WorkspaceAPI,
   HearthAPI,
-  VaultAPI,
   SettingsAPI,
   ConfirmDialogConfig,
   InputDialogConfig,
@@ -128,12 +127,9 @@ export type {
 // ── Extension Point Types ──
 export type {
   ExtensionManifest,
-  PluginManifest,
   ExtensionSettingTab,
-  PluginSettingTab,
   CommandItem,
   ActionRailItem,
-  RibbonItem,
   StatusBarItem,
   ViewDefinition,
   SidebarTabDefinition,
@@ -226,6 +222,6 @@ export type {
   MainViewMode,
   SidebarTab,
   LeftNavView,
-  VaultDiskItem,
-  RecentVaultItem,
+  HearthDiskItem,
+  RecentHearthItem,
 } from '../types';

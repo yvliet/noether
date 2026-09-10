@@ -49,8 +49,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const activeLeftView = useWorkspaceStore((s) => s.activeLeftView);
   const leftSidebarWidth = useWorkspaceStore((s) => s.leftSidebarWidth);
   const setLeftSidebarWidth = useWorkspaceStore((s) => s.setLeftSidebarWidth);
-  const hearthName = useWorkspaceStore((s) => s.hearthName || s.vaultName);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+  const hearthName = useWorkspaceStore((s) => s.hearthName);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);

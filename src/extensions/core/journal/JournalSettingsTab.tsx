@@ -131,6 +131,4 @@ export const JournalSettingsTab: React.FC = () => {
   );
 };
 
-// Alias for backwards compatibility
-export const DailyNotesSettingsTab = JournalSettingsTab;
 export default JournalSettingsTab;

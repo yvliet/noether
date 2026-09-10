@@ -66,7 +66,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     const splitPane = useWorkspaceStore((s) => s.splitPane);
     const togglePinTab = useWorkspaceStore((s) => s.togglePinTab);
 
-    const hearthPath = useWorkspaceStore((s) => s.hearthPath || s.vaultPath);
+    const hearthPath = useWorkspaceStore((s) => s.hearthPath);
     const showToast = useWorkspaceStore((s) => s.showToast);
     const documents = useDocumentStore((s) => s.documents);
     const { showContextMenu } = useAppContextMenu();

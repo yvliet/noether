@@ -28,7 +28,7 @@ export const BookmarksView: React.FC = React.memo(() => {
   const isSplitView = useFlintStore('workspace', (s) => s?.isSplitView ?? false);
   const activePane = useFlintStore('workspace', (s) => s?.activePane ?? 'main');
   const splitActiveDocumentId = useFlintStore('workspace', (s) => s?.splitActiveDocumentId);
-  const vaultPath = useFlintStore('workspace', (s) => s?.vaultPath ?? app.hearth.vaultPath);
+  const hearthPath = useFlintStore('workspace', (s) => s?.hearthPath ?? app.hearth.hearthPath);
 
   const setActiveDocumentById = useCallback((id: string, _opts?: any) => {
     app.hearth.openDocument(id);

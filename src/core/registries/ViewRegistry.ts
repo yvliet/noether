@@ -22,7 +22,7 @@ export class ViewRegistry {
    * Dynamic mapping from view type string to owning extension metadata.
    * Populated automatically when extensions register views without hardcoded entries.
    */
-  private viewTypeToExtension: Map<string, { extensionId: string; pluginId: string; title?: string }> = new Map();
+  private viewTypeToExtension: Map<string, { extensionId: string; title?: string }> = new Map();
 
   /**
    * Registers a new custom view definition.
@@ -46,11 +46,11 @@ export class ViewRegistry {
       this.views.set(raw.id, normalizedView);
     }
 
-    const extId = view.extensionId || view.pluginId || raw.extensionId || raw.pluginId;
+    const extId = view.extensionId || raw.extensionId;
     if (extId) {
-      this.viewTypeToExtension.set(typeKey, { extensionId: extId, pluginId: extId, title });
+      this.viewTypeToExtension.set(typeKey, { extensionId: extId, title });
       if (raw.id && raw.id !== typeKey) {
-        this.viewTypeToExtension.set(raw.id, { extensionId: extId, pluginId: extId, title });
+        this.viewTypeToExtension.set(raw.id, { extensionId: extId, title });
       }
     }
     this.recomputeCache();
@@ -89,16 +89,8 @@ export class ViewRegistry {
    * @param type - View type key.
    * @since 0.2.0
    */
-  public getViewExtensionInfo(type: string): { extensionId: string; pluginId: string; title?: string } | undefined {
+  public getViewExtensionInfo(type: string): { extensionId: string; title?: string } | undefined {
     return this.viewTypeToExtension.get(type);
-  }
-
-  /**
-   * Backwards-compatibility alias for getViewExtensionInfo.
-   * @since 0.1.0
-   */
-  public getViewPluginInfo(type: string): { extensionId: string; pluginId: string; title?: string } | undefined {
-    return this.getViewExtensionInfo(type);
   }
 
   /**
@@ -110,15 +102,7 @@ export class ViewRegistry {
    * @since 0.2.0
    */
   public registerViewExtensionMapping(type: string, extensionId: string, title?: string): void {
-    this.viewTypeToExtension.set(type, { extensionId, pluginId: extensionId, title });
-  }
-
-  /**
-   * Backwards-compatibility alias for registerViewExtensionMapping.
-   * @since 0.1.0
-   */
-  public registerViewPluginMapping(type: string, pluginId: string, title?: string): void {
-    this.registerViewExtensionMapping(type, pluginId, title);
+    this.viewTypeToExtension.set(type, { extensionId, title });
   }
 
   /**
@@ -132,10 +116,10 @@ export class ViewRegistry {
     const direct = this.views.get(type);
     if (direct) return direct;
 
-    // View type alias resolution for core and legacy extension view types
+    // View type alias resolution for core extension view types
     const VIEW_ALIASES: Record<string, string[]> = {
-      marketplace: ['plugin-marketplace', 'extensions-marketplace'],
-      'plugin-marketplace': ['marketplace'],
+      marketplace: ['extensions-marketplace'],
+      'extensions-marketplace': ['marketplace'],
       graph: ['graph-view'],
       'graph-view': ['graph'],
       tasks: ['tasks-view'],

@@ -35,7 +35,6 @@ import {
 
 export interface ExtensionDocViewerProps {
   extensionId?: string;
-  pluginId?: string;
   tabId?: string;
   documentId?: string;
   app?: any;
@@ -593,7 +592,6 @@ function renderInlineMarkdown(text: string): string {
 
 export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(({
   extensionId: explicitExtensionId,
-  pluginId: explicitPluginId,
   tabId: propTabId,
   documentId: propDocId,
 }) => {
@@ -627,14 +625,10 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
 
   const targetExtensionId = useMemo(() => {
     if (explicitExtensionId) return explicitExtensionId;
-    if (explicitPluginId) return explicitPluginId;
 
     if (propDocId) {
       if (propDocId.startsWith('__extension_doc:')) {
         return propDocId.replace(/^__extension_doc:/, '').replace(/__$/, '');
-      }
-      if (propDocId.startsWith('__plugin_doc:')) {
-        return propDocId.replace(/^__plugin_doc:/, '').replace(/__$/, '');
       }
       if (!propDocId.startsWith('__')) {
         return propDocId;
@@ -644,22 +638,13 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
     if (currentTab?.document_id?.startsWith('__extension_doc:')) {
       return currentTab.document_id.replace(/^__extension_doc:/, '').replace(/__$/, '');
     }
-    if (currentTab?.document_id?.startsWith('__plugin_doc:')) {
-      return currentTab.document_id.replace(/^__plugin_doc:/, '').replace(/__$/, '');
-    }
 
     if (propTabId?.startsWith('extension-doc:')) {
       return propTabId.replace(/^extension-doc:/, '');
     }
-    if (propTabId?.startsWith('plugin-doc:')) {
-      return propTabId.replace(/^plugin-doc:/, '');
-    }
 
     if (currentTab?.id?.startsWith('extension-doc:')) {
       return currentTab.id.replace(/^extension-doc:/, '');
-    }
-    if (currentTab?.id?.startsWith('plugin-doc:')) {
-      return currentTab.id.replace(/^plugin-doc:/, '');
     }
 
     if (currentTab?.document_id && !currentTab.document_id.startsWith('__')) {
@@ -672,7 +657,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
     }
 
     return 'flint-cascade';
-  }, [explicitExtensionId, explicitPluginId, propDocId, propTabId, currentTab, app]);
+  }, [explicitExtensionId, propDocId, propTabId, currentTab, app]);
 
   const manifest = useMemo(() => {
     return app.extensions.getExtensionManifest(targetExtensionId);
@@ -995,6 +980,4 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
   );
 });
 
-// Backwards compatibility alias
-export const PluginDocViewer = ExtensionDocViewer;
 export default ExtensionDocViewer;

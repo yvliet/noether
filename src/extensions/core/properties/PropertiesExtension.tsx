@@ -249,6 +249,4 @@ export class PropertiesExtension extends Extension {
   }
 }
 
-// Backwards-compat alias
-export const PropertiesPlugin = PropertiesExtension;
 export default PropertiesExtension;

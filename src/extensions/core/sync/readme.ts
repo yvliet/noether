@@ -1,16 +1,16 @@
 /**
- * @module universalSyncReadme
+ * @module syncReadme
  * @description
- * Documentation for the Universal External Sync core extension.
+ * Documentation for the Sync core extension.
  */
 
-export const universalSyncReadme = `# Universal External Sync
+export const syncReadme = `# Sync
 
 Bidirectional, multi-provider cloud synchronization engine for Flint notes and metadata.
 
 ## 1. Overview
 ---
-Universal External Sync connects your local Flint workspace to external cloud databases, allowing you to synchronize notes across desktop and mobile devices while retaining local-first Markdown files.
+Sync connects your local Flint workspace to external cloud databases, allowing you to synchronize notes across desktop and mobile devices while retaining local-first Markdown files.
 
 Supported storage backends:
 - **Supabase**: Free-tier PostgreSQL cloud database with zero subscription costs.
@@ -29,7 +29,7 @@ Supported storage backends:
 
 ## 3. Getting Started
 ---
-1. Open Flint Settings → **Universal Sync**.
+1. Open Flint Settings → **Sync**.
 2. Select your storage backend (e.g. Supabase).
 3. Follow the guided setup wizard to run the SQL schema initialization and paste your database credentials.
 4. Click **Verify Connection** and trigger **Sync Now**.

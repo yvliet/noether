@@ -17,6 +17,7 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { DocumentItem, TabItem } from '@/types';
 import {
+  MaskTheater02Icon,
   SparklesIcon,
   RotateCcwIcon,
   Folder01Icon,
@@ -44,7 +45,7 @@ import { iconifyReadme } from './readme';
 
 export const ICONIFY_MANIFEST: ExtensionManifest = {
   id: 'iconify',
-  name: 'Iconify',
+  name: 'More icons',
   version: '1.1.0',
   description: 'Let icons live in all of Flint. Customize folders, files, tabs, and rich text documents with an extensible multi-pack icon system and SQLite persistence.',
   author: 'Yuliet Li',
@@ -162,7 +163,7 @@ export class IconifyExtension extends Extension {
     this.registerContextMenuItem({
       id: 'change-icon',
       title: 'Change icon',
-      icon: <SparklesIcon size={14} />,
+      icon: <MaskTheater02Icon size={14} />,
       scope: 'file-tree',
       group: 'tools',
       order: 45,
@@ -240,7 +241,7 @@ export class IconifyExtension extends Extension {
     this.registerContextMenuItem({
       id: 'tab-change-icon',
       title: 'Change icon',
-      icon: <SparklesIcon size={14} />,
+      icon: <MaskTheater02Icon size={14} />,
       scope: 'tab',
       group: 'tab-actions',
       order: 35,
@@ -314,7 +315,7 @@ export class IconifyExtension extends Extension {
     this.registerDocMenuAction({
       id: 'doc-change-icon',
       title: 'Change note icon',
-      icon: <SparklesIcon size={14} className="text-[#8b8e95] group-hover:text-white shrink-0" />,
+      icon: <MaskTheater02Icon size={14} className="text-[#8b8e95] group-hover:text-white shrink-0" />,
       group: 'tools',
       order: 25,
       onClick: (app) => {
@@ -338,8 +339,8 @@ export class IconifyExtension extends Extension {
     // 12. Register Settings Tab
     this.registerSettingTab({
       id: 'iconify-settings',
-      name: 'Iconify',
-      icon: <SparklesIcon size={14} />,
+      name: 'More icons',
+      icon: <MaskTheater02Icon size={14} />,
       render: () => <IconifySettingsTab />,
     });
 
@@ -350,7 +351,7 @@ export class IconifyExtension extends Extension {
     this.registerSlashCommand({
       title: 'Icon',
       description: 'Insert an icon into your document',
-      icon: <SparklesIcon size={16} />,
+      icon: <MaskTheater02Icon size={16} />,
       badge: 'New',
       isEnabled: () => useIconifyStore.getState().enableDocumentIcons,
       submenu: {
@@ -388,7 +389,7 @@ export class IconifyExtension extends Extension {
     // 15. Register Commands
     this.addCommand({
       id: 'toggle-folder-icons',
-      title: 'Iconify: Toggle folder icons',
+      title: 'More icons: Toggle folder icons',
       section: 'Settings',
       icon: <Folder01Icon size={16} />,
       action: () => {
@@ -399,7 +400,7 @@ export class IconifyExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-file-icons',
-      title: 'Iconify: Toggle file icons',
+      title: 'More icons: Toggle file icons',
       section: 'Settings',
       icon: <File01Icon size={16} />,
       action: () => {
@@ -410,9 +411,9 @@ export class IconifyExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-document-icons',
-      title: 'Iconify: Toggle in-document icons (/icon)',
+      title: 'More icons: Toggle in-document icons (/icon)',
       section: 'Settings',
-      icon: <SparklesIcon size={16} />,
+      icon: <MaskTheater02Icon size={16} />,
       action: () => {
         const current = useIconifyStore.getState().enableDocumentIcons;
         useIconifyStore.getState().setEnableDocumentIcons(!current);
@@ -420,7 +421,7 @@ export class IconifyExtension extends Extension {
     });
     this.addCommand({
       id: 'toggle-default-folder-icons',
-      title: 'Iconify: Toggle default folder icons',
+      title: 'More icons: Toggle default folder icons',
       section: 'Settings',
       icon: <Folder01Icon size={16} />,
       action: () => {
@@ -431,7 +432,7 @@ export class IconifyExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-default-file-icons',
-      title: 'Iconify: Toggle default file icons',
+      title: 'More icons: Toggle default file icons',
       section: 'Settings',
       icon: <File01Icon size={16} />,
       action: () => {
@@ -442,7 +443,7 @@ export class IconifyExtension extends Extension {
 
     this.addCommand({
       id: 'reset-all',
-      title: 'Iconify: Reset all custom icons',
+      title: 'More icons: Reset all custom icons',
       section: 'Settings',
       icon: <RotateCcwIcon size={16} />,
       action: async () => {

@@ -1,6 +1,6 @@
 import { Extension } from '@tiptap/core';
 import { TextSelection } from '@tiptap/pm/state';
-import { FoldHeadingPluginKey } from './fold-heading';
+import { FoldPluginKey } from './fold';
 import { getIndentSize } from './smart-tab-indent';
 import { isSuggestionActive } from './suggestion-state';
 import { matchCodeFenceLine, matchBlockquoteLine, matchLineListPrefix } from './smart-pairing-utils';
@@ -548,7 +548,7 @@ export const NumberedListBehavior = Extension.create({
         // 1. Heading Shift-Enter behavior: create normal paragraph below
         if (parent.type.name === 'heading') {
           const headingPos = $from.before();
-          const pluginState = FoldHeadingPluginKey.getState(state);
+          const pluginState = FoldPluginKey.getState(state);
           const foldedHeadings: Set<number> = pluginState?.foldedHeadings || new Set();
 
           const isHeadingFolded = Array.from(foldedHeadings).some(

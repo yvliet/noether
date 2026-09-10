@@ -10,7 +10,7 @@ import {
   CodeIcon,
   MinusSignIcon,
   Brain02Icon,
-  TableIcon,
+  GridTableIcon,
   Link04Icon,
   ChevronRightIcon,
   InformationCircleIcon,
@@ -362,7 +362,7 @@ function renderIcon(name: string | React.ReactNode) {
     case 'card':
       return <Brain02Icon size={16} />;
     case 'table':
-      return <TableIcon size={16} />;
+      return <GridTableIcon size={16} />;
     case 'link':
       return <Link04Icon size={16} />;
     default:

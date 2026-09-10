@@ -1,11 +1,9 @@
 /**
  * @file iconifyDb.ts
  * @description
- * SQLite persistence layer with local cache fallback for the Iconify extension.
- * Manages the dynamic `iconify_icons` table schema, queries, mutations,
+ * SQLite persistence layer with local cache fallback for the More icons extension.
+ * Manages the dynamic `ext_iconify_icons` table schema, queries, mutations,
  * and automatic cleanup on document/folder deletion.
- *
- * Per user request: Old folder_icons data is dropped to maintain a clean start without legacy debt.
  *
  * @author Yuliet Li
  * @since 1.0.0
@@ -29,10 +27,11 @@ export interface IconEntry {
   iconId: string;
   color?: string;
   itemType?: IconItemType;
+  updatedAt: number;
 }
 
 function getLocalStorageKey(): string {
-  return 'flint_iconify_cache_v1';
+  return 'flint_iconify_icons_cache_v1';
 }
 
 function getSettingsLocalStorageKey(): string {
@@ -60,7 +59,7 @@ export const DEFAULT_ICONIFY_SETTINGS: IconifySettings = {
 };
 
 /**
- * Loads Iconify settings synchronously from localStorage.
+ * Loads iconify settings synchronously from localStorage.
  */
 export function loadIconifySettingsFromLocalStorage(): IconifySettings {
   if (typeof window === 'undefined') return DEFAULT_ICONIFY_SETTINGS;
@@ -120,10 +119,6 @@ export function saveIconifySettingsToLocalStorage(settings: IconifySettings): vo
 export function loadIconifyFromLocalStorage(): Record<string, IconEntry> {
   if (typeof window === 'undefined') return {};
   try {
-    // Purge legacy folder icons cache if still present
-    localStorage.removeItem('flint_folder_icons_cache_v1');
-    localStorage.removeItem('flint_folder_icons_settings_v1');
-
     const raw = localStorage.getItem(getLocalStorageKey());
     if (raw) return JSON.parse(raw);
   } catch {}
@@ -158,16 +153,12 @@ export const ICONIFY_TABLE_DEFINITION: TableDefinition = {
 };
 
 /**
- * Initializes the SQLite schema for Iconify.
- * Drops legacy folder_icons table if present and sets up `ext_iconify_icons`.
+ * Initializes the SQLite schema for More icons.
  */
 export async function initIconifyDb(): Promise<void> {
   if (!dbAdapter.isReady()) return;
 
   try {
-    // Clean up legacy table per requirement
-    await dbAdapter.execute(`DROP TABLE IF EXISTS folder_icons;`);
-
     await dbAdapter.execute(`
       CREATE TABLE IF NOT EXISTS ext_iconify_icons (
         item_id TEXT PRIMARY KEY,
@@ -181,20 +172,6 @@ export async function initIconifyDb(): Promise<void> {
     await dbAdapter.execute(`
       CREATE INDEX IF NOT EXISTS idx_iconify_icons_item_id ON ext_iconify_icons(item_id);
     `);
-
-    // Migrate from legacy un-prefixed table if present
-    try {
-      const legacyTable = await dbAdapter.query<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name='iconify_icons'`
-      );
-      if (legacyTable.length > 0) {
-        await dbAdapter.execute(
-          `INSERT OR IGNORE INTO ext_iconify_icons SELECT * FROM iconify_icons;`
-        );
-      }
-    } catch {
-      // Legacy table missing or incompatible; safe to ignore
-    }
   } catch (err) {
     console.error('[IconifyDb] Failed to initialize table:', err);
   }
@@ -218,6 +195,7 @@ export async function getAllIconsFromDb(): Promise<Record<string, IconEntry>> {
         iconId: row.icon_id,
         color: row.color || undefined,
         itemType: (row.item_type as IconItemType) || undefined,
+        updatedAt: row.updated_at || Date.now(),
       };
     }
     return result;

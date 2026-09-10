@@ -357,7 +357,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
   const openTab = useCallback((docId: string, title?: string, opts?: any) => app.workspace.openTab(docId, title, opts), [app]);
   const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
-  const vaultPath = app.hearth.vaultPath;
+  const vaultPath = app.hearth.hearthPath;
   const activeTabId = app.workspace.activeTabId;
   const resolvedTabId = propTabId || activeTabId || propDocId || 'graph-main';
 

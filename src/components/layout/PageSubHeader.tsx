@@ -323,7 +323,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           );
         })}
 
-        {/* Legacy fallback bookmark toggle button (only if explicitly passed as direct prop and not registered dynamically) */}
+        {/* Fallback bookmark toggle button (when explicitly passed as direct prop) */}
         {showBookmark && onToggleBookmark && !registeredActions.some((a) => a.id.includes('bookmark')) && (
           <button
             type="button"

@@ -88,24 +88,6 @@ export async function initCanvasTables(): Promise<void> {
     await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`);
     await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_edges_board ON ext_canvas_edges(board_id);`);
 
-    // Migrate from legacy un-prefixed tables if present
-    try {
-      const legacyNodes = await dbAdapter.query<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name='canvas_nodes'`
-      );
-      if (legacyNodes.length > 0) {
-        await dbAdapter.execute(`INSERT OR IGNORE INTO ext_canvas_nodes SELECT * FROM canvas_nodes;`);
-      }
-      const legacyEdges = await dbAdapter.query<{ name: string }>(
-        `SELECT name FROM sqlite_master WHERE type='table' AND name='canvas_edges'`
-      );
-      if (legacyEdges.length > 0) {
-        await dbAdapter.execute(`INSERT OR IGNORE INTO ext_canvas_edges SELECT * FROM canvas_edges;`);
-      }
-    } catch {
-      // Legacy tables missing or incompatible; safe to ignore
-    }
-
     isInitialized = true;
   } catch (err) {
     console.error('[Flint Canvas] Failed to initialize canvas tables:', err);

@@ -60,7 +60,7 @@ export class DefaultCommandsExtension extends Extension {
       hotkey: 'Ctrl+N',
       action: async (app) => {
         app.workspace.setMainViewMode('document');
-        await app.vault.createNewNote('Untitled');
+        await app.hearth.createNewNote('Untitled');
       },
     });
 
@@ -304,7 +304,7 @@ export class DefaultCommandsExtension extends Extension {
         try {
           const title = (args.title as string) || 'Untitled';
           app.workspace.setMainViewMode('document');
-          const doc = await app.vault.createNewNote(title);
+          const doc = await app.hearth.createNewNote(title);
           return {
             content: [
               {
@@ -385,5 +385,3 @@ export class DefaultCommandsExtension extends Extension {
   }
 }
 
-// Backwards-compat alias
-export const DefaultCommandsPlugin = DefaultCommandsExtension;

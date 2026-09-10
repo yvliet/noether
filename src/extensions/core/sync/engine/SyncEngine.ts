@@ -9,7 +9,7 @@
 import type { FlintApp } from '@/core/app/FlintApp';
 import type { DocumentItem } from '@/types';
 import {
-  UniversalSyncConfig,
+  SyncConfig,
   SyncTelemetry,
   DocumentSyncItem,
 } from '../types';
@@ -24,7 +24,7 @@ export interface SyncEngineState {
 
 export class SyncEngine {
   private app: FlintApp;
-  private config: UniversalSyncConfig;
+  private config: SyncConfig;
   private telemetry: SyncTelemetry;
   private tombstones: Map<string, number> = new Map();
   private remoteToLocal: Map<string, string> = new Map();
@@ -37,7 +37,7 @@ export class SyncEngine {
 
   constructor(
     app: FlintApp,
-    config: UniversalSyncConfig,
+    config: SyncConfig,
     initialTelemetry: Partial<SyncTelemetry> | undefined,
     initialTombstones: [string, number][] | undefined,
     initialRemoteToLocal: [string, string][] | undefined,
@@ -72,7 +72,7 @@ export class SyncEngine {
     this.setupPeriodicSync();
   }
 
-  public updateConfig(newConfig: UniversalSyncConfig): void {
+  public updateConfig(newConfig: SyncConfig): void {
     this.config = newConfig;
     this.setupPeriodicSync();
   }
@@ -121,7 +121,7 @@ export class SyncEngine {
     }
     this.debounceTimer = setTimeout(() => {
       this.syncNow().catch((err) => {
-        console.warn('[UniversalSync] Debounced sync failed:', err);
+        console.warn('[Sync] Debounced sync failed:', err);
       });
     }, 2500);
   }
@@ -136,7 +136,7 @@ export class SyncEngine {
     if (intervalSec > 0) {
       this.periodicTimer = setInterval(() => {
         this.syncNow().catch((err) => {
-          console.warn('[UniversalSync] Periodic sync failed:', err);
+          console.warn('[Sync] Periodic sync failed:', err);
         });
       }, intervalSec * 1000);
     }
@@ -159,7 +159,7 @@ export class SyncEngine {
       tombstones: Array.from(this.tombstones.entries()),
       remoteToLocalMap: Array.from(this.remoteToLocal.entries()),
       localToRemoteMap: Array.from(this.localToRemote.entries()),
-    }).catch((e) => console.warn('[UniversalSync] State persist error:', e));
+    }).catch((e) => console.warn('[Sync] State persist error:', e));
   }
 
   /**
@@ -239,7 +239,7 @@ export class SyncEngine {
             localMap.delete(localId);
             appliedCount++;
           } catch (e) {
-            console.error(`[UniversalSync] Failed to apply remote deletion for ${delRemoteId}:`, e);
+            console.error(`[Sync] Failed to apply remote deletion for ${delRemoteId}:`, e);
           }
         }
       }

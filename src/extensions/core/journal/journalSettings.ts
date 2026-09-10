@@ -34,12 +34,8 @@ export const useJournalSettings = create<JournalSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_JOURNAL_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_journal',
+      name: 'flint_extension_data_journal',
     }
   )
 );
 
-// Alias for backwards compatibility
-export const useDailyNotesSettings = useJournalSettings;
-export const DEFAULT_DAILY_NOTES_SETTINGS = DEFAULT_JOURNAL_SETTINGS;
-export type DailyNotesSettingsState = JournalSettingsState;

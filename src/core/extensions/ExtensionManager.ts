@@ -236,7 +236,6 @@ export class ExtensionManager {
         this.instances.set(extensionId, instance);
       }
       this.app.events.emit('extension:loaded', { extensionId: targetId });
-      this.app.events.emit('plugin:loaded', { pluginId: targetId });
 
       if (manifest.isCore) {
         this.disabledCoreExtensionIds.delete(targetId);
@@ -252,7 +251,6 @@ export class ExtensionManager {
 
       this.saveConfig();
       this.app.events.emit('extension:enabled', { extensionId: targetId });
-      this.app.events.emit('plugin:enabled', { pluginId: targetId });
       this.recomputeSnapshot();
       this.notify();
       console.log(`[ExtensionManager] Enabled extension "${manifest.name}" (${targetId})`);
@@ -310,7 +308,6 @@ export class ExtensionManager {
       this.externalLoader.removeExtensionStyle(targetId);
       this.externalLoader.removeExtensionStyle(extensionId);
       this.app.events.emit('extension:unloaded', { extensionId: targetId });
-      this.app.events.emit('plugin:unloaded', { pluginId: targetId });
 
       if (manifest?.isCore) {
         this.disabledCoreExtensionIds.add(targetId);
@@ -326,7 +323,6 @@ export class ExtensionManager {
 
       this.saveConfig();
       this.app.events.emit('extension:disabled', { extensionId: targetId });
-      this.app.events.emit('plugin:disabled', { pluginId: targetId });
       this.recomputeSnapshot();
       this.notify();
       console.log(`[ExtensionManager] Disabled extension "${targetId}"`);
@@ -610,17 +606,13 @@ export class ExtensionManager {
     return undefined;
   }
 
-  public getPluginManifest(id: string): ExtensionManifest | undefined {
-    return this.getExtensionManifest(id);
-  }
-
   public getViewExtensionState(viewType: string): 
     | { state: 'active'; view: ViewDefinition }
-    | { state: 'disabled'; extensionId: string; pluginId: string; manifest: ExtensionManifest; viewTitle: string }
-    | { state: 'deleted'; extensionId?: string; pluginId?: string; viewType: string }
-    | { state: 'not_plugin' } {
+    | { state: 'disabled'; extensionId: string; manifest: ExtensionManifest; viewTitle: string }
+    | { state: 'deleted'; extensionId?: string; viewType: string }
+    | { state: 'not_extension' } {
     if (!viewType || viewType === 'document') {
-      return { state: 'not_plugin' };
+      return { state: 'not_extension' };
     }
 
     const regView = this.app.views.getView(viewType);
@@ -632,7 +624,6 @@ export class ExtensionManager {
       graph: 'graph-view',
       'graph-view': 'graph-view',
       marketplace: 'marketplace',
-      'plugin-marketplace': 'marketplace',
       canvas: 'canvas',
       'canvas-view': 'canvas',
       tasks: 'tasks',
@@ -646,7 +637,6 @@ export class ExtensionManager {
         return {
           state: 'disabled',
           extensionId: coreExtensionId,
-          pluginId: coreExtensionId,
           manifest,
           viewTitle: manifest.name || viewType,
         };
@@ -658,37 +648,32 @@ export class ExtensionManager {
     }
 
     // Core built-in views are permanent and must never be marked as deleted or trigger tab removal
-    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'plugin-doc'].includes(viewType);
+    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc'].includes(viewType);
     if (isBuiltinCore) {
-      return { state: 'not_plugin' };
+      return { state: 'not_extension' };
     }
 
     // Guard against marking views as deleted while extensions are still booting up asynchronously
     if (!this.isInitialized) {
-      return { state: 'not_plugin' };
+      return { state: 'not_extension' };
     }
 
-    const info = this.app.views.getViewPluginInfo(viewType);
+    const info = this.app.views.getViewExtensionInfo(viewType);
     if (!info) {
       return { state: 'deleted', viewType };
     }
 
-    const manifest = this.getExtensionManifest(info.pluginId);
+    const manifest = this.getExtensionManifest(info.extensionId);
     if (manifest) {
       return {
         state: 'disabled',
-        extensionId: info.pluginId,
-        pluginId: info.pluginId,
+        extensionId: info.extensionId,
         manifest,
         viewTitle: info.title || manifest.name || viewType,
       };
     }
 
-    return { state: 'deleted', extensionId: info.pluginId, pluginId: info.pluginId, viewType };
-  }
-
-  public getViewPluginState(viewType: string): any {
-    return this.getViewExtensionState(viewType);
+    return { state: 'deleted', extensionId: info.extensionId, viewType };
   }
 
   public getSnapshot(): ExtensionListSnapshot {
@@ -769,9 +754,7 @@ export class ExtensionManager {
   // Extension data storage
   public async loadExtensionData(extensionId: string): Promise<any> {
     try {
-      const raw =
-        localStorage.getItem(`flint_extension_data_${extensionId}`) ||
-        localStorage.getItem(`flint_plugin_data_${extensionId}`);
+      const raw = localStorage.getItem(`flint_extension_data_${extensionId}`);
       return raw ? JSON.parse(raw) : null;
     } catch (e) {
       console.warn(`[ExtensionManager] Failed to load data for extension ${extensionId}:`, e);
@@ -779,25 +762,14 @@ export class ExtensionManager {
     }
   }
 
-  public async loadPluginData(pluginId: string): Promise<any> {
-    return this.loadExtensionData(pluginId);
-  }
-
   public async saveExtensionData(extensionId: string, data: any): Promise<void> {
     try {
       const json = JSON.stringify(data);
       localStorage.setItem(`flint_extension_data_${extensionId}`, json);
-      localStorage.setItem(`flint_plugin_data_${extensionId}`, json);
     } catch (e) {
       console.warn(`[ExtensionManager] Failed to save data for extension ${extensionId}:`, e);
     }
   }
-
-  public async savePluginData(pluginId: string, data: any): Promise<void> {
-    return this.saveExtensionData(pluginId, data);
-  }
 }
 
-// Backwards compatibility alias
-export const PluginManager = ExtensionManager;
 export default ExtensionManager;

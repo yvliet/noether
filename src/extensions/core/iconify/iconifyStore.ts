@@ -166,9 +166,9 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
     },
 
     setIcon: async (itemId: string, iconId: string, color?: string, itemType?: IconItemType) => {
-      const next = {
+      const next: Record<string, IconEntry> = {
         ...get().icons,
-        [itemId]: { iconId, color, itemType },
+        [itemId]: { iconId, color, itemType, updatedAt: Date.now() },
       };
 
       // 1. Update in-memory reactive state immediately

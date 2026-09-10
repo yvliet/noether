@@ -1576,7 +1576,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
   try {
     const customExts = fileTypeRegistry.getAllExtensions();
     const allowedExtensions = Array.from(new Set(['md', ...customExts]));
-    let diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
+    let diskItems = await platform.scanHearthFiles(undefined, allowedExtensions);
     const existingDocs = await getAllDocuments();
 
     // Check if the initial welcome note has ever been seeded
@@ -1595,7 +1595,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       if ((!diskItems || diskItems.length === 0) && existingDocs.length === 0) {
         try {
           await platform.saveMarkdownFile('Welcome to Flint', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Flint.md');
-          diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
+          diskItems = await platform.scanHearthFiles(undefined, allowedExtensions);
         } catch (seedErr) {
           console.error('[Flint Docs] Failed to auto-seed Welcome note to disk:', seedErr);
         }

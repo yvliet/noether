@@ -1,5 +1,5 @@
 /**
- * @module UniversalSyncSettingsTab
+ * @module SyncSettingsTab
  * @description
  * Complete settings tab UI for configuring the Universal Sync core extension.
  * Supports Supabase, Turso, Cloudflare D1, and Custom REST endpoints, with
@@ -11,7 +11,7 @@ import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { Button } from '@/components/ui/Button';
 import { TextInput } from '@/components/ui/TextInput';
 import {
-  UniversalSyncConfig,
+  SyncConfig,
   SyncTelemetry,
   SyncProviderType,
   ConflictStrategy,
@@ -31,28 +31,28 @@ import {
 } from './Icons';
 import { SyncEngine } from '../engine/SyncEngine';
 
-interface UniversalSyncSettingsTabProps {
-  config: UniversalSyncConfig;
+interface SyncSettingsTabProps {
+  config: SyncConfig;
   telemetry: SyncTelemetry;
   engine: SyncEngine | null;
-  onSaveConfig: (newConfig: UniversalSyncConfig) => void;
+  onSaveConfig: (newConfig: SyncConfig) => void;
   showToast: (message: string, type?: 'info' | 'success' | 'warning' | 'error') => void;
 }
 
-export const UniversalSyncSettingsTab: React.FC<UniversalSyncSettingsTabProps> = ({
+export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
   config,
   telemetry,
   engine,
   onSaveConfig,
   showToast,
 }) => {
-  const [localConfig, setLocalConfig] = useState<UniversalSyncConfig>({ ...config });
+  const [localConfig, setLocalConfig] = useState<SyncConfig>({ ...config });
   const [isTesting, setIsTesting] = useState(false);
   const [isManualSyncing, setIsManualSyncing] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
   const [copiedSchema, setCopiedSchema] = useState(false);
 
-  const updateConfig = (patch: Partial<UniversalSyncConfig>) => {
+  const updateConfig = (patch: Partial<SyncConfig>) => {
     const updated = { ...localConfig, ...patch };
     setLocalConfig(updated);
     onSaveConfig(updated);
@@ -122,7 +122,7 @@ export const UniversalSyncSettingsTab: React.FC<UniversalSyncSettingsTabProps> =
       {/* Header */}
       <div className="flex items-center justify-between px-1">
         <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Universal External Sync</h3>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Sync</h3>
           <p className="text-[11px] text-[#777]">
             Synchronize your notes bidirectionally across desktop and mobile devices using your own cloud database.
           </p>

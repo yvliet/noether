@@ -1,4 +1,4 @@
-export const tablesReadme = `# Table Blocks
+export const tablesReadme = `# Tables
 
 Create, format, and interact with rich multi-column tables directly within your notes.
 
