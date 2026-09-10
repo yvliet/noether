@@ -12,13 +12,15 @@ export interface CanvasCardProps {
   contentJson?: string;
   isSelected: boolean;
   onSelect: (id: string, e: React.PointerEvent) => void;
-  onOpenDoc?: () => void;
+  onOpenDoc?: (docId?: string) => void;
   onDelete: (id: string) => void;
   onColorChange?: (id: string, color: string) => void;
   onTextChange?: (id: string, newText: string) => void;
   onResizeStart?: (id: string, e: React.PointerEvent, handle: ResizeHandleType) => void;
   onImageDimensions?: (id: string, naturalWidth: number, naturalHeight: number) => void;
   onTaskToggle?: (nodeId: string, taskText: string, currentChecked: boolean) => void;
+  isSpacePressed?: boolean;
+  isPanning?: boolean;
 }
 
 const LEGACY_DEFAULT_COLORS = new Set([
@@ -46,6 +48,8 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     onResizeStart,
     onImageDimensions,
     onTaskToggle,
+    isSpacePressed = false,
+    isPanning = false,
   }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [isEditingText, setIsEditingText] = useState(false);
@@ -74,11 +78,11 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
 
     const handleDoubleClick = useCallback(() => {
       if (isDocBacked && onOpenDoc) {
-        onOpenDoc();
+        onOpenDoc(node.document_id);
       } else if (node.type === 'text') {
         setIsEditingText(true);
       }
-    }, [isDocBacked, onOpenDoc, node.type]);
+    }, [isDocBacked, onOpenDoc, node.type, node.document_id]);
 
     return (
       <div
@@ -97,7 +101,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
           isSelected
             ? 'border-[#888888] ring-1 ring-[#666666] shadow-[0_0_18px_rgba(255,255,255,0.06),0_0_24px_rgba(0,0,0,0.45)] z-20'
             : 'border-[#2c2c2c] hover:border-[#444444] shadow-[0_0_14px_rgba(0,0,0,0.35)] hover:shadow-[0_0_18px_rgba(0,0,0,0.45)] z-10'
-        }`}
+        } ${isPanning ? 'cursor-grabbing' : isSpacePressed ? 'cursor-grab' : ''}`}
       >
         {/* Floating Outside Title (Matching Target img1) */}
         {showOutsideTitle && (
@@ -105,7 +109,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation();
-              onOpenDoc?.();
+              onOpenDoc?.(node.document_id);
             }}
             title={doc?.title || 'Open note'}
             className="absolute bottom-full left-0 mb-1.5 max-w-[calc(100%-80px)] truncate text-[12px] font-medium text-[#888888] hover:text-[#e0e0e0] cursor-pointer select-none transition-none"
@@ -118,7 +122,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         {(isSelected || isHovered) && (
           <CardActionPill
             onDelete={() => onDelete(node.id)}
-            onOpenDoc={isDocBacked ? onOpenDoc : undefined}
+            onOpenDoc={isDocBacked && onOpenDoc ? () => onOpenDoc(node.document_id) : undefined}
             onColorChange={onColorChange ? (c) => onColorChange(node.id, c) : undefined}
             isDocBacked={isDocBacked}
           />
@@ -140,7 +144,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
 
         {/* Interactive 8-Directional Resize Handles (Available on hover and when selected) */}
         {onResizeStart && (
-          <div className={isSelected || isHovered ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}>
+          <div className={!isSpacePressed && (isSelected || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}>
             {/* North (Top edge) */}
             <div
               onPointerDown={(e) => {

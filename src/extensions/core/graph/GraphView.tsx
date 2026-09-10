@@ -1819,19 +1819,19 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         persistTransform();
       }
 
-      // 2. Camera Zoom & Pan Easing (Cinematic velvety easing during focus camera time-lapse)
+      // 2. Camera Zoom & Pan Easing (Snappy, responsive zoom easing matching Canvas View)
       const easeFactor =
         isDraggingRef.current || dragNodeRef.current
           ? 1.0
           : isTimelapseActiveRef.current && graphFocusCameraRef.current
           ? 0.095
-          : 0.16;
+          : 0.38;
 
       const diffScale = target.scale - current.scale;
       const diffX = target.x - current.x;
       const diffY = target.y - current.y;
 
-      if (Math.abs(diffScale) > 0.0002 || Math.abs(diffX) > 0.03 || Math.abs(diffY) > 0.03) {
+      if (Math.abs(diffScale) > 0.0005 || Math.abs(diffX) > 0.03 || Math.abs(diffY) > 0.03) {
         current.scale += diffScale * easeFactor;
         current.x += diffX * easeFactor;
         current.y += diffY * easeFactor;

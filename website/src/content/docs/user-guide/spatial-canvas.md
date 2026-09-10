@@ -57,17 +57,21 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 ---
 
 ## 4. Canvas Navigation & Controls
+---
 
 | Action | Control / Shortcut |
 | :--- | :--- |
-| **Pan Canvas** | Spacebar + Drag, Middle Mouse Drag, or Two-finger Scroll |
-| **Zoom In / Out** | Mouse Wheel (`Ctrl+Wheel`), or `Ctrl + +` / `Ctrl + -` |
-| **Reset Zoom (100%)** | `Ctrl + 0` |
+| **Pan Canvas (Freehand)** | Hold `Space` + Drag (Left Click), or Middle Mouse Drag |
+| **Scroll Vertically** | Mouse Wheel Up / Down (or two-finger vertical swipe) |
+| **Scroll Horizontally** | `Shift + Mouse Wheel`, or two-finger horizontal swipe |
+| **Zoom In / Out** | `Ctrl + Mouse Wheel`, Trackpad Pinch, or `Ctrl + +` / `Ctrl + -` |
+| **Scroll Card Content** | Hover over scrollable note cards and scroll mouse wheel |
+| **Reset Zoom (100%)** | `Ctrl + 0` or Reset View button |
 | **Zoom to Fit All** | `Shift + 1` |
 | **Multi-Select Nodes** | `Shift + Drag` marquee selection box |
-| **Delete Selected** | `Delete` or `Backspace` |
+| **Delete Selected Card** | `Delete` or `Backspace` |
 | **Duplicate Node** | `Alt + Drag` or `Ctrl + D` |
-| **Snap to Grid** | Toggle in the bottom-left canvas toolbar (50px snap interval) |
+| **Snap to Grid** | Toggle in the bottom-left canvas toolbar |
 
 ---
 

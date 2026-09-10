@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useCanvasSettings } from './canvasSettings';
 import { CanvasNode, CanvasEdge } from './types';
@@ -195,12 +195,83 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
 
+  // Spacebar pan mode state and refs
+  const [isSpacePressedState, setIsSpacePressedState] = useState(false);
+  const isSpacePressedRef = useRef(false);
+
+  useEffect(() => {
+    const isEditableElement = (el: HTMLElement | null): boolean => {
+      if (!el) return false;
+      const tag = el.tagName;
+      return (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        el.isContentEditable ||
+        Boolean(el.closest('[contenteditable="true"], input, textarea'))
+      );
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return;
+      const target = (e.target || document.activeElement) as HTMLElement | null;
+      if (isEditableElement(target)) return;
+
+      e.preventDefault();
+      if (!isSpacePressedRef.current) {
+        isSpacePressedRef.current = true;
+        setIsSpacePressedState(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code !== 'Space') return;
+      isSpacePressedRef.current = false;
+      setIsSpacePressedState(false);
+    };
+
+    const handleBlur = () => {
+      isSpacePressedRef.current = false;
+      setIsSpacePressedState(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('keyup', handleKeyUp, { capture: true });
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('keyup', handleKeyUp, { capture: true });
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, []);
+
   // Dual-ref camera transform for smooth lerp easing (same pattern as GraphView).
   // Wheel/gesture events write to targetTransform; the RAF loop interpolates currentTransform
   // toward it and feeds React state each frame, giving velvety smooth zoom and pan.
   const targetTransformRef = useRef({ x: 100, y: 100, scale: 1 });
   const currentTransformRef = useRef({ x: 100, y: 100, scale: 1 });
   const cameraRafRef = useRef<number | null>(null);
+
+  // Direct GPU DOM transform refs for 144Hz+ zero-lag rendering
+  const contentPlaneRef = useRef<HTMLDivElement>(null);
+  const dotPatternRef = useRef<SVGPatternElement>(null);
+  const syncStateRafRef = useRef<number | null>(null);
+
+  // Fast timestamp-based continuous scroll stream tracking (zero timers, zero GC overhead)
+  const lastWheelTimeRef = useRef(0);
+  const wheelOriginWasCanvasRef = useRef(false);
+
+  const syncDomTransform = useCallback((x: number, y: number, scale: number) => {
+    if (contentPlaneRef.current) {
+      contentPlaneRef.current.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
+    }
+    if (dotPatternRef.current) {
+      const step = gridSizeRef.current || 20;
+      const cell = step * scale;
+      dotPatternRef.current.setAttribute('x', String(x % cell));
+      dotPatternRef.current.setAttribute('y', String(y % cell));
+    }
+  }, []);
 
   const runCameraEasing = useCallback(() => {
     if (cameraRafRef.current !== null) return; // Already running
@@ -209,20 +280,21 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const target = targetTransformRef.current;
       const current = currentTransformRef.current;
 
-      // During active drag/pan, apply target instantly (no easing lag on pointer tracking)
-      const ease = isPanningRef.current || draggingNodeIdRef.current ? 1.0 : 0.18;
+      // Snappy, responsive zoom easing (settles in 2-3 frames while retaining subtle visual fluidity)
+      const ease = isPanningRef.current || draggingNodeIdRef.current ? 1.0 : 0.38;
 
       const dx = target.x - current.x;
       const dy = target.y - current.y;
       const ds = target.scale - current.scale;
 
-      const settled = Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05 && Math.abs(ds) < 0.0002;
+      const settled = Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05 && Math.abs(ds) < 0.0005;
 
       if (settled) {
         // Snap to exact target and stop the loop
         current.x = target.x;
         current.y = target.y;
         current.scale = target.scale;
+        syncDomTransform(current.x, current.y, current.scale);
         setPan({ x: current.x, y: current.y });
         setZoom(current.scale);
         cameraRafRef.current = null;
@@ -233,6 +305,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       current.y += dy * ease;
       current.scale += ds * ease;
 
+      syncDomTransform(current.x, current.y, current.scale);
       setPan({ x: current.x, y: current.y });
       setZoom(current.scale);
 
@@ -240,7 +313,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     };
 
     cameraRafRef.current = requestAnimationFrame(tick);
-  }, []);
+  }, [syncDomTransform]);
 
   // Clean up RAF on unmount
   useEffect(() => {
@@ -248,6 +321,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (cameraRafRef.current !== null) {
         cancelAnimationFrame(cameraRafRef.current);
         cameraRafRef.current = null;
+      }
+      if (syncStateRafRef.current !== null) {
+        cancelAnimationFrame(syncStateRafRef.current);
+        syncStateRafRef.current = null;
+      }
+      if (mouseMoveRafRef.current !== null) {
+        cancelAnimationFrame(mouseMoveRafRef.current);
+        mouseMoveRafRef.current = null;
       }
     };
   }, []);
@@ -259,14 +340,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Throttled mouse move via requestAnimationFrame
   const mouseMoveRafRef = useRef<number | null>(null);
   const lastMouseMoveEventRef = useRef<{ clientX: number; clientY: number } | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (mouseMoveRafRef.current !== null) {
-        cancelAnimationFrame(mouseMoveRafRef.current);
-      }
-    };
-  }, []);
 
   // Load Canvas Nodes from SQLite on mount or when effectiveBoardId changes
   useEffect(() => {
@@ -431,6 +504,24 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     showToast('Removed card', 'info');
   }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync]);
 
+  const handleOpenDoc = useCallback(
+    (docId?: string) => {
+      if (docId) {
+        setActiveDocumentById(docId);
+        setMainViewMode('document');
+      }
+    },
+    [setActiveDocumentById, setMainViewMode]
+  );
+
+  const docMap = useMemo(() => {
+    const map = new Map<string, DocumentItem>();
+    for (const d of documents) {
+      map.set(d.id, d);
+    }
+    return map;
+  }, [documents]);
+
   // Keyboard shortcut to delete selected card (Delete / Backspace when not typing)
   useEffect(() => {
     const handleCanvasKeyDown = (e: KeyboardEvent) => {
@@ -562,18 +653,46 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Background Pan & Drag Handlers with continuous window/pointer capture tracking
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea')) return;
-    isPanningRef.current = true;
-    setIsPanningState(true);
-    const ct = currentTransformRef.current;
-    panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
-    setSelectedNodeId(null);
-    try {
-      (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
-    } catch {}
+
+    // Panning requires holding Space (left click) OR Middle Mouse Button (button === 1)
+    const isMiddleClick = e.button === 1;
+    const isSpacePan = e.button === 0 && isSpacePressedRef.current;
+
+    if (isMiddleClick || isSpacePan) {
+      e.preventDefault();
+      isPanningRef.current = true;
+      setIsPanningState(true);
+      const ct = currentTransformRef.current;
+      panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
+      setSelectedNodeId(null);
+      try {
+        (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
+      } catch {}
+      return;
+    }
+
+    // Normal left-click without space: deselect any active card
+    if (e.button === 0) {
+      setSelectedNodeId(null);
+    }
   }, []);
 
   const handleNodePointerDown = useCallback((id: string, e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('button, textarea, input, a, .resize-handle')) return;
+
+    // If Space is held down OR middle-mouse click, pan the canvas instead of dragging the card
+    if (isSpacePressedRef.current || e.button === 1) {
+      e.preventDefault();
+      isPanningRef.current = true;
+      setIsPanningState(true);
+      const ct = currentTransformRef.current;
+      panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
+      try {
+        (containerRef.current as HTMLElement)?.setPointerCapture?.(e.pointerId);
+      } catch {}
+      return;
+    }
+
     e.stopPropagation();
     const node = nodesRef.current.find((n) => n.id === id);
     if (!node) return;
@@ -680,7 +799,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             targetTransformRef.current.y = newY;
             currentTransformRef.current.x = newX;
             currentTransformRef.current.y = newY;
-            runCameraEasing();
+
+            syncDomTransform(newX, newY, currentTransformRef.current.scale);
+
+            if (syncStateRafRef.current === null) {
+              syncStateRafRef.current = requestAnimationFrame(() => {
+                syncStateRafRef.current = null;
+                setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+              });
+            }
           } else if (resizingNodeIdRef.current) {
             const resizeId = resizingNodeIdRef.current;
             const handle = resizeHandleRef.current;
@@ -838,12 +965,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     let initialTouchCenter = { x: 0, y: 0 };
 
     const handleNativeWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const rect = el.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
       let dx = e.deltaX;
       let dy = e.deltaY;
       if (e.deltaMode === 1) {
@@ -859,9 +980,35 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const currentX = target.x;
       const currentY = target.y;
 
-      // Trackpad pinch-to-zoom or Ctrl + Mouse Wheel
+      // Fast timestamp-based continuous scroll stream tracking (zero timers, zero GC overhead)
+      const now = performance.now();
+      const isNewStream = now - lastWheelTimeRef.current > 200;
+      lastWheelTimeRef.current = now;
+
+      if (isNewStream) {
+        const targetEl = e.target as HTMLElement | null;
+        const isOverScrollable = Boolean(
+          targetEl && targetEl.closest('.custom-scrollbar, [data-scrollable="true"], pre, table')
+        );
+        wheelOriginWasCanvasRef.current = !isOverScrollable;
+      }
+
+      // 1. Zoom with Ctrl / Meta or Trackpad Pinch (getBoundingClientRect evaluated only when zooming)
       if (e.ctrlKey || e.metaKey) {
-        const zoomFactor = Math.exp(-dy * 0.012);
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect = el.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        let zoomFactor: number;
+        if (Math.abs(dy) < 30 && e.deltaMode === 0) {
+          zoomFactor = Math.exp(-dy * 0.01);
+        } else {
+          zoomFactor = dy < 0 ? 1.15 : 0.85;
+        }
+
         const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
 
         if (Math.abs(newScale - currentScale) > 0.0001) {
@@ -875,45 +1022,65 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
 
-      // Shift + Wheel → Horizontal Pan
-      if (e.shiftKey) {
-        targetTransformRef.current = {
-          x: currentX - (Math.abs(dy) > 0 ? dy : dx),
-          y: currentY,
-          scale: currentScale,
-        };
-        runCameraEasing();
-        return;
+      // 2. Strict Scrollable Card Isolation (Do NOT scroll canvas when hovering inside a scrollable card)
+      // Only inspect DOM if gesture originated over a card (skips 100% of queries during canvas navigation!)
+      if (!isSpacePressedRef.current && !wheelOriginWasCanvasRef.current) {
+        const scrollTarget = (e.target as HTMLElement | null)?.closest(
+          '.custom-scrollbar, [data-scrollable="true"], pre, table'
+        ) as HTMLElement | null;
+
+        if (scrollTarget) {
+          const isScrollableY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
+          const isScrollableX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
+
+          if (isScrollableY || isScrollableX) {
+            const canScrollDown = dy > 0 && scrollTarget.scrollTop + scrollTarget.clientHeight < scrollTarget.scrollHeight - 1;
+            const canScrollUp = dy < 0 && scrollTarget.scrollTop > 0;
+            const canScrollRight = dx > 0 && scrollTarget.scrollLeft + scrollTarget.clientWidth < scrollTarget.scrollWidth - 1;
+            const canScrollLeft = dx < 0 && scrollTarget.scrollLeft > 0;
+
+            if (canScrollDown || canScrollUp || canScrollRight || canScrollLeft) {
+              // Still has scroll room: permit native element scroll inside note card
+              return;
+            }
+
+            // Reached scroll boundary (top, bottom, or sides): absorb event completely so canvas never pans
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
       }
 
-      // Trackpad 2-Finger Horizontal / Diagonal Pan
-      if (Math.abs(dx) > 0) {
-        targetTransformRef.current = {
-          x: currentX - dx,
-          y: currentY - dy,
-          scale: currentScale,
-        };
-        runCameraEasing();
-        return;
+      // 3. Directional Canvas Panning (Vertical dy, Horizontal dx, or Shift + Wheel)
+      e.preventDefault();
+      e.stopPropagation();
+
+      let scrollX = dx;
+      let scrollY = dy;
+
+      // Standard desktop modifier: Shift + Vertical Wheel scrolls horizontally
+      if (e.shiftKey && Math.abs(dy) > 0 && Math.abs(dx) === 0) {
+        scrollX = dy;
+        scrollY = 0;
       }
 
-      // Mouse Wheel Scroll (without Ctrl) OR Trackpad Vertical Scroll → Zoom centered at cursor
-      let zoomFactor: number;
-      if (Math.abs(dy) < 30 && e.deltaMode === 0) {
-        zoomFactor = Math.exp(-dy * 0.008);
-      } else {
-        zoomFactor = dy < 0 ? 1.18 : 0.84;
-      }
+      const nextX = currentX - scrollX;
+      const nextY = currentY - scrollY;
+      targetTransformRef.current.x = nextX;
+      targetTransformRef.current.y = nextY;
+      currentTransformRef.current.x = nextX;
+      currentTransformRef.current.y = nextY;
 
-      const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
+      // Instant direct GPU transform (zero lag, 144Hz+)
+      syncDomTransform(nextX, nextY, currentScale);
 
-      if (Math.abs(newScale - currentScale) > 0.0001) {
-        targetTransformRef.current = {
-          x: mouseX - ((mouseX - currentX) * (newScale / currentScale)),
-          y: mouseY - ((mouseY - currentY) * (newScale / currentScale)),
-          scale: newScale,
-        };
-        runCameraEasing();
+      // Throttled React state update to avoid redundant multi-render per frame
+      if (syncStateRafRef.current === null) {
+        syncStateRafRef.current = requestAnimationFrame(() => {
+          syncStateRafRef.current = null;
+          setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+        });
       }
     };
 
@@ -1113,13 +1280,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         onPointerDown={handlePointerDown}
         style={{ touchAction: 'none' }}
         className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none ${
-          isPanningState ? 'cursor-grabbing' : 'cursor-grab'
+          isPanningState ? 'cursor-grabbing' : isSpacePressedState ? 'cursor-grab' : 'cursor-default'
         }`}
       >
         {/* Crisp Lightweight Vector Spatial Dot Grid */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
           <defs>
             <pattern
+              ref={dotPatternRef}
               id="flint-canvas-dots"
               width={cellSize}
               height={cellSize}
@@ -1140,16 +1308,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
         {/* Infinite Canvas Content Plane */}
         <div
+          ref={contentPlaneRef}
           style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
             transformOrigin: '0 0',
+            willChange: isPanningState || isSpacePressedState ? 'transform' : 'auto',
           }}
           className="absolute inset-0 pointer-events-none"
         >
         {nodes.map((node) => {
-          const doc = node.document_id
-            ? documents.find((d: DocumentItem) => d.id === node.document_id) || null
-            : null;
+          const doc = node.document_id ? docMap.get(node.document_id) || null : null;
           const isSelected = selectedNodeId === node.id;
           const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
 
@@ -1160,13 +1328,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               doc={doc}
               contentJson={contentJson}
               isSelected={isSelected}
+              isSpacePressed={isSpacePressedState}
+              isPanning={isPanningState}
               onSelect={handleNodePointerDown}
-              onOpenDoc={() => {
-                if (node.document_id) {
-                  setActiveDocumentById(node.document_id);
-                  setMainViewMode('document');
-                }
-              }}
+              onOpenDoc={handleOpenDoc}
               onDelete={handleDeleteNode}
               onColorChange={handleColorChange}
               onTextChange={handleTextChange}

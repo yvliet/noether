@@ -1092,7 +1092,7 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
       }
 
       return (
-        <div className="w-full h-full overflow-y-auto custom-scrollbar p-3.5 text-xs text-[#e0e0e0] leading-relaxed select-text cursor-text">
+        <div className="w-full h-full overflow-y-auto custom-scrollbar p-3.5 text-xs text-[#e0e0e0] leading-relaxed select-text cursor-text overscroll-contain">
           {renderPlainTextToMarkdown(node.text_content || '', onTaskToggle)}
         </div>
       );
@@ -1116,7 +1116,7 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
     }, [contentJson, doc?.content_json, onTaskToggle]);
 
     return (
-      <div className="w-full h-full overflow-y-auto custom-scrollbar p-3.5 text-xs leading-relaxed select-text">
+      <div className="w-full h-full overflow-y-auto custom-scrollbar p-3.5 text-xs leading-relaxed select-text overscroll-contain">
         {renderedBody}
       </div>
     );
