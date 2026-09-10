@@ -64,6 +64,27 @@ export class EditorRegistry {
     return this.activeEditor;
   }
 
+  /**
+   * Dispatches an action or command directly to the currently active editor instance.
+   * Useful for extensions triggering formatting, table insertion, or custom block mutations.
+   * @since 0.4.6
+   */
+  public dispatchAction(action: string, payload?: any): boolean {
+    const editor = this.activeEditor;
+    if (!editor) return false;
+
+    if (editor.commands && typeof editor.commands[action] === 'function') {
+      return Boolean(editor.commands[action](payload));
+    }
+    if (typeof editor.chain === 'function') {
+      const chain = editor.chain().focus();
+      if (typeof chain[action] === 'function') {
+        return Boolean(chain[action](payload).run());
+      }
+    }
+    return false;
+  }
+
   public registerExtension(factory: TiptapExtensionFactory): Disposable {
     this.extensionFactories.add(factory);
     try {

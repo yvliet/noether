@@ -45,6 +45,22 @@ export { EventBus } from '../core/events/EventBus';
 export { z } from 'zod';
 export { zodToMcpJsonSchema, formatZodIssues } from '../lib/mcp/zodToJsonSchema';
 export { usePortalSlots, useEditorPlugins } from '../core/app/AppContext';
+
+// ── Reactive React Hooks ──
+export {
+  useFlintApp,
+  useActiveDocument,
+  useHearthDocuments,
+  useActiveTab,
+  useWorkspaceTabs,
+  useMainViewMode,
+  useDocumentHeadings,
+  useDocumentBacklinks,
+  useDocumentOutgoingLinks,
+  useDocumentUnlinkedMentions,
+  useVaultTags,
+  useGlobalTasks,
+} from './react';
 export { renderHugeIconSvg } from '../components/common/Icons';
 export type { IconProps, RenderHugeIconSvgOptions } from '../components/common/Icons';
 export {

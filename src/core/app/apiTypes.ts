@@ -10,7 +10,18 @@
  */
 
 import React from 'react';
-import type { TabItem, DocumentItem, DocumentProperties } from '@/types';
+import type {
+  TabItem,
+  DocumentItem,
+  DocumentProperties,
+  BacklinkItem,
+  OutgoingLinkItem,
+  UnlinkedMentionItem,
+  TagItem,
+  TagTreeNode,
+  HeadingItem,
+  GlobalTaskItem,
+} from '@/types';
 import type { ContextMenuItemDefinition, OpenTabOptions } from '../extensions/types';
 
 // ─── Dialog Configuration Types ──────────────────────────────────
@@ -582,6 +593,94 @@ export interface HearthAPI {
    * @since 0.2.0
    */
   updateDocumentProperties(docId: string, properties: Partial<DocumentProperties>): Promise<void>;
+ 
+  // ── Subsystem Queries & Graph ──
+
+  /**
+   * Resolves the full relative or absolute filesystem path for a document.
+   * @param docId - The document's unique identifier.
+   * @since 0.4.6
+   */
+  getDocumentPath(docId: string): Promise<string>;
+
+  /**
+   * Checks whether a document is currently marked as read-only / locked.
+   * @param docId - The document's unique identifier.
+   * @since 0.4.6
+   */
+  isDocumentLocked(docId: string): boolean;
+
+  /**
+   * Retrieves all incoming backlinks pointing to a document.
+   * If docId is omitted, queries backlinks for the currently active document.
+   * @param docId - Optional document ID.
+   * @since 0.4.6
+   */
+  getBacklinks(docId?: string): Promise<BacklinkItem[]>;
+
+  /**
+   * Retrieves all outgoing wikilinks originating from a document.
+   * If docId is omitted, queries outgoing links for the currently active document.
+   * @param docId - Optional document ID.
+   * @since 0.4.6
+   */
+  getOutgoingLinks(docId?: string): Promise<OutgoingLinkItem[]>;
+
+  /**
+   * Finds unlinked text mentions of a document title across the Hearth.
+   * @param docId - The target document ID.
+   * @param title - Optional title override to search for.
+   * @since 0.4.6
+   */
+  getUnlinkedMentions(docId: string, title?: string): Promise<UnlinkedMentionItem[]>;
+
+  /**
+   * Converts an unlinked mention into an explicit wikilink.
+   * @param sourceDocId - The document containing the mention text.
+   * @param title - The title/mention text to convert into [[title]].
+   * @since 0.4.6
+   */
+  convertUnlinkedMention(sourceDocId: string, title: string): Promise<boolean>;
+
+  /**
+   * Retrieves the complete list of unique tags indexed in the Hearth.
+   * @since 0.4.6
+   */
+  getTags(): Promise<TagItem[]>;
+
+  /**
+   * Retrieves the hierarchical tag tree structure for nested tags.
+   * @since 0.4.6
+   */
+  getTagTree(): Promise<TagTreeNode[]>;
+
+  /**
+   * Retrieves headings outline items for a document.
+   * @param docId - Optional document ID (defaults to active document).
+   * @since 0.4.6
+   */
+  getHeadings(docId?: string): HeadingItem[];
+
+  /**
+   * Retrieves global tasks across all notes, with optional filtering.
+   * @param filter - Optional filter criteria (completed state, search query).
+   * @since 0.4.6
+   */
+  getGlobalTasks(filter?: { completed?: boolean; query?: string }): Promise<GlobalTaskItem[]>;
+
+  /**
+   * Toggles the completion state of a task item at the given line index.
+   * @param docId - Document containing the task.
+   * @param lineIndex - Line index of the task.
+   * @since 0.4.6
+   */
+  toggleTask(docId: string, lineIndex: number): Promise<boolean>;
+
+  /**
+   * Retrieves all document links for graph view visualization.
+   * @since 0.4.6
+   */
+  getDocumentLinks(): Promise<Array<{ sourceId: string; targetId: string }>>;
 }
 
 // ─── Settings API ───────────────────────────────────────────────

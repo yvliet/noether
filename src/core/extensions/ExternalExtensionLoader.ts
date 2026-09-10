@@ -139,18 +139,20 @@ export class ExternalExtensionLoader {
           if (
             moduleName === 'flint' ||
             moduleName === 'flint/sdk' ||
+            moduleName === 'flint/react' ||
             moduleName === 'flint-sdk' ||
             moduleName === '@flint' ||
             moduleName === '@flint/core' ||
             moduleName === '@flint/api' ||
             moduleName === '@flint/sdk' ||
+            moduleName === '@flint/react' ||
             moduleName === '@/sdk'
           ) {
             return flintSdk;
           }
           throw new Error(
             `[Flint] Cannot require "${moduleName}" from an extension. ` +
-            `Only 'react', 'react-dom', 'react/jsx-runtime', 'zod', 'clsx', 'tailwind-merge', 'zustand', 'zustand/vanilla', '@hugeicons/react', '@hugeicons/core-free-icons', and 'flint' (or '@flint/sdk') are available.`
+            `Only 'react', 'react-dom', 'react/jsx-runtime', 'zod', 'clsx', 'tailwind-merge', 'zustand', 'zustand/vanilla', '@hugeicons/react', '@hugeicons/core-free-icons', and 'flint' (or '@flint/sdk', '@flint/react') are available.`
           );
         },
         Flint: flintSdk,

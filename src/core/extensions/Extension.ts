@@ -164,6 +164,70 @@ export abstract class Extension {
   }
 
   /**
+   * Registers a DOM event listener with automatic removal when the extension unloads.
+   * @since 0.4.6
+   */
+  public registerDomEvent<K extends keyof WindowEventMap>(
+    target: Window | Document | HTMLElement,
+    type: K,
+    listener: (ev: WindowEventMap[K]) => any,
+    options?: boolean | AddEventListenerOptions
+  ): Disposable {
+    target.addEventListener(type, listener as EventListener, options);
+    const disposable: Disposable = {
+      dispose: () => {
+        target.removeEventListener(type, listener as EventListener, options);
+      },
+    };
+    return this.registerDisposable(disposable);
+  }
+
+  /**
+   * Registers an interval timer with automatic cancellation when the extension unloads.
+   * @since 0.4.6
+   */
+  public registerInterval(callback: () => void, ms: number): Disposable {
+    const handle = window.setInterval(callback, ms);
+    const disposable: Disposable = {
+      dispose: () => {
+        window.clearInterval(handle);
+      },
+    };
+    return this.registerDisposable(disposable);
+  }
+
+  /**
+   * Registers a timeout timer with automatic cancellation when the extension unloads.
+   * @since 0.4.6
+   */
+  public registerTimeout(callback: () => void, ms: number): Disposable {
+    const handle = window.setTimeout(callback, ms);
+    const disposable: Disposable = {
+      dispose: () => {
+        window.clearTimeout(handle);
+      },
+    };
+    return this.registerDisposable(disposable);
+  }
+
+  /**
+   * Subscribes to an external store with automatic unsubscription when the extension unloads.
+   * @since 0.4.6
+   */
+  public registerStoreSubscription<T>(
+    store: { subscribe: (fn: (state: T) => void) => () => void },
+    listener: (state: T) => void
+  ): Disposable {
+    const unsubscribe = store.subscribe(listener);
+    const disposable: Disposable = {
+      dispose: () => {
+        unsubscribe();
+      },
+    };
+    return this.registerDisposable(disposable);
+  }
+
+  /**
    * Subscribes to an application event with automatic cleanup on extension unload.
    *
    * @param event - The event key to listen for.

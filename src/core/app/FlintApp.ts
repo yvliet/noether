@@ -34,6 +34,18 @@ import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
 import { storeRefs, bindFlintStores, setAppInstanceBridge } from './storeBridge';
+import {
+  getDocumentPath as dbGetDocumentPath,
+  isDocumentLocked as dbIsDocumentLocked,
+  getAllGlobalTasks as dbGetAllGlobalTasks,
+} from '@/lib/db/documents';
+import {
+  getBacklinksForDocument,
+  getOutgoingLinksWithDetails,
+  getUnlinkedMentionsForDocument,
+} from '@/lib/db/links';
+import { getAllVaultTags, buildTagTree } from '@/lib/db/tags';
+import { dbAdapter } from '@/lib/db/adapter';
 import type {
   WorkspaceAPI,
   HearthAPI,
@@ -42,7 +54,18 @@ import type {
   ConfirmDialogConfig,
   InputDialogConfig,
 } from './apiTypes';
-import type { TabItem, DocumentItem, DocumentProperties } from '@/types';
+import type {
+  TabItem,
+  DocumentItem,
+  DocumentProperties,
+  BacklinkItem,
+  OutgoingLinkItem,
+  UnlinkedMentionItem,
+  TagItem,
+  TagTreeNode,
+  HeadingItem,
+  GlobalTaskItem,
+} from '@/types';
 import type { ContextMenuItemDefinition, OpenTabOptions } from '../extensions/types';
 
 export { bindFlintStores };
@@ -487,6 +510,80 @@ export class FlintApp {
           }
         }
         await storeRefs.document?.getState()?.updateProperties(docId, merged);
+      },
+      getDocumentPath: async (docId: string): Promise<string> => {
+        const allDocs = storeRefs.document?.getState()?.documents ?? [];
+        const doc = allDocs.find((d: DocumentItem) => d.id === docId);
+        if (!doc) return '';
+        return dbGetDocumentPath(doc, allDocs);
+      },
+      isDocumentLocked: (docId: string): boolean => {
+        return dbIsDocumentLocked(docId);
+      },
+      getBacklinks: async (docId?: string): Promise<BacklinkItem[]> => {
+        const targetId = docId || storeRefs.document?.getState()?.activeDocument?.id;
+        if (!targetId) return [];
+        return getBacklinksForDocument(targetId);
+      },
+      getOutgoingLinks: async (docId?: string): Promise<OutgoingLinkItem[]> => {
+        const targetId = docId || storeRefs.document?.getState()?.activeDocument?.id;
+        if (!targetId) return [];
+        return getOutgoingLinksWithDetails(targetId);
+      },
+      getUnlinkedMentions: async (docId: string, title?: string): Promise<UnlinkedMentionItem[]> => {
+        const doc = storeRefs.document?.getState()?.documents.find((d: DocumentItem) => d.id === docId);
+        const searchTitle = title || doc?.title;
+        if (!searchTitle) return [];
+        return getUnlinkedMentionsForDocument(searchTitle, docId);
+      },
+      convertUnlinkedMention: async (sourceDocId: string, title: string): Promise<boolean> => {
+        const docStore = storeRefs.document?.getState();
+        if (docStore?.convertUnlinkedMention) {
+          return docStore.convertUnlinkedMention(sourceDocId, title);
+        }
+        return false;
+      },
+      getTags: async (): Promise<TagItem[]> => {
+        return getAllVaultTags();
+      },
+      getTagTree: async (): Promise<TagTreeNode[]> => {
+        const tags = await getAllVaultTags();
+        return buildTagTree(tags);
+      },
+      getHeadings: (docId?: string): HeadingItem[] => {
+        const state = storeRefs.document?.getState();
+        if (!state) return [];
+        if (!docId || state.activeDocument?.id === docId) {
+          return state.headings ?? [];
+        }
+        return [];
+      },
+      getGlobalTasks: async (filter?: { completed?: boolean; query?: string }): Promise<GlobalTaskItem[]> => {
+        const tasks = await dbGetAllGlobalTasks();
+        if (!filter) return tasks;
+        return tasks.filter((t) => {
+          if (filter.completed !== undefined && t.completed !== filter.completed) return false;
+          if (filter.query && !t.text.toLowerCase().includes(filter.query.toLowerCase())) return false;
+          return true;
+        });
+      },
+      toggleTask: async (docId: string, lineIndex: number): Promise<boolean> => {
+        const docStore = storeRefs.document?.getState();
+        if (docStore?.updateTaskStatus) {
+          await docStore.updateTaskStatus(docId, lineIndex);
+          return true;
+        }
+        return false;
+      },
+      getDocumentLinks: async (): Promise<Array<{ sourceId: string; targetId: string }>> => {
+        try {
+          const rows = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
+            `SELECT source_document_id, target_document_id FROM document_links`
+          );
+          return rows.map((r) => ({ sourceId: r.source_document_id, targetId: r.target_document_id }));
+        } catch {
+          return [];
+        }
       },
     };
   }
