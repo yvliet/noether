@@ -233,7 +233,7 @@ export async function getUnifiedIconCatalog(): Promise<{
 
 export const HugeIconRenderer = React.memo<{
   iconDef: any;
-  size?: number;
+  size?: number | string;
   className?: string;
   color?: string;
 }>(({ iconDef, size = 14, className = '', color = 'currentColor' }) => {
@@ -252,7 +252,7 @@ HugeIconRenderer.displayName = 'HugeIconRenderer';
 
 export const DynamicHugeIcon: React.FC<{
   iconId: string;
-  size?: number;
+  size?: number | string;
   className?: string;
   color?: string;
 }> = React.memo(({ iconId, size = 14, className = '', color = 'currentColor' }) => {
@@ -303,7 +303,7 @@ DynamicHugeIcon.displayName = 'DynamicHugeIcon';
 
 export function renderUnifiedIcon(
   iconId: string,
-  options: { size?: number; className?: string; color?: string; emojiStyle?: EmojiStyle } = {}
+  options: { size?: number | string; className?: string; color?: string; emojiStyle?: EmojiStyle } = {}
 ): React.ReactNode {
   if (!iconId) return null;
 

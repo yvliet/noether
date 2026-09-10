@@ -531,6 +531,25 @@ kbd,
   color: var(--flint-selection-text, #ffffff);
 }
 
+.ProseMirror .node-iconChip,
+.ProseMirror .flint-icon-chip {
+  display: inline-flex;
+  vertical-align: top;
+  height: 1lh;
+  line-height: inherit;
+  border-radius: 0 !important;
+}
+
+.ProseMirror .node-iconChip.ProseMirror-selectednode,
+.ProseMirror .flint-icon-chip.ProseMirror-selectednode,
+.flint-icon-chip[data-selected="true"] {
+  background-color: var(--flint-selection-bg, #4a4e57) !important;
+  color: var(--flint-selection-text, #ffffff) !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
 .ProseMirror p,
 .markdown-prose p {
   margin-top: 0.5rem;

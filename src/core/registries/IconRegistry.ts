@@ -16,7 +16,7 @@ import React from 'react';
 import type { Disposable } from '../extensions/types';
 
 export interface IconRenderOptions {
-  size?: number;
+  size?: number | string;
   className?: string;
   color?: string;
   style?: React.CSSProperties;

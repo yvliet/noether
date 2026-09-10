@@ -87,19 +87,27 @@ export const IconChipView: React.FC<NodeViewProps> = ({
     <NodeViewWrapper
       as="span"
       data-icon-chip="true"
-      className={`flint-icon-chip inline-flex items-center align-middle mx-0.5 select-none relative group cursor-pointer ${
-        selected ? 'ring-1 ring-[var(--flint-accent,#ea580c)] rounded px-0.5' : ''
+      data-selected={selected ? 'true' : undefined}
+      className={`flint-icon-chip inline-flex items-center justify-center relative select-none cursor-pointer ${
+        selected ? 'bg-[var(--flint-selection-bg,#4a4e57)]' : ''
       }`}
+      style={{
+        height: '1lh',
+        verticalAlign: 'top',
+        lineHeight: 'inherit',
+      }}
       onClick={handleChipClick}
       title={`${fullIdentifier} (click to customize)`}
     >
       <span
-        className="inline-flex items-center justify-center rounded px-0.5 py-0.2 hover:bg-[#282828] text-[var(--flint-text-primary)]"
-        style={{ color: color || undefined }}
+        className="inline-flex items-center justify-center leading-none"
+        style={{
+          color: color || (selected ? 'var(--flint-selection-text,#ffffff)' : 'inherit'),
+        }}
       >
         {renderUnifiedIcon(fullIdentifier, {
-          size: 15,
-          color: color || 'currentColor',
+          size: '1.15em',
+          color: color || (selected ? 'var(--flint-selection-text,#ffffff)' : 'currentColor'),
           className: 'shrink-0',
         })}
       </span>
@@ -182,7 +190,7 @@ export const IconChipExtension = Node.create({
   inline: true,
   atom: true,
   selectable: true,
-  draggable: true,
+  draggable: false,
 
   addAttributes() {
     return {
