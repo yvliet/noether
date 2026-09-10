@@ -640,7 +640,7 @@ export function jsonToMarkdown(
         if (trimmed.startsWith('#')) {
           return `${trimmed}\n`;
         }
-        return `${prefix} ${inner}\n`;
+        return inner ? `${prefix} ${inner.trimStart()}\n` : `${prefix}\n`;
       }
 
       if (node.type === 'paragraph') {
@@ -894,6 +894,45 @@ export function markdownToTipTapJson(md: string): string {
             },
           },
         ],
+      });
+      continue;
+    }
+
+    // 3. Fenced code block: ```lang ... ```
+    if (trimmed.startsWith('```')) {
+      const lang = trimmed.slice(3).trim();
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      content.push({
+        type: 'codeBlock',
+        attrs: { language: lang },
+        content: codeLines.length > 0 ? [{ type: 'text', text: codeLines.join('\n') }] : [],
+      });
+      continue;
+    }
+
+    // 4. Horizontal rule: ---, ***, ___
+    if (/^([-*_])\1{2,}$/.test(trimmed)) {
+      content.push({
+        type: 'horizontalRule',
+      });
+      continue;
+    }
+
+    // 5. Headings: # through ######
+    const trimmedLeading = line.replace(/^[ ]{0,3}/, '');
+    const headingMatch = trimmedLeading.match(/^(#{1,6})(?:[ \t]+(.*?))?(?:[ \t]+#+)?[ \t]*$/);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      const headingText = (headingMatch[2] || '').trim();
+      content.push({
+        type: 'heading',
+        attrs: { level },
+        content: headingText ? parseInlineMarkdownTokens(headingText) : [],
       });
       continue;
     }
@@ -1344,27 +1383,27 @@ export function computeFastHash(str: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
 }
 
-export const DEFAULT_WELCOME_MARKDOWN = `---
-id: welcome-to-flint
-title: Welcome to Flint
-bookmarked: true
----
+export const DEFAULT_WELCOME_MARKDOWN = `# Welcome to Flint
 
-# Welcome to Flint ⚡
+Welcome! You're looking at your first note.
 
-Flint is a local-first writing environment and knowledge engine combining a modern typography canvas with embedded SQLite relational persistence and a modular extension ecosystem.
+Flint is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.
 
-## Key Features & Hotkeys
+## Quick Start
 
-- **Quick Open / Command Search**: \`Ctrl + K\` or \`Cmd + K\`
-- **Slash Commands**: Type \`/\` at any empty line to insert headings, task lists, code blocks, or custom extension blocks.
-- **Bi-directional Wiki-links**: Type \`[[\` to link to any note in your Hearth.
-- **Graph View**: Explore connections between ideas dynamically.
-- **Daily Notes**: Keep track of daily thoughts and logs seamlessly.
+Here are a few handy things to try right away:
 
-## Getting Started
+- **Create a note**: Click the **+** button in the sidebar or press \`Ctrl + N\` (\`Cmd + N\` on macOS).
+- **Find anything**: Press \`Ctrl + K\` (\`Cmd + K\`) to open Quick Search and jump to any note or command.
+- **Link your ideas**: Type \`[[\` to create a bi-directional link to any other note. If the note doesn't exist yet, Flint creates it for you on the fly.
+- **Slash commands**: Type \`/\` on an empty line to quickly insert headings, lists, tables, callouts, or math blocks.
+- **Explore connections**: Open the **Graph View** in the ribbon to see your thoughts branch out as your notes grow.
 
-Create notes, organize folders in the left sidebar, and explore installed extensions from Settings (\`Ctrl + ,\`).
+## Your Notes, Your Machine
+
+There is no proprietary lock-in here. Your notes live in your Hearth folder as standard \`.md\` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.
+
+Feel free to edit this note, delete it, or keep it around as a quick reference. Happy writing!
 `;
 
 /**
@@ -1380,14 +1419,33 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     let diskItems = await platform.scanVaultFiles();
     const existingDocs = await getAllDocuments();
 
-    // If both disk and SQLite have zero documents, auto-seed the initial welcome document
-    if ((!diskItems || diskItems.length === 0) && existingDocs.length === 0) {
-      try {
-        await platform.saveMarkdownFile('Welcome to Flint', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Flint.md');
-        diskItems = await platform.scanVaultFiles();
-      } catch (seedErr) {
-        console.error('[Flint Docs] Failed to auto-seed Welcome note to disk:', seedErr);
+    // Check if the initial welcome note has ever been seeded
+    const WELCOME_SEEDED_KEY = 'flint_welcome_seeded_v1';
+    let hasSeededWelcome = false;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        hasSeededWelcome = window.localStorage.getItem(WELCOME_SEEDED_KEY) === 'true';
       }
+    } catch (e) {
+      hasSeededWelcome = true;
+    }
+
+    if (!hasSeededWelcome) {
+      // Only seed on the very first run when both disk and database are completely empty
+      if ((!diskItems || diskItems.length === 0) && existingDocs.length === 0) {
+        try {
+          await platform.saveMarkdownFile('Welcome to Flint', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Flint.md');
+          diskItems = await platform.scanVaultFiles();
+        } catch (seedErr) {
+          console.error('[Flint Docs] Failed to auto-seed Welcome note to disk:', seedErr);
+        }
+      }
+      // Record seed flag so the welcome note is never re-created if deleted or when switching hearths
+      try {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(WELCOME_SEEDED_KEY, 'true');
+        }
+      } catch (e) {}
     }
 
     if (!diskItems || diskItems.length === 0) return { syncedCount: 0 };
@@ -1519,7 +1577,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         const propertiesJson = Object.keys(properties).length > 0 ? JSON.stringify(properties) : '{}';
         const isWelcomeDoc = fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint';
         const newId = isWelcomeDoc ? 'welcome-to-flint' : `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
-        const isBookmarked = isWelcomeDoc ? 1 : 0;
+        const isBookmarked = properties.bookmarked === true || properties.bookmarked === 'true' || properties.bookmarked === 1 || properties.bookmarked === '1' ? 1 : 0;
         const now = fileMtime;
         await dbAdapter.execute(
           `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)

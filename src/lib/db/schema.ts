@@ -107,7 +107,7 @@ export const INITIAL_DOCUMENTS_SEED = [
     title: 'Welcome to Flint',
     is_daily_note: 0,
     is_folder: 0,
-    is_bookmarked: 1,
+    is_bookmarked: 0,
     created_at: Date.now(),
     updated_at: Date.now(),
     content_json: JSON.stringify({
@@ -116,71 +116,76 @@ export const INITIAL_DOCUMENTS_SEED = [
         {
           type: 'heading',
           attrs: { level: 1 },
-          content: [{ type: 'text', text: 'Welcome to Flint ⚡' }]
+          content: [{ type: 'text', text: 'Welcome to Flint' }]
         },
         {
           type: 'paragraph',
           content: [
-            { type: 'text', text: 'Flint is a local-first writing environment and knowledge engine combining a modern typography canvas with embedded ' },
-            { type: 'text', marks: [{ type: 'bold' }], text: 'SQLite' },
-            { type: 'text', text: ' relational persistence and a modular extension ecosystem.' }
+            { type: 'text', text: "Welcome! You're looking at your first note." }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Flint is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.' }
           ]
         },
         {
           type: 'heading',
           attrs: { level: 2 },
-          content: [{ type: 'text', text: 'Key Features & Hotkeys' }]
+          content: [{ type: 'text', text: 'Quick Start' }]
         },
         {
-          type: 'bulletList',
+          type: 'paragraph',
           content: [
-            {
-              type: 'listItem',
-              content: [{
-                type: 'paragraph',
-                content: [
-                  { type: 'text', marks: [{ type: 'bold' }], text: 'Quick Open / Command Search: ' },
-                  { type: 'text', marks: [{ type: 'code' }], text: 'Ctrl + K' },
-                  { type: 'text', text: ' or ' },
-                  { type: 'text', marks: [{ type: 'code' }], text: 'Cmd + K' }
-                ]
-              }]
-            },
-            {
-              type: 'listItem',
-              content: [{
-                type: 'paragraph',
-                content: [
-                  { type: 'text', marks: [{ type: 'bold' }], text: 'Slash Commands: ' },
-                  { type: 'text', text: 'Type ' },
-                  { type: 'text', marks: [{ type: 'code' }], text: '/' },
-                  { type: 'text', text: ' at any empty line to insert headings, task lists, code blocks, or custom extension blocks.' }
-                ]
-              }]
-            },
-            {
-              type: 'listItem',
-              content: [{
-                type: 'paragraph',
-                content: [
-                  { type: 'text', marks: [{ type: 'bold' }], text: 'Bi-directional Wiki-links: ' },
-                  { type: 'text', text: 'Type ' },
-                  { type: 'text', marks: [{ type: 'code' }], text: '[[' },
-                  { type: 'text', text: ' to link to any note in your Hearth.' }
-                ]
-              }]
-            }
+            { type: 'text', text: 'Here are a few handy things to try right away:' }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '- **Create a note**: Click the **+** button in the sidebar or press `Ctrl + N` (`Cmd + N` on macOS).' }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '- **Find anything**: Press `Ctrl + K` (`Cmd + K`) to open Quick Search and jump to any note or command.' }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: "- **Link your ideas**: Type `[[` to create a bi-directional link to any other note. If the note doesn't exist yet, Flint creates it for you on the fly." }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '- **Slash commands**: Type `/` on an empty line to quickly insert headings, lists, tables, callouts, or math blocks.' }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: '- **Explore connections**: Open the **Graph View** in the ribbon to see your thoughts branch out as your notes grow.' }
           ]
         },
         {
           type: 'heading',
           attrs: { level: 2 },
-          content: [{ type: 'text', text: 'Getting Started' }]
+          content: [{ type: 'text', text: 'Your Notes, Your Machine' }]
         },
         {
           type: 'paragraph',
           content: [
-            { type: 'text', text: 'Create notes, organize folders in the left sidebar, and explore installed extensions from Settings (Ctrl + ,).' }
+            { type: 'text', text: 'There is no proprietary lock-in here. Your notes live in your Hearth folder as standard `.md` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.' }
+          ]
+        },
+        {
+          type: 'paragraph',
+          content: [
+            { type: 'text', text: 'Feel free to edit this note, delete it, or keep it around as a quick reference. Happy writing!' }
           ]
         }
       ]

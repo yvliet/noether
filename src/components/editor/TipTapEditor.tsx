@@ -748,6 +748,43 @@ const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
   });
 };
 
+/**
+ * Normalizes incoming TipTap document ASTs.
+ * Converts any legacy or imported paragraphs starting with markdown heading tokens
+ * (`# `, `## `, etc.) into native heading nodes with the appropriate level attribute,
+ * ensuring proper styling, outline navigation, and code folding.
+ */
+function normalizeTipTapContent(doc: any): any {
+  if (!doc || typeof doc !== 'object' || !Array.isArray(doc.content)) return doc;
+
+  const newContent = doc.content.map((node: any) => {
+    if (node && node.type === 'paragraph' && Array.isArray(node.content) && node.content.length > 0) {
+      const firstChild = node.content[0];
+      if (firstChild && firstChild.type === 'text' && typeof firstChild.text === 'string') {
+        const match = firstChild.text.match(/^([ ]{0,3})(#{1,6})(?:[ \t]+(.*))?$/);
+        if (match) {
+          const level = match[2].length;
+          const restOfFirstText = (match[3] || '').replace(/[ \t]+#+[ \t]*$/, '');
+          const remainingContent = node.content.slice(1);
+          const newInlineContent: any[] = [];
+          if (restOfFirstText.length > 0) {
+            newInlineContent.push({ ...firstChild, text: restOfFirstText });
+          }
+          newInlineContent.push(...remainingContent);
+          return {
+            type: 'heading',
+            attrs: { level },
+            content: newInlineContent,
+          };
+        }
+      }
+    }
+    return node;
+  });
+
+  return { ...doc, content: newContent };
+}
+
 interface TipTapEditorProps {
   documentId?: string;
   content: string;
@@ -1146,7 +1183,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       SmartMathNavigation,
       SearchAndReplace,
       StarterKit.configure({
-        heading: { levels: [1, 2, 3] },
+        heading: { levels: [1, 2, 3, 4, 5, 6] },
         // Enable hardBreak so that Shift-Enter inserts inline <br> breaks with normal line-height
         // instead of splitting blocks into new paragraphs (which have 0.5rem paragraph margins).
         hardBreak: {
@@ -1213,7 +1250,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         };
       }
       try {
-        return typeof content === 'string' ? JSON.parse(content) : content;
+        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+        return normalizeTipTapContent(parsed);
       } catch (e) {
         return {
           type: 'doc',
@@ -2031,7 +2069,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         }
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);
         const parsed = typeof content === 'string' ? JSON.parse(content) : content;
-        editor.commands.setContent(parsed, false);
+        editor.commands.setContent(normalizeTipTapContent(parsed), false);
       }
     } catch (e) {}
   }, [content, editor, documentId]);
