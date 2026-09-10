@@ -469,14 +469,6 @@ export function useKeyboardShortcuts() {
         Boolean(activeEl?.closest('.editor-canvas'));
       const isAnyEditorOrInput = isInput || isContentEditor;
       const isSidebarFocused = Boolean(target?.closest('[data-sidebar="true"]') || activeEl?.closest('[data-sidebar="true"]'));
-      const isCanvasOrGraph = Boolean(
-        target?.closest('[data-canvas-view="true"]') ||
-        target?.closest('.flint-canvas-view') ||
-        activeEl?.closest('[data-canvas-view="true"]') ||
-        activeEl?.closest('.flint-canvas-view') ||
-        ws.mainViewMode === 'canvas' ||
-        ws.mainViewMode === 'graph'
-      );
 
       // 18. File Action Undo & Redo (Only when explicitly focused in sidebar/file tree)
       if (!isAnyEditorOrInput && isSidebarFocused) {

@@ -12,7 +12,7 @@
 import React from 'react';
 import { BookOpen01Icon } from '@/components/common/Icons';
 import { CommandRegistry } from '../registries/CommandRegistry';
-import { ViewRegistry } from '../registries/ViewRegistry';
+import { ViewRegistry, viewRegistry } from '../registries/ViewRegistry';
 import { ActionRailRegistry } from '../registries/ActionRailRegistry';
 import { SidebarRegistry } from '../registries/SidebarRegistry';
 import { StatusBarRegistry } from '../registries/StatusBarRegistry';
@@ -104,7 +104,7 @@ export class FlintApp {
 
   constructor() {
     this.commands = new CommandRegistry();
-    this.views = new ViewRegistry();
+    this.views = viewRegistry;
     this.actionRail = new ActionRailRegistry();
     this.sidebars = new SidebarRegistry();
     this.statusBar = new StatusBarRegistry();

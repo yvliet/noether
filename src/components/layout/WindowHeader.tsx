@@ -541,20 +541,13 @@ export const WindowHeader: React.FC = React.memo(() => {
   // Automatically delete tabs whose extension has been deleted from disk/system
   useEffect(() => {
     if (!app.extensions.isReady) return;
-    const CORE_VIEWS = new Set(['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'plugin-doc']);
     for (const [paneId, model] of Object.entries(panes)) {
       for (const tab of model.tabs) {
         const viewType =
           tab.view_type ||
           tab.view_mode ||
-          (tab.document_id === '__graph__'
-            ? 'graph'
-            : tab.document_id === '__canvas__'
-            ? 'canvas'
-            : tab.document_id === '__tasks__'
-            ? 'tasks'
-            : '');
-        if (viewType && viewType !== 'document' && !CORE_VIEWS.has(viewType)) {
+          (tab.document_id?.startsWith('__') ? tab.document_id.replace(/^__/, '').replace(/__$/, '') : '');
+        if (viewType && viewType !== 'document') {
           const state = app.extensions.getViewExtensionState(viewType);
           if (state.state === 'deleted') {
             closeTabInPane(paneId, tab.id);
@@ -796,13 +789,7 @@ export const WindowHeader: React.FC = React.memo(() => {
       const viewType =
         tab.view_type ||
         tab.view_mode ||
-        (tab.document_id === '__graph__'
-          ? 'graph'
-          : tab.document_id === '__canvas__'
-          ? 'canvas'
-          : tab.document_id === '__tasks__'
-          ? 'tasks'
-          : '');
+        (tab.document_id?.startsWith('__') ? tab.document_id.replace(/^__/, '').replace(/__$/, '') : '');
 
       if (viewType && viewType !== 'document') {
         const extState = app.extensions.getViewExtensionState(viewType);
@@ -812,24 +799,15 @@ export const WindowHeader: React.FC = React.memo(() => {
         if (extState.state === 'deleted') {
           return null;
         }
-        const regView = extState.state === 'active' ? extState.view : app.views.getView(viewType);
-        if (regView?.icon) {
-          if (React.isValidElement(regView.icon)) {
-            return React.cloneElement(regView.icon as React.ReactElement<any>, {
+        const regIcon = extState.state === 'active' ? extState.view.icon : app.views.getViewIcon(viewType);
+        if (regIcon) {
+          if (React.isValidElement(regIcon)) {
+            return React.cloneElement(regIcon as React.ReactElement<any>, {
               size: 13,
               className: `shrink-0 ${iconColor}`,
             });
           }
-          return <span className="shrink-0 text-[12px]">{regView.icon}</span>;
-        }
-        if (viewType === 'graph') {
-          return <NeuralNetworkIcon size={13} className={`shrink-0 ${iconColor}`} />;
-        }
-        if (viewType === 'canvas') {
-          return <Layout01Icon size={13} className={`shrink-0 ${iconColor}`} />;
-        }
-        if (viewType === 'plugin-doc' || viewType === 'extension-doc') {
-          return <BookOpen01Icon size={13} className={`shrink-0 ${iconColor}`} />;
+          return <span className="shrink-0 text-[12px]">{regIcon}</span>;
         }
       }
 
@@ -866,17 +844,10 @@ export const WindowHeader: React.FC = React.memo(() => {
       const viewType =
         tab.view_type ||
         tab.view_mode ||
-        (tab.document_id === '__graph__'
-          ? 'graph'
-          : tab.document_id === '__canvas__'
-          ? 'canvas'
-          : tab.document_id === '__tasks__'
-          ? 'tasks'
-          : '');
+        (tab.document_id?.startsWith('__') ? tab.document_id.replace(/^__/, '').replace(/__$/, '') : '');
 
       if (viewType && viewType !== 'document') {
-        const regView = app.views.getView(viewType);
-        if (regView?.title) return regView.title;
+        return app.views.getViewTitle(viewType);
       }
 
       return doc ? doc.title : 'Untitled';
@@ -995,12 +966,7 @@ export const WindowHeader: React.FC = React.memo(() => {
         item.viewType ||
         (item.id.startsWith('view:') ? item.id.slice(5) : item.id);
       if (viewType && viewType !== 'document') {
-        const regView = app.views.getView(viewType);
-        if (regView?.title) return regView.title;
-        if (viewType === 'graph') return 'Graph view';
-        if (viewType === 'canvas') return 'Canvas';
-        if (viewType === 'tasks') return 'Tasks';
-        return viewType.charAt(0).toUpperCase() + viewType.slice(1);
+        return app.views.getViewTitle(viewType);
       }
 
       return item.title || item.id;

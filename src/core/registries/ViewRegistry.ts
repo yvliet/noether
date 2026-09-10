@@ -11,7 +11,7 @@
  * @since 0.1.0
  */
 
-import { ViewDefinition, Disposable } from '../extensions/types';
+import { ViewDefinition, ViewBehaviorPolicy, Disposable } from '../extensions/types';
 
 export class ViewRegistry {
   private views: Map<string, ViewDefinition> = new Map();
@@ -155,6 +155,43 @@ export class ViewRegistry {
   }
 
   /**
+   * Retrieves behavioral policy flags for a view type.
+   * @since 0.4.6
+   */
+  public getBehaviorPolicy(type: string): ViewBehaviorPolicy | undefined {
+    return this.getView(type)?.behavior;
+  }
+
+  /**
+   * Retrieves the display title for a view type, or returns a formatted fallback.
+   * @since 0.4.6
+   */
+  public getViewTitle(type: string, fallback?: string): string {
+    const view = this.getView(type);
+    if (view?.title) return view.title;
+    if (fallback !== undefined) return fallback;
+    return type
+      .replace(/[-_]+/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+
+  /**
+   * Retrieves the icon for a view type, if registered.
+   * @since 0.4.6
+   */
+  public getViewIcon(type: string): React.ReactNode | undefined {
+    return this.getView(type)?.icon;
+  }
+
+  /**
+   * Checks whether a view type is currently registered.
+   * @since 0.4.6
+   */
+  public isRegistered(type: string): boolean {
+    return Boolean(this.getView(type));
+  }
+
+  /**
    * Returns a snapshot array of all currently registered active views.
    * @since 0.1.0
    */
@@ -192,3 +229,10 @@ export class ViewRegistry {
     });
   }
 }
+
+/**
+ * Shared central ViewRegistry singleton instance.
+ * Exposed on FlintApp.views and imported directly across layout headers and stores.
+ * @since 0.4.6
+ */
+export const viewRegistry = new ViewRegistry();

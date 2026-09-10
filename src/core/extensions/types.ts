@@ -148,6 +148,33 @@ export interface StatusBarItem {
 }
 
 /**
+ * Behavioral policy defining how workspace navigation, note creation,
+ * and splitting interact with a view.
+ * @since 0.4.6
+ */
+export interface ViewBehaviorPolicy {
+  /**
+   * When true, newly created notes (e.g. from File Tree, hotkeys) open in
+   * the background rather than replacing or obscuring this active view.
+   * Useful for spatial surfaces like graph view and whiteboard canvases.
+   */
+  openNewDocumentsInBackground?: boolean;
+  /**
+   * When true, only a single tab instance of this view may exist in a pane.
+   */
+  singleton?: boolean;
+  /**
+   * When true, allows splitting the pane with this view.
+   */
+  allowSplitView?: boolean;
+  /**
+   * Indicates a continuous spatial surface (graph, canvas) where default
+   * document shortcuts might need different handling.
+   */
+  isSpatialSurface?: boolean;
+}
+
+/**
  * Defines a full workspace view type rendered in the main tab area.
  * @since 0.1.0
  */
@@ -162,6 +189,8 @@ export interface ViewDefinition {
   extensionId?: string;
   /** Legacy owning plugin identifier. */
   pluginId?: string;
+  /** Optional behavioral policies for workspace interactions. */
+  behavior?: ViewBehaviorPolicy;
   /** Render function for the view content. */
   render: (props: { tabId?: string; documentId?: string; app: FlintApp }) => React.ReactNode;
 }

@@ -762,7 +762,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     get().openCustomTabInPane(targetPaneId, options);
     get().recordNavigation({
       viewType: options.viewType,
-      documentId: options.documentId || `__${options.viewType}__`,
+      documentId: options.documentId,
       title: options.title,
     });
   },
@@ -771,7 +771,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     get().openCustomTab({
       viewType: 'graph',
       title: 'Graph view',
-      documentId: '__graph__',
     });
   },
 
@@ -779,7 +778,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     get().openCustomTab({
       viewType: 'canvas',
       title: 'Canvas',
-      documentId: '__canvas__',
     });
   },
 
@@ -787,7 +785,6 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     get().openCustomTab({
       viewType: 'tasks',
       title: 'Tasks',
-      documentId: '__tasks__',
     });
   },
 
@@ -1075,12 +1072,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         resolvedMainViewMode = activeTab.view_type as any;
       } else if (activeTab.view_mode && activeTab.view_mode !== 'document') {
         resolvedMainViewMode = activeTab.view_mode as any;
-      } else if (activeTab.document_id === '__graph__') {
-        resolvedMainViewMode = 'graph';
-      } else if (activeTab.document_id === '__canvas__') {
-        resolvedMainViewMode = 'canvas';
-      } else if (activeTab.document_id === '__tasks__') {
-        resolvedMainViewMode = 'tasks';
+      } else if (activeTab.document_id?.startsWith('__')) {
+        resolvedMainViewMode = activeTab.document_id.replace(/^__/, '').replace(/__$/, '') as any;
       } else {
         const doc = activeTab.document_id ? docMap.get(activeTab.document_id) : null;
         if (doc?.doc_type === 'canvas') {
@@ -1246,57 +1239,46 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ isNavigatingHistory: true });
     try {
       const { tabs } = get();
-      if (entry.viewType === 'graph' || entry.documentId === '__graph__') {
-        const graphTab = tabs.find((t) => t.view_type === 'graph' || t.view_mode === 'graph' || t.document_id === '__graph__');
-        if (graphTab) {
-          set({ mainViewMode: 'graph', activeTabId: graphTab.id });
-        } else {
-          get().openGraphTab();
-        }
-      } else if (entry.viewType === 'canvas' || entry.documentId === '__canvas__') {
-        if (entry.documentId && !entry.documentId.startsWith('__')) {
-          const canvasTab = tabs.find((t) => t.document_id === entry.documentId);
-          if (canvasTab) {
-            set({ mainViewMode: 'canvas', activeTabId: canvasTab.id });
-          }
-          await useDocumentStore.getState().setActiveDocumentById(entry.documentId, { preserveViewMode: true });
-          set({ mainViewMode: 'canvas' });
-        } else {
-          const canvasTab = tabs.find((t) => t.view_type === 'canvas' || t.view_mode === 'canvas' || t.document_id === '__canvas__');
-          if (canvasTab) {
-            set({ mainViewMode: 'canvas', activeTabId: canvasTab.id });
-          } else {
-            get().openCanvasTab();
-          }
-        }
-      } else if (entry.viewType === 'tasks' || entry.documentId === '__tasks__') {
-        const tasksTab = tabs.find((t) => t.view_type === 'tasks' || t.view_mode === 'tasks' || t.document_id === '__tasks__');
-        if (tasksTab) {
-          set({ mainViewMode: 'tasks', activeTabId: tasksTab.id });
-        } else {
-          get().openTasksTab();
-        }
-      } else if ((entry.viewType === 'extension-doc' || entry.viewType === 'plugin-doc') && entry.documentId) {
+      if ((entry.viewType === 'extension-doc' || entry.viewType === 'plugin-doc') && entry.documentId) {
         const extensionId = entry.documentId.replace(/^__(extension_doc|plugin_doc):/, '').replace(/__$/, '');
         get().openExtensionDocTab(extensionId, entry.title);
-      } else if (entry.viewType && entry.viewType !== 'document') {
-        get().openCustomTab({
-          viewType: entry.viewType,
-          documentId: entry.documentId || undefined,
-          title: entry.title || entry.viewType,
-        });
-      } else if (entry.documentId && !entry.documentId.startsWith('__')) {
-        const docTab = tabs.find((t) => t.document_id === entry.documentId);
-        if (docTab) {
-          set({ mainViewMode: 'document', activeTabId: docTab.id });
-        } else {
-          get().openTab(entry.documentId, entry.title || 'Untitled');
-        }
-        await useDocumentStore.getState().setActiveDocumentById(entry.documentId, { preserveViewMode: true });
-        set({ mainViewMode: 'document' });
       } else {
-        set({ mainViewMode: 'document' });
-        useDocumentStore.setState({ activeDocument: null });
+        const targetViewType =
+          entry.viewType ||
+          (entry.documentId?.startsWith('__') ? entry.documentId.replace(/^__/, '').replace(/__$/, '') : 'document');
+
+        if (targetViewType && targetViewType !== 'document') {
+          const matchingTab = tabs.find(
+            (t) =>
+              t.view_type === targetViewType ||
+              t.view_mode === targetViewType ||
+              (entry.documentId && t.document_id === entry.documentId)
+          );
+          if (matchingTab) {
+            set({ mainViewMode: targetViewType as any, activeTabId: matchingTab.id });
+          } else {
+            get().openCustomTab({
+              viewType: targetViewType,
+              documentId: entry.documentId && !entry.documentId.startsWith('__') ? entry.documentId : undefined,
+              title: entry.title || targetViewType,
+            });
+          }
+          if (entry.documentId && !entry.documentId.startsWith('__')) {
+            await useDocumentStore.getState().setActiveDocumentById(entry.documentId, { preserveViewMode: true });
+          }
+        } else if (entry.documentId && !entry.documentId.startsWith('__')) {
+          const docTab = tabs.find((t) => t.document_id === entry.documentId);
+          if (docTab) {
+            set({ mainViewMode: 'document', activeTabId: docTab.id });
+          } else {
+            get().openTab(entry.documentId, entry.title || 'Untitled');
+          }
+          await useDocumentStore.getState().setActiveDocumentById(entry.documentId, { preserveViewMode: true });
+          set({ mainViewMode: 'document' });
+        } else {
+          set({ mainViewMode: 'document' });
+          useDocumentStore.setState({ activeDocument: null });
+        }
       }
     } catch (e) {
       console.error('[workspaceStore] Error applying navigation history entry:', e);
@@ -1438,13 +1420,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       initialOptions?.viewMode ||
       (customType ? customType.viewType : undefined) ||
       targetTab?.view_mode ||
-      (activeDocId === '__graph__' ? 'graph' : activeDocId === '__canvas__' ? 'canvas' : activeDocId === '__tasks__' ? 'tasks' : 'document');
+      (activeDocId?.startsWith('__') ? activeDocId.replace(/^__/, '').replace(/__$/, '') : 'document');
 
     const resolvedViewType =
       initialOptions?.viewType ||
       (customType ? customType.viewType : undefined) ||
       targetTab?.view_type ||
-      (activeDocId === '__graph__' ? 'graph' : activeDocId === '__canvas__' ? 'canvas' : activeDocId === '__tasks__' ? 'tasks' : 'document');
+      (activeDocId?.startsWith('__') ? activeDocId.replace(/^__/, '').replace(/__$/, '') : 'document');
 
     const resolvedIcon = initialOptions?.icon !== undefined ? initialOptions.icon : targetTab?.icon;
     const resolvedMetadata = initialOptions?.metadata !== undefined ? initialOptions.metadata : targetTab?.metadata;
@@ -1942,12 +1924,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const currentPane = panes[targetPaneId];
     if (!currentPane) return;
 
-    const targetDocId = options.documentId || `__${options.viewType}__`;
+    const targetDocId = options.documentId || '';
     const isDocViewer = options.viewType === 'extension-doc' || options.viewType === 'plugin-doc';
     const existing = currentPane.tabs.find(
       (t) =>
         (options.id && t.id === options.id) ||
-        t.document_id === targetDocId ||
+        (targetDocId !== '' && t.document_id === targetDocId) ||
         (!isDocViewer && (t.view_type === options.viewType || t.view_mode === options.viewType))
     );
 
@@ -1996,7 +1978,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...currentPane,
       tabs: newTabs,
       activeTabId: finalTabId,
-      activeDocumentId: targetDocId,
+      activeDocumentId: targetDocId || null,
     };
 
     const newPanes = {
@@ -2011,7 +1993,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activePane: isMain ? 'main' : 'split',
       ...(isMain ? { tabs: newTabs, activeTabId: finalTabId, mainViewMode: (options.viewType as any) || 'document' } : {}),
       ...(targetPaneId === get().focusedPaneId && !isMain
-        ? { splitTabs: newTabs, splitActiveTabId: finalTabId, splitActiveDocumentId: targetDocId }
+        ? { splitTabs: newTabs, splitActiveTabId: finalTabId, splitActiveDocumentId: targetDocId || null }
         : {}),
     });
 

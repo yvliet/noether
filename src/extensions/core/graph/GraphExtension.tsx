@@ -44,6 +44,11 @@ export class GraphExtension extends Extension {
       type: 'graph',
       title: 'Graph View',
       icon: <NeuralNetworkIcon size={14} />,
+      behavior: {
+        openNewDocumentsInBackground: true,
+        isSpatialSurface: true,
+        allowSplitView: true,
+      },
       render: (props) => (
         <React.Suspense fallback={<div className="w-full h-full bg-transparent" />}>
           <LazyGraphView
@@ -64,7 +69,6 @@ export class GraphExtension extends Extension {
         app.workspace.openCustomTab({
           viewType: 'graph',
           title: 'Graph View',
-          documentId: '__graph__',
           icon: <NeuralNetworkIcon size={14} />,
         });
       },
@@ -92,7 +96,6 @@ export class GraphExtension extends Extension {
         app.workspace.openCustomTab({
           viewType: 'graph',
           title: 'Graph View',
-          documentId: '__graph__',
           icon: <NeuralNetworkIcon size={14} />,
         });
       },

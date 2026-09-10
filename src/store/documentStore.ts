@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { emitBridgeAppEvent } from '@/core/app/storeBridge';
 import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
+import { viewRegistry } from '@/core/registries/ViewRegistry';
 import {
   DocumentItem,
   TrashItem,
@@ -566,12 +567,13 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const ws = useWorkspaceStore.getState();
     const focusedPane = ws.panes[ws.focusedPaneId || 'main'];
     const activeTab = focusedPane?.tabs.find((t) => t.id === focusedPane.activeTabId);
-    const activeViewType = activeTab?.view_type || activeTab?.view_mode || ws.mainViewMode;
-    const isGraphView = activeViewType === 'graph' || activeTab?.document_id === '__graph__';
+    const activeViewType = activeTab?.view_type || activeTab?.view_mode || ws.mainViewMode || 'document';
+    const activePolicy = viewRegistry.getBehaviorPolicy(activeViewType);
+    const shouldOpenInBackground = activePolicy?.openNewDocumentsInBackground ?? false;
 
     // 0ms instantaneous optimistic state update
-    if (isGraphView) {
-      // In Graph View, keep the graph canvas undisturbed so the user can watch the new node emerge live
+    if (shouldOpenInBackground) {
+      // For spatial views (e.g. graph, canvas), keep the surface undisturbed so the user can watch the new node emerge live
       set((state) => ({
         documents: [doc, ...state.documents],
         searchQuery: '',
@@ -598,8 +600,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           viewType: customType.viewType,
           viewMode: customType.viewType as any,
         });
-      } else if (isGraphView) {
-        // Open the new note in a background tab so the Graph View tab and canvas remain active
+      } else if (shouldOpenInBackground) {
+        // Open the new note in a background tab so the active surface remains focused
         ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false, background: true });
       } else {
         ws.setMainViewMode('document');

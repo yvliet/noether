@@ -12,9 +12,6 @@ import {
   Cancel01Icon,
   PlusSignIcon,
   Alert02Icon,
-  NeuralNetworkIcon,
-  Layout01Icon,
-  BookOpen01Icon,
   SplitRightIcon,
   Copy01Icon,
 } from '@/components/common/Icons';
@@ -93,13 +90,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       const viewType =
         tab.view_type ||
         tab.view_mode ||
-        (tab.document_id === '__graph__'
-          ? 'graph'
-          : tab.document_id === '__canvas__'
-          ? 'canvas'
-          : tab.document_id === '__tasks__'
-          ? 'tasks'
-          : '');
+        (tab.document_id?.startsWith('__') ? tab.document_id.replace(/^__/, '').replace(/__$/, '') : '');
 
       if (viewType && viewType !== 'document') {
         const extState = app.extensions.getViewExtensionState(viewType);
@@ -109,24 +100,15 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
         if (extState.state === 'deleted') {
           return null;
         }
-        const regView = extState.state === 'active' ? extState.view : app.views.getView(viewType);
-        if (regView?.icon) {
-          if (React.isValidElement(regView.icon)) {
-            return React.cloneElement(regView.icon as React.ReactElement<any>, {
+        const regIcon = app.views.getViewIcon(viewType);
+        if (regIcon) {
+          if (React.isValidElement(regIcon)) {
+            return React.cloneElement(regIcon as React.ReactElement<any>, {
               size: 13,
               className: `shrink-0 ${iconColor}`,
             });
           }
-          return <span className="shrink-0 text-[12px]">{regView.icon}</span>;
-        }
-        if (viewType === 'graph') {
-          return <NeuralNetworkIcon size={13} className={`shrink-0 ${iconColor}`} />;
-        }
-        if (viewType === 'canvas') {
-          return <Layout01Icon size={13} className={`shrink-0 ${iconColor}`} />;
-        }
-        if (viewType === 'plugin-doc' || viewType === 'extension-doc') {
-          return <BookOpen01Icon size={13} className={`shrink-0 ${iconColor}`} />;
+          return <span className="shrink-0 text-[12px]">{regIcon}</span>;
         }
       }
 
@@ -159,13 +141,13 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
         if (customTitle !== undefined) return customTitle;
       }
 
-      if (tab.document_id === '__graph__' || tab.view_type === 'graph' || tab.view_mode === 'graph') return 'Graph view';
-      if (tab.document_id === '__canvas__' || tab.view_type === 'canvas' || tab.view_mode === 'canvas') return 'Canvas';
-      if (tab.document_id === '__tasks__' || tab.view_type === 'tasks' || tab.view_mode === 'tasks') return 'Tasks';
+      const viewType =
+        tab.view_type ||
+        tab.view_mode ||
+        (tab.document_id?.startsWith('__') ? tab.document_id.replace(/^__/, '').replace(/__$/, '') : '');
 
-      if (tab.view_type && tab.view_type !== 'document') {
-        const regView = app.views.getView(tab.view_type);
-        if (regView?.title) return regView.title;
+      if (viewType && viewType !== 'document') {
+        return app.views.getViewTitle(viewType, tab.title);
       }
 
       return tab.title || (doc ? doc.title : 'Untitled');

@@ -3,8 +3,6 @@ import {
   dragTooltipManager,
   STICKY_NOTE_02_SVG,
   FOLDER_SVG,
-  GIT_FORK_SVG,
-  CANVAS_LAYOUT_SVG,
 } from '@/lib/dragTooltip';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
@@ -500,10 +498,6 @@ export function useTabReorder<T>({
               : (currentItem as any)?.title || 'Tab';
             const iconSvg = getIconSvgRef.current
               ? getIconSvgRef.current(currentItem)
-              : (currentItem as any)?.view_type === 'graph' || (currentItem as any)?.document_id === '__graph__'
-              ? GIT_FORK_SVG
-              : (currentItem as any)?.view_type === 'canvas' || (currentItem as any)?.document_id === '__canvas__'
-              ? CANVAS_LAYOUT_SVG
               : STICKY_NOTE_02_SVG;
 
             dragTooltipManager.show(
@@ -675,10 +669,6 @@ export function useDockReorder<T extends { id: string; title: string }>({
               ? getIconSvgRef.current(currentItem)
               : isDoc
               ? STICKY_NOTE_02_SVG
-              : (currentItem as any)?.viewType === 'graph' || (currentItem as any)?.id === 'graph'
-              ? GIT_FORK_SVG
-              : (currentItem as any)?.viewType === 'canvas' || (currentItem as any)?.id === 'canvas'
-              ? CANVAS_LAYOUT_SVG
               : FOLDER_SVG;
 
             dragTooltipManager.show(title, null, iconSvg, moveEvent.clientX, moveEvent.clientY);
