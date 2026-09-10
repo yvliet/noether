@@ -25,6 +25,8 @@ import {
   deleteCanvasNode,
   saveCanvasEdge,
   purgeCanvasNodesForDocument,
+  CANVAS_NODES_TABLE_DEF,
+  CANVAS_EDGES_TABLE_DEF,
 } from './canvasDb';
 
 const LazyCanvasView = React.lazy(() =>
@@ -48,6 +50,14 @@ export class CanvasExtension extends Extension {
   }
 
   public onload(): void {
+    // 0. Register declarative SQLite tables
+    this.defineTable(CANVAS_NODES_TABLE_DEF).catch((err) => {
+      console.error('[CanvasExtension] Failed to define nodes table:', err);
+    });
+    this.defineTable(CANVAS_EDGES_TABLE_DEF).catch((err) => {
+      console.error('[CanvasExtension] Failed to define edges table:', err);
+    });
+
     // 1. Register Main View
     this.registerView({
       type: 'canvas',

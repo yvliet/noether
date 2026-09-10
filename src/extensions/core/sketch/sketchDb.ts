@@ -24,12 +24,13 @@ export const SKETCH_TABLE_DEFINITION = {
 };
 
 /**
- * Initializes the document_sketches SQLite table if it does not yet exist.
+ * Initializes the ext_sketch_document_sketches SQLite table if it does not yet exist,
+ * migrating any legacy rows from document_sketches.
  */
 export async function initSketchDb(): Promise<void> {
   try {
     await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS document_sketches (
+      CREATE TABLE IF NOT EXISTS ext_sketch_document_sketches (
         document_id TEXT PRIMARY KEY,
         anchoring TEXT NOT NULL DEFAULT 'content',
         strokes_json TEXT NOT NULL DEFAULT '[]',
@@ -37,8 +38,22 @@ export async function initSketchDb(): Promise<void> {
       );
     `);
     await dbAdapter.execute(`
-      CREATE INDEX IF NOT EXISTS idx_sketches_doc ON document_sketches (document_id);
+      CREATE INDEX IF NOT EXISTS idx_sketches_doc ON ext_sketch_document_sketches (document_id);
     `);
+
+    // Migrate from legacy un-prefixed table if present
+    try {
+      const legacyTable = await dbAdapter.query<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='document_sketches'`
+      );
+      if (legacyTable.length > 0) {
+        await dbAdapter.execute(
+          `INSERT OR IGNORE INTO ext_sketch_document_sketches SELECT * FROM document_sketches;`
+        );
+      }
+    } catch {
+      // Legacy table missing or incompatible; safe to ignore
+    }
   } catch (err) {
     console.error('[Flint Sketch] Failed to initialize SQLite table:', err);
   }
@@ -61,7 +76,7 @@ export async function loadSketchFromDb(documentId: string): Promise<SketchDocume
       strokes_json: string;
       updated_at: number;
     }>(
-      `SELECT document_id, anchoring, strokes_json, updated_at FROM document_sketches WHERE document_id = ?`,
+      `SELECT document_id, anchoring, strokes_json, updated_at FROM ext_sketch_document_sketches WHERE document_id = ?`,
       [documentId]
     );
 
@@ -110,7 +125,7 @@ export async function saveSketchToDb(data: SketchDocumentData): Promise<void> {
     const json = JSON.stringify(data.strokes || []);
     const now = Date.now();
     await dbAdapter.execute(
-      `INSERT OR REPLACE INTO document_sketches (document_id, anchoring, strokes_json, updated_at)
+      `INSERT OR REPLACE INTO ext_sketch_document_sketches (document_id, anchoring, strokes_json, updated_at)
        VALUES (?, ?, ?, ?)`,
       [data.documentId, data.anchoring, json, now]
     );
@@ -127,7 +142,7 @@ export async function deleteSketchFromDb(documentId: string): Promise<void> {
   sketchMemoryCache.delete(documentId);
 
   try {
-    await dbAdapter.execute(`DELETE FROM document_sketches WHERE document_id = ?`, [documentId]);
+    await dbAdapter.execute(`DELETE FROM ext_sketch_document_sketches WHERE document_id = ?`, [documentId]);
   } catch (err) {
     console.error(`[Flint Sketch] Error deleting sketch for doc ${documentId}:`, err);
   }
@@ -139,7 +154,7 @@ export async function deleteSketchFromDb(documentId: string): Promise<void> {
 export async function getSketchDocumentCount(): Promise<number> {
   try {
     const res = await dbAdapter.query<{ count: number }>(
-      `SELECT COUNT(*) as count FROM document_sketches WHERE strokes_json != '[]'`
+      `SELECT COUNT(*) as count FROM ext_sketch_document_sketches WHERE strokes_json != '[]'`
     );
     return res[0]?.count ?? 0;
   } catch {

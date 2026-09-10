@@ -12,7 +12,7 @@
  */
 
 import { dbAdapter } from '@/lib/db/adapter';
-
+import type { TableDefinition } from '@/core/extensions/types';
 import { EmojiStyle } from '@/components/common/emoji';
 
 export type IconItemType = 'folder' | 'file' | 'other';
@@ -142,9 +142,24 @@ export function saveIconifyToLocalStorage(
   } catch {}
 }
 
+export const ICONIFY_TABLE_DEFINITION: TableDefinition = {
+  tableName: 'icons',
+  version: 1,
+  columns: {
+    item_id: { type: 'text', primaryKey: true },
+    icon_id: { type: 'text' },
+    color: { type: 'text', nullable: true },
+    item_type: { type: 'text', nullable: true },
+    updated_at: { type: 'integer' },
+  },
+  indexes: [
+    { name: 'idx_iconify_icons_item_id', columns: ['item_id'] },
+  ],
+};
+
 /**
  * Initializes the SQLite schema for Iconify.
- * Drops legacy folder_icons table if present and sets up `iconify_icons`.
+ * Drops legacy folder_icons table if present and sets up `ext_iconify_icons`.
  */
 export async function initIconifyDb(): Promise<void> {
   if (!dbAdapter.isReady()) return;
@@ -154,7 +169,7 @@ export async function initIconifyDb(): Promise<void> {
     await dbAdapter.execute(`DROP TABLE IF EXISTS folder_icons;`);
 
     await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS iconify_icons (
+      CREATE TABLE IF NOT EXISTS ext_iconify_icons (
         item_id TEXT PRIMARY KEY,
         icon_id TEXT NOT NULL,
         color TEXT,
@@ -164,8 +179,22 @@ export async function initIconifyDb(): Promise<void> {
     `);
 
     await dbAdapter.execute(`
-      CREATE INDEX IF NOT EXISTS idx_iconify_icons_item_id ON iconify_icons(item_id);
+      CREATE INDEX IF NOT EXISTS idx_iconify_icons_item_id ON ext_iconify_icons(item_id);
     `);
+
+    // Migrate from legacy un-prefixed table if present
+    try {
+      const legacyTable = await dbAdapter.query<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='iconify_icons'`
+      );
+      if (legacyTable.length > 0) {
+        await dbAdapter.execute(
+          `INSERT OR IGNORE INTO ext_iconify_icons SELECT * FROM iconify_icons;`
+        );
+      }
+    } catch {
+      // Legacy table missing or incompatible; safe to ignore
+    }
   } catch (err) {
     console.error('[IconifyDb] Failed to initialize table:', err);
   }
@@ -180,7 +209,7 @@ export async function getAllIconsFromDb(): Promise<Record<string, IconEntry>> {
   try {
     await initIconifyDb();
     const rows = await dbAdapter.query<IconRecord>(`
-      SELECT item_id, icon_id, color, item_type, updated_at FROM iconify_icons;
+      SELECT item_id, icon_id, color, item_type, updated_at FROM ext_iconify_icons;
     `);
 
     const result: Record<string, IconEntry> = {};
@@ -214,7 +243,7 @@ export async function setIconInDb(
     const now = Date.now();
     await dbAdapter.execute(
       `
-      INSERT INTO iconify_icons (item_id, icon_id, color, item_type, updated_at)
+      INSERT INTO ext_iconify_icons (item_id, icon_id, color, item_type, updated_at)
       VALUES (?, ?, ?, ?, ?)
       ON CONFLICT(item_id) DO UPDATE SET
         icon_id = excluded.icon_id,
@@ -238,7 +267,7 @@ export async function removeIconFromDb(itemId: string): Promise<void> {
   try {
     await initIconifyDb();
     await dbAdapter.execute(
-      `DELETE FROM iconify_icons WHERE item_id = ?;`,
+      `DELETE FROM ext_iconify_icons WHERE item_id = ?;`,
       [itemId]
     );
   } catch (err) {
@@ -254,7 +283,7 @@ export async function clearAllIconsInDb(): Promise<void> {
 
   try {
     await initIconifyDb();
-    await dbAdapter.execute(`DELETE FROM iconify_icons;`);
+    await dbAdapter.execute(`DELETE FROM ext_iconify_icons;`);
   } catch (err) {
     console.error('[IconifyDb] Error clearing icons in DB:', err);
   }

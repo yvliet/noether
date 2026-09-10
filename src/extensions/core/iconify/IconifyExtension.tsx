@@ -23,7 +23,7 @@ import {
   File01Icon,
 } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
-import { initIconifyDb, IconItemType } from './iconifyDb';
+import { initIconifyDb, IconItemType, ICONIFY_TABLE_DEFINITION } from './iconifyDb';
 import { useIconifyStore } from './iconifyStore';
 import { IconPicker, HugeIconRenderer } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
@@ -59,6 +59,11 @@ export class IconifyExtension extends Extension {
   }
 
   public async onload(): Promise<void> {
+    // 0. Register declarative SQLite schema via defineTable
+    this.defineTable(ICONIFY_TABLE_DEFINITION).catch((err) => {
+      console.error('[IconifyExtension] Failed to define icons table:', err);
+    });
+
     // 1. Initial hydration from cache and DB
     await useIconifyStore.getState().loadIcons();
 

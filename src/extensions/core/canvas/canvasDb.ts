@@ -7,7 +7,43 @@
  */
 
 import { dbAdapter } from '@/lib/db/adapter';
+import type { TableDefinition } from '@/core/extensions/types';
 import type { CanvasNode, CanvasEdge } from './types';
+
+export const CANVAS_NODES_TABLE_DEF: TableDefinition = {
+  tableName: 'nodes',
+  version: 1,
+  columns: {
+    id: { type: 'text', primaryKey: true },
+    board_id: { type: 'text', default: 'default' },
+    type: { type: 'text' },
+    x: { type: 'real' },
+    y: { type: 'real' },
+    width: { type: 'real' },
+    height: { type: 'real' },
+    document_id: { type: 'text', nullable: true },
+    text_content: { type: 'text', nullable: true },
+    color: { type: 'text', nullable: true },
+  },
+  indexes: [
+    { name: 'idx_canvas_nodes_board', columns: ['board_id'] },
+  ],
+};
+
+export const CANVAS_EDGES_TABLE_DEF: TableDefinition = {
+  tableName: 'edges',
+  version: 1,
+  columns: {
+    id: { type: 'text', primaryKey: true },
+    board_id: { type: 'text', default: 'default' },
+    from_node_id: { type: 'text' },
+    to_node_id: { type: 'text' },
+    label: { type: 'text', nullable: true },
+  },
+  indexes: [
+    { name: 'idx_canvas_edges_board', columns: ['board_id'] },
+  ],
+};
 
 let isInitialized = false;
 
@@ -19,7 +55,7 @@ export async function initCanvasTables(): Promise<void> {
   if (isInitialized) return;
   try {
     await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS canvas_nodes (
+      CREATE TABLE IF NOT EXISTS ext_canvas_nodes (
         id TEXT PRIMARY KEY,
         board_id TEXT NOT NULL DEFAULT 'default',
         type TEXT NOT NULL,
@@ -34,7 +70,7 @@ export async function initCanvasTables(): Promise<void> {
     `);
 
     await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS canvas_edges (
+      CREATE TABLE IF NOT EXISTS ext_canvas_edges (
         id TEXT PRIMARY KEY,
         board_id TEXT NOT NULL DEFAULT 'default',
         from_node_id TEXT NOT NULL,
@@ -43,8 +79,27 @@ export async function initCanvasTables(): Promise<void> {
       );
     `);
 
-    await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON canvas_nodes(board_id);`);
-    await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_edges_board ON canvas_edges(board_id);`);
+    await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`);
+    await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_edges_board ON ext_canvas_edges(board_id);`);
+
+    // Migrate from legacy un-prefixed tables if present
+    try {
+      const legacyNodes = await dbAdapter.query<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='canvas_nodes'`
+      );
+      if (legacyNodes.length > 0) {
+        await dbAdapter.execute(`INSERT OR IGNORE INTO ext_canvas_nodes SELECT * FROM canvas_nodes;`);
+      }
+      const legacyEdges = await dbAdapter.query<{ name: string }>(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='canvas_edges'`
+      );
+      if (legacyEdges.length > 0) {
+        await dbAdapter.execute(`INSERT OR IGNORE INTO ext_canvas_edges SELECT * FROM canvas_edges;`);
+      }
+    } catch {
+      // Legacy tables missing or incompatible; safe to ignore
+    }
+
     isInitialized = true;
   } catch (err) {
     console.error('[Flint Canvas] Failed to initialize canvas tables:', err);
@@ -54,7 +109,7 @@ export async function initCanvasTables(): Promise<void> {
 export async function getCanvasNodes(boardId = 'default'): Promise<CanvasNode[]> {
   await initCanvasTables();
   const nodes = await dbAdapter.query<CanvasNode>(
-    `SELECT * FROM canvas_nodes WHERE board_id = ?`,
+    `SELECT * FROM ext_canvas_nodes WHERE board_id = ?`,
     [boardId]
   );
   return nodes;
@@ -63,7 +118,7 @@ export async function getCanvasNodes(boardId = 'default'): Promise<CanvasNode[]>
 export async function getCanvasEdges(boardId = 'default'): Promise<CanvasEdge[]> {
   await initCanvasTables();
   const edges = await dbAdapter.query<CanvasEdge>(
-    `SELECT * FROM canvas_edges WHERE board_id = ?`,
+    `SELECT * FROM ext_canvas_edges WHERE board_id = ?`,
     [boardId]
   );
   return edges;
@@ -72,7 +127,7 @@ export async function getCanvasEdges(boardId = 'default'): Promise<CanvasEdge[]>
 export async function saveCanvasNode(node: CanvasNode): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(
-    `INSERT OR REPLACE INTO canvas_nodes (id, board_id, type, x, y, width, height, document_id, text_content, color)
+    `INSERT OR REPLACE INTO ext_canvas_nodes (id, board_id, type, x, y, width, height, document_id, text_content, color)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       node.id,
@@ -91,9 +146,9 @@ export async function saveCanvasNode(node: CanvasNode): Promise<void> {
 
 export async function deleteCanvasNode(nodeId: string): Promise<void> {
   await initCanvasTables();
-  await dbAdapter.execute(`DELETE FROM canvas_nodes WHERE id = ?`, [nodeId]);
+  await dbAdapter.execute(`DELETE FROM ext_canvas_nodes WHERE id = ?`, [nodeId]);
   await dbAdapter.execute(
-    `DELETE FROM canvas_edges WHERE from_node_id = ? OR to_node_id = ?`,
+    `DELETE FROM ext_canvas_edges WHERE from_node_id = ? OR to_node_id = ?`,
     [nodeId, nodeId]
   );
 }
@@ -101,7 +156,7 @@ export async function deleteCanvasNode(nodeId: string): Promise<void> {
 export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(
-    `INSERT OR REPLACE INTO canvas_edges (id, board_id, from_node_id, to_node_id, label)
+    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, to_node_id, label)
      VALUES (?, ?, ?, ?, ?)`,
     [edge.id, edge.board_id || 'default', edge.from_node_id, edge.to_node_id, edge.label || null]
   );
@@ -109,13 +164,13 @@ export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
 
 export async function deleteCanvasEdge(edgeId: string): Promise<void> {
   await initCanvasTables();
-  await dbAdapter.execute(`DELETE FROM canvas_edges WHERE id = ?`, [edgeId]);
+  await dbAdapter.execute(`DELETE FROM ext_canvas_edges WHERE id = ?`, [edgeId]);
 }
 
 export async function purgeCanvasNodesForDocument(documentId: string): Promise<void> {
   await initCanvasTables();
   const nodes = await dbAdapter.query<{ id: string }>(
-    `SELECT id FROM canvas_nodes WHERE document_id = ?`,
+    `SELECT id FROM ext_canvas_nodes WHERE document_id = ?`,
     [documentId]
   );
   if (nodes.length > 0) {
@@ -127,8 +182,8 @@ export async function purgeCanvasNodesForDocument(documentId: string): Promise<v
 
 export async function purgeCanvasBoard(boardId: string): Promise<void> {
   await initCanvasTables();
-  await dbAdapter.execute(`DELETE FROM canvas_nodes WHERE board_id = ?`, [boardId]);
-  await dbAdapter.execute(`DELETE FROM canvas_edges WHERE board_id = ?`, [boardId]);
+  await dbAdapter.execute(`DELETE FROM ext_canvas_nodes WHERE board_id = ?`, [boardId]);
+  await dbAdapter.execute(`DELETE FROM ext_canvas_edges WHERE board_id = ?`, [boardId]);
 }
 
 export async function serializeCanvasBoard(boardId: string): Promise<string> {

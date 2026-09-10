@@ -16,7 +16,7 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { FlintApp } from '@/core/app/FlintApp';
 import { sketchReadme } from './readme';
-import { initSketchDb, loadSketchFromDb, saveSketchToDb, deleteSketchFromDb } from './sketchDb';
+import { initSketchDb, loadSketchFromDb, saveSketchToDb, deleteSketchFromDb, SKETCH_TABLE_DEFINITION } from './sketchDb';
 import { serializeSketchToComment, parseSketchFromComment, exportStrokesToSvg } from './sketchEngine';
 import { useSketchStore } from './sketchStore';
 import { SketchSubheaderButton } from './SketchSubheaderButton';
@@ -41,7 +41,8 @@ export class SketchExtension extends Extension {
   }
 
   public async onload(): Promise<void> {
-    // 1. Initialize SQLite WASM Schema
+    // 1. Initialize SQLite Schema via declarative defineTable and migration helper
+    await this.defineTable(SKETCH_TABLE_DEFINITION);
     await initSketchDb();
 
     // 2. Register Extension Settings Tab
