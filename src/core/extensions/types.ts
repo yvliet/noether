@@ -639,6 +639,11 @@ export interface OpenTabOptions {
    * Used for actions like "Open in new tab", middle-clicks, or tab bar "+" clicks.
    */
   newTab?: boolean;
+  /**
+   * If true, creates the tab in the background without activating it or stealing focus.
+   * The current tab and main view mode remain active.
+   */
+  background?: boolean;
 }
 
 /**

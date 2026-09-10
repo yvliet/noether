@@ -567,12 +567,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           icon: <FileAddIcon size={12} />,
           onClick: async () => {
             setIsOpen(true);
-            const newDoc = await createNewNote('Untitled', item.id);
-            if (newDoc) {
-              openTab(newDoc.id, newDoc.title, { newTab: true, replaceCurrentTab: false });
-              setActiveDocumentById(newDoc.id, { preserveViewMode: true });
-              setEditingDocId(newDoc.id);
-            }
+            await createNewNote('Untitled', item.id);
           },
         },
         {
@@ -693,12 +688,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <FileAddIcon size={14} />,
             onClick: async () => {
               setIsOpen(true);
-              const newDoc = await createNewNote('Untitled', item.id);
-              if (newDoc) {
-                openTab(newDoc.id, newDoc.title, { newTab: true, replaceCurrentTab: false });
-                setActiveDocumentById(newDoc.id, { preserveViewMode: true });
-                setEditingDocId(newDoc.id);
-              }
+              await createNewNote('Untitled', item.id);
             },
           },
           {

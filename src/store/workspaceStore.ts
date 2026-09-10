@@ -726,7 +726,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   openTab: (documentId, title, options?: OpenTabOptions) => {
     const targetPaneId = get().focusedPaneId || 'main';
     get().openTabInPane(targetPaneId, documentId, title, options);
-    get().recordNavigation({ viewType: options?.viewType || 'document', documentId, title: title || 'Untitled' });
+    if (!options?.background) {
+      get().recordNavigation({ viewType: options?.viewType || 'document', documentId, title: title || 'Untitled' });
+    }
   },
 
   openExtensionDocTab: (extensionId: string, title?: string) => {
@@ -1722,11 +1724,19 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
      * New tabs are only created when explicitly requested (e.g. options.newTab, tab bar "+",
      * middle click, or context menu "Open in new tab") or when the active tab is pinned.
      */
+    const isCurrentCustomTab = Boolean(
+      currentTab &&
+        ((currentTab.view_type && currentTab.view_type !== 'document') ||
+          (currentTab.view_mode && currentTab.view_mode !== 'document') ||
+          (currentTab.document_id && currentTab.document_id.startsWith('__')))
+    );
+
     const shouldReplaceCurrent =
       options?.newTab !== true &&
       (options?.replaceCurrentTab ?? true) &&
       Boolean(currentTab) &&
-      !currentTab?.is_pinned;
+      !currentTab?.is_pinned &&
+      !isCurrentCustomTab;
 
     if (isCurrentTabEmpty) {
       nextTabId = explicitTabId || (currentTab.id.startsWith('tab-empty') ? `tab-${docId}-${Date.now()}` : currentTab.id);
@@ -1776,8 +1786,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         // Change the page in the current tab without creating a new tab
         const isCustomOrEmptyTab =
           currentTab.id.startsWith('tab-empty') ||
-          currentTab.id.startsWith('custom-') ||
-          (currentTab.view_type && currentTab.view_type !== 'document' && currentTab.view_type !== options?.viewType);
+          currentTab.id.startsWith('custom-');
 
         nextTabId = explicitTabId || (isCustomOrEmptyTab ? `tab-${docId}-${Date.now()}` : currentTab.id);
 
@@ -1810,11 +1819,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       }
     }
 
+    const isBackground = options?.background === true;
+    const finalActiveTabId = isBackground ? currentPane.activeTabId : (nextTabId || null);
+    const finalActiveDocId = isBackground ? currentPane.activeDocumentId : docId;
+
     const updatedPane: PaneModel = {
       ...currentPane,
       tabs: newTabs,
-      activeTabId: nextTabId || null,
-      activeDocumentId: docId,
+      activeTabId: finalActiveTabId,
+      activeDocumentId: finalActiveDocId,
     };
 
     const newPanes = {
@@ -1827,17 +1840,29 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       panes: newPanes,
       focusedPaneId: targetPaneId,
       activePane: isMain ? 'main' : 'split',
-      ...(isMain ? { tabs: newTabs, activeTabId: nextTabId, mainViewMode: (options?.viewType as any) || 'document' } : {}),
+      ...(isMain
+        ? {
+            tabs: newTabs,
+            ...(isBackground
+              ? {}
+              : { activeTabId: nextTabId, mainViewMode: (options?.viewType as any) || 'document' }),
+          }
+        : {}),
       ...(targetPaneId === get().focusedPaneId && !isMain
-        ? { splitTabs: newTabs, splitActiveTabId: nextTabId, splitActiveDocumentId: docId }
+        ? {
+            splitTabs: newTabs,
+            ...(isBackground ? {} : { splitActiveTabId: nextTabId, splitActiveDocumentId: docId }),
+          }
         : {}),
     });
 
-    if (docId && !docId.startsWith('__')) {
+    if (!isBackground && docId && !docId.startsWith('__')) {
       useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
     }
 
-    emitBridgeAppEvent('tab:changed', { activeTabId: nextTabId });
+    if (!isBackground) {
+      emitBridgeAppEvent('tab:changed', { activeTabId: nextTabId });
+    }
     saveTabsSession(get().vaultPath);
   },
 

@@ -555,22 +555,39 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     };
 
     const ws = useWorkspaceStore.getState();
+    const focusedPane = ws.panes[ws.focusedPaneId || 'main'];
+    const activeTab = focusedPane?.tabs.find((t) => t.id === focusedPane.activeTabId);
+    const activeViewType = activeTab?.view_type || activeTab?.view_mode || ws.mainViewMode;
+    const isGraphView = activeViewType === 'graph' || activeTab?.document_id === '__graph__';
 
     // 0ms instantaneous optimistic state update
-    set((state) => ({
-      documents: [doc, ...state.documents],
-      editingDocId: doc.id,
-      searchQuery: '',
-      activeDocument: doc,
-      selectedDocIds: [doc.id],
-      lastSelectedDocId: doc.id,
-    }));
+    if (isGraphView) {
+      // In Graph View, keep the graph canvas undisturbed so the user can watch the new node emerge live
+      set((state) => ({
+        documents: [doc, ...state.documents],
+        searchQuery: '',
+      }));
+    } else {
+      set((state) => ({
+        documents: [doc, ...state.documents],
+        editingDocId: doc.id,
+        searchQuery: '',
+        activeDocument: doc,
+        selectedDocIds: [doc.id],
+        lastSelectedDocId: doc.id,
+      }));
+    }
 
     useFileHistoryStore.getState().recordCreate(doc, activeDocBefore);
 
     if (autoOpenInMain) {
-      ws.setMainViewMode('document');
-      ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false });
+      if (isGraphView) {
+        // Open the new note in a background tab so the Graph View tab and canvas remain active
+        ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false, background: true });
+      } else {
+        ws.setMainViewMode('document');
+        ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false });
+      }
     }
 
     // Persist in background without blocking UI thread
