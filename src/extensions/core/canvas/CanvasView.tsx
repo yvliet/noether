@@ -162,12 +162,69 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     };
   }, [isAddMenuOpen, updateAddMenuPos]);
 
-  // Pan & Zoom
+  // Pan & Zoom (smooth kinematic easing via target/current dual-ref system)
   const [pan, setPan] = useState({ x: 100, y: 100 });
   const [zoom, setZoom] = useState(1);
   const [isPanningState, setIsPanningState] = useState(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
+
+  // Dual-ref camera transform for smooth lerp easing (same pattern as GraphView).
+  // Wheel/gesture events write to targetTransform; the RAF loop interpolates currentTransform
+  // toward it and feeds React state each frame, giving velvety smooth zoom and pan.
+  const targetTransformRef = useRef({ x: 100, y: 100, scale: 1 });
+  const currentTransformRef = useRef({ x: 100, y: 100, scale: 1 });
+  const cameraRafRef = useRef<number | null>(null);
+
+  const runCameraEasing = useCallback(() => {
+    if (cameraRafRef.current !== null) return; // Already running
+
+    const tick = () => {
+      const target = targetTransformRef.current;
+      const current = currentTransformRef.current;
+
+      // During active drag/pan, apply target instantly (no easing lag on pointer tracking)
+      const ease = isPanningRef.current || draggingNodeIdRef.current ? 1.0 : 0.18;
+
+      const dx = target.x - current.x;
+      const dy = target.y - current.y;
+      const ds = target.scale - current.scale;
+
+      const settled = Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05 && Math.abs(ds) < 0.0002;
+
+      if (settled) {
+        // Snap to exact target and stop the loop
+        current.x = target.x;
+        current.y = target.y;
+        current.scale = target.scale;
+        setPan({ x: current.x, y: current.y });
+        setZoom(current.scale);
+        cameraRafRef.current = null;
+        return;
+      }
+
+      current.x += dx * ease;
+      current.y += dy * ease;
+      current.scale += ds * ease;
+
+      setPan({ x: current.x, y: current.y });
+      setZoom(current.scale);
+
+      cameraRafRef.current = requestAnimationFrame(tick);
+    };
+
+    cameraRafRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  // Clean up RAF on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraRafRef.current !== null) {
+        cancelAnimationFrame(cameraRafRef.current);
+        cameraRafRef.current = null;
+      }
+    };
+  }, []);
 
   // Dragging node
   const draggingNodeIdRef = useRef<string | null>(null);
@@ -383,7 +440,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea')) return;
     isPanningRef.current = true;
     setIsPanningState(true);
-    panStartRef.current = { x: e.clientX - panRef.current.x, y: e.clientY - panRef.current.y };
+    const ct = currentTransformRef.current;
+    panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
     setSelectedNodeId(null);
     try {
       (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
@@ -417,10 +475,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           if (!pos) return;
 
           if (isPanningRef.current) {
-            setPan({
-              x: pos.clientX - panStartRef.current.x,
-              y: pos.clientY - panStartRef.current.y,
-            });
+            const newX = pos.clientX - panStartRef.current.x;
+            const newY = pos.clientY - panStartRef.current.y;
+            // Write to both refs directly (panning uses ease=1.0 so no visual lag)
+            targetTransformRef.current.x = newX;
+            targetTransformRef.current.y = newY;
+            currentTransformRef.current.x = newX;
+            currentTransformRef.current.y = newY;
+            runCameraEasing();
           } else if (draggingNodeIdRef.current) {
             const dragId = draggingNodeIdRef.current;
             setNodes((prev) => {
@@ -497,60 +559,67 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         dy *= window.innerHeight;
       }
 
+      const target = targetTransformRef.current;
+      const currentScale = target.scale;
+      const currentX = target.x;
+      const currentY = target.y;
+
       // Trackpad pinch-to-zoom or Ctrl + Mouse Wheel
       if (e.ctrlKey || e.metaKey) {
-        let zoomFactor: number;
-        if (Math.abs(dy) < 40) {
-          zoomFactor = Math.pow(2, -dy * 0.025);
-        } else {
-          zoomFactor = dy < 0 ? 1.18 : 0.84;
-        }
+        const zoomFactor = Math.exp(-dy * 0.012);
+        const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
 
-        setZoom((prevZoom) => {
-          const newZoom = Math.min(3.0, Math.max(0.15, prevZoom * zoomFactor));
-          setPan((prevPan) => ({
-            x: mouseX - ((mouseX - prevPan.x) * (newZoom / prevZoom)),
-            y: mouseY - ((mouseY - prevPan.y) * (newZoom / prevZoom)),
-          }));
-          return newZoom;
-        });
+        if (Math.abs(newScale - currentScale) > 0.0001) {
+          targetTransformRef.current = {
+            x: mouseX - ((mouseX - currentX) * (newScale / currentScale)),
+            y: mouseY - ((mouseY - currentY) * (newScale / currentScale)),
+            scale: newScale,
+          };
+          runCameraEasing();
+        }
         return;
       }
 
-      // Shift + Wheel -> Horizontal Pan
+      // Shift + Wheel → Horizontal Pan
       if (e.shiftKey) {
-        setPan((prevPan) => ({
-          x: prevPan.x - (Math.abs(dy) > 0 ? dy : dx),
-          y: prevPan.y,
-        }));
+        targetTransformRef.current = {
+          x: currentX - (Math.abs(dy) > 0 ? dy : dx),
+          y: currentY,
+          scale: currentScale,
+        };
+        runCameraEasing();
         return;
       }
 
       // Trackpad 2-Finger Horizontal / Diagonal Pan
       if (Math.abs(dx) > 0) {
-        setPan((prevPan) => ({
-          x: prevPan.x - dx,
-          y: prevPan.y - dy,
-        }));
+        targetTransformRef.current = {
+          x: currentX - dx,
+          y: currentY - dy,
+          scale: currentScale,
+        };
+        runCameraEasing();
         return;
       }
 
-      // Mouse Wheel Scroll (without Ctrl) OR Trackpad Vertical Scroll -> Zoom centered at cursor
+      // Mouse Wheel Scroll (without Ctrl) OR Trackpad Vertical Scroll → Zoom centered at cursor
       let zoomFactor: number;
       if (Math.abs(dy) < 30 && e.deltaMode === 0) {
-        zoomFactor = Math.pow(2, -dy * 0.02);
+        zoomFactor = Math.exp(-dy * 0.008);
       } else {
         zoomFactor = dy < 0 ? 1.18 : 0.84;
       }
 
-      setZoom((prevZoom) => {
-        const newZoom = Math.min(3.0, Math.max(0.15, prevZoom * zoomFactor));
-        setPan((prevPan) => ({
-          x: mouseX - ((mouseX - prevPan.x) * (newZoom / prevZoom)),
-          y: mouseY - ((mouseY - prevPan.y) * (newZoom / prevZoom)),
-        }));
-        return newZoom;
-      });
+      const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
+
+      if (Math.abs(newScale - currentScale) > 0.0001) {
+        targetTransformRef.current = {
+          x: mouseX - ((mouseX - currentX) * (newScale / currentScale)),
+          y: mouseY - ((mouseY - currentY) * (newScale / currentScale)),
+          scale: newScale,
+        };
+        runCameraEasing();
+      }
     };
 
     const handleTouchStart = (e: TouchEvent) => {
@@ -559,14 +628,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const t1 = e.touches[0];
         const t2 = e.touches[1];
         initialTouchDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        setZoom((z) => {
-          initialTouchZoom = z;
-          return z;
-        });
-        setPan((p) => {
-          initialTouchPan = { ...p };
-          return p;
-        });
+        initialTouchZoom = targetTransformRef.current.scale;
+        initialTouchPan = { x: targetTransformRef.current.x, y: targetTransformRef.current.y };
         const rect = el.getBoundingClientRect();
         initialTouchCenter = {
           x: (t1.clientX + t2.clientX) / 2 - rect.left,
@@ -582,7 +645,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const t2 = e.touches[1];
         const currentDist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
         const scaleMultiplier = currentDist / initialTouchDist;
-        const newZoom = Math.min(3.0, Math.max(0.15, initialTouchZoom * scaleMultiplier));
+        const newScale = Math.min(3.0, Math.max(0.15, initialTouchZoom * scaleMultiplier));
 
         const rect = el.getBoundingClientRect();
         const currentCenter = {
@@ -590,11 +653,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           y: (t1.clientY + t2.clientY) / 2 - rect.top,
         };
 
-        setZoom(newZoom);
-        setPan({
-          x: currentCenter.x - ((initialTouchCenter.x - initialTouchPan.x) * (newZoom / initialTouchZoom)),
-          y: currentCenter.y - ((initialTouchCenter.y - initialTouchPan.y) * (newZoom / initialTouchZoom)),
-        });
+        const newX = currentCenter.x - ((initialTouchCenter.x - initialTouchPan.x) * (newScale / initialTouchZoom));
+        const newY = currentCenter.y - ((initialTouchCenter.y - initialTouchPan.y) * (newScale / initialTouchZoom));
+
+        // Touch pinch is continuous, apply directly to both refs for responsive tracking
+        targetTransformRef.current = { x: newX, y: newY, scale: newScale };
+        currentTransformRef.current = { x: newX, y: newY, scale: newScale };
+        runCameraEasing();
       }
     };
 
@@ -606,14 +671,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     const handleGestureStart = (e: any) => {
       e.preventDefault();
-      setZoom((z) => {
-        initialTouchZoom = z;
-        return z;
-      });
-      setPan((p) => {
-        initialTouchPan = { ...p };
-        return p;
-      });
+      initialTouchZoom = targetTransformRef.current.scale;
+      initialTouchPan = { x: targetTransformRef.current.x, y: targetTransformRef.current.y };
     };
 
     const handleGestureChange = (e: any) => {
@@ -621,13 +680,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const rect = el.getBoundingClientRect();
       const mouseX = (e.clientX || rect.width / 2) - rect.left;
       const mouseY = (e.clientY || rect.height / 2) - rect.top;
-      const newZoom = Math.min(3.0, Math.max(0.15, initialTouchZoom * (e.scale || 1)));
+      const newScale = Math.min(3.0, Math.max(0.15, initialTouchZoom * (e.scale || 1)));
 
-      setZoom(newZoom);
-      setPan({
-        x: mouseX - ((mouseX - initialTouchPan.x) * (newZoom / initialTouchZoom)),
-        y: mouseY - ((mouseY - initialTouchPan.y) * (newZoom / initialTouchZoom)),
-      });
+      const newX = mouseX - ((mouseX - initialTouchPan.x) * (newScale / initialTouchZoom));
+      const newY = mouseY - ((mouseY - initialTouchPan.y) * (newScale / initialTouchZoom));
+
+      // Gesture events are continuous, apply directly
+      targetTransformRef.current = { x: newX, y: newY, scale: newScale };
+      currentTransformRef.current = { x: newX, y: newY, scale: newScale };
+      runCameraEasing();
     };
 
     el.addEventListener('wheel', handleNativeWheel, { passive: false });
@@ -736,8 +797,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             <button
               type="button"
               onClick={() => {
-                setPan({ x: 100, y: 100 });
-                setZoom(1);
+                targetTransformRef.current = { x: 100, y: 100, scale: 1 };
+                runCameraEasing();
               }}
               title={`Reset view (${Math.round(zoom * 100)}%)`}
               className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] transition-colors cursor-pointer"
@@ -807,7 +868,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 minHeight: `${node.height}px`,
                 backgroundColor: node.color || '#1e1e1e',
               }}
-              className={`canvas-card absolute pointer-events-auto rounded-xl p-3 shadow-2xl flex flex-col justify-between border transition-shadow ${
+              className={`canvas-card absolute pointer-events-auto rounded-md p-3 shadow-2xl flex flex-col justify-between border transition-shadow ${
                 isSelected
                   ? 'border-[#888] shadow-white/10 ring-1 ring-[#666]'
                   : 'border-[#2c2c2c] hover:border-[#444]'
