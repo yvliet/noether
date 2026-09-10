@@ -107,8 +107,8 @@ export const SlashMenu = React.memo(
             }
 
             const currentItem = items[selectedIndexRef.current];
-            const isTable = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
-            const isCallout = currentItem && (currentItem.icon === 'callout' || currentItem.title.toLowerCase() === 'callout');
+            const isTable = currentItem && currentItem.title.toLowerCase() === 'table';
+            const isCallout = currentItem && currentItem.title.toLowerCase() === 'callout';
             const hasSubmenu = Boolean(currentItem?.submenu) || Boolean(isTable) || Boolean(isCallout);
             const subId = currentItem?.submenu?.id || (isTable ? 'table' : (isCallout ? 'callout' : null));
 
@@ -156,8 +156,8 @@ export const SlashMenu = React.memo(
       }
 
       const currentItem = items[selectedIndex];
-      const isTableItem = currentItem && (currentItem.icon === 'table' || currentItem.title.toLowerCase() === 'table');
-      const isCalloutItem = currentItem && (currentItem.icon === 'callout' || currentItem.title.toLowerCase() === 'callout');
+      const isTableItem = currentItem && currentItem.title.toLowerCase() === 'table';
+      const isCalloutItem = currentItem && currentItem.title.toLowerCase() === 'callout';
 
       return (
         <div className="relative flex items-start gap-2 pointer-events-none">
@@ -177,8 +177,8 @@ export const SlashMenu = React.memo(
             </div>
             {items.map((item, index) => {
               const isSelected = index === selectedIndex;
-              const isTable = item.icon === 'table' || item.title.toLowerCase() === 'table';
-              const isCallout = item.icon === 'callout' || item.title.toLowerCase() === 'callout';
+              const isTable = item.title.toLowerCase() === 'table';
+              const isCallout = item.title.toLowerCase() === 'callout';
               const hasSub = Boolean(item.submenu) || isTable || isCallout;
               const itemSubId = item.submenu?.id || (isTable ? 'table' : (isCallout ? 'callout' : null));
 
@@ -226,8 +226,15 @@ export const SlashMenu = React.memo(
                       {renderIcon(item.icon)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-[var(--flint-text-primary)] truncate">
-                        {item.title}
+                      <div className="flex items-baseline gap-1.5 min-w-0">
+                        <span className="font-medium text-sm text-[var(--flint-text-primary)] truncate">
+                          {item.title}
+                        </span>
+                        {item.badge && (
+                          <span className="text-[11px] font-normal text-[var(--flint-text-muted)] select-none shrink-0">
+                            {item.badge}
+                          </span>
+                        )}
                       </div>
                       <div className="text-[11px] text-[var(--flint-text-muted)] truncate">
                         {item.description}
@@ -250,7 +257,16 @@ export const SlashMenu = React.memo(
 
           {/* Submenu Flyout (Table Grid, Callout Picker, Icon Picker, or Extension Submenu) */}
           {activeSubmenu && currentItem && (
-            <div data-flint-suggestion-popup="true" className="pointer-events-auto">
+            <div
+              data-flint-suggestion-popup="true"
+              onMouseDown={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              className="pointer-events-auto"
+            >
               {activeSubmenu === 'table' && isTableItem ? (
                 <TableGridPicker
                   ref={gridPickerRef}

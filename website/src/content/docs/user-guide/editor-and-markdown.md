@@ -156,7 +156,7 @@ When editing in Live Preview, Flint smoothly conceals the raw `> [!type]` marker
 
 ### Built-in Callout Types
 
-Flint supports all 13 canonical Obsidian callout types and their recognized aliases:
+Flint supports all 13 canonical callout types and their recognized aliases:
 
 | Callout Type | Aliases | Accent Color | Intended Usage |
 | :--- | :--- | :--- | :--- |
@@ -207,7 +207,7 @@ Nest callouts inside other callouts or blockquotes by increasing the blockquote 
 
 ### Keyboard & Slash Commands
 
-- **Slash Command**: Type `/callout` in the editor to insert a callout or press `ArrowRight` to open the Callout Types submenu.
+- **Slash Commands**: Type `/callout` in the editor to open the Callout Types submenu, or type direct shortcuts like `/tip`, `/warning`, `/todo`, `/info`, or `/note` to insert specific callouts immediately.
 - **Enter Continuation**: Pressing `Enter` inside a callout automatically continues the `>` prefix on the next line. Pressing `Enter` on an empty `>` line cleanly exits the callout.
 - **Tab Indentation**: Pressing `Tab` at the beginning of a callout line increases nesting (`>` → `>>`), while `Shift+Tab` decreases nesting (`>>` → `>`).
 

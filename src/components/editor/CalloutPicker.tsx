@@ -44,7 +44,7 @@ export const CalloutPicker = forwardRef<CalloutPickerHandle, CalloutPickerProps>
           return true;
         }
 
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || e.key === 'Tab') {
           const chosen = definitions[selectedIndexRef.current];
           if (chosen) {
             onSelect(chosen);
@@ -64,6 +64,7 @@ export const CalloutPicker = forwardRef<CalloutPickerHandle, CalloutPickerProps>
     return (
       <div
         data-flint-suggestion-popup="true"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: 'var(--flint-shadow-2)' }}
         className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-lg overflow-hidden w-64 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"

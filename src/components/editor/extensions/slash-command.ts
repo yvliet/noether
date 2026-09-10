@@ -19,6 +19,7 @@ export interface SlashItem {
   description: string;
   icon: string | React.ReactNode;
   badge?: string;
+  aliases?: string[];
   submenu?: SlashSubmenuDefinition;
   isEnabled?: () => boolean;
   command: (props: { editor: any; range: any; [key: string]: any }) => void;
@@ -38,7 +39,7 @@ export const SlashCommands = Extension.create<{
         char: '/',
         pluginKey: SlashCommandPluginKey,
         command: ({ editor, range, props }) => {
-          props.command({ editor, range, ...props });
+          props.command({ editor, range, extra: props.extra, ...props });
         },
       },
     };

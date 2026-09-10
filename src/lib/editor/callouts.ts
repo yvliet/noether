@@ -55,7 +55,7 @@ export interface ParsedCalloutHeader {
 }
 
 /**
- * Standard Obsidian callout types and their visual styles.
+ * Standard Markdown callout types and their visual styles.
  * Colors and layout match the website documentation theme (crisp left border, subtle tint background).
  */
 export const CALLOUT_DEFINITIONS: Record<string, CalloutTypeDefinition> = {
@@ -267,7 +267,7 @@ export function getAllCalloutDefinitions(): CalloutTypeDefinition[] {
 }
 
 /**
- * Parses a markdown line for Obsidian callout header syntax:
+ * Parses a markdown line for callout header syntax:
  * e.g. `> [!tip]+ My Custom Title` or `>> [!warning]- Destructive operation`
  */
 export function parseCalloutHeader(lineText: string): ParsedCalloutHeader | null {

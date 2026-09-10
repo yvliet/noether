@@ -33,6 +33,7 @@ import { SmartTabIndent } from './extensions/smart-tab-indent';
 import { TableExitBehavior } from './extensions/table-exit-behavior';
 import { transformPastedHtmlToMarkdown } from './paste-markdown';
 import { SlashMenu } from './SlashMenu';
+import { getAllCalloutDefinitions } from '@/lib/editor/callouts';
 import { WikiLinkPopup } from './WikiLinkPopup';
 import { MathKeyboard } from './MathKeyboard';
 import { useDocumentStore } from '@/store/documentStore';
@@ -148,12 +149,14 @@ const baseSlashItems: SlashItem[] = [
   },
   {
     title: 'Callout',
-    description: 'Obsidian callout box (> [!note])',
+    description: 'Callout box',
     icon: 'callout',
-    command: ({ editor, range, extra }) => {
-      const type = extra?.id || 'note';
-      const capTitle = type.charAt(0).toUpperCase() + type.slice(1);
-      editor.chain().focus().deleteRange(range).insertContent(`> [!${type}] ${capTitle}\n> `).run();
+    aliases: ['callout', 'box'],
+    command: ({ editor, range, extra, id, type: passedType }: any) => {
+      const type = extra?.id || id || passedType || 'note';
+      const def = getAllCalloutDefinitions().find((d) => d.id === type || d.canonicalType === type);
+      const capTitle = extra?.title || def?.title || (type.charAt(0).toUpperCase() + type.slice(1));
+      editor.chain().focus().deleteRange(range).insertContent(`> [!${type}] ${capTitle}\n`).run();
     },
   },
   {
@@ -840,6 +843,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         description: p.description,
         icon: typeof p.icon === 'string' ? (p.icon as any) : p.icon,
         badge: p.badge,
+        aliases: (p as any).aliases,
         submenu: p.submenu,
         isEnabled: p.isEnabled,
         command: p.command,
@@ -860,6 +864,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         description: p.description,
         icon: typeof p.icon === 'string' ? (p.icon as any) : p.icon,
         badge: p.badge,
+        aliases: (p as any).aliases,
         submenu: p.submenu,
         isEnabled: p.isEnabled,
         command: p.command,
@@ -998,18 +1003,62 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             const currentSlashItems = getSlashItemsRef.current();
             const q = query.trim().toLowerCase();
             const normQ = q.replace(/\s+/g, '');
-            return currentSlashItems.filter((item) => {
+            const filteredBase = currentSlashItems.filter((item) => {
               if (item.isEnabled && !item.isEnabled()) return false;
               const title = item.title.toLowerCase();
               const desc = item.description.toLowerCase();
               const normTitle = title.replace(/\s+/g, '');
               const normDesc = desc.replace(/\s+/g, '');
-              return (
+              const matchesText =
                 title.includes(q) ||
                 desc.includes(q) ||
-                (normQ.length > 0 && (normTitle.includes(normQ) || normDesc.includes(normQ)))
-              );
+                (normQ.length > 0 && (normTitle.includes(normQ) || normDesc.includes(normQ)));
+              if (matchesText) return true;
+              if (
+                item.aliases &&
+                item.aliases.some((a) => a.toLowerCase().includes(q) || q.includes(a.toLowerCase()))
+              ) {
+                return true;
+              }
+              return false;
             });
+
+            // When searching with a non-empty query, also surface direct matching callout types
+            if (q.length > 0) {
+              const calloutDefs = getAllCalloutDefinitions();
+              const matchingCalloutItems: SlashItem[] = [];
+              for (const def of calloutDefs) {
+                const defId = def.id.toLowerCase();
+                const defTitle = def.title.toLowerCase();
+                const matches =
+                  defId.includes(q) ||
+                  defTitle.includes(q) ||
+                  q.includes(defId) ||
+                  def.aliases.some((a) => a.toLowerCase().includes(q) || q.includes(a.toLowerCase()));
+
+                if (matches) {
+                  const IconComp = def.iconComponent;
+                  matchingCalloutItems.push({
+                    title: def.title,
+                    description: def.description,
+                    icon: <IconComp size={16} color={def.accentHex} />,
+                    badge: 'Callout',
+                    command: ({ editor, range }) => {
+                      editor
+                        .chain()
+                        .focus()
+                        .deleteRange(range)
+                        .insertContent(`> [!${def.id}] ${def.title}\n`)
+                        .run();
+                    },
+                  });
+                }
+              }
+
+              return [...filteredBase, ...matchingCalloutItems];
+            }
+
+            return filteredBase;
           },
           render: () => {
             return {
@@ -1023,7 +1072,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   items: props.items,
                   command: (item: SlashItem, extra?: any) => {
                     suggestionPopupsRef.current?.setSlashMenuProps(null);
-                    props.command({ ...item, ...extra });
+                    props.command({ ...item, extra, ...(extra || {}) });
                   },
                   rect: rect || null,
                 });
@@ -1040,7 +1089,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                         items: props.items,
                         command: (item: SlashItem, extra?: any) => {
                           suggestionPopupsRef.current?.setSlashMenuProps(null);
-                          props.command({ ...item, ...extra });
+                          props.command({ ...item, extra, ...(extra || {}) });
                         },
                         rect: prev.rect || props.clientRect?.() || null,
                       }
@@ -1809,7 +1858,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
               title: 'Callout',
               icon: <QuoteDownIcon size={14} />,
               onClick: () => {
-                editor.chain().focus().insertContent('> [!note]\n> ').run();
+                editor.chain().focus().insertContent('> [!note] Note\n').run();
               },
             },
             {
