@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { DocumentItem } from '@/types';
 import type { CanvasNode, CanvasNodeSide } from '../types';
 import {
@@ -8,7 +8,7 @@ import {
   isVideoDocument,
   isPdfDocument,
 } from './CardContentRenderer';
-import { CardActionPill } from './CardActionPill';
+import { CardActionPill, computePillScale } from './CardActionPill';
 import { resolveCardColorTheme } from './cardColors';
 
 export type ResizeHandleType = 'n' | 's' | 'e' | 'w' | 'ne' | 'nw' | 'se' | 'sw';
@@ -20,6 +20,7 @@ export interface CanvasCardProps {
   isSelected: boolean;
   onSelect: (id: string, e: React.PointerEvent) => void;
   onOpenDoc?: (docId?: string) => void;
+  onFitToCenter?: (id: string) => void;
   onDelete: (id: string) => void;
   onColorChange?: (id: string, color: string) => void;
   onTextChange?: (id: string, newText: string) => void;
@@ -35,6 +36,9 @@ export interface CanvasCardProps {
   isPanning?: boolean;
   isDragging?: boolean;
   isReadOnly?: boolean;
+  zoom?: number;
+  autoFocus?: boolean;
+  onAutoFocusConsumed?: () => void;
 }
 
 export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
@@ -45,6 +49,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     isSelected,
     onSelect,
     onOpenDoc,
+    onFitToCenter,
     onDelete,
     onColorChange,
     onTextChange,
@@ -60,12 +65,14 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     isPanning = false,
     isDragging = false,
     isReadOnly = false,
+    zoom = 1,
+    autoFocus = false,
+    onAutoFocusConsumed,
   }) => {
     const isPanActive = isPanModifier || isSpacePressed;
     const [isHovered, setIsHovered] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
     const [hoveredSide, setHoveredSide] = useState<CanvasNodeSide | null>(null);
-    const [isEditingText, setIsEditingText] = useState(false);
-    const isDraggable = !isReadOnly && !isEditingText;
 
     const isDocBacked = Boolean(doc || node.document_id);
     const showOutsideTitle = isDocBacked && node.type !== 'text';
@@ -73,7 +80,64 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
       isImageDocument(doc) || isAudioDocument(doc) || isVideoDocument(doc) || isPdfDocument(doc);
     const canEdit = !isReadOnly && (node.type === 'text' || isDocBacked) && !isMediaDoc && node.type !== 'link';
 
+    const [isEditingText, setIsEditingText] = useState(Boolean(autoFocus && canEdit));
+    const isDraggable = !isReadOnly && !isEditingText;
+
+    useEffect(() => {
+      if (autoFocus && canEdit) {
+        setIsEditingText(true);
+        onAutoFocusConsumed?.();
+      }
+    }, [autoFocus, canEdit, onAutoFocusConsumed]);
+
+    // Synchronize text editing state when card deselected
+    useEffect(() => {
+      if (!isSelected && isEditingText) {
+        setIsEditingText(false);
+        const sel = window.getSelection();
+        if (sel && sel.rangeCount > 0) {
+          sel.removeAllRanges();
+        }
+      }
+    }, [isSelected, isEditingText]);
+
+    // Handle outside clicks: clear text selection and exit editing mode if pointer down occurs outside this card
+    useEffect(() => {
+      const handleGlobalPointerDown = (e: PointerEvent) => {
+        if (!cardRef.current) return;
+        if (!cardRef.current.contains(e.target as Node)) {
+          if (isEditingText) {
+            setIsEditingText(false);
+          }
+          const selection = window.getSelection();
+          if (selection && selection.rangeCount > 0) {
+            try {
+              const range = selection.getRangeAt(0);
+              if (
+                cardRef.current.contains(range.startContainer) ||
+                cardRef.current.contains(range.endContainer) ||
+                cardRef.current.contains(range.commonAncestorContainer)
+              ) {
+                selection.removeAllRanges();
+              }
+            } catch {
+              selection.removeAllRanges();
+            }
+          }
+          if (document.activeElement && cardRef.current.contains(document.activeElement)) {
+            (document.activeElement as HTMLElement).blur();
+          }
+        }
+      };
+
+      window.addEventListener('pointerdown', handleGlobalPointerDown, true);
+      return () => {
+        window.removeEventListener('pointerdown', handleGlobalPointerDown, true);
+      };
+    }, [isEditingText]);
+
     const colorTheme = useMemo(() => resolveCardColorTheme(node.color), [node.color]);
+    const dotScale = computePillScale(zoom);
 
     const handlePointerDown = useCallback(
       (e: React.PointerEvent) => {
@@ -85,6 +149,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
           )
         ) {
           return;
+        }
+        if (isEditingText) {
+          setIsEditingText(false);
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount > 0) {
+            sel.removeAllRanges();
+          }
         }
         onSelect(node.id, e);
       },
@@ -100,9 +171,19 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
 
     const handleCardPointerMove = useCallback(
       (e: React.PointerEvent) => {
-        if (isReadOnly || isPanActive || isPanning || isDragging || isEditingText || isDraftingArrow) {
+        if (isReadOnly || isDragging || isEditingText || isDraftingArrow) {
           if (hoveredSide !== null) setHoveredSide(null);
           return;
+        }
+
+        // Maintain active side if cursor is directly over any side connection dot to prevent flashing
+        const targetDot = (e.target as HTMLElement).closest<HTMLElement>('.canvas-side-dot');
+        if (targetDot) {
+          const side = targetDot.getAttribute('data-canvas-side') as CanvasNodeSide | null;
+          if (side) {
+            if (side !== hoveredSide) setHoveredSide(side);
+            return;
+          }
         }
 
         const rect = e.currentTarget.getBoundingClientRect();
@@ -111,18 +192,23 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         const w = rect.width;
         const h = rect.height;
 
-        const edgeThreshold = 36;
-        const cornerThreshold = 28;
+        // Dynamic edge and corner thresholds adapted to card screen dimensions so zones never collapse
+        const cornerThreshold = Math.min(28, Math.max(6, Math.min(w, h) * 0.2));
+        const baseEdgeThreshold = Math.min(36, Math.max(12, Math.min(w, h) * 0.35));
+
+        // Hysteresis: keep active hovered side if cursor is within slightly extended boundary
+        const hysteresis = hoveredSide ? 14 : 0;
+        const edgeThreshold = baseEdgeThreshold + hysteresis;
 
         let nextSide: CanvasNodeSide | null = null;
 
-        if (relY <= edgeThreshold && relX >= cornerThreshold && relX <= w - cornerThreshold) {
+        if (relY <= edgeThreshold && relX >= cornerThreshold - hysteresis && relX <= w - cornerThreshold + hysteresis) {
           nextSide = 'top';
-        } else if (relY >= h - edgeThreshold && relX >= cornerThreshold && relX <= w - cornerThreshold) {
+        } else if (relY >= h - edgeThreshold && relX >= cornerThreshold - hysteresis && relX <= w - cornerThreshold + hysteresis) {
           nextSide = 'bottom';
-        } else if (relX <= edgeThreshold && relY >= cornerThreshold && relY <= h - cornerThreshold) {
+        } else if (relX <= edgeThreshold && relY >= cornerThreshold - hysteresis && relY <= h - cornerThreshold + hysteresis) {
           nextSide = 'left';
-        } else if (relX >= w - edgeThreshold && relY >= cornerThreshold && relY <= h - cornerThreshold) {
+        } else if (relX >= w - edgeThreshold && relY >= cornerThreshold - hysteresis && relY <= h - cornerThreshold + hysteresis) {
           nextSide = 'right';
         }
 
@@ -130,11 +216,12 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
           setHoveredSide(nextSide);
         }
       },
-      [isReadOnly, isPanActive, isPanning, isDragging, isEditingText, isDraftingArrow, hoveredSide]
+      [isReadOnly, isDragging, isEditingText, isDraftingArrow, hoveredSide]
     );
 
     return (
       <div
+        ref={cardRef}
         onPointerDown={handlePointerDown}
         onDoubleClick={handleDoubleClick}
         onPointerEnter={() => setIsHovered(true)}
@@ -154,16 +241,9 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             : isHovered
             ? colorTheme.borderHover
             : colorTheme.borderIdle,
-          boxShadow: isSelected
-            ? colorTheme.shadowActive
-            : isHovered
-            ? colorTheme.id !== 'default'
-              ? `0 0 16px ${colorTheme.borderIdle}, 0 0 20px rgba(0,0,0,0.45)`
-              : '0 0 16px rgba(0,0,0,0.45)'
-            : '0 0 14px rgba(0,0,0,0.35)',
         }}
         className={`canvas-card absolute pointer-events-auto rounded-md flex flex-col border transition-none ${
-          isSelected ? 'z-20 ring-1' : 'z-10'
+          isSelected ? 'z-20' : 'z-10'
         } ${
           isPanning || isDragging
             ? 'cursor-grabbing'
@@ -189,7 +269,9 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
               onOpenDoc?.(node.document_id);
             }}
             title={doc?.title || 'Open note'}
-            className={`absolute bottom-full left-0 mb-1.5 max-w-[calc(100%-80px)] truncate text-[12px] font-medium text-[#888888] hover:text-[#e0e0e0] select-none transition-none ${
+            className={`absolute bottom-full left-0 mb-2 ${
+              isSelected || isHovered ? 'max-w-[calc(50%-36px)]' : 'max-w-full'
+            } truncate text-[14px] font-medium text-[#888888] hover:text-[#e0e0e0] select-none transition-none ${
               isPanActive || isPanning ? 'pointer-events-none' : 'cursor-pointer'
             }`}
           >
@@ -198,14 +280,16 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         )}
 
         {/* Floating Contextual Action Pill (Hover / Selected) */}
-        {!isReadOnly && !isPanActive && !isPanning && !isDragging && (isSelected || isHovered) && (
+        {!isReadOnly && !isDragging && (isSelected || isHovered) && (
           <CardActionPill
             onDelete={() => onDelete(node.id)}
             onOpenDoc={isDocBacked && onOpenDoc ? () => onOpenDoc(node.document_id) : undefined}
+            onFitToCenter={onFitToCenter ? () => onFitToCenter(node.id) : undefined}
             onColorChange={onColorChange ? (c) => onColorChange(node.id, c) : undefined}
             currentColor={node.color}
             onEdit={canEdit ? () => setIsEditingText(true) : undefined}
             isDocBacked={isDocBacked}
+            zoom={zoom}
           />
         )}
 
@@ -224,7 +308,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             isEditingText={isEditingText}
             onTextChange={(val) => onTextChange?.(node.id, val)}
             onDocContentChange={onDocContentChange}
-            onTextBlur={() => setIsEditingText(false)}
+            onTextBlur={() => {
+              setIsEditingText(false);
+              const sel = window.getSelection();
+              if (sel && sel.rangeCount > 0) {
+                sel.removeAllRanges();
+              }
+            }}
             onImageDimensions={onImageDimensions ? (w, h) => onImageDimensions(node.id, w, h) : undefined}
             onTaskToggle={onTaskToggle ? (txt, chk) => onTaskToggle(node.id, txt, chk) : undefined}
           />
@@ -324,20 +414,27 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         )}
 
         {/* Interactive Side Connection Anchor Dots (Strictly on-dot trigger, higher priority over Resize Handles) */}
-        {!isReadOnly && !isPanActive && !isPanning && !isDragging && !isEditingText && !isDraftingArrow && onSideDotPointerDown && (
+        {!isReadOnly && !isDragging && !isEditingText && !isDraftingArrow && onSideDotPointerDown && (
           <>
             {/* North (Top Side) */}
             <div
               data-canvas-side="top"
-              style={{ zIndex: 60 }}
+              style={{
+                zIndex: 60,
+                left: '50%',
+                top: 0,
+                transform: `translate(-50%, -50%) scale(${dotScale})`,
+                transformOrigin: 'center center',
+              }}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 onSideDotPointerDown(node.id, 'top', e);
               }}
-              className={`canvas-side-dot absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-[#1e1e1e] shadow-md transition-none select-none cursor-crosshair ${
+              onPointerEnter={() => setHoveredSide('top')}
+              className={`canvas-side-dot absolute w-4 h-4 rounded-full border-2 border-[#1e1e1e] transition-none select-none cursor-pointer ${
                 hoveredSide === 'top' && activeSnapSide !== 'top'
-                  ? 'bg-[#e0e0e0] hover:bg-white hover:scale-125 opacity-100 pointer-events-auto'
+                  ? 'bg-[#e0e0e0] hover:bg-white opacity-100 pointer-events-auto'
                   : 'opacity-0 pointer-events-none'
               }`}
             />
@@ -345,15 +442,22 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             {/* South (Bottom Side) */}
             <div
               data-canvas-side="bottom"
-              style={{ zIndex: 60 }}
+              style={{
+                zIndex: 60,
+                left: '50%',
+                bottom: 0,
+                transform: `translate(-50%, 50%) scale(${dotScale})`,
+                transformOrigin: 'center center',
+              }}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 onSideDotPointerDown(node.id, 'bottom', e);
               }}
-              className={`canvas-side-dot absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-4 h-4 rounded-full border-2 border-[#1e1e1e] shadow-md transition-none select-none cursor-crosshair ${
+              onPointerEnter={() => setHoveredSide('bottom')}
+              className={`canvas-side-dot absolute w-4 h-4 rounded-full border-2 border-[#1e1e1e] transition-none select-none cursor-pointer ${
                 hoveredSide === 'bottom' && activeSnapSide !== 'bottom'
-                  ? 'bg-[#e0e0e0] hover:bg-white hover:scale-125 opacity-100 pointer-events-auto'
+                  ? 'bg-[#e0e0e0] hover:bg-white opacity-100 pointer-events-auto'
                   : 'opacity-0 pointer-events-none'
               }`}
             />
@@ -361,15 +465,22 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             {/* West (Left Side) */}
             <div
               data-canvas-side="left"
-              style={{ zIndex: 60 }}
+              style={{
+                zIndex: 60,
+                left: 0,
+                top: '50%',
+                transform: `translate(-50%, -50%) scale(${dotScale})`,
+                transformOrigin: 'center center',
+              }}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 onSideDotPointerDown(node.id, 'left', e);
               }}
-              className={`canvas-side-dot absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-[#1e1e1e] shadow-md transition-none select-none cursor-crosshair ${
+              onPointerEnter={() => setHoveredSide('left')}
+              className={`canvas-side-dot absolute w-4 h-4 rounded-full border-2 border-[#1e1e1e] transition-none select-none cursor-pointer ${
                 hoveredSide === 'left' && activeSnapSide !== 'left'
-                  ? 'bg-[#e0e0e0] hover:bg-white hover:scale-125 opacity-100 pointer-events-auto'
+                  ? 'bg-[#e0e0e0] hover:bg-white opacity-100 pointer-events-auto'
                   : 'opacity-0 pointer-events-none'
               }`}
             />
@@ -377,15 +488,22 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             {/* East (Right Side) */}
             <div
               data-canvas-side="right"
-              style={{ zIndex: 60 }}
+              style={{
+                zIndex: 60,
+                right: 0,
+                top: '50%',
+                transform: `translate(50%, -50%) scale(${dotScale})`,
+                transformOrigin: 'center center',
+              }}
               onPointerDown={(e) => {
                 e.stopPropagation();
                 e.preventDefault();
                 onSideDotPointerDown(node.id, 'right', e);
               }}
-              className={`canvas-side-dot absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-[#1e1e1e] shadow-md transition-none select-none cursor-crosshair ${
+              onPointerEnter={() => setHoveredSide('right')}
+              className={`canvas-side-dot absolute w-4 h-4 rounded-full border-2 border-[#1e1e1e] transition-none select-none cursor-pointer ${
                 hoveredSide === 'right' && activeSnapSide !== 'right'
-                  ? 'bg-[#e0e0e0] hover:bg-white hover:scale-125 opacity-100 pointer-events-auto'
+                  ? 'bg-[#e0e0e0] hover:bg-white opacity-100 pointer-events-auto'
                   : 'opacity-0 pointer-events-none'
               }`}
             />

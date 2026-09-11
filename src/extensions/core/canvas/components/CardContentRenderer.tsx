@@ -141,9 +141,9 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
               loading="lazy"
             />
           ) : (
-            <div className="flex flex-col items-center justify-center text-[#666] text-xs gap-1 p-3">
-              <File01Icon size={18} className="text-[#555]" />
-              <span className="text-[11px] truncate max-w-[200px]">{doc?.title || 'Image attachment'}</span>
+            <div className="flex flex-col items-center justify-center text-[#666] text-[14px] gap-1.5 p-3">
+              <File01Icon size={20} className="text-[#555]" />
+              <span className="text-[13px] truncate max-w-[240px]">{doc?.title || 'Image attachment'}</span>
             </div>
           )}
         </div>
@@ -175,17 +175,17 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
       const src = resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
       return (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-transparent gap-2 rounded-[4px] text-center">
-          <File01Icon size={24} className="text-rose-400" />
-          <span className="text-xs font-medium text-[#dedede] truncate max-w-[220px]">
+          <File01Icon size={26} className="text-rose-400" />
+          <span className="text-[14px] font-medium text-[#dedede] truncate max-w-[260px]">
             {doc?.title || 'PDF Document'}
           </span>
           {src && (
             <button
               type="button"
               onClick={() => window.open(src, '_blank')}
-              className="px-2.5 py-1 text-xs rounded bg-[#262626] hover:bg-[#333] text-[#ccc] hover:text-white cursor-pointer transition-none flex items-center gap-1"
+              className="px-3 py-1.5 text-[14px] rounded bg-[#262626] hover:bg-[#333] text-[#ccc] hover:text-white cursor-pointer transition-none flex items-center gap-1.5"
             >
-              <LinkSquare02Icon size={12} />
+              <LinkSquare02Icon size={14} />
               <span>Open PDF</span>
             </button>
           )}
@@ -199,17 +199,17 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
       return (
         <div className="w-full h-full flex flex-col justify-between p-3.5 bg-transparent rounded-[4px] select-text">
           <div className="flex items-center gap-2">
-            <LinkSquare02Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
-            <span className="text-xs font-semibold text-white truncate">
+            <LinkSquare02Icon size={16} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+            <span className="text-[14px] font-semibold text-white truncate">
               {node.text_content || targetUrl || 'Web Link'}
             </span>
           </div>
-          <p className="text-[11px] text-[#777] truncate my-2">{targetUrl}</p>
+          <p className="text-[13px] text-[#777] truncate my-2">{targetUrl}</p>
           {targetUrl && (
             <button
               type="button"
               onClick={() => window.open(targetUrl, '_blank')}
-              className="px-2.5 py-1 text-[11px] rounded bg-[#242424] hover:bg-[#2e2e2e] text-[#ccc] hover:text-white cursor-pointer transition-none self-start flex items-center gap-1"
+              className="px-3 py-1.5 text-[13px] rounded bg-[#242424] hover:bg-[#2e2e2e] text-[#ccc] hover:text-white cursor-pointer transition-none self-start flex items-center gap-1.5"
             >
               <span>Visit Link</span>
             </button>

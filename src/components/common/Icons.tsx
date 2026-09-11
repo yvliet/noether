@@ -13,6 +13,7 @@ import {
   Cancel01Icon as HugeCancel01Icon,
   ArrowLeft01Icon as HugeArrowLeft01Icon,
   ArrowRight01Icon as HugeArrowRight01Icon,
+  ArrowRight02Icon as HugeArrowRight02Icon,
   ArrowDown01Icon as HugeArrowDown01Icon,
   ArrowUp01Icon as HugeArrowUp01Icon,
   BookOpen01Icon as HugeBookOpen01Icon,
@@ -252,6 +253,7 @@ export const PlusSignIcon = createIcon(HugePlusSignIcon);
 export const Cancel01Icon = createIcon(HugeCancel01Icon);
 export const ArrowLeft01Icon = createIcon(HugeArrowLeft01Icon);
 export const ArrowRight01Icon = createIcon(HugeArrowRight01Icon);
+export const ArrowRight02Icon = createIcon(HugeArrowRight02Icon);
 export const ArrowDown01Icon = createIcon(HugeArrowDown01Icon);
 export const ArrowUp01Icon = createIcon(HugeArrowUp01Icon);
 export const ChevronRightIcon = createIcon(HugeChevronRightIcon);

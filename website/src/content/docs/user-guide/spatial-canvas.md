@@ -5,6 +5,7 @@ Linear text documents are ideal for long-form writing, but creative brainstormin
 ---
 
 ## 1. Overview & Canvas Philosophy
+---
 
 The Canvas gives you an unbounded 2D plane where ideas can exist as interactive cards, sticky notes, visual groups, and directional connection pathways.
 
@@ -18,6 +19,7 @@ To create a canvas, click the **Canvas** icon on the left Action Rail, click the
 ---
 
 ## 2. Canvas Node Types
+---
 
 You can place four fundamental node types onto the spatial plane:
 
@@ -30,6 +32,8 @@ Drag any document from your sidebar file tree directly onto the canvas, or press
 ### 2. Sticky Text Nodes
 Quick, lightweight notes for fleeting ideas, task checklists, or annotations:
 - Click **+ Text** or double-click anywhere on the canvas background.
+- Adding a card defaults to a 4-grid-unit height and focuses the cursor immediately for quick typing.
+- Minimum card resizing is clamped to a $4 \times 4$ grid boundary.
 - Supports full inline markdown, bullet points, checklists, and code snippets.
 - Adjustable pastel and accent color presets for instant visual tagging.
 
@@ -46,6 +50,7 @@ Organize clusters of related nodes into bounded regions:
 ---
 
 ## 3. Connections & Edge Routing
+---
 
 Connect thoughts visually using flexible relationship arrows between cards (**Note Card A** → *Cubic Bezier Connector* → **Note Card B**):
 
@@ -65,6 +70,7 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 | **Scroll Vertically** | Mouse Wheel Up / Down (or two-finger vertical swipe) |
 | **Scroll Horizontally** | `Shift + Mouse Wheel`, or two-finger horizontal swipe |
 | **Zoom In / Out** | `Ctrl + Mouse Wheel`, Trackpad Pinch, or `Ctrl + +` / `Ctrl + -` |
+| **Pan + Zoom Concurrency** | Hold `Ctrl` + Drag with mouse while rolling the wheel without losing zoom focus |
 | **Scroll Card Content** | Hover over scrollable note cards and scroll mouse wheel |
 | **Reset Zoom (100%)** | `Ctrl + 0` or Reset View button |
 | **Zoom to Fit All** | `Shift + 1` |
@@ -76,6 +82,7 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 ---
 
 ## 5. Performance Engineering on Large Canvases
+---
 
 To guarantee steady 60 FPS performance when building massive mindmaps with hundreds of nodes:
 

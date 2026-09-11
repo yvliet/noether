@@ -43,6 +43,7 @@ export const CANVAS_EDGES_TABLE_DEF: TableDefinition = {
     to_side: { type: 'text', nullable: true },
     label: { type: 'text', nullable: true },
     color: { type: 'text', nullable: true },
+    direction: { type: 'text', nullable: true },
   },
   indexes: [
     { name: 'idx_canvas_edges_board', columns: ['board_id'] },
@@ -87,7 +88,8 @@ export async function initCanvasTables(): Promise<void> {
         to_node_id TEXT NOT NULL,
         to_side TEXT,
         label TEXT,
-        color TEXT
+        color TEXT,
+        direction TEXT
       );
     `);
 
@@ -99,6 +101,9 @@ export async function initCanvasTables(): Promise<void> {
     } catch {}
     try {
       await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN color TEXT;`);
+    } catch {}
+    try {
+      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN direction TEXT;`);
     } catch {}
 
     await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`);
@@ -161,8 +166,8 @@ export async function deleteCanvasNode(nodeId: string): Promise<void> {
 export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(
-    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       edge.id,
       edge.board_id || 'default',
@@ -172,6 +177,7 @@ export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
       edge.to_side || 'left',
       edge.label || null,
       edge.color || null,
+      edge.direction || 'unidirectional',
     ]
   );
 }
@@ -226,6 +232,7 @@ export async function serializeCanvasBoard(boardId: string): Promise<string> {
     toSide: e.to_side || 'left',
     label: e.label,
     color: e.color,
+    direction: e.direction || 'unidirectional',
   }));
 
   return JSON.stringify({ nodes: canvasNodes, edges: canvasEdges }, null, 2);
@@ -267,6 +274,7 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
         to_side: e.toSide || e.to_side || 'left',
         label: e.label,
         color: e.color,
+        direction: e.direction || (e.fromEnd ? (e.toEnd ? 'bidirectional' : 'nondirectional') : 'unidirectional'),
       };
       await saveCanvasEdge(edge);
       importedEdges.push(edge);

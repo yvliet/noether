@@ -18,7 +18,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: '#2c2c2c',
     borderHover: '#444444',
     borderActive: '#888888',
-    shadowActive: '0 0 18px rgba(255,255,255,0.06), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
   {
     id: 'red',
@@ -28,7 +28,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: 'rgba(239, 68, 68, 0.45)',
     borderHover: 'rgba(239, 68, 68, 0.8)',
     borderActive: '#ef4444',
-    shadowActive: '0 0 20px rgba(239, 68, 68, 0.28), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
   {
     id: 'orange',
@@ -38,7 +38,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: 'rgba(249, 115, 22, 0.45)',
     borderHover: 'rgba(249, 115, 22, 0.8)',
     borderActive: '#f97316',
-    shadowActive: '0 0 20px rgba(249, 115, 22, 0.28), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
   {
     id: 'yellow',
@@ -48,7 +48,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: 'rgba(250, 204, 21, 0.45)',
     borderHover: 'rgba(250, 204, 21, 0.8)',
     borderActive: '#facc15',
-    shadowActive: '0 0 20px rgba(250, 204, 21, 0.28), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
   {
     id: 'green',
@@ -58,7 +58,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: 'rgba(34, 197, 94, 0.45)',
     borderHover: 'rgba(34, 197, 94, 0.8)',
     borderActive: '#22c55e',
-    shadowActive: '0 0 20px rgba(34, 197, 94, 0.28), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
   {
     id: 'cyan',
@@ -68,7 +68,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: 'rgba(6, 182, 212, 0.45)',
     borderHover: 'rgba(6, 182, 212, 0.8)',
     borderActive: '#06b6d4',
-    shadowActive: '0 0 20px rgba(6, 182, 212, 0.28), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
   {
     id: 'purple',
@@ -78,7 +78,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
     borderIdle: 'rgba(168, 85, 247, 0.45)',
     borderHover: 'rgba(168, 85, 247, 0.8)',
     borderActive: '#a855f7',
-    shadowActive: '0 0 20px rgba(168, 85, 247, 0.28), 0 0 24px rgba(0,0,0,0.45)',
+    shadowActive: 'none',
   },
 ];
 
@@ -140,7 +140,7 @@ export function resolveCardColorTheme(rawColor?: string): CardColorPreset & { is
       borderIdle: `rgba(${r}, ${g}, ${b}, 0.45)`,
       borderHover: `rgba(${r}, ${g}, ${b}, 0.8)`,
       borderActive: clean,
-      shadowActive: `0 0 20px rgba(${r}, ${g}, ${b}, 0.28), 0 0 24px rgba(0,0,0,0.45)`,
+      shadowActive: 'none',
       isCustom: true,
     };
   }

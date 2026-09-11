@@ -339,6 +339,19 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
       wasEditableRef.current = editable;
     }, [editable, editor]);
 
+    // Ensure immediate focus if autoFocus is requested on mount or edit trigger
+    useEffect(() => {
+      if (!editor || editor.isDestroyed) return;
+      if (autoFocus && editable) {
+        requestAnimationFrame(() => {
+          if (!editor.isDestroyed) {
+            editor.view.dispatch(editor.state.tr.setMeta('livePreviewFocus', true));
+            editor.commands.focus('end');
+          }
+        });
+      }
+    }, [autoFocus, editable, editor]);
+
     // Flush any pending save on unmount
     useEffect(() => {
       return () => {
@@ -384,7 +397,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
             }
             .flint-compact-doc .ProseMirror {
               outline: none !important;
-              font-size: 12px !important;
+              font-size: 14px !important;
               line-height: 1.625 !important;
               color: #d0d0d0 !important;
               min-height: auto !important;
@@ -399,12 +412,12 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               margin-top: 0.25rem !important;
               margin-bottom: 0.25rem !important;
               line-height: 1.625 !important;
-              font-size: 12px !important;
+              font-size: 14px !important;
               color: #d0d0d0 !important;
               word-break: break-word !important;
             }
             .flint-compact-doc .ProseMirror h1 {
-              font-size: 1rem !important;
+              font-size: 1.2rem !important;
               font-weight: 700 !important;
               color: #ffffff !important;
               margin-top: 0.5rem !important;
@@ -413,7 +426,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               letter-spacing: -0.025em !important;
             }
             .flint-compact-doc .ProseMirror h2 {
-              font-size: 0.875rem !important;
+              font-size: 1.05rem !important;
               font-weight: 600 !important;
               color: #f0f0f0 !important;
               margin-top: 0.5rem !important;
@@ -421,7 +434,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               line-height: 1.375 !important;
             }
             .flint-compact-doc .ProseMirror h3 {
-              font-size: 0.75rem !important;
+              font-size: 0.9rem !important;
               font-weight: 600 !important;
               color: #e0e0e0 !important;
               margin-top: 0.375rem !important;
@@ -440,7 +453,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
             }
             .flint-compact-doc .ProseMirror li {
               line-height: 1.625 !important;
-              font-size: 12px !important;
+              font-size: 14px !important;
               color: #d0d0d0 !important;
             }
             .flint-compact-doc .ProseMirror blockquote {
@@ -448,12 +461,12 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               padding-left: 0.625rem !important;
               border-left: 2px solid var(--flint-accent, #ea580c) !important;
               background-color: rgba(234, 88, 12, 0.05) !important;
-              font-size: 12px !important;
+              font-size: 14px !important;
               color: #bbb !important;
             }
             .flint-compact-doc .ProseMirror code {
               font-family: var(--font-monospace) !important;
-              font-size: 11px !important;
+              font-size: 13px !important;
               background-color: #161616 !important;
               border: 1px solid #2a2a2a !important;
               border-radius: 3px !important;
@@ -467,7 +480,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               background-color: #141414 !important;
               padding: 0.5rem !important;
               font-family: var(--font-monospace) !important;
-              font-size: 11px !important;
+              font-size: 13px !important;
               color: #dcdcdc !important;
               overflow-x: auto !important;
             }

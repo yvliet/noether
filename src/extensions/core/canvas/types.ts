@@ -21,6 +21,8 @@ export interface CanvasNode {
 
 export type CanvasNodeSide = 'top' | 'right' | 'bottom' | 'left';
 
+export type CanvasEdgeDirection = 'nondirectional' | 'unidirectional' | 'bidirectional';
+
 export interface CanvasEdge {
   id: string;
   board_id: string;
@@ -30,4 +32,5 @@ export interface CanvasEdge {
   to_side?: CanvasNodeSide;
   label?: string;
   color?: string;
+  direction?: CanvasEdgeDirection;
 }

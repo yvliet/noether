@@ -16,6 +16,7 @@ import {
   computeBezierPath,
   findTargetSideSnap,
   determineDefaultConnectingSides,
+  getEdgeLabelBox,
   SideSnapTarget,
 } from './utils/canvasEdges';
 import {
@@ -36,6 +37,9 @@ import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'flint';
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
+import { CardActionPill, computePillScale } from './components/CardActionPill';
+import { EdgeActionPill } from './components/EdgeActionPill';
+import { EdgeLabel } from './components/EdgeLabel';
 import { isImageDocument } from './components/CardContentRenderer';
 import { CanvasSettingsRail } from './components/CanvasSettingsRail';
 import { CanvasBottomDock, CanvasDockActionType } from './components/CanvasBottomDock';
@@ -76,7 +80,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<CanvasEdge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [autoEditingNodeId, setAutoEditingNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [editingEdgeLabelId, setEditingEdgeLabelId] = useState<string | null>(null);
+  const [editingLabelDraft, setEditingLabelDraft] = useState<string>('');
   const [docContentMap, setDocContentMap] = useState<Record<string, string>>({});
   const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
   const [dragGhost, setDragGhost] = useState<{
@@ -120,8 +127,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
-  useEffect(() => { edgesRef.current = edges; }, [edges]);
   useEffect(() => { draftEdgeRef.current = draftEdge; }, [draftEdge]);
+  useEffect(() => {
+    if (draftEdge) {
+      document.body.style.cursor = 'grab';
+      return () => {
+        document.body.style.cursor = '';
+      };
+    }
+  }, [Boolean(draftEdge)]);
   useEffect(() => { selectedEdgeIdRef.current = selectedEdgeId; }, [selectedEdgeId]);
   useEffect(() => { canvasSnapGridRef.current = canvasSnapGrid; }, [canvasSnapGrid]);
   useEffect(() => { canvasSnapObjectsRef.current = canvasSnapObjects; }, [canvasSnapObjects]);
@@ -464,6 +478,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         current.x = target.x;
         current.y = target.y;
         current.scale = target.scale;
+        panRef.current = { x: current.x, y: current.y };
+        zoomRef.current = current.scale;
         syncDomTransform(current.x, current.y, current.scale);
         setPan({ x: current.x, y: current.y });
         setZoom(current.scale);
@@ -474,6 +490,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       current.x += dx * ease;
       current.y += dy * ease;
       current.scale += ds * ease;
+      panRef.current = { x: current.x, y: current.y };
+      zoomRef.current = current.scale;
 
       syncDomTransform(current.x, current.y, current.scale);
       setPan({ x: current.x, y: current.y });
@@ -614,6 +632,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
     recordSnapshot();
     const step = gridSize || 20;
+    const cardHeight = 4 * step;
     let initialX = (-pan.x + 300) / zoom;
     let initialY = (-pan.y + 200) / zoom;
     if (canvasSnapGrid) {
@@ -627,13 +646,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       x: initialX,
       y: initialY,
       width: 260,
-      height: 180,
-      text_content: 'New thought or idea...',
+      height: cardHeight,
+      text_content: '',
       color: '#1e1e1e',
     };
     await saveCanvasNode(newNode);
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
+    setSelectedNodeId(newNode.id);
+    setAutoEditingNodeId(newNode.id);
     showToast('Added note card', 'success');
   }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, recordSnapshot]);
 
@@ -777,6 +798,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (selectedEdgeIdRef.current === edgeId) {
         setSelectedEdgeId(null);
       }
+      if (editingEdgeLabelIdRef.current === edgeId) {
+        editingEdgeLabelIdRef.current = null;
+        editingLabelDraftRef.current = '';
+        setEditingEdgeLabelId(null);
+        setEditingLabelDraft('');
+      }
       triggerDiskSync(effectiveBoardId);
       showToast('Removed connection', 'info');
     },
@@ -787,6 +814,66 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   useEffect(() => {
     handleDeleteEdgeRef.current = handleDeleteEdge;
   }, [handleDeleteEdge]);
+
+  const handleUpdateEdge = useCallback(
+    async (edgeId: string, updates: Partial<CanvasEdge>) => {
+      if (canvasReadOnlyRef.current) return;
+      const currentEdge = edgesRef.current.find((e) => e.id === edgeId);
+      if (!currentEdge) return;
+
+      // Avoid redundant DB writes if nothing changed
+      const hasChanges = Object.keys(updates).some((key) => {
+        const k = key as keyof CanvasEdge;
+        return currentEdge[k] !== updates[k];
+      });
+      if (!hasChanges) return;
+
+      recordSnapshot();
+      const updatedEdge: CanvasEdge = {
+        ...currentEdge,
+        ...updates,
+      };
+
+      await saveCanvasEdge(updatedEdge);
+      setEdges((prev) => prev.map((e) => (e.id === edgeId ? updatedEdge : e)));
+      triggerDiskSync(effectiveBoardId);
+    },
+    [effectiveBoardId, recordSnapshot, triggerDiskSync]
+  );
+
+  const editingEdgeLabelIdRef = useRef<string | null>(null);
+  const editingLabelDraftRef = useRef<string>('');
+
+  const startEditingEdgeLabel = useCallback((edgeId: string, initialText: string) => {
+    editingEdgeLabelIdRef.current = edgeId;
+    editingLabelDraftRef.current = initialText;
+    setEditingEdgeLabelId(edgeId);
+    setEditingLabelDraft(initialText);
+  }, []);
+
+  const handleDraftChange = useCallback((draft: string) => {
+    editingLabelDraftRef.current = draft;
+    setEditingLabelDraft(draft);
+  }, []);
+
+  const cancelEditingEdgeLabel = useCallback(() => {
+    editingEdgeLabelIdRef.current = null;
+    editingLabelDraftRef.current = '';
+    setEditingEdgeLabelId(null);
+    setEditingLabelDraft('');
+  }, []);
+
+  const commitActiveEdgeLabel = useCallback(() => {
+    const edgeId = editingEdgeLabelIdRef.current;
+    if (edgeId) {
+      const draft = editingLabelDraftRef.current.trim();
+      editingEdgeLabelIdRef.current = null;
+      editingLabelDraftRef.current = '';
+      setEditingEdgeLabelId(null);
+      setEditingLabelDraft('');
+      handleUpdateEdge(edgeId, { label: draft });
+    }
+  }, [handleUpdateEdge]);
 
   const retargetEdge = useCallback(
     async (
@@ -835,20 +922,39 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
   );
 
+  const clearTextSelection = useCallback(() => {
+    try {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        sel.removeAllRanges();
+      }
+      if (document.activeElement instanceof HTMLElement) {
+        if (
+          document.activeElement.tagName === 'INPUT' ||
+          document.activeElement.tagName === 'TEXTAREA' ||
+          document.activeElement.isContentEditable ||
+          document.activeElement.closest('.ProseMirror, .flint-compact-doc, .document-view-root')
+        ) {
+          document.activeElement.blur();
+        }
+      }
+    } catch {}
+  }, []);
+
   const handleSelectEdge = useCallback((edgeId: string, e: React.SyntheticEvent) => {
     e.stopPropagation();
+    clearTextSelection();
+    commitActiveEdgeLabel();
     setSelectedEdgeId(edgeId);
     setSelectedNodeId(null);
-    if (document.activeElement instanceof HTMLElement) {
-      document.activeElement.blur();
-    }
-  }, []);
+  }, [clearTextSelection, commitActiveEdgeLabel]);
 
   const handleEdgePointerDown = useCallback(
     (edge: CanvasEdge, e: React.PointerEvent, isArrowhead: boolean = false) => {
       if (canvasReadOnlyRef.current || e.button !== 0) return;
-      if ((e.target as HTMLElement).closest('.canvas-edge-delete')) return;
+      if ((e.target as HTMLElement).closest('.canvas-edge-action-pill, .canvas-edge-delete')) return;
 
+      clearTextSelection();
       e.stopPropagation();
       e.preventDefault();
 
@@ -1131,6 +1237,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           return;
         }
         if (selectedNodeId) {
+          clearTextSelection();
           setSelectedNodeId(null);
           return;
         }
@@ -1273,7 +1380,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Background Pan & Drag Handlers with continuous window/pointer capture tracking
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     const target = e.target as Element | null;
-    if (target?.closest?.('.canvas-card, button, input, textarea, .canvas-side-dot, .canvas-edge, .canvas-edge-delete, [data-edge-id]')) return;
+    if (target?.closest?.('.canvas-card, button, input, textarea, .canvas-side-dot, .canvas-edge, .canvas-edge-delete, .canvas-edge-label, [data-edge-id]')) return;
 
     // If drafting in click mode, connect if snapped, or cancel if clicked on empty canvas
     if (draftEdgeRef.current && draftEdgeRef.current.mode === 'click') {
@@ -1304,9 +1411,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     if (isMiddleClick || isModifierPan) {
       e.preventDefault();
+      clearTextSelection();
+      commitActiveEdgeLabel();
+      if (cameraRafRef.current !== null) {
+        cancelAnimationFrame(cameraRafRef.current);
+        cameraRafRef.current = null;
+      }
       isPanningRef.current = true;
       setIsPanningState(true);
       const ct = currentTransformRef.current;
+      targetTransformRef.current.x = ct.x;
+      targetTransformRef.current.y = ct.y;
+      targetTransformRef.current.scale = ct.scale;
       panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
       setSelectedNodeId(null);
       setSelectedEdgeId(null);
@@ -1316,12 +1432,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       return;
     }
 
-    // Normal left-click without space/ctrl: deselect any active card or edge
+    // Normal left-click without space/ctrl: deselect any active card or edge and commit active edge label
     if (e.button === 0) {
+      clearTextSelection();
+      commitActiveEdgeLabel();
       setSelectedNodeId(null);
       setSelectedEdgeId(null);
     }
-  }, [createEdge, retargetEdge]);
+  }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
 
   const handleNodePointerDown = useCallback((id: string, e: React.PointerEvent) => {
     // If drafting in click mode, connect if snapped, or cancel if clicked without snap
@@ -1352,9 +1470,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     // If Space or Ctrl is held down OR middle-mouse click, pan the canvas instead of dragging the card
     if (isModifierPan) {
       e.preventDefault();
+      if (cameraRafRef.current !== null) {
+        cancelAnimationFrame(cameraRafRef.current);
+        cameraRafRef.current = null;
+      }
       isPanningRef.current = true;
       setIsPanningState(true);
       const ct = currentTransformRef.current;
+      targetTransformRef.current.x = ct.x;
+      targetTransformRef.current.y = ct.y;
+      targetTransformRef.current.scale = ct.scale;
       panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
       try {
         (containerRef.current as HTMLElement)?.setPointerCapture?.(e.pointerId);
@@ -1366,8 +1491,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     if (target?.closest?.('button, textarea, input, a, .resize-handle, .canvas-side-dot')) return;
 
     e.stopPropagation();
+    commitActiveEdgeLabel();
     const node = nodesRef.current.find((n) => n.id === id);
     if (!node) return;
+    if (selectedNodeId !== node.id) {
+      clearTextSelection();
+    }
     setSelectedNodeId(node.id);
     setSelectedEdgeId(null);
 
@@ -1384,7 +1513,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       x: mouseCanvasX - node.x,
       y: mouseCanvasY - node.y,
     };
-  }, [createEdge, retargetEdge]);
+  }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge, selectedNodeId]);
 
   const resizingNodeIdRef = useRef<string | null>(null);
   const resizeHandleRef = useRef<ResizeHandleType | null>(null);
@@ -1489,6 +1618,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             targetTransformRef.current.y = newY;
             currentTransformRef.current.x = newX;
             currentTransformRef.current.y = newY;
+            panRef.current = { x: newX, y: newY };
 
             syncDomTransform(newX, newY, currentTransformRef.current.scale);
 
@@ -1511,6 +1641,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             const isImage = Boolean(start.isImage);
             const aspect = start.aspectRatio || 1.33;
             const step = canvasSnapGridRef.current ? (gridSizeRef.current || 20) : 1;
+            const minGridStep = gridSizeRef.current || 20;
+            const minCardW = 4 * minGridStep;
+            const minCardH = 4 * minGridStep;
 
             setNodes((prev) => {
               return prev.map((n) => {
@@ -1524,64 +1657,64 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   // For images: lock aspect ratio on any axis / diagonal resize so no letterbox spaces appear
                   if (handle === 'se') {
                     const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
-                    newW = Math.max(160, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
-                    newH = Math.max(100, Math.round(newW / aspect));
+                    newW = Math.max(minCardW, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+                    newH = Math.max(minCardH, Math.round(newW / aspect));
                   } else if (handle === 'sw') {
                     const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
-                    newW = Math.max(160, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
-                    newH = Math.max(100, Math.round(newW / aspect));
+                    newW = Math.max(minCardW, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+                    newH = Math.max(minCardH, Math.round(newW / aspect));
                     newX = start.x + (start.width - newW);
                   } else if (handle === 'ne') {
                     const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
-                    newW = Math.max(160, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
-                    newH = Math.max(100, Math.round(newW / aspect));
+                    newW = Math.max(minCardW, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+                    newH = Math.max(minCardH, Math.round(newW / aspect));
                     newY = start.y + (start.height - newH);
                   } else if (handle === 'nw') {
                     const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
-                    newW = Math.max(160, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
-                    newH = Math.max(100, Math.round(newW / aspect));
+                    newW = Math.max(minCardW, start.width + dominant);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+                    newH = Math.max(minCardH, Math.round(newW / aspect));
                     newX = start.x + (start.width - newW);
                     newY = start.y + (start.height - newH);
                   } else if (handle === 'e') {
-                    newW = Math.max(160, start.width + deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
-                    newH = Math.max(100, Math.round(newW / aspect));
+                    newW = Math.max(minCardW, start.width + deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+                    newH = Math.max(minCardH, Math.round(newW / aspect));
                   } else if (handle === 'w') {
-                    newW = Math.max(160, start.width - deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
-                    newH = Math.max(100, Math.round(newW / aspect));
+                    newW = Math.max(minCardW, start.width - deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+                    newH = Math.max(minCardH, Math.round(newW / aspect));
                     newX = start.x + (start.width - newW);
                   } else if (handle === 's') {
-                    newH = Math.max(100, start.height + deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
-                    newW = Math.max(160, Math.round(newH * aspect));
+                    newH = Math.max(minCardH, start.height + deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+                    newW = Math.max(minCardW, Math.round(newH * aspect));
                   } else if (handle === 'n') {
-                    newH = Math.max(100, start.height - deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
-                    newW = Math.max(160, Math.round(newH * aspect));
+                    newH = Math.max(minCardH, start.height - deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+                    newW = Math.max(minCardW, Math.round(newH * aspect));
                     newY = start.y + (start.height - newH);
                   }
                 } else {
                   // Standard 8-directional freeform resize for notes and text cards
                   if (handle === 'e' || handle === 'se' || handle === 'ne') {
-                    newW = Math.max(160, start.width + deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newW = Math.max(minCardW, start.width + deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
                   } else if (handle === 'w' || handle === 'sw' || handle === 'nw') {
-                    newW = Math.max(160, start.width - deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.round(newW / step) * step;
+                    newW = Math.max(minCardW, start.width - deltaX);
+                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
                     newX = start.x + (start.width - newW);
                   }
 
                   if (handle === 's' || handle === 'se' || handle === 'sw') {
-                    newH = Math.max(100, start.height + deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
+                    newH = Math.max(minCardH, start.height + deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
                   } else if (handle === 'n' || handle === 'ne' || handle === 'nw') {
-                    newH = Math.max(100, start.height - deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.round(newH / step) * step;
+                    newH = Math.max(minCardH, start.height - deltaY);
+                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
                     newY = start.y + (start.height - newH);
                   }
                 }
@@ -1888,11 +2021,61 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     runCameraEasing();
   }, [nodes, containerSize.width, containerSize.height, runCameraEasing]);
 
+  const handleFitNodeToCenter = useCallback(
+    (nodeId: string) => {
+      const node = nodeMap.get(nodeId);
+      if (!node) return;
+      const el = containerRef.current;
+      const rect = el?.getBoundingClientRect();
+      const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+      const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+      const w = node.width || 260;
+      const h = node.height || 180;
+      const centerX = node.x + w / 2;
+      const centerY = node.y + h / 2;
+
+      const currentScale = currentTransformRef.current.scale || 1;
+      const targetX = width / 2 - centerX * currentScale;
+      const targetY = height / 2 - centerY * currentScale;
+
+      targetTransformRef.current = {
+        x: Number.isFinite(targetX) ? targetX : 100,
+        y: Number.isFinite(targetY) ? targetY : 100,
+        scale: currentScale,
+      };
+      runCameraEasing();
+    },
+    [nodeMap, containerSize.width, containerSize.height, runCameraEasing]
+  );
+
+  const handleFitEdgeToCenter = useCallback(
+    (_edge: CanvasEdge, mid: { x: number; y: number }) => {
+      const el = containerRef.current;
+      const rect = el?.getBoundingClientRect();
+      const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+      const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+      const currentScale = currentTransformRef.current.scale || 1;
+      const targetX = width / 2 - mid.x * currentScale;
+      const targetY = height / 2 - mid.y * currentScale;
+
+      targetTransformRef.current = {
+        x: Number.isFinite(targetX) ? targetX : 100,
+        y: Number.isFinite(targetY) ? targetY : 100,
+        scale: currentScale,
+      };
+      runCameraEasing();
+    },
+    [containerSize.width, containerSize.height, runCameraEasing]
+  );
+
   // Double-click on empty canvas to quickly place a new text card at cursor
   const handleCanvasDoubleClick = useCallback(
     async (e: React.MouseEvent) => {
       if (canvasReadOnlyRef.current) return;
-      if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea, a')) return;
+      if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea, a, .canvas-edge-label, .canvas-edge, [data-edge-id]')) return;
+      commitActiveEdgeLabel();
       const el = containerRef.current;
       if (!el) return;
       recordSnapshot();
@@ -1900,9 +2083,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
       const ct = currentTransformRef.current;
-      let canvasX = (mouseX - ct.x) / ct.scale;
-      let canvasY = (mouseY - ct.y) / ct.scale;
       const step = gridSizeRef.current || 20;
+      const cardWidth = 260;
+      const cardHeight = 4 * step;
+      let canvasX = (mouseX - ct.x) / ct.scale - cardWidth / 2;
+      let canvasY = (mouseY - ct.y) / ct.scale - cardHeight / 2;
       if (canvasSnapGridRef.current) {
         canvasX = Math.round(canvasX / step) * step;
         canvasY = Math.round(canvasY / step) * step;
@@ -1913,8 +2098,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         type: 'text',
         x: Math.round(canvasX),
         y: Math.round(canvasY),
-        width: 260,
-        height: 180,
+        width: cardWidth,
+        height: cardHeight,
         text_content: '',
         color: '',
       };
@@ -1922,8 +2107,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       triggerDiskSync(effectiveBoardId);
       setNodes((prev) => [...prev, newNode]);
       setSelectedNodeId(newNode.id);
+      setAutoEditingNodeId(newNode.id);
     },
-    [effectiveBoardId, triggerDiskSync, recordSnapshot]
+    [commitActiveEdgeLabel, effectiveBoardId, triggerDiskSync, recordSnapshot]
   );
 
   // Drag and drop documents from navigation tree directly onto canvas
@@ -1993,9 +2179,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, [documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
 
   const getCardDimensions = useCallback((type: CanvasDockActionType) => {
+    const step = gridSizeRef.current || 20;
     switch (type) {
       case 'card':
-        return { width: 260, height: 180 };
+        return { width: 260, height: 4 * step };
       case 'note':
         return { width: 320, height: 280 };
       case 'media':
@@ -2047,6 +2234,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
       recordSnapshot();
+      const step = gridSizeRef.current || 20;
+      const cardHeight = 4 * step;
       const newNode: CanvasNode = {
         id: `node-${Date.now()}`,
         board_id: effectiveBoardId,
@@ -2054,7 +2243,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         x,
         y,
         width: 260,
-        height: 180,
+        height: cardHeight,
         text_content: '',
         color: '',
       };
@@ -2062,6 +2251,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       triggerDiskSync(effectiveBoardId);
       setNodes((prev) => [...prev, newNode]);
       setSelectedNodeId(newNode.id);
+      setAutoEditingNodeId(newNode.id);
       showToast('Added card', 'info');
     },
     [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
@@ -2302,12 +2492,58 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
 
         if (Math.abs(newScale - currentScale) > 0.0001) {
+          const newTargetX = mouseX - ((mouseX - currentX) * (newScale / currentScale));
+          const newTargetY = mouseY - ((mouseY - currentY) * (newScale / currentScale));
+
           targetTransformRef.current = {
-            x: mouseX - ((mouseX - currentX) * (newScale / currentScale)),
-            y: mouseY - ((mouseY - currentY) * (newScale / currentScale)),
+            x: newTargetX,
+            y: newTargetY,
             scale: newScale,
           };
-          runCameraEasing();
+
+          const isHoldingMouse =
+            isPanningRef.current ||
+            ((e.buttons & 1) === 1 && (isPanModifierRef.current || e.ctrlKey || e.metaKey)) ||
+            (e.buttons & 4) === 4;
+
+          if (isHoldingMouse) {
+            isPanningRef.current = true;
+            setIsPanningState(true);
+
+            if (cameraRafRef.current !== null) {
+              cancelAnimationFrame(cameraRafRef.current);
+              cameraRafRef.current = null;
+            }
+            if (mouseMoveRafRef.current !== null) {
+              cancelAnimationFrame(mouseMoveRafRef.current);
+              mouseMoveRafRef.current = null;
+            }
+
+            currentTransformRef.current = {
+              x: newTargetX,
+              y: newTargetY,
+              scale: newScale,
+            };
+            panStartRef.current = {
+              x: e.clientX - newTargetX,
+              y: e.clientY - newTargetY,
+            };
+            lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
+            panRef.current = { x: newTargetX, y: newTargetY };
+            zoomRef.current = newScale;
+
+            syncDomTransform(newTargetX, newTargetY, newScale);
+
+            if (syncStateRafRef.current === null) {
+              syncStateRafRef.current = requestAnimationFrame(() => {
+                syncStateRafRef.current = null;
+                setPan({ x: newTargetX, y: newTargetY });
+                setZoom(newScale);
+              });
+            }
+          } else {
+            runCameraEasing();
+          }
         }
         return;
       }
@@ -2547,7 +2783,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         onDoubleClick={handleCanvasDoubleClick}
         style={{ touchAction: 'none' }}
         className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none ${
-          isPanningState || isDraggingNodeState ? 'cursor-grabbing' : isPanModifierState ? 'cursor-grab' : 'cursor-default'
+          draftEdge
+            ? '!cursor-grab [&_*]:!cursor-grab'
+            : isPanningState || isDraggingNodeState
+            ? 'cursor-grabbing'
+            : isPanModifierState
+            ? 'cursor-grab'
+            : 'cursor-default'
         }`}
       >
         {/* Crisp Lightweight Vector Spatial Dot Grid */}
@@ -2602,8 +2844,24 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               const p1 = getSideAnchorPoint(fromNode, fromSide);
               const p2 = getSideAnchorPoint(toNode, toSide);
 
-              const { path, arrowPath, mid } = computeBezierPath(p1, fromSide, p2, toSide);
+              const { path, arrowPath, sourceArrowPath, mid } = computeBezierPath(
+                p1,
+                fromSide,
+                p2,
+                toSide,
+                12,
+                13,
+                edge.direction || 'unidirectional'
+              );
               const isSelected = selectedEdgeId === edge.id;
+              const edgeColor = edge.color || '#888888';
+              const displayColor = isSelected ? '#ffffff' : edgeColor;
+
+              const hasLabel = Boolean(edge.label && edge.label.trim() !== '');
+              const isEditing = editingEdgeLabelId === edge.id;
+              const shouldMask = hasLabel || isEditing;
+              const textToMeasure = isEditing ? (editingLabelDraft || 'Type label...') : (edge.label || '');
+              const labelBox = shouldMask ? getEdgeLabelBox(textToMeasure) : null;
 
               return (
                 <g
@@ -2611,7 +2869,30 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   data-edge-id={edge.id}
                   className="canvas-edge group/edge pointer-events-auto select-none transition-none cursor-pointer"
                   onPointerDown={(e) => handleEdgePointerDown(edge, e, false)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setSelectedEdgeId(edge.id);
+                    setSelectedNodeId(null);
+                    startEditingEdgeLabel(edge.id, edge.label || '');
+                  }}
                 >
+                  {/* Invisible clipping mask for edge label gap (dynamic ID invalidates Blink compositor mask cache per keystroke) */}
+                  {shouldMask && labelBox && (
+                    <mask id={`edge-label-mask-${edge.id}-${Math.round(labelBox.width)}`}>
+                      {/* White reveals the arrow curve */}
+                      <rect x="-100000" y="-100000" width="200000" height="200000" fill="white" />
+                      {/* Black clips out the arrow where the label sits */}
+                      <rect
+                        x={mid.x - labelBox.width / 2}
+                        y={mid.y - labelBox.height / 2}
+                        width={labelBox.width}
+                        height={labelBox.height}
+                        fill="black"
+                      />
+                    </mask>
+                  )}
+
                   {/* Invisible wide hit path for effortless clicking and selection */}
                   <path
                     d={path}
@@ -2624,17 +2905,28 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   <path
                     d={path}
                     fill="none"
-                    stroke={isSelected ? '#ffffff' : '#888888'}
+                    stroke={displayColor}
                     strokeWidth={isSelected ? 2.5 : 2}
+                    mask={shouldMask && labelBox ? `url(#edge-label-mask-${edge.id}-${Math.round(labelBox.width)})` : undefined}
                     className="group-hover/edge:stroke-[#e0e0e0] transition-none pointer-events-auto"
                   />
-                  {/* Seamless Solid Arrowhead (highlights in unison with curve body) */}
-                  <path
-                    d={arrowPath}
-                    fill={isSelected ? '#ffffff' : '#888888'}
-                    className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-crosshair"
-                  />
-                  {/* Invisible generous hit target around the arrowhead for easy grabbing and retargeting */}
+                  {/* Target Arrowhead (unidirectional or bidirectional) */}
+                  {arrowPath ? (
+                    <path
+                      d={arrowPath}
+                      fill={displayColor}
+                      className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-crosshair"
+                    />
+                  ) : null}
+                  {/* Source Arrowhead (bidirectional) */}
+                  {sourceArrowPath ? (
+                    <path
+                      d={sourceArrowPath}
+                      fill={displayColor}
+                      className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-crosshair"
+                    />
+                  ) : null}
+                  {/* Invisible generous hit target around the target arrowhead for easy grabbing and retargeting */}
                   <circle
                     cx={p2.x}
                     cy={p2.y}
@@ -2642,47 +2934,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                     fill="transparent"
                     className="cursor-crosshair pointer-events-auto"
                     onPointerDown={(e) => handleEdgePointerDown(edge, e, true)}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setSelectedEdgeId(edge.id);
+                      setSelectedNodeId(null);
+                      startEditingEdgeLabel(edge.id, edge.label || '');
+                    }}
                   />
-                  {/* Selected Edge Quick-Delete Handle */}
-                  {isSelected && !canvasReadOnly && (
-                    <g
-                      transform={`translate(${mid.x}, ${mid.y})`}
-                      className="canvas-edge-delete cursor-pointer group/del pointer-events-auto"
-                      onPointerDown={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleDeleteEdge(edge.id);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        handleDeleteEdge(edge.id);
-                      }}
-                    >
-                      {/* Generous transparent hit area for easy clicking */}
-                      <circle
-                        r={18}
-                        fill="transparent"
-                        className="cursor-pointer"
-                      />
-                      {/* Button circular badge */}
-                      <circle
-                        r={11}
-                        fill="#1e1e1e"
-                        stroke="#888888"
-                        strokeWidth={1.5}
-                        className="group-hover/del:stroke-red-400 group-hover/del:fill-[#2a2a2a] transition-none"
-                      />
-                      {/* X icon */}
-                      <path
-                        d="M -3.5 -3.5 L 3.5 3.5 M 3.5 -3.5 L -3.5 3.5"
-                        stroke="#e0e0e0"
-                        strokeWidth={1.5}
-                        strokeLinecap="round"
-                        className="group-hover/del:stroke-red-400 transition-none"
-                      />
-                    </g>
-                  )}
                 </g>
               );
             })}
@@ -2718,6 +2977,85 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               );
             })()}
           </svg>
+
+          {/* HTML Overlay for Edge Labels & Selected Edge Action Pill */}
+          <div className="absolute inset-0 pointer-events-none z-20">
+            {edges.map((edge) => {
+              if (draftEdge?.editingEdgeId === edge.id) return null;
+
+              const fromNode = nodeMap.get(edge.from_node_id);
+              const toNode = nodeMap.get(edge.to_node_id);
+              if (!fromNode || !toNode) return null;
+
+              const defaultSides = determineDefaultConnectingSides(fromNode, toNode);
+              const fromSide = edge.from_side || defaultSides.fromSide;
+              const toSide = edge.to_side || defaultSides.toSide;
+
+              const p1 = getSideAnchorPoint(fromNode, fromSide);
+              const p2 = getSideAnchorPoint(toNode, toSide);
+
+              const { mid } = computeBezierPath(
+                p1,
+                fromSide,
+                p2,
+                toSide,
+                12,
+                13,
+                edge.direction || 'unidirectional'
+              );
+
+              const isSelected = selectedEdgeId === edge.id;
+              const isEditingLabel = editingEdgeLabelId === edge.id;
+              const hasLabel = Boolean(edge.label && edge.label.trim() !== '');
+
+              return (
+                <React.Fragment key={`edge-ui-${edge.id}`}>
+                  {/* Edge Midpoint Label */}
+                  {(hasLabel || isEditingLabel) && (
+                    <EdgeLabel
+                      label={edge.label}
+                      mid={mid}
+                      isSelected={isSelected}
+                      isEditing={isEditingLabel}
+                      onStartEdit={() => startEditingEdgeLabel(edge.id, edge.label || '')}
+                      onDraftChange={handleDraftChange}
+                      onSave={(newLabel) => {
+                        cancelEditingEdgeLabel();
+                        handleUpdateEdge(edge.id, { label: newLabel });
+                      }}
+                      onCancel={cancelEditingEdgeLabel}
+                    />
+                  )}
+
+                  {/* Selected Edge Action Pill */}
+                  {isSelected && !canvasReadOnly && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        left: `${mid.x}px`,
+                        top: `${mid.y - (hasLabel || isEditingLabel ? 22 : 16)}px`,
+                        transform: `translate(-50%, -100%) scale(${computePillScale(zoom)})`,
+                        transformOrigin: 'bottom center',
+                      }}
+                      className="canvas-edge-action-pill pointer-events-auto z-30 select-none transition-none"
+                    >
+                      <EdgeActionPill
+                        onDelete={() => handleDeleteEdge(edge.id)}
+                        onFitToCenter={() => handleFitEdgeToCenter(edge, mid)}
+                        onColorChange={(color) => handleUpdateEdge(edge.id, { color })}
+                        currentColor={edge.color}
+                        onDirectionChange={(direction) => handleUpdateEdge(edge.id, { direction })}
+                        currentDirection={edge.direction || 'unidirectional'}
+                        hasLabel={hasLabel}
+                        onEditLabel={() => startEditingEdgeLabel(edge.id, edge.label || '')}
+                        onClearLabel={() => handleUpdateEdge(edge.id, { label: '' })}
+                      />
+                    </div>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
 
           {/* Object Snapping Alignment Guidelines & Corner / Center Dots */}
           {activeGuides.length > 0 && (
@@ -2772,8 +3110,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               isPanning={isPanningState}
               isDragging={isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id)}
               isReadOnly={canvasReadOnly}
+              zoom={zoom}
+              autoFocus={autoEditingNodeId === node.id}
+              onAutoFocusConsumed={() => setAutoEditingNodeId((current) => (current === node.id ? null : current))}
               onSelect={handleNodePointerDown}
               onOpenDoc={handleOpenDoc}
+              onFitToCenter={handleFitNodeToCenter}
               onDelete={handleDeleteNode}
               onColorChange={handleColorChange}
               onTextChange={handleTextChange}
@@ -2793,7 +3135,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             const dims = getCardDimensions(dragGhost.type);
             return (
               <div
-                className="absolute pointer-events-none z-30 rounded-md border-2 border-dashed border-[#888888] bg-[#1e1e1e]/85 backdrop-blur-[2px] shadow-2xl select-none transition-none"
+                className="absolute pointer-events-none z-30 rounded-md border-2 border-dashed border-[#888888] bg-[#1e1e1e]/85 backdrop-blur-[2px] select-none transition-none"
                 style={{
                   left: `${dragGhost.canvasX}px`,
                   top: `${dragGhost.canvasY}px`,
