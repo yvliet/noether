@@ -87,6 +87,9 @@ import {
   Shield01Icon as HugeShield01Icon,
   Layers01Icon as HugeLayers01Icon,
   StickyNote02Icon as HugeStickyNote02Icon,
+  StickyNote03Icon as HugeStickyNote03Icon,
+  FileEmpty02Icon as HugeFileEmpty02Icon,
+  FileImageIcon as HugeFileImageIcon,
   ColorPickerIcon as HugeColorPickerIcon,
   SquareSplitVerticalIcon as HugeSquareSplitVerticalIcon,
   SquareSplitHorizontalIcon as HugeSquareSplitHorizontalIcon,
@@ -332,6 +335,9 @@ export const PuzzlePieceIcon = PuzzleIcon;
 export const ShieldIcon = createIcon(HugeShield01Icon);
 export const LayersIcon = createIcon(HugeLayers01Icon);
 export const StickyNote02Icon = createIcon(HugeStickyNote02Icon);
+export const StickyNote03Icon = createIcon(HugeStickyNote03Icon);
+export const FileEmpty02Icon = createIcon(HugeFileEmpty02Icon);
+export const FileImageIcon = createIcon(HugeFileImageIcon);
 export const UserIcon = createIcon(HugeUserIcon);
 
 export const EyedropperIcon = createIcon(HugeColorPickerIcon);

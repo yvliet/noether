@@ -19,6 +19,9 @@ import {
   Delete02Icon,
   SparklesIcon,
   Layout01Icon,
+  StickyNote03Icon,
+  FileEmpty02Icon,
+  FileImageIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'flint';
@@ -26,8 +29,11 @@ import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
 import { isImageDocument } from './components/CardContentRenderer';
 import { CanvasSettingsRail } from './components/CanvasSettingsRail';
+import { CanvasBottomDock, CanvasDockActionType } from './components/CanvasBottomDock';
+import { CanvasItemSearchModal } from './components/CanvasItemSearchModal';
 import { calculateObjectSnap, AlignmentGuide } from './utils/canvasSnapping';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useDocumentStore } from '@/store/documentStore';
 
 export interface CanvasViewProps {
   boardId?: string;
@@ -63,6 +69,24 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [docContentMap, setDocContentMap] = useState<Record<string, string>>({});
   const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
+  const [dragGhost, setDragGhost] = useState<{
+    type: CanvasDockActionType;
+    screenX: number;
+    screenY: number;
+    canvasX: number;
+    canvasY: number;
+  } | null>(null);
+  const [searchModalState, setSearchModalState] = useState<{
+    isOpen: boolean;
+    mode: 'note' | 'media';
+    targetCanvasX: number;
+    targetCanvasY: number;
+  }>({
+    isOpen: false,
+    mode: 'note',
+    targetCanvasX: 0,
+    targetCanvasY: 0,
+  });
 
   const nodesRef = useRef(nodes);
   const canvasSnapGridRef = useRef(canvasSnapGrid);
@@ -432,6 +456,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       dragDidMoveRef.current = false;
       setIsDraggingNodeState(false);
       setActiveGuides([]);
+      setDragGhost(null);
     }
   }, [isLightboxOpen]);
 
@@ -1391,7 +1416,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         width: 260,
         height: 180,
         text_content: '',
-        color: '#1e1e1e',
+        color: '',
       };
       await saveCanvasNode(newNode);
       triggerDiskSync(effectiveBoardId);
@@ -1441,7 +1466,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           width: isImg ? 340 : 320,
           height: isImg ? 260 : 280,
           document_id: docId,
-          color: '#1e1e1e',
+          color: '',
         };
         newNodes.push(node);
         offset++;
@@ -1466,6 +1491,259 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       window.removeEventListener('flint:custom-drop', handleCustomDrop);
     };
   }, [documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
+
+  const getCardDimensions = useCallback((type: CanvasDockActionType) => {
+    switch (type) {
+      case 'card':
+        return { width: 260, height: 180 };
+      case 'note':
+        return { width: 320, height: 280 };
+      case 'media':
+        return { width: 340, height: 260 };
+    }
+  }, []);
+
+  const getCanvasCoordsForScreenPoint = useCallback(
+    (screenX: number, screenY: number, width: number, height: number) => {
+      const el = containerRef.current;
+      if (!el) return { x: 0, y: 0 };
+      const rect = el.getBoundingClientRect();
+      const ct = currentTransformRef.current;
+      let canvasX = (screenX - rect.left - ct.x) / ct.scale - width / 2;
+      let canvasY = (screenY - rect.top - ct.y) / ct.scale - height / 2;
+      const step = gridSizeRef.current || 20;
+      if (canvasSnapGridRef.current) {
+        canvasX = Math.round(canvasX / step) * step;
+        canvasY = Math.round(canvasY / step) * step;
+      }
+      return { x: Math.round(canvasX), y: Math.round(canvasY) };
+    },
+    []
+  );
+
+  const getCanvasViewportCenter = useCallback(
+    (width: number, height: number) => {
+      const el = containerRef.current;
+      const rect = el?.getBoundingClientRect();
+      const w = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+      const h = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+      const ct = currentTransformRef.current;
+      let canvasX = (w / 2 - ct.x) / ct.scale - width / 2;
+      let canvasY = (h / 2 - ct.y) / ct.scale - height / 2;
+      const step = gridSizeRef.current || 20;
+      if (canvasSnapGridRef.current) {
+        canvasX = Math.round(canvasX / step) * step;
+        canvasY = Math.round(canvasY / step) * step;
+      }
+      return { x: Math.round(canvasX), y: Math.round(canvasY) };
+    },
+    [containerSize]
+  );
+
+  const handleAddStickyCard = useCallback(
+    async (x: number, y: number) => {
+      if (canvasReadOnlyRef.current) {
+        showToast('Canvas is in read-only mode', 'warning');
+        return;
+      }
+      recordSnapshot();
+      const newNode: CanvasNode = {
+        id: `node-${Date.now()}`,
+        board_id: effectiveBoardId,
+        type: 'text',
+        x,
+        y,
+        width: 260,
+        height: 180,
+        text_content: '',
+        color: '',
+      };
+      await saveCanvasNode(newNode);
+      triggerDiskSync(effectiveBoardId);
+      setNodes((prev) => [...prev, newNode]);
+      setSelectedNodeId(newNode.id);
+      showToast('Added card', 'info');
+    },
+    [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+  );
+
+  const handleAddDocumentCard = useCallback(
+    async (docId: string, x: number, y: number) => {
+      if (canvasReadOnlyRef.current) {
+        showToast('Canvas is in read-only mode', 'warning');
+        return;
+      }
+      const allDocs = useDocumentStore.getState().documents;
+      const targetDoc =
+        allDocs.find((d: DocumentItem) => d.id === docId) ||
+        documents.find((d: DocumentItem) => d.id === docId);
+      if (!targetDoc) return;
+
+      const isImg = isImageDocument(targetDoc);
+      const nodeWidth = isImg ? 340 : 320;
+      const nodeHeight = isImg ? 260 : 280;
+
+      recordSnapshot();
+      const newNode: CanvasNode = {
+        id: `node-${Date.now()}`,
+        board_id: effectiveBoardId,
+        type: 'note',
+        x,
+        y,
+        width: nodeWidth,
+        height: nodeHeight,
+        document_id: docId,
+        color: '',
+      };
+      await saveCanvasNode(newNode);
+      triggerDiskSync(effectiveBoardId);
+      setNodes((prev) => [...prev, newNode]);
+      setSelectedNodeId(newNode.id);
+      showToast(`Added ${targetDoc.title || 'document'} to canvas`, 'success');
+    },
+    [documents, effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+  );
+
+  const handleDockActionClick = useCallback(
+    (type: CanvasDockActionType) => {
+      const dims = getCardDimensions(type);
+      const center = getCanvasViewportCenter(dims.width, dims.height);
+      if (type === 'card') {
+        handleAddStickyCard(center.x, center.y);
+      } else {
+        setDragGhost({
+          type,
+          screenX: 0,
+          screenY: 0,
+          canvasX: center.x,
+          canvasY: center.y,
+        });
+        setSearchModalState({
+          isOpen: true,
+          mode: type,
+          targetCanvasX: center.x,
+          targetCanvasY: center.y,
+        });
+      }
+    },
+    [getCardDimensions, getCanvasViewportCenter, handleAddStickyCard]
+  );
+
+  const computeGhostPlacement = useCallback(
+    (type: CanvasDockActionType, screenX: number, screenY: number) => {
+      const dims = getCardDimensions(type);
+      const el = containerRef.current;
+      if (!el) {
+        return { canvasX: 0, canvasY: 0, guides: [] as AlignmentGuide[] };
+      }
+
+      const rect = el.getBoundingClientRect();
+      const curPan = panRef.current;
+      const curZoom = zoomRef.current;
+
+      const rawX = (screenX - rect.left - curPan.x) / curZoom - dims.width / 2;
+      const rawY = (screenY - rect.top - curPan.y) / curZoom - dims.height / 2;
+
+      const step = gridSizeRef.current || 20;
+      const gridX = canvasSnapGridRef.current ? Math.round(rawX / step) * step : rawX;
+      const gridY = canvasSnapGridRef.current ? Math.round(rawY / step) * step : rawY;
+
+      let finalX = gridX;
+      let finalY = gridY;
+      let guides: AlignmentGuide[] = [];
+
+      if (canvasSnapObjectsRef.current) {
+        const threshold = 8 / Math.max(0.2, curZoom);
+        const cWidth = el.clientWidth || window.innerWidth;
+        const cHeight = el.clientHeight || window.innerHeight;
+
+        const viewport = {
+          left: -curPan.x / curZoom,
+          top: -curPan.y / curZoom,
+          right: (-curPan.x + cWidth) / curZoom,
+          bottom: (-curPan.y + cHeight) / curZoom,
+        };
+
+        const snapResult = calculateObjectSnap(
+          '__ghost__',
+          rawX,
+          rawY,
+          gridX,
+          gridY,
+          dims.width,
+          dims.height,
+          nodesRef.current,
+          threshold,
+          viewport
+        );
+
+        finalX = snapResult.x;
+        finalY = snapResult.y;
+        guides = snapResult.guides;
+      }
+
+      return {
+        canvasX: Math.round(finalX),
+        canvasY: Math.round(finalY),
+        guides,
+      };
+    },
+    [getCardDimensions]
+  );
+
+  const handleDockDragStart = useCallback(
+    (type: CanvasDockActionType, screenX: number, screenY: number) => {
+      const { canvasX, canvasY, guides } = computeGhostPlacement(type, screenX, screenY);
+      setDragGhost({ type, screenX, screenY, canvasX, canvasY });
+      setActiveGuides(guides);
+    },
+    [computeGhostPlacement]
+  );
+
+  const handleDockDragMove = useCallback(
+    (screenX: number, screenY: number) => {
+      setDragGhost((prev) => {
+        if (!prev) return null;
+        const { canvasX, canvasY, guides } = computeGhostPlacement(prev.type, screenX, screenY);
+        setActiveGuides(guides);
+        return { ...prev, screenX, screenY, canvasX, canvasY };
+      });
+    },
+    [computeGhostPlacement]
+  );
+
+  const handleDockDragEnd = useCallback(
+    (type: CanvasDockActionType, screenX: number, screenY: number, didDrag: boolean) => {
+      setActiveGuides([]);
+      if (!didDrag) {
+        setDragGhost(null);
+        return;
+      }
+
+      const { canvasX, canvasY } = computeGhostPlacement(type, screenX, screenY);
+
+      if (type === 'card') {
+        setDragGhost(null);
+        handleAddStickyCard(canvasX, canvasY);
+      } else {
+        // Keep the ghost card visible on the canvas at drop position while searching
+        setDragGhost({
+          type,
+          screenX,
+          screenY,
+          canvasX,
+          canvasY,
+        });
+        setSearchModalState({
+          isOpen: true,
+          mode: type,
+          targetCanvasX: canvasX,
+          targetCanvasY: canvasY,
+        });
+      }
+    },
+    [computeGhostPlacement, handleAddStickyCard]
+  );
 
   useEffect(() => {
     const el = containerRef.current;
@@ -1869,8 +2147,51 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             />
           );
         })}
+
+          {/* Snapped Drag Ghost Preview in Spatial Canvas Coordinate Plane */}
+          {dragGhost && (() => {
+            const dims = getCardDimensions(dragGhost.type);
+            return (
+              <div
+                className="absolute pointer-events-none z-30 rounded-md border-2 border-dashed border-[#888888] bg-[#1e1e1e]/85 backdrop-blur-[2px] shadow-2xl select-none transition-none"
+                style={{
+                  left: `${dragGhost.canvasX}px`,
+                  top: `${dragGhost.canvasY}px`,
+                  width: `${dims.width}px`,
+                  height: `${dims.height}px`,
+                }}
+              />
+            );
+          })()}
         </div>
       </div>
+
+      {/* Floating Bottom Center Dock (Card, Note, Media) */}
+      <CanvasBottomDock
+        onActionClick={handleDockActionClick}
+        onDragStart={handleDockDragStart}
+        onDragMove={handleDockDragMove}
+        onDragEnd={handleDockDragEnd}
+      />
+
+      {/* Search Modal for Note & Media */}
+      <CanvasItemSearchModal
+        isOpen={searchModalState.isOpen}
+        mode={searchModalState.mode}
+        currentBoardId={effectiveBoardId}
+        onClose={() => {
+          setDragGhost(null);
+          setSearchModalState((prev) => ({ ...prev, isOpen: false }));
+        }}
+        onSelectDocument={(docId) => {
+          setDragGhost(null);
+          handleAddDocumentCard(
+            docId,
+            searchModalState.targetCanvasX,
+            searchModalState.targetCanvasY
+          );
+        }}
+      />
     </div>
   );
 });

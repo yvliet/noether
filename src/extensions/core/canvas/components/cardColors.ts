@@ -106,6 +106,21 @@ export function resolveCardColorTheme(rawColor?: string): CardColorPreset & { is
 
   const clean = rawColor.toLowerCase().trim();
 
+  if (
+    clean === '' ||
+    clean === 'default' ||
+    clean === '#1e1e1e' ||
+    clean === '#2a2a2a' ||
+    clean === '#181818' ||
+    clean === '#1a1a1a' ||
+    clean === '#242424' ||
+    clean === '#161616' ||
+    clean === '#737373' ||
+    clean === 'none'
+  ) {
+    return CARD_COLOR_PRESETS[0];
+  }
+
   const foundPreset = CARD_COLOR_PRESETS.find(
     (p) => p.id === clean || p.swatch.toLowerCase() === clean
   );
