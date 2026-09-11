@@ -436,6 +436,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Direct GPU DOM transform refs for 144Hz+ zero-lag rendering
   const contentPlaneRef = useRef<HTMLDivElement>(null);
   const dotPatternRef = useRef<SVGPatternElement>(null);
+  const dotCircleRef = useRef<SVGCircleElement>(null);
+  const dotGridRectRef = useRef<SVGRectElement>(null);
   const syncStateRafRef = useRef<number | null>(null);
 
   // Fast timestamp-based continuous scroll stream tracking (zero timers, zero GC overhead)
@@ -448,12 +450,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
     if (dotPatternRef.current) {
       const step = gridSizeRef.current || 20;
-      const cell = step * scale;
-      const halfCell = cell / 2;
-      const patternX = (((x - halfCell) % cell) + cell) % cell;
-      const patternY = (((y - halfCell) % cell) + cell) % cell;
-      dotPatternRef.current.setAttribute('x', String(patternX));
-      dotPatternRef.current.setAttribute('y', String(patternY));
+      const originX = x - (step / 2) * scale;
+      const originY = y - (step / 2) * scale;
+      dotPatternRef.current.setAttribute(
+        'patternTransform',
+        `translate(${originX}, ${originY}) scale(${scale})`
+      );
+      if (dotCircleRef.current) {
+        const dotRadius = Math.max(0.6, Math.min(1.8, 1 / scale));
+        dotCircleRef.current.setAttribute('r', String(dotRadius));
+      }
+      if (dotGridRectRef.current) {
+        const opacity = Math.min(1, Math.max(0, (scale - 0.18) / 0.22));
+        dotGridRectRef.current.style.opacity = String(opacity);
+      }
     }
   }, []);
 
@@ -2699,7 +2709,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, []);
 
   const step = gridSize || 20;
-  const cellSize = step * zoom;
+  gridSizeRef.current = step;
 
   return (
     <div
@@ -2798,21 +2808,27 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             <pattern
               ref={dotPatternRef}
               id="flint-canvas-dots"
-              width={cellSize}
-              height={cellSize}
+              width={step}
+              height={step}
               patternUnits="userSpaceOnUse"
-              x={(((pan.x - cellSize / 2) % cellSize) + cellSize) % cellSize}
-              y={(((pan.y - cellSize / 2) % cellSize) + cellSize) % cellSize}
+              patternTransform={`translate(${pan.x - (step / 2) * zoom}, ${pan.y - (step / 2) * zoom}) scale(${zoom})`}
             >
               <circle
-                cx={cellSize / 2}
-                cy={cellSize / 2}
-                r={Math.max(0.75, Math.min(1.5, 1 * zoom))}
+                ref={dotCircleRef}
+                cx={step / 2}
+                cy={step / 2}
+                r={Math.max(0.6, Math.min(1.8, 1 / zoom))}
                 fill="rgba(255, 255, 255, 0.10)"
               />
             </pattern>
           </defs>
-          <rect width="100%" height="100%" fill="url(#flint-canvas-dots)" />
+          <rect
+            ref={dotGridRectRef}
+            width="100%"
+            height="100%"
+            fill="url(#flint-canvas-dots)"
+            style={{ opacity: Math.min(1, Math.max(0, (zoom - 0.18) / 0.22)) }}
+          />
         </svg>
 
         {/* Infinite Canvas Content Plane */}
