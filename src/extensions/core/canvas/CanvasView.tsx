@@ -38,6 +38,7 @@ import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'fl
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
 import { CardActionPill, computePillScale } from './components/CardActionPill';
+import { MultiSelectActionPill } from './components/MultiSelectActionPill';
 import { EdgeActionPill } from './components/EdgeActionPill';
 import { EdgeLabel } from './components/EdgeLabel';
 import { isImageDocument } from './components/CardContentRenderer';
@@ -47,6 +48,29 @@ import { CanvasItemSearchModal } from './components/CanvasItemSearchModal';
 import { calculateObjectSnap, AlignmentGuide } from './utils/canvasSnapping';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
+
+let measureTitleCtx: CanvasRenderingContext2D | null = null;
+let resolvedFontFamily: string | null = null;
+
+function getTitleTextWidth(text: string): number {
+  if (!text) return 0;
+  if (typeof document !== 'undefined') {
+    if (!measureTitleCtx) {
+      const c = document.createElement('canvas');
+      measureTitleCtx = c.getContext('2d');
+    }
+    if (!resolvedFontFamily) {
+      const root = document.documentElement;
+      const comp = window.getComputedStyle(root).getPropertyValue('--font-interface').trim();
+      resolvedFontFamily = comp || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif';
+    }
+    if (measureTitleCtx) {
+      measureTitleCtx.font = `500 14px ${resolvedFontFamily}`;
+      return measureTitleCtx.measureText(text).width;
+    }
+  }
+  return text.length * 8.5;
+}
 
 export interface CanvasViewProps {
   boardId?: string;
@@ -80,6 +104,28 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const [nodes, setNodes] = useState<CanvasNode[]>([]);
   const [edges, setEdges] = useState<CanvasEdge[]>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const selectedNodeIdsRef = useRef<string[]>([]);
+  useEffect(() => { selectedNodeIdsRef.current = selectedNodeIds; }, [selectedNodeIds]);
+
+  const [marqueeBox, setMarqueeBox] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+  const [isMarqueeActiveState, setIsMarqueeActiveState] = useState(false);
+  const marqueeStartRef = useRef<{ clientX: number; clientY: number; canvasX: number; canvasY: number } | null>(null);
+  const isMarqueeActiveRef = useRef(false);
+  const multiDragInitialPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+
+  const selectSingleNode = useCallback((id: string | null) => {
+    if (id) {
+      setSelectedNodeIds([id]);
+      selectedNodeIdsRef.current = [id];
+      setSelectedNodeId(id);
+    } else {
+      setSelectedNodeIds([]);
+      selectedNodeIdsRef.current = [];
+      setSelectedNodeId(null);
+    }
+  }, []);
+
   const [autoEditingNodeId, setAutoEditingNodeId] = useState<string | null>(null);
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [editingEdgeLabelId, setEditingEdgeLabelId] = useState<string | null>(null);
@@ -127,6 +173,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
+  useEffect(() => { edgesRef.current = edges; }, [edges]);
   useEffect(() => { draftEdgeRef.current = draftEdge; }, [draftEdge]);
   useEffect(() => {
     if (draftEdge) {
@@ -245,6 +292,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     setNodes(previousState.nodes);
     setEdges(previousState.edges);
+    nodesRef.current = previousState.nodes;
+    edgesRef.current = previousState.edges;
     updateUndoRedoState();
     showToast('Undo', 'info');
   }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState, showToast]);
@@ -284,6 +333,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     setNodes(nextState.nodes);
     setEdges(nextState.edges);
+    nodesRef.current = nextState.nodes;
+    edgesRef.current = nextState.edges;
     updateUndoRedoState();
     showToast('Redo', 'info');
   }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState, showToast]);
@@ -336,6 +387,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const [isPanningState, setIsPanningState] = useState(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
+  const panCanvasAnchorRef = useRef<{ x: number; y: number } | null>(null);
+  const lastMouseMoveEventRef = useRef<{ clientX: number; clientY: number } | null>(null);
 
   // Pan modifier mode state and refs (Space or Ctrl/Cmd)
   const [isPanModifierState, setIsPanModifierState] = useState(false);
@@ -474,14 +527,41 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const target = targetTransformRef.current;
       const current = currentTransformRef.current;
 
-      // Snappy, responsive zoom easing (settles in 2-3 frames while retaining subtle visual fluidity)
-      const ease = isPanningRef.current || draggingNodeIdRef.current ? 1.0 : 0.38;
+      // Smooth kinematic zoom easing (retains fluid motion even while holding mouse/panning)
+      const ease = 0.38;
 
-      const dx = target.x - current.x;
-      const dy = target.y - current.y;
       const ds = target.scale - current.scale;
 
-      const settled = Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05 && Math.abs(ds) < 0.0005;
+      // If user is currently holding the pointer down to pan, keep the grabbed canvas anchor
+      // perfectly aligned with the pointer during zoom easing, preventing any pan/zoom fighting.
+      if (
+        isPanningRef.current &&
+        panCanvasAnchorRef.current &&
+        lastMouseMoveEventRef.current &&
+        containerRef.current
+      ) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const mouseX = lastMouseMoveEventRef.current.clientX - rect.left;
+        const mouseY = lastMouseMoveEventRef.current.clientY - rect.top;
+        const anchor = panCanvasAnchorRef.current;
+
+        current.scale += ds * ease;
+        current.x = mouseX - anchor.x * current.scale;
+        current.y = mouseY - anchor.y * current.scale;
+        target.x = mouseX - anchor.x * target.scale;
+        target.y = mouseY - anchor.y * target.scale;
+      } else {
+        const dx = target.x - current.x;
+        const dy = target.y - current.y;
+        current.x += dx * ease;
+        current.y += dy * ease;
+        current.scale += ds * ease;
+      }
+
+      const settled =
+        Math.abs(target.x - current.x) < 0.05 &&
+        Math.abs(target.y - current.y) < 0.05 &&
+        Math.abs(target.scale - current.scale) < 0.0005;
 
       if (settled) {
         // Snap to exact target and stop the loop
@@ -497,9 +577,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
 
-      current.x += dx * ease;
-      current.y += dy * ease;
-      current.scale += ds * ease;
       panRef.current = { x: current.x, y: current.y };
       zoomRef.current = current.scale;
 
@@ -512,6 +589,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     cameraRafRef.current = requestAnimationFrame(tick);
   }, [syncDomTransform]);
+
+  const autoScrollRafRef = useRef<number | null>(null);
+
+  const stopEdgeAutoScroll = useCallback(() => {
+    if (autoScrollRafRef.current !== null) {
+      cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
+    }
+  }, []);
 
   // Clean up RAF on unmount
   useEffect(() => {
@@ -528,6 +614,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         cancelAnimationFrame(mouseMoveRafRef.current);
         mouseMoveRafRef.current = null;
       }
+      if (autoScrollRafRef.current !== null) {
+        cancelAnimationFrame(autoScrollRafRef.current);
+        autoScrollRafRef.current = null;
+      }
     };
   }, []);
 
@@ -540,6 +630,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Cancel any canvas drag immediately if lightbox opens
   useEffect(() => {
     if (isLightboxOpen) {
+      stopEdgeAutoScroll();
       dragCandidateNodeIdRef.current = null;
       draggingNodeIdRef.current = null;
       dragDidMoveRef.current = false;
@@ -547,11 +638,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setActiveGuides([]);
       setDragGhost(null);
     }
-  }, [isLightboxOpen]);
+  }, [isLightboxOpen, stopEdgeAutoScroll]);
 
   // Throttled mouse move via requestAnimationFrame
   const mouseMoveRafRef = useRef<number | null>(null);
-  const lastMouseMoveEventRef = useRef<{ clientX: number; clientY: number } | null>(null);
 
   // Load Canvas Nodes from SQLite on mount or when effectiveBoardId changes
   useEffect(() => {
@@ -634,6 +724,44 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       flushCanvasSaves();
     };
   }, [effectiveBoardId, flushCanvasSaves]);
+
+  // Prune canvas nodes and connected edges in real time if notes are deleted from sidebar or trash
+  useEffect(() => {
+    if (!app?.events) return;
+    const sub = app.events.on('document:deleted', ({ id }) => {
+      if (!id) return;
+      const toRemove = nodesRef.current.filter(
+        (n) => n.id === id || (n.type === 'note' && n.document_id === id)
+      );
+      if (toRemove.length === 0) return;
+      const removeIds = new Set(toRemove.map((n) => n.id));
+      const remainingNodes = nodesRef.current.filter((n) => !removeIds.has(n.id));
+      const remainingEdges = edgesRef.current.filter(
+        (e) => !removeIds.has(e.from_node_id) && !removeIds.has(e.to_node_id)
+      );
+      nodesRef.current = remainingNodes;
+      edgesRef.current = remainingEdges;
+      setNodes(remainingNodes);
+      setEdges(remainingEdges);
+      setSelectedNodeIds((prev) => {
+        const next = prev.filter((nid) => !removeIds.has(nid));
+        selectedNodeIdsRef.current = next;
+        return next;
+      });
+      setSelectedNodeId((prev) => (prev && removeIds.has(prev) ? null : prev));
+      if (selectedEdgeIdRef.current) {
+        const edgeStillExists = remainingEdges.some((e) => e.id === selectedEdgeIdRef.current);
+        if (!edgeStillExists) {
+          selectedEdgeIdRef.current = null;
+          setSelectedEdgeId(null);
+        }
+      }
+      triggerDiskSyncRef.current(effectiveBoardId);
+    });
+    return () => {
+      sub.dispose();
+    };
+  }, [app?.events, effectiveBoardId]);
 
   const handleAddTextCard = useCallback(async () => {
     if (canvasReadOnlyRef.current) {
@@ -729,11 +857,180 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     recordSnapshot();
     await deleteCanvasNode(id);
     triggerDiskSync(effectiveBoardId);
-    setNodes((prev) => prev.filter((n) => n.id !== id));
-    setEdges((prev) => prev.filter((edge) => edge.from_node_id !== id && edge.to_node_id !== id));
-    if (selectedNodeId === id) setSelectedNodeId(null);
+    setNodes((prev) => {
+      const next = prev.filter((n) => n.id !== id);
+      nodesRef.current = next;
+      return next;
+    });
+    setEdges((prev) => {
+      const next = prev.filter((edge) => edge.from_node_id !== id && edge.to_node_id !== id);
+      edgesRef.current = next;
+      return next;
+    });
+    setSelectedNodeIds((prev) => prev.filter((i) => i !== id));
+    setSelectedNodeId((prev) => (prev === id ? null : prev));
     showToast('Removed card', 'info');
+  }, [effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
+
+  const handleDeleteSelectedNodes = useCallback(async () => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
+    const idsToDelete = selectedNodeIdsRef.current.length > 0
+      ? [...selectedNodeIdsRef.current]
+      : selectedNodeId ? [selectedNodeId] : [];
+
+    if (idsToDelete.length === 0) return;
+
+    recordSnapshot();
+    const idSet = new Set(idsToDelete);
+
+    for (const id of idsToDelete) {
+      await deleteCanvasNode(id);
+    }
+    triggerDiskSync(effectiveBoardId);
+
+    setNodes((prev) => {
+      const next = prev.filter((n) => !idSet.has(n.id));
+      nodesRef.current = next;
+      return next;
+    });
+    setEdges((prev) => {
+      const next = prev.filter((edge) => !idSet.has(edge.from_node_id) && !idSet.has(edge.to_node_id));
+      edgesRef.current = next;
+      return next;
+    });
+    setSelectedNodeIds([]);
+    selectedNodeIdsRef.current = [];
+    setSelectedNodeId(null);
+    setSelectedEdgeId(null);
+    showToast(idsToDelete.length > 1 ? `Removed ${idsToDelete.length} cards` : 'Removed card', 'info');
   }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync, recordSnapshot]);
+
+  const handleBatchColorChange = useCallback(
+    (color: string) => {
+      if (canvasReadOnlyRef.current) return;
+      const targetIds = new Set(selectedNodeIdsRef.current);
+      if (targetIds.size === 0 && selectedNodeId) {
+        targetIds.add(selectedNodeId);
+      }
+      if (targetIds.size === 0) return;
+
+      recordSnapshot();
+      setNodes((prev) => {
+        const updated = prev.map((n) => (targetIds.has(n.id) ? { ...n, color } : n));
+        for (const n of updated) {
+          if (targetIds.has(n.id)) {
+            saveCanvasNode(n);
+          }
+        }
+        triggerDiskSync(effectiveBoardId);
+        return updated;
+      });
+    },
+    [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]
+  );
+
+  const handleDuplicateSelectedNodes = useCallback(async () => {
+    if (canvasReadOnlyRef.current) return;
+    const targetIds = selectedNodeIdsRef.current.length > 0
+      ? selectedNodeIdsRef.current
+      : selectedNodeId ? [selectedNodeId] : [];
+
+    if (targetIds.length === 0) return;
+
+    recordSnapshot();
+    const step = gridSizeRef.current || 20;
+    const offset = step;
+    const targetSet = new Set(targetIds);
+    const toClone = nodesRef.current.filter((n) => targetSet.has(n.id));
+
+    const newNodes: CanvasNode[] = [];
+    const newIds: string[] = [];
+    const oldToNewIdMap = new Map<string, string>();
+
+    for (let i = 0; i < toClone.length; i++) {
+      const src = toClone[i];
+      const newId = `node-${Date.now()}-${i}`;
+      oldToNewIdMap.set(src.id, newId);
+      const clone: CanvasNode = {
+        ...src,
+        id: newId,
+        x: src.x + offset,
+        y: src.y + offset,
+      };
+      newNodes.push(clone);
+      newIds.push(newId);
+      await saveCanvasNode(clone);
+    }
+
+    // Clone internal edges connecting duplicated cards
+    const newEdges: CanvasEdge[] = [];
+    for (const edge of edgesRef.current) {
+      if (oldToNewIdMap.has(edge.from_node_id) && oldToNewIdMap.has(edge.to_node_id)) {
+        const clonedEdge: CanvasEdge = {
+          ...edge,
+          id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+          board_id: effectiveBoardId,
+          from_node_id: oldToNewIdMap.get(edge.from_node_id)!,
+          to_node_id: oldToNewIdMap.get(edge.to_node_id)!,
+        };
+        newEdges.push(clonedEdge);
+        await saveCanvasEdge(clonedEdge);
+      }
+    }
+
+    triggerDiskSync(effectiveBoardId);
+    setNodes((prev) => {
+      const next = [...prev, ...newNodes];
+      nodesRef.current = next;
+      return next;
+    });
+    if (newEdges.length > 0) {
+      setEdges((prev) => {
+        const next = [...prev, ...newEdges];
+        edgesRef.current = next;
+        return next;
+      });
+    }
+    setSelectedNodeIds(newIds);
+    selectedNodeIdsRef.current = newIds;
+    setSelectedNodeId(newIds[newIds.length - 1] || null);
+    showToast(newNodes.length > 1 ? `Duplicated ${newNodes.length} cards` : 'Duplicated card', 'info');
+  }, [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]);
+
+  const handleNudgeSelectedNodes = useCallback(
+    (dx: number, dy: number) => {
+      if (canvasReadOnlyRef.current) return;
+      const targetIds = selectedNodeIdsRef.current.length > 0
+        ? new Set(selectedNodeIdsRef.current)
+        : selectedNodeId ? new Set([selectedNodeId]) : null;
+
+      if (!targetIds || targetIds.size === 0) return;
+
+      recordSnapshot();
+      setNodes((prev) => {
+        const updated = prev.map((n) => {
+          if (!targetIds.has(n.id)) return n;
+          return {
+            ...n,
+            x: n.x + dx,
+            y: n.y + dy,
+          };
+        });
+        nodesRef.current = updated;
+        for (const n of updated) {
+          if (targetIds.has(n.id)) {
+            saveCanvasNode(n);
+          }
+        }
+        triggerDiskSync(effectiveBoardId);
+        return updated;
+      });
+    },
+    [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]
+  );
 
   const handleOpenDoc = useCallback(
     (docId?: string) => {
@@ -771,14 +1068,32 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (canvasReadOnlyRef.current) return;
       if (fromNodeId === toNodeId) return;
 
-      const existing = edgesRef.current.some(
-        (e) =>
-          e.from_node_id === fromNodeId &&
-          e.to_node_id === toNodeId &&
-          (e.from_side || 'right') === fromSide &&
-          (e.to_side || 'left') === toSide
+      const existingEdge = edgesRef.current.find(
+        (e) => e.from_node_id === fromNodeId && e.to_node_id === toNodeId
       );
-      if (existing) return;
+
+      if (existingEdge) {
+        if (
+          (existingEdge.from_side || 'right') === fromSide &&
+          (existingEdge.to_side || 'left') === toSide
+        ) {
+          return;
+        }
+
+        recordSnapshot();
+        const updatedEdge: CanvasEdge = {
+          ...existingEdge,
+          from_side: fromSide,
+          to_side: toSide,
+        };
+
+        await saveCanvasEdge(updatedEdge);
+        setEdges((prev) => prev.map((e) => (e.id === existingEdge.id ? updatedEdge : e)));
+        edgesRef.current = edgesRef.current.map((e) => (e.id === existingEdge.id ? updatedEdge : e));
+        triggerDiskSync(effectiveBoardId);
+        showToast('Updated connection side', 'info');
+        return;
+      }
 
       recordSnapshot();
 
@@ -793,6 +1108,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       await saveCanvasEdge(newEdge);
       setEdges((prev) => [...prev, newEdge]);
+      edgesRef.current = [...edgesRef.current, newEdge];
       triggerDiskSync(effectiveBoardId);
       showToast('Connected cards', 'info');
     },
@@ -805,6 +1121,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       recordSnapshot();
       await deleteCanvasEdge(edgeId);
       setEdges((prev) => prev.filter((e) => e.id !== edgeId));
+      edgesRef.current = edgesRef.current.filter((e) => e.id !== edgeId);
       if (selectedEdgeIdRef.current === edgeId) {
         setSelectedEdgeId(null);
       }
@@ -846,6 +1163,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       await saveCanvasEdge(updatedEdge);
       setEdges((prev) => prev.map((e) => (e.id === edgeId ? updatedEdge : e)));
+      edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
       triggerDiskSync(effectiveBoardId);
     },
     [effectiveBoardId, recordSnapshot, triggerDiskSync]
@@ -897,7 +1215,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       if (currentEdge.from_node_id === newToNodeId) return;
 
-      if (currentEdge.to_node_id === newToNodeId && currentEdge.to_side === newToSide) {
+      if (currentEdge.to_node_id === newToNodeId && (currentEdge.to_side || 'left') === newToSide) {
         return;
       }
 
@@ -907,7 +1225,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           e.id !== edgeId &&
           e.from_node_id === currentEdge.from_node_id &&
           e.to_node_id === newToNodeId &&
-          (e.from_side || 'right') === currentEdge.from_side &&
+          (e.from_side || 'right') === (currentEdge.from_side || 'right') &&
           (e.to_side || 'left') === newToSide
       );
 
@@ -916,6 +1234,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (duplicate) {
         await deleteCanvasEdge(edgeId);
         setEdges((prev) => prev.filter((e) => e.id !== edgeId));
+        edgesRef.current = edgesRef.current.filter((e) => e.id !== edgeId);
       } else {
         const updatedEdge: CanvasEdge = {
           ...currentEdge,
@@ -924,6 +1243,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         };
         await saveCanvasEdge(updatedEdge);
         setEdges((prev) => prev.map((e) => (e.id === edgeId ? updatedEdge : e)));
+        edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
       }
 
       triggerDiskSync(effectiveBoardId);
@@ -957,6 +1277,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     commitActiveEdgeLabel();
     setSelectedEdgeId(edgeId);
     setSelectedNodeId(null);
+    setSelectedNodeIds([]);
+    selectedNodeIdsRef.current = [];
   }, [clearTextSelection, commitActiveEdgeLabel]);
 
   const handleEdgePointerDown = useCallback(
@@ -984,6 +1306,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       handleSelectEdge(edge.id, e);
 
       const handlePointerMove = (moveEv: PointerEvent) => {
+        if (!isArrowhead) return;
         const dx = moveEv.clientX - startClient.x;
         const dy = moveEv.clientY - startClient.y;
         if (!movedBeyondThreshold && Math.sqrt(dx * dx + dy * dy) > 4) {
@@ -1002,7 +1325,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           nodesRef.current,
           { x: curCanvasX, y: curCanvasY },
           edge.from_node_id,
-          36 / zoomRef.current
+          Math.max(44 / zoomRef.current, 36)
         );
 
         const currentDraft: DraftEdgeState = {
@@ -1020,16 +1343,28 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       };
 
       const handlePointerUp = () => {
+        stopEdgeAutoScroll();
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
 
         if (movedBeyondThreshold) {
           const currentDraft = draftEdgeRef.current;
-          if (currentDraft?.snappedTarget) {
+          const target =
+            currentDraft?.snappedTarget ||
+            (currentDraft
+              ? findTargetSideSnap(
+                  nodesRef.current,
+                  { x: currentDraft.currentCanvasX, y: currentDraft.currentCanvasY },
+                  edge.from_node_id,
+                  Math.max(44 / zoomRef.current, 36)
+                )
+              : null);
+
+          if (target) {
             retargetEdge(
               edge.id,
-              currentDraft.snappedTarget.nodeId,
-              currentDraft.snappedTarget.side
+              target.nodeId,
+              target.side
             );
           }
           setDraftEdge(null);
@@ -1045,7 +1380,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             nodesRef.current,
             { x: curCanvasX, y: curCanvasY },
             edge.from_node_id,
-            36 / zoomRef.current
+            Math.max(44 / zoomRef.current, 36)
           );
 
           const clickDraft: DraftEdgeState = {
@@ -1130,7 +1465,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           nodesRef.current,
           { x: curCanvasX, y: curCanvasY },
           nodeId,
-          36 / zoomRef.current
+          Math.max(44 / zoomRef.current, 36)
         );
 
         setDraftEdge((prev) => {
@@ -1146,18 +1481,30 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       };
 
       const handlePointerUp = () => {
+        stopEdgeAutoScroll();
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
 
         if (movedBeyondThreshold) {
           // DRAG mode: release to connect if snapped
           const currentDraft = draftEdgeRef.current;
-          if (currentDraft?.snappedTarget) {
+          const target =
+            currentDraft?.snappedTarget ||
+            (currentDraft
+              ? findTargetSideSnap(
+                  nodesRef.current,
+                  { x: currentDraft.currentCanvasX, y: currentDraft.currentCanvasY },
+                  nodeId,
+                  Math.max(44 / zoomRef.current, 36)
+                )
+              : null);
+
+          if (target) {
             createEdge(
-              currentDraft.fromNodeId,
-              currentDraft.fromSide,
-              currentDraft.snappedTarget.nodeId,
-              currentDraft.snappedTarget.side
+              currentDraft!.fromNodeId,
+              currentDraft!.fromSide,
+              target.nodeId,
+              target.side
             );
           }
           setDraftEdge(null);
@@ -1174,31 +1521,38 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [createEdge, retargetEdge]
   );
 
-  const handleCanvasPointerMove = useCallback((e: React.PointerEvent) => {
-    if (!draftEdgeRef.current || draftEdgeRef.current.mode !== 'click') return;
+  const performDraftEdgeUpdate = useCallback((clientX: number, clientY: number) => {
+    if (!draftEdgeRef.current) return;
     const container = containerRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
-    const curCanvasX = (e.clientX - rect.left - panRef.current.x) / zoomRef.current;
-    const curCanvasY = (e.clientY - rect.top - panRef.current.y) / zoomRef.current;
+    const curCanvasX = (clientX - rect.left - panRef.current.x) / zoomRef.current;
+    const curCanvasY = (clientY - rect.top - panRef.current.y) / zoomRef.current;
 
     const snap = findTargetSideSnap(
       nodesRef.current,
       { x: curCanvasX, y: curCanvasY },
       draftEdgeRef.current.fromNodeId,
-      36 / zoomRef.current
+      Math.max(44 / zoomRef.current, 36)
     );
 
     setDraftEdge((prev) => {
       if (!prev) return null;
-      return {
+      const updated: DraftEdgeState = {
         ...prev,
         currentCanvasX: snap ? snap.point.x : curCanvasX,
         currentCanvasY: snap ? snap.point.y : curCanvasY,
         snappedTarget: snap,
       };
+      draftEdgeRef.current = updated;
+      return updated;
     });
   }, []);
+
+  const handleCanvasPointerMove = useCallback((e: React.PointerEvent) => {
+    if (!draftEdgeRef.current || draftEdgeRef.current.mode !== 'click') return;
+    performDraftEdgeUpdate(e.clientX, e.clientY);
+  }, [performDraftEdgeUpdate]);
 
   // Keyboard shortcuts: Delete/Backspace to remove card/edge, Ctrl+Z / Ctrl+Y for Undo/Redo
   useEffect(() => {
@@ -1232,7 +1586,91 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
 
+      // Ctrl+A / Cmd+A: Select all cards on active canvas
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const allIds = nodesRef.current.map((n) => n.id);
+        setSelectedNodeIds(allIds);
+        selectedNodeIdsRef.current = allIds;
+        setSelectedNodeId(allIds[allIds.length - 1] || null);
+        return;
+      }
+
+      // Ctrl+D / Cmd+D: Duplicate selected card(s)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleDuplicateSelectedNodes();
+        return;
+      }
+
+      // Escape: Cancel active marquee, card drag, resize, draft edge, or clear selection
       if (e.key === 'Escape') {
+        if (isMarqueeActiveRef.current || marqueeStartRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          isMarqueeActiveRef.current = false;
+          marqueeStartRef.current = null;
+          setMarqueeBox(null);
+          setIsMarqueeActiveState(false);
+          return;
+        }
+        if (draggingNodeIdRef.current || dragCandidateNodeIdRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          stopEdgeAutoScroll();
+          if (dragDidMoveRef.current && multiDragInitialPositionsRef.current.size > 0) {
+            const initPosMap = multiDragInitialPositionsRef.current;
+            setNodes((prev) => {
+              const updated = prev.map((n) => {
+                const init = initPosMap.get(n.id);
+                return init ? { ...n, x: init.x, y: init.y } : n;
+              });
+              nodesRef.current = updated;
+              for (const n of updated) {
+                if (initPosMap.has(n.id)) {
+                  saveCanvasNode(n);
+                }
+              }
+              return updated;
+            });
+            triggerDiskSyncRef.current(effectiveBoardId);
+          }
+          dragCandidateNodeIdRef.current = null;
+          draggingNodeIdRef.current = null;
+          dragDidMoveRef.current = false;
+          setIsDraggingNodeState(false);
+          setActiveGuides([]);
+          setDragGhost(null);
+          return;
+        }
+        if (resizingNodeIdRef.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          stopEdgeAutoScroll();
+          if (resizeStartDimsRef.current) {
+            const dims = resizeStartDimsRef.current;
+            const resizeId = resizingNodeIdRef.current;
+            setNodes((prev) => {
+              const updated = prev.map((n) =>
+                n.id === resizeId
+                  ? { ...n, x: dims.x, y: dims.y, width: dims.width, height: dims.height }
+                  : n
+              );
+              nodesRef.current = updated;
+              const restored = updated.find((n) => n.id === resizeId);
+              if (restored) saveCanvasNode(restored);
+              return updated;
+            });
+            triggerDiskSyncRef.current(effectiveBoardId);
+          }
+          resizingNodeIdRef.current = null;
+          resizeHandleRef.current = null;
+          resizeDidMoveRef.current = false;
+          setActiveGuides([]);
+          return;
+        }
         if (draftEdgeRef.current) {
           e.preventDefault();
           e.stopPropagation();
@@ -1246,13 +1684,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           setSelectedEdgeId(null);
           return;
         }
-        if (selectedNodeId) {
+        if (selectedNodeIdsRef.current.length > 0 || selectedNodeId) {
+          e.preventDefault();
+          e.stopPropagation();
           clearTextSelection();
+          setSelectedNodeIds([]);
+          selectedNodeIdsRef.current = [];
           setSelectedNodeId(null);
           return;
         }
       }
 
+      // Delete / Backspace: Delete selected card(s) or edge
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (canvasReadOnlyRef.current) return;
         if (selectedEdgeIdRef.current) {
@@ -1261,20 +1704,48 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           handleDeleteEdgeRef.current(selectedEdgeIdRef.current);
           return;
         }
-        if (selectedNodeId) {
+        if (selectedNodeIdsRef.current.length > 0 || selectedNodeId) {
           e.preventDefault();
           e.stopPropagation();
-          handleDeleteNode(selectedNodeId);
+          handleDeleteSelectedNodes();
           return;
         }
       }
+
+      // Arrow keys: Nudge selected card(s)
+      if (
+        (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') &&
+        (selectedNodeIdsRef.current.length > 0 || selectedNodeId)
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        const step = gridSizeRef.current || 20;
+        const multiplier = e.shiftKey ? 4 : 1;
+        const delta = step * multiplier;
+        let dx = 0;
+        let dy = 0;
+        if (e.key === 'ArrowUp') dy = -delta;
+        if (e.key === 'ArrowDown') dy = delta;
+        if (e.key === 'ArrowLeft') dx = -delta;
+        if (e.key === 'ArrowRight') dx = delta;
+        handleNudgeSelectedNodes(dx, dy);
+        return;
+      }
     };
 
-    window.addEventListener('keydown', handleCanvasKeyDown);
+    window.addEventListener('keydown', handleCanvasKeyDown, { capture: true });
     return () => {
-      window.removeEventListener('keydown', handleCanvasKeyDown);
+      window.removeEventListener('keydown', handleCanvasKeyDown, { capture: true });
     };
-  }, [selectedNodeId, handleDeleteNode, handleUndo, handleRedo]);
+  }, [
+    handleDeleteSelectedNodes,
+    handleDuplicateSelectedNodes,
+    handleNudgeSelectedNodes,
+    handleUndo,
+    handleRedo,
+    clearTextSelection,
+    selectedNodeId,
+  ]);
 
   const handleTextChange = useCallback((id: string, newText: string) => {
     setNodes((prev) => {
@@ -1423,31 +1894,52 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       e.preventDefault();
       clearTextSelection();
       commitActiveEdgeLabel();
-      if (cameraRafRef.current !== null) {
-        cancelAnimationFrame(cameraRafRef.current);
-        cameraRafRef.current = null;
-      }
       isPanningRef.current = true;
       setIsPanningState(true);
+      const container = containerRef.current;
+      const rect = container?.getBoundingClientRect();
+      const mouseX = rect ? e.clientX - rect.left : e.clientX;
+      const mouseY = rect ? e.clientY - rect.top : e.clientY;
       const ct = currentTransformRef.current;
-      targetTransformRef.current.x = ct.x;
-      targetTransformRef.current.y = ct.y;
-      targetTransformRef.current.scale = ct.scale;
+      panCanvasAnchorRef.current = {
+        x: (mouseX - ct.x) / ct.scale,
+        y: (mouseY - ct.y) / ct.scale,
+      };
       panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
-      setSelectedNodeId(null);
-      setSelectedEdgeId(null);
+      lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
       try {
         (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
       } catch {}
       return;
     }
 
-    // Normal left-click without space/ctrl: deselect any active card or edge and commit active edge label
+    // Normal left-click without space/ctrl: start marquee selection or deselect
     if (e.button === 0) {
       clearTextSelection();
       commitActiveEdgeLabel();
-      setSelectedNodeId(null);
-      setSelectedEdgeId(null);
+      try {
+        containerRef.current?.focus();
+      } catch {}
+
+      const rect = containerRef.current?.getBoundingClientRect();
+      const ct = currentTransformRef.current;
+      const curCanvasX = (e.clientX - (rect?.left || 0) - ct.x) / ct.scale;
+      const curCanvasY = (e.clientY - (rect?.top || 0) - ct.y) / ct.scale;
+
+      marqueeStartRef.current = {
+        clientX: e.clientX,
+        clientY: e.clientY,
+        canvasX: curCanvasX,
+        canvasY: curCanvasY,
+      };
+      isMarqueeActiveRef.current = false;
+
+      if (!e.shiftKey) {
+        setSelectedNodeIds([]);
+        selectedNodeIdsRef.current = [];
+        setSelectedNodeId(null);
+        setSelectedEdgeId(null);
+      }
     }
   }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
 
@@ -1480,17 +1972,19 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     // If Space or Ctrl is held down OR middle-mouse click, pan the canvas instead of dragging the card
     if (isModifierPan) {
       e.preventDefault();
-      if (cameraRafRef.current !== null) {
-        cancelAnimationFrame(cameraRafRef.current);
-        cameraRafRef.current = null;
-      }
       isPanningRef.current = true;
       setIsPanningState(true);
+      const container = containerRef.current;
+      const rect = container?.getBoundingClientRect();
+      const mouseX = rect ? e.clientX - rect.left : e.clientX;
+      const mouseY = rect ? e.clientY - rect.top : e.clientY;
       const ct = currentTransformRef.current;
-      targetTransformRef.current.x = ct.x;
-      targetTransformRef.current.y = ct.y;
-      targetTransformRef.current.scale = ct.scale;
+      panCanvasAnchorRef.current = {
+        x: (mouseX - ct.x) / ct.scale,
+        y: (mouseY - ct.y) / ct.scale,
+      };
       panStartRef.current = { x: e.clientX - ct.x, y: e.clientY - ct.y };
+      lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
       try {
         (containerRef.current as HTMLElement)?.setPointerCapture?.(e.pointerId);
       } catch {}
@@ -1502,12 +1996,27 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     e.stopPropagation();
     commitActiveEdgeLabel();
+    try {
+      containerRef.current?.focus();
+    } catch {}
+
     const node = nodesRef.current.find((n) => n.id === id);
     if (!node) return;
-    if (selectedNodeId !== node.id) {
-      clearTextSelection();
+
+    if (e.shiftKey) {
+      setSelectedNodeIds((prev) => {
+        const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id];
+        selectedNodeIdsRef.current = next;
+        setSelectedNodeId(next[next.length - 1] || null);
+        return next;
+      });
+    } else {
+      if (!selectedNodeIdsRef.current.includes(id)) {
+        setSelectedNodeIds([node.id]);
+        selectedNodeIdsRef.current = [node.id];
+      }
+      setSelectedNodeId(node.id);
     }
-    setSelectedNodeId(node.id);
     setSelectedEdgeId(null);
 
     // Read-only mode allows selecting the card, but blocks dragging
@@ -1523,7 +2032,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       x: mouseCanvasX - node.x,
       y: mouseCanvasY - node.y,
     };
-  }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge, selectedNodeId]);
+
+    const currentSelected = selectedNodeIdsRef.current.includes(node.id)
+      ? selectedNodeIdsRef.current
+      : [node.id];
+
+    const posMap = new Map<string, { x: number; y: number }>();
+    for (const sid of currentSelected) {
+      const sn = nodesRef.current.find((n) => n.id === sid);
+      if (sn) {
+        posMap.set(sid, { x: sn.x, y: sn.y });
+      }
+    }
+    multiDragInitialPositionsRef.current = posMap;
+  }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
 
   const resizingNodeIdRef = useRef<string | null>(null);
   const resizeHandleRef = useRef<ResizeHandleType | null>(null);
@@ -1534,6 +2056,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     height: number;
     startX: number;
     startY: number;
+    startCanvasX?: number;
+    startCanvasY?: number;
     isImage?: boolean;
     aspectRatio?: number;
   }>({ x: 0, y: 0, width: 0, height: 0, startX: 0, startY: 0 });
@@ -1583,6 +2107,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         imageAspectMapRef.current[node.id] ||
         (node.width > 0 && node.height > 0 ? node.width / node.height : 1.33);
 
+      const curCanvasX = (e.clientX - panRef.current.x) / zoomRef.current;
+      const curCanvasY = (e.clientY - panRef.current.y) / zoomRef.current;
+
       resizeStartDimsRef.current = {
         x: node.x,
         y: node.y,
@@ -1590,6 +2117,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         height: node.height,
         startX: e.clientX,
         startY: e.clientY,
+        startCanvasX: curCanvasX,
+        startCanvasY: curCanvasY,
         isImage,
         aspectRatio: aspect,
       };
@@ -1600,9 +2129,359 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [documents]
   );
 
+  const performMarqueeDrag = useCallback((clientX: number, clientY: number) => {
+    const start = marqueeStartRef.current;
+    if (!start) return;
+    const dx = Math.abs(clientX - start.clientX);
+    const dy = Math.abs(clientY - start.clientY);
+    if (!isMarqueeActiveRef.current) {
+      if (dx > 4 || dy > 4) {
+        isMarqueeActiveRef.current = true;
+        setIsMarqueeActiveState(true);
+      }
+    }
+    if (isMarqueeActiveRef.current) {
+      const rect = containerRef.current?.getBoundingClientRect();
+      const ct = currentTransformRef.current;
+      const curCanvasX = (clientX - (rect?.left || 0) - ct.x) / ct.scale;
+      const curCanvasY = (clientY - (rect?.top || 0) - ct.y) / ct.scale;
+
+      const boxX = Math.min(start.canvasX, curCanvasX);
+      const boxY = Math.min(start.canvasY, curCanvasY);
+      const boxW = Math.abs(curCanvasX - start.canvasX);
+      const boxH = Math.abs(curCanvasY - start.canvasY);
+
+      setMarqueeBox({
+        startX: boxX,
+        startY: boxY,
+        currentX: boxX + boxW,
+        currentY: boxY + boxH,
+      });
+
+      const marqueeRight = boxX + boxW;
+      const marqueeBottom = boxY + boxH;
+
+      const intersectingIds: string[] = [];
+      for (const n of nodesRef.current) {
+        const nW = n.width || 260;
+        const nH = n.height || 180;
+        const doc = n.document_id ? docMap.get(n.document_id) : null;
+        const showOutsideTitle = Boolean(doc || n.document_id) && n.type !== 'text';
+        const nTop = showOutsideTitle ? n.y - 28 : n.y;
+        let nRight = n.x + nW;
+        if (showOutsideTitle) {
+          const titleText = doc?.title || 'Untitled';
+          const titleW = getTitleTextWidth(titleText);
+          if (n.x + titleW > nRight) {
+            nRight = n.x + titleW;
+          }
+        }
+        const nBottom = n.y + nH;
+
+        const intersects =
+          n.x <= marqueeRight &&
+          nRight >= boxX &&
+          nTop <= marqueeBottom &&
+          nBottom >= boxY;
+
+        if (intersects) {
+          intersectingIds.push(n.id);
+        }
+      }
+
+      setSelectedNodeIds(intersectingIds);
+      selectedNodeIdsRef.current = intersectingIds;
+      setSelectedNodeId(intersectingIds.length > 0 ? intersectingIds[intersectingIds.length - 1] : null);
+    }
+  }, [docMap]);
+
+  const performNodeResize = useCallback((clientX: number, clientY: number) => {
+    const resizeId = resizingNodeIdRef.current;
+    const handle = resizeHandleRef.current;
+    if (!resizeId || !handle) return;
+
+    if (!resizeDidMoveRef.current) {
+      resizeDidMoveRef.current = true;
+      recordSnapshot();
+    }
+    const start = resizeStartDimsRef.current;
+    const curCanvasX = (clientX - panRef.current.x) / zoomRef.current;
+    const curCanvasY = (clientY - panRef.current.y) / zoomRef.current;
+    const deltaX =
+      start.startCanvasX !== undefined
+        ? curCanvasX - start.startCanvasX
+        : (clientX - start.startX) / zoomRef.current;
+    const deltaY =
+      start.startCanvasY !== undefined
+        ? curCanvasY - start.startCanvasY
+        : (clientY - start.startY) / zoomRef.current;
+    const isImage = Boolean(start.isImage);
+    const aspect = start.aspectRatio || 1.33;
+    const step = canvasSnapGridRef.current ? (gridSizeRef.current || 20) : 1;
+    const minGridStep = gridSizeRef.current || 20;
+    const minCardW = 4 * minGridStep;
+    const minCardH = 4 * minGridStep;
+
+    setNodes((prev) => {
+      return prev.map((n) => {
+        if (n.id !== resizeId) return n;
+        let newX = start.x;
+        let newY = start.y;
+        let newW = start.width;
+        let newH = start.height;
+
+        if (isImage) {
+          if (handle === 'se') {
+            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
+            newW = Math.max(minCardW, start.width + dominant);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newW / aspect));
+          } else if (handle === 'sw') {
+            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
+            newW = Math.max(minCardW, start.width + dominant);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newW / aspect));
+            newX = start.x + (start.width - newW);
+          } else if (handle === 'ne') {
+            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
+            newW = Math.max(minCardW, start.width + dominant);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newW / aspect));
+            newY = start.y + (start.height - newH);
+          } else if (handle === 'nw') {
+            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
+            newW = Math.max(minCardW, start.width + dominant);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newW / aspect));
+            newX = start.x + (start.width - newW);
+            newY = start.y + (start.height - newH);
+          } else if (handle === 'e') {
+            newW = Math.max(minCardW, start.width + deltaX);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newW / aspect));
+          } else if (handle === 'w') {
+            newW = Math.max(minCardW, start.width - deltaX);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newX = start.x + (start.width - newW);
+          } else if (handle === 's') {
+            newH = Math.max(minCardH, start.height + deltaY);
+            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+            newW = Math.max(minCardW, Math.round(newH * aspect));
+          } else if (handle === 'n') {
+            newH = Math.max(minCardH, start.height - deltaY);
+            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+            newW = Math.max(minCardW, Math.round(newH * aspect));
+            newY = start.y + (start.height - newH);
+          }
+        } else {
+          if (handle === 'e' || handle === 'se' || handle === 'ne') {
+            newW = Math.max(minCardW, start.width + deltaX);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          } else if (handle === 'w' || handle === 'sw' || handle === 'nw') {
+            newW = Math.max(minCardW, start.width - deltaX);
+            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newX = start.x + (start.width - newW);
+          }
+
+          if (handle === 's' || handle === 'se' || handle === 'sw') {
+            newH = Math.max(minCardH, start.height + deltaY);
+            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          } else if (handle === 'n' || handle === 'ne' || handle === 'nw') {
+            newH = Math.max(minCardH, start.height - deltaY);
+            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+            newY = start.y + (start.height - newH);
+          }
+        }
+
+        return { ...n, x: newX, y: newY, width: newW, height: newH };
+      });
+    });
+  }, [recordSnapshot]);
+
+  const performNodeDrag = useCallback((clientX: number, clientY: number) => {
+    const dragId = draggingNodeIdRef.current || dragCandidateNodeIdRef.current;
+    if (!dragId) return;
+
+    if (!dragDidMoveRef.current) {
+      const dx = Math.abs(clientX - dragStartClientRef.current.x);
+      const dy = Math.abs(clientY - dragStartClientRef.current.y);
+      if (dx < 4 && dy < 4) return;
+      dragDidMoveRef.current = true;
+      draggingNodeIdRef.current = dragId;
+      setIsDraggingNodeState(true);
+      recordSnapshot();
+    }
+    const currentNodes = nodesRef.current;
+    const node = currentNodes.find((n) => n.id === dragId);
+    if (!node) return;
+
+    const rawX = (clientX - panRef.current.x) / zoomRef.current - dragOffsetRef.current.x;
+    const rawY = (clientY - panRef.current.y) / zoomRef.current - dragOffsetRef.current.y;
+
+    const step = gridSizeRef.current || 20;
+    const gridX = canvasSnapGridRef.current ? Math.round(rawX / step) * step : rawX;
+    const gridY = canvasSnapGridRef.current ? Math.round(rawY / step) * step : rawY;
+
+    let finalX = gridX;
+    let finalY = gridY;
+    let newGuides: AlignmentGuide[] = [];
+
+    if (canvasSnapObjectsRef.current) {
+      const threshold = 8 / Math.max(0.2, zoomRef.current);
+      const containerEl = containerRef.current;
+      const cWidth = containerEl?.clientWidth || window.innerWidth;
+      const cHeight = containerEl?.clientHeight || window.innerHeight;
+      const curPan = panRef.current;
+      const curZoom = zoomRef.current;
+
+      const viewport = {
+        left: -curPan.x / curZoom,
+        top: -curPan.y / curZoom,
+        right: (-curPan.x + cWidth) / curZoom,
+        bottom: (-curPan.y + cHeight) / curZoom,
+      };
+
+      const snapResult = calculateObjectSnap(
+        dragId,
+        rawX,
+        rawY,
+        gridX,
+        gridY,
+        node.width || 260,
+        node.height || 180,
+        currentNodes,
+        threshold,
+        viewport
+      );
+
+      finalX = snapResult.x;
+      finalY = snapResult.y;
+      newGuides = snapResult.guides;
+    }
+
+    const initialPosMap = multiDragInitialPositionsRef.current;
+    const isMultiDrag = initialPosMap.size > 1 && initialPosMap.has(dragId);
+
+    let nextNodes: CanvasNode[];
+    if (isMultiDrag) {
+      const primaryInitial = initialPosMap.get(dragId)!;
+      const deltaX = finalX - primaryInitial.x;
+      const deltaY = finalY - primaryInitial.y;
+
+      nextNodes = currentNodes.map((n) => {
+        const init = initialPosMap.get(n.id);
+        if (init) {
+          return { ...n, x: init.x + deltaX, y: init.y + deltaY };
+        }
+        return n;
+      });
+    } else {
+      nextNodes = currentNodes.map((n) => (n.id === dragId ? { ...n, x: finalX, y: finalY } : n));
+    }
+
+    nodesRef.current = nextNodes;
+    setActiveGuides(newGuides);
+    setNodes(nextNodes);
+  }, [recordSnapshot]);
+
+  const runEdgeAutoScroll = useCallback(() => {
+    const container = containerRef.current;
+    const pos = lastMouseMoveEventRef.current;
+    if (!container || !pos) {
+      autoScrollRafRef.current = null;
+      return;
+    }
+
+    const isDraggingCard = Boolean(draggingNodeIdRef.current || dragCandidateNodeIdRef.current);
+    const isDraggingMarquee = Boolean(isMarqueeActiveRef.current || marqueeStartRef.current);
+    const isDraftingEdge = Boolean(draftEdgeRef.current);
+    const isResizing = Boolean(resizingNodeIdRef.current);
+
+    if (!isDraggingCard && !isDraggingMarquee && !isDraftingEdge && !isResizing) {
+      autoScrollRafRef.current = null;
+      return;
+    }
+
+    const rect = container.getBoundingClientRect();
+    const MARGIN = 60;
+    const maxSpeed = 18;
+
+    let scrollDx = 0;
+    let scrollDy = 0;
+
+    // Right edge -> scroll right (camera moves right, pan.x decreases)
+    if (pos.clientX > rect.right - MARGIN) {
+      const depth = pos.clientX - (rect.right - MARGIN);
+      const ratio = Math.min(2.5, Math.max(0.1, depth / MARGIN));
+      scrollDx = -Math.min(maxSpeed, Math.round(ratio * ratio * 8 + ratio * 4));
+    }
+    // Left edge -> scroll left (camera moves left, pan.x increases)
+    else if (pos.clientX < rect.left + MARGIN) {
+      const depth = (rect.left + MARGIN) - pos.clientX;
+      const ratio = Math.min(2.5, Math.max(0.1, depth / MARGIN));
+      scrollDx = Math.min(maxSpeed, Math.round(ratio * ratio * 8 + ratio * 4));
+    }
+
+    // Bottom edge -> scroll down (camera moves down, pan.y decreases)
+    if (pos.clientY > rect.bottom - MARGIN) {
+      const depth = pos.clientY - (rect.bottom - MARGIN);
+      const ratio = Math.min(2.5, Math.max(0.1, depth / MARGIN));
+      scrollDy = -Math.min(maxSpeed, Math.round(ratio * ratio * 8 + ratio * 4));
+    }
+    // Top edge -> scroll up (camera moves up, pan.y increases)
+    else if (pos.clientY < rect.top + MARGIN) {
+      const depth = (rect.top + MARGIN) - pos.clientY;
+      const ratio = Math.min(2.5, Math.max(0.1, depth / MARGIN));
+      scrollDy = Math.min(maxSpeed, Math.round(ratio * ratio * 8 + ratio * 4));
+    }
+
+    if (scrollDx !== 0 || scrollDy !== 0) {
+      const ct = currentTransformRef.current;
+      const newX = ct.x + scrollDx;
+      const newY = ct.y + scrollDy;
+
+      targetTransformRef.current.x = newX;
+      targetTransformRef.current.y = newY;
+      currentTransformRef.current.x = newX;
+      currentTransformRef.current.y = newY;
+      panRef.current = { x: newX, y: newY };
+
+      syncDomTransform(newX, newY, ct.scale);
+
+      if (syncStateRafRef.current === null) {
+        syncStateRafRef.current = requestAnimationFrame(() => {
+          syncStateRafRef.current = null;
+          setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+        });
+      }
+
+      if (isDraggingCard) {
+        performNodeDrag(pos.clientX, pos.clientY);
+      } else if (isDraggingMarquee) {
+        performMarqueeDrag(pos.clientX, pos.clientY);
+      } else if (isDraftingEdge) {
+        performDraftEdgeUpdate(pos.clientX, pos.clientY);
+      } else if (isResizing) {
+        performNodeResize(pos.clientX, pos.clientY);
+      }
+
+      autoScrollRafRef.current = requestAnimationFrame(runEdgeAutoScroll);
+    } else {
+      autoScrollRafRef.current = null;
+    }
+  }, [
+    syncDomTransform,
+    performDraftEdgeUpdate,
+    performMarqueeDrag,
+    performNodeDrag,
+    performNodeResize,
+  ]);
+
   useEffect(() => {
     const handleGlobalPointerMove = (e: PointerEvent) => {
       if (isLightboxOpen) return;
+
+      lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
 
       if (isCtrlHeldRef.current && !e.ctrlKey && !e.metaKey) {
         isCtrlHeldRef.current = false;
@@ -1613,206 +2492,122 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
       }
 
-      if (!isPanningRef.current && !draggingNodeIdRef.current && !dragCandidateNodeIdRef.current && !resizingNodeIdRef.current) return;
-      lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
+      // Check if auto-scroll should be started
+      const isInteracting =
+        Boolean(draggingNodeIdRef.current || dragCandidateNodeIdRef.current) ||
+        Boolean(isMarqueeActiveRef.current || marqueeStartRef.current) ||
+        Boolean(draftEdgeRef.current) ||
+        Boolean(resizingNodeIdRef.current);
+
+      if (isInteracting && autoScrollRafRef.current === null) {
+        const container = containerRef.current;
+        if (container) {
+          const rect = container.getBoundingClientRect();
+          const MARGIN = 60;
+          const isNearEdge =
+            e.clientX < rect.left + MARGIN ||
+            e.clientX > rect.right - MARGIN ||
+            e.clientY < rect.top + MARGIN ||
+            e.clientY > rect.bottom - MARGIN;
+
+          if (isNearEdge) {
+            autoScrollRafRef.current = requestAnimationFrame(runEdgeAutoScroll);
+          }
+        }
+      }
+
+      if (!isPanningRef.current && !isInteracting) return;
+
       if (mouseMoveRafRef.current === null) {
         mouseMoveRafRef.current = requestAnimationFrame(() => {
           mouseMoveRafRef.current = null;
           const pos = lastMouseMoveEventRef.current;
           if (!pos) return;
 
-          if (isPanningRef.current) {
-            const newX = pos.clientX - panStartRef.current.x;
-            const newY = pos.clientY - panStartRef.current.y;
-            targetTransformRef.current.x = newX;
-            targetTransformRef.current.y = newY;
-            currentTransformRef.current.x = newX;
-            currentTransformRef.current.y = newY;
-            panRef.current = { x: newX, y: newY };
+          if (marqueeStartRef.current) {
+            performMarqueeDrag(pos.clientX, pos.clientY);
+          } else if (isPanningRef.current) {
+            const container = containerRef.current;
+            if (container && panCanvasAnchorRef.current) {
+              const rect = container.getBoundingClientRect();
+              const anchor = panCanvasAnchorRef.current;
+              const mouseX = pos.clientX - rect.left;
+              const mouseY = pos.clientY - rect.top;
 
-            syncDomTransform(newX, newY, currentTransformRef.current.scale);
+              const curScale = currentTransformRef.current.scale;
+              const tarScale = targetTransformRef.current.scale;
+              const newX = mouseX - anchor.x * curScale;
+              const newY = mouseY - anchor.y * curScale;
 
-            if (syncStateRafRef.current === null) {
-              syncStateRafRef.current = requestAnimationFrame(() => {
-                syncStateRafRef.current = null;
-                setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
-              });
+              currentTransformRef.current.x = newX;
+              currentTransformRef.current.y = newY;
+              targetTransformRef.current.x = mouseX - anchor.x * tarScale;
+              targetTransformRef.current.y = mouseY - anchor.y * tarScale;
+              panRef.current = { x: newX, y: newY };
+
+              syncDomTransform(newX, newY, curScale);
+
+              if (syncStateRafRef.current === null) {
+                syncStateRafRef.current = requestAnimationFrame(() => {
+                  syncStateRafRef.current = null;
+                  setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+                });
+              }
+            } else {
+              const newX = pos.clientX - panStartRef.current.x;
+              const newY = pos.clientY - panStartRef.current.y;
+              targetTransformRef.current.x = newX;
+              targetTransformRef.current.y = newY;
+              currentTransformRef.current.x = newX;
+              currentTransformRef.current.y = newY;
+              panRef.current = { x: newX, y: newY };
+
+              syncDomTransform(newX, newY, currentTransformRef.current.scale);
+
+              if (syncStateRafRef.current === null) {
+                syncStateRafRef.current = requestAnimationFrame(() => {
+                  syncStateRafRef.current = null;
+                  setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+                });
+              }
             }
           } else if (resizingNodeIdRef.current) {
-            if (!resizeDidMoveRef.current) {
-              resizeDidMoveRef.current = true;
-              recordSnapshot();
-            }
-            const resizeId = resizingNodeIdRef.current;
-            const handle = resizeHandleRef.current;
-            const start = resizeStartDimsRef.current;
-            const deltaX = (pos.clientX - start.startX) / zoomRef.current;
-            const deltaY = (pos.clientY - start.startY) / zoomRef.current;
-            const isImage = Boolean(start.isImage);
-            const aspect = start.aspectRatio || 1.33;
-            const step = canvasSnapGridRef.current ? (gridSizeRef.current || 20) : 1;
-            const minGridStep = gridSizeRef.current || 20;
-            const minCardW = 4 * minGridStep;
-            const minCardH = 4 * minGridStep;
-
-            setNodes((prev) => {
-              return prev.map((n) => {
-                if (n.id !== resizeId) return n;
-                let newX = start.x;
-                let newY = start.y;
-                let newW = start.width;
-                let newH = start.height;
-
-                if (isImage) {
-                  // For images: lock aspect ratio on any axis / diagonal resize so no letterbox spaces appear
-                  if (handle === 'se') {
-                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
-                    newW = Math.max(minCardW, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newH = Math.max(minCardH, Math.round(newW / aspect));
-                  } else if (handle === 'sw') {
-                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
-                    newW = Math.max(minCardW, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newH = Math.max(minCardH, Math.round(newW / aspect));
-                    newX = start.x + (start.width - newW);
-                  } else if (handle === 'ne') {
-                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
-                    newW = Math.max(minCardW, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newH = Math.max(minCardH, Math.round(newW / aspect));
-                    newY = start.y + (start.height - newH);
-                  } else if (handle === 'nw') {
-                    const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
-                    newW = Math.max(minCardW, start.width + dominant);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newH = Math.max(minCardH, Math.round(newW / aspect));
-                    newX = start.x + (start.width - newW);
-                    newY = start.y + (start.height - newH);
-                  } else if (handle === 'e') {
-                    newW = Math.max(minCardW, start.width + deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newH = Math.max(minCardH, Math.round(newW / aspect));
-                  } else if (handle === 'w') {
-                    newW = Math.max(minCardW, start.width - deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newH = Math.max(minCardH, Math.round(newW / aspect));
-                    newX = start.x + (start.width - newW);
-                  } else if (handle === 's') {
-                    newH = Math.max(minCardH, start.height + deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-                    newW = Math.max(minCardW, Math.round(newH * aspect));
-                  } else if (handle === 'n') {
-                    newH = Math.max(minCardH, start.height - deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-                    newW = Math.max(minCardW, Math.round(newH * aspect));
-                    newY = start.y + (start.height - newH);
-                  }
-                } else {
-                  // Standard 8-directional freeform resize for notes and text cards
-                  if (handle === 'e' || handle === 'se' || handle === 'ne') {
-                    newW = Math.max(minCardW, start.width + deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                  } else if (handle === 'w' || handle === 'sw' || handle === 'nw') {
-                    newW = Math.max(minCardW, start.width - deltaX);
-                    if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-                    newX = start.x + (start.width - newW);
-                  }
-
-                  if (handle === 's' || handle === 'se' || handle === 'sw') {
-                    newH = Math.max(minCardH, start.height + deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-                  } else if (handle === 'n' || handle === 'ne' || handle === 'nw') {
-                    newH = Math.max(minCardH, start.height - deltaY);
-                    if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-                    newY = start.y + (start.height - newH);
-                  }
-                }
-
-                return { ...n, x: newX, y: newY, width: newW, height: newH };
-              });
-            });
+            performNodeResize(pos.clientX, pos.clientY);
           } else if (dragCandidateNodeIdRef.current || draggingNodeIdRef.current) {
-            const dragId = draggingNodeIdRef.current || dragCandidateNodeIdRef.current;
-            if (!dragId) return;
-
-            if (!dragDidMoveRef.current) {
-              const dx = Math.abs(pos.clientX - dragStartClientRef.current.x);
-              const dy = Math.abs(pos.clientY - dragStartClientRef.current.y);
-              if (dx < 4 && dy < 4) return;
-              dragDidMoveRef.current = true;
-              draggingNodeIdRef.current = dragId;
-              setIsDraggingNodeState(true);
-              recordSnapshot();
-            }
-            const currentNodes = nodesRef.current;
-            const node = currentNodes.find((n) => n.id === dragId);
-            if (!node) return;
-
-            const rawX = (pos.clientX - panRef.current.x) / zoomRef.current - dragOffsetRef.current.x;
-            const rawY = (pos.clientY - panRef.current.y) / zoomRef.current - dragOffsetRef.current.y;
-
-            const step = gridSizeRef.current || 20;
-            const gridX = canvasSnapGridRef.current ? Math.round(rawX / step) * step : rawX;
-            const gridY = canvasSnapGridRef.current ? Math.round(rawY / step) * step : rawY;
-
-            let finalX = gridX;
-            let finalY = gridY;
-            let newGuides: AlignmentGuide[] = [];
-
-            if (canvasSnapObjectsRef.current) {
-              const threshold = 8 / Math.max(0.2, zoomRef.current);
-              const containerEl = containerRef.current;
-              const cWidth = containerEl?.clientWidth || window.innerWidth;
-              const cHeight = containerEl?.clientHeight || window.innerHeight;
-              const curPan = panRef.current;
-              const curZoom = zoomRef.current;
-
-              const viewport = {
-                left: -curPan.x / curZoom,
-                top: -curPan.y / curZoom,
-                right: (-curPan.x + cWidth) / curZoom,
-                bottom: (-curPan.y + cHeight) / curZoom,
-              };
-
-              const snapResult = calculateObjectSnap(
-                dragId,
-                rawX,
-                rawY,
-                gridX,
-                gridY,
-                node.width || 260,
-                node.height || 180,
-                currentNodes,
-                threshold,
-                viewport
-              );
-
-              finalX = snapResult.x;
-              finalY = snapResult.y;
-              newGuides = snapResult.guides;
-            }
-
-            const nextNodes = currentNodes.map((n) => (n.id === dragId ? { ...n, x: finalX, y: finalY } : n));
-            nodesRef.current = nextNodes;
-            setActiveGuides(newGuides);
-            setNodes(nextNodes);
+            performNodeDrag(pos.clientX, pos.clientY);
+          } else if (draftEdgeRef.current) {
+            performDraftEdgeUpdate(pos.clientX, pos.clientY);
           }
         });
       }
     };
 
     const handleGlobalPointerUp = (e?: PointerEvent) => {
+      stopEdgeAutoScroll();
       if (mouseMoveRafRef.current !== null) {
         cancelAnimationFrame(mouseMoveRafRef.current);
         mouseMoveRafRef.current = null;
       }
       if (draggingNodeIdRef.current && dragDidMoveRef.current) {
+        const initialPosMap = multiDragInitialPositionsRef.current;
         const dragId = draggingNodeIdRef.current;
-        const node = nodesRef.current.find((n) => n.id === dragId);
-        if (node) {
-          saveCanvasNode(node);
-          triggerDiskSyncRef.current(node.board_id);
+        if (initialPosMap.size > 1 && initialPosMap.has(dragId)) {
+          for (const sid of initialPosMap.keys()) {
+            const sn = nodesRef.current.find((n) => n.id === sid);
+            if (sn) {
+              saveCanvasNode(sn);
+            }
+          }
+          const primaryNode = nodesRef.current.find((n) => n.id === dragId);
+          if (primaryNode) {
+            triggerDiskSyncRef.current(primaryNode.board_id);
+          }
+        } else {
+          const node = nodesRef.current.find((n) => n.id === dragId);
+          if (node) {
+            saveCanvasNode(node);
+            triggerDiskSyncRef.current(node.board_id);
+          }
         }
       }
       if (resizingNodeIdRef.current) {
@@ -1834,12 +2629,38 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
       }
 
+      if (marqueeStartRef.current) {
+        if (isMarqueeActiveRef.current) {
+          isMarqueeActiveRef.current = false;
+          setIsMarqueeActiveState(false);
+          setMarqueeBox(null);
+        } else {
+          if (e && !e.shiftKey) {
+            setSelectedNodeIds([]);
+            selectedNodeIdsRef.current = [];
+            setSelectedNodeId(null);
+            setSelectedEdgeId(null);
+          }
+        }
+        marqueeStartRef.current = null;
+      }
+
+      if (dragCandidateNodeIdRef.current && !dragDidMoveRef.current && (!e || !e.shiftKey)) {
+        const clickedId = dragCandidateNodeIdRef.current;
+        if (selectedNodeIdsRef.current.length > 1 && selectedNodeIdsRef.current.includes(clickedId)) {
+          setSelectedNodeIds([clickedId]);
+          selectedNodeIdsRef.current = [clickedId];
+          setSelectedNodeId(clickedId);
+        }
+      }
+
       setActiveGuides([]);
       dragCandidateNodeIdRef.current = null;
       dragDidMoveRef.current = false;
       resizeDidMoveRef.current = false;
       isPanningRef.current = false;
       setIsPanningState(false);
+      panCanvasAnchorRef.current = null;
       draggingNodeIdRef.current = null;
       setIsDraggingNodeState(false);
     };
@@ -1849,11 +2670,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     window.addEventListener('pointercancel', handleGlobalPointerUp);
 
     return () => {
+      stopEdgeAutoScroll();
       window.removeEventListener('pointermove', handleGlobalPointerMove);
       window.removeEventListener('pointerup', handleGlobalPointerUp);
       window.removeEventListener('pointercancel', handleGlobalPointerUp);
     };
-  }, [recordSnapshot]);
+  }, [
+    recordSnapshot,
+    performDraftEdgeUpdate,
+    performMarqueeDrag,
+    performNodeDrag,
+    performNodeResize,
+    runEdgeAutoScroll,
+    stopEdgeAutoScroll,
+  ]);
 
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
@@ -2079,6 +2909,80 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     },
     [containerSize.width, containerSize.height, runCameraEasing]
   );
+
+  const multiSelectBounds = useMemo(() => {
+    if (selectedNodeIds.length < 2) return null;
+    const selectedNodes = nodes.filter((n) => selectedNodeIds.includes(n.id));
+    if (selectedNodes.length < 2) return null;
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const n of selectedNodes) {
+      const w = n.width || 260;
+      const h = n.height || 180;
+      const doc = n.document_id ? docMap.get(n.document_id) : null;
+      const showOutsideTitle = Boolean(doc || n.document_id) && n.type !== 'text';
+      const nodeTop = showOutsideTitle ? n.y - 28 : n.y;
+      let nodeRight = n.x + w;
+      if (showOutsideTitle) {
+        const titleText = doc?.title || 'Untitled';
+        const titleW = getTitleTextWidth(titleText);
+        if (n.x + titleW > nodeRight) {
+          nodeRight = n.x + titleW;
+        }
+      }
+
+      if (n.x < minX) minX = n.x;
+      if (nodeTop < minY) minY = nodeTop;
+      if (nodeRight > maxX) maxX = nodeRight;
+      if (n.y + h > maxY) maxY = n.y + h;
+    }
+
+    if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) return null;
+
+    const padding = 6;
+    return {
+      x: minX - padding,
+      y: minY - padding,
+      width: (maxX - minX) + padding * 2,
+      height: (maxY - minY) + padding * 2,
+      count: selectedNodes.length,
+    };
+  }, [selectedNodeIds, nodes, docMap]);
+
+  const handleFitMultiSelectionToCenter = useCallback(() => {
+    if (!multiSelectBounds) return;
+    const el = containerRef.current;
+    const rect = el?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+    const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+    const padding = 100;
+    const contentWidth = Math.max(100, multiSelectBounds.width);
+    const contentHeight = Math.max(100, multiSelectBounds.height);
+    const contentCenterX = multiSelectBounds.x + multiSelectBounds.width / 2;
+    const contentCenterY = multiSelectBounds.y + multiSelectBounds.height / 2;
+
+    const availWidth = Math.max(200, width - padding * 2);
+    const availHeight = Math.max(200, height - padding * 2);
+
+    const scaleX = availWidth / contentWidth;
+    const scaleY = availHeight / contentHeight;
+    const fitScale = Math.min(1.25, Math.max(0.2, Math.min(scaleX, scaleY)));
+
+    const targetX = width / 2 - contentCenterX * fitScale;
+    const targetY = height / 2 - contentCenterY * fitScale;
+
+    targetTransformRef.current = {
+      x: Number.isFinite(targetX) ? targetX : 100,
+      y: Number.isFinite(targetY) ? targetY : 100,
+      scale: fitScale,
+    };
+    runCameraEasing();
+  }, [multiSelectBounds, containerSize.width, containerSize.height, runCameraEasing]);
 
   // Double-click on empty canvas to quickly place a new text card at cursor
   const handleCanvasDoubleClick = useCallback(
@@ -2502,8 +3406,21 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
 
         if (Math.abs(newScale - currentScale) > 0.0001) {
-          const newTargetX = mouseX - ((mouseX - currentX) * (newScale / currentScale));
-          const newTargetY = mouseY - ((mouseY - currentY) * (newScale / currentScale));
+          lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
+
+          let anchorX: number;
+          let anchorY: number;
+
+          if (isPanningRef.current && panCanvasAnchorRef.current) {
+            anchorX = panCanvasAnchorRef.current.x;
+            anchorY = panCanvasAnchorRef.current.y;
+          } else {
+            anchorX = (mouseX - currentX) / currentScale;
+            anchorY = (mouseY - currentY) / currentScale;
+          }
+
+          const newTargetX = mouseX - anchorX * newScale;
+          const newTargetY = mouseY - anchorY * newScale;
 
           targetTransformRef.current = {
             x: newTargetX,
@@ -2511,49 +3428,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             scale: newScale,
           };
 
-          const isHoldingMouse =
-            isPanningRef.current ||
-            ((e.buttons & 1) === 1 && (isPanModifierRef.current || e.ctrlKey || e.metaKey)) ||
-            (e.buttons & 4) === 4;
-
-          if (isHoldingMouse) {
-            isPanningRef.current = true;
-            setIsPanningState(true);
-
-            if (cameraRafRef.current !== null) {
-              cancelAnimationFrame(cameraRafRef.current);
-              cameraRafRef.current = null;
-            }
-            if (mouseMoveRafRef.current !== null) {
-              cancelAnimationFrame(mouseMoveRafRef.current);
-              mouseMoveRafRef.current = null;
-            }
-
-            currentTransformRef.current = {
-              x: newTargetX,
-              y: newTargetY,
-              scale: newScale,
-            };
-            panStartRef.current = {
-              x: e.clientX - newTargetX,
-              y: e.clientY - newTargetY,
-            };
-            lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
-            panRef.current = { x: newTargetX, y: newTargetY };
-            zoomRef.current = newScale;
-
-            syncDomTransform(newTargetX, newTargetY, newScale);
-
-            if (syncStateRafRef.current === null) {
-              syncStateRafRef.current = requestAnimationFrame(() => {
-                syncStateRafRef.current = null;
-                setPan({ x: newTargetX, y: newTargetY });
-                setZoom(newScale);
-              });
-            }
-          } else {
-            runCameraEasing();
-          }
+          runCameraEasing();
         }
         return;
       }
@@ -2689,13 +3564,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       runCameraEasing();
     };
 
+    const handleGestureEnd = (e: any) => {
+      e.preventDefault();
+    };
+
     el.addEventListener('wheel', handleNativeWheel, { passive: false });
     el.addEventListener('touchstart', handleTouchStart, { passive: false });
     el.addEventListener('touchmove', handleTouchMove, { passive: false });
     el.addEventListener('touchend', handleTouchEnd, { passive: false });
     el.addEventListener('gesturestart', handleGestureStart, { passive: false });
     el.addEventListener('gesturechange', handleGestureChange, { passive: false });
-    el.addEventListener('gestureend', handleGestureStart, { passive: false });
+    el.addEventListener('gestureend', handleGestureEnd, { passive: false });
 
     return () => {
       el.removeEventListener('wheel', handleNativeWheel);
@@ -2704,7 +3583,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       el.removeEventListener('touchend', handleTouchEnd);
       el.removeEventListener('gesturestart', handleGestureStart);
       el.removeEventListener('gesturechange', handleGestureChange);
-      el.removeEventListener('gestureend', handleGestureStart);
+      el.removeEventListener('gestureend', handleGestureEnd);
     };
   }, []);
 
@@ -2784,6 +3663,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       {/* Interactive Spatial Canvas Plane */}
       <div
         ref={containerRef}
+        tabIndex={0}
         data-pinchable="true"
         data-canvas-view="true"
         data-custom-drop-target="true"
@@ -2792,7 +3672,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         onPointerMove={handleCanvasPointerMove}
         onDoubleClick={handleCanvasDoubleClick}
         style={{ touchAction: 'none' }}
-        className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none ${
+        className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none outline-none ${
           draftEdge
             ? '!cursor-grab [&_*]:!cursor-grab'
             : isPanningState || isDraggingNodeState
@@ -2818,7 +3698,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 cx={step / 2}
                 cy={step / 2}
                 r={Math.max(0.6, Math.min(1.8, 1 / zoom))}
-                fill="rgba(255, 255, 255, 0.10)"
+                fill="rgba(255, 255, 255, 0.055)"
               />
             </pattern>
           </defs>
@@ -3111,7 +3991,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
         {visibleNodes.map((node) => {
           const doc = node.document_id ? docMap.get(node.document_id) || null : null;
-          const isSelected = selectedNodeId === node.id;
+          const isSelected = selectedNodeIds.includes(node.id) || selectedNodeId === node.id;
+          const isMultiSelected = selectedNodeIds.length > 1;
           const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
 
           return (
@@ -3121,6 +4002,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               doc={doc}
               contentJson={contentJson}
               isSelected={isSelected}
+              isMultiSelected={isMultiSelected}
               isSpacePressed={isPanModifierState}
               isPanModifier={isPanModifierState}
               isPanning={isPanningState}
@@ -3145,6 +4027,101 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             />
           );
         })}
+
+        {/* Arrowhead Retarget Grab Handles Layer */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none overflow-visible transition-none"
+          style={{ zIndex: 35 }}
+        >
+          {/* Interactive Arrowhead Retarget Grab Handles */}
+          {!canvasReadOnly && !draftEdge && edges.map((edge) => {
+            const fromNode = nodeMap.get(edge.from_node_id);
+            const toNode = nodeMap.get(edge.to_node_id);
+            if (!fromNode || !toNode) return null;
+
+            const defaultSides = determineDefaultConnectingSides(fromNode, toNode);
+            const toSide = edge.to_side || defaultSides.toSide;
+            const p2 = getSideAnchorPoint(toNode, toSide);
+            const hitRadius = 20 / Math.min(1.5, Math.max(0.6, zoom));
+
+            return (
+              <g key={`arrowhead-overlay-${edge.id}`} className="transition-none">
+                {/* Generous hit circle for dragging/retargeting the connection endpoint */}
+                <circle
+                  cx={p2.x}
+                  cy={p2.y}
+                  r={hitRadius}
+                  fill="transparent"
+                  className="cursor-crosshair pointer-events-auto"
+                  onPointerDown={(e) => handleEdgePointerDown(edge, e, true)}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setSelectedEdgeId(edge.id);
+                    setSelectedNodeId(null);
+                    startEditingEdgeLabel(edge.id, edge.label || '');
+                  }}
+                />
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Marquee Selection Drag Box */}
+        {marqueeBox && (
+          <div
+            style={{
+              left: `${marqueeBox.startX}px`,
+              top: `${marqueeBox.startY}px`,
+              width: `${marqueeBox.currentX - marqueeBox.startX}px`,
+              height: `${marqueeBox.currentY - marqueeBox.startY}px`,
+            }}
+            className="absolute border border-white/70 bg-white/[0.06] rounded-[2px] pointer-events-none z-30 transition-none"
+          />
+        )}
+
+        {/* Multi-Selection Bounding Enclosure Box & Floating Multi-Action Pill */}
+        {multiSelectBounds && (
+          <div
+            style={{
+              left: `${multiSelectBounds.x}px`,
+              top: `${multiSelectBounds.y}px`,
+              width: `${multiSelectBounds.width}px`,
+              height: `${multiSelectBounds.height}px`,
+            }}
+            className="absolute border border-[#b8b8b8]/45 bg-[#909090]/[0.07] rounded-[2px] pointer-events-none z-25 transition-none select-none"
+          >
+            <svg className="absolute -inset-[4px] w-[calc(100%+8px)] h-[calc(100%+8px)] overflow-visible pointer-events-none">
+              <rect
+                x={4}
+                y={4}
+                width={multiSelectBounds.width}
+                height={multiSelectBounds.height}
+                rx={2}
+                fill="none"
+                stroke="transparent"
+                strokeWidth={12}
+                style={{ pointerEvents: 'stroke' }}
+                className="cursor-grab active:cursor-grabbing"
+                onPointerDown={(e) => {
+                  const primaryId = selectedNodeIds[0];
+                  if (primaryId) handleNodePointerDown(primaryId, e as any);
+                }}
+              />
+            </svg>
+            {!canvasReadOnly && !isDraggingNodeState && !isMarqueeActiveState && (
+              <div className="pointer-events-auto">
+                <MultiSelectActionPill
+                  onDelete={handleDeleteSelectedNodes}
+                  onColorChange={handleBatchColorChange}
+                  onFitToCenter={handleFitMultiSelectionToCenter}
+                  zoom={zoom}
+                  count={multiSelectBounds.count}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
           {/* Snapped Drag Ghost Preview in Spatial Canvas Coordinate Plane */}
           {dragGhost && (() => {

@@ -245,36 +245,79 @@ export function findTargetSideSnap(
 ): SideSnapTarget | null {
   let closestTarget: SideSnapTarget | null = null;
   let minDistance = thresholdCanvas;
+  let insideTarget: SideSnapTarget | null = null;
+  let minInsideDist = Infinity;
 
   for (const node of nodes) {
     if (node.id === excludeNodeId) continue;
 
+    const w = node.width || 260;
+    const h = node.height || 180;
+    const isInside =
+      cursorCanvas.x >= node.x &&
+      cursorCanvas.x <= node.x + w &&
+      cursorCanvas.y >= node.y &&
+      cursorCanvas.y <= node.y + h;
+
+    if (isInside) {
+      const dTop = cursorCanvas.y - node.y;
+      const dBottom = node.y + h - cursorCanvas.y;
+      const dLeft = cursorCanvas.x - node.x;
+      const dRight = node.x + w - cursorCanvas.x;
+
+      let closestSide: CanvasNodeSide = 'top';
+      let minDist = dTop;
+      if (dBottom < minDist) {
+        minDist = dBottom;
+        closestSide = 'bottom';
+      }
+      if (dLeft < minDist) {
+        minDist = dLeft;
+        closestSide = 'left';
+      }
+      if (dRight < minDist) {
+        minDist = dRight;
+        closestSide = 'right';
+      }
+
+      if (minDist < minInsideDist) {
+        minInsideDist = minDist;
+        insideTarget = {
+          nodeId: node.id,
+          side: closestSide,
+          point: getSideAnchorPoint(node, closestSide),
+          distance: minDist,
+        };
+      }
+      continue;
+    }
+
     for (const side of ALL_CANVAS_SIDES) {
       const anchor = getSideAnchorPoint(node, side);
       const isHorizontal = side === 'top' || side === 'bottom';
-      const sideLength = isHorizontal ? node.width : node.height;
-      const cornerClearance = Math.min(28, sideLength * 0.25);
+      const sideLength = isHorizontal ? w : h;
+      const cornerClearance = Math.min(16, sideLength * 0.15);
 
       let dist: number;
       if (side === 'top') {
-        const clampedX = Math.max(node.x + cornerClearance, Math.min(node.x + node.width - cornerClearance, cursorCanvas.x));
+        const clampedX = Math.max(node.x + cornerClearance, Math.min(node.x + w - cornerClearance, cursorCanvas.x));
         const dx = cursorCanvas.x - clampedX;
         const dy = cursorCanvas.y - node.y;
         dist = Math.sqrt(dx * dx + dy * dy);
       } else if (side === 'bottom') {
-        const clampedX = Math.max(node.x + cornerClearance, Math.min(node.x + node.width - cornerClearance, cursorCanvas.x));
+        const clampedX = Math.max(node.x + cornerClearance, Math.min(node.x + w - cornerClearance, cursorCanvas.x));
         const dx = cursorCanvas.x - clampedX;
-        const dy = cursorCanvas.y - (node.y + node.height);
+        const dy = cursorCanvas.y - (node.y + h);
         dist = Math.sqrt(dx * dx + dy * dy);
       } else if (side === 'left') {
-        const clampedY = Math.max(node.y + cornerClearance, Math.min(node.y + node.height - cornerClearance, cursorCanvas.y));
+        const clampedY = Math.max(node.y + cornerClearance, Math.min(node.y + h - cornerClearance, cursorCanvas.y));
         const dx = cursorCanvas.x - node.x;
         const dy = cursorCanvas.y - clampedY;
         dist = Math.sqrt(dx * dx + dy * dy);
       } else {
         // 'right'
-        const clampedY = Math.max(node.y + cornerClearance, Math.min(node.y + node.height - cornerClearance, cursorCanvas.y));
-        const dx = cursorCanvas.x - (node.x + node.width);
+        const clampedY = Math.max(node.y + cornerClearance, Math.min(node.y + h - cornerClearance, cursorCanvas.y));
+        const dx = cursorCanvas.x - (node.x + w);
         const dy = cursorCanvas.y - clampedY;
         dist = Math.sqrt(dx * dx + dy * dy);
       }
@@ -291,7 +334,7 @@ export function findTargetSideSnap(
     }
   }
 
-  return closestTarget;
+  return insideTarget || closestTarget;
 }
 
 /**

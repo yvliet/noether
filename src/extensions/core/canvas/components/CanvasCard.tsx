@@ -39,6 +39,7 @@ export interface CanvasCardProps {
   zoom?: number;
   autoFocus?: boolean;
   onAutoFocusConsumed?: () => void;
+  isMultiSelected?: boolean;
 }
 
 export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
@@ -68,6 +69,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     zoom = 1,
     autoFocus = false,
     onAutoFocusConsumed,
+    isMultiSelected = false,
   }) => {
     const isPanActive = isPanModifier || isSpacePressed;
     const [isHovered, setIsHovered] = useState(false);
@@ -270,8 +272,8 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             }}
             title={doc?.title || 'Open note'}
             className={`absolute bottom-full left-0 mb-2 ${
-              isSelected || isHovered ? 'max-w-[calc(50%-36px)]' : 'max-w-full'
-            } truncate text-[14px] font-medium text-[#888888] hover:text-[#e0e0e0] select-none transition-none ${
+              isSelected ? 'max-w-none whitespace-nowrap' : 'max-w-full truncate'
+            } text-[14px] font-medium text-[#888888] hover:text-[#e0e0e0] select-none transition-none ${
               isPanActive || isPanning ? 'pointer-events-none' : 'cursor-pointer'
             }`}
           >
@@ -280,7 +282,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         )}
 
         {/* Floating Contextual Action Pill (Hover / Selected) */}
-        {!isReadOnly && !isDragging && (isSelected || isHovered) && (
+        {!isReadOnly && !isDragging && !isMultiSelected && (isSelected || isHovered) && (
           <CardActionPill
             onDelete={() => onDelete(node.id)}
             onOpenDoc={isDocBacked && onOpenDoc ? () => onOpenDoc(node.document_id) : undefined}

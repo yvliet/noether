@@ -253,11 +253,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       const { selectedDocIds: currentSelected, lastSelectedDocId } = useDocumentStore.getState();
 
-      // Ctrl+A / Cmd+A: Select all visible items
+      // Ctrl+A / Cmd+A: Select all visible items (only when interacting with sidebar)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
         const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover'));
-        if (isInsideSidebar || currentSelected.length > 0) {
+        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
+        if (isInsideSidebar) {
           e.preventDefault();
           const visibleIds = getVisibleTreeItemIds();
           if (visibleIds.length > 0) {
@@ -281,11 +281,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
         }
       }
 
-      // Delete / Backspace: Delete selected items
+      // Delete / Backspace: Delete selected items (only when interacting with sidebar)
       if ((e.key === 'Delete' || e.key === 'Backspace') && currentSelected.length > 0) {
         const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover'));
-        if (isInsideSidebar || document.activeElement === document.body) {
+        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
+        if (isInsideSidebar) {
           e.preventDefault();
           const count = currentSelected.length;
           const { skipDeleteConfirmation } = useSettingsStore.getState();
