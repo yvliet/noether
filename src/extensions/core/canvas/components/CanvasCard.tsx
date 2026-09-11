@@ -28,7 +28,9 @@ export interface CanvasCardProps {
   onImageDimensions?: (id: string, naturalWidth: number, naturalHeight: number) => void;
   onTaskToggle?: (nodeId: string, taskText: string, currentChecked: boolean) => void;
   isSpacePressed?: boolean;
+  isPanModifier?: boolean;
   isPanning?: boolean;
+  isDragging?: boolean;
   isReadOnly?: boolean;
 }
 
@@ -48,11 +50,15 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     onImageDimensions,
     onTaskToggle,
     isSpacePressed = false,
+    isPanModifier = false,
     isPanning = false,
+    isDragging = false,
     isReadOnly = false,
   }) => {
+    const isPanActive = isPanModifier || isSpacePressed;
     const [isHovered, setIsHovered] = useState(false);
     const [isEditingText, setIsEditingText] = useState(false);
+    const isDraggable = !isReadOnly && !isEditingText;
 
     const isDocBacked = Boolean(doc || node.document_id);
     const showOutsideTitle = isDocBacked && node.type !== 'text';
@@ -112,25 +118,41 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         }}
         className={`canvas-card absolute pointer-events-auto rounded-md flex flex-col border transition-none ${
           isSelected ? 'z-20 ring-1' : 'z-10'
-        } ${isPanning ? 'cursor-grabbing' : isSpacePressed ? 'cursor-grab' : isReadOnly ? 'cursor-default' : ''}`}
+        } ${
+          isPanning || isDragging
+            ? 'cursor-grabbing'
+            : isPanActive
+            ? 'cursor-grab'
+            : isDraggable
+            ? 'cursor-grab active:cursor-grabbing'
+            : isReadOnly
+            ? 'cursor-default'
+            : ''
+        }`}
       >
         {/* Floating Outside Title (Matching Target img1) */}
         {showOutsideTitle && (
           <div
-            onPointerDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => {
+              if (isPanActive || isPanning) return;
+              e.stopPropagation();
+            }}
             onClick={(e) => {
+              if (isPanActive || isPanning) return;
               e.stopPropagation();
               onOpenDoc?.(node.document_id);
             }}
             title={doc?.title || 'Open note'}
-            className="absolute bottom-full left-0 mb-1.5 max-w-[calc(100%-80px)] truncate text-[12px] font-medium text-[#888888] hover:text-[#e0e0e0] cursor-pointer select-none transition-none"
+            className={`absolute bottom-full left-0 mb-1.5 max-w-[calc(100%-80px)] truncate text-[12px] font-medium text-[#888888] hover:text-[#e0e0e0] select-none transition-none ${
+              isPanActive || isPanning ? 'pointer-events-none' : 'cursor-pointer'
+            }`}
           >
             {doc?.title || 'Untitled'}
           </div>
         )}
 
         {/* Floating Contextual Action Pill (Hover / Selected) */}
-        {!isReadOnly && (isSelected || isHovered) && (
+        {!isReadOnly && !isPanActive && !isPanning && !isDragging && (isSelected || isHovered) && (
           <CardActionPill
             onDelete={() => onDelete(node.id)}
             onOpenDoc={isDocBacked && onOpenDoc ? () => onOpenDoc(node.document_id) : undefined}
@@ -142,7 +164,13 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         )}
 
         {/* Card Body - Content Renderer */}
-        <div className="flex-1 w-full h-full min-h-0 overflow-hidden rounded-md">
+        <div className={`flex-1 w-full h-full min-h-0 overflow-hidden rounded-md ${
+          isPanActive || isPanning || isDragging ? 'pointer-events-none' : ''
+        } ${
+          isDraggable
+            ? 'cursor-grab active:cursor-grabbing [&_.flint-compact-doc]:!cursor-grab [&_.flint-compact-doc]:active:!cursor-grabbing [&_.tiptap-reading-view]:!cursor-grab [&_.tiptap-reading-view]:active:!cursor-grabbing [&_.ProseMirror]:!cursor-grab [&_.ProseMirror]:active:!cursor-grabbing [&_img]:!cursor-grab [&_img]:active:!cursor-grabbing [&_a]:!cursor-pointer [&_button]:!cursor-pointer'
+            : ''
+        }`}>
           <CardContentRenderer
             node={node}
             doc={doc}
@@ -158,7 +186,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
 
         {/* Interactive 8-Directional Resize Handles (Available on hover and when selected) */}
         {!isReadOnly && onResizeStart && (
-          <div className={!isSpacePressed && (isSelected || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}>
+          <div className={!isPanActive && !isPanning && !isDragging && (isSelected || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}>
             {/* North (Top edge) */}
             <div
               onPointerDown={(e) => {

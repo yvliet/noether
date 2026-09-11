@@ -61,7 +61,7 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 
 | Action | Control / Shortcut |
 | :--- | :--- |
-| **Pan Canvas (Freehand)** | Hold `Space` + Drag (Left Click), or Middle Mouse Drag |
+| **Pan Canvas (Freehand)** | Hold `Space` or `Ctrl` + Drag (Left Click), or Middle Mouse Drag |
 | **Scroll Vertically** | Mouse Wheel Up / Down (or two-finger vertical swipe) |
 | **Scroll Horizontally** | `Shift + Mouse Wheel`, or two-finger horizontal swipe |
 | **Zoom In / Out** | `Ctrl + Mouse Wheel`, Trackpad Pinch, or `Ctrl + +` / `Ctrl + -` |

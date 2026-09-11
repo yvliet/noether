@@ -140,7 +140,7 @@ For visual brainstorming, concept maps, flowcharts, and moodboards:
 - **Sticky Text Nodes**: Double-click anywhere to create free-form sticky cards.
 - **Group Containers**: Select cards and press `Ctrl+G` to encase them in colored, titled container frames.
 - **Connectors**: Drag connection handles from card borders to create Bezier curve arrows with custom labels.
-- **Navigation**: Hold `Spacebar` to pan, scroll with `Ctrl+Wheel` to zoom, and use snap-to-grid for tidy alignment.
+- **Navigation**: Hold `Spacebar` or `Ctrl` to pan, scroll with `Ctrl+Wheel` to zoom, and use snap-to-grid for tidy alignment.
 
 ---
 

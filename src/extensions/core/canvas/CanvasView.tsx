@@ -238,9 +238,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
 
-  // Spacebar pan mode state and refs
-  const [isSpacePressedState, setIsSpacePressedState] = useState(false);
-  const isSpacePressedRef = useRef(false);
+  // Pan modifier mode state and refs (Space or Ctrl/Cmd)
+  const [isPanModifierState, setIsPanModifierState] = useState(false);
+  const isPanModifierRef = useRef(false);
+  const isSpaceHeldRef = useRef(false);
+  const isCtrlHeldRef = useRef(false);
 
   useEffect(() => {
     const isEditableElement = (el: HTMLElement | null): boolean => {
@@ -254,27 +256,64 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       );
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return;
-      const target = (e.target || document.activeElement) as HTMLElement | null;
-      if (isEditableElement(target)) return;
+    const isCtrlOrMetaKey = (e: KeyboardEvent): boolean => {
+      return (
+        e.key === 'Control' ||
+        e.key === 'Meta' ||
+        e.code === 'ControlLeft' ||
+        e.code === 'ControlRight' ||
+        e.code === 'MetaLeft' ||
+        e.code === 'MetaRight'
+      );
+    };
 
-      e.preventDefault();
-      if (!isSpacePressedRef.current) {
-        isSpacePressedRef.current = true;
-        setIsSpacePressedState(true);
+    const syncModifierState = () => {
+      const active = isSpaceHeldRef.current || isCtrlHeldRef.current;
+      if (active !== isPanModifierRef.current) {
+        isPanModifierRef.current = active;
+        setIsPanModifierState(active);
       }
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isSpace = e.code === 'Space';
+      const isCtrl = isCtrlOrMetaKey(e);
+
+      if (!isSpace && !isCtrl) return;
+
+      const target = (e.target || document.activeElement) as HTMLElement | null;
+      if (isEditableElement(target)) return;
+
+      if (isSpace) {
+        e.preventDefault();
+        isSpaceHeldRef.current = true;
+      }
+      if (isCtrl) {
+        isCtrlHeldRef.current = true;
+      }
+
+      syncModifierState();
+    };
+
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code !== 'Space') return;
-      isSpacePressedRef.current = false;
-      setIsSpacePressedState(false);
+      const isSpace = e.code === 'Space';
+      const isCtrl = isCtrlOrMetaKey(e);
+
+      if (isSpace) {
+        isSpaceHeldRef.current = false;
+      }
+      if (isCtrl || (!e.ctrlKey && !e.metaKey)) {
+        isCtrlHeldRef.current = false;
+      }
+
+      syncModifierState();
     };
 
     const handleBlur = () => {
-      isSpacePressedRef.current = false;
-      setIsSpacePressedState(false);
+      isSpaceHeldRef.current = false;
+      isCtrlHeldRef.current = false;
+      isPanModifierRef.current = false;
+      setIsPanModifierState(false);
     };
 
     window.addEventListener('keydown', handleKeyDown, { capture: true });
@@ -380,6 +419,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, []);
 
   // Dragging node
+  const [isDraggingNodeState, setIsDraggingNodeState] = useState(false);
   const draggingNodeIdRef = useRef<string | null>(null);
   const dragCandidateNodeIdRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
@@ -390,6 +430,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       dragCandidateNodeIdRef.current = null;
       draggingNodeIdRef.current = null;
       dragDidMoveRef.current = false;
+      setIsDraggingNodeState(false);
       setActiveGuides([]);
     }
   }, [isLightboxOpen]);
@@ -759,11 +800,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea')) return;
 
-    // Panning requires holding Space (left click) OR Middle Mouse Button (button === 1)
+    // Panning requires holding Space/Ctrl (left click) OR Middle Mouse Button (button === 1)
     const isMiddleClick = e.button === 1;
-    const isSpacePan = e.button === 0 && isSpacePressedRef.current;
+    const isModifierPan = e.button === 0 && (isPanModifierRef.current || e.ctrlKey || e.metaKey);
 
-    if (isMiddleClick || isSpacePan) {
+    if (isMiddleClick || isModifierPan) {
       e.preventDefault();
       isPanningRef.current = true;
       setIsPanningState(true);
@@ -776,17 +817,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       return;
     }
 
-    // Normal left-click without space: deselect any active card
+    // Normal left-click without space/ctrl: deselect any active card
     if (e.button === 0) {
       setSelectedNodeId(null);
     }
   }, []);
 
   const handleNodePointerDown = useCallback((id: string, e: React.PointerEvent) => {
-    if ((e.target as HTMLElement).closest('button, textarea, input, a, .resize-handle')) return;
+    const isModifierPan = isPanModifierRef.current || e.ctrlKey || e.metaKey || e.button === 1;
 
-    // If Space is held down OR middle-mouse click, pan the canvas instead of dragging the card
-    if (isSpacePressedRef.current || e.button === 1) {
+    // If Space or Ctrl is held down OR middle-mouse click, pan the canvas instead of dragging the card
+    if (isModifierPan) {
       e.preventDefault();
       isPanningRef.current = true;
       setIsPanningState(true);
@@ -797,6 +838,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       } catch {}
       return;
     }
+
+    if ((e.target as HTMLElement).closest('button, textarea, input, a, .resize-handle')) return;
 
     e.stopPropagation();
     const node = nodesRef.current.find((n) => n.id === id);
@@ -896,6 +939,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   useEffect(() => {
     const handleGlobalPointerMove = (e: PointerEvent) => {
       if (isLightboxOpen) return;
+
+      if (isCtrlHeldRef.current && !e.ctrlKey && !e.metaKey) {
+        isCtrlHeldRef.current = false;
+        const active = isSpaceHeldRef.current;
+        if (active !== isPanModifierRef.current) {
+          isPanModifierRef.current = active;
+          setIsPanModifierState(active);
+        }
+      }
+
       if (!isPanningRef.current && !draggingNodeIdRef.current && !dragCandidateNodeIdRef.current && !resizingNodeIdRef.current) return;
       lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
       if (mouseMoveRafRef.current === null) {
@@ -1021,6 +1074,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               if (dx < 4 && dy < 4) return;
               dragDidMoveRef.current = true;
               draggingNodeIdRef.current = dragId;
+              setIsDraggingNodeState(true);
               recordSnapshot();
             }
             const currentNodes = nodesRef.current;
@@ -1080,7 +1134,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       }
     };
 
-    const handleGlobalPointerUp = () => {
+    const handleGlobalPointerUp = (e?: PointerEvent) => {
       if (mouseMoveRafRef.current !== null) {
         cancelAnimationFrame(mouseMoveRafRef.current);
         mouseMoveRafRef.current = null;
@@ -1103,6 +1157,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         resizingNodeIdRef.current = null;
         resizeHandleRef.current = null;
       }
+      if (e && isCtrlHeldRef.current && !e.ctrlKey && !e.metaKey) {
+        isCtrlHeldRef.current = false;
+        const active = isSpaceHeldRef.current;
+        if (active !== isPanModifierRef.current) {
+          isPanModifierRef.current = active;
+          setIsPanModifierState(active);
+        }
+      }
+
       setActiveGuides([]);
       dragCandidateNodeIdRef.current = null;
       dragDidMoveRef.current = false;
@@ -1110,6 +1173,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       isPanningRef.current = false;
       setIsPanningState(false);
       draggingNodeIdRef.current = null;
+      setIsDraggingNodeState(false);
     };
 
     window.addEventListener('pointermove', handleGlobalPointerMove);
@@ -1472,7 +1536,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       // 2. Strict Scrollable Card Isolation (Do NOT scroll canvas when hovering inside a scrollable card)
       // Only inspect DOM if gesture originated over a card (skips 100% of queries during canvas navigation!)
-      if (!isSpacePressedRef.current && !wheelOriginWasCanvasRef.current) {
+      if (!isPanModifierRef.current && !wheelOriginWasCanvasRef.current) {
         const scrollTarget = (e.target as HTMLElement | null)?.closest(
           '.custom-scrollbar, [data-scrollable="true"], pre, table'
         ) as HTMLElement | null;
@@ -1704,7 +1768,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         onDoubleClick={handleCanvasDoubleClick}
         style={{ touchAction: 'none' }}
         className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none ${
-          isPanningState ? 'cursor-grabbing' : isSpacePressedState ? 'cursor-grab' : 'cursor-default'
+          isPanningState || isDraggingNodeState ? 'cursor-grabbing' : isPanModifierState ? 'cursor-grab' : 'cursor-default'
         }`}
       >
         {/* Crisp Lightweight Vector Spatial Dot Grid */}
@@ -1736,7 +1800,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           style={{
             transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${zoom})`,
             transformOrigin: '0 0',
-            willChange: isPanningState || isSpacePressedState ? 'transform' : 'auto',
+            willChange: isPanningState || isDraggingNodeState || isPanModifierState ? 'transform' : 'auto',
           }}
           className="absolute inset-0 pointer-events-none"
         >
@@ -1788,8 +1852,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               doc={doc}
               contentJson={contentJson}
               isSelected={isSelected}
-              isSpacePressed={isSpacePressedState}
+              isSpacePressed={isPanModifierState}
+              isPanModifier={isPanModifierState}
               isPanning={isPanningState}
+              isDragging={isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id)}
               isReadOnly={canvasReadOnly}
               onSelect={handleNodePointerDown}
               onOpenDoc={handleOpenDoc}
