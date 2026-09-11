@@ -19,10 +19,15 @@ export interface CanvasNode {
   url?: string;
 }
 
+export type CanvasNodeSide = 'top' | 'right' | 'bottom' | 'left';
+
 export interface CanvasEdge {
   id: string;
   board_id: string;
   from_node_id: string;
+  from_side?: CanvasNodeSide;
   to_node_id: string;
+  to_side?: CanvasNodeSide;
   label?: string;
+  color?: string;
 }

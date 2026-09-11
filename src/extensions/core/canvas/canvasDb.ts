@@ -33,13 +33,16 @@ export const CANVAS_NODES_TABLE_DEF: TableDefinition = {
 
 export const CANVAS_EDGES_TABLE_DEF: TableDefinition = {
   tableName: 'edges',
-  version: 1,
+  version: 2,
   columns: {
     id: { type: 'text', primaryKey: true },
     board_id: { type: 'text', default: 'default' },
     from_node_id: { type: 'text' },
+    from_side: { type: 'text', nullable: true },
     to_node_id: { type: 'text' },
+    to_side: { type: 'text', nullable: true },
     label: { type: 'text', nullable: true },
+    color: { type: 'text', nullable: true },
   },
   indexes: [
     { name: 'idx_canvas_edges_board', columns: ['board_id'] },
@@ -80,10 +83,23 @@ export async function initCanvasTables(): Promise<void> {
         id TEXT PRIMARY KEY,
         board_id TEXT NOT NULL DEFAULT 'default',
         from_node_id TEXT NOT NULL,
+        from_side TEXT,
         to_node_id TEXT NOT NULL,
-        label TEXT
+        to_side TEXT,
+        label TEXT,
+        color TEXT
       );
     `);
+
+    try {
+      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN from_side TEXT;`);
+    } catch {}
+    try {
+      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN to_side TEXT;`);
+    } catch {}
+    try {
+      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN color TEXT;`);
+    } catch {}
 
     await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`);
     await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_edges_board ON ext_canvas_edges(board_id);`);
@@ -145,9 +161,18 @@ export async function deleteCanvasNode(nodeId: string): Promise<void> {
 export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(
-    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, to_node_id, label)
-     VALUES (?, ?, ?, ?, ?)`,
-    [edge.id, edge.board_id || 'default', edge.from_node_id, edge.to_node_id, edge.label || null]
+    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      edge.id,
+      edge.board_id || 'default',
+      edge.from_node_id,
+      edge.from_side || 'right',
+      edge.to_node_id,
+      edge.to_side || 'left',
+      edge.label || null,
+      edge.color || null,
+    ]
   );
 }
 
@@ -196,8 +221,11 @@ export async function serializeCanvasBoard(boardId: string): Promise<string> {
   const canvasEdges = edges.map((e) => ({
     id: e.id,
     fromNode: e.from_node_id,
+    fromSide: e.from_side || 'right',
     toNode: e.to_node_id,
+    toSide: e.to_side || 'left',
     label: e.label,
+    color: e.color,
   }));
 
   return JSON.stringify({ nodes: canvasNodes, edges: canvasEdges }, null, 2);
@@ -234,8 +262,11 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
         id: e.id || `edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
         board_id: boardId,
         from_node_id: e.fromNode || e.from_node_id,
+        from_side: e.fromSide || e.from_side || 'right',
         to_node_id: e.toNode || e.to_node_id,
+        to_side: e.toSide || e.to_side || 'left',
         label: e.label,
+        color: e.color,
       };
       await saveCanvasEdge(edge);
       importedEdges.push(edge);
