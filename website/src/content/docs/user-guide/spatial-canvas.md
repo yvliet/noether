@@ -52,11 +52,16 @@ Organize clusters of related nodes into bounded regions:
 ## 3. Connections & Edge Routing
 ---
 
-Connect thoughts visually using flexible relationship arrows between cards (**Note Card A** → *Cubic Bezier Connector* → **Note Card B**):
+Connect thoughts visually using flexible relationship arrows between cards (**Note Card A** → *Connector* → **Note Card B**):
 
 - **Creating Connections**: Hover over any node's perimeter to reveal connector anchor points (top, right, bottom, left). Click and drag the anchor handle to any other node to form a link.
-- **Bezier Curve Pathways**: Connectors calculate smooth cubic Bezier paths that dynamically route around neighboring cards.
-- **Directional Styles**: Toggle arrow directions (unidirectional, bidirectional, or nondirectional) and line styles (solid, dashed, dotted).
+- **Routing Styles**:
+  - **Curved**: Fluid cubic Bezier curves that dynamically calculate approach tangents and curvature depth.
+  - **Step**: Diagrammatic orthogonal right-angle pathways with clean rounded corner fillets.
+  - **Straight**: Direct point-to-point connections.
+  - Set your preferred board-wide default routing style in Canvas Settings, or override individual edges directly from the Edge ActionPill.
+- **Interactive Curve & Step Bending**: Hold `Shift` and click and drag anywhere along an edge to fluidly bend the curve or reposition the orthogonal step segment to your preferred trajectory. Alternatively, select any edge to expose its midpoint control handle and drag it directly. Double-clicking the handle or selecting *Reset curve bend* on the ActionPill restores the automatic path. Not available for Straight edges.
+- **Directional Modes**: Toggle arrow directions (unidirectional, bidirectional, or nondirectional) from the Edge ActionPill.
 - **Edge Labels**: Double-click any connector arrow to type an explanatory label (e.g. *"implements"*, *"depends on"*, *"leads to"*).
 
 ---
@@ -73,11 +78,18 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 | **Pan + Zoom Concurrency** | Hold `Ctrl` + Drag with mouse while rolling the wheel without losing zoom focus |
 | **Scroll Card Content** | Hover over scrollable note cards and scroll mouse wheel |
 | **Reset Zoom (100%)** | `Ctrl + 0` or Reset View button |
-| **Zoom to Fit All** | `Shift + 1` |
-| **Multi-Select Nodes** | `Shift + Drag` marquee selection box |
-| **Delete Selected Card** | `Delete` or `Backspace` |
+| **Zoom to Fit All** | `Shift + 1`, `Ctrl + 1`, or Fit View button |
+| **Multi-Select Nodes** | `Shift + Drag` marquee selection box, or `Shift + Click` |
+| **Select All Nodes** | `Ctrl + A` |
+| **Copy / Paste Cards** | `Ctrl + C` / `Ctrl + V` (pastes centered at cursor) |
 | **Duplicate Node** | `Alt + Drag` or `Ctrl + D` |
+| **Nudge Selected Cards** | Arrow keys (`Shift + Arrow` for larger step) |
+| **Cancel / Deselect** | `Escape` |
+| **Bend Edge Curve / Step** | Hold `Shift` + Drag on any edge, or drag the selected edge midpoint handle |
+| **Reset Edge Bend** | Double-click the midpoint handle, or click *Reset curve bend* on the ActionPill |
+| **Delete Selected Card / Edge** | `Delete` or `Backspace` |
 | **Snap to Grid** | Toggle in the bottom-left canvas toolbar |
+
 
 ---
 

@@ -33,7 +33,7 @@ export const CANVAS_NODES_TABLE_DEF: TableDefinition = {
 
 export const CANVAS_EDGES_TABLE_DEF: TableDefinition = {
   tableName: 'edges',
-  version: 2,
+  version: 3,
   columns: {
     id: { type: 'text', primaryKey: true },
     board_id: { type: 'text', default: 'default' },
@@ -44,6 +44,8 @@ export const CANVAS_EDGES_TABLE_DEF: TableDefinition = {
     label: { type: 'text', nullable: true },
     color: { type: 'text', nullable: true },
     direction: { type: 'text', nullable: true },
+    style: { type: 'text', nullable: true },
+    control_points: { type: 'text', nullable: true },
   },
   indexes: [
     { name: 'idx_canvas_edges_board', columns: ['board_id'] },
@@ -88,7 +90,9 @@ export async function initCanvasTables(): Promise<void> {
               to_side TEXT,
               label TEXT,
               color TEXT,
-              direction TEXT
+              direction TEXT,
+              style TEXT,
+              control_points TEXT
             );
           `),
         ]);
@@ -100,7 +104,10 @@ export async function initCanvasTables(): Promise<void> {
           dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN to_side TEXT;`),
           dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN color TEXT;`),
           dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN direction TEXT;`),
+          dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN style TEXT;`),
+          dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN control_points TEXT;`),
         ]);
+
 
         await Promise.allSettled([
           dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`),
@@ -129,11 +136,22 @@ export async function getCanvasNodes(boardId = 'default'): Promise<CanvasNode[]>
 
 export async function getCanvasEdges(boardId = 'default'): Promise<CanvasEdge[]> {
   await initCanvasTables();
-  const edges = await dbAdapter.query<CanvasEdge>(
+  const rawEdges = await dbAdapter.query<any>(
     `SELECT * FROM ext_canvas_edges WHERE board_id = ?`,
     [boardId]
   );
-  return edges;
+  return rawEdges.map((e) => ({
+    ...e,
+    control_points: typeof e.control_points === 'string' && e.control_points.trim()
+      ? (() => {
+          try {
+            return JSON.parse(e.control_points);
+          } catch {
+            return undefined;
+          }
+        })()
+      : (Array.isArray(e.control_points) ? e.control_points : undefined),
+  }));
 }
 
 export async function saveCanvasNode(node: CanvasNode): Promise<void> {
@@ -169,8 +187,8 @@ export async function deleteCanvasNode(nodeId: string): Promise<void> {
 export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
   await initCanvasTables();
   await dbAdapter.execute(
-    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction, style, control_points)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       edge.id,
       edge.board_id || 'default',
@@ -181,9 +199,12 @@ export async function saveCanvasEdge(edge: CanvasEdge): Promise<void> {
       edge.label || null,
       edge.color || null,
       edge.direction || 'unidirectional',
+      edge.style || null,
+      edge.control_points && edge.control_points.length > 0 ? JSON.stringify(edge.control_points) : null,
     ]
   );
 }
+
 
 export async function deleteCanvasEdge(edgeId: string): Promise<void> {
   await initCanvasTables();
@@ -236,6 +257,8 @@ export async function serializeCanvasBoard(boardId: string): Promise<string> {
     label: e.label,
     color: e.color,
     direction: e.direction || 'unidirectional',
+    style: e.style,
+    controlPoints: e.control_points,
   }));
 
   return JSON.stringify({ nodes: canvasNodes, edges: canvasEdges }, null, 2);
@@ -271,6 +294,8 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
       label: e.label,
       color: e.color,
       direction: e.direction || (e.fromEnd ? (e.toEnd ? 'bidirectional' : 'nondirectional') : 'unidirectional'),
+      style: e.style || e.lineStyle,
+      control_points: e.controlPoints || e.control_points,
     }));
 
     // Concurrently persist imported elements in SQLite in background via a single atomic WAL transaction
@@ -293,8 +318,8 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
         ],
       })),
       ...importedEdges.map((e) => ({
-        sql: `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction)
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        sql: `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction, style, control_points)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         params: [
           e.id,
           e.board_id || 'default',
@@ -305,9 +330,12 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
           e.label || null,
           e.color || null,
           e.direction || 'unidirectional',
+          e.style || null,
+          e.control_points && e.control_points.length > 0 ? JSON.stringify(e.control_points) : null,
         ],
       })),
     ];
+
 
     if (queries.length > 0) {
       dbAdapter.transaction(queries).catch((err) => {

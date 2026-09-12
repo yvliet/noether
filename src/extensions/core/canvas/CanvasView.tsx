@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useCanvasSettings } from './canvasSettings';
-import { CanvasNode, CanvasEdge, CanvasNodeSide } from './types';
+import { CanvasNode, CanvasEdge, CanvasNodeSide, CanvasEdgeStyle } from './types';
 import {
   getCanvasNodes,
   getCanvasEdges,
@@ -14,11 +14,13 @@ import {
 import {
   getSideAnchorPoint,
   computeBezierPath,
+  computeEdgeGeometry,
   findTargetSideSnap,
   determineDefaultConnectingSides,
   getEdgeLabelBox,
   SideSnapTarget,
 } from './utils/canvasEdges';
+
 import {
   PlusSignIcon,
   MinusSignIcon,
@@ -123,7 +125,10 @@ function parseCanvasJson(json: string, boardId: string): { nodes: CanvasNode[]; 
       label: e.label,
       color: e.color,
       direction: e.direction || (e.fromEnd ? (e.toEnd ? 'bidirectional' : 'nondirectional') : 'unidirectional'),
+      style: e.style || e.lineStyle,
+      control_points: e.controlPoints || e.control_points,
     }));
+
 
     return { nodes, edges };
   } catch {
@@ -147,7 +152,29 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const canvasReadOnly = useCanvasSettings((s: any) => s.canvasReadOnly);
   const setCanvasReadOnly = useCanvasSettings((s: any) => s.setCanvasReadOnly);
   const gridSize = useCanvasSettings((s: any) => s.gridSize);
+  const defaultEdgeStyle = useCanvasSettings((s: any) => s.defaultEdgeStyle || 'bezier');
+  const [isShiftHeld, setIsShiftHeld] = useState(false);
+  const isAltHeldRef = useRef(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftHeld(true);
+      if (e.key === 'Alt') isAltHeldRef.current = true;
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftHeld(false);
+      if (e.key === 'Alt') isAltHeldRef.current = false;
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
   const documents = useVaultDocuments();
+
   const activeDocument = useActiveDocument();
   const isLightboxOpen = useWorkspaceStore((s) => Boolean(s.imageLightbox?.isOpen));
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
@@ -582,6 +609,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const handleBlur = () => {
       isSpaceHeldRef.current = false;
       isCtrlHeldRef.current = false;
+      isAltHeldRef.current = false;
       isPanModifierRef.current = false;
       setIsPanModifierState(false);
     };
@@ -744,6 +772,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const draggingNodeIdRef = useRef<string | null>(null);
   const dragCandidateNodeIdRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const isAltDragRef = useRef(false);
+  const altDragClonedRef = useRef(false);
+
+  // Camera & Zoom Action Refs (invocable from keyboard shortcuts)
+  const handleResetZoomRef = useRef<() => void>(() => {});
+  const handleFitToCenterRef = useRef<() => void>(() => {});
+  const handleZoomInRef = useRef<() => void>(() => {});
+  const handleZoomOutRef = useRef<() => void>(() => {});
 
   // Synchronize grabbing cursor on document.body during node dragging or canvas panning
   useEffect(() => {
@@ -1603,9 +1639,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       // Avoid redundant DB writes if nothing changed
       const hasChanges = Object.keys(updates).some((key) => {
         const k = key as keyof CanvasEdge;
+        if (k === 'control_points') return true;
         return currentEdge[k] !== updates[k];
       });
       if (!hasChanges) return;
+
 
       recordSnapshot();
       const updatedEdge: CanvasEdge = {
@@ -2118,6 +2156,83 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     ]
   );
 
+  const handleBendPointerDown = useCallback(
+    (edge: CanvasEdge, e: React.PointerEvent) => {
+      if (canvasReadOnlyRef.current || e.button !== 0) return;
+      clearTextSelection();
+      e.stopPropagation();
+      e.preventDefault();
+      handleSelectEdge(edge.id, e);
+
+      const currentContainer = containerRef.current;
+      if (!currentContainer) return;
+      const cRect = currentContainer.getBoundingClientRect();
+      const startCanvasX = (e.clientX - cRect.left - panRef.current.x) / zoomRef.current;
+      const startCanvasY = (e.clientY - cRect.top - panRef.current.y) / zoomRef.current;
+
+      const existingBend = edge.control_points?.[0] || { x: 0, y: 0 };
+      let bendDidMove = false;
+
+      const handleBendMove = (moveEv: PointerEvent) => {
+        if ((moveEv.buttons & 1) === 0) {
+          window.removeEventListener('pointermove', handleBendMove);
+          window.removeEventListener('pointerup', handleBendUp);
+          return;
+        }
+
+        const moveCanvasX = (moveEv.clientX - cRect.left - panRef.current.x) / zoomRef.current;
+        const moveCanvasY = (moveEv.clientY - cRect.top - panRef.current.y) / zoomRef.current;
+
+        const dx = moveCanvasX - startCanvasX;
+        const dy = moveCanvasY - startCanvasY;
+
+        if (!bendDidMove && Math.hypot(dx, dy) > 2) {
+          bendDidMove = true;
+        }
+        if (!bendDidMove) return;
+
+        let newOffsetX = Math.round(existingBend.x + dx);
+        let newOffsetY = Math.round(existingBend.y + dy);
+
+        if (canvasSnapGridRef.current && gridSizeRef.current > 0) {
+          newOffsetX = Math.round(newOffsetX / gridSizeRef.current) * gridSizeRef.current;
+          newOffsetY = Math.round(newOffsetY / gridSizeRef.current) * gridSizeRef.current;
+        }
+
+        setEdges((prev) =>
+          prev.map((item) =>
+            item.id === edge.id
+              ? { ...item, control_points: [{ x: newOffsetX, y: newOffsetY }] }
+              : item
+          )
+        );
+        edgesRef.current = edgesRef.current.map((item) =>
+          item.id === edge.id
+            ? { ...item, control_points: [{ x: newOffsetX, y: newOffsetY }] }
+            : item
+        );
+      };
+
+      const handleBendUp = () => {
+        window.removeEventListener('pointermove', handleBendMove);
+        window.removeEventListener('pointerup', handleBendUp);
+
+        if (bendDidMove) {
+          const updatedEdge = edgesRef.current.find((item) => item.id === edge.id);
+          if (updatedEdge) {
+            saveCanvasEdge(updatedEdge);
+            triggerDiskSyncRef.current(updatedEdge.board_id);
+            recordSnapshot();
+          }
+        }
+      };
+
+      window.addEventListener('pointermove', handleBendMove);
+      window.addEventListener('pointerup', handleBendUp);
+    },
+    [handleSelectEdge, recordSnapshot]
+  );
+
   const handleEdgePointerDown = useCallback(
     (
       edge: CanvasEdge,
@@ -2131,7 +2246,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       e.stopPropagation();
       e.preventDefault();
 
+      if (e.shiftKey && targetEndpoint === 'auto') {
+        handleBendPointerDown(edge, e);
+        return;
+      }
+
       if (draftEdgeRef.current && draftEdgeRef.current.mode === 'click') return;
+
 
       const fromNode = nodeMap.get(edge.from_node_id);
       const toNode = nodeMap.get(edge.to_node_id);
@@ -2475,6 +2596,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, []);
 
   const handleCanvasPointerMove = useCallback((e: React.PointerEvent) => {
+    lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
     if (!draftEdgeRef.current || draftEdgeRef.current.mode !== 'click') return;
     performDraftEdgeUpdate(e.clientX, e.clientY);
   }, [performDraftEdgeUpdate]);
@@ -2508,6 +2630,55 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         e.preventDefault();
         e.stopPropagation();
         handleRedo();
+        return;
+      }
+
+      // Shift+1 or Ctrl+1 / Cmd+1: Zoom to fit all cards
+      if (
+        ((e.shiftKey && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && !e.shiftKey)) &&
+        !e.altKey &&
+        (e.key === '1' || e.key === '!' || e.code === 'Digit1')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleFitToCenterRef.current();
+        return;
+      }
+
+      // Ctrl+0 / Cmd+0: Reset zoom to 100%
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.shiftKey &&
+        !e.altKey &&
+        (e.key === '0' || e.code === 'Digit0' || e.code === 'Numpad0')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleResetZoomRef.current();
+        return;
+      }
+
+      // Ctrl+= / Ctrl++ / Cmd+=: Zoom in
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.altKey &&
+        (e.key === '=' || e.key === '+' || e.code === 'Equal' || e.code === 'NumpadAdd')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleZoomInRef.current();
+        return;
+      }
+
+      // Ctrl+- / Cmd+-: Zoom out
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.altKey &&
+        (e.key === '-' || e.key === '_' || e.code === 'Minus' || e.code === 'NumpadSubtract')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleZoomOutRef.current();
         return;
       }
 
@@ -2546,17 +2717,33 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
       }
 
-      // Ctrl+V / Cmd+V: Paste card(s) or clipboard text at viewport center
+      // Ctrl+V / Cmd+V: Paste card(s) or clipboard text centered at cursor (or viewport center fallback)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
         e.preventDefault();
         e.stopPropagation();
         const el = containerRef.current;
+        const rect = el?.getBoundingClientRect();
         const ct = currentTransformRef.current;
-        const width = el ? el.clientWidth : 800;
-        const height = el ? el.clientHeight : 600;
-        const centerX = (width / 2 - ct.x) / ct.scale;
-        const centerY = (height / 2 - ct.y) / ct.scale;
-        handlePasteAtCoordinates(centerX, centerY);
+        let pasteX: number;
+        let pasteY: number;
+
+        if (lastMouseMoveEventRef.current && rect) {
+          const mouseX = lastMouseMoveEventRef.current.clientX - rect.left;
+          const mouseY = lastMouseMoveEventRef.current.clientY - rect.top;
+          if (mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
+            pasteX = (mouseX - ct.x) / ct.scale;
+            pasteY = (mouseY - ct.y) / ct.scale;
+          } else {
+            pasteX = (rect.width / 2 - ct.x) / ct.scale;
+            pasteY = (rect.height / 2 - ct.y) / ct.scale;
+          }
+        } else {
+          const width = el ? el.clientWidth : 800;
+          const height = el ? el.clientHeight : 600;
+          pasteX = (width / 2 - ct.x) / ct.scale;
+          pasteY = (height / 2 - ct.y) / ct.scale;
+        }
+        handlePasteAtCoordinates(pasteX, pasteY);
         return;
       }
 
@@ -2575,7 +2762,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           e.preventDefault();
           e.stopPropagation();
           stopEdgeAutoScroll();
-          if (dragDidMoveRef.current && multiDragInitialPositionsRef.current.size > 0) {
+          if (altDragClonedRef.current) {
+            const clonedIds = new Set(selectedNodeIdsRef.current);
+            const remaining = nodesRef.current.filter((n) => !clonedIds.has(n.id));
+            nodesRef.current = remaining;
+            setNodes(remaining);
+            for (const cid of clonedIds) {
+              deleteCanvasNode(cid);
+            }
+            triggerDiskSyncRef.current(effectiveBoardId);
+          } else if (dragDidMoveRef.current && multiDragInitialPositionsRef.current.size > 0) {
             const initPosMap = multiDragInitialPositionsRef.current;
             setNodes((prev) => {
               const updated = prev.map((n) => {
@@ -2592,6 +2788,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             });
             triggerDiskSyncRef.current(effectiveBoardId);
           }
+          isAltDragRef.current = false;
+          altDragClonedRef.current = false;
           dragCandidateNodeIdRef.current = null;
           draggingNodeIdRef.current = null;
           dragDidMoveRef.current = false;
@@ -3047,6 +3245,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     dragStartClientRef.current = { x: e.clientX, y: e.clientY };
     dragCandidateNodeIdRef.current = node.id;
     draggingNodeIdRef.current = null;
+    isAltDragRef.current = Boolean(e.altKey);
+    altDragClonedRef.current = false;
     const mouseCanvasX = (e.clientX - panRef.current.x) / zoomRef.current;
     const mouseCanvasY = (e.clientY - panRef.current.y) / zoomRef.current;
     dragOffsetRef.current = {
@@ -3320,20 +3520,69 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, [recordSnapshot]);
 
   const performNodeDrag = useCallback((clientX: number, clientY: number) => {
-    const dragId = draggingNodeIdRef.current || dragCandidateNodeIdRef.current;
-    if (!dragId) return;
+    let activeDragId = draggingNodeIdRef.current || dragCandidateNodeIdRef.current;
+    if (!activeDragId) return;
 
     if (!dragDidMoveRef.current) {
       const dx = Math.abs(clientX - dragStartClientRef.current.x);
       const dy = Math.abs(clientY - dragStartClientRef.current.y);
       if (dx < 4 && dy < 4) return;
       dragDidMoveRef.current = true;
-      draggingNodeIdRef.current = dragId;
+      draggingNodeIdRef.current = activeDragId;
       setIsDraggingNodeState(true);
       recordSnapshot();
+
+      // Alt+Drag duplication: duplicate selected cards in-place and drag the clones
+      const isAltActive = isAltDragRef.current || isAltHeldRef.current;
+      if (isAltActive && !altDragClonedRef.current && !canvasReadOnlyRef.current) {
+        altDragClonedRef.current = true;
+        const currentSelected = selectedNodeIdsRef.current.includes(activeDragId)
+          ? selectedNodeIdsRef.current
+          : [activeDragId];
+
+        const clones: CanvasNode[] = [];
+        const cloneIds: string[] = [];
+        const newPosMap = new Map<string, { x: number; y: number }>();
+        const oldToNewMap = new Map<string, string>();
+
+        for (let i = 0; i < currentSelected.length; i++) {
+          const origNode = nodesRef.current.find((n) => n.id === currentSelected[i]);
+          if (!origNode) continue;
+          const newId = `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+          oldToNewMap.set(origNode.id, newId);
+          const clone: CanvasNode = {
+            ...origNode,
+            id: newId,
+          };
+          clones.push(clone);
+          cloneIds.push(newId);
+          newPosMap.set(newId, { x: origNode.x, y: origNode.y });
+          saveCanvasNode(clone);
+        }
+
+        if (clones.length > 0) {
+          const nextNodes = [...nodesRef.current, ...clones];
+          nodesRef.current = nextNodes;
+          setNodes(nextNodes);
+
+          const newDragId = oldToNewMap.get(activeDragId) || cloneIds[0];
+          activeDragId = newDragId;
+          draggingNodeIdRef.current = newDragId;
+          dragCandidateNodeIdRef.current = newDragId;
+          selectedNodeIdsRef.current = cloneIds;
+          setSelectedNodeIds(cloneIds);
+          setSelectedNodeId(newDragId);
+          multiDragInitialPositionsRef.current = newPosMap;
+
+          showToast(
+            clones.length > 1 ? `Duplicated ${clones.length} cards` : 'Duplicated card',
+            'info'
+          );
+        }
+      }
     }
     const currentNodes = nodesRef.current;
-    const node = currentNodes.find((n) => n.id === dragId);
+    const node = currentNodes.find((n) => n.id === activeDragId);
     if (!node) return;
 
     const rawX = (clientX - panRef.current.x) / zoomRef.current - dragOffsetRef.current.x;
@@ -3363,7 +3612,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       };
 
       const snapResult = calculateObjectSnap(
-        dragId,
+        activeDragId,
         rawX,
         rawY,
         gridX,
@@ -3381,11 +3630,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
 
     const initialPosMap = multiDragInitialPositionsRef.current;
-    const isMultiDrag = initialPosMap.size > 1 && initialPosMap.has(dragId);
+    const isMultiDrag = initialPosMap.size > 1 && initialPosMap.has(activeDragId);
 
     let nextNodes: CanvasNode[];
     if (isMultiDrag) {
-      const primaryInitial = initialPosMap.get(dragId)!;
+      const primaryInitial = initialPosMap.get(activeDragId)!;
       const deltaX = finalX - primaryInitial.x;
       const deltaY = finalY - primaryInitial.y;
 
@@ -3397,7 +3646,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return n;
       });
     } else {
-      nextNodes = currentNodes.map((n) => (n.id === dragId ? { ...n, x: finalX, y: finalY } : n));
+      nextNodes = currentNodes.map((n) => (n.id === activeDragId ? { ...n, x: finalX, y: finalY } : n));
     }
 
     nodesRef.current = nextNodes;
@@ -3679,6 +3928,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setActiveGuides([]);
       dragCandidateNodeIdRef.current = null;
       dragDidMoveRef.current = false;
+      isAltDragRef.current = false;
+      altDragClonedRef.current = false;
       resizeDidMoveRef.current = false;
       isPanningRef.current = false;
       setIsPanningState(false);
@@ -3925,6 +4176,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     };
     runCameraEasing();
   }, [nodes, containerSize.width, containerSize.height, runCameraEasing]);
+
+  handleResetZoomRef.current = handleResetZoom;
+  handleFitToCenterRef.current = handleFitToCenter;
+  handleZoomInRef.current = handleZoomIn;
+  handleZoomOutRef.current = handleZoomOut;
 
   const handleFitNodeToCenter = useCallback(
     (nodeId: string) => {
@@ -5379,14 +5635,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               const p1 = getSideAnchorPoint(fromNode, fromSide);
               const p2 = getSideAnchorPoint(toNode, toSide);
 
-              const { path, arrowPath, sourceArrowPath, mid } = computeBezierPath(
+              const edgeStyle = edge.style || defaultEdgeStyle;
+              const { path, arrowPath, sourceArrowPath, mid } = computeEdgeGeometry(
                 p1,
                 fromSide,
                 p2,
                 toSide,
+                edgeStyle,
                 12,
                 13,
-                edge.direction || 'unidirectional'
+                edge.direction || 'unidirectional',
+                edge.control_points
               );
               const isSelected = selectedEdgeId === edge.id;
               const edgeColor = edge.color || '#888888';
@@ -5402,8 +5661,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 <g
                   key={edge.id}
                   data-edge-id={edge.id}
-                  className="canvas-edge group/edge pointer-events-auto select-none transition-none cursor-pointer"
+                  className={`canvas-edge group/edge pointer-events-auto select-none transition-none ${
+                    isShiftHeld ? 'cursor-grab' : 'cursor-pointer'
+                  }`}
                   onPointerDown={(e) => handleEdgePointerDown(edge, e, 'auto')}
+
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -5510,16 +5772,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 ? edgesRef.current.find((e) => e.id === draftEdge.editingEdgeId)
                 : null;
               const direction = originalEdge?.direction || 'unidirectional';
+              const draftStyle = originalEdge?.style || defaultEdgeStyle;
 
-              const { path, arrowPath, sourceArrowPath } = computeBezierPath(
+              const { path, arrowPath, sourceArrowPath } = computeEdgeGeometry(
                 p1,
                 fromSide,
                 p2,
                 toSide,
+                draftStyle,
                 12,
                 13,
-                direction
+                direction,
+                originalEdge?.control_points
               );
+
 
               return (
                 <g className="pointer-events-none select-none transition-none">
@@ -5552,7 +5818,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           </svg>
 
           {/* HTML Overlay for Edge Labels & Selected Edge Action Pill */}
-          <div className="absolute inset-0 pointer-events-none z-20">
+          <div className="absolute inset-0 pointer-events-none z-40">
             {edges.map((edge) => {
               if (draftEdge?.editingEdgeId === edge.id) return null;
 
@@ -5567,14 +5833,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               const p1 = getSideAnchorPoint(fromNode, fromSide);
               const p2 = getSideAnchorPoint(toNode, toSide);
 
-              const { mid } = computeBezierPath(
+              const edgeStyle = edge.style || defaultEdgeStyle;
+              const { mid } = computeEdgeGeometry(
                 p1,
                 fromSide,
                 p2,
                 toSide,
+                edgeStyle,
                 12,
                 13,
-                edge.direction || 'unidirectional'
+                edge.direction || 'unidirectional',
+                edge.control_points
               );
 
               const isSelected = selectedEdgeId === edge.id;
@@ -5619,6 +5888,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                         currentColor={edge.color}
                         onDirectionChange={(direction) => handleUpdateEdge(edge.id, { direction })}
                         currentDirection={edge.direction || 'unidirectional'}
+                        onStyleChange={(style) => handleUpdateEdge(edge.id, { style })}
+                        currentStyle={edge.style || defaultEdgeStyle}
+                        hasCustomBend={Boolean(edge.control_points && edge.control_points.length > 0)}
+                        onResetBend={() => handleUpdateEdge(edge.id, { control_points: [] })}
                         hasLabel={hasLabel}
                         onEditLabel={() => startEditingEdgeLabel(edge.id, edge.label || '')}
                         onClearLabel={() => handleUpdateEdge(edge.id, { label: '' })}
@@ -5627,6 +5900,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   )}
                 </React.Fragment>
               );
+
             })}
           </div>
 
@@ -5709,7 +5983,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         {/* Arrowhead / Endpoint Retarget Grab Handles Layer */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none overflow-visible transition-none"
-          style={{ zIndex: 40 }}
+          style={{ zIndex: 28 }}
         >
           {/* Interactive Retarget Grab Handles (mounted strictly when an edge is selected so unselected edges never shadow card drag dots) */}
           {!canvasReadOnly && !draftEdge && edges.map((edge) => {
@@ -5726,6 +6000,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             const p1 = getSideAnchorPoint(fromNode, fromSide);
             const p2 = getSideAnchorPoint(toNode, toSide);
             const hitRadius = 26 / Math.min(1.5, Math.max(0.6, zoom));
+            const edgeStyle = edge.style || defaultEdgeStyle;
+            const { mid } = computeEdgeGeometry(
+              p1,
+              fromSide,
+              p2,
+              toSide,
+              edgeStyle,
+              12,
+              13,
+              edge.direction || 'unidirectional',
+              edge.control_points
+            );
 
             return (
               <g key={`edge-handles-${edge.id}`} className="transition-none">
@@ -5758,8 +6044,32 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                     startEditingEdgeLabel(edge.id, edge.label || '');
                   }}
                 />
+
+                {/* Midpoint / Curve bend control handle — not shown for straight edges */}
+                {edgeStyle !== 'straight' && (
+                  <circle
+                    cx={mid.x}
+                    cy={mid.y}
+                    r={Math.max(5, 7 / zoom)}
+                    fill="#e0e0e0"
+                    stroke="#1e1e1e"
+                    strokeWidth={2 / zoom}
+                    style={{ pointerEvents: 'all' }}
+                    className="cursor-grab active:cursor-grabbing pointer-events-auto transition-none"
+                    onPointerDown={(e) => handleBendPointerDown(edge, e)}
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      handleUpdateEdge(edge.id, { control_points: [] });
+                    }}
+                  >
+                    <title>Drag to bend line (Shift+Drag anywhere on line). Double-click to reset.</title>
+                  </circle>
+                )}
               </g>
             );
+
+
           })}
         </svg>
 

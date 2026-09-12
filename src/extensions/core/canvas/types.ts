@@ -25,6 +25,13 @@ export type CanvasNodeSide = 'top' | 'right' | 'bottom' | 'left';
 
 export type CanvasEdgeDirection = 'nondirectional' | 'unidirectional' | 'bidirectional';
 
+export type CanvasEdgeStyle = 'bezier' | 'step' | 'straight';
+
+export interface CanvasControlPoint {
+  x: number;
+  y: number;
+}
+
 export interface CanvasEdge {
   id: string;
   board_id: string;
@@ -35,4 +42,7 @@ export interface CanvasEdge {
   label?: string;
   color?: string;
   direction?: CanvasEdgeDirection;
+  style?: CanvasEdgeStyle;
+  control_points?: CanvasControlPoint[];
 }
+

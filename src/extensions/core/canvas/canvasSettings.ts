@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import type { CanvasEdgeStyle } from './types';
 
 export interface CanvasSettingsState {
   canvasSnapGrid: boolean;
@@ -7,12 +8,14 @@ export interface CanvasSettingsState {
   canvasReadOnly: boolean;
   gridSize: number;
   defaultNodeColor: string;
+  defaultEdgeStyle: CanvasEdgeStyle;
 
   setCanvasSnapGrid: (val: boolean) => void;
   setCanvasSnapObjects: (val: boolean) => void;
   setCanvasReadOnly: (val: boolean) => void;
   setGridSize: (val: number) => void;
   setDefaultNodeColor: (val: string) => void;
+  setDefaultEdgeStyle: (val: CanvasEdgeStyle) => void;
   restoreDefaults: () => void;
 }
 
@@ -22,6 +25,7 @@ export const DEFAULT_CANVAS_SETTINGS = {
   canvasReadOnly: false,
   gridSize: 20,
   defaultNodeColor: '#2a2a2a',
+  defaultEdgeStyle: 'bezier' as CanvasEdgeStyle,
 };
 
 export const useCanvasSettings = create<CanvasSettingsState>()(
@@ -34,6 +38,7 @@ export const useCanvasSettings = create<CanvasSettingsState>()(
       setCanvasReadOnly: (canvasReadOnly) => set({ canvasReadOnly }),
       setGridSize: (gridSize) => set({ gridSize }),
       setDefaultNodeColor: (defaultNodeColor) => set({ defaultNodeColor }),
+      setDefaultEdgeStyle: (defaultEdgeStyle) => set({ defaultEdgeStyle }),
 
       restoreDefaults: () => set({ ...DEFAULT_CANVAS_SETTINGS }),
     }),
@@ -42,3 +47,4 @@ export const useCanvasSettings = create<CanvasSettingsState>()(
     }
   )
 );
+

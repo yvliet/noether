@@ -1,5 +1,6 @@
 import React from 'react';
 import { useCanvasSettings, DEFAULT_CANVAS_SETTINGS } from './canvasSettings';
+import type { CanvasEdgeStyle } from './types';
 import { useToast } from 'noether';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
@@ -14,6 +15,8 @@ export const CanvasSettingsTab: React.FC = () => {
     setGridSize,
     defaultNodeColor,
     setDefaultNodeColor,
+    defaultEdgeStyle,
+    setDefaultEdgeStyle,
     restoreDefaults,
   } = useCanvasSettings();
 
@@ -22,7 +25,9 @@ export const CanvasSettingsTab: React.FC = () => {
   const isModified =
     canvasSnapGrid !== DEFAULT_CANVAS_SETTINGS.canvasSnapGrid ||
     gridSize !== DEFAULT_CANVAS_SETTINGS.gridSize ||
-    defaultNodeColor !== DEFAULT_CANVAS_SETTINGS.defaultNodeColor;
+    defaultNodeColor !== DEFAULT_CANVAS_SETTINGS.defaultNodeColor ||
+    defaultEdgeStyle !== DEFAULT_CANVAS_SETTINGS.defaultEdgeStyle;
+
 
   return (
     <div className="flex flex-col gap-5">
@@ -123,7 +128,39 @@ export const CanvasSettingsTab: React.FC = () => {
             <ColorPicker value={defaultNodeColor} onChange={setDefaultNodeColor} />
           </div>
         </div>
+
+        {/* Default Edge Routing Style */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-[13px] font-normal text-[#dcddde]">Default edge routing</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Default path geometry for connecting lines between cards.
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {defaultEdgeStyle !== DEFAULT_CANVAS_SETTINGS.defaultEdgeStyle && (
+              <button
+                type="button"
+                onClick={() => setDefaultEdgeStyle(DEFAULT_CANVAS_SETTINGS.defaultEdgeStyle)}
+                title="Restore default (Curved)"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+              >
+                <RotateCcwIcon size={13} />
+              </button>
+            )}
+            <CustomSelect<CanvasEdgeStyle>
+              value={defaultEdgeStyle}
+              onChange={setDefaultEdgeStyle}
+              options={[
+                { value: 'bezier', label: 'Curved' },
+                { value: 'step', label: 'Step' },
+                { value: 'straight', label: 'Straight' },
+              ]}
+            />
+          </div>
+        </div>
       </div>
     </div>
+
   );
 };

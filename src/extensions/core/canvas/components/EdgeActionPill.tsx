@@ -7,10 +7,11 @@ import {
   Delete02Icon,
   PaletteIcon,
   PencilEdit02Icon,
+  RotateCcwIcon,
 } from '@/components/common/Icons';
 import { InlineColorPicker } from '@/components/common/ColorPicker';
 import { CARD_COLOR_PRESETS, resolveCardColorTheme } from './cardColors';
-import type { CanvasEdgeDirection } from '../types';
+import type { CanvasEdgeDirection, CanvasEdgeStyle } from '../types';
 
 export interface EdgeActionPillProps {
   onDelete: () => void;
@@ -19,6 +20,10 @@ export interface EdgeActionPillProps {
   currentColor?: string;
   onDirectionChange: (direction: CanvasEdgeDirection) => void;
   currentDirection?: CanvasEdgeDirection;
+  onStyleChange?: (style: CanvasEdgeStyle) => void;
+  currentStyle?: CanvasEdgeStyle;
+  hasCustomBend?: boolean;
+  onResetBend?: () => void;
   hasLabel: boolean;
   onEditLabel: () => void;
   onClearLabel: () => void;
@@ -32,6 +37,10 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
     currentColor,
     onDirectionChange,
     currentDirection = 'unidirectional',
+    onStyleChange,
+    currentStyle = 'bezier',
+    hasCustomBend = false,
+    onResetBend,
     hasLabel,
     onEditLabel,
     onClearLabel,
@@ -39,15 +48,17 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
     const [isColorMenuOpen, setIsColorMenuOpen] = useState(false);
     const [showAdvancedPicker, setShowAdvancedPicker] = useState(false);
     const [isDirectionMenuOpen, setIsDirectionMenuOpen] = useState(false);
+    const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
 
     const colorMenuRef = useRef<HTMLDivElement>(null);
     const directionMenuRef = useRef<HTMLDivElement>(null);
+    const styleMenuRef = useRef<HTMLDivElement>(null);
 
     const activeTheme = resolveCardColorTheme(currentColor);
 
     // Close menus on outside click or Escape key
     useEffect(() => {
-      if (!isColorMenuOpen && !isDirectionMenuOpen) return;
+      if (!isColorMenuOpen && !isDirectionMenuOpen && !isStyleMenuOpen) return;
 
       const handleOutsideClick = (e: MouseEvent) => {
         const target = e.target as Node;
@@ -58,6 +69,9 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
         if (isDirectionMenuOpen && directionMenuRef.current && !directionMenuRef.current.contains(target)) {
           setIsDirectionMenuOpen(false);
         }
+        if (isStyleMenuOpen && styleMenuRef.current && !styleMenuRef.current.contains(target)) {
+          setIsStyleMenuOpen(false);
+        }
       };
 
       const handleKeyDown = (e: KeyboardEvent) => {
@@ -65,6 +79,7 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
           setIsColorMenuOpen(false);
           setShowAdvancedPicker(false);
           setIsDirectionMenuOpen(false);
+          setIsStyleMenuOpen(false);
         }
       };
 
@@ -74,7 +89,8 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
         window.removeEventListener('mousedown', handleOutsideClick);
         window.removeEventListener('keydown', handleKeyDown);
       };
-    }, [isColorMenuOpen, isDirectionMenuOpen]);
+    }, [isColorMenuOpen, isDirectionMenuOpen, isStyleMenuOpen]);
+
 
     return (
       <div
@@ -207,6 +223,121 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
             </div>
           )}
         </div>
+
+        {/* 4. Line Style Popover */}
+        <div className="relative flex items-center">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsStyleMenuOpen(!isStyleMenuOpen);
+              setIsDirectionMenuOpen(false);
+              setIsColorMenuOpen(false);
+            }}
+            title="Line style"
+            className={`w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0 ${
+              isStyleMenuOpen ? 'text-white bg-[#282828]' : ''
+            }`}
+          >
+            {currentStyle === 'step' ? (
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 13h4a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2h4" />
+              </svg>
+            ) : currentStyle === 'straight' ? (
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <line x1="2" y1="14" x2="14" y2="2" />
+              </svg>
+            ) : (
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M2 12C5 12 5 4 8 4C11 4 11 12 14 12" />
+              </svg>
+            )}
+          </button>
+
+          {isStyleMenuOpen && (
+            <div
+              ref={styleMenuRef}
+              className="absolute top-full left-0 mt-1.5 flex flex-col bg-[#1e1e1e] border border-[#333333] rounded-[10px] py-1 shadow-2xl z-40 select-none min-w-[170px]"
+            >
+              {/* Curved (Bezier) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStyleChange?.('bezier');
+                  setIsStyleMenuOpen(false);
+                }}
+                className="flex items-center justify-between px-3 py-2 text-[14px] text-[#cccccc] hover:text-white hover:bg-[#282828] cursor-pointer transition-none w-full text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-[#999999] shrink-0">
+                    <path d="M2 12C5 12 5 4 8 4C11 4 11 12 14 12" />
+                  </svg>
+                  <span>Curved</span>
+                </div>
+                {currentStyle === 'bezier' && <CheckIcon size={14} className="text-white shrink-0 ml-2" />}
+              </button>
+
+              {/* Smooth 90° (Step) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStyleChange?.('step');
+                  setIsStyleMenuOpen(false);
+                }}
+                className="flex items-center justify-between px-3 py-2 text-[14px] text-[#cccccc] hover:text-white hover:bg-[#282828] cursor-pointer transition-none w-full text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-[#999999] shrink-0">
+                    <path d="M2 13h4a2 2 0 0 0 2-2V5a2 2 0 0 1 2-2h4" />
+                  </svg>
+                  <span>Step</span>
+                </div>
+                {currentStyle === 'step' && <CheckIcon size={14} className="text-white shrink-0 ml-2" />}
+              </button>
+
+              {/* Straight */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onStyleChange?.('straight');
+                  setIsStyleMenuOpen(false);
+                }}
+                className="flex items-center justify-between px-3 py-2 text-[14px] text-[#cccccc] hover:text-white hover:bg-[#282828] cursor-pointer transition-none w-full text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-[#999999] shrink-0">
+                    <line x1="2" y1="14" x2="14" y2="2" />
+                  </svg>
+                  <span>Straight</span>
+                </div>
+                {currentStyle === 'straight' && <CheckIcon size={14} className="text-white shrink-0 ml-2" />}
+              </button>
+
+              {/* Reset Bend Button (if edge has manual bend) */}
+              {hasCustomBend && (
+                <>
+                  <div className="my-1 border-t border-[#333333]" />
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onResetBend?.();
+                      setIsStyleMenuOpen(false);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 text-[13px] text-[#ff8888] hover:text-rose-300 hover:bg-[#282828] cursor-pointer transition-none w-full text-left"
+                  >
+                    <RotateCcwIcon size={13} className="shrink-0" />
+                    <span>Reset curve bend</span>
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
 
         {/* 4. Fit Arrow to Center */}
         <button
