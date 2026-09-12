@@ -755,5 +755,13 @@ export interface SettingsAPI {
    * @since 0.2.0
    */
   setDefaultEditingMode(mode: string): void;
+
+  /**
+   * Restores all application preferences and extension settings to default values.
+   * Resets host settings, clears persisted extension storage, and invokes extension reset callbacks.
+   *
+   * @since 0.5.0
+   */
+  restoreAllDefaults(): Promise<void>;
 }
 

@@ -15,6 +15,7 @@ import { LeftToRightListBulletIcon } from '@/components/common/Icons';
 import { HeadingItem } from '@/types';
 import { getDocumentById } from '@/lib/db/documents';
 import { outlineReadme } from './readme';
+import { useOutlineSettings } from './outlineSettings';
 
 const LazyOutlineView = React.lazy(() =>
   import('./OutlineView').then((m) => ({ default: m.OutlineView }))
@@ -104,6 +105,9 @@ export class OutlineExtension extends Extension {
           <LazyOutlineSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useOutlineSettings.getState().restoreDefaults();
+      },
     });
 
     // 3. Register MCP Tools

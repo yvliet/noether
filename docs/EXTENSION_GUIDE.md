@@ -149,6 +149,9 @@ this.registerSettingTab({
   name: 'Word Counter',
   render: () => {
     return React.createElement('div', null, 'Configure word counter rules...');
+  },
+  onRestoreDefaults: () => {
+    // Reset internal store or persisted data back to defaults
   }
 });
 ```

@@ -342,6 +342,9 @@ export class IconifyExtension extends Extension {
       name: 'More icons',
       icon: <MaskTheater02Icon size={14} />,
       render: () => <IconifySettingsTab />,
+      onRestoreDefaults: () => {
+        useIconifyStore.getState().restoreDefaults();
+      },
     });
 
     // 13. Register TipTap In-Document Icon Chip Extension

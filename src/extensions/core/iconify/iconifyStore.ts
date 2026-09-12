@@ -23,6 +23,7 @@ import {
   setIconInDb,
   removeIconFromDb,
   clearAllIconsInDb,
+  DEFAULT_ICONIFY_SETTINGS,
 } from './iconifyDb';
 
 export interface IconPickerTarget {
@@ -79,6 +80,8 @@ export interface IconifyState {
   removeIcon: (itemId: string) => Promise<void>;
   /** Clear all custom icons */
   clearAllIcons: () => Promise<void>;
+  /** Restore settings to default values */
+  restoreDefaults: () => void;
 }
 
 export const useIconifyStore = create<IconifyState>((set, get) => {
@@ -143,6 +146,19 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
     setEmojiStyle: (style: import('@/components/common/emoji').EmojiStyle) => {
       set({ emojiStyle: style });
       persistCurrentSettings({ emojiStyle: style });
+    },
+
+    restoreDefaults: () => {
+      set({
+        enableFolderIcons: DEFAULT_ICONIFY_SETTINGS.enableFolderIcons,
+        enableFileIcons: DEFAULT_ICONIFY_SETTINGS.enableFileIcons,
+        enableDocumentIcons: DEFAULT_ICONIFY_SETTINGS.enableDocumentIcons,
+        showDefaultFolderIcons: DEFAULT_ICONIFY_SETTINGS.showDefaultFolderIcons,
+        showDefaultFileIcons: DEFAULT_ICONIFY_SETTINGS.showDefaultFileIcons,
+        showEditorTitleIcon: DEFAULT_ICONIFY_SETTINGS.showEditorTitleIcon,
+        emojiStyle: DEFAULT_ICONIFY_SETTINGS.emojiStyle,
+      });
+      saveIconifySettingsToLocalStorage(DEFAULT_ICONIFY_SETTINGS);
     },
 
     loadIcons: async () => {

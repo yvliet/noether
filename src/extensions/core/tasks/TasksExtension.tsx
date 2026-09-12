@@ -15,6 +15,7 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { CheckmarkSquare02Icon } from '@/components/common/Icons';
 import { tasksReadme } from './readme';
+import { useTasksSettings } from './tasksSettings';
 
 const LazyTasksView = React.lazy(() =>
   import('./TasksView').then((m) => ({ default: m.TasksView }))
@@ -104,6 +105,9 @@ export class TasksExtension extends Extension {
           <LazyTasksSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useTasksSettings.getState().restoreDefaults();
+      },
     });
 
     // ── MCP Tools Registration ──

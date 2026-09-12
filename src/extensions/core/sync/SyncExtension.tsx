@@ -169,6 +169,20 @@ export class SyncExtension extends Extension {
           }}
         />
       ),
+      onRestoreDefaults: async () => {
+        this.config = { ...DEFAULT_CONFIG };
+        this.engine?.updateConfig(this.config);
+        useSyncStore.getState().restoreDefaults();
+        await this.saveData({
+          config: this.config,
+          state: {
+            telemetry: this.engine?.getTelemetry() || useSyncStore.getState().telemetry,
+            tombstones: [],
+            remoteToLocalMap: [],
+            localToRemoteMap: [],
+          },
+        });
+      },
     });
 
     // 7. Register MCP Tools

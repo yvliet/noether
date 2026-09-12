@@ -16,6 +16,7 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { Layout01Icon } from '@/components/common/Icons';
 import { CanvasSettingsTab } from './CanvasSettingsTab';
+import { useCanvasSettings } from './canvasSettings';
 import { canvasReadme } from './readme';
 import { CanvasNode, CanvasEdge } from './types';
 import {
@@ -108,6 +109,9 @@ export class CanvasExtension extends Extension {
       name: 'Canvas',
       icon: <Layout01Icon size={14} />,
       render: () => <CanvasSettingsTab />,
+      onRestoreDefaults: () => {
+        useCanvasSettings.getState().restoreDefaults();
+      },
     });
 
     // 5. Register File Tree Action (New canvas button)

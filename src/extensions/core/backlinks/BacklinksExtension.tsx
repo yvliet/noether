@@ -130,6 +130,9 @@ export class BacklinksExtension extends Extension {
           <LazyBacklinksSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useBacklinksSettings.getState().restoreDefaults();
+      },
     });
 
     // 6. Register Document Menu Actions

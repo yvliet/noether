@@ -51,6 +51,9 @@ export class SketchExtension extends Extension {
       name: 'Sketch',
       icon: <PaintBoardIcon size={14} />,
       render: () => <SketchSettingsTab />,
+      onRestoreDefaults: () => {
+        useSketchStore.getState().restoreDefaults();
+      },
     });
 
     // 3. Register Subheader Button Slot (Left of Editing view toggle)

@@ -223,6 +223,9 @@ this.registerSettingTab({
       )
     );
   },
+  onRestoreDefaults: () => {
+    // Reset extension configuration back to defaults
+  },
 });
 ```
 

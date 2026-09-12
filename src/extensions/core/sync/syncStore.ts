@@ -16,6 +16,7 @@ export interface SyncStoreState {
   setConfig: (config: SyncConfig) => void;
   setTelemetry: (telemetry: SyncTelemetry) => void;
   setEngine: (engine: SyncEngine | null) => void;
+  restoreDefaults: () => void;
 }
 
 export const useSyncStore = create<SyncStoreState>((set) => ({
@@ -32,4 +33,16 @@ export const useSyncStore = create<SyncStoreState>((set) => ({
   setConfig: (config) => set({ config }),
   setTelemetry: (telemetry) => set({ telemetry }),
   setEngine: (engine) => set({ engine }),
+  restoreDefaults: () =>
+    set({
+      config: { ...DEFAULT_CONFIG },
+      telemetry: {
+        lastSyncedAt: null,
+        lastStatus: 'idle',
+        lastError: null,
+        syncedCount: 0,
+        conflictCount: 0,
+        deviceId: DEFAULT_CONFIG.deviceId,
+      },
+    }),
 }));

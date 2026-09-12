@@ -233,6 +233,9 @@ export class JournalExtension extends Extension {
           <LazyJournalSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useJournalSettings.getState().restoreDefaults();
+      },
     });
 
     // 4. Open on startup if configured (waits deterministically for vault hydration)

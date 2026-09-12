@@ -16,6 +16,7 @@ import { NoetherApp } from '@/core/app/NoetherApp';
 import { NeuralNetworkIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
 import { GraphSettingsTab } from './GraphSettingsTab';
+import { useGraphSettings } from './graphSettings';
 import { graphReadme } from './readme';
 
 const LazyGraphView = React.lazy(() =>
@@ -107,6 +108,9 @@ export class GraphExtension extends Extension {
       name: 'Graph view',
       icon: <NeuralNetworkIcon size={14} />,
       render: () => <GraphSettingsTab />,
+      onRestoreDefaults: () => {
+        useGraphSettings.getState().restoreDefaults();
+      },
     });
 
     // ── MCP Tools Registration ──

@@ -59,6 +59,7 @@ export interface SketchState {
   undo: () => void;
   redo: () => void;
   clearAllStrokes: () => void;
+  restoreDefaults: () => void;
 }
 
 export const useSketchStore = create<SketchState>((set, get) => ({
@@ -426,5 +427,14 @@ export const useSketchStore = create<SketchState>((set, get) => ({
     if (currentDocId) {
       deleteSketchFromDb(currentDocId);
     }
+  },
+
+  restoreDefaults: () => {
+    set({
+      activeTool: 'pen',
+      activeColor: '#3b82f6',
+      activeWidth: 3,
+      activeAnchoring: 'content',
+    });
   },
 }));

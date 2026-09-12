@@ -3552,12 +3552,12 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           {/* Bottom Global Reset Action */}
           <div className="pt-2 mt-auto border-t border-[var(--noether-border-subtle,#242424)] shrink-0">
             <button
-              onClick={() => {
-                restoreAllDefaults();
-                showToast('Restored all settings to default values', 'info');
+              onClick={async () => {
+                await app.restoreAllDefaults();
+                showToast('Restored all settings and extension defaults', 'info');
               }}
               className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--noether-text-muted,#777)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] cursor-pointer border border-transparent hover:border-[var(--noether-border-base)]"
-              title="Restore all settings across all tabs to default"
+              title="Restore all settings across all tabs and extensions to default"
             >
               <RotateCcwIcon size={12} />
               <span>Restore all defaults</span>
@@ -3655,6 +3655,20 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                     </div>
 
                     <div className="flex items-center gap-2">
+                      {currentTab?.onRestoreDefaults && isEnabled && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await currentTab.onRestoreDefaults?.();
+                            showToast(`Restored ${tabName} defaults`, 'info');
+                          }}
+                          title={`Restore default ${tabName} settings`}
+                          className="px-2.5 py-1 rounded-[5px] flex items-center gap-1.5 text-xs text-[#888] hover:text-white hover:bg-[#2a2a2a] cursor-pointer"
+                        >
+                          <RotateCcwIcon size={12} />
+                          <span>Restore defaults</span>
+                        </button>
+                      )}
                       {manifest?.readme && (
                         <button
                           type="button"

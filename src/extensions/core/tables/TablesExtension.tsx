@@ -46,6 +46,9 @@ export class TablesExtension extends Extension {
           <LazyTablesSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useTablesSettings.getState().restoreDefaults();
+      },
     });
 
     // 2. Register Command Palette Command

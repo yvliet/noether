@@ -41,6 +41,44 @@ export class SettingRegistry {
     };
   }
 
+  /**
+   * Invokes onRestoreDefaults callbacks across all registered extension setting tabs.
+   * Executes sequentially with error isolation to ensure one faulty extension cannot block others.
+   */
+  public async restoreAllExtensionDefaults(): Promise<void> {
+    for (const tab of this.tabs.values()) {
+      try {
+        if (typeof tab.onRestoreDefaults === 'function') {
+          await tab.onRestoreDefaults();
+        }
+      } catch (err) {
+        console.error(`[SettingRegistry] Error restoring defaults for tab "${tab.id}":`, err);
+      }
+    }
+  }
+
+  /**
+   * Restores default settings for an individual extension tab by tab ID or alias.
+   */
+  public async restoreTabDefaults(tabId: string): Promise<void> {
+    let tab = this.tabs.get(tabId);
+    if (!tab) {
+      for (const t of this.tabs.values()) {
+        if (t.id === tabId || t.extensionId === tabId || t.id.endsWith(`:${tabId}`)) {
+          tab = t;
+          break;
+        }
+      }
+    }
+    if (tab && typeof tab.onRestoreDefaults === 'function') {
+      try {
+        await tab.onRestoreDefaults();
+      } catch (err) {
+        console.error(`[SettingRegistry] Error restoring defaults for tab "${tabId}":`, err);
+      }
+    }
+  }
+
   private recomputeCache(): void {
     this.cachedTabs = Array.from(this.tabs.values());
   }

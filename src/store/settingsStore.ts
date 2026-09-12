@@ -599,6 +599,10 @@ export const useSettingsStore = create<SettingsState>()(
         }),
       resetAllHotkeys: () => set({ customHotkeys: {} }),
       restoreAllDefaults: () => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('noether_skip_delete_confirmation', 'false');
+          localStorage.setItem('noether_skip_rename_confirmation', 'false');
+        }
         set({ ...DEFAULT_SETTINGS });
         applyAppearanceDOM(DEFAULT_SETTINGS);
       },

@@ -63,6 +63,10 @@ export interface WorkspaceEvents {
   'mcp:tool-result': { toolName: string; success: boolean; durationMs: number; error?: string };
   /** Emitted when the set of registered MCP tools changes (extension loaded/unloaded). */
   'mcp:tools-changed': { count: number };
+
+  // ── Settings Lifecycle ──
+  /** Emitted when application preferences and extension settings are restored to default values. */
+  'settings:defaults-restored': { scope: 'all' | string };
 }
 
 /**

@@ -15,6 +15,7 @@ import { NoetherApp } from '@/core/app/NoetherApp';
 import { Bookmark01Icon } from '@/components/common/Icons';
 import { bookmarksReadme } from './readme';
 import { BookmarksView } from './BookmarksView';
+import { useBookmarksSettings } from './bookmarksSettings';
 
 const LazyBookmarksSettingsTab = React.lazy(() =>
   import('./BookmarksSettingsTab').then((m) => ({ default: m.BookmarksSettingsTab }))
@@ -87,6 +88,9 @@ export class BookmarksExtension extends Extension {
           <LazyBookmarksSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useBookmarksSettings.getState().restoreDefaults();
+      },
     });
 
     // 5. Register Document Header Action Button (Sub-header star icon)

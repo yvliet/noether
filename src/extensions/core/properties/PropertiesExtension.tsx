@@ -64,6 +64,9 @@ export class PropertiesExtension extends Extension {
       name: 'Properties',
       icon: <PackageIcon size={14} />,
       render: () => <PropertiesSettingsTab />,
+      onRestoreDefaults: () => {
+        usePropertiesSettings.getState().restoreDefaults();
+      },
     });
 
     // 4. Register Document Menu Action

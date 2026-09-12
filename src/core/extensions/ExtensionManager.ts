@@ -761,6 +761,62 @@ export class ExtensionManager {
       console.warn(`[ExtensionManager] Failed to save data for extension ${extensionId}:`, e);
     }
   }
+
+  /**
+   * Resets all persisted extension storage and restores default extension enablement state.
+   * Clears all localStorage keys prefixed with noether_extension_data_ and iconify storage caches,
+   * restores core extension default activation states, saves clean config, and notifies subscribers.
+   */
+  public async resetAllExtensionData(): Promise<void> {
+    // 1. Purge all extension persistent storage in localStorage
+    if (typeof localStorage !== 'undefined') {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (
+          key &&
+          (key.startsWith('noether_extension_data_') ||
+           key.startsWith('noether_iconify_settings_') ||
+           key.startsWith('noether_iconify_icons_cache_'))
+        ) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => localStorage.removeItem(key));
+    }
+
+    // 2. Reset core extension disabled sets to default
+    this.disabledCoreExtensionIds.clear();
+
+    // Preserve installed community extensions enablement, but reset core enabled set
+    const communityEnabled = Array.from(this.enabledExtensionIds).filter((id) => {
+      const manifest = this.manifests.get(id);
+      return manifest && !manifest.isCore;
+    });
+    this.enabledExtensionIds = new Set(communityEnabled);
+
+    // 3. Ensure all default-enabled core extensions are running, and defaultDisabled are off
+    for (const [id, manifest] of this.manifests.entries()) {
+      if (manifest.isCore) {
+        if (manifest.defaultDisabled) {
+          this.disabledCoreExtensionIds.add(id);
+          this.enabledExtensionIds.delete(id);
+          if (this.instances.has(id)) {
+            await this.disableExtension(id);
+          }
+        } else {
+          this.disabledCoreExtensionIds.delete(id);
+          if (!this.instances.has(id)) {
+            await this.enableExtension(id);
+          }
+        }
+      }
+    }
+
+    this.saveConfig();
+    this.recomputeSnapshot();
+    this.notify();
+  }
 }
 
 export default ExtensionManager;

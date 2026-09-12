@@ -75,6 +75,8 @@ export interface ExtensionSettingTab {
   icon?: React.ReactNode;
   /** Render function returning the tab's settings UI panel. */
   render: () => React.ReactNode;
+  /** Optional callback invoked when restoring default settings for this extension. */
+  onRestoreDefaults?: () => void | Promise<void>;
 }
 
 /**

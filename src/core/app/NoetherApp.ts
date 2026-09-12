@@ -616,7 +616,31 @@ export class NoetherApp {
       setDefaultEditingMode(mode: string): void {
         storeRefs.settings?.getState()?.setDefaultEditingMode(mode);
       },
+      restoreAllDefaults: async (): Promise<void> => {
+        await this.restoreAllDefaults();
+      },
     };
+  }
+
+  /**
+   * Restores all application preferences and extension settings to default values.
+   * Completely resets host preferences, purges persisted extension configurations,
+   * restores registered extension setting tabs, and broadcasts the event via the EventBus.
+   *
+   * @since 0.5.0
+   */
+  public async restoreAllDefaults(): Promise<void> {
+    // 1. Reset host preferences store
+    storeRefs.settings?.getState()?.restoreAllDefaults?.();
+
+    // 2. Reset all extension persisted data and default activation states
+    await this.extensions.resetAllExtensionData();
+
+    // 3. Invoke onRestoreDefaults callbacks across all registered extension setting tabs
+    await this.settingsRegistry.restoreAllExtensionDefaults();
+
+    // 4. Emit EventBus broadcast so running extensions can re-initialize default state
+    this.events.emit('settings:defaults-restored', { scope: 'all' });
   }
 }
 

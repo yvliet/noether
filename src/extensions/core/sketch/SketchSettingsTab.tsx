@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSketchStore } from './sketchStore';
 import { useToast } from 'noether';
-import { Delete02Icon } from '@/components/common/Icons';
+import { Delete02Icon, RotateCcwIcon } from '@/components/common/Icons';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { SketchToolType, SketchAnchoringMode } from './types';
 
@@ -32,8 +32,15 @@ export const SketchSettingsTab: React.FC = () => {
   const setWidth = useSketchStore((s) => s.setWidth);
   const setAnchoring = useSketchStore((s) => s.setAnchoring);
   const clearAllStrokes = useSketchStore((s) => s.clearAllStrokes);
+  const restoreDefaults = useSketchStore((s) => s.restoreDefaults);
 
   const showToast = useToast();
+
+  const isModified =
+    activeTool !== 'pen' ||
+    activeColor !== '#3b82f6' ||
+    activeWidth !== 3 ||
+    activeAnchoring !== 'content';
 
   return (
     <div className="flex flex-col gap-5">
@@ -44,6 +51,20 @@ export const SketchSettingsTab: React.FC = () => {
             Lightweight freehand vector drawing and markup overlay for notes and documents.
           </p>
         </div>
+        {isModified && (
+          <button
+            type="button"
+            onClick={() => {
+              restoreDefaults();
+              showToast('Restored Sketch defaults', 'info');
+            }}
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            title="Restore default sketch settings"
+          >
+            <RotateCcwIcon size={12} />
+            <span>Restore defaults</span>
+          </button>
+        )}
       </div>
 
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">

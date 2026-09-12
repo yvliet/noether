@@ -14,6 +14,7 @@ import { NoetherApp } from '@/core/app/NoetherApp';
 import { Tag01Icon } from '@/components/common/Icons';
 import { getAllVaultTags, buildTagTree } from '@/lib/db/tags';
 import { tagsReadme } from './readme';
+import { useTagsSettings } from './tagsSettings';
 
 const LazyTagsView = React.lazy(() =>
   import('./TagsView').then((m) => ({ default: m.TagsView }))
@@ -63,6 +64,9 @@ export class TagsExtension extends Extension {
           <LazyTagsSettingsTab />
         </React.Suspense>
       ),
+      onRestoreDefaults: () => {
+        useTagsSettings.getState().restoreDefaults();
+      },
     });
 
     // 3. Register MCP Tools
