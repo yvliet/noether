@@ -29,10 +29,10 @@ export const MarketplaceSettingsTab: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
         <div>
-          <h3 className="text-sm font-semibold text-white mb-1">Community Extensions</h3>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Community Extensions</h3>
           <p className="text-[11px] text-[#777]">Explore, install, and manage community extensions.</p>
         </div>
       </div>

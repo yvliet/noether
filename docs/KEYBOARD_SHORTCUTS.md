@@ -100,3 +100,14 @@ These shortcuts manage file-level mutations across your vault separate from in-e
 | **Zoom In** | `Ctrl+=` | `Cmd+=` |
 | **Zoom Out** | `Ctrl+-` | `Cmd+-` |
 | **Reset Zoom to 100%** | `Ctrl+0` | `Cmd+0` |
+
+## 8. Hotkeys Management & Settings Deep Search
+---
+
+All shortcuts can be remapped and managed in **Settings** (`Ctrl+,` or `Cmd+,`):
+
+- **Customize Hotkeys**: In **Settings → Hotkeys**, select any command and press your desired key combination (e.g. `Ctrl+Shift+K`) to reassign it immediately.
+- **Reset to Defaults**: Click the reset button next to any customized hotkey to restore default assignments, or use **Reset all** to restore all defaults.
+- **Deep Settings Search**: Search any command or setting name in the search bar. The all-occurrences view groups results by tab and section with active accent highlighting.
+- **Quick Search Clear**: Press `Escape` while focused on the settings search bar to clear your search query.
+

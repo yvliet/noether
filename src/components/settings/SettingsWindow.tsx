@@ -222,8 +222,8 @@ const SettingSection: React.FC<SettingSectionProps> = ({
     if (matchCount === 0) return null;
 
     return (
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between px-4 mb-1">
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between px-4">
           <div>
             <h3 className="text-sm font-semibold text-white mb-0.5">
               {highlightMatch(tabName, searchQuery)}
@@ -243,7 +243,7 @@ const SettingSection: React.FC<SettingSectionProps> = ({
   return (
     <div className="flex flex-col gap-2.5">
       {defaultHeading ? (
-        <div className="px-4 mb-1">
+        <div className="px-4">
           <h3 className="text-sm font-semibold text-white">{defaultHeading}</h3>
         </div>
       ) : (
@@ -353,8 +353,8 @@ const SETTINGS_SEARCH_INDEX: SettingIndexEntry[] = [
   // Hotkeys
   { tabId: 'hotkeys', tabName: 'Hotkeys', sectionName: 'Hotkeys', title: 'Keyboard shortcuts', description: 'View and customize keyboard shortcuts across all commands', keywords: ['hotkeys', 'shortcuts', 'keybindings', 'commands'] },
 
-  // Built-in extensions
-  { tabId: 'core-extensions', tabName: 'Built-in extensions', sectionName: 'Built-in extensions', title: 'Core extensions', description: 'Built-in features designed as modular extensions. Toggle them anytime', keywords: ['extensions', 'built-in', 'core', 'plugins', 'modules'] },
+  // Core extensions
+  { tabId: 'core-extensions', tabName: 'Core extensions', sectionName: 'Core extensions', title: 'Core extensions', description: 'Core features designed as modular extensions. Toggle them anytime', keywords: ['extensions', 'core', 'core extensions', 'built-in', 'plugins', 'modules'] },
 
   // Community extensions
   { tabId: 'community-extensions', tabName: 'Community extensions', sectionName: 'Community extensions', title: 'Community extensions', description: 'Browse and install community extensions from the Noether ecosystem', keywords: ['community', 'marketplace', 'plugins', 'install', 'discover'] },
@@ -1004,9 +1004,9 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
       {/* Section 2: Visual Themes Showcase */}
       {isThemeSearchMatch && (
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2.5">
         {showAllOccurrences && searchQuery.trim() ? (
-          <div className="flex items-center justify-between px-4 mb-1">
+          <div className="flex items-center justify-between px-4">
             <div>
               <h3 className="text-sm font-semibold text-white mb-0.5">
                 {highlightMatch('Appearance', searchQuery)}
@@ -1019,7 +1019,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
         ) : (
           <div className="flex items-center justify-between px-4">
             <div>
-              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-white flex items-center gap-2 mb-0.5">
                 <span>Themes</span>
                 <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#2a2a2a] text-[#888] rounded-full">
                   {allThemes.length}
@@ -2841,9 +2841,9 @@ const HotkeysTab: React.FC = React.memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5">
       {showAllOccurrences && searchQuery.trim() ? (
-        <div className="flex items-center justify-between px-4 mb-1">
+        <div className="flex items-center justify-between px-4">
           <div>
             <h3 className="text-sm font-semibold text-white mb-0.5">
               {highlightMatch('Hotkeys', searchQuery)}
@@ -2869,7 +2869,7 @@ const HotkeysTab: React.FC = React.memo(() => {
       ) : (
         <div className="flex items-center justify-between px-4">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-1">Hotkeys</h3>
+            <h3 className="text-sm font-semibold text-white mb-0.5">Hotkeys</h3>
             <p className="text-[11px] text-[#777]">View and customize keyboard shortcuts across all commands.</p>
           </div>
           {Object.keys(customHotkeys).length > 0 && (
@@ -2903,7 +2903,7 @@ const HotkeysTab: React.FC = React.memo(() => {
         </div>
       )}
 
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {filteredCommands.map((cmd) => {
           const cmdTitle = typeof cmd.title === 'function' ? cmd.title(app) : cmd.title;
           const activeHotkey = customHotkeys[cmd.id] !== undefined ? customHotkeys[cmd.id] : cmd.hotkey;
@@ -3021,8 +3021,10 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
         ext.name.toLowerCase().includes(q) ||
         (ext.description && ext.description.toLowerCase().includes(q)) ||
         ext.id.toLowerCase().includes(q) ||
+        'core extensions'.includes(q) ||
+        'core'.includes(q) ||
         'built-in extensions'.includes(q) ||
-        'core extensions'.includes(q)
+        'extensions'.includes(q)
       );
     });
   }, [extensionList.core, searchQuery]);
@@ -3041,26 +3043,26 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5">
       {showAllOccurrences && searchQuery.trim() ? (
-        <div className="px-4 mb-1">
+        <div className="px-4">
           <h3 className="text-sm font-semibold text-white mb-0.5">
-            {highlightMatch('Built-in extensions', searchQuery)}
+            {highlightMatch('Core extensions', searchQuery)}
           </h3>
           <p className="text-[11px] text-[var(--noether-text-muted)]">
-            {highlightMatch('Built-in extensions', searchQuery)}
+            {highlightMatch('Core extensions', searchQuery)}
           </p>
         </div>
       ) : (
         <div className="px-4">
-          <h3 className="text-sm font-semibold text-white mb-1">Built-in extensions</h3>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Core extensions</h3>
           <p className="text-[11px] text-[#777]">
-            Built-in features designed as modular extensions. Toggle them anytime.
+            Core features designed as modular extensions. Toggle them anytime.
           </p>
         </div>
       )}
 
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {filteredCore.map((ext) => {
           const isEnabled = app.extensions.isExtensionEnabled(ext.id);
           const settingsTab = coreExtensionTabs.find((tab) => isTabMatch(tab, ext.id));
@@ -3248,9 +3250,9 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-2.5">
       {showAllOccurrences && searchQuery.trim() ? (
-        <div className="px-4 mb-1">
+        <div className="px-4">
           <h3 className="text-sm font-semibold text-white mb-0.5">
             {highlightMatch('Community extensions', searchQuery)}
           </h3>
@@ -3261,7 +3263,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
       ) : (
         <div className="flex items-center justify-between px-4">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-1">Community extensions</h3>
+            <h3 className="text-sm font-semibold text-white mb-0.5">Community extensions</h3>
             <p className="text-[11px] text-[#777]">
               Installed community extensions in your Vault.
             </p>
@@ -3527,7 +3529,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     { id: 'editor', label: 'Editor', icon: <Edit02Icon size={14} />, keywords: ['editor', 'line', 'preview', 'indent', 'heading', 'pairing', 'properties', 'reading', 'math', 'formulas', 'dollar', 'auto-pair'] },
     { id: 'files', label: 'Files and links', icon: <Folder01Icon size={14} />, keywords: ['files and links', 'files', 'links', 'trash', 'deleted', 'delete', 'vault', 'vault', 'wikilink'] },
     { id: 'hotkeys', label: 'Hotkeys', icon: <KeyIcon size={14} />, keywords: ['hotkeys', 'shortcuts', 'keys', 'commands'] },
-    { id: 'core-extensions', label: 'Built-in extensions', icon: <PackageIcon size={14} />, keywords: ['built-in extensions', 'core extensions', 'core plugins', 'plugins', 'modules', 'extensions'] },
+    { id: 'core-extensions', label: 'Core extensions', icon: <PackageIcon size={14} />, keywords: ['core extensions', 'core', 'built-in extensions', 'plugins', 'modules', 'extensions'] },
     { id: 'community-extensions', label: 'Community extensions', icon: <PuzzleIcon size={14} />, keywords: ['community extensions', 'community plugins', 'plugins', 'marketplace', 'extensions'] },
   ], []);
 
@@ -3638,8 +3640,9 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         e.name.toLowerCase().includes(q) ||
         e.description?.toLowerCase().includes(q) ||
         e.id.toLowerCase().includes(q) ||
-        'built-in extensions'.includes(q) ||
-        'core extensions'.includes(q)
+        'core extensions'.includes(q) ||
+        'core'.includes(q) ||
+        'built-in extensions'.includes(q)
     );
     if (coreMatch) return true;
     const commMatch = extensionList.community.some(
@@ -3648,7 +3651,8 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         e.description?.toLowerCase().includes(q) ||
         e.id.toLowerCase().includes(q) ||
         (e.author && e.author.toLowerCase().includes(q)) ||
-        'community extensions'.includes(q)
+        'community extensions'.includes(q) ||
+        'community'.includes(q)
     );
     if (commMatch) return true;
     return false;
@@ -3674,7 +3678,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         const manifestMatch =
           manifest?.name.toLowerCase().includes(q) ||
           manifest?.description?.toLowerCase().includes(q);
-        return nameMatch || manifestMatch || extId.toLowerCase().includes(q);
+        const sectionMatch =
+          'core extensions'.includes(q) ||
+          'core'.includes(q) ||
+          'built-in extensions'.includes(q);
+        return nameMatch || manifestMatch || extId.toLowerCase().includes(q) || sectionMatch;
       }
       return true;
     });
@@ -3690,7 +3698,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         const manifestMatch =
           manifest?.name.toLowerCase().includes(q) ||
           manifest?.description?.toLowerCase().includes(q);
-        return nameMatch || manifestMatch || extId.toLowerCase().includes(q);
+        const sectionMatch =
+          'community extensions'.includes(q) ||
+          'community'.includes(q);
+        return nameMatch || manifestMatch || extId.toLowerCase().includes(q) || sectionMatch;
       }
       return true;
     });
@@ -3883,10 +3894,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               </div>
             )}
 
-            {/* Section 2: Built-in Extensions */}
+            {/* Section 2: Core Extensions */}
             {filteredCoreExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Built-in extensions</div>
+                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Core extensions</div>
                 {filteredCoreExtensions.map((item) => {
                   const isActive = !showAllOccurrences && isTabMatch(item, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (

@@ -112,3 +112,22 @@ The **Command Palette** is your central cockpit in Noether.
 | **Redo Drawing Stroke** | `Ctrl+Y` or `Ctrl+Shift+Z` | `Cmd+Y` or `Cmd+Shift+Z` |
 | **Delete Selected Drawings** | `Delete` or `Backspace` | `Delete` or `Backspace` |
 | **Deselect / Close Toolbar** | `Escape` | `Escape` |
+
+## 8. Hotkeys Management & Settings Deep Search
+---
+
+All shortcuts and preferences can be browsed, searched, and customized in **Settings** (`Ctrl+,` or `Cmd+,`):
+
+### Customizing Shortcuts
+- Navigate to **Settings → Hotkeys** to review keyboard shortcuts for every command.
+- Click any command's shortcut button and press your desired key combination (e.g. `Ctrl+Shift+K`) to reassign it immediately.
+- Use the reset button next to any customized shortcut or click **Reset all** to restore default shortcuts.
+
+### Deep Settings Search
+- Use the search bar (`Search settings...`) at the top of the sidebar to query across all settings tabs simultaneously.
+- While typing or focused on the search input, the right pane displays the **all-occurrences view**, grouping results by Tab Name (H3) and Location/Section (subtitle) with matched terms highlighted in your active accent color.
+- All controls (toggles, selects, sliders) remain interactive directly within search results.
+- Clicking any category tab opens that tab without clearing your search query, preserving term highlights.
+- Refocusing or clicking into the search bar clears category tab selection and restores the all-occurrences view.
+- Clear the query anytime by pressing `Escape` or clicking the clear icon.
+

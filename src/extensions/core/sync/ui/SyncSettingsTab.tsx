@@ -119,28 +119,29 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl pb-10">
-      {/* Header */}
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Sync</h3>
-          <p className="text-[11px] text-[#777]">
-            Synchronize your notes bidirectionally across desktop and mobile devices using your own cloud database.
-          </p>
+      <div className="flex flex-col gap-2.5">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">Sync</h3>
+            <p className="text-[11px] text-[#777]">
+              Synchronize your notes bidirectionally across desktop and mobile devices using your own cloud database.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              onClick={handleManualSync}
+              disabled={isManualSyncing || telemetry.lastStatus === 'syncing'}
+              icon={<RefreshIcon size={12} className={isManualSyncing || telemetry.lastStatus === 'syncing' ? 'animate-spin' : ''} />}
+            >
+              {isManualSyncing || telemetry.lastStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={handleManualSync}
-            disabled={isManualSyncing || telemetry.lastStatus === 'syncing'}
-            icon={<RefreshIcon size={12} className={isManualSyncing || telemetry.lastStatus === 'syncing' ? 'animate-spin' : ''} />}
-          >
-            {isManualSyncing || telemetry.lastStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
-          </Button>
-        </div>
-      </div>
 
-      {/* Sync Status Card */}
-      <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        {/* Sync Status Card */}
+        <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
             className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
@@ -195,6 +196,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
             <span>{testResult.message}</span>
           </div>
         )}
+      </div>
       </div>
 
       {/* Provider Selector */}
