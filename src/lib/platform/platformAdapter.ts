@@ -437,15 +437,23 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     if (this.isTauri()) {
       try {
         const res: any = await invoke('rename_vault', { targetPath, newName });
+        let error = res?.error;
+        if (error && (error.includes('os error 5') || error.includes('os error 32') || error.includes('Access is denied') || error.includes('used by another process'))) {
+          error = 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.';
+        }
         return {
           success: Boolean(res?.success),
           path: res?.path,
           name: res?.name,
-          recentVaults: res?.recentVaults || res?.recentVaults || [],
-          error: res?.error,
+          recentVaults: res?.recentVaults || [],
+          error,
         };
       } catch (e: any) {
-        return { success: false, error: e?.message || 'Failed to rename Vault', recentVaults: [] };
+        let msg = e?.message || 'Failed to rename Vault';
+        if (msg.includes('os error 5') || msg.includes('os error 32') || msg.includes('Access is denied') || msg.includes('used by another process')) {
+          msg = 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.';
+        }
+        return { success: false, error: msg, recentVaults: [] };
       }
     }
     return { success: false, path: targetPath, name: newName, recentVaults: [], error: 'Desktop mode only' };

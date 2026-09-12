@@ -5,9 +5,9 @@ mod db;
 use std::path::Path;
 use parking_lot::Mutex;
 use std::time::Duration;
-use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
+use notify::Event;
 use tauri::{Emitter, Manager};
-use vault::{load_config, AppState};
+use vault::{load_config, AppState, WatcherState};
 
 #[tauri::command]
 fn set_accent_icon(app_handle: tauri::AppHandle, accent_color: String) -> Result<(), String> {
@@ -22,6 +22,9 @@ pub fn run() {
     let initial_config = load_config();
     let initial_vault = initial_config.current_vault_path.clone();
 
+    let (watcher_tx, watcher_rx) = std::sync::mpsc::channel();
+    let watcher_state = WatcherState::new(watcher_tx);
+
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -30,6 +33,7 @@ pub fn run() {
             config: Mutex::new(initial_config),
         })
         .manage(db::DbState::new())
+        .manage(watcher_state)
         .invoke_handler(tauri::generate_handler![
             vault::get_current_vault,
             vault::set_current_vault,
@@ -98,24 +102,17 @@ pub fn run() {
             // Initialize general-purpose global hotkey loop
             vault::init_global_hotkeys(handle.clone());
 
+            // Initialize watcher for initial vault path
+            let watcher = app.state::<WatcherState>();
+            let initial_path = Path::new(&vault_to_watch);
+            if initial_path.exists() {
+                watcher.watch(initial_path);
+            }
+
             let handle_watcher = handle.clone();
             // Background thread for real-time vault file watcher (cross-platform)
             std::thread::spawn(move || {
-                let (tx, rx) = std::sync::mpsc::channel();
-                let mut watcher = match RecommendedWatcher::new(tx, Config::default()) {
-                    Ok(w) => w,
-                    Err(e) => {
-                        eprintln!("[Noether Watcher] Failed to initialize file watcher: {}", e);
-                        return;
-                    }
-                };
-
-                let path_to_watch = Path::new(&vault_to_watch);
-                if path_to_watch.exists() {
-                    let _ = watcher.watch(path_to_watch, RecursiveMode::Recursive);
-                }
-
-                while let Ok(res) = rx.recv() {
+                while let Ok(res) = watcher_rx.recv() {
                     match res {
                         Ok(Event { paths, .. }) => {
                             // If Noether itself just saved/edited the file internally, ignore the event

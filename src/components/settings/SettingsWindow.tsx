@@ -2265,9 +2265,12 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
 
   const handleSaveVaultName = useCallback(async () => {
     if (tempVaultName.trim()) {
-      await renameVault(vaultPath, tempVaultName.trim());
+      const res = await renameVault(vaultPath, tempVaultName.trim());
+      if (!res?.success) {
+        setTempVaultName(vaultName);
+      }
     }
-  }, [tempVaultName, vaultPath, renameVault]);
+  }, [tempVaultName, vaultPath, renameVault, vaultName]);
 
   const handlePickAttachmentFolder = useCallback(() => {
     promptFolderSelection({

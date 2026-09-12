@@ -2583,14 +2583,23 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         get().showToast(`Renamed Vault to "${cleanName}"`, 'success');
         return { success: true, path: finalPath, name: cleanName };
       } else {
-        const errorMsg = res?.error || 'Failed to rename Vault';
+        const rawErr = res?.error || 'Failed to rename Vault';
+        const isLocked = rawErr.includes('os error 5') || rawErr.includes('os error 32') || rawErr.includes('Access is denied') || rawErr.includes('used by another process');
+        const errorMsg = isLocked
+          ? 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.'
+          : rawErr;
         get().showToast(errorMsg, 'warning');
         return { success: false, error: errorMsg };
       }
     } catch (e: any) {
       console.error('Error renaming vault:', e);
-      get().showToast(e.message || 'Failed to rename Vault', 'warning');
-      return { success: false, error: e.message };
+      const rawMsg = e?.message || 'Failed to rename Vault';
+      const isLocked = rawMsg.includes('os error 5') || rawMsg.includes('os error 32') || rawMsg.includes('Access is denied') || rawMsg.includes('used by another process');
+      const errorMsg = isLocked
+        ? 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.'
+        : rawMsg;
+      get().showToast(errorMsg, 'warning');
+      return { success: false, error: errorMsg };
     }
   },
 

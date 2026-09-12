@@ -112,6 +112,48 @@ impl DbState {
             active_path: Mutex::new(String::new()),
         }
     }
+
+    /// Safely checkpoints pending WAL transactions and releases the SQLite connection
+    #[allow(dead_code)]
+    pub fn close(&self) {
+        if let Some(conn) = self.conn.lock().as_mut() {
+            let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+        }
+        *self.conn.lock() = None;
+        *self.active_path.lock() = String::new();
+    }
+
+    /// Closes SQLite connection if the active vault database is inside or matches target_path
+    pub fn close_if_matching(&self, target_path: &std::path::Path) -> Option<String> {
+        let current = self.active_path.lock().clone();
+        if current.is_empty() {
+            return None;
+        }
+
+        let current_buf = PathBuf::from(&current);
+        let current_norm = crate::vault::normalize_path(&current_buf);
+        let target_norm = crate::vault::normalize_path(target_path);
+
+        #[cfg(windows)]
+        let is_match = {
+            let cur_s = current_norm.to_string_lossy().to_lowercase();
+            let tgt_s = target_norm.to_string_lossy().to_lowercase();
+            cur_s == tgt_s || cur_s.starts_with(&tgt_s)
+        };
+        #[cfg(not(windows))]
+        let is_match = current_norm == target_norm || current_norm.starts_with(&target_norm);
+
+        if is_match {
+            if let Some(conn) = self.conn.lock().as_mut() {
+                let _ = conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+            }
+            *self.conn.lock() = None;
+            *self.active_path.lock() = String::new();
+            Some(current)
+        } else {
+            None
+        }
+    }
 }
 
 /// Converts a serde_json::Value to a rusqlite parameter
@@ -234,6 +276,15 @@ pub fn noether_db_init(
                 return Ok(true);
             }
         }
+    }
+
+    // Cleanly checkpoint and close prior connection if re-initializing or switching vaults
+    {
+        let mut guard = state.conn.lock();
+        if let Some(old_conn) = guard.as_mut() {
+            let _ = old_conn.execute_batch("PRAGMA wal_checkpoint(TRUNCATE);");
+        }
+        *guard = None;
     }
 
     let conn = open_vault_db(&path_str)?;

@@ -1,8 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::mpsc::Sender;
 use parking_lot::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
+use notify::{Config, Event, RecommendedWatcher, RecursiveMode, Watcher};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
@@ -39,7 +41,7 @@ fn strip_unc_prefix(path_str: &str) -> String {
 }
 
 /// Normalizes path components and resolves relative traversals lexically without disk lookups
-fn normalize_path(p: &Path) -> PathBuf {
+pub fn normalize_path(p: &Path) -> PathBuf {
     #[cfg(windows)]
     let s = p.to_string_lossy().replace('/', "\\");
     #[cfg(not(windows))]
@@ -167,6 +169,83 @@ pub struct AppState {
     pub config: Mutex<NoetherConfig>,
 }
 
+pub struct WatcherState {
+    pub watcher: Mutex<Option<RecommendedWatcher>>,
+    pub watched_path: Mutex<Option<PathBuf>>,
+    pub tx: Sender<Result<Event, notify::Error>>,
+}
+
+impl WatcherState {
+    pub fn new(tx: Sender<Result<Event, notify::Error>>) -> Self {
+        Self {
+            watcher: Mutex::new(None),
+            watched_path: Mutex::new(None),
+            tx,
+        }
+    }
+
+    pub fn watch(&self, path: &Path) {
+        let mut watcher_lock = self.watcher.lock();
+        let mut path_lock = self.watched_path.lock();
+
+        if let Some(existing) = path_lock.as_ref() {
+            if existing == path && watcher_lock.is_some() {
+                return;
+            }
+        }
+
+        // Drop existing watcher to release Windows directory handle immediately
+        *watcher_lock = None;
+        *path_lock = None;
+
+        if !path.exists() {
+            return;
+        }
+
+        if let Ok(mut watcher) = RecommendedWatcher::new(self.tx.clone(), Config::default()) {
+            if watcher.watch(path, RecursiveMode::Recursive).is_ok() {
+                *watcher_lock = Some(watcher);
+                *path_lock = Some(path.to_path_buf());
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn unwatch(&self) {
+        let mut watcher_lock = self.watcher.lock();
+        let mut path_lock = self.watched_path.lock();
+        *watcher_lock = None;
+        *path_lock = None;
+    }
+
+    pub fn unwatch_if_matching(&self, target_path: &Path) -> Option<PathBuf> {
+        let mut watcher_lock = self.watcher.lock();
+        let mut path_lock = self.watched_path.lock();
+
+        if let Some(watched) = path_lock.as_ref() {
+            let watched_norm = normalize_path(watched);
+            let target_norm = normalize_path(target_path);
+
+            #[cfg(windows)]
+            let is_match = {
+                let w_s = watched_norm.to_string_lossy().to_lowercase();
+                let t_s = target_norm.to_string_lossy().to_lowercase();
+                w_s == t_s || w_s.starts_with(&t_s)
+            };
+            #[cfg(not(windows))]
+            let is_match = watched_norm == target_norm || watched_norm.starts_with(&target_norm);
+
+            if is_match {
+                let prev = watched.clone();
+                *watcher_lock = None;
+                *path_lock = None;
+                return Some(prev);
+            }
+        }
+        None
+    }
+}
+
 fn get_default_vault_path() -> String {
     let docs = dirs::document_dir().unwrap_or_else(|| PathBuf::from("."));
     docs.join("Noether Vault").to_string_lossy().to_string()
@@ -224,7 +303,13 @@ pub fn get_current_vault(state: tauri::State<AppState>) -> Value {
 }
 
 #[tauri::command]
-pub fn set_current_vault(app: AppHandle, state: tauri::State<AppState>, vault_path: String) -> Value {
+pub fn set_current_vault(
+    app: AppHandle,
+    state: tauri::State<'_, AppState>,
+    db_state: tauri::State<'_, crate::db::DbState>,
+    watcher_state: tauri::State<'_, WatcherState>,
+    vault_path: String,
+) -> Value {
     let _ = fs::create_dir_all(&vault_path);
     let chosen_name = Path::new(&vault_path)
         .file_name()
@@ -246,6 +331,12 @@ pub fn set_current_vault(app: AppHandle, state: tauri::State<AppState>, vault_pa
     }
     save_config(&cfg);
 
+    // Switch watcher to the new vault directory
+    watcher_state.watch(Path::new(&vault_path));
+
+    // Re-bind native SQLite database to the newly chosen vault path
+    let _ = crate::db::noether_db_init(db_state, Some(vault_path.clone()));
+
     let payload = json!({
         "success": true,
         "path": vault_path,
@@ -265,7 +356,9 @@ pub fn set_current_vault(app: AppHandle, state: tauri::State<AppState>, vault_pa
 #[tauri::command]
 pub fn create_new_vault(
     app: AppHandle,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
+    db_state: tauri::State<'_, crate::db::DbState>,
+    watcher_state: tauri::State<'_, WatcherState>,
     name: String,
     parent_path: Option<String>,
 ) -> Value {
@@ -279,13 +372,29 @@ pub fn create_new_vault(
     let _ = fs::create_dir_all(&new_vault_path);
     let path_str = new_vault_path.to_string_lossy().to_string();
 
-    set_current_vault(app, state, path_str)
+    set_current_vault(app, state, db_state, watcher_state, path_str)
+}
+
+fn format_rename_error(err: Option<&std::io::Error>) -> String {
+    if let Some(e) = err {
+        let code = e.raw_os_error();
+        let err_str = e.to_string();
+        if code == Some(5) || code == Some(32) || err_str.contains("Access is denied") || err_str.contains("used by another process") {
+            "Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.".to_string()
+        } else {
+            format!("Could not rename folder on disk: {}", err_str)
+        }
+    } else {
+        "Could not rename folder on disk.".to_string()
+    }
 }
 
 #[tauri::command]
 pub fn rename_vault(
     app: AppHandle,
-    state: tauri::State<AppState>,
+    state: tauri::State<'_, AppState>,
+    db_state: tauri::State<'_, crate::db::DbState>,
+    watcher_state: tauri::State<'_, WatcherState>,
     target_path: String,
     new_name: String,
 ) -> Value {
@@ -302,72 +411,192 @@ pub fn rename_vault(
     };
 
     let target_path_buf = PathBuf::from(&target);
-    let mut final_path = target.clone();
+    if !target_path_buf.exists() {
+        return json!({ "success": false, "error": "Vault folder not found on disk." });
+    }
 
-    if target_path_buf.exists() {
-        let parent = target_path_buf.parent().unwrap_or_else(|| Path::new("."));
-        let target_new_path = parent.join(&clean_name);
+    let parent = target_path_buf.parent().unwrap_or_else(|| Path::new("."));
+    let target_new_path = parent.join(&clean_name);
 
-        if target_new_path != target_path_buf {
-            let is_case_only = target_new_path.to_string_lossy().to_lowercase() == target_path_buf.to_string_lossy().to_lowercase();
-            if !is_case_only && target_new_path.exists() {
-                return json!({
-                    "success": false,
-                    "error": format!("A folder named \"{}\" already exists at this location.", clean_name)
-                });
-            }
+    if target_new_path == target_path_buf {
+        let cfg = state.config.lock();
+        return json!({
+            "success": true,
+            "path": target,
+            "name": clean_name,
+            "recentVaults": cfg.recent_vaults,
+        });
+    }
 
-            // Cross-platform rename with retry loop and case-insensitive intermediate rename support
-            if is_case_only {
-                let temp_path = parent.join(format!("{}.__noether_tmp_rename__", clean_name));
-                let _ = fs::rename(&target_path_buf, &temp_path);
-                if let Err(e) = fs::rename(&temp_path, &target_new_path) {
-                    return json!({ "success": false, "error": format!("Failed to rename folder: {}", e) });
-                }
-            } else {
-                let mut renamed = false;
-                let mut last_err = String::new();
-                for attempt in 0..5 {
-                    if fs::rename(&target_path_buf, &target_new_path).is_ok() {
-                        renamed = true;
-                        break;
-                    } else if let Err(e) = fs::rename(&target_path_buf, &target_new_path) {
-                        last_err = e.to_string();
-                        std::thread::sleep(std::time::Duration::from_millis(100 * (attempt + 1)));
-                    }
-                }
-                if !renamed {
-                    return json!({ "success": false, "error": format!("Could not rename folder on disk: {}", last_err) });
-                }
-            }
-            final_path = target_new_path.to_string_lossy().to_string();
+    let is_case_only = target_new_path.to_string_lossy().to_lowercase() == target_path_buf.to_string_lossy().to_lowercase();
+    if !is_case_only && target_new_path.exists() {
+        return json!({
+            "success": false,
+            "error": format!("A folder named \"{}\" already exists at this location.", clean_name)
+        });
+    }
+
+    // Release Noether's own locks before attempting to rename directory on Windows
+    let closed_db_path = db_state.close_if_matching(&target_path_buf);
+    let unwatched_path = watcher_state.unwatch_if_matching(&target_path_buf);
+
+    // If folder has read-only attribute on Windows, temporarily unset it
+    if let Ok(mut perms) = fs::metadata(&target_path_buf).map(|m| m.permissions()) {
+        if perms.readonly() {
+            perms.set_readonly(false);
+            let _ = fs::set_permissions(&target_path_buf, perms);
         }
     }
 
+    // Give OS filter drivers and anti-virus scanners a brief pause to release handles
+    #[cfg(windows)]
+    std::thread::sleep(std::time::Duration::from_millis(60));
+
+    let rename_res: Result<(), String> = if is_case_only {
+        let temp_path = parent.join(format!("{}.__noether_tmp_rename_{}__", clean_name, std::process::id()));
+        let mut step1_ok = false;
+        let mut last_err: Option<std::io::Error> = None;
+        for attempt in 0..10 {
+            match fs::rename(&target_path_buf, &temp_path) {
+                Ok(()) => {
+                    step1_ok = true;
+                    break;
+                }
+                Err(e) => {
+                    let code = e.raw_os_error();
+                    last_err = Some(e);
+                    if code == Some(5) || code == Some(32) {
+                        std::thread::sleep(std::time::Duration::from_millis(80 * (attempt + 1)));
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !step1_ok {
+            Err(format_rename_error(last_err.as_ref()))
+        } else {
+            let mut step2_ok = false;
+            for attempt in 0..10 {
+                match fs::rename(&temp_path, &target_new_path) {
+                    Ok(()) => {
+                        step2_ok = true;
+                        break;
+                    }
+                    Err(e) => {
+                        let code = e.raw_os_error();
+                        last_err = Some(e);
+                        if code == Some(5) || code == Some(32) {
+                            std::thread::sleep(std::time::Duration::from_millis(80 * (attempt + 1)));
+                        } else {
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if !step2_ok {
+                // Rollback step 1
+                let _ = fs::rename(&temp_path, &target_path_buf);
+                Err(format_rename_error(last_err.as_ref()))
+            } else {
+                Ok(())
+            }
+        }
+    } else {
+        let mut renamed = false;
+        let mut last_err: Option<std::io::Error> = None;
+        for attempt in 0..10 {
+            match fs::rename(&target_path_buf, &target_new_path) {
+                Ok(()) => {
+                    renamed = true;
+                    break;
+                }
+                Err(e) => {
+                    let code = e.raw_os_error();
+                    last_err = Some(e);
+                    if code == Some(5) || code == Some(32) {
+                        std::thread::sleep(std::time::Duration::from_millis(80 * (attempt + 1)));
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        if !renamed {
+            Err(format_rename_error(last_err.as_ref()))
+        } else {
+            Ok(())
+        }
+    };
+
+    if let Err(err_msg) = rename_res {
+        // Rollback: restore active database connection and watcher on original path
+        if let Some(prev_db) = closed_db_path {
+            let _ = crate::db::noether_db_init(db_state, Some(prev_db));
+        }
+        if let Some(prev_watched) = unwatched_path {
+            watcher_state.watch(&prev_watched);
+        }
+        return json!({ "success": false, "error": err_msg });
+    }
+
+    let final_path = target_new_path.to_string_lossy().to_string();
+
     let mut cfg = state.config.lock();
-    let is_current = cfg.current_vault_path == target || target.is_empty();
+    let target_norm = normalize_path(Path::new(&target));
+    let current_norm = normalize_path(Path::new(&cfg.current_vault_path));
+
+    #[cfg(windows)]
+    let is_current = target.is_empty()
+        || current_norm.to_string_lossy().eq_ignore_ascii_case(&target_norm.to_string_lossy());
+    #[cfg(not(windows))]
+    let is_current = target.is_empty() || current_norm == target_norm;
+
     if is_current {
         cfg.current_vault_path = final_path.clone();
     }
 
     for item in &mut cfg.recent_vaults {
-        if item.path == target {
+        let item_norm = normalize_path(Path::new(&item.path));
+        #[cfg(windows)]
+        let matches = item_norm.to_string_lossy().eq_ignore_ascii_case(&target_norm.to_string_lossy());
+        #[cfg(not(windows))]
+        let matches = item_norm == target_norm;
+
+        if matches {
             item.path = final_path.clone();
             item.name = clean_name.clone();
         }
     }
     save_config(&cfg);
 
+    // Reopen database at new location if it was active
+    if closed_db_path.is_some() || is_current {
+        let _ = crate::db::noether_db_init(db_state, Some(final_path.clone()));
+    }
+    // Reattach file watcher at new location if it was active
+    if unwatched_path.is_some() || is_current {
+        watcher_state.watch(&target_new_path);
+    }
+
     let payload = json!({
         "success": true,
-        "path": final_path,
-        "name": clean_name,
+        "path": if is_current { final_path.clone() } else { cfg.current_vault_path.clone() },
+        "name": if is_current { clean_name.clone() } else { Path::new(&cfg.current_vault_path).file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default() },
         "recentVaults": cfg.recent_vaults,
     });
 
     let _ = app.emit("vault-changed", payload.clone());
 
-    payload
+    json!({
+        "success": true,
+        "path": final_path,
+        "name": clean_name,
+        "recentVaults": cfg.recent_vaults,
+    })
 }
 
 #[tauri::command]
