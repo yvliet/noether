@@ -1174,6 +1174,207 @@ export function registerNativeTools(app: NoetherApp): void {
         }
       },
     },
+
+    // ── 23. Run Script ──
+    {
+      name: 'noether_run_script',
+      description: 'Execute an ad-hoc JavaScript script against the in-app Vault state with instant access to documents, database, and workspace APIs.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          script: {
+            type: 'string',
+            description: 'JavaScript code to execute. Variables in scope: app, vault, args, console.',
+          },
+          args: {
+            type: 'object',
+            description: 'Optional arguments object',
+          },
+        },
+        required: ['script'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        try {
+          const scriptCode = String(args.script || '').trim();
+          if (!scriptCode) {
+            return { isError: true, content: [{ type: 'text', text: 'Script parameter is required.' }] };
+          }
+
+          const logs: Array<{ level: string; message: string }> = [];
+          const logger = {
+            log: (...a: unknown[]) => logs.push({ level: 'info', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+            info: (...a: unknown[]) => logs.push({ level: 'info', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+            warn: (...a: unknown[]) => logs.push({ level: 'warn', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+            error: (...a: unknown[]) => logs.push({ level: 'error', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+          };
+
+          const startTime = performance.now();
+          const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+          const fn = new AsyncFunction('app', 'vault', 'args', 'console', scriptCode);
+          const result = await fn(hostApp, hostApp.vault, args.args || {}, logger);
+          const executionTimeMs = performance.now() - startTime;
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  result: result !== undefined ? result : null,
+                  logs,
+                  executionTimeMs: Math.round(executionTimeMs),
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: `Script execution error: ${message}` }],
+          };
+        }
+      },
+    },
+
+    // ── 24. Create Custom Tool ──
+    {
+      name: 'noether_create_custom_tool',
+      description: 'Create and dynamically register a custom MCP tool in the application ToolRegistry for in-app agents.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Unique tool name identifier' },
+          description: { type: 'string', description: 'Detailed tool description' },
+          parameters: { type: 'object', description: 'JSON Schema for parameters' },
+          script: { type: 'string', description: 'JavaScript code handler' },
+        },
+        required: ['name', 'description', 'script'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        try {
+          const rawName = String(args.name || '').trim().toLowerCase().replace(/^custom_/, '');
+          if (!/^[a-z0-9_-]+$/.test(rawName)) {
+            return { isError: true, content: [{ type: 'text', text: 'Invalid tool name. Use alphanumeric characters, underscores, or hyphens.' }] };
+          }
+
+          const description = String(args.description || `Custom tool: ${rawName}`);
+          const scriptCode = String(args.script || '');
+          const parameters = (args.parameters as any) || { type: 'object', properties: {} };
+          const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor;
+
+          const toolName = `custom_${rawName}`;
+          hostApp.tools.registerTool({
+            name: toolName,
+            description,
+            category: 'custom',
+            parameters,
+            handler: async (toolArgs: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
+              const logs: Array<{ level: string; message: string }> = [];
+              const logger = {
+                log: (...a: unknown[]) => logs.push({ level: 'info', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+                info: (...a: unknown[]) => logs.push({ level: 'info', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+                warn: (...a: unknown[]) => logs.push({ level: 'warn', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+                error: (...a: unknown[]) => logs.push({ level: 'error', message: a.map((x) => (typeof x === 'object' ? JSON.stringify(x) : String(x))).join(' ') }),
+              };
+              const fn = new AsyncFunction('args', 'app', 'vault', 'console', scriptCode);
+              const result = await fn(toolArgs, app, app.vault, logger);
+              return {
+                content: [{ type: 'text', text: JSON.stringify({ result, logs }) }],
+              };
+            },
+          });
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  message: `Custom tool "${rawName}" registered successfully.`,
+                  toolName,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : String(err);
+          return { isError: true, content: [{ type: 'text', text: `Failed to create tool: ${message}` }] };
+        }
+      },
+    },
+
+    // ── 25. List Custom Tools ──
+    {
+      name: 'noether_list_custom_tools',
+      description: 'List all custom dynamic MCP tools registered in the workspace.',
+      category: 'workspace',
+      parameters: { type: 'object', properties: {} },
+      handler: async (_args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        const allTools = hostApp.tools.getAllTools();
+        const custom = allTools
+          .filter((t) => t.name.startsWith('custom_') || t.category === 'custom')
+          .map((t) => ({
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+          }));
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify({ totalCustomTools: custom.length, tools: custom }),
+            },
+          ],
+        };
+      },
+    },
+
+    // ── 26. Run Custom Tool ──
+    {
+      name: 'noether_run_custom_tool',
+      description: 'Execute a custom MCP tool by name.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Name of the custom tool' },
+          args: { type: 'object', description: 'Arguments payload' },
+        },
+        required: ['name'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        const name = String(args.name || '').trim();
+        const fullName = name.startsWith('custom_') ? name : `custom_${name}`;
+        const toolArgs = (args.args as Record<string, unknown>) || {};
+        return hostApp.tools.executeTool(fullName, toolArgs);
+      },
+    },
+
+    // ── 27. Delete Custom Tool ──
+    {
+      name: 'noether_delete_custom_tool',
+      description: 'Unregister a custom MCP tool by name.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'Name of the custom tool to unregister' },
+        },
+        required: ['name'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        const name = String(args.name || '').trim();
+        const fullName = name.startsWith('custom_') ? name : `custom_${name}`;
+        hostApp.tools.unregisterTool(fullName);
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, message: `Tool "${fullName}" unregistered.` }) }],
+        };
+      },
+    },
   ];
 
   // Register each native tool directly on the application's ToolRegistry

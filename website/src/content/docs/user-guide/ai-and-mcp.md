@@ -23,7 +23,7 @@ Through a native stdio MCP server (`bin/noether-mcp-server.cjs`), external AI as
 
 ---
 
-Noether exposes **13 structured RPC tools** directly to connected AI agents:
+Noether exposes **18 structured RPC tools** directly to connected AI agents:
 
 | Tool Name | Scope | Capability |
 | :--- | :--- | :--- |
@@ -40,6 +40,11 @@ Noether exposes **13 structured RPC tools** directly to connected AI agents:
 | `noether_get_backlinks` | Graph | Resolves incoming references, forward links, and unlinked mentions. |
 | `tasks_get_all` | Tasks | Aggregates all open and completed `- [ ]` markdown tasks across the vault. |
 | `fsrs-spaced-repetition_get_due_cards` | Study | Retrieves flashcards currently due for active recall review. |
+| `noether_run_script` | Automation | Executes ad-hoc JavaScript/Node.js scripts against the active Vault in a single round-trip. |
+| `noether_create_custom_tool` | Automation | Authors and persists a new custom MCP tool into `.noether/tools/<name>.js`. |
+| `noether_list_custom_tools` | Automation | Lists all custom MCP tools stored in the active Vault with load status. |
+| `noether_run_custom_tool` | Automation | Executes a custom tool by name with arguments without waiting for cache refresh. |
+| `noether_delete_custom_tool` | Automation | Deletes and unregisters a custom MCP tool from the active Vault. |
 
 
 ## 2. Connecting Claude Desktop
@@ -106,7 +111,19 @@ In Cursor:
    - **Command**: `node <path-to-noether>/bin/noether-mcp-server.cjs`
 
 
-## 5. Built-in Noether Copilot (In-App AI Chat)
+## 5. Dynamic Script Execution & Custom Agent Tools
+
+---
+
+When external AI assistants or autonomous agents encounter bespoke tasks, they can dynamically extend Noether's tool surface without waiting for host application releases or writing manual extensions:
+
+- **Ad-Hoc Scripting (`noether_run_script`)**: Agents execute sandboxed Node.js scripts directly against the active Vault. The script receives an active `vault` interface, standard path helpers, and a clean logging buffer, returning calculated insights or performing batch updates in a single round-trip.
+- **Custom Tool Authoring (`noether_create_custom_tool`)**: Agents can turn a validated workflow into a permanent MCP tool saved inside `.noether/tools/<name>.js`. The tool is automatically discovered, verified, added to `tools/list`, and broadcast to connected MCP clients via `notifications/tools/list_changed`.
+- **Universal Tool Runner (`noether_run_custom_tool`)**: Execute authored custom tools immediately without waiting for IDE cache refreshes.
+- **Tool Lifecycle (`noether_list_custom_tools`, `noether_delete_custom_tool`)**: Inspect tool parameters and operational status or delete obsolete custom tools.
+
+
+## 6. Built-in Noether Copilot (In-App AI Chat)
 
 ---
 

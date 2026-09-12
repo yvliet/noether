@@ -219,7 +219,17 @@ Add to `.cursor/mcp.json`:
 External agents can now search your notes (`noether_search_notes`), query your tasks (`tasks_get_all`), and invoke your custom extension tools seamlessly.
 
 
-## 7. Related Reading & References
+## 7. Compiled Extension Tools vs Dynamic Vault Tools
+
+---
+
+Noether supports two distinct modalities for custom MCP tools:
+
+1. **Compiled Extension Tools**: Authored inside standalone extension packages via `this.registerTool()` in `onload()`. These tools are packaged, versioned, distributed through the community registry, and automatically namespaced with the extension ID (e.g. `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`).
+2. **Dynamic Vault Tools**: Authored dynamically by AI agents (or users) on demand via `noether_create_custom_tool` and stored in `<vault>/.noether/tools/<name>.js`. These tools require zero compilation or packaging. They are hot-loaded, validated, and registered into `tools/list` as `custom_<name>`, allowing AI models to immediately create and call tools tailored to a specific vault's domain.
+
+
+## 8. Related Reading & References
 
 ---
 

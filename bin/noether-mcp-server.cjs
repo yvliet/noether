@@ -21,6 +21,12 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
+const vm = require('vm');
+
+// Redirect console output to stderr so stdout is strictly JSON-RPC 2.0 messages
+console.log = (...args) => process.stderr.write(args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ') + '\n');
+console.info = console.log;
+console.warn = console.log;
 
 // ── Configuration & Vault Discovery ──
 
@@ -255,6 +261,355 @@ function resolveNoteFile(targetIdentifier, activePath) {
   return null;
 }
 
+function isSafeVaultPath(targetPath, vaultPath) {
+  if (!targetPath || !vaultPath) return false;
+  const resolvedTarget = path.resolve(targetPath).toLowerCase();
+  const resolvedVault = path.resolve(vaultPath).toLowerCase();
+  return resolvedTarget.startsWith(resolvedVault);
+}
+
+function extractMarkdownTasks(activePath, status = 'all') {
+  const files = scanMarkdownFiles(activePath);
+  const tasks = [];
+
+  for (const file of files) {
+    if (file.isFolder) continue;
+    const note = readNoteFile(file.fullPath);
+    if (!note) continue;
+
+    const lines = note.body.split('\n');
+    for (const line of lines) {
+      const match = line.match(/^(\s*[-*]\s*\[([ xX])\]\s*)(.*)$/);
+      if (match) {
+        const completed = match[2].toLowerCase() === 'x';
+        if (status === 'pending' && completed) continue;
+        if (status === 'completed' && !completed) continue;
+
+        tasks.push({
+          noteTitle: file.title,
+          relativePath: file.relativePath,
+          text: match[3].trim(),
+          completed,
+        });
+      }
+    }
+  }
+
+  return tasks;
+}
+
+function extractFlashcards(activePath, filterTitle = null) {
+  const files = scanMarkdownFiles(activePath);
+  const cards = [];
+  const filter = filterTitle ? String(filterTitle).toLowerCase() : null;
+
+  const stripPrefix = (str) =>
+    str
+      .replace(/^(\s*[-*+]\s*\[[ xX]\]\s*)/, '')
+      .replace(/^(\s*[-*+]\s+)/, '')
+      .replace(/^(\s*\d+[\.\)]\s+)/, '')
+      .replace(/^(\s*>\s*)/, '')
+      .trim();
+
+  for (const file of files) {
+    if (file.isFolder) continue;
+    if (filter && !file.title.toLowerCase().includes(filter) && !file.relativePath.toLowerCase().includes(filter)) {
+      continue;
+    }
+
+    const note = readNoteFile(file.fullPath);
+    if (!note) continue;
+
+    const lines = note.body.split('\n');
+    for (const rawLine of lines) {
+      const rawTrimmed = rawLine.trim();
+      if (!rawTrimmed || rawTrimmed.startsWith('```') || rawTrimmed.startsWith('~~~')) continue;
+
+      const line = stripPrefix(rawTrimmed);
+      if (!line) continue;
+
+      // 1. Two-way card (;;)
+      if (line.includes(';;')) {
+        const parts = line.split(';;').map((s) => s.trim());
+        if (parts.length >= 2 && parts[0] && parts[1]) {
+          const front = parts[0];
+          const back = parts.slice(1).join(';;').trim();
+          cards.push({ noteTitle: file.title, type: 'two_way', front, back });
+          cards.push({ noteTitle: file.title, type: 'two_way', front: back, back: front });
+          continue;
+        }
+      }
+
+      // 2. Concept card (::)
+      if (line.includes('::')) {
+        const parts = line.split('::').map((s) => s.trim());
+        if (parts.length >= 2 && parts[0] && parts[1]) {
+          const front = parts[0];
+          const back = parts.slice(1).join('::').trim();
+          cards.push({ noteTitle: file.title, type: 'concept_descriptor', front, back });
+          continue;
+        }
+      }
+
+      // 3. Cloze deletion ({cloze} or ==cloze==)
+      const clozeCurly = /\{+([^\{\}]+)\}+/g;
+      const clozeEqual = /==([^=\n]+)==/g;
+      let match;
+      let foundCloze = false;
+
+      while ((match = clozeCurly.exec(line)) !== null) {
+        let answer = match[1].trim();
+        if (/^c\d+::/i.test(answer)) answer = answer.replace(/^c\d+::/i, '').trim();
+        if (answer.includes('::')) answer = answer.split('::')[0].trim();
+        if (answer) {
+          cards.push({ noteTitle: file.title, type: 'cloze', front: line, back: answer });
+          foundCloze = true;
+        }
+      }
+
+      if (!foundCloze) {
+        while ((match = clozeEqual.exec(line)) !== null) {
+          const answer = match[1].trim();
+          if (answer) {
+            cards.push({ noteTitle: file.title, type: 'cloze', front: line, back: answer });
+          }
+        }
+      }
+    }
+  }
+
+  return cards;
+}
+
+// ── Dynamic Custom MCP Tool Engine & Vault Script Context ──
+
+function loadVaultCustomTools(vaultPath) {
+  const toolsDir = path.join(vaultPath, '.noether', 'tools');
+  const loaded = new Map();
+  if (!fs.existsSync(toolsDir)) return loaded;
+
+  let entries = [];
+  try {
+    entries = fs.readdirSync(toolsDir, { withFileTypes: true });
+  } catch (e) {
+    return loaded;
+  }
+
+  for (const entry of entries) {
+    if (entry.isDirectory()) continue;
+    if (!entry.name.endsWith('.js') && !entry.name.endsWith('.cjs')) continue;
+
+    const filePath = path.join(toolsDir, entry.name);
+    const baseName = path.basename(entry.name, path.extname(entry.name)).replace(/^custom_/, '');
+
+    try {
+      delete require.cache[require.resolve(filePath)];
+      const mod = require(filePath);
+      if (!mod || typeof mod !== 'object') continue;
+
+      const toolName = (mod.name || baseName).replace(/^custom_/, '');
+      if (typeof mod.handler === 'function') {
+        loaded.set(toolName.toLowerCase(), {
+          name: toolName,
+          mcpName: `custom_${toolName}`,
+          description: mod.description || `Custom vault tool: ${toolName}`,
+          parameters: mod.parameters || { type: 'object', properties: {} },
+          handler: mod.handler,
+          filePath,
+          status: 'loaded',
+        });
+      }
+    } catch (err) {
+      loaded.set(baseName.toLowerCase(), {
+        name: baseName,
+        mcpName: `custom_${baseName}`,
+        description: `Failed to load custom tool: ${err.message}`,
+        parameters: { type: 'object', properties: {} },
+        filePath,
+        status: 'error',
+        error: err.message,
+      });
+    }
+  }
+
+  return loaded;
+}
+
+function createVaultScriptContext(activeVaultPath, captureLogs = []) {
+  const logger = {
+    log: (...args) => captureLogs.push({ level: 'info', message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') }),
+    info: (...args) => captureLogs.push({ level: 'info', message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') }),
+    warn: (...args) => captureLogs.push({ level: 'warn', message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') }),
+    error: (...args) => captureLogs.push({ level: 'error', message: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') }),
+  };
+
+  const vaultApi = {
+    path: activeVaultPath,
+    readNote: (idOrPath) => {
+      const resolved = resolveNoteFile(idOrPath, activeVaultPath);
+      if (!resolved || resolved.isFolder) return null;
+      return readNoteFile(resolved.fullPath);
+    },
+    writeNote: (idOrPath, content, properties) => {
+      let targetPath;
+      if (path.isAbsolute(idOrPath)) {
+        targetPath = idOrPath;
+      } else {
+        targetPath = path.join(activeVaultPath, idOrPath.endsWith('.md') ? idOrPath : `${idOrPath}.md`);
+      }
+      if (!isSafeVaultPath(targetPath, activeVaultPath)) {
+        throw new Error(`Path containment violation: "${targetPath}" is outside the active Vault boundary.`);
+      }
+      writeNoteFile(targetPath, content, properties);
+      return { success: true, path: targetPath };
+    },
+    deleteNote: (idOrPath) => {
+      const resolved = resolveNoteFile(idOrPath, activeVaultPath);
+      if (!resolved || resolved.isFolder) throw new Error(`Note "${idOrPath}" not found.`);
+      const trashDir = path.join(activeVaultPath, '.trash');
+      if (!fs.existsSync(trashDir)) fs.mkdirSync(trashDir, { recursive: true });
+      const trashPath = path.join(trashDir, path.basename(resolved.fullPath));
+      fs.renameSync(resolved.fullPath, trashPath);
+      return { success: true, trashedTo: trashPath };
+    },
+    scanNotes: (subfolder = '') => {
+      const targetDir = subfolder ? path.join(activeVaultPath, subfolder) : activeVaultPath;
+      return scanMarkdownFiles(targetDir, activeVaultPath);
+    },
+    searchNotes: (query, limit = 20) => {
+      const q = String(query).toLowerCase();
+      const files = scanMarkdownFiles(activeVaultPath);
+      const matches = [];
+      for (const file of files) {
+        if (file.isFolder) continue;
+        const note = readNoteFile(file.fullPath);
+        if (!note) continue;
+        if (file.title.toLowerCase().includes(q) || note.body.toLowerCase().includes(q)) {
+          matches.push({
+            id: file.id,
+            title: file.title,
+            relativePath: file.relativePath,
+            snippet: note.body.slice(0, 200).replace(/\r?\n/g, ' '),
+          });
+          if (matches.length >= limit) break;
+        }
+      }
+      return matches;
+    },
+    getBacklinks: (title) => {
+      const files = scanMarkdownFiles(activeVaultPath);
+      const target = String(title).toLowerCase();
+      const backlinks = [];
+      for (const file of files) {
+        if (file.isFolder) continue;
+        const note = readNoteFile(file.fullPath);
+        if (!note) continue;
+        if (note.body.toLowerCase().includes(`[[${target}`) || note.body.toLowerCase().includes(`[[${target}|`)) {
+          backlinks.push({ sourceTitle: file.title, relativePath: file.relativePath });
+        }
+      }
+      return backlinks;
+    },
+    getTasks: (status = 'all') => {
+      return extractMarkdownTasks(activeVaultPath, status);
+    },
+    getDueCards: (filterTitle = null) => {
+      return extractFlashcards(activeVaultPath, filterTitle);
+    },
+    resolveNote: (target) => resolveNoteFile(target, activeVaultPath),
+    listVaults: () => {
+      return (config.recentVaults || []).map((v) => ({
+        name: v.name,
+        path: v.path,
+        isActive: v.path === activeVaultPath,
+      }));
+    },
+  };
+
+  return {
+    vault: vaultApi,
+    console: logger,
+    path,
+    Buffer,
+    setTimeout,
+    clearTimeout,
+    parseInt,
+    parseFloat,
+    encodeURIComponent,
+    decodeURIComponent,
+    parseFrontmatter,
+    serializeFrontmatter,
+  };
+}
+
+async function executeScriptCode(code, args = {}, activeVaultPath, timeoutMs = 30000) {
+  const logs = [];
+  const contextObj = createVaultScriptContext(activeVaultPath, logs);
+
+  const sandbox = {
+    ...contextObj,
+    args: args || {},
+    context: contextObj,
+  };
+
+  const vmContext = vm.createContext(sandbox);
+
+  const wrappedCode = `
+    (async () => {
+      let module = { exports: {} };
+      let exports = module.exports;
+      const __fn = async () => {
+        ${code}
+      };
+      const __res = await __fn();
+      if (typeof module.exports === 'function') {
+        return await module.exports(args, context);
+      }
+      if (module.exports && typeof module.exports.handler === 'function') {
+        return await module.exports.handler(args, context);
+      }
+      return __res;
+    })()
+  `;
+
+  const script = new vm.Script(wrappedCode, {
+    filename: 'agent-script.js',
+  });
+
+  const startTime = Date.now();
+  let timerId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timerId = setTimeout(() => {
+      reject(new Error(`Script execution timed out after ${timeoutMs}ms.`));
+    }, timeoutMs);
+  });
+
+  try {
+    const runPromise = script.runInContext(vmContext, { timeout: timeoutMs });
+    const result = await Promise.race([runPromise, timeoutPromise]);
+    clearTimeout(timerId);
+    const executionTimeMs = Date.now() - startTime;
+    return {
+      success: true,
+      result: result !== undefined ? result : null,
+      logs,
+      executionTimeMs,
+    };
+  } catch (err) {
+    clearTimeout(timerId);
+    const executionTimeMs = Date.now() - startTime;
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+      stack: err instanceof Error ? err.stack : undefined,
+      logs,
+      executionTimeMs,
+    };
+  }
+}
+
+let customTools = loadVaultCustomTools(getActiveVaultPath());
+
 // ── MCP Tool Definitions & Handlers ──
 
 const TOOLS = [
@@ -318,6 +673,8 @@ const TOOLS = [
         throw new Error(`Target Vault at "${targetPath}" does not exist.`);
       }
       config.currentVaultPath = targetPath;
+      customTools = loadVaultCustomTools(targetPath);
+      sendNotification('notifications/tools/list_changed', {});
       return { message: `Switched active Vault to "${path.basename(targetPath)}"`, path: targetPath };
     },
   },
@@ -605,33 +962,7 @@ const TOOLS = [
     },
     handler: async ({ status = 'all' }) => {
       const activePath = getActiveVaultPath();
-      const files = scanMarkdownFiles(activePath);
-      const tasks = [];
-
-      for (const file of files) {
-        if (file.isFolder) continue;
-        const note = readNoteFile(file.fullPath);
-        if (!note) continue;
-
-        const lines = note.body.split('\n');
-        for (const line of lines) {
-          const match = line.match(/^(\s*[-*]\s*\[([ xX])\]\s*)(.*)$/);
-          if (match) {
-            const completed = match[2].toLowerCase() === 'x';
-            if (status === 'pending' && completed) continue;
-            if (status === 'completed' && !completed) continue;
-
-            tasks.push({
-              noteTitle: file.title,
-              relativePath: file.relativePath,
-              text: match[3].trim(),
-              completed,
-            });
-          }
-        }
-      }
-
-      return tasks;
+      return extractMarkdownTasks(activePath, status);
     },
   },
 
@@ -647,86 +978,7 @@ const TOOLS = [
     },
     handler: async (args) => {
       const activePath = getActiveVaultPath();
-      const files = scanMarkdownFiles(activePath);
-      const cards = [];
-      const filterTitle = args?.documentId ? String(args.documentId).toLowerCase() : null;
-
-      const stripPrefix = (str) =>
-        str
-          .replace(/^(\s*[-*+]\s*\[[ xX]\]\s*)/, '')
-          .replace(/^(\s*[-*+]\s+)/, '')
-          .replace(/^(\s*\d+[\.\)]\s+)/, '')
-          .replace(/^(\s*>\s*)/, '')
-          .trim();
-
-      for (const file of files) {
-        if (file.isFolder) continue;
-        if (filterTitle && !file.title.toLowerCase().includes(filterTitle) && !file.relativePath.toLowerCase().includes(filterTitle)) {
-          continue;
-        }
-
-        const note = readNoteFile(file.fullPath);
-        if (!note) continue;
-
-        const lines = note.body.split('\n');
-        for (const rawLine of lines) {
-          const rawTrimmed = rawLine.trim();
-          if (!rawTrimmed || rawTrimmed.startsWith('```') || rawTrimmed.startsWith('~~~')) continue;
-
-          const line = stripPrefix(rawTrimmed);
-          if (!line) continue;
-
-          // 1. Two-way card (;;)
-          if (line.includes(';;')) {
-            const parts = line.split(';;').map((s) => s.trim());
-            if (parts.length >= 2 && parts[0] && parts[1]) {
-              const front = parts[0];
-              const back = parts.slice(1).join(';;').trim();
-              cards.push({ noteTitle: file.title, type: 'two_way', front, back });
-              cards.push({ noteTitle: file.title, type: 'two_way', front: back, back: front });
-              continue;
-            }
-          }
-
-          // 2. Concept card (::)
-          if (line.includes('::')) {
-            const parts = line.split('::').map((s) => s.trim());
-            if (parts.length >= 2 && parts[0] && parts[1]) {
-              const front = parts[0];
-              const back = parts.slice(1).join('::').trim();
-              cards.push({ noteTitle: file.title, type: 'concept_descriptor', front, back });
-              continue;
-            }
-          }
-
-          // 3. Cloze deletion ({cloze} or ==cloze==)
-          const clozeCurly = /\{+([^\{\}]+)\}+/g;
-          const clozeEqual = /==([^=\n]+)==/g;
-          let match;
-          let foundCloze = false;
-
-          while ((match = clozeCurly.exec(line)) !== null) {
-            let answer = match[1].trim();
-            if (/^c\d+::/i.test(answer)) answer = answer.replace(/^c\d+::/i, '').trim();
-            if (answer.includes('::')) answer = answer.split('::')[0].trim();
-            if (answer) {
-              cards.push({ noteTitle: file.title, type: 'cloze', front: line, back: answer });
-              foundCloze = true;
-            }
-          }
-
-          if (!foundCloze) {
-            while ((match = clozeEqual.exec(line)) !== null) {
-              const answer = match[1].trim();
-              if (answer) {
-                cards.push({ noteTitle: file.title, type: 'cloze', front: line, back: answer });
-              }
-            }
-          }
-        }
-      }
-
-      return cards;
+      return extractFlashcards(activePath, args?.documentId);
     },
   },
 
@@ -761,6 +1013,248 @@ const TOOLS = [
       }
 
       return backlinks;
+    },
+  },
+
+  // 14. noether_run_script
+  {
+    name: 'noether_run_script',
+    description: 'Execute an ad-hoc JavaScript/Node.js script directly against the active Vault with high-speed access to notes, tasks, flashcards, search, and file manipulation. Variables available in scope: vault, context, args, console, and path. Returns script output, captured console logs, and execution duration in a single round-trip.',
+    parameters: {
+      type: 'object',
+      properties: {
+        script: {
+          type: 'string',
+          description: 'The JavaScript code to execute. Can be expressions, async statements with return, or module.exports = async (args, context) => ...',
+        },
+        args: {
+          type: 'object',
+          description: 'Optional arguments object accessible as "args" inside the script',
+        },
+        timeoutMs: {
+          type: 'number',
+          description: 'Maximum execution timeout in milliseconds (default: 30000)',
+        },
+      },
+      required: ['script'],
+    },
+    handler: async ({ script, args = {}, timeoutMs = 30000 }) => {
+      const activePath = getActiveVaultPath();
+      const res = await executeScriptCode(script, args, activePath, timeoutMs);
+      if (!res.success) {
+        throw new Error(`Script execution failed: ${res.error}\n${res.stack || ''}`);
+      }
+      return res;
+    },
+  },
+
+  // 15. noether_create_custom_tool
+  {
+    name: 'noether_create_custom_tool',
+    description: 'Create and persist a custom MCP tool in the active Vault (.noether/tools/<name>.js). The tool is dynamically validated, compiled, loaded into memory, exposed in tools/list, and immediately callable by AI agents.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Unique tool name identifier (e.g. "count_tags", "summarize_readings"). Alphanumeric, underscores, and hyphens only.',
+        },
+        description: {
+          type: 'string',
+          description: 'Detailed description explaining what the tool does and when an AI agent should invoke it.',
+        },
+        parameters: {
+          type: 'object',
+          description: 'JSON Schema object defining the tool\'s input parameters (e.g. { type: "object", properties: { ... }, required: [...] })',
+        },
+        script: {
+          type: 'string',
+          description: 'JavaScript code for the tool. Can be either the function body of async (args, context) => ... or a complete CommonJS module exporting { name, description, parameters, handler }.',
+        },
+        overwrite: {
+          type: 'boolean',
+          description: 'Whether to overwrite an existing tool with the same name (default: false)',
+        },
+      },
+      required: ['name', 'description', 'script'],
+    },
+    handler: async ({ name, description, parameters = { type: 'object', properties: {} }, script, overwrite = false }) => {
+      const activePath = getActiveVaultPath();
+      const cleanName = String(name).trim().toLowerCase().replace(/^custom_/, '');
+
+      if (!/^[a-z0-9_-]+$/.test(cleanName)) {
+        throw new Error(`Invalid tool name "${name}". Name must contain only alphanumeric characters, underscores, or hyphens.`);
+      }
+
+      const toolsDir = path.join(activePath, '.noether', 'tools');
+      if (!fs.existsSync(toolsDir)) {
+        fs.mkdirSync(toolsDir, { recursive: true });
+      }
+
+      const targetFile = path.join(toolsDir, `${cleanName}.js`);
+      if (fs.existsSync(targetFile) && !overwrite) {
+        throw new Error(`Custom tool "${cleanName}" already exists at "${targetFile}". Set overwrite: true to replace it.`);
+      }
+
+      let fileContent;
+      if (script.includes('module.exports')) {
+        fileContent = script;
+      } else {
+        const safeDescription = String(description).replace(/\*\//g, '* /');
+        const indentedScript = script.split('\n').map((l) => `    ${l}`).join('\n');
+        fileContent = `/**\n * Custom MCP Tool: ${cleanName}\n * ${safeDescription}\n */\n\nmodule.exports = {\n  name: ${JSON.stringify(cleanName)},\n  description: ${JSON.stringify(description)},\n  parameters: ${JSON.stringify(parameters || { type: 'object', properties: {} }, null, 2)},\n  handler: async (args, context) => {\n${indentedScript}\n  },\n};\n`;
+      }
+
+      try {
+        new vm.Script(fileContent, { filename: `${cleanName}.js` });
+      } catch (compileErr) {
+        throw new Error(`Script syntax validation failed: ${compileErr.message}`);
+      }
+
+      fs.writeFileSync(targetFile, fileContent, 'utf8');
+
+      customTools = loadVaultCustomTools(activePath);
+      sendNotification('notifications/tools/list_changed', {});
+
+      return {
+        success: true,
+        message: `Custom tool "${cleanName}" created and registered successfully.`,
+        toolName: `custom_${cleanName}`,
+        filePath: targetFile,
+        availableInList: true,
+      };
+    },
+  },
+
+  // 16. noether_list_custom_tools
+  {
+    name: 'noether_list_custom_tools',
+    description: 'List all custom MCP tools authored for and stored in the active Vault (.noether/tools/), including their status, descriptions, parameters schema, and file paths.',
+    parameters: { type: 'object', properties: {} },
+    handler: async () => {
+      const activePath = getActiveVaultPath();
+      customTools = loadVaultCustomTools(activePath);
+      const list = Array.from(customTools.values()).map((t) => ({
+        name: t.name,
+        mcpName: t.mcpName,
+        description: t.description,
+        parameters: t.parameters,
+        status: t.status,
+        filePath: t.filePath,
+        error: t.error || null,
+      }));
+      return {
+        activeVault: path.basename(activePath),
+        totalCustomTools: list.length,
+        tools: list,
+      };
+    },
+  },
+
+  // 17. noether_run_custom_tool
+  {
+    name: 'noether_run_custom_tool',
+    description: 'Execute an existing custom MCP tool by name with arguments. Enables immediate execution without waiting for client tool cache refresh.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name of the custom tool to execute (e.g. "my_tool" or "custom_my_tool")',
+        },
+        args: {
+          type: 'object',
+          description: 'Arguments object matching the tool parameters schema',
+        },
+      },
+      required: ['name'],
+    },
+    handler: async ({ name, args = {} }) => {
+      const activePath = getActiveVaultPath();
+      const cleanKey = String(name).toLowerCase().replace(/^custom_/, '');
+
+      if (!customTools.has(cleanKey)) {
+        customTools = loadVaultCustomTools(activePath);
+      }
+
+      const tool = customTools.get(cleanKey);
+      if (!tool) {
+        const available = Array.from(customTools.keys()).join(', ') || 'none';
+        throw new Error(`Custom tool "${name}" not found. Available custom tools: ${available}`);
+      }
+
+      if (tool.status === 'error') {
+        throw new Error(`Custom tool "${name}" is in an error state: ${tool.error}`);
+      }
+
+      const logs = [];
+      const context = createVaultScriptContext(activePath, logs);
+      const originalLog = console.log;
+      const originalInfo = console.info;
+      const originalWarn = console.warn;
+      const originalError = console.error;
+
+      console.log = (...a) => context.console.log(...a);
+      console.info = (...a) => context.console.info(...a);
+      console.warn = (...a) => context.console.warn(...a);
+      console.error = (...a) => context.console.error(...a);
+
+      const startTime = Date.now();
+      try {
+        const result = await tool.handler(args, context);
+        const executionTimeMs = Date.now() - startTime;
+        return {
+          success: true,
+          result: result !== undefined ? result : null,
+          logs,
+          executionTimeMs,
+        };
+      } finally {
+        console.log = originalLog;
+        console.info = originalInfo;
+        console.warn = originalWarn;
+        console.error = originalError;
+      }
+    },
+  },
+
+  // 18. noether_delete_custom_tool
+  {
+    name: 'noether_delete_custom_tool',
+    description: 'Delete a custom MCP tool from the active Vault (.noether/tools/), unregistering it from the MCP server.',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Name of the custom tool to delete',
+        },
+      },
+      required: ['name'],
+    },
+    handler: async ({ name }) => {
+      const activePath = getActiveVaultPath();
+      const cleanKey = String(name).toLowerCase().replace(/^custom_/, '');
+      const toolsDir = path.join(activePath, '.noether', 'tools');
+
+      let deleted = false;
+      for (const ext of ['.js', '.cjs']) {
+        const candidate = path.join(toolsDir, `${cleanKey}${ext}`);
+        if (fs.existsSync(candidate)) {
+          fs.unlinkSync(candidate);
+          deleted = true;
+          break;
+        }
+      }
+
+      customTools = loadVaultCustomTools(activePath);
+      sendNotification('notifications/tools/list_changed', {});
+
+      if (!deleted) {
+        return { success: false, message: `Custom tool "${name}" was not found on disk.` };
+      }
+
+      return { success: true, message: `Custom tool "${cleanKey}" deleted and unregistered.` };
     },
   },
 ];
@@ -833,7 +1327,7 @@ rl.on('line', async (line) => {
         sendResponse(id, {
           protocolVersion: '2024-11-05',
           capabilities: {
-            tools: { listChanged: false },
+            tools: { listChanged: true },
             prompts: { listChanged: false },
           },
           serverInfo: {
@@ -856,13 +1350,24 @@ rl.on('line', async (line) => {
       }
 
       case 'tools/list': {
-        sendResponse(id, {
-          tools: TOOLS.map((t) => ({
-            name: t.name,
-            description: t.description,
-            inputSchema: t.parameters,
-          })),
-        });
+        const dynamicTools = [];
+        for (const ct of customTools.values()) {
+          if (ct.status === 'loaded') {
+            dynamicTools.push({
+              name: ct.mcpName,
+              description: `[Custom Vault Tool] ${ct.description}`,
+              inputSchema: ct.parameters,
+            });
+          }
+        }
+
+        const allTools = TOOLS.map((t) => ({
+          name: t.name,
+          description: t.description,
+          inputSchema: t.parameters,
+        })).concat(dynamicTools);
+
+        sendResponse(id, { tools: allTools });
         break;
       }
 
@@ -871,25 +1376,75 @@ rl.on('line', async (line) => {
         const toolArgs = params?.arguments || {};
         const tool = TOOLS.find((t) => t.name === toolName);
 
-        if (!tool) {
-          sendResponse(id, {
-            isError: true,
-            content: [{ type: 'text', text: `Tool "${toolName}" not found.` }],
-          });
+        if (tool) {
+          try {
+            const result = await tool.handler(toolArgs);
+            sendResponse(id, {
+              content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
+            });
+          } catch (err) {
+            sendResponse(id, {
+              isError: true,
+              content: [{ type: 'text', text: `Execution error: ${err.message}` }],
+            });
+          }
           break;
         }
 
-        try {
-          const result = await tool.handler(toolArgs);
-          sendResponse(id, {
-            content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-          });
-        } catch (err) {
-          sendResponse(id, {
-            isError: true,
-            content: [{ type: 'text', text: `Execution error: ${err.message}` }],
-          });
+        const cleanKey = String(toolName || '').toLowerCase().replace(/^custom_/, '');
+        const customTool = customTools.get(cleanKey);
+        if (customTool && customTool.status === 'loaded') {
+          const logs = [];
+          const context = createVaultScriptContext(getActiveVaultPath(), logs);
+          const originalLog = console.log;
+          const originalInfo = console.info;
+          const originalWarn = console.warn;
+          const originalError = console.error;
+
+          console.log = (...a) => context.console.log(...a);
+          console.info = (...a) => context.console.info(...a);
+          console.warn = (...a) => context.console.warn(...a);
+          console.error = (...a) => context.console.error(...a);
+
+          try {
+            const startTime = Date.now();
+            const result = await customTool.handler(toolArgs, context);
+            const executionTimeMs = Date.now() - startTime;
+            sendResponse(id, {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(
+                    {
+                      success: true,
+                      result: result !== undefined ? result : null,
+                      logs: logs.length > 0 ? logs : undefined,
+                      executionTimeMs,
+                    },
+                    null,
+                    2
+                  ),
+                },
+              ],
+            });
+          } catch (err) {
+            sendResponse(id, {
+              isError: true,
+              content: [{ type: 'text', text: `Custom tool error: ${err.message}` }],
+            });
+          } finally {
+            console.log = originalLog;
+            console.info = originalInfo;
+            console.warn = originalWarn;
+            console.error = originalError;
+          }
+          break;
         }
+
+        sendResponse(id, {
+          isError: true,
+          content: [{ type: 'text', text: `Tool "${toolName}" not found.` }],
+        });
         break;
       }
 

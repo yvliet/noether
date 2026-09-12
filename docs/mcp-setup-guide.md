@@ -174,3 +174,59 @@ this.registerTool({
   },
 });
 ```
+
+---
+
+## 9. Dynamic Script Execution & Custom Agent Tools
+
+---
+
+When external AI assistants or autonomous agents need custom capabilities tailored to specific user needs, they do not need to rely solely on predefined tools or multi-step round-trips. Noether provides a flexible script execution runtime and dynamic tool authoring engine:
+
+### Running Ad-Hoc Scripts (`noether_run_script`)
+
+Agents can execute Node.js / JavaScript scripts directly against the active Vault in a single round-trip:
+
+```json
+{
+  "name": "noether_run_script",
+  "arguments": {
+    "script": "const notes = vault.scanNotes('Projects'); const tasks = vault.getTasks('pending'); return { projectsCount: notes.length, pendingTasks: tasks.length };"
+  }
+}
+```
+
+The execution sandbox exposes:
+- **`vault`**: High-speed APIs for note reading, writing, searching, backlinks, tasks, and flashcards (`vault.readNote`, `vault.writeNote`, `vault.scanNotes`, `vault.searchNotes`, `vault.getTasks`, `vault.getBacklinks`, etc.).
+- **`console`**: Captures logs cleanly into a structured output array without corrupting the MCP stdio stream.
+- **`path`**: Standard filesystem path utilities.
+- **`args`**: Custom input parameters passed into the script.
+
+### Authoring Persistent Custom Tools (`noether_create_custom_tool`)
+
+When a user requests a recurring custom workflow, the AI agent can persist a new first-class MCP tool directly into the active Vault (`.noether/tools/<name>.js`):
+
+```json
+{
+  "name": "noether_create_custom_tool",
+  "arguments": {
+    "name": "summarize_weekly_journal",
+    "description": "Scans all daily notes from the last 7 days and extracts key achievements and blockers",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "days": { "type": "number", "description": "Number of days to inspect (default: 7)" }
+      }
+    },
+    "script": "const days = Number(args.days) || 7; const notes = context.vault.scanNotes('Journal'); return { inspected: notes.length };"
+  }
+}
+```
+
+Once created:
+1. The tool is verified and saved to `<vault>/.noether/tools/<name>.js`.
+2. It is immediately registered as `custom_<name>` in `tools/list`.
+3. The server emits a `notifications/tools/list_changed` notification so compliant clients refresh their tool palettes.
+4. Agents can also call `noether_run_custom_tool` immediately to execute the custom tool without waiting for a cache refresh.
+5. Inspect all authored tools with `noether_list_custom_tools`, or remove unneeded tools with `noether_delete_custom_tool`.
+
