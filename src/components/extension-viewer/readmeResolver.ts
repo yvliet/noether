@@ -159,10 +159,10 @@ export async function fetchTursoReadme(
           type: 'execute',
           stmt: {
             sql: `
-              SELECT pv.readme
-              FROM plugin_versions pv
-              WHERE pv.plugin_id = ?
-              ORDER BY pv.published_at DESC
+              SELECT ev.readme
+              FROM extension_versions ev
+              WHERE ev.extension_id = ?
+              ORDER BY ev.published_at DESC
               LIMIT 1
             `,
             args: [{ type: 'text', value: extensionId }],
