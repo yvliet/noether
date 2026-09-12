@@ -5,10 +5,12 @@
  * Kept strictly within the Canvas plugin directory to prevent type leakage into Noether native core.
  */
 
+export type CanvasNodeType = 'note' | 'text' | 'link' | 'image' | 'audio' | 'video' | 'pdf' | string;
+
 export interface CanvasNode {
   id: string;
   board_id: string;
-  type: 'note' | 'text' | 'link';
+  type: CanvasNodeType;
   x: number;
   y: number;
   width: number;

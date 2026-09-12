@@ -17,10 +17,10 @@ export interface CardContentRendererProps {
   onTaskToggle?: (taskText: string, currentChecked: boolean) => void;
 }
 
-const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif']);
-const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus']);
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi']);
-const PDF_EXTS = new Set(['pdf']);
+export const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif']);
+export const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus']);
+export const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi']);
+export const PDF_EXTS = new Set(['pdf']);
 
 export function getFileExtension(filename?: string): string {
   if (!filename) return '';
@@ -91,15 +91,25 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
     const pointerDownPosRef = React.useRef<{ x: number; y: number } | null>(null);
 
     // 1. Image Attachment Cards
-    if (isImageDocument(doc)) {
-      const src = resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
+    const isImage =
+      isImageDocument(doc) ||
+      node.type === 'image' ||
+      (Boolean(node.url) && IMAGE_EXTS.has(getFileExtension(node.url)));
+    if (isImage) {
+      const src =
+        node.url ||
+        resolveMediaSrc(contentJson || doc?.content_json, doc?.title) ||
+        node.text_content ||
+        '';
       return (
         <div className="w-full h-full flex items-center justify-center bg-transparent overflow-hidden rounded-[4px] select-none">
           {src ? (
             <img
               src={src}
-              alt={doc?.title || 'Canvas image'}
+              alt={doc?.title || node.text_content || 'Canvas image'}
               draggable={false}
+              decoding="async"
+              loading="lazy"
               onDragStart={(e) => e.preventDefault()}
               onLoad={(e) => {
                 const img = e.currentTarget;
@@ -138,7 +148,6 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
                 }
               }}
               className="w-full h-full object-contain pointer-events-auto rounded-[3px] cursor-zoom-in select-none"
-              loading="lazy"
             />
           ) : (
             <div className="flex flex-col items-center justify-center text-[#666] text-[14px] gap-1.5 p-3">
@@ -151,8 +160,12 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
     }
 
     // 2. Audio Attachment Cards
-    if (isAudioDocument(doc)) {
-      const src = resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
+    const isAudio =
+      isAudioDocument(doc) ||
+      node.type === 'audio' ||
+      (Boolean(node.url) && AUDIO_EXTS.has(getFileExtension(node.url)));
+    if (isAudio) {
+      const src = node.url || resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
       return (
         <div className="w-full h-full flex flex-col justify-center p-3 bg-transparent rounded-[4px]">
           <audio controls src={src} className="w-full h-8" />
@@ -161,8 +174,12 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
     }
 
     // 3. Video Attachment Cards
-    if (isVideoDocument(doc)) {
-      const src = resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
+    const isVideo =
+      isVideoDocument(doc) ||
+      node.type === 'video' ||
+      (Boolean(node.url) && VIDEO_EXTS.has(getFileExtension(node.url)));
+    if (isVideo) {
+      const src = node.url || resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
       return (
         <div className="w-full h-full bg-transparent flex items-center justify-center overflow-hidden rounded-[4px]">
           <video controls src={src} className="w-full h-full object-contain" />
@@ -171,8 +188,12 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
     }
 
     // 4. PDF Attachment Cards
-    if (isPdfDocument(doc)) {
-      const src = resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
+    const isPdf =
+      isPdfDocument(doc) ||
+      node.type === 'pdf' ||
+      (Boolean(node.url) && PDF_EXTS.has(getFileExtension(node.url)));
+    if (isPdf) {
+      const src = node.url || resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
       return (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-transparent gap-2 rounded-[4px] text-center">
           <File01Icon size={26} className="text-rose-400" />
@@ -230,6 +251,7 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
           onChange={(val) => onTextChange?.(val)}
           onBlur={onTextBlur}
           onEscape={onTextBlur}
+          onTaskToggle={onTaskToggle}
         />
       );
     }
@@ -250,6 +272,7 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
         }}
         onBlur={onTextBlur}
         onEscape={onTextBlur}
+        onTaskToggle={onTaskToggle}
       />
     );
   }

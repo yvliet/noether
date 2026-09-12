@@ -29,10 +29,7 @@ import {
   CANVAS_NODES_TABLE_DEF,
   CANVAS_EDGES_TABLE_DEF,
 } from './canvasDb';
-
-const LazyCanvasView = React.lazy(() =>
-  import('./CanvasView').then((m) => ({ default: m.CanvasView }))
-);
+import { CanvasView } from './CanvasView';
 
 export const CANVAS_MANIFEST: ExtensionManifest = {
   id: 'canvas',
@@ -65,9 +62,7 @@ export class CanvasExtension extends Extension {
       title: 'Canvas',
       icon: <Layout01Icon size={14} />,
       render: (props?: { tabId?: string; documentId?: string }) => (
-        <React.Suspense fallback={<div className="w-full h-full bg-[#181818]" />}>
-          <LazyCanvasView boardId={props?.documentId} tabId={props?.tabId} />
-        </React.Suspense>
+        <CanvasView boardId={props?.documentId} tabId={props?.tabId} />
       ),
     });
 

@@ -41,8 +41,18 @@ import { CardActionPill, computePillScale } from './components/CardActionPill';
 import { MultiSelectActionPill } from './components/MultiSelectActionPill';
 import { EdgeActionPill } from './components/EdgeActionPill';
 import { EdgeLabel } from './components/EdgeLabel';
-import { isImageDocument } from './components/CardContentRenderer';
 import { CanvasSettingsRail } from './components/CanvasSettingsRail';
+import {
+  isImageDocument,
+  isAudioDocument,
+  isVideoDocument,
+  isPdfDocument,
+  IMAGE_EXTS,
+  AUDIO_EXTS,
+  VIDEO_EXTS,
+  PDF_EXTS,
+  getFileExtension,
+} from './components/CardContentRenderer';
 import { CanvasBottomDock, CanvasDockActionType } from './components/CanvasBottomDock';
 import { CanvasItemSearchModal } from './components/CanvasItemSearchModal';
 import { calculateObjectSnap, AlignmentGuide } from './utils/canvasSnapping';
@@ -81,6 +91,44 @@ function getTitleTextWidth(text: string): number {
     }
   }
   return text.length * 8.5;
+}
+
+function parseCanvasJson(json: string, boardId: string): { nodes: CanvasNode[]; edges: CanvasEdge[] } {
+  try {
+    const data = JSON.parse(json);
+    const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
+    const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
+
+    const nodes: CanvasNode[] = rawNodes.map((n: any) => ({
+      id: n.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      board_id: boardId,
+      type: n.type === 'file' ? 'note' : (n.type || 'text'),
+      x: typeof n.x === 'number' ? n.x : 0,
+      y: typeof n.y === 'number' ? n.y : 0,
+      width: typeof n.width === 'number' ? n.width : 240,
+      height: typeof n.height === 'number' ? n.height : 160,
+      document_id: n.file || n.document_id,
+      text_content: n.text || n.text_content,
+      color: n.color,
+      url: n.url,
+    }));
+
+    const edges: CanvasEdge[] = rawEdges.map((e: any) => ({
+      id: e.id || `edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      board_id: boardId,
+      from_node_id: e.fromNode || e.from_node_id,
+      from_side: e.fromSide || e.from_side || 'right',
+      to_node_id: e.toNode || e.to_node_id,
+      to_side: e.toSide || e.to_side || 'left',
+      label: e.label,
+      color: e.color,
+      direction: e.direction || (e.fromEnd ? (e.toEnd ? 'bidirectional' : 'nondirectional') : 'unidirectional'),
+    }));
+
+    return { nodes, edges };
+  } catch {
+    return { nodes: [], edges: [] };
+  }
 }
 
 export interface CanvasViewProps {
@@ -123,8 +171,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     documents.find((d: DocumentItem) => d.id === effectiveBoardId) ||
     (activeDocument?.id === effectiveBoardId ? activeDocument : null);
 
-  const [nodes, setNodes] = useState<CanvasNode[]>([]);
-  const [edges, setEdges] = useState<CanvasEdge[]>([]);
+  const initialCanvasData = useMemo(() => {
+    if (activeDoc?.content_json && activeDoc.content_json.trim().length > 0) {
+      return parseCanvasJson(activeDoc.content_json, effectiveBoardId);
+    }
+    return { nodes: [], edges: [] };
+  }, [activeDoc?.content_json, effectiveBoardId]);
+
+  const [nodes, setNodes] = useState<CanvasNode[]>(() => initialCanvasData.nodes);
+  const [edges, setEdges] = useState<CanvasEdge[]>(() => initialCanvasData.edges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
   const selectedNodeIdsRef = useRef<string[]>([]);
@@ -152,7 +207,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
   const [editingEdgeLabelId, setEditingEdgeLabelId] = useState<string | null>(null);
   const [editingLabelDraft, setEditingLabelDraft] = useState<string>('');
-  const [docContentMap, setDocContentMap] = useState<Record<string, string>>({});
+  const [docContentMap, setDocContentMap] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    if (Array.isArray(documents)) {
+      for (const d of documents) {
+        if (d.id && d.content_json) {
+          map[d.id] = d.content_json;
+        }
+      }
+    }
+    return map;
+  });
   const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
   const [dragGhost, setDragGhost] = useState<{
     type: CanvasDockActionType;
@@ -227,7 +292,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   useEffect(() => { canvasReadOnlyRef.current = canvasReadOnly; }, [canvasReadOnly]);
   useEffect(() => { gridSizeRef.current = gridSize; }, [gridSize]);
 
-  // Asynchronously load note content into memory cache for cards that need it
+  // Concurrently load note content into memory cache for cards that need it
   useEffect(() => {
     const missingIds = nodes
       .filter((n) => n.document_id && docContentMap[n.document_id] === undefined)
@@ -236,19 +301,34 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     if (missingIds.length === 0) return;
 
     let isMounted = true;
-    missingIds.forEach(async (id) => {
-      try {
-        const doc = await app.vault.readDocument(id);
-        if (isMounted && doc) {
-          setDocContentMap((prev) => ({ ...prev, [id]: doc.content_json || '' }));
+    Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const doc = await app.vault.readDocument(id);
+          return { id, content: doc?.content_json || '' };
+        } catch {
+          return { id, content: '' };
         }
-      } catch {}
+      })
+    ).then((results) => {
+      if (!isMounted) return;
+      setDocContentMap((prev) => {
+        let changed = false;
+        const next = { ...prev };
+        for (const { id, content } of results) {
+          if (next[id] === undefined) {
+            next[id] = content;
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
     });
 
     return () => {
       isMounted = false;
     };
-  }, [nodes, app.vault, docContentMap]);
+  }, [nodes, app.vault]);
 
   const diskSyncTimerRef = useRef<any>(null);
 
@@ -697,16 +777,52 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     flushCanvasSaves();
 
     async function loadBoard() {
-      const savedNodes = await getCanvasNodes(effectiveBoardId);
-      const savedEdges = await getCanvasEdges(effectiveBoardId);
+      const [savedNodes, savedEdges] = await Promise.all([
+        getCanvasNodes(effectiveBoardId),
+        getCanvasEdges(effectiveBoardId),
+      ]);
 
       if (!isMounted) return;
 
       if (savedNodes.length > 0 || savedEdges.length > 0) {
         setNodes(savedNodes);
         setEdges(savedEdges);
+
+        // Concurrently fetch document content for any missing doc-backed nodes
+        const docIdsToFetch = Array.from(
+          new Set(
+            savedNodes
+              .filter((n) => n.document_id && docContentMap[n.document_id] === undefined)
+              .map((n) => n.document_id as string)
+          )
+        );
+
+        if (docIdsToFetch.length > 0) {
+          Promise.all(
+            docIdsToFetch.map(async (id) => {
+              try {
+                const doc = await app.vault.readDocument(id);
+                return [id, doc?.content_json || ''] as const;
+              } catch {
+                return [id, ''] as const;
+              }
+            })
+          ).then((docEntries) => {
+            if (!isMounted) return;
+            setDocContentMap((prev) => {
+              const next = { ...prev };
+              for (const [id, content] of docEntries) {
+                next[id] = content;
+              }
+              return next;
+            });
+          });
+        }
       } else {
-        const currentDoc = app.vault.documents.find((d: DocumentItem) => d.id === effectiveBoardId);
+        const currentDoc =
+          documents.find((d: DocumentItem) => d.id === effectiveBoardId) ||
+          (activeDocument?.id === effectiveBoardId ? activeDocument : null);
+
         if (currentDoc?.content_json && currentDoc.content_json.trim().length > 0) {
           try {
             const { nodes: importedNodes, edges: importedEdges } = await importCanvasBoard(
@@ -714,8 +830,39 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               currentDoc.content_json
             );
             if (!isMounted) return;
+
             setNodes(importedNodes);
             setEdges(importedEdges);
+
+            const docIdsToFetch = Array.from(
+              new Set(
+                importedNodes
+                  .filter((n) => n.document_id && docContentMap[n.document_id] === undefined)
+                  .map((n) => n.document_id as string)
+              )
+            );
+
+            if (docIdsToFetch.length > 0) {
+              Promise.all(
+                docIdsToFetch.map(async (id) => {
+                  try {
+                    const doc = await app.vault.readDocument(id);
+                    return [id, doc?.content_json || ''] as const;
+                  } catch {
+                    return [id, ''] as const;
+                  }
+                })
+              ).then((docEntries) => {
+                if (!isMounted) return;
+                setDocContentMap((prev) => {
+                  const next = { ...prev };
+                  for (const [id, content] of docEntries) {
+                    next[id] = content;
+                  }
+                  return next;
+                });
+              });
+            }
             return;
           } catch (e) {
             console.error('[CanvasView] Error parsing content_json:', e);
@@ -2196,6 +2343,40 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
       }
 
+      // Enter: Enter text editing on single selected card
+      if (
+        e.key === 'Enter' &&
+        !e.shiftKey &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        !canvasReadOnlyRef.current &&
+        (selectedNodeIdsRef.current.length === 1 || (selectedNodeIdsRef.current.length === 0 && selectedNodeId))
+      ) {
+        const targetId = selectedNodeIdsRef.current[0] || selectedNodeId;
+        const targetNode = nodesRef.current.find((n) => n.id === targetId);
+        if (targetNode) {
+          const targetDoc = targetNode.document_id ? docMap.get(targetNode.document_id) : null;
+          const isMedia =
+            targetNode.type === 'image' ||
+            targetNode.type === 'audio' ||
+            targetNode.type === 'video' ||
+            targetNode.type === 'pdf' ||
+            targetNode.type === 'link' ||
+            Boolean(targetNode.url) ||
+            isImageDocument(targetDoc) ||
+            isAudioDocument(targetDoc) ||
+            isVideoDocument(targetDoc) ||
+            isPdfDocument(targetDoc);
+          if (!isMedia && (targetNode.type === 'text' || targetNode.type === 'note' || targetNode.document_id)) {
+            e.preventDefault();
+            e.stopPropagation();
+            setAutoEditingNodeId(targetId);
+            return;
+          }
+        }
+      }
+
       // Delete / Backspace: Delete selected card(s) or edge
       if (e.key === 'Delete' || e.key === 'Backspace') {
         if (canvasReadOnlyRef.current) return;
@@ -2282,7 +2463,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       // 1. Document-backed note card
       if (targetNode.document_id) {
         const docId = targetNode.document_id;
-        const raw = docContentMap[docId];
+        let raw = docContentMap[docId] || docMap.get(docId)?.content_json;
+        if (!raw) {
+          try {
+            const docItem = await app.vault.readDocument(docId);
+            raw = docItem?.content_json;
+          } catch {}
+        }
         if (!raw) return;
 
         let updatedContent = raw;
@@ -2296,7 +2483,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   const tText = (item.content || [])
                     .map((c: any) => (c.content || []).map((t: any) => t.text || '').join(''))
                     .join('');
-                  if (tText.trim() === taskText.trim()) {
+                  if (tText.trim() === taskText.trim() && Boolean(item.attrs?.checked) === currentChecked) {
                     item.attrs = { ...item.attrs, checked: newChecked };
                     return true;
                   }
@@ -2312,14 +2499,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             }
           }
         } catch {
+          let toggled = false;
           const lines = raw.split('\n');
           const updatedLines = lines.map((line) => {
+            if (toggled) return line;
             const trimmed = line.trim();
-            if (
-              (trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]')) &&
-              trimmed.slice(5).trim() === taskText.trim()
-            ) {
-              return line.replace(/- \[[ xX]\]/, newChecked ? '- [x]' : '- [ ]');
+            const match = trimmed.match(/^([-*+]\s+\[)([ xX])(\]\s+)(.*)$/);
+            if (match && match[4].trim() === taskText.trim()) {
+              const isChecked = match[2] !== ' ';
+              if (isChecked === currentChecked) {
+                toggled = true;
+                return line.replace(/^(\s*[-*+]\s+\[)[ xX](\])/, `$1${newChecked ? 'x' : ' '}$2`);
+              }
             }
             return line;
           });
@@ -2332,14 +2523,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
       } else if (targetNode.type === 'text' && targetNode.text_content) {
         // 2. Text sticky card
+        let toggled = false;
         const lines = targetNode.text_content.split('\n');
         const updatedLines = lines.map((line) => {
+          if (toggled) return line;
           const trimmed = line.trim();
-          if (
-            (trimmed.startsWith('- [ ]') || trimmed.startsWith('- [x]')) &&
-            trimmed.slice(5).trim() === taskText.trim()
-          ) {
-            return line.replace(/- \[[ xX]\]/, newChecked ? '- [x]' : '- [ ]');
+          const match = trimmed.match(/^([-*+]\s+\[)([ xX])(\]\s+)(.*)$/);
+          if (match && match[4].trim() === taskText.trim()) {
+            const isChecked = match[2] !== ' ';
+            if (isChecked === currentChecked) {
+              toggled = true;
+              return line.replace(/^(\s*[-*+]\s+\[)[ xX](\])/, `$1${newChecked ? 'x' : ' '}$2`);
+            }
           }
           return line;
         });
@@ -3252,7 +3447,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     stopEdgeAutoScroll,
   ]);
 
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [containerSize, setContainerSize] = useState(() => ({
+    width: typeof window !== 'undefined' ? window.innerWidth : 0,
+    height: typeof window !== 'undefined' ? window.innerHeight : 0,
+  }));
 
   useEffect(() => {
     const el = containerRef.current;
@@ -3285,8 +3483,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const bottom = (-pan.y + containerSize.height) / zoom + overscan;
 
     return nodes.filter((node) => {
-      // Never cull selected node so focus / active editing is preserved uninterrupted
-      if (node.id === selectedNodeId) return true;
+      // Never cull selected or actively editing nodes so focus & selection are preserved
+      if (node.id === selectedNodeId || selectedNodeIds.includes(node.id) || node.id === autoEditingNodeId) return true;
 
       const nodeWidth = node.width || 260;
       const nodeHeight = node.height || 180;
@@ -3300,7 +3498,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         node.y <= bottom
       );
     });
-  }, [nodes, pan.x, pan.y, zoom, containerSize.width, containerSize.height, selectedNodeId]);
+  }, [nodes, pan.x, pan.y, zoom, containerSize.width, containerSize.height, selectedNodeId, selectedNodeIds, autoEditingNodeId]);
 
   // Top-Right Camera Controls: Smooth Animated Zoom In, Zoom Out, and Fit to Center
   const handleZoomIn = useCallback(() => {
@@ -4933,10 +5131,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             transformOrigin: '0 0',
             willChange: isPanningState || isDraggingNodeState || isPanModifierState ? 'transform' : 'auto',
           }}
-          className="absolute inset-0 pointer-events-none"
+          className="canvas-content-plane absolute inset-0 pointer-events-none"
         >
           {/* Interactive Bezier Edges SVG Layer */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible z-10 transition-none">
+          <svg className="canvas-edges-layer absolute inset-0 w-full h-full pointer-events-none overflow-visible z-10 transition-none">
             <defs />
 
             {/* Existing Saved Edges */}

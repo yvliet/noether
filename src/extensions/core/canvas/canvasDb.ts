@@ -51,6 +51,7 @@ export const CANVAS_EDGES_TABLE_DEF: TableDefinition = {
 };
 
 let isInitialized = false;
+let initPromise: Promise<void> | null = null;
 
 /**
  * Ensures canvas tables and indices exist in the active SQLite database.
@@ -58,61 +59,63 @@ let isInitialized = false;
  */
 export async function initCanvasTables(): Promise<void> {
   if (isInitialized) return;
-  try {
-    await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS ext_canvas_nodes (
-        id TEXT PRIMARY KEY,
-        board_id TEXT NOT NULL DEFAULT 'default',
-        type TEXT NOT NULL,
-        x REAL NOT NULL,
-        y REAL NOT NULL,
-        width REAL NOT NULL,
-        height REAL NOT NULL,
-        document_id TEXT,
-        text_content TEXT,
-        color TEXT,
-        url TEXT
-      );
-    `);
+  if (!initPromise) {
+    initPromise = (async () => {
+      try {
+        await Promise.allSettled([
+          dbAdapter.execute(`
+            CREATE TABLE IF NOT EXISTS ext_canvas_nodes (
+              id TEXT PRIMARY KEY,
+              board_id TEXT NOT NULL DEFAULT 'default',
+              type TEXT NOT NULL,
+              x REAL NOT NULL,
+              y REAL NOT NULL,
+              width REAL NOT NULL,
+              height REAL NOT NULL,
+              document_id TEXT,
+              text_content TEXT,
+              color TEXT,
+              url TEXT
+            );
+          `),
+          dbAdapter.execute(`
+            CREATE TABLE IF NOT EXISTS ext_canvas_edges (
+              id TEXT PRIMARY KEY,
+              board_id TEXT NOT NULL DEFAULT 'default',
+              from_node_id TEXT NOT NULL,
+              from_side TEXT,
+              to_node_id TEXT NOT NULL,
+              to_side TEXT,
+              label TEXT,
+              color TEXT,
+              direction TEXT
+            );
+          `),
+        ]);
 
-    try {
-      await dbAdapter.execute(`ALTER TABLE ext_canvas_nodes ADD COLUMN url TEXT;`);
-    } catch {}
+        // Concurrently run non-destructive column migrations for existing user vaults
+        await Promise.allSettled([
+          dbAdapter.execute(`ALTER TABLE ext_canvas_nodes ADD COLUMN url TEXT;`),
+          dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN from_side TEXT;`),
+          dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN to_side TEXT;`),
+          dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN color TEXT;`),
+          dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN direction TEXT;`),
+        ]);
 
-    await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS ext_canvas_edges (
-        id TEXT PRIMARY KEY,
-        board_id TEXT NOT NULL DEFAULT 'default',
-        from_node_id TEXT NOT NULL,
-        from_side TEXT,
-        to_node_id TEXT NOT NULL,
-        to_side TEXT,
-        label TEXT,
-        color TEXT,
-        direction TEXT
-      );
-    `);
+        await Promise.allSettled([
+          dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`),
+          dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_edges_board ON ext_canvas_edges(board_id);`),
+        ]);
 
-    try {
-      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN from_side TEXT;`);
-    } catch {}
-    try {
-      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN to_side TEXT;`);
-    } catch {}
-    try {
-      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN color TEXT;`);
-    } catch {}
-    try {
-      await dbAdapter.execute(`ALTER TABLE ext_canvas_edges ADD COLUMN direction TEXT;`);
-    } catch {}
-
-    await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_nodes_board ON ext_canvas_nodes(board_id);`);
-    await dbAdapter.execute(`CREATE INDEX IF NOT EXISTS idx_canvas_edges_board ON ext_canvas_edges(board_id);`);
-
-    isInitialized = true;
-  } catch (err) {
-    console.error('[Noether Canvas] Failed to initialize canvas tables:', err);
+        isInitialized = true;
+      } catch (err) {
+        console.error('[Noether Canvas] Failed to initialize canvas tables:', err);
+      } finally {
+        initPromise = null;
+      }
+    })();
   }
+  return initPromise;
 }
 
 export async function getCanvasNodes(boardId = 'default'): Promise<CanvasNode[]> {
@@ -239,45 +242,77 @@ export async function serializeCanvasBoard(boardId: string): Promise<string> {
 }
 
 export async function importCanvasBoard(boardId: string, json: string): Promise<{ nodes: CanvasNode[]; edges: CanvasEdge[] }> {
-  await initCanvasTables();
   try {
     const data = JSON.parse(json);
     const rawNodes = Array.isArray(data?.nodes) ? data.nodes : [];
     const rawEdges = Array.isArray(data?.edges) ? data.edges : [];
 
-    const importedNodes: CanvasNode[] = [];
-    for (const n of rawNodes) {
-      const node: CanvasNode = {
-        id: n.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        board_id: boardId,
-        type: n.type === 'file' ? 'note' : (n.type || 'text'),
-        x: typeof n.x === 'number' ? n.x : 0,
-        y: typeof n.y === 'number' ? n.y : 0,
-        width: typeof n.width === 'number' ? n.width : 240,
-        height: typeof n.height === 'number' ? n.height : 160,
-        document_id: n.file || n.document_id,
-        text_content: n.text || n.text_content,
-        color: n.color,
-      };
-      await saveCanvasNode(node);
-      importedNodes.push(node);
-    }
+    const importedNodes: CanvasNode[] = rawNodes.map((n: any) => ({
+      id: n.id || `node-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      board_id: boardId,
+      type: n.type === 'file' ? 'note' : (n.type || 'text'),
+      x: typeof n.x === 'number' ? n.x : 0,
+      y: typeof n.y === 'number' ? n.y : 0,
+      width: typeof n.width === 'number' ? n.width : 240,
+      height: typeof n.height === 'number' ? n.height : 160,
+      document_id: n.file || n.document_id,
+      text_content: n.text || n.text_content,
+      color: n.color,
+      url: n.url,
+    }));
 
-    const importedEdges: CanvasEdge[] = [];
-    for (const e of rawEdges) {
-      const edge: CanvasEdge = {
-        id: e.id || `edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        board_id: boardId,
-        from_node_id: e.fromNode || e.from_node_id,
-        from_side: e.fromSide || e.from_side || 'right',
-        to_node_id: e.toNode || e.to_node_id,
-        to_side: e.toSide || e.to_side || 'left',
-        label: e.label,
-        color: e.color,
-        direction: e.direction || (e.fromEnd ? (e.toEnd ? 'bidirectional' : 'nondirectional') : 'unidirectional'),
-      };
-      await saveCanvasEdge(edge);
-      importedEdges.push(edge);
+    const importedEdges: CanvasEdge[] = rawEdges.map((e: any) => ({
+      id: e.id || `edge-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      board_id: boardId,
+      from_node_id: e.fromNode || e.from_node_id,
+      from_side: e.fromSide || e.from_side || 'right',
+      to_node_id: e.toNode || e.to_node_id,
+      to_side: e.toSide || e.to_side || 'left',
+      label: e.label,
+      color: e.color,
+      direction: e.direction || (e.fromEnd ? (e.toEnd ? 'bidirectional' : 'nondirectional') : 'unidirectional'),
+    }));
+
+    // Concurrently persist imported elements in SQLite in background via a single atomic WAL transaction
+    const queries = [
+      ...importedNodes.map((n) => ({
+        sql: `INSERT OR REPLACE INTO ext_canvas_nodes (id, board_id, type, x, y, width, height, document_id, text_content, color, url)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [
+          n.id,
+          n.board_id || 'default',
+          n.type,
+          n.x,
+          n.y,
+          n.width,
+          n.height,
+          n.document_id || null,
+          n.text_content || null,
+          n.color || null,
+          n.url || null,
+        ],
+      })),
+      ...importedEdges.map((e) => ({
+        sql: `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [
+          e.id,
+          e.board_id || 'default',
+          e.from_node_id,
+          e.from_side || 'right',
+          e.to_node_id,
+          e.to_side || 'left',
+          e.label || null,
+          e.color || null,
+          e.direction || 'unidirectional',
+        ],
+      })),
+    ];
+
+    if (queries.length > 0) {
+      dbAdapter.transaction(queries).catch((err) => {
+        console.error('[CanvasDb] Error persisting imported canvas elements:', err);
+      });
     }
 
     return { nodes: importedNodes, edges: importedEdges };

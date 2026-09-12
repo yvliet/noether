@@ -624,6 +624,15 @@ export function jsonToMarkdown(
             if (m.type === 'code') text = `\`${text}\``;
             if (m.type === 'strike') text = `~~${text}~~`;
             if (m.type === 'highlight') text = `==${text}==`;
+            if (m.type === 'link') {
+              const href = m.attrs?.href || '';
+              const wikilinkTarget = m.attrs?.['data-wikilink-target'];
+              if (wikilinkTarget) {
+                text = text === wikilinkTarget ? `[[${wikilinkTarget}]]` : `[[${wikilinkTarget}|${text}]]`;
+              } else if (href) {
+                text = `[${text}](${href})`;
+              }
+            }
           }
         }
         return text;
@@ -997,6 +1006,55 @@ export function markdownToTipTapJson(md: string): string {
         type: 'horizontalRule',
       });
       continue;
+    }
+
+    // 4.5 Markdown Pipe Table (| Header | Header |)
+    if (trimmed.includes('|') && i + 1 < lines.length) {
+      const nextTrimmed = lines[i + 1].trim();
+      const isDelimiterRow = /^\|?(\s*:?-+:?\s*\|)+\s*:?-+:?\s*\|?$/.test(nextTrimmed);
+      if (isDelimiterRow) {
+        const splitRow = (rowStr: string): string[] => {
+          let s = rowStr.trim();
+          if (s.startsWith('|')) s = s.slice(1);
+          if (s.endsWith('|')) s = s.slice(0, -1);
+          return s.split('|').map((c) => c.trim());
+        };
+
+        const headerCells = splitRow(line);
+        const colCount = Math.max(headerCells.length, 1);
+
+        const tableRows: any[] = [];
+        tableRows.push({
+          type: 'tableRow',
+          content: headerCells.map((cellText) => ({
+            type: 'tableHeader',
+            content: [{ type: 'paragraph', content: cellText ? parseInlineMarkdownTokens(cellText) : [] }],
+          })),
+        });
+
+        i += 2; // Skip header line and delimiter line
+        while (i < lines.length) {
+          const rowLine = lines[i].trim();
+          if (!rowLine || !rowLine.includes('|')) break;
+          const cells = splitRow(rowLine);
+          while (cells.length < colCount) cells.push('');
+          tableRows.push({
+            type: 'tableRow',
+            content: cells.slice(0, colCount).map((cellText) => ({
+              type: 'tableCell',
+              content: [{ type: 'paragraph', content: cellText ? parseInlineMarkdownTokens(cellText) : [] }],
+            })),
+          });
+          i++;
+        }
+        i--;
+
+        content.push({
+          type: 'table',
+          content: tableRows,
+        });
+        continue;
+      }
     }
 
     // 5. Headings: # through ######

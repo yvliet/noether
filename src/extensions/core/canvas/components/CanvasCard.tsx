@@ -7,6 +7,11 @@ import {
   isAudioDocument,
   isVideoDocument,
   isPdfDocument,
+  IMAGE_EXTS,
+  AUDIO_EXTS,
+  VIDEO_EXTS,
+  PDF_EXTS,
+  getFileExtension,
 } from './CardContentRenderer';
 import { CardActionPill, computePillScale } from './CardActionPill';
 import { resolveCardColorTheme } from './cardColors';
@@ -82,14 +87,28 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     const showOutsideTitle = isDocBacked && node.type !== 'text';
     const isMediaDoc =
       isImageDocument(doc) || isAudioDocument(doc) || isVideoDocument(doc) || isPdfDocument(doc);
-    const canEdit = !isReadOnly && (node.type === 'text' || isDocBacked) && !isMediaDoc && node.type !== 'link';
+    const isMediaNode =
+      node.type === 'image' ||
+      node.type === 'audio' ||
+      node.type === 'video' ||
+      node.type === 'pdf' ||
+      (Boolean(node.url) &&
+        (IMAGE_EXTS.has(getFileExtension(node.url)) ||
+          AUDIO_EXTS.has(getFileExtension(node.url)) ||
+          VIDEO_EXTS.has(getFileExtension(node.url)) ||
+          PDF_EXTS.has(getFileExtension(node.url))));
+    const isMedia = isMediaDoc || isMediaNode;
+    const isLink = node.type === 'link' || Boolean(node.url);
+    const canEdit = !isReadOnly && !isMedia && !isLink && (node.type === 'text' || isDocBacked);
 
     const [isEditingText, setIsEditingText] = useState(Boolean(autoFocus && canEdit));
     const isDraggable = !isReadOnly && !isEditingText;
 
     useEffect(() => {
-      if (autoFocus && canEdit) {
-        setIsEditingText(true);
+      if (autoFocus) {
+        if (canEdit) {
+          setIsEditingText(true);
+        }
         onAutoFocusConsumed?.();
       }
     }, [autoFocus, canEdit, onAutoFocusConsumed]);
@@ -167,11 +186,10 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     );
 
     const handleDoubleClick = useCallback(() => {
-      // Both regular text cards and doc-backed note cards enter live WYSIWYG editing directly on the canvas
-      if (node.type === 'text' || isDocBacked) {
-        setIsEditingText(true);
-      }
-    }, [isDocBacked, node.type]);
+      // Only editable cards (text cards and doc-backed notes that are not media or links) enter live inline editing
+      if (!canEdit) return;
+      setIsEditingText(true);
+    }, [canEdit]);
 
     const handleCardPointerMove = useCallback(
       (e: React.PointerEvent) => {
