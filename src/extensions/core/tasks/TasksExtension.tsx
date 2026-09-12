@@ -14,7 +14,8 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { CheckmarkSquare02Icon } from '@/components/common/Icons';
-import { tasksReadme } from './readme';
+import manifest from './manifest.json';
+import tasksReadme from './readme.md?raw';
 import { useTasksSettings } from './tasksSettings';
 
 const LazyTasksView = React.lazy(() =>
@@ -25,13 +26,7 @@ const LazyTasksSettingsTab = React.lazy(() =>
 );
 
 export const TASKS_MANIFEST: ExtensionManifest = {
-  id: 'tasks',
-  name: 'Tasks & Checklists',
-  version: '1.0.0',
-  description: 'Global task aggregation dashboard extracting checklists and todo items across all notes.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['tasks', 'todo', 'checklists', 'productivity', 'tracking'],
+  ...(manifest as ExtensionManifest),
   readme: tasksReadme,
 };
 

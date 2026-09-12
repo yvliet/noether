@@ -17,7 +17,8 @@ import { NoetherApp } from '@/core/app/NoetherApp';
 import { Layout01Icon } from '@/components/common/Icons';
 import { CanvasSettingsTab } from './CanvasSettingsTab';
 import { useCanvasSettings } from './canvasSettings';
-import { canvasReadme } from './readme';
+import manifest from './manifest.json';
+import canvasReadme from './readme.md?raw';
 import { CanvasNode, CanvasEdge } from './types';
 import {
   getCanvasNodes,
@@ -32,13 +33,7 @@ import {
 import { CanvasView } from './CanvasView';
 
 export const CANVAS_MANIFEST: ExtensionManifest = {
-  id: 'canvas',
-  name: 'Infinite Canvas',
-  version: '1.0.0',
-  description: 'Infinite 2D spatial canvas to map out notes, ideas, media, and visual cards.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['canvas', 'whiteboard', 'mindmap', 'spatial', 'visual'],
+  ...(manifest as ExtensionManifest),
   readme: canvasReadme,
 };
 

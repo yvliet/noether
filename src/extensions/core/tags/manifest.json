@@ -1,0 +1,24 @@
+{
+  "id": "tags-explorer",
+  "name": "Tags Explorer",
+  "version": "1.0.0",
+  "description": "Hierarchical nested tags tree view across all documents in the vault.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "tags",
+    "categories",
+    "organization",
+    "taxonomy",
+    "explorer"
+  ],
+  "icon": {
+    "name": "hash",
+    "type": "gradient",
+    "gradientColors": [
+      "#d946ef",
+      "#a21caf"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

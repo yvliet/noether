@@ -15,7 +15,8 @@ import { z } from 'zod';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
-import { sketchReadme } from './readme';
+import manifest from './manifest.json';
+import sketchReadme from './readme.md?raw';
 import { initSketchDb, loadSketchFromDb, saveSketchToDb, deleteSketchFromDb, SKETCH_TABLE_DEFINITION } from './sketchDb';
 import { serializeSketchToComment, parseSketchFromComment, exportStrokesToSvg } from './sketchEngine';
 import { useSketchStore } from './sketchStore';
@@ -25,13 +26,7 @@ import { SketchSettingsTab } from './SketchSettingsTab';
 import { PaintBoardIcon } from '@/components/common/Icons';
 
 export const SKETCH_MANIFEST: ExtensionManifest = {
-  id: 'sketch',
-  name: 'Sketch',
-  version: '1.0.0',
-  description: 'Lightweight freehand vector drawing and markup overlay for notes and canvases.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['sketch', 'drawing', 'overlay', 'canvas', 'freehand', 'annotations'],
+  ...(manifest as ExtensionManifest),
   readme: sketchReadme,
 };
 

@@ -320,7 +320,7 @@ export const MarketplaceView: React.FC = () => {
           {/* 2-Column Extension Cards Grid matching page width */}
           {extensions.length === 0 ? (
             <div className="text-center py-20 flex flex-col items-center justify-center max-w-sm mx-auto">
-              <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--noether-accent,#eb584d)]">
+              <div className="w-12 h-12 rounded-lg bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--noether-accent,#eb584d)]">
                 <Store01Icon size={24} />
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">
@@ -369,11 +369,11 @@ export const MarketplaceView: React.FC = () => {
                 return (
                   <div
                     key={ext.id}
-                    className="p-3.5 rounded-xl bg-[#1b1b1b] hover:bg-[#1f1f1f] border border-[#262626] hover:border-[#333333] flex flex-col justify-between gap-2.5 group relative shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+                    className="p-3.5 rounded-lg bg-[#1b1b1b] hover:bg-[#1f1f1f] border border-[#262626] hover:border-[#333333] flex flex-col justify-between gap-2.5 group relative shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
                   >
                     {/* Optional Card Banner Image */}
                     {ext.bannerImage && (
-                      <div className="w-full h-24 mb-1 rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#161616]">
+                      <div className="w-full h-24 mb-1 rounded-[6px] overflow-hidden border border-[#2a2a2a] bg-[#161616]">
                         <img src={ext.bannerImage} alt={ext.name} className="w-full h-full object-cover" />
                       </div>
                     )}

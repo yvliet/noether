@@ -1,0 +1,24 @@
+{
+  "id": "default-commands",
+  "name": "Default Workspace Commands",
+  "version": "1.0.0",
+  "description": "Standard built-in commands for file management, sidebar toggling, and settings.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "commands",
+    "palette",
+    "hotkeys",
+    "shortcuts",
+    "workspace"
+  ],
+  "icon": {
+    "name": "command",
+    "type": "gradient",
+    "gradientColors": [
+      "#475569",
+      "#1e293b"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

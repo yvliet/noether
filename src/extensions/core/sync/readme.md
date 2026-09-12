@@ -1,4 +1,4 @@
-export const syncReadme = `# Sync Engine
+# Sync Engine
 
 Bidirectional cloud synchronization connecting your local notes to Supabase, Turso, Cloudflare D1, or Custom REST backends.
 
@@ -12,8 +12,8 @@ The **Sync** extension provides multi-provider cloud synchronization. You can co
 
 ### Where It Lives in Noether
 - **Status Bar Indicator**: Displays active cloud sync status, progress animations, and error alerts in the bottom window dock.
-- **Settings Window**: Configure credentials and guided SQL schema setup under **Settings** (\`Ctrl+,\`) → **Sync**.
-- **Command Palette**: Trigger instant sync or inspect telemetry via \`Ctrl+K\` commands.
+- **Settings Window**: Configure credentials and guided SQL schema setup under **Settings** (`Ctrl+,`) → **Sync**.
+- **Command Palette**: Trigger instant sync or inspect telemetry via `Ctrl+K` commands.
 
 ## 2. Features & Step-by-Step Guide
 
@@ -24,7 +24,7 @@ The **Sync** extension provides multi-provider cloud synchronization. You can co
 - **Custom REST API**: Connect to any custom server or self-hosted sync backend.
 
 ### 2. Guided Setup Walkthrough
-1. Open **Settings** (\`Ctrl+,\`) → **Sync** and enable the extension toggle.
+1. Open **Settings** (`Ctrl+,`) → **Sync** and enable the extension toggle.
 2. Choose your preferred cloud provider (e.g. **Supabase**).
 3. Copy the provided schema SQL script and run it once in your provider's web console to create the synchronization tables.
 4. Paste your database URL and API key into the settings inputs.
@@ -45,20 +45,20 @@ The **Sync** extension provides multi-provider cloud synchronization. You can co
 
 ## 3. Architecture & SDK Blueprint (For Extension Builders)
 
-The Sync extension demonstrates how to manage long-running background engine workers, persist extension-specific configuration via \`loadData\` / \`saveData\`, and render status bar badges via the Noether SDK.
+The Sync extension demonstrates how to manage long-running background engine workers, persist extension-specific configuration via `loadData` / `saveData`, and render status bar badges via the Noether SDK.
 
 ### SDK Extension Points Used
-- \`this.loadData()\` / \`this.saveData()\`: Persists credentials and local-to-remote ID mappings safely in vault settings.
-- \`this.addStatusBarItem()\`: Mounts the interactive cloud status badge in the bottom window frame.
-- \`this.addCommand()\`: Registers palette shortcuts for manual sync triggering.
-- \`this.registerSettingTab()\`: Injects the multi-provider credential setup wizard.
-- \`this.registerTool()\`: Exposes MCP AI tools for automated background synchronization.
+- `this.loadData()` / `this.saveData()`: Persists credentials and local-to-remote ID mappings safely in vault settings.
+- `this.addStatusBarItem()`: Mounts the interactive cloud status badge in the bottom window frame.
+- `this.addCommand()`: Registers palette shortcuts for manual sync triggering.
+- `this.registerSettingTab()`: Injects the multi-provider credential setup wizard.
+- `this.registerTool()`: Exposes MCP AI tools for automated background synchronization.
 
 ### Real SDK Implementation Pattern
 
 Extension builders can maintain background synchronization state using this SDK pattern:
 
-\`\`\`typescript
+```typescript
 import { Extension, NoetherApp } from 'noether';
 
 export default class CustomBackupExtension extends Extension {
@@ -95,24 +95,23 @@ export default class CustomBackupExtension extends Extension {
     }
   }
 }
-\`\`\`
+```
 
 ## 4. MCP Tools Reference
 
 Sync exposes three MCP tools for programmatic cloud operations:
 
-### 1. \`sync_sync_now\`
+### 1. `sync_sync_now`
 - **Description**: Triggers a bidirectional synchronization cycle with the active cloud provider immediately.
 - **Parameters**: None.
 - **Returns**: Result object containing upload count, download count, conflict count, and success boolean.
 
-### 2. \`sync_get_sync_status\`
+### 2. `sync_get_sync_status`
 - **Description**: Returns the current sync state, active cloud provider name, last sync timestamp, and telemetry metrics.
 - **Parameters**: None.
 - **Returns**: Telemetry payload with pending uploads, pending downloads, and last error message.
 
-### 3. \`sync_test_connection\`
+### 3. `sync_test_connection`
 - **Description**: Tests network reachability and schema credentials for the configured cloud provider.
 - **Parameters**: None.
 - **Returns**: Object confirming connection status and latency.
-`;

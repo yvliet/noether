@@ -18,20 +18,15 @@ import { DocumentItem } from '@/types';
 import { getDocumentById, getAllDocuments } from '@/lib/db/documents';
 import { storeRefs } from 'noether';
 import { useJournalSettings } from './journalSettings';
-import { journalReadme } from './readme';
+import manifest from './manifest.json';
+import journalReadme from './readme.md?raw';
 
 const LazyJournalSettingsTab = React.lazy(() =>
   import('./JournalSettingsTab').then((m) => ({ default: m.JournalSettingsTab }))
 );
 
 export const JOURNAL_MANIFEST: ExtensionManifest = {
-  id: 'journal',
-  name: 'Journal',
-  version: '1.0.0',
-  description: 'Quickly create and jump to periodic daily journal and logging notes.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['journal', 'daily-notes', 'calendar', 'habits', 'logging'],
+  ...(manifest as ExtensionManifest),
   readme: journalReadme,
 };
 

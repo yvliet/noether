@@ -13,7 +13,8 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { Bookmark01Icon } from '@/components/common/Icons';
-import { bookmarksReadme } from './readme';
+import manifest from './manifest.json';
+import bookmarksReadme from './readme.md?raw';
 import { BookmarksView } from './BookmarksView';
 import { useBookmarksSettings } from './bookmarksSettings';
 
@@ -22,13 +23,7 @@ const LazyBookmarksSettingsTab = React.lazy(() =>
 );
 
 export const BOOKMARKS_MANIFEST: ExtensionManifest = {
-  id: 'bookmarks',
-  name: 'Bookmarks',
-  version: '1.0.0',
-  description: 'Bookmark important notes and searches for fast 1-click access in your workspace sidebar.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['bookmarks', 'favorites', 'pinned', 'sidebar', 'workspace'],
+  ...(manifest as ExtensionManifest),
   readme: bookmarksReadme,
 };
 

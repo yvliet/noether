@@ -14,7 +14,8 @@ import { NoetherApp } from '@/core/app/NoetherApp';
 import { LeftToRightListBulletIcon } from '@/components/common/Icons';
 import { HeadingItem } from '@/types';
 import { getDocumentById } from '@/lib/db/documents';
-import { outlineReadme } from './readme';
+import manifest from './manifest.json';
+import outlineReadme from './readme.md?raw';
 import { useOutlineSettings } from './outlineSettings';
 
 const LazyOutlineView = React.lazy(() =>
@@ -25,13 +26,7 @@ const LazyOutlineSettingsTab = React.lazy(() =>
 );
 
 export const OUTLINE_MANIFEST: ExtensionManifest = {
-  id: 'outline',
-  name: 'Document Outline',
-  version: '1.0.0',
-  description: 'Interactive table of contents and document outline navigator based on Markdown headings.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['outline', 'headings', 'toc', 'navigation', 'structure'],
+  ...(manifest as ExtensionManifest),
   readme: outlineReadme,
 };
 

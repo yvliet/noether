@@ -62,20 +62,15 @@ import {
 } from '@/components/common/Icons';
 import { platform } from '@/lib/platform/platformAdapter';
 import { insertOrWrapMarkdownLink } from '@/components/editor/extensions/markdown-shortcuts';
-import { defaultCommandsReadme } from './defaultCommandsReadme';
+import manifest from './manifest.json';
+import defaultCommandsReadme from './readme.md?raw';
 
 const LazyDefaultCommandsSettingsTab = React.lazy(() =>
   import('./DefaultCommandsSettingsTab').then((m) => ({ default: m.DefaultCommandsSettingsTab }))
 );
 
 export const DEFAULT_COMMANDS_MANIFEST: ExtensionManifest = {
-  id: 'default-commands',
-  name: 'Default Workspace Commands',
-  version: '1.0.0',
-  description: 'Standard built-in commands for file management, sidebar toggling, and settings.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['commands', 'palette', 'hotkeys', 'shortcuts', 'workspace'],
+  ...(manifest as ExtensionManifest),
   readme: defaultCommandsReadme,
 };
 

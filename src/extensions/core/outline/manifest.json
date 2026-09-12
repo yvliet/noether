@@ -1,0 +1,24 @@
+{
+  "id": "outline",
+  "name": "Document Outline",
+  "version": "1.0.0",
+  "description": "Interactive table of contents and document outline navigator based on Markdown headings.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "outline",
+    "headings",
+    "toc",
+    "navigation",
+    "structure"
+  ],
+  "icon": {
+    "name": "left-to-right-list-bullet",
+    "type": "gradient",
+    "gradientColors": [
+      "#0284c7",
+      "#0369a1"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

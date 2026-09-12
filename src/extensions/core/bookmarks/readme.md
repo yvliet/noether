@@ -1,4 +1,4 @@
-export const bookmarksReadme = `# Bookmarks
+# Bookmarks
 
 Pin and organize your most critical notes, projects, and searches for instant 1-click access.
 
@@ -14,14 +14,14 @@ The **Bookmarks** extension provides an instant access hub in Noether's left sid
 - **Left Sidebar Tab**: Click the bookmark ribbon icon in the left sidebar to open your Bookmarks list.
 - **Note Header Action**: A bookmark star icon appears in the document sub-header of every active note for immediate toggling.
 - **File Tree Context Menu**: Right-click any file or selection in the file tree to add or remove bookmarks.
-- **Global Hotkey**: Press \`Ctrl+Shift+B\` to instantly toggle bookmark status for the open note.
+- **Global Hotkey**: Press `Ctrl+Shift+B` to instantly toggle bookmark status for the open note.
 
 ## 2. Features & Step-by-Step Guide
 
 ### 1. Bookmarking Notes
-- **From the Active Note**: Click the bookmark icon in the top document sub-header, or press \`Ctrl+Shift+B\`.
-- **From the File Explorer**: Right-click any note and select **Bookmark**. To bookmark multiple files at once, hold \`Ctrl\` (or \`Shift\`) to multi-select, right-click, and choose **Bookmark N items**.
-- **From the Command Palette**: Press \`Ctrl+K\` and type "Bookmark" to toggle bookmarking for the current note.
+- **From the Active Note**: Click the bookmark icon in the top document sub-header, or press `Ctrl+Shift+B`.
+- **From the File Explorer**: Right-click any note and select **Bookmark**. To bookmark multiple files at once, hold `Ctrl` (or `Shift`) to multi-select, right-click, and choose **Bookmark N items**.
+- **From the Command Palette**: Press `Ctrl+K` and type "Bookmark" to toggle bookmarking for the current note.
 
 ### 2. Navigating Bookmarked Notes
 1. Switch to the **Bookmarks** tab in the left sidebar.
@@ -32,7 +32,7 @@ The **Bookmarks** extension provides an instant access hub in Noether's left sid
 
 | Action | Shortcut | Description |
 | :--- | :--- | :--- |
-| **Toggle Bookmark** | \`Ctrl+Shift+B\` | Toggles bookmark status for the currently active note. |
+| **Toggle Bookmark** | `Ctrl+Shift+B` | Toggles bookmark status for the currently active note. |
 | **Open Bookmarks Tab** | Command Palette | Switches the left sidebar view directly to the Bookmarks drawer. |
 
 ## 3. Architecture & SDK Blueprint (For Extension Builders)
@@ -40,17 +40,17 @@ The **Bookmarks** extension provides an instant access hub in Noether's left sid
 The Bookmarks extension demonstrates how to connect multiple UI extension points into a unified user flow using the Noether SDK.
 
 ### SDK Extension Points Used
-- \`this.registerSidebarTab()\`: Injects a dedicated drawer view into the left sidebar.
-- \`this.registerDocumentHeaderAction()\`: Adds a dynamic, reactive action button directly to the editor's sub-header.
-- \`this.registerFileContextMenuAction()\`: Extends the file tree right-click context menu with single and multi-selection support.
-- \`this.addCommand()\`: Registers context-aware commands that update their label dynamically based on active document state.
-- \`this.registerTool()\`: Exposes MCP AI tools for programmatic agent interaction.
+- `this.registerSidebarTab()`: Injects a dedicated drawer view into the left sidebar.
+- `this.registerDocumentHeaderAction()`: Adds a dynamic, reactive action button directly to the editor's sub-header.
+- `this.registerFileContextMenuAction()`: Extends the file tree right-click context menu with single and multi-selection support.
+- `this.addCommand()`: Registers context-aware commands that update their label dynamically based on active document state.
+- `this.registerTool()`: Exposes MCP AI tools for programmatic agent interaction.
 
 ### Real SDK Implementation Pattern
 
 Here is how an extension builder can implement sidebar tabs, header buttons, and context actions using the Noether SDK:
 
-\`\`\`typescript
+```typescript
 import { Extension, NoetherApp } from 'noether';
 import React from 'react';
 
@@ -98,23 +98,22 @@ export default class QuickPinExtension extends Extension {
     });
   }
 }
-\`\`\`
+```
 
 ### Storage & SQLite Integration
-Bookmark state is stored directly as an indexed boolean attribute (\`is_bookmarked\`) in the vault's SQLite \`documents\` table. When toggled, state updates propagate instantaneously to the in-memory Zustand store for 0ms visual updates, followed by atomic SQLite persistence without disk I/O lag.
+Bookmark state is stored directly as an indexed boolean attribute (`is_bookmarked`) in the vault's SQLite `documents` table. When toggled, state updates propagate instantaneously to the in-memory Zustand store for 0ms visual updates, followed by atomic SQLite persistence without disk I/O lag.
 
 ## 4. MCP Tools Reference
 
 Bookmarks registers two MCP tools allowing AI agents to query and manage pinned notes:
 
-### 1. \`bookmarks_list\`
+### 1. `bookmarks_list`
 - **Description**: Returns all bookmarked documents in the active vault.
 - **Parameters**: None.
-- **Returns**: Array of bookmarked note records with \`id\`, \`title\`, \`parent_id\`, \`created_at\`, and \`updated_at\`.
+- **Returns**: Array of bookmarked note records with `id`, `title`, `parent_id`, `created_at`, and `updated_at`.
 
-### 2. \`bookmarks_toggle\`
+### 2. `bookmarks_toggle`
 - **Description**: Toggles the bookmark status of a specific document by ID.
 - **Parameters**:
-  - \`documentId\` (string, required): The target document identifier.
-- **Returns**: Result object confirming updated \`isBookmarked\` boolean status and note \`title\`.
-`;
+  - `documentId` (string, required): The target document identifier.
+- **Returns**: Result object confirming updated `isBookmarked` boolean status and note `title`.

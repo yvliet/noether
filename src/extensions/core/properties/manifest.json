@@ -1,0 +1,24 @@
+{
+  "id": "note-properties",
+  "name": "Note Properties",
+  "version": "1.0.0",
+  "description": "Structured frontmatter metadata and property fields editor.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "properties",
+    "frontmatter",
+    "yaml",
+    "metadata",
+    "editor"
+  ],
+  "icon": {
+    "name": "tag-01",
+    "type": "gradient",
+    "gradientColors": [
+      "#eab308",
+      "#a16207"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

@@ -19,6 +19,12 @@ import {
   Bookmark01Icon,
   CheckmarkSquare02Icon,
   Calendar01Icon,
+  GridTableIcon,
+  NeuralNetworkIcon,
+  CommandIcon,
+  HashIcon,
+  LeftToRightListBulletIcon,
+  Link01Icon,
 } from '@/components/common/Icons';
 
 export interface ExtensionAppIconProps {
@@ -136,10 +142,43 @@ function resolveIconComponent(rawName?: string): React.ComponentType<any> {
     case 'journal':
       return Calendar01Icon;
 
-    case 'terminal':
     case 'command':
+    case 'cmd':
+      return CommandIcon;
+
+    case 'terminal':
     case 'code':
       return TerminalIcon;
+
+    case 'table':
+    case 'tables':
+    case 'grid':
+    case 'grid-table':
+      return GridTableIcon;
+
+    case 'graph':
+    case 'graph-view':
+    case 'neural-network':
+    case 'network':
+      return NeuralNetworkIcon;
+
+    case 'hash':
+    case 'hashtag':
+      return HashIcon;
+
+    case 'outline':
+    case 'list':
+    case 'toc':
+    case 'headings':
+    case 'left-to-right-list-bullet':
+      return LeftToRightListBulletIcon;
+
+    case 'link':
+    case 'links':
+    case 'backlink':
+    case 'backlinks':
+    case 'link-01':
+      return Link01Icon;
 
     case 'package':
       return PackageIcon;
@@ -264,7 +303,7 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
   }
 
   // Geometry dimensions
-  const borderRadius = Math.max(7, Math.round(size * 0.28));
+  const borderRadius = Math.max(6, Math.round(size * 0.22));
   const glyphSize = Math.round(size * 0.52);
 
   // 3. Render icon glyph
@@ -309,12 +348,11 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
         ...backgroundStyle,
       }}
     >
-      {/* 1. Subtle tactile top light sheen highlight rim matching app icon styling */}
+      {/* 1. Consistent tactile light sheen outline rim */}
       <div
         className="absolute inset-0 pointer-events-none rounded-[inherit]"
         style={{
-          background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.03) 40%, rgba(255, 255, 255, 0) 100%)',
-          boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.12)',
+          boxShadow: 'inset 0 0 0 1px rgba(255, 255, 255, 0.16)',
         }}
       />
 

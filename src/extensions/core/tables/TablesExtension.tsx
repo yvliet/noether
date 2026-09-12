@@ -12,7 +12,8 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { GridTableIcon } from '@/components/common/Icons';
-import { tablesReadme } from './readme';
+import manifest from './manifest.json';
+import tablesReadme from './readme.md?raw';
 import { useTablesSettings } from './tablesSettings';
 
 const LazyTablesSettingsTab = React.lazy(() =>
@@ -20,13 +21,7 @@ const LazyTablesSettingsTab = React.lazy(() =>
 );
 
 export const TABLES_MANIFEST: ExtensionManifest = {
-  id: 'tables',
-  name: 'Tables',
-  version: '1.0.0',
-  description: 'Create and format interactive tables with a Google Docs-style grid dimension picker, AI Markdown interoperability, and rich column resizing.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['tables', 'grid', 'gdocs', 'markdown', 'formatting'],
+  ...(manifest as ExtensionManifest),
   readme: tablesReadme,
 };
 

@@ -17,17 +17,11 @@ import { createProvider } from './providers';
 import { SyncStatusIndicator } from './SyncStatusIndicator';
 import { SyncSettingsTab } from './ui/SyncSettingsTab';
 import { useSyncStore } from './syncStore';
-import { syncReadme } from './readme';
+import manifest from './manifest.json';
+import syncReadme from './readme.md?raw';
 
 export const SYNC_MANIFEST: ExtensionManifest = {
-  id: 'sync',
-  name: 'Sync',
-  version: '1.0.0',
-  description: 'Bidirectional cloud sync engine supporting Supabase, Turso, Cloudflare D1, and Custom REST APIs.',
-  author: 'Yuliet Li',
-  isCore: true,
-  defaultDisabled: true,
-  tags: ['sync', 'cloud', 'supabase', 'turso', 'd1', 'mobile'],
+  ...(manifest as ExtensionManifest),
   readme: syncReadme,
 };
 

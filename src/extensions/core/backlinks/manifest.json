@@ -1,0 +1,24 @@
+{
+  "id": "backlinks",
+  "name": "Backlinks & Unlinked Mentions",
+  "version": "1.0.0",
+  "description": "Displays incoming bidirectional backlinks and unlinked mentions to the active note.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "backlinks",
+    "mentions",
+    "wikilinks",
+    "graph",
+    "navigation"
+  ],
+  "icon": {
+    "name": "link-01",
+    "type": "gradient",
+    "gradientColors": [
+      "#6366f1",
+      "#4338ca"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

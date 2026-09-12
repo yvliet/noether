@@ -1,0 +1,23 @@
+{
+  "id": "marketplace",
+  "name": "Community Extensions Marketplace",
+  "version": "1.0.0",
+  "description": "Browse, discover, and install community extensions into your Vault.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "marketplace",
+    "extensions",
+    "community",
+    "themes"
+  ],
+  "icon": {
+    "name": "store-01",
+    "type": "gradient",
+    "gradientColors": [
+      "#10b981",
+      "#047857"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

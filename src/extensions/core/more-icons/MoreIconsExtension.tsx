@@ -43,16 +43,11 @@ import { MoreIconsSettingsTab } from './MoreIconsSettingsTab';
 import { IconChipExtension } from './IconChipExtension';
 import { MoreIconsSubmenuPicker } from './MoreIconsSubmenuPicker';
 import { getMoreIconsDef } from './moreIconsCatalog';
-import { moreIconsReadme } from './readme';
+import manifest from './manifest.json';
+import moreIconsReadme from './readme.md?raw';
 
 export const MORE_ICONS_MANIFEST: ExtensionManifest = {
-  id: 'more-icons',
-  name: 'More icons',
-  version: '1.2.0',
-  description: 'Let icons live in all of Noether. Customize folders, files, tabs, and rich text documents with an extensible multi-pack icon system and SQLite persistence.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['icons', 'customization', 'file-tree', 'tabs', 'notes', 'ui', 'editor'],
+  ...(manifest as ExtensionManifest),
   readme: moreIconsReadme,
 };
 

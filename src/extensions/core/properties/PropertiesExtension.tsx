@@ -14,20 +14,15 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { PackageIcon, PlusCircleIcon } from '@/components/common/Icons';
-import { propertiesReadme } from './readme';
+import manifest from './manifest.json';
+import propertiesReadme from './readme.md?raw';
 import { PropertiesView } from './PropertiesView';
 import { DocumentPropertiesHeader } from './DocumentPropertiesHeader';
 import { PropertiesSettingsTab } from './PropertiesSettingsTab';
 import { usePropertiesSettings } from './propertiesSettings';
 
 export const PROPERTIES_MANIFEST: ExtensionManifest = {
-  id: 'note-properties',
-  name: 'Note Properties',
-  version: '1.0.0',
-  description: 'Structured frontmatter metadata and property fields editor.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['properties', 'frontmatter', 'yaml', 'metadata', 'editor'],
+  ...(manifest as ExtensionManifest),
   readme: propertiesReadme,
 };
 

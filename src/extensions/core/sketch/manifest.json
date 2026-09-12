@@ -1,0 +1,25 @@
+{
+  "id": "sketch",
+  "name": "Sketch",
+  "version": "1.0.0",
+  "description": "Lightweight freehand vector drawing and markup overlay for notes and canvases.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "sketch",
+    "drawing",
+    "overlay",
+    "canvas",
+    "freehand",
+    "annotations"
+  ],
+  "icon": {
+    "name": "pencil-edit-02",
+    "type": "gradient",
+    "gradientColors": [
+      "#8b5cf6",
+      "#6d28d9"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

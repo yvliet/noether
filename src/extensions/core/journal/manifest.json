@@ -1,0 +1,24 @@
+{
+  "id": "journal",
+  "name": "Journal",
+  "version": "1.0.0",
+  "description": "Quickly create and jump to periodic daily journal and logging notes.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "journal",
+    "daily-notes",
+    "calendar",
+    "habits",
+    "logging"
+  ],
+  "icon": {
+    "name": "calendar-01",
+    "type": "gradient",
+    "gradientColors": [
+      "#ea580c",
+      "#c2410c"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

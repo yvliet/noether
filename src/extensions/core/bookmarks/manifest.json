@@ -1,0 +1,24 @@
+{
+  "id": "bookmarks",
+  "name": "Bookmarks",
+  "version": "1.0.0",
+  "description": "Bookmark important notes and searches for fast 1-click access in your workspace sidebar.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "bookmarks",
+    "favorites",
+    "pinned",
+    "sidebar",
+    "workspace"
+  ],
+  "icon": {
+    "name": "bookmark-01",
+    "type": "gradient",
+    "gradientColors": [
+      "#f59e0b",
+      "#d97706"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

@@ -13,7 +13,8 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { Tag01Icon } from '@/components/common/Icons';
 import { getAllVaultTags, buildTagTree } from '@/lib/db/tags';
-import { tagsReadme } from './readme';
+import manifest from './manifest.json';
+import tagsReadme from './readme.md?raw';
 import { useTagsSettings } from './tagsSettings';
 
 const LazyTagsView = React.lazy(() =>
@@ -24,13 +25,7 @@ const LazyTagsSettingsTab = React.lazy(() =>
 );
 
 export const TAGS_MANIFEST: ExtensionManifest = {
-  id: 'tags-explorer',
-  name: 'Tags Explorer',
-  version: '1.0.0',
-  description: 'Hierarchical nested tags tree view across all documents in the vault.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['tags', 'categories', 'organization', 'taxonomy', 'explorer'],
+  ...(manifest as ExtensionManifest),
   readme: tagsReadme,
 };
 

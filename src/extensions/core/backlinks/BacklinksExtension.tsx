@@ -22,7 +22,8 @@ import {
   convertUnlinkedMentionToLink,
 } from '@/lib/db/links';
 import { useBacklinksSettings } from './backlinksSettings';
-import { backlinksReadme } from './readme';
+import manifest from './manifest.json';
+import backlinksReadme from './readme.md?raw';
 import { DocumentBacklinks } from './DocumentBacklinks';
 
 const LazyBacklinksView = React.lazy(() =>
@@ -33,13 +34,7 @@ const LazyBacklinksSettingsTab = React.lazy(() =>
 );
 
 export const BACKLINKS_MANIFEST: ExtensionManifest = {
-  id: 'backlinks',
-  name: 'Backlinks & Unlinked Mentions',
-  version: '1.0.0',
-  description: 'Displays incoming bidirectional backlinks and unlinked mentions to the active note.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['backlinks', 'mentions', 'wikilinks', 'graph', 'navigation'],
+  ...(manifest as ExtensionManifest),
   readme: backlinksReadme,
 };
 

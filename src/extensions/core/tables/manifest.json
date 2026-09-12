@@ -1,0 +1,24 @@
+{
+  "id": "tables",
+  "name": "Tables",
+  "version": "1.0.0",
+  "description": "Create and format interactive tables with a Google Docs-style grid dimension picker, AI Markdown interoperability, and rich column resizing.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "tables",
+    "grid",
+    "gdocs",
+    "markdown",
+    "formatting"
+  ],
+  "icon": {
+    "name": "grid-table",
+    "type": "gradient",
+    "gradientColors": [
+      "#0d9488",
+      "#0f766e"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

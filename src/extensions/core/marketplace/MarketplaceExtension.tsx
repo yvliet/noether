@@ -14,7 +14,8 @@ import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { Store01Icon } from '@/components/common/Icons';
-import { marketplaceReadme } from './readme';
+import manifest from './manifest.json';
+import marketplaceReadme from './readme.md?raw';
 import { fetchTursoPlugins } from './tursoClient';
 
 const LazyMarketplaceView = React.lazy(() =>
@@ -25,13 +26,7 @@ const LazyMarketplaceSettingsTab = React.lazy(() =>
 );
 
 export const MARKETPLACE_MANIFEST: ExtensionManifest = {
-  id: 'marketplace',
-  name: 'Community Extensions Marketplace',
-  version: '1.0.0',
-  description: 'Browse, discover, and install community extensions into your Vault.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['marketplace', 'extensions', 'community', 'themes'],
+  ...(manifest as ExtensionManifest),
   readme: marketplaceReadme,
 };
 

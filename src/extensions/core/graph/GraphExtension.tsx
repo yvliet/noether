@@ -17,20 +17,15 @@ import { NeuralNetworkIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
 import { GraphSettingsTab } from './GraphSettingsTab';
 import { useGraphSettings } from './graphSettings';
-import { graphReadme } from './readme';
+import manifest from './manifest.json';
+import graphReadme from './readme.md?raw';
 
 const LazyGraphView = React.lazy(() =>
   import('./GraphView').then((m) => ({ default: m.GraphView }))
 );
 
 export const GRAPH_MANIFEST: ExtensionManifest = {
-  id: 'graph-view',
-  name: 'Graph View',
-  version: '1.0.0',
-  description: 'Interactive force-directed graph visualizing knowledge network relationships between notes.',
-  author: 'Yuliet Li',
-  isCore: true,
-  tags: ['graph', 'visualization', 'network', 'knowledge', 'links'],
+  ...(manifest as ExtensionManifest),
   readme: graphReadme,
 };
 

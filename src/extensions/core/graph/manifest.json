@@ -1,0 +1,24 @@
+{
+  "id": "graph-view",
+  "name": "Graph View",
+  "version": "1.0.0",
+  "description": "Interactive force-directed graph visualizing knowledge network relationships between notes.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "graph",
+    "visualization",
+    "network",
+    "knowledge",
+    "links"
+  ],
+  "icon": {
+    "name": "neural-network",
+    "type": "gradient",
+    "gradientColors": [
+      "#7c3aed",
+      "#4c1d95"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

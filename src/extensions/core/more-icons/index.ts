@@ -8,4 +8,3 @@ export * from './MoreIconsSubmenuPicker';
 export * from './MoreIconsEditorTitleIcon';
 export * from './IconChipExtension';
 export * from './moreIconsCatalog';
-export * from './readme';

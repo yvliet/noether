@@ -1,0 +1,24 @@
+{
+  "id": "tasks",
+  "name": "Tasks & Checklists",
+  "version": "1.0.0",
+  "description": "Global task aggregation dashboard extracting checklists and todo items across all notes.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "tasks",
+    "todo",
+    "checklists",
+    "productivity",
+    "tracking"
+  ],
+  "icon": {
+    "name": "checkmark-square-02",
+    "type": "gradient",
+    "gradientColors": [
+      "#2563eb",
+      "#1d4ed8"
+    ],
+    "gradientDirection": "135deg"
+  }
+}
