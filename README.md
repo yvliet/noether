@@ -1,23 +1,13 @@
 <div align="center">
 
-  <img src="docs/assets/noether-ascii.svg" alt="      ___                                   ___                 
-     /  /\                    ___          /__/\          ___   
-    /  /:/_                  /  /\         \  \:\        /  /\  
-   /  /:/ /\  ___     ___   /  /:/          \  \:\      /  /:/  
-  /  /:/ /:/ /__/\   /  /\ /__/::\      _____\__\:\    /  /:/   
- /__/:/ /:/  \  \:\ /  /:/ \__\/\:\__  /__/::::::::\  /  /::\   
- \  \:\/:/    \  \:\  /:/     \  \:\/\ \  \:\~~\~~\/ /__/:/\:\  
-  \  \::/      \  \:\/:/       \__\::/  \  \:\  ~~~  \__\/  \:\ 
-   \  \:\       \  \::/        /__/:/    \  \:\           \  \:\
-    \  \:\       \__\/         \__\/      \  \:\           \__\/
-     \__\/                                 \__\/                " width="502"/>
+  <img src="docs/assets/noether-banner.png" alt="Noether" width="600" />
 
 ### A fast, local-first note-taking app that respects your plain text.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
-[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-eb584d.svg?logo=tauri&logoColor=white)](src-tauri)
-[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=61dafb)](package.json)
-[![Docs](https://img.shields.io/badge/Docs-Website-eb584d.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/noether/)
+[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-24C8D8.svg?logo=tauri&logoColor=white)](src-tauri)
+[![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=white)](package.json)
+[![Documentation](https://img.shields.io/badge/Documentation-Website-eb584d.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/noether/)
 
 [Documentation](https://yvliet.github.io/noether/) •
 [Availability](#1-availability) •
