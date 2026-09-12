@@ -267,7 +267,7 @@ export const OutlineView: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter headings..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-secondary)] placeholder-[var(--noether-text-muted)]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-secondary)] placeholder-[var(--noether-text-faint)]"
             />
           </div>
         </div>

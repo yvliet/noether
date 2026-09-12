@@ -255,14 +255,14 @@ export const TagsView: React.FC = () => {
       {isSearchOpen && (
         <div className="px-2.5 py-1.5">
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-secondary)]">
-            <Search01Icon size={13} className="text-[var(--noether-text-muted)]" />
+            <Search01Icon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter tags..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-secondary)] placeholder-[var(--noether-text-muted)]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-secondary)] placeholder-[var(--noether-text-faint)]"
             />
           </div>
         </div>

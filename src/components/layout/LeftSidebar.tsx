@@ -586,8 +586,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
         <div className="pt-2 px-2 pb-1.5 flex flex-col gap-1.5">
           {/* Top Search Input Row */}
           <div className="flex items-center gap-1.5">
-            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus-within:border-[var(--noether-accent)]">
-              <Search01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
+            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)]">
+              <Search01Icon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -613,7 +613,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
                   type="button"
                   onClick={() => setSearchQuery('')}
                   title="Clear search"
-                  className="p-0.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
+                  className="w-4 h-4 flex items-center justify-center rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
                 >
                   <CancelCircleIcon size={13} />
                 </button>

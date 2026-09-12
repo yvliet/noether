@@ -264,14 +264,14 @@ export const PropertiesView: React.FC = () => {
       {isSearchOpen && (
         <div className="px-2.5 py-1.5 border-b border-[var(--noether-border-subtle)]">
           <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-primary)] shadow-xs">
-            <Search01Icon size={13} className="text-[var(--noether-text-muted)]" />
+            <Search01Icon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter properties..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)]"
             />
           </div>
         </div>

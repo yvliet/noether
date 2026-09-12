@@ -206,7 +206,7 @@ const FontPickerView: React.FC<FontPickerViewProps> = React.memo(({ mode, onClos
             value={fontSearchQuery}
             onChange={(e) => setFontSearchQuery(e.target.value)}
             placeholder="Enter font name..."
-            className="w-full bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-[#666] outline-none"
+            className="w-full bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-[var(--noether-text-faint)] outline-none"
           />
         </div>
 
@@ -331,7 +331,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
             value={trashSearchQuery}
             onChange={(e) => setTrashSearchQuery(e.target.value)}
             placeholder="Search deleted files..."
-            className="w-full bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-[#666] outline-none"
+            className="w-full bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-[var(--noether-text-faint)] outline-none"
           />
         </div>
 
@@ -826,7 +826,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               value={themeSearchQuery}
               onChange={(e) => setThemeSearchQuery(e.target.value)}
               placeholder="Search themes..."
-              className="bg-transparent outline-none text-xs text-white placeholder-[#555] w-full"
+              className="bg-transparent outline-none text-xs text-white placeholder-[var(--noether-text-faint)] w-full"
             />
           </div>
         </div>
@@ -3457,13 +3457,13 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         <aside className="w-[230px] bg-[var(--noether-bg-sidebar,#141414)] border-r border-[var(--noether-border-subtle,#242424)] h-full flex flex-col p-3 shrink-0 overflow-hidden">
           {/* Search Box */}
           <div className="relative mb-3 shrink-0">
-            <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted,#666)]" />
+            <Search01Icon size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted)] pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search settings..."
-              className="w-full bg-[var(--noether-bg-input,#1e1e1e)] border border-[var(--noether-border-base,#2c2c2c)] focus:border-[var(--noether-border-strong,#444)] rounded-lg pl-8 pr-2.5 py-1 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-muted,#666)] outline-none"
+              className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] outline-none"
             />
           </div>
 

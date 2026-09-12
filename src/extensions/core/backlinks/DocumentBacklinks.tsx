@@ -274,20 +274,20 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
       {/* 2. Optional Inline Search Filter */}
       {isSearchOpen && (
         <div className="mt-2 mb-3">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[#1c1c1c] border border-[#2c2c2c] text-xs text-[#dcddde]">
-            <Search01Icon size={13} className="text-[#666] shrink-0" />
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-secondary)]">
+            <Search01Icon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter backlinks & mentions..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[#dcddde] placeholder-[#555]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-secondary)] placeholder-[var(--noether-text-faint)]"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="text-[#666] hover:text-white text-[11px] px-1 cursor-pointer"
+                className="text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] text-[11px] px-1 cursor-pointer"
               >
                 Clear
               </button>
