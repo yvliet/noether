@@ -523,6 +523,7 @@ export const WindowHeader: React.FC = React.memo(() => {
   const closeTabInPane = useWorkspaceStore((s) => s.closeTabInPane);
   const documents = useDocumentStore((s) => s.documents);
   const isMaximized = useIsMaximized();
+  const isMac = useMemo(() => platform.isMacOS(), []);
 
   const topRowLeaves = useMemo(() => getTopRowLeaves(layoutTree), [layoutTree]);
 
@@ -983,98 +984,222 @@ export const WindowHeader: React.FC = React.memo(() => {
       } as React.CSSProperties}
       className="noether-header h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
     >
-      {/* 1. Ribbon Column Header (w-11) */}
-      <div
-        style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-        className="w-11 h-full flex items-center justify-center shrink-0"
-      >
-        <button
-          onClick={toggleLeftSidebar}
-          title="Toggle left sidebar (Ctrl+\)"
-          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
-        >
-          {isLeftSidebarOpen ? <LayoutLeftIcon size={16} /> : <LayoutAlignLeftIcon size={16} />}
-        </button>
-      </div>
-
-      {/* 2. Left Sidebar View Switchers */}
-      {isLeftSidebarOpen && (
+      {/* 1. macOS Window Controls Reserved Area (w-[72px]) */}
+      {isMac && (
         <div
-          ref={leftTopReorder.containerRef}
-          data-dock-zone="left-top"
-          onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'left')}
-          onWheel={(e) => {
-            if (e.deltaY !== 0) {
-              e.currentTarget.scrollLeft += e.deltaY;
-            }
-          }}
-          style={{
-            width: `${leftSidebarWidth}px`,
-            WebkitAppRegion: 'no-drag',
-            scrollbarWidth: 'none',
-            msOverflowStyle: 'none',
-          } as React.CSSProperties}
-          className="h-full flex items-center gap-0.5 px-2 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
-        >
-          {leftTopDockItems.map((item, index) => {
-            const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
-            const extTab = leftTabs.find(
-              (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
-            );
-            const icon = renderDockIcon(item);
-            const isActive =
-              (item.id === 'files' && activeLeftView === 'files') ||
-              (item.id === 'search' && activeLeftView === 'search') ||
-              activeLeftView === item.id ||
-              activeLeftView === tabKey ||
-              activeLeftView === item.viewType ||
-              activeLeftView === item.extensionId ||
-              activeLeftView === item.documentId ||
-              activeLeftView === `doc:${item.documentId}` ||
-              (extTab && (activeLeftView === extTab.id || extTab.id.endsWith(`:${activeLeftView}`)));
-            const itemTitle = getDockItemTitle(item);
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          className="w-[72px] h-full shrink-0"
+          aria-hidden="true"
+        />
+      )}
 
-            return (
-              <button
-                key={item.id}
-                ref={(el) => leftTopReorder.registerItemRef(index, el)}
-                onPointerDown={(e) => leftTopReorder.handlePointerDown(index, e)}
-                onClick={() => {
-                  if (leftTopReorder.hasDragged()) return;
-                  setActiveLeftView(item.id as any);
-                  useSidebarDockStore.getState().setActiveItemInZone('left-top', item.id);
-                }}
-                onContextMenu={(e) => handleDockItemContextMenu(e, item, 'left')}
-                onAuxClick={(e) => {
-                  if (e.button === 1) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    undockItem(item.id);
-                  }
-                }}
-                title={itemTitle}
-                data-dock-item-id={item.id}
-                className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
-                  isActive
-                    ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
-                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
-                }`}
-              >
-                {icon}
-              </button>
-            );
-          })}
-
-
-          {leftTopReorder.dropIndicatorLeft !== null && (
+      {/* 2. Left Sidebar Header & View Switchers */}
+      {isMac ? (
+        isLeftSidebarOpen ? (
+          <div
+            style={{
+              width: `${Math.max(36, leftSidebarWidth + 44 - 72)}px`,
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties}
+            className="h-full flex items-center pr-2 shrink-0 min-w-0 select-none relative"
+            data-no-drag="true"
+          >
             <div
-              style={{
-                left: `${leftTopReorder.dropIndicatorLeft}px`,
+              ref={leftTopReorder.containerRef}
+              data-dock-zone="left-top"
+              onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'left')}
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
               }}
-              className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
-            />
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+              className="flex-1 h-full flex items-center gap-0.5 px-1 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
+            >
+              {leftTopDockItems.map((item, index) => {
+                const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
+                const extTab = leftTabs.find(
+                  (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
+                );
+                const icon = renderDockIcon(item);
+                const isActive =
+                  (item.id === 'files' && activeLeftView === 'files') ||
+                  (item.id === 'search' && activeLeftView === 'search') ||
+                  activeLeftView === item.id ||
+                  activeLeftView === tabKey ||
+                  activeLeftView === item.viewType ||
+                  activeLeftView === item.extensionId ||
+                  activeLeftView === item.documentId ||
+                  activeLeftView === `doc:${item.documentId}` ||
+                  (extTab && (activeLeftView === extTab.id || extTab.id.endsWith(`:${activeLeftView}`)));
+                const itemTitle = getDockItemTitle(item);
+
+                return (
+                  <button
+                    key={item.id}
+                    ref={(el) => leftTopReorder.registerItemRef(index, el)}
+                    onPointerDown={(e) => leftTopReorder.handlePointerDown(index, e)}
+                    onClick={() => {
+                      if (leftTopReorder.hasDragged()) return;
+                      setActiveLeftView(item.id as any);
+                      useSidebarDockStore.getState().setActiveItemInZone('left-top', item.id);
+                    }}
+                    onContextMenu={(e) => handleDockItemContextMenu(e, item, 'left')}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        undockItem(item.id);
+                      }
+                    }}
+                    title={itemTitle}
+                    data-dock-item-id={item.id}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                    }`}
+                  >
+                    {icon}
+                  </button>
+                );
+              })}
+
+              {leftTopReorder.dropIndicatorLeft !== null && (
+                <div
+                  style={{
+                    left: `${leftTopReorder.dropIndicatorLeft}px`,
+                  }}
+                  className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
+                />
+              )}
+            </div>
+
+            {/* Left sidebar collapse button at the trailing end (cursor position) */}
+            <button
+              type="button"
+              onClick={toggleLeftSidebar}
+              title="Collapse left sidebar (Ctrl+\)"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 ml-1"
+            >
+              <LayoutLeftIcon size={16} />
+            </button>
+          </div>
+        ) : (
+          /* Collapsed on macOS: Expand button directly adjacent to the 72px window controls zone */
+          <div
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            className="w-11 h-full flex items-center justify-center shrink-0"
+            data-no-drag="true"
+          >
+            <button
+              type="button"
+              onClick={toggleLeftSidebar}
+              title="Expand left sidebar (Ctrl+\)"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            >
+              <LayoutAlignLeftIcon size={16} />
+            </button>
+          </div>
+        )
+      ) : (
+        /* Windows / Linux layout (standard ribbon column + left dock items) */
+        <>
+          <div
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            className="w-11 h-full flex items-center justify-center shrink-0"
+          >
+            <button
+              type="button"
+              onClick={toggleLeftSidebar}
+              title="Toggle left sidebar (Ctrl+\)"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            >
+              {isLeftSidebarOpen ? <LayoutLeftIcon size={16} /> : <LayoutAlignLeftIcon size={16} />}
+            </button>
+          </div>
+
+          {isLeftSidebarOpen && (
+            <div
+              ref={leftTopReorder.containerRef}
+              data-dock-zone="left-top"
+              onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'left')}
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+              style={{
+                width: `${leftSidebarWidth}px`,
+                WebkitAppRegion: 'no-drag',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              } as React.CSSProperties}
+              className="h-full flex items-center gap-0.5 px-2 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
+            >
+              {leftTopDockItems.map((item, index) => {
+                const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
+                const extTab = leftTabs.find(
+                  (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
+                );
+                const icon = renderDockIcon(item);
+                const isActive =
+                  (item.id === 'files' && activeLeftView === 'files') ||
+                  (item.id === 'search' && activeLeftView === 'search') ||
+                  activeLeftView === item.id ||
+                  activeLeftView === tabKey ||
+                  activeLeftView === item.viewType ||
+                  activeLeftView === item.extensionId ||
+                  activeLeftView === item.documentId ||
+                  activeLeftView === `doc:${item.documentId}` ||
+                  (extTab && (activeLeftView === extTab.id || extTab.id.endsWith(`:${activeLeftView}`)));
+                const itemTitle = getDockItemTitle(item);
+
+                return (
+                  <button
+                    key={item.id}
+                    ref={(el) => leftTopReorder.registerItemRef(index, el)}
+                    onPointerDown={(e) => leftTopReorder.handlePointerDown(index, e)}
+                    onClick={() => {
+                      if (leftTopReorder.hasDragged()) return;
+                      setActiveLeftView(item.id as any);
+                      useSidebarDockStore.getState().setActiveItemInZone('left-top', item.id);
+                    }}
+                    onContextMenu={(e) => handleDockItemContextMenu(e, item, 'left')}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        undockItem(item.id);
+                      }
+                    }}
+                    title={itemTitle}
+                    data-dock-item-id={item.id}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                    }`}
+                  >
+                    {icon}
+                  </button>
+                );
+              })}
+
+              {leftTopReorder.dropIndicatorLeft !== null && (
+                <div
+                  style={{
+                    left: `${leftTopReorder.dropIndicatorLeft}px`,
+                  }}
+                  className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
+                />
+              )}
+            </div>
           )}
-        </div>
+        </>
       )}
 
       {/* 3. Document Tabs Area across all top-row panes */}
@@ -1103,104 +1228,199 @@ export const WindowHeader: React.FC = React.memo(() => {
       )}
 
       {/* 4. Right Controls */}
-      <div
-        data-no-drag="true"
-        style={{
-          width: isRightSidebarOpen ? `${rightSidebarWidth + 42}px` : 'auto',
-          WebkitAppRegion: 'no-drag',
-        } as React.CSSProperties}
-        className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30"
-      >
-        <button
-          type="button"
-          onClick={toggleRightSidebar}
-          title="Toggle right sidebar (Ctrl+Shift+\)"
-          className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 ${
-            !isRightSidebarOpen ? 'mr-[14px]' : ''
-          }`}
+      {isMac ? (
+        <div
+          data-no-drag="true"
+          style={{
+            width: isRightSidebarOpen ? `${rightSidebarWidth}px` : 'auto',
+            WebkitAppRegion: 'no-drag',
+          } as React.CSSProperties}
+          className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30"
         >
-          {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
-        </button>
+          {isRightSidebarOpen && (
+            <div
+              ref={rightTopReorder.containerRef}
+              data-dock-zone="right-top"
+              onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'right')}
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+              className="flex-1 flex items-center gap-0.5 px-2 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
+            >
+              {rightTopDockItems.map((item, index) => {
+                const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
+                const extTab = rightTabs.find(
+                  (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
+                );
+                const icon = renderDockIcon(item);
+                const isActive =
+                  activeRightTab === item.id ||
+                  activeRightTab === tabKey ||
+                  activeRightTab === item.viewType ||
+                  activeRightTab === item.extensionId ||
+                  activeRightTab === item.documentId ||
+                  activeRightTab === `doc:${item.documentId}` ||
+                  (extTab && (activeRightTab === extTab.id || extTab.id.endsWith(`:${activeRightTab}`)));
+                const itemTitle = getDockItemTitle(item);
 
-        {isRightSidebarOpen && (
+                return (
+                  <button
+                    key={item.id}
+                    ref={(el) => rightTopReorder.registerItemRef(index, el)}
+                    onPointerDown={(e) => rightTopReorder.handlePointerDown(index, e)}
+                    onClick={() => {
+                      if (rightTopReorder.hasDragged()) return;
+                      setActiveRightTab(item.id as any);
+                      useSidebarDockStore.getState().setActiveItemInZone('right-top', item.id);
+                    }}
+                    onContextMenu={(e) => handleDockItemContextMenu(e, item, 'right')}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        undockItem(item.id);
+                      }
+                    }}
+                    title={itemTitle}
+                    data-dock-item-id={item.id}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                    }`}
+                  >
+                    {icon}
+                  </button>
+                );
+              })}
+
+              {rightTopReorder.dropIndicatorLeft !== null && (
+                <div
+                  style={{
+                    left: `${rightTopReorder.dropIndicatorLeft}px`,
+                  }}
+                  className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Right sidebar toggle button on the far top-right edge (w-11) */}
           <div
-            ref={rightTopReorder.containerRef}
-            data-dock-zone="right-top"
-            onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'right')}
-            onWheel={(e) => {
-              if (e.deltaY !== 0) {
-                e.currentTarget.scrollLeft += e.deltaY;
-              }
-            }}
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}
-            className="flex-1 flex items-center gap-0.5 ml-0.5 px-0.5 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            className="w-11 h-full flex items-center justify-center shrink-0"
+            data-no-drag="true"
           >
-            {rightTopDockItems.map((item, index) => {
-              const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
-              const extTab = rightTabs.find(
-                (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
-              );
-              const icon = renderDockIcon(item);
-              const isActive =
-                activeRightTab === item.id ||
-                activeRightTab === tabKey ||
-                activeRightTab === item.viewType ||
-                activeRightTab === item.extensionId ||
-                activeRightTab === item.documentId ||
-                activeRightTab === `doc:${item.documentId}` ||
-                (extTab && (activeRightTab === extTab.id || extTab.id.endsWith(`:${activeRightTab}`)));
-              const itemTitle = getDockItemTitle(item);
-
-              return (
-                <button
-                  key={item.id}
-                  ref={(el) => rightTopReorder.registerItemRef(index, el)}
-                  onPointerDown={(e) => rightTopReorder.handlePointerDown(index, e)}
-                  onClick={() => {
-                    if (rightTopReorder.hasDragged()) return;
-                    setActiveRightTab(item.id as any);
-                    useSidebarDockStore.getState().setActiveItemInZone('right-top', item.id);
-                  }}
-                  onContextMenu={(e) => handleDockItemContextMenu(e, item, 'right')}
-                  onAuxClick={(e) => {
-                    if (e.button === 1) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      undockItem(item.id);
-                    }
-                  }}
-                  title={itemTitle}
-                  data-dock-item-id={item.id}
-                  className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
-                    isActive
-                      ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
-                      : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
-                  }`}
-                >
-                  {icon}
-                </button>
-              );
-            })}
-
-
-            {rightTopReorder.dropIndicatorLeft !== null && (
-              <div
-                style={{
-                  left: `${rightTopReorder.dropIndicatorLeft}px`,
-                }}
-                className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
-              />
-            )}
+            <button
+              type="button"
+              onClick={toggleRightSidebar}
+              title="Toggle right sidebar (Ctrl+Shift+\)"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            >
+              {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
+            </button>
           </div>
-        )}
+        </div>
+      ) : (
+        /* Windows / Linux layout with button before items, and caption buttons to the right inside the container */
+        <div
+          data-no-drag="true"
+          style={{
+            width: isRightSidebarOpen ? `${rightSidebarWidth + 42}px` : 'auto',
+            WebkitAppRegion: 'no-drag',
+          } as React.CSSProperties}
+          className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30"
+        >
+          <button
+            type="button"
+            onClick={toggleRightSidebar}
+            title="Toggle right sidebar (Ctrl+Shift+\)"
+            className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 mr-[14px]`}
+          >
+            {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
+          </button>
 
+          {isRightSidebarOpen && (
+            <div
+              ref={rightTopReorder.containerRef}
+              data-dock-zone="right-top"
+              onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'right')}
+              onWheel={(e) => {
+                if (e.deltaY !== 0) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+              }}
+              className="flex-1 flex items-center gap-0.5 ml-0.5 px-0.5 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
+            >
+              {rightTopDockItems.map((item, index) => {
+                const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
+                const extTab = rightTabs.find(
+                  (t) => t.id === item.id || t.id.endsWith(`:${item.id}`) || t.id === item.viewType || t.id === item.extensionId
+                );
+                const icon = renderDockIcon(item);
+                const isActive =
+                  activeRightTab === item.id ||
+                  activeRightTab === tabKey ||
+                  activeRightTab === item.viewType ||
+                  activeRightTab === item.extensionId ||
+                  activeRightTab === item.documentId ||
+                  activeRightTab === `doc:${item.documentId}` ||
+                  (extTab && (activeRightTab === extTab.id || extTab.id.endsWith(`:${activeRightTab}`)));
+                const itemTitle = getDockItemTitle(item);
 
+                return (
+                  <button
+                    key={item.id}
+                    ref={(el) => rightTopReorder.registerItemRef(index, el)}
+                    onPointerDown={(e) => rightTopReorder.handlePointerDown(index, e)}
+                    onClick={() => {
+                      if (rightTopReorder.hasDragged()) return;
+                      setActiveRightTab(item.id as any);
+                      useSidebarDockStore.getState().setActiveItemInZone('right-top', item.id);
+                    }}
+                    onContextMenu={(e) => handleDockItemContextMenu(e, item, 'right')}
+                    onAuxClick={(e) => {
+                      if (e.button === 1) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        undockItem(item.id);
+                      }
+                    }}
+                    title={itemTitle}
+                    data-dock-item-id={item.id}
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                      isActive
+                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                    }`}
+                  >
+                    {icon}
+                  </button>
+                );
+              })}
 
-        {/* 5. Window Controls (Windows / Linux) */}
-        {!platform.isMacOS() && (
+              {rightTopReorder.dropIndicatorLeft !== null && (
+                <div
+                  style={{
+                    left: `${rightTopReorder.dropIndicatorLeft}px`,
+                  }}
+                  className="absolute top-1/2 -translate-y-1/2 w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
+                />
+              )}
+            </div>
+          )}
+
+          {/* Window Controls (Windows / Linux) nested inside the right container */}
           <div
             className="flex items-center h-full shrink-0 ml-auto"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
@@ -1245,8 +1465,8 @@ export const WindowHeader: React.FC = React.memo(() => {
               <WindowCloseIcon />
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   );
 });

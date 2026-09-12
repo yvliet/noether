@@ -86,6 +86,15 @@ pub fn run() {
             for (_, window) in app.webview_windows() {
                 let _ = window.set_icon(initial_icon.clone());
             }
+
+            // On macOS, activate decorations so the Overlay title bar renders native traffic lights
+            #[cfg(target_os = "macos")]
+            {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.set_decorations(true);
+                }
+            }
+
             // Initialize general-purpose global hotkey loop
             vault::init_global_hotkeys(handle.clone());
 

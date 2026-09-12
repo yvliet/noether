@@ -23,7 +23,13 @@
         "center": true,
         "maximized": true,
         "zoomHotkeysEnabled": true,
-        "devtools": true
+        "devtools": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": {
+          "x": 16,
+          "y": 14
+        }
       }
     ],
     "security": {
