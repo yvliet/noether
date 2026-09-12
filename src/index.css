@@ -708,6 +708,13 @@ kbd,
   font-family: var(--font-monospace) !important;
 }
 
+.markdown-prose div > pre {
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
 .ProseMirror pre code,
 .markdown-prose pre code {
   background: transparent;

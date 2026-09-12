@@ -282,7 +282,7 @@ export const MarkdownDocRenderer: React.FC<{ content: string }> = React.memo(({ 
                   <span>{copiedIndex === blockIndex ? 'Copied' : 'Copy'}</span>
                 </button>
               </div>
-              <pre className="p-3.5 text-[calc(var(--editor-font-size,16px)*0.85)] font-mono text-[var(--noether-text-primary)] overflow-x-auto leading-relaxed">
+              <pre className="p-3.5 text-[calc(var(--editor-font-size,16px)*0.85)] font-mono text-[var(--noether-text-primary)] overflow-x-auto leading-relaxed !bg-transparent !border-none !m-0 !rounded-none">
                 <code dangerouslySetInnerHTML={{ __html: highlightCode(blockCode, codeLanguage) }} />
               </pre>
             </div>
