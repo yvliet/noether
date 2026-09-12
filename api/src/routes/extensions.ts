@@ -44,13 +44,13 @@ extensionRoutes.get('/', async (c) => {
   const queryArgs: InValue[] = [];
 
   if (category && category.toLowerCase() !== 'all') {
-    whereClauses.push('LOWER(p.category) = LOWER(?)');
+    whereClauses.push('LOWER(e.category) = LOWER(?)');
     queryArgs.push(category);
   }
 
   if (search) {
     whereClauses.push(
-      '(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.tags) LIKE ? OR LOWER(a.display_name) LIKE ? OR LOWER(a.github_username) LIKE ?)'
+      '(LOWER(e.name) LIKE ? OR LOWER(e.description) LIKE ? OR LOWER(e.tags) LIKE ? OR LOWER(a.display_name) LIKE ? OR LOWER(a.github_username) LIKE ?)'
     );
     const searchPattern = `%${search.toLowerCase()}%`;
     queryArgs.push(searchPattern, searchPattern, searchPattern, searchPattern, searchPattern);
@@ -59,20 +59,20 @@ extensionRoutes.get('/', async (c) => {
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
 
   // Order By mappings
-  let orderBy = 'p.downloads DESC';
+  let orderBy = 'e.downloads DESC';
   if (sort === 'rating') {
-    orderBy = 'p.stars DESC, p.downloads DESC';
+    orderBy = 'e.stars DESC, e.downloads DESC';
   } else if (sort === 'newest') {
-    orderBy = 'p.created_at DESC';
+    orderBy = 'e.created_at DESC';
   } else if (sort === 'name') {
-    orderBy = 'p.name ASC';
+    orderBy = 'e.name ASC';
   }
 
   // Count total matching records
   const countSql = `
     SELECT COUNT(*) as total
-    FROM plugins p
-    JOIN authors a ON p.author_id = a.id
+    FROM extensions e
+    JOIN authors a ON e.author_id = a.id
     ${whereSql}
   `;
   const countResult = await db.execute({ sql: countSql, args: queryArgs });
@@ -82,34 +82,34 @@ extensionRoutes.get('/', async (c) => {
   // Retrieve matching paginated items with latest version string
   const itemsSql = `
     SELECT
-      p.id,
-      p.name,
-      p.description,
-      p.category,
-      p.tags,
-      p.icon,
-      p.repo_url,
-      p.banner_url,
-      p.downloads,
-      p.stars,
-      p.is_verified,
-      p.created_at,
-      p.updated_at,
+      e.id,
+      e.name,
+      e.description,
+      e.category,
+      e.tags,
+      e.icon,
+      e.repo_url,
+      e.banner_url,
+      e.downloads,
+      e.stars,
+      e.is_verified,
+      e.created_at,
+      e.updated_at,
       a.id as author_id,
       a.github_username,
       a.display_name,
       a.avatar_url,
       (
-        SELECT pv.version
-        FROM plugin_versions pv
-        WHERE pv.plugin_id = p.id
-        ORDER BY pv.published_at DESC, pv.rowid DESC
+        SELECT ev.version
+        FROM extension_versions ev
+        WHERE ev.extension_id = e.id
+        ORDER BY ev.published_at DESC, ev.rowid DESC
         LIMIT 1
       ) as latest_version
-    FROM plugins p
-    JOIN authors a ON p.author_id = a.id
+    FROM extensions e
+    JOIN authors a ON e.author_id = a.id
     ${whereSql}
-    ORDER BY ${orderBy}
+    ORDER BY ${orderBy.replace(/\bp\./g, 'e.')}
     LIMIT ? OFFSET ?
   `;
 
@@ -170,26 +170,26 @@ extensionRoutes.get('/:id', async (c) => {
 
   const extensionSql = `
     SELECT
-      p.id,
-      p.name,
-      p.description,
-      p.category,
-      p.tags,
-      p.icon,
-      p.repo_url,
-      p.banner_url,
-      p.downloads,
-      p.stars,
-      p.is_verified,
-      p.created_at,
-      p.updated_at,
+      e.id,
+      e.name,
+      e.description,
+      e.category,
+      e.tags,
+      e.icon,
+      e.repo_url,
+      e.banner_url,
+      e.downloads,
+      e.stars,
+      e.is_verified,
+      e.created_at,
+      e.updated_at,
       a.id as author_id,
       a.github_username,
       a.display_name,
       a.avatar_url
-    FROM plugins p
-    JOIN authors a ON p.author_id = a.id
-    WHERE p.id = ?
+    FROM extensions e
+    JOIN authors a ON e.author_id = a.id
+    WHERE e.id = ?
     LIMIT 1
   `;
 
@@ -203,8 +203,8 @@ extensionRoutes.get('/:id', async (c) => {
   // Fetch all versions ordered by publication timestamp descending
   const versionsSql = `
     SELECT id, version, min_app_version, readme, bundle_url, styles_url, manifest_json, sha256, published_at
-    FROM plugin_versions
-    WHERE plugin_id = ?
+    FROM extension_versions
+    WHERE extension_id = ?
     ORDER BY published_at DESC, rowid DESC
   `;
   const versionsResult = await db.execute({ sql: versionsSql, args: [extensionId] });
@@ -300,7 +300,7 @@ extensionRoutes.get('/:id/download', async (c) => {
 
   // 1. Verify extension existence
   const check = await db.execute({
-    sql: 'SELECT id FROM plugins WHERE id = ?',
+    sql: 'SELECT id FROM extensions WHERE id = ?',
     args: [extensionId],
   });
   if (check.rows.length === 0) {
@@ -308,11 +308,11 @@ extensionRoutes.get('/:id/download', async (c) => {
   }
 
   // 2. Fetch specific version or latest version
-  let versionQuery = 'SELECT * FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let versionQuery = 'SELECT * FROM extension_versions WHERE extension_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
   let versionArgs: InValue[] = [extensionId];
 
   if (targetVersion) {
-    versionQuery = 'SELECT * FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    versionQuery = 'SELECT * FROM extension_versions WHERE extension_id = ? AND version = ? LIMIT 1';
     versionArgs = [extensionId, targetVersion];
   }
 
@@ -332,7 +332,7 @@ extensionRoutes.get('/:id/download', async (c) => {
 
   // 3. Increment download counter atomically
   await db.execute({
-    sql: 'UPDATE plugins SET downloads = downloads + 1 WHERE id = ?',
+    sql: 'UPDATE extensions SET downloads = downloads + 1 WHERE id = ?',
     args: [extensionId],
   });
 
@@ -372,11 +372,11 @@ extensionRoutes.get('/:id/bundle', async (c) => {
   const extensionId = c.req.param('id');
   const targetVersion = c.req.query('version')?.trim();
 
-  let query = 'SELECT bundle_code, bundle_url FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let query = 'SELECT bundle_code, bundle_url FROM extension_versions WHERE extension_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
   let args: InValue[] = [extensionId];
 
   if (targetVersion) {
-    query = 'SELECT bundle_code, bundle_url FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    query = 'SELECT bundle_code, bundle_url FROM extension_versions WHERE extension_id = ? AND version = ? LIMIT 1';
     args = [extensionId, targetVersion];
   }
 
@@ -410,11 +410,11 @@ extensionRoutes.get('/:id/styles', async (c) => {
   const extensionId = c.req.param('id');
   const targetVersion = c.req.query('version')?.trim();
 
-  let query = 'SELECT styles_code, styles_url FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let query = 'SELECT styles_code, styles_url FROM extension_versions WHERE extension_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
   let args: InValue[] = [extensionId];
 
   if (targetVersion) {
-    query = 'SELECT styles_code, styles_url FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    query = 'SELECT styles_code, styles_url FROM extension_versions WHERE extension_id = ? AND version = ? LIMIT 1';
     args = [extensionId, targetVersion];
   }
 
@@ -448,11 +448,11 @@ extensionRoutes.get('/:id/manifest.json', async (c) => {
   const extensionId = c.req.param('id');
   const targetVersion = c.req.query('version')?.trim();
 
-  let query = 'SELECT manifest_json FROM plugin_versions WHERE plugin_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
+  let query = 'SELECT manifest_json FROM extension_versions WHERE extension_id = ? ORDER BY published_at DESC, rowid DESC LIMIT 1';
   let args: InValue[] = [extensionId];
 
   if (targetVersion) {
-    query = 'SELECT manifest_json FROM plugin_versions WHERE plugin_id = ? AND version = ? LIMIT 1';
+    query = 'SELECT manifest_json FROM extension_versions WHERE extension_id = ? AND version = ? LIMIT 1';
     args = [extensionId, targetVersion];
   }
 
@@ -532,7 +532,7 @@ extensionRoutes.post('/publish', async (c) => {
 
   // 2. Extension registration or ownership verification
   const existingExtension = await db.execute({
-    sql: 'SELECT id, author_id FROM plugins WHERE id = ?',
+    sql: 'SELECT id, author_id FROM extensions WHERE id = ?',
     args: [manifest.id],
   });
 
@@ -549,7 +549,7 @@ extensionRoutes.post('/publish', async (c) => {
 
     // Check for duplicate version conflict
     const versionCheck = await db.execute({
-      sql: 'SELECT id FROM plugin_versions WHERE plugin_id = ? AND version = ?',
+      sql: 'SELECT id FROM extension_versions WHERE extension_id = ? AND version = ?',
       args: [manifest.id, manifest.version],
     });
 
@@ -565,10 +565,10 @@ extensionRoutes.post('/publish', async (c) => {
 
       // Safe in-place update of existing version
       await db.execute({
-        sql: `UPDATE plugin_versions
+        sql: `UPDATE extension_versions
               SET min_app_version = ?, readme = ?, bundle_url = ?, styles_url = ?,
                   bundle_code = ?, styles_code = ?, manifest_json = ?, sha256 = ?, published_at = datetime('now')
-              WHERE plugin_id = ? AND version = ?`,
+              WHERE extension_id = ? AND version = ?`,
         args: [
           manifest.minAppVersion ?? '0.4.0',
           readme ?? null,
@@ -586,8 +586,8 @@ extensionRoutes.post('/publish', async (c) => {
       // Insert new version
       const versionId = `${manifest.id}_v${manifest.version}`;
       await db.execute({
-        sql: `INSERT INTO plugin_versions (
-                id, plugin_id, version, min_app_version, readme, bundle_url,
+        sql: `INSERT INTO extension_versions (
+                id, extension_id, version, min_app_version, readme, bundle_url,
                 styles_url, bundle_code, styles_code, manifest_json, sha256, published_at
               ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
         args: [
@@ -608,7 +608,7 @@ extensionRoutes.post('/publish', async (c) => {
 
     // Update existing extension metadata
     await db.execute({
-      sql: `UPDATE plugins
+      sql: `UPDATE extensions
             SET name = ?, description = ?, category = ?, tags = ?, icon = ?, repo_url = ?, banner_url = ?, updated_at = datetime('now')
             WHERE id = ?`,
       args: [
@@ -625,7 +625,7 @@ extensionRoutes.post('/publish', async (c) => {
   } else {
     // Insert new extension record
     await db.execute({
-      sql: `INSERT INTO plugins (
+      sql: `INSERT INTO extensions (
               id, name, description, author_id, category, tags, icon, repo_url,
               banner_url, downloads, stars, is_verified, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, datetime('now'), datetime('now'))`,
@@ -645,8 +645,8 @@ extensionRoutes.post('/publish', async (c) => {
     // Insert new version record
     const versionId = `${manifest.id}_v${manifest.version}`;
     await db.execute({
-      sql: `INSERT INTO plugin_versions (
-              id, plugin_id, version, min_app_version, readme, bundle_url,
+      sql: `INSERT INTO extension_versions (
+              id, extension_id, version, min_app_version, readme, bundle_url,
               styles_url, bundle_code, styles_code, manifest_json, sha256, published_at
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`,
       args: [

@@ -57,7 +57,7 @@ export const STORAGE_CACHE_TIME_KEY = 'noether_marketplace_catalogue_cache_time'
 
 const DEFAULT_TURSO_URL = 'https://noether-ricriya.aws-ap-northeast-1.turso.io';
 const DEFAULT_TURSO_AUTH_TOKEN =
-  'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODg2MzIxNDUsImlkIjoiMDFhMDcyYzEtMmUxMC03MTViLTk1ZDEtNmYyNzc5YWNiYjI0Iiwia2lkIjoiZ19GZi1OeUdDTTJBelpadnhkYjdwek9YSXpNa0FGOHMwQ2RPMmtUQWRoMCIsInJpZCI6IjQ1MjJhZjNiLTdlOTEtNDJkYi05M2Y5LWVkNzRjY2RkYmJiMiJ9.HZ8mk6RKqstJB-66oCYu6XP5pGreS2tEfQ5xX0vjB0RYwDYVQ2aZe9cL_Zqx2qbD5SQop1wjWB5wAhx0FNJrDw';
+  'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODkyMDU5NTAsImlkIjoiMDFhMDk0ZmItZGUxMC03NTNkLTgzNmUtZjc4MGM1NjM1MzVkIiwia2lkIjoiZ19GZi1OeUdDTTJBelpadnhkYjdwek9YSXpNa0FGOHMwQ2RPMmtUQWRoMCIsInJpZCI6ImJjNDZkZjQwLTNhMTUtNGQ5NC05YWMwLTc5ZDMwYzNmYjc0YiJ9.hdkthzep3WYl510TAbtzCV8zUXR-VWd0U4ZIDIT8LtkZcLL63MWzB8_pnNmXX-mSUIdV4SovklRJKRZUa5QoDw';
 
 /**
  * Resolves the primary or custom plugin registry base endpoint.
@@ -222,31 +222,31 @@ export async function executeTursoQuery(
 export async function fetchTursoPlugins(): Promise<RawRegistryPlugin[]> {
   const sql = `
     SELECT 
-      p.id,
-      p.name,
-      p.description,
-      p.category,
-      p.tags,
-      p.icon,
-      p.repo_url,
-      p.banner_url,
-      p.downloads,
-      p.stars,
-      p.is_verified,
+      e.id,
+      e.name,
+      e.description,
+      e.category,
+      e.tags,
+      e.icon,
+      e.repo_url,
+      e.banner_url,
+      e.downloads,
+      e.stars,
+      e.is_verified,
       a.id as author_id,
       a.github_username,
       a.display_name,
       a.avatar_url,
       (
-        SELECT pv.version
-        FROM plugin_versions pv
-        WHERE pv.plugin_id = p.id
-        ORDER BY pv.published_at DESC
+        SELECT ev.version
+        FROM extension_versions ev
+        WHERE ev.extension_id = e.id
+        ORDER BY ev.published_at DESC
         LIMIT 1
       ) as latest_version
-    FROM plugins p
-    JOIN authors a ON p.author_id = a.id
-    ORDER BY p.downloads DESC
+    FROM extensions e
+    JOIN authors a ON e.author_id = a.id
+    ORDER BY e.downloads DESC
   `;
 
   const rows = await executeTursoQuery(sql);
@@ -288,10 +288,10 @@ export async function fetchTursoPlugins(): Promise<RawRegistryPlugin[]> {
  */
 export async function fetchTursoReadme(pluginId: string): Promise<string | null> {
   const sql = `
-    SELECT pv.readme
-    FROM plugin_versions pv
-    WHERE pv.plugin_id = ?
-    ORDER BY pv.published_at DESC
+    SELECT ev.readme
+    FROM extension_versions ev
+    WHERE ev.extension_id = ?
+    ORDER BY ev.published_at DESC
     LIMIT 1
   `;
   try {
@@ -317,8 +317,8 @@ export async function fetchTursoPluginBundle(pluginId: string): Promise<TursoBun
       styles_code,
       manifest_json,
       readme
-    FROM plugin_versions
-    WHERE plugin_id = ?
+    FROM extension_versions
+    WHERE extension_id = ?
     ORDER BY published_at DESC
     LIMIT 1
   `;

@@ -19,9 +19,9 @@ export interface Author {
 }
 
 /**
- * Raw plugin database row representation.
+ * Raw extension database row representation.
  */
-export interface PluginRow {
+export interface ExtensionRow {
   id: string;
   name: string;
   description: string;
@@ -38,12 +38,14 @@ export interface PluginRow {
   updated_at: string;
 }
 
+export type PluginRow = ExtensionRow;
+
 /**
- * Raw plugin version database row representation.
+ * Raw extension version database row representation.
  */
-export interface PluginVersionRow {
+export interface ExtensionVersionRow {
   id: string;
-  plugin_id: string;
+  extension_id: string;
   version: string;
   min_app_version: string | null;
   readme: string | null;
@@ -55,6 +57,8 @@ export interface PluginVersionRow {
   sha256: string | null;
   published_at: string;
 }
+
+export type PluginVersionRow = ExtensionVersionRow & { plugin_id?: string };
 
 /**
  * Public extension manifest shape conforming to Noether extension specifications.

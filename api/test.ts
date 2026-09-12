@@ -16,7 +16,7 @@ async function runTests() {
   console.log('[Test 1] Initializing database and verifying connectivity...');
   await initDatabase();
   const db = getDb();
-  const countRes = await db.execute('SELECT COUNT(*) as count FROM plugins');
+  const countRes = await db.execute('SELECT COUNT(*) as count FROM extensions');
   const initialPluginCount = Number(countRes.rows[0].count);
   console.log(`✓ Database initialized and connected with ${initialPluginCount} extensions.`);
 
@@ -333,7 +333,7 @@ async function runTests() {
   console.log('✓ Direct Turso bundle, styles, and manifest delivery verified.');
 
   console.log('\n[Test 16] Cleaning up temporary test records...');
-  await db.execute("DELETE FROM plugins WHERE id IN ('markdown-mindmap', 'code-runner', 'custom-bundle-test')");
+  await db.execute("DELETE FROM extensions WHERE id IN ('markdown-mindmap', 'code-runner', 'custom-bundle-test')");
   await db.execute("DELETE FROM authors WHERE id IN ('author_devjane', 'author_coder_bob', 'author_turso_tester', 'author_impostor_user')");
   console.log('✓ Cleaned up test records from database.');
 
@@ -349,7 +349,7 @@ async function main() {
     console.error('Test verification failed:', err);
     try {
       const db = getDb();
-      await db.execute("DELETE FROM plugins WHERE id IN ('markdown-mindmap', 'code-runner', 'custom-bundle-test')");
+      await db.execute("DELETE FROM extensions WHERE id IN ('markdown-mindmap', 'code-runner', 'custom-bundle-test')");
       await db.execute("DELETE FROM authors WHERE id IN ('author_devjane', 'author_coder_bob', 'author_turso_tester', 'author_impostor_user')");
     } catch {}
     process.exit(1);

@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS authors (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Plugins table: Central catalogue of published community extensions and plugins
-CREATE TABLE IF NOT EXISTS plugins (
+-- Extensions table: Central catalogue of published community extensions
+CREATE TABLE IF NOT EXISTS extensions (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -30,10 +30,10 @@ CREATE TABLE IF NOT EXISTS plugins (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Plugin Versions table: Release bundles, metadata, and SemVer histories
-CREATE TABLE IF NOT EXISTS plugin_versions (
+-- Extension Versions table: Release bundles, metadata, and SemVer histories
+CREATE TABLE IF NOT EXISTS extension_versions (
   id TEXT PRIMARY KEY,
-  plugin_id TEXT NOT NULL REFERENCES plugins(id) ON DELETE CASCADE,
+  extension_id TEXT NOT NULL REFERENCES extensions(id) ON DELETE CASCADE,
   version TEXT NOT NULL,
   min_app_version TEXT,
   readme TEXT,
@@ -44,14 +44,14 @@ CREATE TABLE IF NOT EXISTS plugin_versions (
   manifest_json TEXT NOT NULL,
   sha256 TEXT,
   published_at TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (plugin_id) REFERENCES plugins(id) ON DELETE CASCADE
+  FOREIGN KEY (extension_id) REFERENCES extensions(id) ON DELETE CASCADE
 );
 
 -- Indexes for performance and query optimization
-CREATE INDEX IF NOT EXISTS idx_plugins_category ON plugins(category);
-CREATE INDEX IF NOT EXISTS idx_plugins_downloads ON plugins(downloads DESC);
-CREATE INDEX IF NOT EXISTS idx_plugins_stars ON plugins(stars DESC);
-CREATE INDEX IF NOT EXISTS idx_plugins_created_at ON plugins(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_plugins_author_id ON plugins(author_id);
-CREATE INDEX IF NOT EXISTS idx_plugin_versions_plugin_id ON plugin_versions(plugin_id);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_plugin_versions_unique_ver ON plugin_versions(plugin_id, version);
+CREATE INDEX IF NOT EXISTS idx_extensions_category ON extensions(category);
+CREATE INDEX IF NOT EXISTS idx_extensions_downloads ON extensions(downloads DESC);
+CREATE INDEX IF NOT EXISTS idx_extensions_stars ON extensions(stars DESC);
+CREATE INDEX IF NOT EXISTS idx_extensions_created_at ON extensions(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_extensions_author_id ON extensions(author_id);
+CREATE INDEX IF NOT EXISTS idx_extension_versions_extension_id ON extension_versions(extension_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_extension_versions_unique_ver ON extension_versions(extension_id, version);
