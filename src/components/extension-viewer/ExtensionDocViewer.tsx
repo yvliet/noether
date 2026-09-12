@@ -15,6 +15,7 @@ import {
   Download01Icon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BookOpen01Icon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { DocLayoutWrapper } from '@/components/layout/DocLayoutWrapper';
@@ -751,7 +752,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
       {/* 1. Shared Modular Document Sub-Header (Standard layout matching notes & graph view) */}
       <PageSubHeader
         title={meta.name}
-        icon={meta.isCore ? <PackageIcon size={13} /> : <PuzzleIcon size={13} />}
+        icon={<BookOpen01Icon size={13} />}
         document={null}
         showReadingToggle={false}
         showBookmark={false}
@@ -848,21 +849,18 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
 
         {/* Document Header (Title + In-Document Properties) */}
         <div className="relative group/title">
-          {/* App Icon */}
-          <div className="mb-3.5">
+          {/* Document Title Header with Left App Icon */}
+          <div className="mb-4 flex items-center gap-3.5">
             <ExtensionAppIcon
               icon={meta.icon}
               iconConfig={meta.iconConfig}
               name={meta.name}
-              size={48}
+              size={42}
+              className="shrink-0"
             />
-          </div>
-
-          {/* Document Title Header */}
-          <div className="mb-3 relative">
             <h1
               style={{ fontSize: 'calc(var(--editor-font-size, 16px) * 2.3)' }}
-              className="w-full font-bold text-[var(--noether-text-primary)] pb-2 font-text tracking-tight leading-tight select-text"
+              className="font-bold text-[var(--noether-text-primary)] font-text tracking-tight leading-tight select-text"
             >
               {meta.name}
             </h1>
