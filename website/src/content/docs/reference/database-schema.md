@@ -175,7 +175,7 @@ import { Extension } from 'noether';
 export default class FlashcardsExtension extends Extension {
   async onload() {
     await this.app.db.execute(`
-      CREATE TABLE IF NOT EXISTS plugin_flashcards (
+      CREATE TABLE IF NOT EXISTS ext_flashcards (
         id TEXT PRIMARY KEY,
         document_id TEXT NOT NULL,
         card_front TEXT NOT NULL,
@@ -184,7 +184,7 @@ export default class FlashcardsExtension extends Extension {
         stability REAL NOT NULL DEFAULT 1.0,
         difficulty REAL NOT NULL DEFAULT 5.0
       );
-      CREATE INDEX IF NOT EXISTS idx_flashcards_due ON plugin_flashcards(due_timestamp);
+      CREATE INDEX IF NOT EXISTS idx_flashcards_due ON ext_flashcards(due_timestamp);
     `);
   }
 

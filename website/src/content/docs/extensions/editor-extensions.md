@@ -3,7 +3,7 @@
 Extensions in Noether can integrate directly into the TipTap 2.x and ProseMirror Live Preview editor engine using `this.registerEditorPlugin()`.
 
 
-## 1. Registering an Editor Plugin
+## 1. Registering Editor Extensions & Middleware
 
 ---
 

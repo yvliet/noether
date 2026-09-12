@@ -2,9 +2,9 @@
 
 Noether turns disconnected documents into an interconnected web of knowledge through bidirectional linking, real-time relational backlinks, unlinked mention resolution, and an interactive 2D force-directed knowledge graph.
 
----
-
 ## 1. Bidirectional Linking with `[[Wikilinks]]`
+
+---
 
 In Noether, you connect ideas naturally without managing rigid folder taxonomies.
 
@@ -26,9 +26,10 @@ When you reference a note that does not yet exist on disk (e.g. `[[Future Resear
 - Clicking the link instantly creates the target Markdown file in your active Vault and navigates directly to it.
 - Your relational graph immediately tracks the edge, allowing top-down thought structuring without breaking your writing flow.
 
----
 
 ## 2. Persistent Visited Link Tracking
+
+---
 
 To provide a true native browsing feel and prevent you from losing orientation in deep research sessions, Noether implements **persistent visited link tracking**:
 
@@ -40,9 +41,10 @@ To provide a true native browsing feel and prevent you from losing orientation i
 - **Underline Modes**: Choose between *Always Underlined* or *Underline on Hover*.
 - **External Link Indicators**: Toggle clean trailing arrow icons (`↗`) on external HTTP/HTTPS links.
 
----
 
 ## 3. Backlinks, Outgoing Links & Unlinked Mentions
+
+---
 
 The **Backlinks Pane** in the right sidebar (`Ctrl+Shift+\`) provides a 360-degree view of how any document connects to your broader vault.
 
@@ -75,9 +77,10 @@ Even in vaults containing over 50,000 notes, backlink queries return in under 2m
 ### Unlinked Mentions
 Noether automatically scans notes for text occurrences that match existing document titles or aliases without explicit `[[...]]` brackets. Clicking **[Link Idea]** transforms the plain text into an active bidirectional wikilink with zero typing required.
 
----
 
 ## 4. 2D Force-Directed Knowledge Graph
+
+---
 
 The **Knowledge Graph View** provides a macroscopic visual model of your entire second brain.
 

@@ -4,9 +4,9 @@ Noether features an advanced, high-performance **Live Preview editor** engineere
 
 Noether coordinates the editor through an immediate memory-to-disk pipeline: **TipTap / ProseMirror Layer** (active in-memory state with sub-8ms transaction mapping) → **Debounced Persistence Engine** (300ms save debounce with AST metadata extraction) → **Universal Plain CommonMark Storage** (authoritative `.md` on disk).
 
----
-
 ## 1. Live Preview vs. Source Mode
+
+---
 
 Noether provides two synchronized editing experiences:
 
@@ -15,9 +15,10 @@ Noether provides two synchronized editing experiences:
 
 You can switch between modes anytime using the document options menu (`...` in the top right) or via the Command Palette (`Ctrl+K` → *Toggle Source Mode*).
 
----
 
 ## 2. Typing Performance & Decoration Mapping
+
+---
 
 Many web-based editors suffer from severe input lag when opening documents exceeding 20,000 words. Noether guarantees a **sub-8ms input latency** on documents of 100,000+ words through a series of systems-level invariants:
 
@@ -26,9 +27,10 @@ Many web-based editors suffer from severe input lag when opening documents excee
 - **Formula Memoization**: KaTeX rendering trees are cached in an LRU memory buffer, preventing repetitive LaTeX parsing during cursor movement.
 - **Bounded Undo History**: ProseMirror history depth is bounded to 50 snapshots to maintain a lean, constant-size memory working set.
 
----
 
 ## 3. Formatting & Keyboard Shortcuts
+
+---
 
 Noether supports standard CommonMark syntax and intuitive desktop shortcuts:
 
@@ -61,9 +63,10 @@ Typing opening characters like `(`, `[`, `{`, `"`, `'`, or `` ` `` around an act
 - Pressing `Shift+Tab` unindents the list item.
 - Pressing `Enter` on an empty list item breaks out of the list back to standard paragraph text.
 
----
 
 ## 4. Slash Commands Menu (`/`)
+
+---
 
 Pressing `/` on an empty line or after a space opens the **Slash Commands Palette**. This provides instant access to rich block insertion without taking your hands off the keyboard.
 
@@ -83,9 +86,10 @@ Pressing `/` on an empty line or after a space opens the **Slash Commands Palett
 
 Type to filter commands (e.g. `/tab` for Table, `/cal` for Callout, `/mat` for Math), and press `Enter` or `Tab` to insert.
 
----
 
 ## 5. Mathematical Formulas & KaTeX
+
+---
 
 Noether provides deep mathematical typesetting with both inline and multi-line display equations powered by KaTeX and MathLive.
 
@@ -112,9 +116,10 @@ When you click on a math formula chip, Noether opens an interactive **MathLive O
 
 Formulas render with instant mathematical typesetting while preserving the raw LaTeX code directly in your markdown file.
 
----
 
 ## 6. Interactive Visual Tables
+
+---
 
 Noether features a fully visual table editing engine that eliminates the friction of hand-formatting raw ASCII markdown tables.
 
@@ -133,7 +138,6 @@ Noether features a fully visual table editing engine that eliminates the frictio
 - **Floating Toolbar**: Highlight cells to toggle header rows, change column alignments (left, center, right), clear cell contents, or delete rows and columns.
 - **Keyboard Navigation**: Press `Tab` to navigate to the next cell; pressing `Tab` in the final cell automatically appends a new row. Press `Shift+Tab` to navigate backward.
 
----
 
 ## 7. Callouts & Alerts
 ---
@@ -223,9 +227,10 @@ You can customize individual callout types or create custom types using CSS snip
 }
 ```
 
----
 
 ## 8. Media & Document Embeds
+
+---
 
 Noether supports embedding local attachments and cross-document transclusions using the `![[...]]` syntax:
 
@@ -235,9 +240,10 @@ Noether supports embedding local attachments and cross-document transclusions us
 - **PDF Documents**: `![[whitepaper.pdf]]` renders an embedded viewer pane.
 - **Note Transclusions**: `![[Architecture Overview]]` embeds the live content of another note directly inside the active document.
 
----
 
 ## 9. Intelligent Web Clip Cleaner
+
+---
 
 Copying content from Wikipedia, research papers, or web articles often clutters notes with unwanted citation brackets (e.g. `[1]`, `[citation needed]`) and messy HTML inline tags.
 
@@ -247,9 +253,10 @@ Noether includes an **Intelligent Paste Pipeline**:
 - Preserves code fences with correct syntax language tags.
 - Removes tracking query parameters from pasted URLs.
 
----
 
 ## 10. Hierarchical Folding
+
+---
 
 To keep extensive notes organized and navigable:
 - Hover over any heading (`# H1` through `###### H6`) or list item to reveal the **fold chevron** (`▾`).

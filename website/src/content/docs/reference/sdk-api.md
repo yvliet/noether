@@ -2,12 +2,10 @@
 
 The Noether Extension SDK (`src/sdk/index.ts`) is the official public programming interface for building extensions and themes. It exposes base classes, typed service registries, event subscribers, and data models while maintaining strict separation from host application internals.
 
-
 ## 1. The `Extension` Base Class
-
 ---
 
-Every Noether extension extends the `Extension` (or `Plugin`) base class. It provides automated resource tracking so that all commands, event listeners, status bar widgets, and tools registered through its methods are automatically disposed of when the extension is disabled or reloaded.
+Every Noether extension extends the `Extension` base class. It provides automated resource tracking so that all commands, event listeners, status bar widgets, and tools registered through its methods are automatically disposed of when the extension is disabled or reloaded.
 
 ```typescript
 import { Extension, NoetherApp } from 'noether';
@@ -35,7 +33,7 @@ export default class MyCustomExtension extends Extension {
 
 | Method | Description |
 | :--- | :--- |
-| `this.addCommand(command: CommandItem): void` | Registers an action into the Command Palette (`Ctrl+K` / `Cmd+K`). |
+| `this.addCommand(command: CommandItem): void` | Registers an action into the Command Palette (`Ctrl+K` / `Cmd+K`). Supports dynamic stateful titles, dynamic icons, search aliases, and contextual enablement. |
 | `this.addActionRailIcon(id, icon, tooltip, callback, order?): void` | Adds a high-frequency icon trigger to the left vertical Action Rail / Ribbon. |
 | `this.addStatusBarItem(item: StatusBarItem): HTMLElement` | Adds a status indicator or live counter to the bottom status bar. |
 | `this.addSettingTab(tab: ExtensionSettingTab): void` | Injects a custom configuration panel into Noether Settings. |
@@ -45,21 +43,42 @@ export default class MyCustomExtension extends Extension {
 | `this.registerPortalSlot(slot: PortalSlotDefinition): void` | Injects React components into dynamic application portal slots. |
 | `this.registerWorkerTask(task: WorkerTaskDefinition): void` | Registers an off-thread background Web Worker routine. |
 
+### The `CommandItem` Specification
+
+```typescript
+export interface CommandItem {
+  /** Unique command identifier (automatically prefixed with extension ID). */
+  id: string;
+  /** Static display title or dynamic function returning the stateful action label. */
+  title: string | ((app: NoetherApp) => string);
+  /** Grouping section name (e.g. 'View', 'Editor', 'Navigation', 'Files'). */
+  section?: string;
+  /** Static ReactNode or dynamic function returning a stateful icon. */
+  icon?: React.ReactNode | ((app: NoetherApp) => React.ReactNode);
+  /** Keyboard shortcut combination string (e.g. 'Ctrl+Shift+B'). */
+  hotkey?: string;
+  /** Search keywords and aliases that match this command in the palette. */
+  aliases?: string[];
+  /** Handler function executed when triggered. */
+  action: (app: NoetherApp) => void | Promise<void>;
+  /** Optional predicate determining if the command is currently active in this context. */
+  isEnabled?: (app: NoetherApp) => boolean;
+}
+```
 
 ## 2. The `NoetherApp` Container
-
 ---
 
 Extensions access host capabilities through the `NoetherApp` instance (`this.app`).
 
 ```typescript
 export interface NoetherApp {
-  /** Document navigation, tab management, dialogs, and notifications */
+  /** Document navigation, tab management, sidebars, dialogs, and notifications */
   workspace: WorkspaceAPI;
-  /** Active Vault directory, recent vaults, and workspace switching */
+  /** Active Vault directory, recent vaults, and note management */
   vault: VaultAPI;
-  /** File read, write, rename, and directory operations */
-  vault: VaultAPI;
+  /** Active ProseMirror / TipTap editor controller */
+  editor: EditorAPI;
   /** In-memory and disk SQLite database operations */
   db: ExtensionDatabaseManager;
   /** Central typed event bus */
@@ -71,27 +90,33 @@ export interface NoetherApp {
 
 ### Workspace API (`app.workspace`)
 
-- `app.workspace.activeDocument`: Retrieves the currently opened `DocumentItem` or `null`.
-- `app.workspace.openDocument(idOrPath: string)`: Opens a document in the active editor tab.
-- `app.workspace.showToast(message: string, type?: 'info' | 'success' | 'warning' | 'error')`: Shows a non-blocking toast notification.
-- `app.workspace.showConfirmDialog(config: ConfirmDialogConfig)`: Opens an interactive confirmation modal dialog.
-- `app.workspace.showInputDialog(config: InputDialogConfig)`: Opens a text prompt dialog.
+- `app.workspace.activeTabId`: Readonly ID of the active workspace tab.
+- `app.workspace.mainViewMode`: Current view mode (`'document'` | `'canvas'`).
+- `app.workspace.isSidebarOpen(side: 'left' | 'right'): boolean`: Returns whether the specified sidebar panel is currently expanded.
+- `app.workspace.toggleLeftSidebar(): void`: Toggles the left file explorer sidebar.
+- `app.workspace.toggleRightSidebar(): void`: Toggles the right backlinks and outline sidebar.
+- `app.workspace.revealInFileTree(documentId: string): void`: Opens the left sidebar, activates the files tab, and highlights the note in the document tree.
+- `app.workspace.isSplitViewOpen(): boolean`: Returns whether the editor is currently split side-by-side.
+- `app.workspace.toggleSplitView(): void`: Toggles side-by-side editor pane splitting.
+- `app.workspace.openTab(documentId: string, title?: string): void`: Opens a document in a tab.
+- `app.workspace.closeTab(tabId: string): void`: Closes an open tab.
+- `app.workspace.showToast(message: string, type?: 'info' | 'success' | 'warning' | 'error')`: Shows an instant, non-blocking toast notification.
+- `app.workspace.openConfirmDialog(config: ConfirmDialogConfig)`: Opens an interactive confirmation modal with custom title, message, optional `subtext`, danger styling, and optional `onDontAskAgain` callback.
+- `app.workspace.openInputDialog(config: InputDialogConfig)`: Opens a text prompt dialog.
+- `app.workspace.openCommandPalette(): void`: Launches the universal Command Palette.
 
 ### Vault API (`app.vault`)
 
+- `app.vault.activeDocument`: Retrieves the currently opened `DocumentItem` or `null`.
+- `app.vault.documents`: Readonly array of all documents and folders in the active Vault.
 - `app.vault.vaultPath`: Absolute filesystem path to the currently opened Vault.
-- `app.vault.switchVault(path: string)`: Programmatically switches the active Vault.
-- `app.vault.getRecentVaults()`: Returns a list of recently opened Vault paths and names.
-
-### Vault API (`app.vault`)
-
-- `app.vault.read(path: string): Promise<string>`: Reads a raw UTF-8 file from the Vault.
-- `app.vault.write(path: string, content: string): Promise<void>`: Writes text to disk.
-- `app.vault.delete(path: string): Promise<void>`: Moves a file to the Vault `.trash/` folder or deletes it.
-
+- `app.vault.vaultName`: Name of the active Vault.
+- `app.vault.createNewNote(title: string, parentId?: string | null): Promise<DocumentItem | null>`: Creates a new note.
+- `app.vault.deleteDocument(id: string): Promise<void>`: Moves a document to the Vault `.trash/` folder.
+- `app.vault.toggleBookmark(id: string): Promise<boolean>`: Toggles the bookmark status of a document.
+- `app.vault.readDocument(id: string): Promise<DocumentItem | null>`: Retrieves full note content and metadata from the SQLite index.
 
 ## 3. The `EventBus`
-
 ---
 
 The `EventBus` enables loosely coupled communication between the Noether core and extensions. Always subscribe through `this.registerEvent(this.app.events.on(...))` to prevent memory leaks:
@@ -130,9 +155,7 @@ this.registerEvent(
 | `vault:switched` | `{ vaultPath }` | User switches to a different Vault folder. |
 | `tag:renamed` | `{ oldTag, newTag }` | A tag taxonomy is refactored across notes. |
 
-
 ## 4. Inversion of Control: `SlotRegistry`
-
 ---
 
 Noether provides dynamic React portal slots that allow extensions to mount UI components directly into native application shell regions:
@@ -160,9 +183,7 @@ this.registerPortalSlot({
 - `sidebar:left:bottom`: Docked below the left file tree.
 - `sidebar:right:bottom`: Docked below the backlinks outline panel.
 
-
 ## 5. Background Web Worker Pool (`ExtensionWorkerPool`)
-
 ---
 
 To ensure the UI thread remains completely fluid (sub-8ms input latency), heavy computational tasks (such as large-scale natural language processing, vector embeddings, or dense PDF parsing) can be offloaded to the worker pool:
@@ -175,9 +196,7 @@ const result = await this.app.workerPool.runTask({
 });
 ```
 
-
 ## 6. Reactive React Hooks (`@noether/react` and `noether`)
-
 ---
 
 Extensions rendering React components can import reactive hooks directly from `noether` or `@noether/react`. These hooks subscribe directly to host state changes using React 18 external store synchronization with zero state leakage:
@@ -238,9 +257,7 @@ export const MyExtensionView: React.FC = () => {
 | `useNoetherStore(key, selector)` | `TSelected` | Subscribes to host store slices with a selector function. |
 | `useToast()` | `(msg, type?) => void` | Returns a toast notification dispatcher. |
 
-
 ## 7. Inversion of Control Registries
-
 ---
 
 Noether decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:

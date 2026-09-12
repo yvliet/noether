@@ -19,9 +19,9 @@ Through a native stdio MCP server (`bin/noether-mcp-server.cjs`), external AI as
   Markdown Notes (*.md) • noether.sqlite (WAL) • Tasks • FSRS Deck
 ```
 
----
-
 ## 1. Built-in MCP Tools Reference
+
+---
 
 Noether exposes **13 structured RPC tools** directly to connected AI agents:
 
@@ -41,9 +41,10 @@ Noether exposes **13 structured RPC tools** directly to connected AI agents:
 | `tasks_get_all` | Tasks | Aggregates all open and completed `- [ ]` markdown tasks across the vault. |
 | `fsrs-spaced-repetition_get_due_cards` | Study | Retrieves flashcards currently due for active recall review. |
 
----
 
 ## 2. Connecting Claude Desktop
+
+---
 
 To connect Claude Desktop to your Noether notes, edit your Claude Desktop configuration file:
 
@@ -66,9 +67,10 @@ Add the `noether` entry under `mcpServers`:
 
 Restart Claude Desktop. The hammer icon (🛠️) will appear in the chat prompt, confirming that Noether tools are loaded.
 
----
 
 ## 3. Connecting Google Antigravity & Agent Runtimes
+
+---
 
 In Antigravity or standard MCP client configurations:
 
@@ -89,9 +91,10 @@ Now you can prompt your AI:
 
 The AI will call `noether_search_notes`, `tasks_get_all`, and `noether_get_backlinks` autonomously to produce a grounded response.
 
----
 
 ## 4. Connecting Cursor IDE
+
+---
 
 In Cursor:
 1. Open **Cursor Settings** (`Ctrl+,`).
@@ -102,9 +105,10 @@ In Cursor:
    - **Type**: `command`
    - **Command**: `node <path-to-noether>/bin/noether-mcp-server.cjs`
 
----
 
 ## 5. Built-in Noether Copilot (In-App AI Chat)
+
+---
 
 In addition to external MCP clients, Noether includes a pre-bundled showcase extension: **Copilot for Noether** (`noether-copilot`).
 

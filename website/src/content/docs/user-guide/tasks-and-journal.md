@@ -2,16 +2,16 @@
 
 Noether eliminates the separation between note-taking, project tracking, and daily reflection. Through the **Global Tasks Dashboard** and **Daily Journal Engine**, your action items and daily scratchpads stay organized without requiring fragmented third-party productivity apps.
 
----
-
 ## 1. Centralized Tasks Dashboard
+
+---
 
 In traditional Markdown systems, task checkboxes (`- [ ]`) scattered across dozens of project notes often go forgotten. Noether indexes every task in your Vault into a unified, actionable control center.
 
 ### Task Syntax
 Write tasks naturally in any note:
 ```markdown
-## Sprint Tasks
+### Sprint Tasks
 - [ ] Implement FTS5 diacritics tokenization #backend ^task-101
 - [x] Configure Tauri v2 memory limits
 - [ ] Design custom SVG folder icons #design
@@ -27,9 +27,9 @@ Write tasks naturally in any note:
 | • [ ] **Design custom SVG folder icons**<br />`#design` • `Icons.md` | • [ ] **Audit FSRS-4.5 retention curve**<br />`#fsrs` • `Algorithm.md` | • [x] ~~**TipTap 2.x Live Preview**~~<br />`#editor` • `Editor.md` |
 
 
----
-
 ## 2. Views & Two-Way Disk Synchronization
+
+---
 
 ### Kanban & List Modes
 - **Kanban Board**: Drag task cards between *To Do*, *In Progress*, and *Completed* columns.
@@ -43,9 +43,10 @@ When you check off a task or drag it into the *Completed* column in the Tasks Da
 3. Updates the `blocks` table in SQLite.
 4. Suppresses echo file reload loops, ensuring smooth UI continuity.
 
----
 
 ## 3. Daily Journal & Reflection
+
+---
 
 The **Journal** feature provides zero-friction capture for morning plans, meeting logs, and evening reflections.
 

@@ -7,7 +7,9 @@ At first I thought, *“Obsidian is there.”*
 > [!QUOTE]
 > “Nah, I don't want to use Obsidian. It seems way too complicated and... too intimidating.”
 
-And thus, I made Noether as a fun project born out of that thought. I set out to make something lighter, much more modular than Obsidian, and delightfully easy to use with native built-in capabilities: pairing plain Markdown files on disk with instant desktop responsiveness, clean relational SQLite indexing, and native Model Context Protocol (MCP) AI tooling.
+And thus, I made Noether as a fun project born out of that thought. I set out to make something lighter, much more modular than Obsidian, and delightfully easy to use. Beyond raw speed, I craved a significantly cleaner UI: zero visual clutter, balanced spacing that makes scanning effortless, and a refined user experience where every tool feels immediately intuitive without getting lost in the settings page (real experience, by the way).
+
+That modularity goes deeper than just toggling features on and off. In Noether, extensions build directly on standard host design tokens and shared UI primitives, so custom extensions look and feel truly native from day one. They don't break or visually clash when you switch themes, and the app never turns into that chaotic, messy patchwork of outdated styles that often plagues Obsidian setups. Pairing plain Markdown files on disk with instant desktop responsiveness, clean relational SQLite indexing, and native Model Context Protocol (MCP) AI tooling created the ideal space: a calm, cohesive, clutter-free workspace that respects your attention.
 
 
 ## 1. Core Philosophy: Local-First & Sovereign Data
@@ -33,12 +35,12 @@ In Noether, individual workspaces or note vaults are called **Vaults**.
 A Vault is simply any standard folder on your filesystem that you designate as a Noether workspace. When you open or create a Vault, Noether establishes a hidden `.noether/` directory within that root folder to store local workspace state:
 
 ```
-My-Knowledge-Base/             <-- Vault Root Directory
-├── .noether/                   <-- Local Workspace Metadata & Cache
-│   ├── noether.sqlite          <-- Embedded native SQLite relational & FTS5 engine
-│   ├── noether.sqlite-wal      <-- SQLite Write-Ahead Log journal
-│   ├── settings.json         <-- Vault-specific settings & toggles
-│   └── extensions/           <-- Community and custom extensions
+My-Knowledge-Base/             ← Vault Root Directory
+├── .noether/                   ← Local Workspace Metadata & Cache
+│   ├── noether.sqlite          ← Embedded native SQLite relational & FTS5 engine
+│   ├── noether.sqlite-wal      ← SQLite Write-Ahead Log journal
+│   ├── settings.json         ← Vault-specific settings & toggles
+│   └── extensions/           ← Community and custom extensions
 │       └── word-counter/
 │           ├── manifest.json
 │           └── main.js
@@ -95,7 +97,7 @@ Noether resolves this tension through a **Dual-Storage Architecture**:
 
 ---
 
-Noether is structured as a **micro-kernel**: internal core features and external community plugins share the identical extension runtime.
+Noether is structured as a **micro-kernel**: internal core features and external community extensions share the identical extension runtime.
 
 - **Unified Extension Model**: Features like Graph View, Infinite Canvas, FSRS Spaced-Repetition Flashcards, Task Management, Daily Notes, and Backlinks are all constructed using the Noether Extension SDK (`src/sdk`).
 - **Zero Native Core Leakage**: Host application internals remain strictly decoupled from extensions. Extensions interact through declared Inversion of Control (IoC) registries and an asynchronous typed `EventBus`.
@@ -116,4 +118,4 @@ Ready to dive in?
 - [[AI Assistants & MCP Tools]]: Connect Claude Desktop, Antigravity, and Cursor via MCP.
 - [[Dual-Storage Architecture]]: Deep-dive into file synchronization and SQLite schemas.
 - [[Micro-Kernel & Extension Architecture]]: Understand core isolation and extension runtimes.
-- [[Plugin Quick Start]]: Build your first Noether extension in 5 minutes.
+- [[Extension Quick Start]]: Build your first Noether extension in 5 minutes.

@@ -125,7 +125,7 @@ You can validate your `manifest.json` using the official JSON Schema:
 
 When Noether boots or loads a new extension, it runs validation on `manifest.json`. Common validation failures include:
 
-1. **Invalid ID Format**: IDs with uppercase letters, spaces, or special characters (`WordCounter` or `my_plugin`) will fail. Use kebab-case: `word-counter` or `my-plugin`.
+1. **Invalid ID Format**: IDs with uppercase letters, spaces, or special characters (`WordCounter` or `my_extension`) will fail. Use kebab-case: `word-counter` or `my-extension`.
 2. **Missing Required Fields**: Omitting `description`, `version`, or `name` prevents the extension from loading.
 3. **App Version Mismatch**: If `minAppVersion` is higher than the currently running Noether application version, the extension is disabled with an incompatibility notice.
 
@@ -134,7 +134,7 @@ When Noether boots or loads a new extension, it runs validation on `manifest.jso
 
 ---
 
-- [[Plugin Quick Start]]: Build and run your first extension with a valid manifest.
+- [[Extension Quick Start]]: Build and run your first extension with a valid manifest.
 - [[Extension Points Reference]]: Register commands, ribbon icons, and status bar items.
-- [[Plugin Submission Requirements]]: Guidelines for packaging and distribution.
+- [[Extension Submission Requirements]]: Guidelines for packaging and distribution.
 - [[Developer Policies & Guidelines]]: Best practices for privacy and local-first architecture.

@@ -1,6 +1,6 @@
 # Extension Points Reference
 
-Noether provides a rich set of declarative extension points allowing plugins to seamlessly inject buttons, views, menus, and editor behaviors into the workspace.
+Noether provides a rich set of declarative extension points allowing extensions to seamlessly inject buttons, views, menus, and editor behaviors into the workspace.
 
 
 ## 1. Action Rail (Left Ribbon Toolbar)
@@ -34,20 +34,26 @@ export default class ActionRailExample extends Extension {
 
 ---
 
-Commands appear in Noether's searchable Command Palette and can be bound to custom keyboard shortcuts.
+Commands appear in Noether's searchable Command Palette and can be bound to custom keyboard shortcuts. Noether supports dynamic stateful titles, dynamic icons, search aliases, and contextual enablement:
 
 ```typescript
 this.addCommand({
-  id: 'insert-timestamp',
-  title: 'Insert Current ISO Timestamp',
-  section: 'Editor Actions',
-  hotkey: 'Ctrl+Alt+T',
-  allowInInput: true, // Enables firing even when an input or editor has focus
+  id: 'toggle-view-mode',
+  // Dynamic functional title indicating current stateful action
+  title: (app: NoetherApp) =>
+    app.settings.defaultTabMode === 'Reading view' ? 'Switch to editing view' : 'Switch to reading view',
+  section: 'View',
+  hotkey: 'Ctrl+E',
+  // Aliases ensure discoverability even when searching for "toggle"
+  aliases: ['toggle reading view', 'toggle editing view', 'reading view', 'editing view'],
+  // Grayed out and skipped during keyboard navigation when not in a valid context
+  isEnabled: (app: NoetherApp) => Boolean(app.vault.activeDocument),
   action: (app: NoetherApp) => {
-    const timestamp = new Date().toISOString();
-    app.workspace.showToast(`Timestamp: ${timestamp}`, 'success');
+    const cur = app.settings.defaultTabMode;
+    const next = cur === 'Reading view' ? 'Editing view' : 'Reading view';
+    app.settings.setDefaultTabMode(next);
   },
-  isVisible: (app: NoetherApp) => true, // Optional conditional filter
+  isVisible: (app: NoetherApp) => true,
 });
 ```
 

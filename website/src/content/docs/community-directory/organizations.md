@@ -34,4 +34,4 @@ For organization-scoped extensions, I recommend prefixing your extension `id` wi
 
 This ensures clear brand recognition and prevents collisions with general community utilities.
 
-To build and test extensions with your team, follow [[Plugin Quick Start]] and [[Extension Points Reference]].
+To build and test extensions with your team, follow [[Extension Quick Start]] and [[Extension Points Reference]].

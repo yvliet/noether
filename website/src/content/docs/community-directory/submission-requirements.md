@@ -1,10 +1,8 @@
-# Plugin Submission Requirements
+# Extension Submission Requirements
 
 These guidelines define the standards that extensions must meet to ensure security, reliability, and code quality across the Noether ecosystem.
 
-
 ## 1. Manifest Requirements
-
 ---
 
 - `id`: Lowercase alphanumeric string with hyphens. Must be unique.
@@ -16,19 +14,15 @@ These guidelines define the standards that extensions must meet to ensure securi
 
 See [[Manifest Specification]] for the complete schema.
 
-
 ## 2. Code Quality & Bundling
-
 ---
 
 - **Single Bundle**: Extensions must compile into a self-contained `main.js` bundle (CommonJS or ESM).
 - **No Unused Boilerplate**: Remove sample counter buttons, debug logs, and unused boilerplate code before publishing.
-- **Strict Native Core Isolation**: Plugins must never import native core paths. Only import from the public `noether` SDK module. Read [[Micro-Kernel & Extension Architecture]].
-- **Proper Command IDs**: Do not include your plugin ID in the `id` field passed to `this.addCommand()`; Noether prefixes it automatically.
-
+- **Strict Native Core Isolation**: Extensions must never import native core paths. Only import from the public `noether` SDK module. Read [[Micro-Kernel & Extension Architecture]].
+- **Proper Command IDs**: Do not include your extension ID in the `id` field passed to `this.addCommand()`; Noether prefixes it automatically.
 
 ## 3. Financial Support & Links
-
 ---
 
 If you accept donations or patronage for your open-source work:

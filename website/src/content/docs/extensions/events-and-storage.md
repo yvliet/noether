@@ -61,27 +61,27 @@ export default class EventWatcherExtension extends Extension {
 
 ---
 
-For simple plugin configuration (such as API keys, user preferences, or toggle states), use `this.loadData()` and `this.saveData()`. Data is serialized as JSON in `.noether/extensions/<plugin-id>/data.json`.
+For simple extension configuration (such as API keys, user preferences, or toggle states), use `this.loadData()` and `this.saveData()`. Data is serialized as JSON in `.noether/extensions/<extension-id>/data.json`.
 
 ```typescript
-interface MyPluginConfig {
+interface MyExtensionConfig {
   autoSummarize: boolean;
   refreshInterval: number;
   tagsToWatch: string[];
 }
 
-const DEFAULT_CONFIG: MyPluginConfig = {
+const DEFAULT_CONFIG: MyExtensionConfig = {
   autoSummarize: false,
   refreshInterval: 300,
   tagsToWatch: ['#project', '#review'],
 };
 
 export default class ConfigurableExtension extends Extension {
-  private config: MyPluginConfig = DEFAULT_CONFIG;
+  private config: MyExtensionConfig = DEFAULT_CONFIG;
 
   async onload() {
     // Load stored settings or fall back to defaults
-    const loaded = await this.loadData<MyPluginConfig>();
+    const loaded = await this.loadData<MyExtensionConfig>();
     this.config = Object.assign({}, DEFAULT_CONFIG, loaded);
 
     console.log('Current config:', this.config);
@@ -179,7 +179,7 @@ export default class SpacedRepetitionExtension extends Extension {
 
 ### Features of `defineTable()`
 - **Foreign Key Cascade**: Columns referencing `documents(id)` with `onDelete: 'cascade'` are cleaned up automatically when the user deletes a note.
-- **Automated Versioned Migrations**: Declare a `migrations` map for seamless schema evolution across plugin versions.
+- **Automated Versioned Migrations**: Declare a `migrations` map for seamless schema evolution across extension versions.
 - **Teardown Safety**: When `teardownPolicy: 'drop-on-uninstall'` is specified, Noether removes the table upon extension uninstallation, leaving no database bloat behind.
 
 

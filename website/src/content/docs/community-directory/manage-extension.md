@@ -25,7 +25,7 @@ If your extension creates custom SQLite tables as described in [[Events & Relati
 async onload() {
   // Always use CREATE TABLE IF NOT EXISTS
   await this.app.db.execute(`
-    CREATE TABLE IF NOT EXISTS plugin_bookmarks (
+    CREATE TABLE IF NOT EXISTS ext_bookmarks (
       id TEXT PRIMARY KEY,
       url TEXT NOT NULL,
       title TEXT
@@ -35,7 +35,7 @@ async onload() {
   // Use try/catch for non-destructive column additions
   try {
     await this.app.db.execute(`
-      ALTER TABLE plugin_bookmarks ADD COLUMN favorite INTEGER DEFAULT 0;
+      ALTER TABLE ext_bookmarks ADD COLUMN favorite INTEGER DEFAULT 0;
     `);
   } catch {
     // Column already exists from previous version; safely continue

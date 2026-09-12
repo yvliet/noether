@@ -1,4 +1,4 @@
-# Plugin & Extension CSS Variables
+# Extension CSS Variables
 
 Standards and design tokens for styling custom extension UI components, dynamic React portal slots, sidebar views, settings tabs, and status bar badges.
 

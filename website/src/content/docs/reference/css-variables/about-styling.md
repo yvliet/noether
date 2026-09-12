@@ -12,7 +12,7 @@ Noether avoids hardcoded color hex values and proprietary CSS runtimes. Every vi
 ### Key Benefits
 - **Zero Layout Shifts**: Design tokens evaluate synchronously in the browser engine.
 - **Dark & Light Mode Support**: Themes provide definitions for dark mode (`:root`) and light mode (`.theme-light`).
-- **Seamless Extension Integration**: Extensions and plugins inherit host design tokens automatically.
+- **Seamless Extension Integration**: Extensions inherit host design tokens automatically.
 
 
 ## 2. Token Cascade & Scopes
@@ -26,7 +26,7 @@ Noether resolves styling rules using a clear cascade:
 | **Level 1: Host Base Defaults** | `noetherDark.ts` / `noetherLight.ts` fallback palette for standard core views |
 | **Level 2: Active Theme Overrides** | `.noether/themes/<theme>/theme.json` + `styles.css` custom palette tokens |
 | **Level 3: User Customizations** | Settings UI accent color selection, interface scale, and custom fonts |
-| **Level 4: Extension Custom Scopes** | Plugin-specific CSS namespaces (`.noether-ext-*`) inheriting standard variables |
+| **Level 4: Extension Custom Scopes** | Extension-specific CSS namespaces (`.noether-ext-*`) inheriting standard variables |
 
 
 ## 3. Dark & Light Theme Structure

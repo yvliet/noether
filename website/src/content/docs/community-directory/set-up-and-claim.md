@@ -41,5 +41,5 @@ Currently, extension development and ownership are tracked via public GitHub rep
 ---
 
 - Review the required manifest format in [[Manifest Specification]].
-- Ensure your extension satisfies [[Plugin Submission Requirements]].
+- Ensure your extension satisfies [[Extension Submission Requirements]].
 - Check my core principles in [[Developer Policies & Guidelines]].

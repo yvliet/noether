@@ -9,7 +9,7 @@ The Noether Community Directory connects creators with users who want to extend 
 
 Noether isolates all third-party community extensions from the native desktop binary. Community extensions are never baked into the native host distribution; instead, they are indexed and served on-demand from an edge-replicated Turso libSQL database:
 
-- **Turso Edge Registry**: Extension metadata, SemVer release histories, Markdown readmes, and compiled JavaScript bundles are stored directly inside libSQL edge database tables (`authors`, `plugins`, `plugin_versions`).
+- **Turso Edge Registry**: Extension metadata, SemVer release histories, Markdown readmes, and compiled JavaScript bundles are stored directly inside libSQL edge database tables.
 - **Dynamic In-App Discovery**: The Noether Marketplace queries the Turso registry over REST / libSQL HTTP endpoints with Stale-While-Revalidate (SWR) caching for instant 0ms initial render latency.
 - **One-Click Installation**: Installing an extension fetches the compiled `main.js` bundle and `manifest.json` from Turso, writes them into `<vault>/.noether/extensions/<id>/` on disk, and executes them inside the runtime sandbox.
 - **Strict Native Core Isolation**: True core extensions (`isCore: true`) provide fundamental host capabilities, while all community extensions remain modular, hot-swappable, and independently updatable.
@@ -43,7 +43,7 @@ My-Vault/
 
 ---
 
-- To build your first extension, follow [[Plugin Quick Start]].
+- To build your first extension, follow [[Extension Quick Start]].
 - To style custom themes, follow [[Build Your First Theme]].
 - To publish your extension to the Turso registry, follow [[Publishing Extensions & Marketplace Roadmap]].
 - Review privacy and performance standards in [[Developer Policies & Guidelines]].

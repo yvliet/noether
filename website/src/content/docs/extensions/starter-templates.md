@@ -250,7 +250,7 @@ Template demonstrating how to dynamically create custom SQLite tables, execute q
 #### `manifest.json`
 ```json
 {
-  "id": "relational-storage-plugin",
+  "id": "relational-storage-extension",
   "name": "Relational Storage Starter",
   "version": "1.0.0",
   "minAppVersion": "0.2.0",
@@ -269,21 +269,21 @@ export default class RelationalStorageExtension extends Extension {
   async onload(): Promise<void> {
     // 1. Dynamically initialize extension SQLite table
     await this.app.db.execute(`
-      CREATE TABLE IF NOT EXISTS plugin_reading_progress (
+      CREATE TABLE IF NOT EXISTS ext_reading_progress (
         document_id TEXT PRIMARY KEY,
         scroll_percentage REAL DEFAULT 0,
         completed INTEGER DEFAULT 0,
         last_read_at INTEGER
       );
       CREATE INDEX IF NOT EXISTS idx_reading_progress_date 
-      ON plugin_reading_progress (last_read_at);
+      ON ext_reading_progress (last_read_at);
     `);
 
     // 2. Listen to document deletions to keep table clean
     this.registerEvent(
       this.app.events.on('document:deleted', async (event) => {
         await this.app.db.execute(
-          'DELETE FROM plugin_reading_progress WHERE document_id = ?',
+          'DELETE FROM ext_reading_progress WHERE document_id = ?',
           [event.documentId]
         );
       })
@@ -292,13 +292,13 @@ export default class RelationalStorageExtension extends Extension {
     // 3. Register Command to Mark Active Note Completed
     this.addCommand({
       id: 'mark-completed',
-      title: 'Reading Progress: Mark Document Completed',
+      title: 'Mark Document Completed (Reading Progress)',
       action: async (app) => {
         const doc = app.workspace.activeDocument;
         if (!doc) return;
 
         await this.app.db.execute(
-          `INSERT INTO plugin_reading_progress (document_id, scroll_percentage, completed, last_read_at)
+          `INSERT INTO ext_reading_progress (document_id, scroll_percentage, completed, last_read_at)
            VALUES (?, 1.0, 1, ?)
            ON CONFLICT(document_id) DO UPDATE SET completed = 1, last_read_at = ?`,
           [doc.id, Date.now(), Date.now()]

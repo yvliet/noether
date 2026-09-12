@@ -2,9 +2,9 @@
 
 Noether incorporates a state-of-the-art **Spaced Repetition Review Engine** directly into your everyday note-taking workflow. Powered by the modern **FSRS-4.5 algorithm (Free Spaced Repetition Scheduler)** via `ts-fsrs`, Noether turns plain Markdown notes into high-efficiency active recall flashcards without requiring external apps like Anki.
 
----
-
 ## 1. Why FSRS-4.5 over Traditional SM-2?
+
+---
 
 Most legacy flashcard systems rely on the SuperMemo-2 (SM-2) algorithm from 1987, which uses heuristic "ease factors" that lead to card scheduling collapse (the "ease hell" trap).
 
@@ -14,19 +14,20 @@ Noether uses **FSRS-4.5**, a modern mathematical memory model based on empirical
 - **Target Retention Calibration**: Lets you configure an exact retention goal (e.g. 90%), dynamically calculating review intervals to achieve that rate with the fewest reviews possible.
 - **Adaptive Scheduling**: Card intervals expand exponentially when recalled easily and adjust smoothly when forgotten, without penalizing future ease indefinitely.
 
----
 
 ## 2. Inline Markdown Flashcard Syntax
 
+---
+
 You never have to switch into a dedicated card authoring menu. Write flashcards directly in your notes using three intuitive syntax formats:
 
-### 1. Concept Cards (`::`)
+### Concept Cards (`::`)
 A single-direction question and answer pair:
 ```markdown
 What is Write-Ahead Logging (WAL) in SQLite? :: A transaction log mechanism where changes are appended to a separate log file before modifying the primary database pages.
 ```
 
-### 2. Bidirectional Cards (`;;`)
+### Bidirectional Cards (`;;`)
 Generates **two** independent study cards (Forward: $A \to B$ and Reverse: $B \to A$), ideal for language learning, medical terminology, and code definitions:
 ```markdown
 Ephemeral Port Range ;; 49152 to 65535
@@ -34,7 +35,7 @@ Ephemeral Port Range ;; 49152 to 65535
 - Card 1 tests: *"Ephemeral Port Range"* $\to$ Reveals: *"49152 to 65535"*
 - Card 2 tests: *"49152 to 65535"* $\to$ Reveals: *"Ephemeral Port Range"*
 
-### 3. Cloze Deletion Cards (`{...}` or `==...==`)
+### Cloze Deletion Cards (`{...}` or `==...==`)
 Hide specific keywords within a contextual sentence:
 ```markdown
 In Noether, disk text files are the single source of truth, while {noether.sqlite} acts as an embedded relational query accelerator.
@@ -44,9 +45,10 @@ Or use standard Markdown highlights:
 The Tauri v2 architecture uses ==rusqlite== with WAL mode for native persistence.
 ```
 
----
 
 ## 3. The Study Review Deck
+
+---
 
 Launch the study session by clicking the **Flashcards** icon on the left Action Rail or selecting *Review Due Cards* from the Command Palette (`Ctrl+K`).
 
@@ -62,9 +64,10 @@ During a review session, Noether presents flashcards sequentially with prompt, a
 
 Estimated review intervals for each grade are calculated in real time by the FSRS algorithm and displayed directly on the rating buttons.
 
----
 
 ## 4. Background Reconciliation & Data Safety
+
+---
 
 - **Deterministic Card Keys**: Flashcards compute deterministic content hashes and document IDs. If you reorganize or rename your note files, Noether reconciles card history seamlessly.
 - **Relational Integrity**: Card review states (stability, difficulty, due dates, review logs) are stored in the local SQLite database.

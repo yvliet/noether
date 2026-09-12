@@ -16,9 +16,9 @@ Themes are stored within your active Vault in the `.noether/themes/` directory. 
 └── .noether/
     └── themes/
         └── my-custom-theme/
-            ├── manifest.json   <-- Theme metadata
-            ├── styles.css      <-- CSS variable overrides & rules
-            └── banner.png      <-- Optional preview thumbnail (400x250)
+            ├── manifest.json   ← Theme metadata
+            ├── styles.css      ← CSS variable overrides & rules
+            └── banner.png      ← Optional preview thumbnail (400x250)
 ```
 
 

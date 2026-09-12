@@ -32,7 +32,7 @@ Noether uses a layered hierarchy of background tokens to convey visual depth and
 ### Usage Example
 
 ```css
-.my-custom-plugin-card {
+.my-custom-extension-card {
   background-color: var(--noether-bg-card);
   border: 1px solid var(--noether-border-base);
   color: var(--noether-text-primary);
@@ -40,7 +40,7 @@ Noether uses a layered hierarchy of background tokens to convey visual depth and
   padding: 16px;
 }
 
-.my-custom-plugin-card:hover {
+.my-custom-extension-card:hover {
   background-color: var(--noether-bg-card-hover);
   border-color: var(--noether-border-strong);
 }

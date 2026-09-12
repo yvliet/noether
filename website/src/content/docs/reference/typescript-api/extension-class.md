@@ -1,6 +1,6 @@
 # TypeScript API: `Extension` Base Class
 
-The `Extension` base class (`src/sdk/Extension.ts`) is the primary entry point for all Noether plugins. It handles automatic lifecycle disposal, registry binding, and EventBus tracking.
+The `Extension` base class (`src/sdk/Extension.ts`) is the primary entry point for all Noether extensions. It handles automatic lifecycle disposal, registry binding, and EventBus tracking.
 
 
 ## 1. Class Overview

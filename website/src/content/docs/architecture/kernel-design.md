@@ -10,7 +10,7 @@ Noether is architected around a strict **micro-kernel** design. The host applica
 A fundamental architectural invariant in Noether is **strict native core isolation**:
 
 > [!IMPORTANT]
-> Native directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) must never import code, types, or models from extensions or plugins (`src/plugins/*`, `src/extensions/*`).
+> Native directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) must never import code, types, or models from extensions (`src/extensions/*`).
 
 All interaction between the host application and extensions is decoupled using:
 1. **The Noether SDK (`src/sdk`)**: A stable public contract exposing base classes, interfaces, and registry helpers.
@@ -21,8 +21,8 @@ All interaction between the host application and extensions is decoupled using:
 |:---|:---|
 | **Noether Extensions Layer** | Modular extensions consuming only the public SDK boundary |
 | **Core Built-ins** | Graph View, Infinite Canvas, Task Manager, FSRS Flashcards, Journal, Backlinks |
-| **Community & Custom** | Cascade Chat, AI Copilot, Quicknote, Custom User Plugins |
-| **Public SDK Surface (`src/sdk`)** | Stable host-extension contract decoupling kernel internals from plugins |
+| **Community & Custom** | Cascade Chat, AI Copilot, Quicknote, Custom User Extensions |
+| **Public SDK Surface (`src/sdk`)** | Stable host-extension contract decoupling kernel internals from extensions |
 | **Core Interfaces** | `Extension` base class, `NoetherApp` locator, Disposable Manager, Event Hooks |
 | **Tool Builder** | Schema builders, Typed MCP definitions, Settings API |
 | **Micro-Kernel IoC Registries** | Central inversion-of-control registries managed by the host application |
