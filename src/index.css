@@ -516,12 +516,25 @@ textarea::selection {
 }
 
 /* Window Drag Regions */
-.drag-region {
+.drag-region,
+header[data-noether-header] {
   -webkit-app-region: drag;
 }
 
-.no-drag {
+.no-drag,
+header[data-noether-header] [data-no-drag="true"],
+header[data-noether-header] button,
+header[data-noether-header] input,
+header[data-noether-header] [role="tab"],
+header[data-noether-header] [data-tab-id],
+header[data-noether-header] [data-dock-item-id],
+header[data-noether-header] [data-window-control] {
   -webkit-app-region: no-drag;
+}
+
+header[data-noether-header][data-item-interacting="true"],
+header[data-noether-header][data-item-interacting="true"] * {
+  -webkit-app-region: no-drag !important;
 }
 
 /* Quicknote is a floating card, so its full-screen backdrop must not block Noether controls. */

@@ -92,8 +92,20 @@ export function isItemAllowedInEditorPane(item: any): boolean {
   return true;
 }
 
+export function setHeaderDragInteracting(interacting: boolean) {
+  if (typeof document === 'undefined') return;
+  const headerEl = document.querySelector('header[data-noether-header]') as HTMLElement | null;
+  if (!headerEl) return;
+  if (interacting) {
+    headerEl.setAttribute('data-item-interacting', 'true');
+  } else {
+    headerEl.removeAttribute('data-item-interacting');
+  }
+}
+
 export function broadcastDragState(state: ActiveTabDrag | null) {
   currentGlobalDrag = state;
+  setHeaderDragInteracting(Boolean(state));
   dragListeners.forEach((listener) => listener(state));
 }
 
@@ -476,6 +488,7 @@ export function useTabReorder<T>({
 
       const targetEl = e.currentTarget as HTMLElement;
       targetEl.setPointerCapture?.(e.pointerId);
+      setHeaderDragInteracting(true);
 
       const startX = e.clientX;
       const startY = e.clientY;
@@ -533,8 +546,9 @@ export function useTabReorder<T>({
         targetEl.releasePointerCapture?.(upEvent.pointerId);
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
-        window.removeEventListener('pointercancel', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerCancel);
 
+        setHeaderDragInteracting(false);
         targetEl.style.cursor = '';
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -549,9 +563,14 @@ export function useTabReorder<T>({
         broadcastDragState(null);
       };
 
+      const onPointerCancel = (cancelEvent: PointerEvent) => {
+        setHeaderDragInteracting(false);
+        onPointerUp(cancelEvent);
+      };
+
       window.addEventListener('pointermove', onPointerMove, { passive: true });
       window.addEventListener('pointerup', onPointerUp);
-      window.addEventListener('pointercancel', onPointerUp);
+      window.addEventListener('pointercancel', onPointerCancel);
     },
     [paneId, dragDistanceThreshold]
   );
@@ -639,6 +658,7 @@ export function useDockReorder<T extends { id: string; title: string }>({
 
       const targetEl = e.currentTarget as HTMLElement;
       targetEl.setPointerCapture?.(e.pointerId);
+      setHeaderDragInteracting(true);
 
       const startX = e.clientX;
       const startY = e.clientY;
@@ -699,8 +719,9 @@ export function useDockReorder<T extends { id: string; title: string }>({
         targetEl.releasePointerCapture?.(upEvent.pointerId);
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
-        window.removeEventListener('pointercancel', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerCancel);
 
+        setHeaderDragInteracting(false);
         targetEl.style.cursor = '';
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
@@ -715,9 +736,14 @@ export function useDockReorder<T extends { id: string; title: string }>({
         broadcastDragState(null);
       };
 
+      const onPointerCancel = (cancelEvent: PointerEvent) => {
+        setHeaderDragInteracting(false);
+        onPointerUp(cancelEvent);
+      };
+
       window.addEventListener('pointermove', onPointerMove, { passive: true });
       window.addEventListener('pointerup', onPointerUp);
-      window.addEventListener('pointercancel', onPointerUp);
+      window.addEventListener('pointercancel', onPointerCancel);
     },
     [zone, dragDistanceThreshold]
   );

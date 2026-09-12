@@ -31,7 +31,7 @@ import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
 
 
 import { useIsMaximized } from '@/hooks/useIsMaximized';
-import { useTabReorder, useDockReorder } from '@/hooks/useTabReorder';
+import { useTabReorder, useDockReorder, useActiveTabDrag } from '@/hooks/useTabReorder';
 import { TabItem } from '@/types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
@@ -294,11 +294,9 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     return (
       <div
         data-pane-id={paneId}
-        data-no-drag="true"
         onContextMenu={handleBarContextMenu}
         style={
           {
-            WebkitAppRegion: 'no-drag',
             ...widthStyle,
           } as unknown as React.CSSProperties
         }
@@ -307,6 +305,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
         <div
           ref={tabReorder.containerRef}
           data-no-drag="true"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           className="flex items-end gap-[2px] shrink min-w-0 overflow-visible relative"
         >
           {tabs.map((tab, index) => {
@@ -341,9 +340,11 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             return (
               <div
                 key={tab.id}
+                role="tab"
                 data-tab-id={tab.id}
                 data-tab-doc-id={tab.document_id || ''}
                 ref={(el) => tabReorder.registerTabRef(index, el)}
+                data-tauri-drag-region="false"
                 data-no-drag="true"
                 onPointerDown={(e) => tabReorder.handlePointerDown(index, e)}
                 onClick={(e) => {
@@ -463,7 +464,9 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 {canCloseTab && (
                   <button
                     type="button"
+                    data-tauri-drag-region="false"
                     data-no-drag="true"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     onClick={(e) => {
                       e.stopPropagation();
                       closeTabInPane(paneId, tab.id);
@@ -492,10 +495,20 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             openEmptyTabInPane(paneId);
           }}
           title="New tab (Ctrl+T)"
+          data-tauri-drag-region="false"
+          data-no-drag="true"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
         >
           <PlusSignIcon size={14} />
         </button>
+
+        {/* Empty draggable space spanning the remainder of the pane's header */}
+        <div
+          className="flex-1 h-full min-w-4 self-stretch"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          data-tauri-drag-region
+        />
       </div>
     );
   }
@@ -524,6 +537,8 @@ export const WindowHeader: React.FC = React.memo(() => {
   const documents = useDocumentStore((s) => s.documents);
   const isMaximized = useIsMaximized();
   const isMac = useMemo(() => platform.isMacOS(), []);
+  const activeTabDrag = useActiveTabDrag();
+  const isItemDragging = activeTabDrag !== null;
 
   const topRowLeaves = useMemo(() => getTopRowLeaves(layoutTree), [layoutTree]);
 
@@ -978,9 +993,30 @@ export const WindowHeader: React.FC = React.memo(() => {
   return (
     <header
       data-noether-header="true"
+      data-tauri-drag-region="deep"
+      onMouseDown={(e) => {
+        if (
+          e.button === 0 &&
+          !(e.target as HTMLElement).closest(
+            'button, input, textarea, a, select, [data-tab-id], [data-dock-item-id], [data-window-control], [data-no-drag="true"]'
+          )
+        ) {
+          platform.startDragging();
+        }
+      }}
+      onDoubleClick={(e) => {
+        if (
+          e.button === 0 &&
+          !(e.target as HTMLElement).closest(
+            'button, input, textarea, a, select, [data-tab-id], [data-dock-item-id], [data-window-control], [data-no-drag="true"]'
+          )
+        ) {
+          platform.maximize();
+        }
+      }}
       style={{
         background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
-        WebkitAppRegion: 'drag',
+        WebkitAppRegion: isItemDragging ? 'no-drag' : 'drag',
       } as React.CSSProperties}
       className="noether-header h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
     >
@@ -997,16 +1033,17 @@ export const WindowHeader: React.FC = React.memo(() => {
       {isMac ? (
         isLeftSidebarOpen ? (
           <div
+            data-no-drag="true"
             style={{
               width: `${Math.max(36, leftSidebarWidth + 44 - 72)}px`,
               WebkitAppRegion: 'no-drag',
             } as React.CSSProperties}
             className="h-full flex items-center pr-2 shrink-0 min-w-0 select-none relative"
-            data-no-drag="true"
           >
             <div
               ref={leftTopReorder.containerRef}
               data-dock-zone="left-top"
+              data-no-drag="true"
               onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'left')}
               onWheel={(e) => {
                 if (e.deltaY !== 0) {
@@ -1014,9 +1051,10 @@ export const WindowHeader: React.FC = React.memo(() => {
                 }
               }}
               style={{
+                WebkitAppRegion: 'no-drag',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
-              }}
+              } as React.CSSProperties}
               className="flex-1 h-full flex items-center gap-0.5 px-1 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
             >
               {leftTopDockItems.map((item, index) => {
@@ -1057,6 +1095,9 @@ export const WindowHeader: React.FC = React.memo(() => {
                     }}
                     title={itemTitle}
                     data-dock-item-id={item.id}
+                    data-tauri-drag-region="false"
+                    data-no-drag="true"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                       isActive
                         ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
@@ -1083,6 +1124,9 @@ export const WindowHeader: React.FC = React.memo(() => {
               type="button"
               onClick={toggleLeftSidebar}
               title="Collapse left sidebar (Ctrl+\)"
+              data-tauri-drag-region="false"
+              data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 ml-1"
             >
               <LayoutLeftIcon size={16} />
@@ -1091,14 +1135,17 @@ export const WindowHeader: React.FC = React.memo(() => {
         ) : (
           /* Collapsed on macOS: Expand button directly adjacent to the 72px window controls zone */
           <div
+            data-no-drag="true"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             className="w-11 h-full flex items-center justify-center shrink-0"
-            data-no-drag="true"
           >
             <button
               type="button"
               onClick={toggleLeftSidebar}
               title="Expand left sidebar (Ctrl+\)"
+              data-tauri-drag-region="false"
+              data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <LayoutAlignLeftIcon size={16} />
@@ -1110,12 +1157,16 @@ export const WindowHeader: React.FC = React.memo(() => {
         <>
           <div
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            data-no-drag="true"
             className="w-11 h-full flex items-center justify-center shrink-0"
           >
             <button
               type="button"
               onClick={toggleLeftSidebar}
               title="Toggle left sidebar (Ctrl+\)"
+              data-tauri-drag-region="false"
+              data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               {isLeftSidebarOpen ? <LayoutLeftIcon size={16} /> : <LayoutAlignLeftIcon size={16} />}
@@ -1126,6 +1177,7 @@ export const WindowHeader: React.FC = React.memo(() => {
             <div
               ref={leftTopReorder.containerRef}
               data-dock-zone="left-top"
+              data-no-drag="true"
               onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'left')}
               onWheel={(e) => {
                 if (e.deltaY !== 0) {
@@ -1178,6 +1230,9 @@ export const WindowHeader: React.FC = React.memo(() => {
                     }}
                     title={itemTitle}
                     data-dock-item-id={item.id}
+                    data-tauri-drag-region="false"
+                    data-no-drag="true"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                       isActive
                         ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
@@ -1205,8 +1260,6 @@ export const WindowHeader: React.FC = React.memo(() => {
       {/* 3. Document Tabs Area across all top-row panes */}
       {showTabTitleBar ? (
         <div
-          data-no-drag="true"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           className="flex-1 flex items-end h-[41px] -mb-[1px] min-w-0 relative z-20 overflow-visible"
         >
           {topRowLeaves.map((leaf, index) => (
@@ -1224,7 +1277,7 @@ export const WindowHeader: React.FC = React.memo(() => {
           ))}
         </div>
       ) : (
-        <div className="flex-1 h-full" />
+        <div className="flex-1 h-full" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} data-tauri-drag-region />
       )}
 
       {/* 4. Right Controls */}
@@ -1241,6 +1294,7 @@ export const WindowHeader: React.FC = React.memo(() => {
             <div
               ref={rightTopReorder.containerRef}
               data-dock-zone="right-top"
+              data-no-drag="true"
               onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'right')}
               onWheel={(e) => {
                 if (e.deltaY !== 0) {
@@ -1248,9 +1302,10 @@ export const WindowHeader: React.FC = React.memo(() => {
                 }
               }}
               style={{
+                WebkitAppRegion: 'no-drag',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
-              }}
+              } as React.CSSProperties}
               className="flex-1 flex items-center gap-0.5 px-2 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
             >
               {rightTopDockItems.map((item, index) => {
@@ -1289,6 +1344,9 @@ export const WindowHeader: React.FC = React.memo(() => {
                     }}
                     title={itemTitle}
                     data-dock-item-id={item.id}
+                    data-tauri-drag-region="false"
+                    data-no-drag="true"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                       isActive
                         ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
@@ -1313,14 +1371,17 @@ export const WindowHeader: React.FC = React.memo(() => {
 
           {/* Right sidebar toggle button on the far top-right edge (w-11) */}
           <div
+            data-no-drag="true"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             className="w-11 h-full flex items-center justify-center shrink-0"
-            data-no-drag="true"
           >
             <button
               type="button"
               onClick={toggleRightSidebar}
               title="Toggle right sidebar (Ctrl+Shift+\)"
+              data-tauri-drag-region="false"
+              data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
@@ -1330,10 +1391,8 @@ export const WindowHeader: React.FC = React.memo(() => {
       ) : (
         /* Windows / Linux layout with button before items, and caption buttons to the right inside the container */
         <div
-          data-no-drag="true"
           style={{
             width: isRightSidebarOpen ? `${rightSidebarWidth + 42}px` : 'auto',
-            WebkitAppRegion: 'no-drag',
           } as React.CSSProperties}
           className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30"
         >
@@ -1341,6 +1400,9 @@ export const WindowHeader: React.FC = React.memo(() => {
             type="button"
             onClick={toggleRightSidebar}
             title="Toggle right sidebar (Ctrl+Shift+\)"
+            data-tauri-drag-region="false"
+            data-no-drag="true"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 mr-[14px]`}
           >
             {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
@@ -1350,6 +1412,7 @@ export const WindowHeader: React.FC = React.memo(() => {
             <div
               ref={rightTopReorder.containerRef}
               data-dock-zone="right-top"
+              data-no-drag="true"
               onContextMenu={(e) => handleSidebarHeaderContextMenu(e, 'right')}
               onWheel={(e) => {
                 if (e.deltaY !== 0) {
@@ -1357,9 +1420,10 @@ export const WindowHeader: React.FC = React.memo(() => {
                 }
               }}
               style={{
+                WebkitAppRegion: 'no-drag',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
-              }}
+              } as React.CSSProperties}
               className="flex-1 flex items-center gap-0.5 ml-0.5 px-0.5 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
             >
               {rightTopDockItems.map((item, index) => {
@@ -1398,6 +1462,9 @@ export const WindowHeader: React.FC = React.memo(() => {
                     }}
                     title={itemTitle}
                     data-dock-item-id={item.id}
+                    data-tauri-drag-region="false"
+                    data-no-drag="true"
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                       isActive
                         ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
@@ -1423,12 +1490,15 @@ export const WindowHeader: React.FC = React.memo(() => {
           {/* Window Controls (Windows / Linux) nested inside the right container */}
           <div
             className="flex items-center h-full shrink-0 ml-auto"
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
             data-no-drag="true"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
           >
             <button
               type="button"
+              data-window-control="true"
+              data-tauri-drag-region="false"
               data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               onClick={(e) => {
                 e.stopPropagation();
                 handleMinimize();
@@ -1441,7 +1511,10 @@ export const WindowHeader: React.FC = React.memo(() => {
 
             <button
               type="button"
+              data-window-control="true"
+              data-tauri-drag-region="false"
               data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               onClick={(e) => {
                 e.stopPropagation();
                 handleMaximize();
@@ -1454,7 +1527,10 @@ export const WindowHeader: React.FC = React.memo(() => {
 
             <button
               type="button"
+              data-window-control="true"
+              data-tauri-drag-region="false"
               data-no-drag="true"
+              style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
               onClick={(e) => {
                 e.stopPropagation();
                 handleClose();
