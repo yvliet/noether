@@ -396,9 +396,10 @@ export class MoreIconsExtension extends Extension {
     // 18. Register Commands
     this.addCommand({
       id: 'toggle-folder-icons',
-      title: 'More icons: Toggle folder icons',
+      title: () => (useMoreIconsStore.getState().enableFolderIcons ? 'Disable folder icons' : 'Enable folder icons'),
       section: 'Settings',
       icon: <Folder01Icon size={16} />,
+      aliases: ['toggle folder icons', 'folder icons', 'enable folder icons', 'disable folder icons'],
       action: () => {
         const current = useMoreIconsStore.getState().enableFolderIcons;
         useMoreIconsStore.getState().setEnableFolderIcons(!current);
@@ -407,9 +408,10 @@ export class MoreIconsExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-file-icons',
-      title: 'More icons: Toggle file icons',
+      title: () => (useMoreIconsStore.getState().enableFileIcons ? 'Disable file icons' : 'Enable file icons'),
       section: 'Settings',
       icon: <File01Icon size={16} />,
+      aliases: ['toggle file icons', 'file icons', 'enable file icons', 'disable file icons'],
       action: () => {
         const current = useMoreIconsStore.getState().enableFileIcons;
         useMoreIconsStore.getState().setEnableFileIcons(!current);
@@ -418,9 +420,10 @@ export class MoreIconsExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-document-icons',
-      title: 'More icons: Toggle in-document icons (/icon)',
+      title: () => (useMoreIconsStore.getState().enableDocumentIcons ? 'Disable in-document icons' : 'Enable in-document icons'),
       section: 'Settings',
       icon: <MaskTheater02Icon size={16} />,
+      aliases: ['toggle in-document icons', 'document icons', 'icons in editor'],
       action: () => {
         const current = useMoreIconsStore.getState().enableDocumentIcons;
         useMoreIconsStore.getState().setEnableDocumentIcons(!current);
@@ -429,9 +432,10 @@ export class MoreIconsExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-default-folder-icons',
-      title: 'More icons: Toggle default folder icons',
+      title: () => (useMoreIconsStore.getState().showDefaultFolderIcons ? 'Hide default folder icons' : 'Show default folder icons'),
       section: 'Settings',
       icon: <Folder01Icon size={16} />,
+      aliases: ['toggle default folder icons', 'default folder icons', 'folder icons'],
       action: () => {
         const current = useMoreIconsStore.getState().showDefaultFolderIcons;
         useMoreIconsStore.getState().setShowDefaultFolderIcons(!current);
@@ -440,9 +444,10 @@ export class MoreIconsExtension extends Extension {
 
     this.addCommand({
       id: 'toggle-default-file-icons',
-      title: 'More icons: Toggle default file icons',
+      title: () => (useMoreIconsStore.getState().showDefaultFileIcons ? 'Hide default file icons' : 'Show default file icons'),
       section: 'Settings',
       icon: <File01Icon size={16} />,
+      aliases: ['toggle default file icons', 'default file icons', 'file icons'],
       action: () => {
         const current = useMoreIconsStore.getState().showDefaultFileIcons;
         useMoreIconsStore.getState().setShowDefaultFileIcons(!current);
@@ -451,7 +456,7 @@ export class MoreIconsExtension extends Extension {
 
     this.addCommand({
       id: 'reset-all',
-      title: 'More icons: Reset all custom icons',
+      title: 'Reset all custom icons',
       section: 'Settings',
       icon: <RotateCcwIcon size={16} />,
       action: async () => {

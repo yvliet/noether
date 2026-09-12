@@ -121,7 +121,7 @@ export class SyncExtension extends Extension {
     // 5. Register Commands
     this.addCommand({
       id: 'sync:sync-now',
-      title: 'Sync: Synchronize Now',
+      title: 'Synchronize now',
       action: async (app) => {
         if (!this.engine) {
           app.workspace.showToast('Sync engine is not initialized', 'warning');
@@ -139,7 +139,7 @@ export class SyncExtension extends Extension {
 
     this.addCommand({
       id: 'sync:open-settings',
-      title: 'Sync: Configure Cloud Provider',
+      title: 'Configure cloud provider',
       action: (app) => {
         app.workspace.openSettings('sync:sync-settings');
       },

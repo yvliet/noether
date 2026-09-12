@@ -51,10 +51,12 @@ export class BookmarksExtension extends Extension {
     // 2. Register Toggle Bookmark Command
     this.addCommand({
       id: 'cmd-toggle-bookmark',
-      title: 'Toggle bookmark for active note',
+      title: (app) => (app.vault.activeDocument?.is_bookmarked ? 'Remove bookmark from active note' : 'Bookmark active note'),
       section: 'Navigation',
       icon: <Bookmark01Icon size={16} />,
       hotkey: 'Ctrl+Shift+B',
+      aliases: ['toggle bookmark', 'toggle bookmark for active note', 'bookmark', 'unbookmark', 'favorite', 'pin'],
+      isEnabled: (app) => Boolean(app.vault.activeDocument && !app.vault.activeDocument.is_folder),
       action: async (app) => {
         const activeDoc = app.vault.activeDocument;
         if (activeDoc) {

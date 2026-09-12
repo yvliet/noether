@@ -107,8 +107,10 @@ export class SketchExtension extends Extension {
     // 6. Register Command Palette Hotkey (Ctrl+Shift+S)
     this.addCommand({
       id: 'toggle-sketch-overlay',
-      title: 'Sketch: Toggle Drawing Overlay',
+      title: () => (useSketchStore.getState().isSketchingActive ? 'Hide drawing overlay' : 'Show drawing overlay'),
+      section: 'Editor',
       hotkey: 'Ctrl+Shift+S',
+      aliases: ['toggle drawing overlay', 'toggle sketch', 'drawing', 'sketch', 'overlay', 'draw', 'ink'],
       action: () => {
         useSketchStore.getState().toggleSketching();
       },

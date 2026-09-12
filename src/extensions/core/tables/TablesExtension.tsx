@@ -56,6 +56,15 @@ export class TablesExtension extends Extension {
       id: 'editor:insert-table',
       title: 'Insert table',
       icon: <GridTableIcon size={14} />,
+      isEnabled: (app) => {
+        const activeDoc = app.vault.activeDocument;
+        if (!activeDoc || activeDoc.is_folder) return false;
+        const nonMarkdownTypes = ['canvas', 'image', 'audio', 'video', 'pdf'];
+        if (activeDoc.doc_type && nonMarkdownTypes.includes(activeDoc.doc_type)) {
+          return false;
+        }
+        return true;
+      },
       action: (app) => {
         const { defaultRows, defaultCols } = useTablesSettings.getState();
         const handled = app.editor.dispatchAction('insertTable', { rows: defaultRows, cols: defaultCols, withHeaderRow: true });

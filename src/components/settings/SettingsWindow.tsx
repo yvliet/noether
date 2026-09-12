@@ -2613,6 +2613,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
 // TAB: HOTKEYS
 // ==========================================
 const HotkeysTab: React.FC = React.memo(() => {
+  const app = useNoetherApp();
   const allCommands = useCommands();
   const customHotkeys = useSettingsStore((s) => s.customHotkeys);
   const setCustomHotkey = useSettingsStore((s) => s.setCustomHotkey);
@@ -2701,6 +2702,7 @@ const HotkeysTab: React.FC = React.memo(() => {
 
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
         {allCommands.map((cmd) => {
+          const cmdTitle = typeof cmd.title === 'function' ? cmd.title(app) : cmd.title;
           const activeHotkey = customHotkeys[cmd.id] !== undefined ? customHotkeys[cmd.id] : cmd.hotkey;
           const isCustomized = customHotkeys[cmd.id] !== undefined;
           const isRecording = recordingCommandId === cmd.id;
@@ -2711,7 +2713,7 @@ const HotkeysTab: React.FC = React.memo(() => {
               className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
             >
               <div className="flex flex-col">
-                <span className="text-[13px] font-normal text-white">{cmd.title}</span>
+                <span className="text-[13px] font-normal text-white">{cmdTitle}</span>
                 {cmd.section && (
                   <span className="text-[10px] text-[#666] uppercase mt-0.5">{cmd.section}</span>
                 )}
@@ -2721,7 +2723,7 @@ const HotkeysTab: React.FC = React.memo(() => {
                   <button
                     onClick={() => {
                       resetCustomHotkey(cmd.id);
-                      showToast(`Reset shortcut for "${cmd.title}"`, 'info');
+                      showToast(`Reset shortcut for "${cmdTitle}"`, 'info');
                     }}
                     title="Reset to default"
                     className="text-[10px] text-[#777] hover:text-white p-1 hover:bg-[#282828] rounded-[4px] cursor-pointer"

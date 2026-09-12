@@ -82,7 +82,7 @@ export class MarketplaceExtension extends Extension {
     // 3. Register Command
     this.addCommand({
       id: 'cmd-open-marketplace',
-      title: 'Marketplace: Browse extension marketplace',
+      title: 'Browse extension marketplace',
       section: 'Navigation',
       icon: <Store01Icon size={16} />,
       action: (app) => {

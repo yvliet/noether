@@ -26,8 +26,42 @@ import {
   BookOpen01Icon,
   SourceCodeIcon,
   SparklesIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
+  ZoomIcon,
+  SplitRightIcon,
+  Cancel01Icon,
+  CancelCircleIcon,
+  Maximize01Icon,
+  Minimize01Icon,
+  Copy01Icon,
+  FolderTreeIcon,
+  Delete02Icon,
+  Heading101Icon,
+  Heading201Icon,
+  Heading301Icon,
+  Heading401Icon,
+  Heading501Icon,
+  Heading601Icon,
+  ParagraphIcon,
+  LeftToRightListBulletIcon,
+  LeftToRightListNumberIcon,
+  CheckmarkSquare02Icon,
+  QuoteDownIcon,
+  CodeIcon,
+  MinusSignIcon,
+  StickyNote02Icon,
+  SigmaIcon,
+  Link01Icon,
+  LinkSquare02Icon,
+  InformationCircleIcon,
+  BulbIcon,
+  AlertTriangleIcon,
+  Alert02Icon,
+  AlertDiamondIcon,
 } from '@/components/common/Icons';
 import { platform } from '@/lib/platform/platformAdapter';
+import { insertOrWrapMarkdownLink } from '@/components/editor/extensions/markdown-shortcuts';
 import { defaultCommandsReadme } from './defaultCommandsReadme';
 
 const LazyDefaultCommandsSettingsTab = React.lazy(() =>
@@ -67,10 +101,11 @@ export class DefaultCommandsExtension extends Extension {
     // 2. Toggle Left Sidebar
     this.addCommand({
       id: 'cmd-toggle-left-sidebar',
-      title: 'Toggle Left Sidebar',
+      title: (app) => (app.workspace.isSidebarOpen('left') ? 'Collapse left sidebar' : 'Expand left sidebar'),
       section: 'View',
       icon: <LayoutLeftIcon size={16} />,
       hotkey: 'Ctrl+\\',
+      aliases: ['toggle left sidebar', 'toggle sidebar', 'left sidebar', 'sidebar', 'show left sidebar', 'hide left sidebar', 'collapse', 'expand'],
       action: (app) => {
         app.workspace.toggleLeftSidebar();
       },
@@ -79,10 +114,11 @@ export class DefaultCommandsExtension extends Extension {
     // 3. Toggle Right Sidebar
     this.addCommand({
       id: 'cmd-toggle-right-sidebar',
-      title: 'Toggle Right Sidebar',
+      title: (app) => (app.workspace.isSidebarOpen('right') ? 'Collapse right sidebar' : 'Expand right sidebar'),
       section: 'View',
       icon: <LayoutRightIcon size={16} />,
       hotkey: 'Ctrl+Shift+\\',
+      aliases: ['toggle right sidebar', 'toggle sidebar', 'right sidebar', 'sidebar', 'show right sidebar', 'hide right sidebar', 'collapse', 'expand'],
       action: (app) => {
         app.workspace.toggleRightSidebar();
       },
@@ -91,9 +127,11 @@ export class DefaultCommandsExtension extends Extension {
     // 4. Toggle Split Pane
     this.addCommand({
       id: 'cmd-toggle-split-pane',
-      title: 'Toggle Split Editor Pane',
+      title: (app) => (app.workspace.isSplitViewOpen() ? 'Close split editor pane' : 'Split editor pane'),
       section: 'View',
+      icon: <SplitRightIcon size={16} />,
       hotkey: 'Ctrl+Alt+\\',
+      aliases: ['toggle split editor pane', 'toggle split pane', 'split editor', 'split pane', 'split view', 'split', 'close split'],
       action: (app) => {
         app.workspace.toggleSplitView();
       },
@@ -102,10 +140,11 @@ export class DefaultCommandsExtension extends Extension {
     // 4.1 Toggle Reading View
     this.addCommand({
       id: 'editor:toggle-reading-view',
-      title: 'Toggle Reading view',
+      title: (app) => (app.settings.defaultTabMode === 'Reading view' ? 'Switch to editing view' : 'Switch to reading view'),
       section: 'Editor',
       icon: <BookOpen01Icon size={16} />,
       hotkey: 'Ctrl+E',
+      aliases: ['toggle reading view', 'toggle editing view', 'reading view', 'editing view', 'preview', 'switch view', 'toggle mode'],
       action: (app) => {
         const curMode = app.settings.defaultTabMode;
         const next = curMode === 'Reading view' ? 'Editing view' : 'Reading view';
@@ -117,10 +156,11 @@ export class DefaultCommandsExtension extends Extension {
     // 4.2 Toggle Source Mode
     this.addCommand({
       id: 'editor:toggle-source-mode',
-      title: 'Toggle Source mode',
+      title: (app) => (app.settings.defaultEditingMode === 'Source mode' ? 'Switch to live preview' : 'Switch to source mode'),
       section: 'Editor',
       icon: <SourceCodeIcon size={16} />,
       hotkey: 'Ctrl+Alt+S',
+      aliases: ['toggle source mode', 'toggle live preview', 'source mode', 'live preview', 'raw markdown', 'markdown source', 'toggle mode'],
       action: (app) => {
         const curMode = app.settings.defaultEditingMode;
         const next = curMode === 'Source mode' ? 'Live Preview' : 'Source mode';
@@ -137,6 +177,7 @@ export class DefaultCommandsExtension extends Extension {
       id: 'cmd-zoom-in',
       title: 'Zoom in',
       section: 'View',
+      icon: <ZoomInIcon size={16} />,
       hotkey: 'Ctrl+=',
       action: (app) => {
         const currentZoom = app.settings.zoomLevel || 100;
@@ -155,6 +196,7 @@ export class DefaultCommandsExtension extends Extension {
       id: 'cmd-zoom-out',
       title: 'Zoom out',
       section: 'View',
+      icon: <ZoomOutIcon size={16} />,
       hotkey: 'Ctrl+-',
       action: (app) => {
         const currentZoom = app.settings.zoomLevel || 100;
@@ -173,6 +215,7 @@ export class DefaultCommandsExtension extends Extension {
       id: 'cmd-reset-zoom',
       title: 'Reset zoom level to 100%',
       section: 'View',
+      icon: <ZoomIcon size={16} />,
       hotkey: 'Ctrl+0',
       action: (app) => {
         app.settings.setZoomLevel(100);
@@ -185,6 +228,7 @@ export class DefaultCommandsExtension extends Extension {
       id: 'cmd-next-tab',
       title: 'Next tab',
       section: 'View',
+      icon: <ArrowRight01Icon size={16} />,
       hotkey: 'Ctrl+Tab',
       action: (app) => {
         const tabs = app.workspace.getTabs();
@@ -202,6 +246,7 @@ export class DefaultCommandsExtension extends Extension {
       id: 'cmd-prev-tab',
       title: 'Previous tab',
       section: 'View',
+      icon: <ArrowLeft01Icon size={16} />,
       hotkey: 'Ctrl+Shift+Tab',
       action: (app) => {
         const tabs = app.workspace.getTabs();
@@ -265,7 +310,7 @@ export class DefaultCommandsExtension extends Extension {
     // 14. Undo File Action
     this.addCommand({
       id: 'workspace:undo-file-action',
-      title: 'Undo file action (restore deleted or renamed file)',
+      title: 'Undo file action',
       section: 'Files',
       icon: <RotateCcwIcon size={16} />,
       hotkey: 'Ctrl+Alt+Z',
@@ -279,9 +324,532 @@ export class DefaultCommandsExtension extends Extension {
       id: 'workspace:redo-file-action',
       title: 'Redo file action',
       section: 'Files',
+      icon: <RotateCcwIcon size={16} className="-scale-x-100" />,
       hotkey: 'Ctrl+Alt+Y',
       action: async (app) => {
         await app.workspace.redoFileAction();
+      },
+    });
+
+    // 16. Close Active Tab
+    this.addCommand({
+      id: 'cmd-close-active-tab',
+      title: 'Close active tab',
+      section: 'Tabs',
+      icon: <Cancel01Icon size={16} />,
+      hotkey: 'Ctrl+W',
+      isEnabled: (app) => Boolean(app.workspace.activeTabId),
+      action: (app) => {
+        const activeTabId = app.workspace.activeTabId;
+        if (activeTabId) {
+          app.workspace.closeTab(activeTabId);
+        }
+      },
+    });
+
+    // 17. Close Other Tabs
+    this.addCommand({
+      id: 'cmd-close-other-tabs',
+      title: 'Close other tabs',
+      section: 'Tabs',
+      icon: <CancelCircleIcon size={16} />,
+      isEnabled: (app) => app.workspace.getTabs().length > 1,
+      action: (app) => {
+        const tabs = app.workspace.getTabs();
+        const activeTabId = app.workspace.activeTabId;
+        tabs.forEach((tab) => {
+          if (tab.id !== activeTabId) {
+            app.workspace.closeTab(tab.id);
+          }
+        });
+      },
+    });
+
+    // 18. Toggle Fullscreen
+    this.addCommand({
+      id: 'cmd-toggle-fullscreen',
+      title: () => (Boolean(document.fullscreenElement) ? 'Exit fullscreen' : 'Enter fullscreen'),
+      section: 'View',
+      icon: () => (Boolean(document.fullscreenElement) ? <Minimize01Icon size={16} /> : <Maximize01Icon size={16} />),
+      hotkey: 'F11',
+      aliases: ['toggle fullscreen', 'fullscreen', 'maximize', 'minimize', 'screen'],
+      action: () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+        } else {
+          document.exitFullscreen().catch(() => {});
+        }
+      },
+    });
+
+    // 19. Copy Active File Path
+    this.addCommand({
+      id: 'cmd-copy-note-path',
+      title: 'Copy active file path',
+      section: 'Files',
+      icon: <Copy01Icon size={16} />,
+      isEnabled: (app) => Boolean(app.vault.activeDocument),
+      action: async (app) => {
+        const activeDoc = app.vault.activeDocument;
+        if (!activeDoc) return;
+        const fullPath = activeDoc.title;
+        await navigator.clipboard.writeText(fullPath);
+        app.workspace.showToast(`Copied note name: ${fullPath}`, 'info');
+      },
+    });
+
+    // 20. Reveal Active File in File Tree
+    this.addCommand({
+      id: 'cmd-reveal-in-file-tree',
+      title: 'Reveal active file in file tree',
+      section: 'Files',
+      icon: <FolderTreeIcon size={16} />,
+      aliases: ['reveal in file tree', 'show in explorer', 'locate note', 'find file in tree'],
+      isEnabled: (app) => Boolean(app.vault.activeDocument),
+      action: (app) => {
+        const activeDoc = app.vault.activeDocument;
+        if (!activeDoc) return;
+        app.workspace.revealInFileTree(activeDoc.id);
+        app.workspace.showToast(`Revealed "${activeDoc.title}" in file tree`, 'info');
+      },
+    });
+
+    // 21. Duplicate Active Note
+    this.addCommand({
+      id: 'cmd-duplicate-note',
+      title: 'Duplicate active note',
+      section: 'Files',
+      icon: <Copy01Icon size={16} />,
+      aliases: ['duplicate note', 'clone note', 'copy note', 'make a copy'],
+      isEnabled: (app) => {
+        const doc = app.vault.activeDocument;
+        return Boolean(doc && !doc.is_folder);
+      },
+      action: async (app) => {
+        const activeDoc = app.vault.activeDocument;
+        if (!activeDoc || activeDoc.is_folder) return;
+
+        // Smart duplicate naming: "Note" -> "Note Copy", "Note Copy" -> "Note Copy 2"
+        const existingTitles = new Set(
+          app.vault.documents
+            .filter((d) => d.parent_id === activeDoc.parent_id)
+            .map((d) => d.title.toLowerCase())
+        );
+        const match = activeDoc.title.match(/^(.*?)(?:\s+\(Copy\)|\s+Copy(?:\s+(\d+))?)?$/i);
+        const baseName = match && match[1] ? match[1].trim() : activeDoc.title;
+        let copyTitle = `${baseName} Copy`;
+        let counter = 2;
+        while (existingTitles.has(copyTitle.toLowerCase())) {
+          copyTitle = `${baseName} Copy ${counter}`;
+          counter++;
+        }
+
+        const newDoc = await app.vault.createNewNote(copyTitle, activeDoc.parent_id);
+        if (newDoc) {
+          app.workspace.openTab(newDoc.id, newDoc.title);
+          app.workspace.showToast(`Duplicated note as "${copyTitle}"`, 'info');
+        }
+      },
+    });
+
+    // 22. Delete Active Note
+    this.addCommand({
+      id: 'cmd-delete-active-note',
+      title: 'Delete active note',
+      section: 'Files',
+      icon: <Delete02Icon size={16} />,
+      isEnabled: (app) => {
+        const doc = app.vault.activeDocument;
+        return Boolean(doc && !doc.is_folder);
+      },
+      action: (app) => {
+        const activeDoc = app.vault.activeDocument;
+        if (!activeDoc) return;
+        app.workspace.openConfirmDialog({
+          title: 'Delete file',
+          message: `Are you sure you want to delete "${activeDoc.title || 'Untitled'}"?`,
+          subtext: 'It will be moved to trash and can be restored within 48 hours.',
+          confirmText: 'Delete',
+          isDanger: true,
+          onConfirm: async () => {
+            await app.vault.deleteDocument(activeDoc.id);
+            app.workspace.showToast(`Moved "${activeDoc.title}" to trash`, 'info');
+          },
+        });
+      },
+    });
+
+    // 23. Reload Window
+    this.addCommand({
+      id: 'cmd-reload-window',
+      title: 'Reload window',
+      section: 'System',
+      icon: <RotateCcwIcon size={16} />,
+      hotkey: 'Ctrl+R',
+      action: () => {
+        window.location.reload();
+      },
+    });
+
+    const isMarkdownEditorActive = (app: NoetherApp): boolean => {
+      const activeDoc = app.vault.activeDocument;
+      if (!activeDoc || activeDoc.is_folder) return false;
+      const nonMarkdownTypes = ['canvas', 'image', 'audio', 'video', 'pdf'];
+      if (activeDoc.doc_type && nonMarkdownTypes.includes(activeDoc.doc_type)) {
+        return false;
+      }
+      return Boolean(app.editor.getActiveEditor());
+    };
+
+    // 24. Document Editor Commands (Slash commands in Command Palette)
+    // Headings
+    this.addCommand({
+      id: 'editor:heading-1',
+      title: 'Heading 1',
+      section: 'Editor',
+      icon: <Heading101Icon size={16} />,
+      hotkey: 'Ctrl+Alt+1',
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setNode('heading', { level: 1 }).run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:heading-2',
+      title: 'Heading 2',
+      section: 'Editor',
+      icon: <Heading201Icon size={16} />,
+      hotkey: 'Ctrl+Alt+2',
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setNode('heading', { level: 2 }).run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:heading-3',
+      title: 'Heading 3',
+      section: 'Editor',
+      icon: <Heading301Icon size={16} />,
+      hotkey: 'Ctrl+Alt+3',
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setNode('heading', { level: 3 }).run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:heading-4',
+      title: 'Heading 4',
+      section: 'Editor',
+      icon: <Heading401Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setNode('heading', { level: 4 }).run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:heading-5',
+      title: 'Heading 5',
+      section: 'Editor',
+      icon: <Heading501Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setNode('heading', { level: 5 }).run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:heading-6',
+      title: 'Heading 6',
+      section: 'Editor',
+      icon: <Heading601Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setNode('heading', { level: 6 }).run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:paragraph',
+      title: 'Paragraph',
+      section: 'Editor',
+      icon: <ParagraphIcon size={16} />,
+      hotkey: 'Ctrl+Alt+0',
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setParagraph().run();
+      },
+    });
+
+    // Lists
+    this.addCommand({
+      id: 'editor:bullet-list',
+      title: 'Bullet list',
+      section: 'Editor',
+      icon: <LeftToRightListBulletIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().toggleBulletList().run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:numbered-list',
+      title: 'Numbered list',
+      section: 'Editor',
+      icon: <LeftToRightListNumberIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().toggleOrderedList().run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:task-list',
+      title: 'Task list',
+      section: 'Editor',
+      icon: <CheckmarkSquare02Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().toggleTaskList().run();
+      },
+    });
+
+    // Quotes & Code
+    this.addCommand({
+      id: 'editor:quote-block',
+      title: 'Quote block',
+      section: 'Editor',
+      icon: <QuoteDownIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().toggleBlockquote().run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:code-block',
+      title: 'Code block',
+      section: 'Editor',
+      icon: <CodeIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().toggleCodeBlock().run();
+      },
+    });
+
+    // Divider
+    this.addCommand({
+      id: 'editor:divider',
+      title: 'Insert divider',
+      section: 'Editor',
+      icon: <MinusSignIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().setHorizontalRule().run();
+      },
+    });
+
+    // Callouts
+    this.addCommand({
+      id: 'editor:callout',
+      title: 'Insert callout',
+      section: 'Editor',
+      icon: <StickyNote02Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!note] Note\n> `).run();
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:callout-note',
+      title: 'Insert note callout',
+      section: 'Editor',
+      icon: <InformationCircleIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!note] Note\n> `).run();
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:callout-tip',
+      title: 'Insert tip callout',
+      section: 'Editor',
+      icon: <BulbIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!tip] Tip\n> `).run();
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:callout-info',
+      title: 'Insert info callout',
+      section: 'Editor',
+      icon: <InformationCircleIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!info] Info\n> `).run();
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:callout-warning',
+      title: 'Insert warning callout',
+      section: 'Editor',
+      icon: <AlertTriangleIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!warning] Warning\n> `).run();
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:callout-caution',
+      title: 'Insert caution callout',
+      section: 'Editor',
+      icon: <Alert02Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!caution] Caution\n> `).run();
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:callout-important',
+      title: 'Insert important callout',
+      section: 'Editor',
+      icon: <AlertDiamondIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          const prefix = isStartOfLine ? '' : '\n';
+          editor.chain().focus().insertContent(`${prefix}> [!important] Important\n> `).run();
+        }
+      },
+    });
+
+    // Math Blocks
+    this.addCommand({
+      id: 'editor:math-block',
+      title: 'Insert math block',
+      section: 'Editor',
+      icon: <SigmaIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          const { from } = editor.state.selection;
+          const isStartOfLine = editor.state.doc.resolve(from).parentOffset === 0;
+          if (!isStartOfLine) {
+            editor.chain().focus().splitBlock().insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
+          } else {
+            editor.chain().focus().insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
+          }
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:inline-math',
+      title: 'Insert inline math',
+      section: 'Editor',
+      icon: <SigmaIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().insertMathChip({ latex: '', display: 'inline', startEditing: true }).run();
+      },
+    });
+
+    // Links & Embeds
+    this.addCommand({
+      id: 'editor:insert-link',
+      title: 'Insert link',
+      section: 'Editor',
+      icon: <Link01Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        const editor = app.editor.getActiveEditor();
+        if (editor) {
+          insertOrWrapMarkdownLink(editor);
+        }
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:insert-wikilink',
+      title: 'Insert wikilink',
+      section: 'Editor',
+      icon: <LinkSquare02Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().insertContent('[[]]').run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:insert-note-embed',
+      title: 'Insert note embed',
+      section: 'Editor',
+      icon: <QuoteDownIcon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().insertContent('![[]]').run();
+      },
+    });
+
+    this.addCommand({
+      id: 'editor:insert-media-embed',
+      title: 'Insert media embed',
+      section: 'Editor',
+      icon: <Link01Icon size={16} />,
+      isEnabled: isMarkdownEditorActive,
+      action: (app) => {
+        app.editor.getActiveEditor()?.chain().focus().insertContent('![]()').run();
       },
     });
 

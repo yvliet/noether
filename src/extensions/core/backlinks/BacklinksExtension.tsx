@@ -106,9 +106,10 @@ export class BacklinksExtension extends Extension {
     // 4. Register Command to toggle in-document backlinks
     this.addCommand({
       id: 'cmd-toggle-backlinks-in-doc',
-      title: 'Backlinks: Toggle backlinks in document',
+      title: () => (useBacklinksSettings.getState().showBacklinksInDoc ? 'Hide backlinks in document' : 'Show backlinks in document'),
       section: 'Backlinks',
       icon: <LinkSquare02Icon size={16} />,
+      aliases: ['toggle backlinks in document', 'toggle backlinks', 'backlinks', 'show backlinks', 'hide backlinks'],
       action: (app) => {
         const { showBacklinksInDoc, setShowBacklinksInDoc } = useBacklinksSettings.getState();
         const next = !showBacklinksInDoc;
