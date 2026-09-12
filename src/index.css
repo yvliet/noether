@@ -1639,11 +1639,25 @@ a.noether-btn::after {
   z-index: 1;
 }
 
+/* Compact note card guideline calibration: proportional top/bottom offsets matching 0.25rem paragraph margins */
+.noether-compact-doc .noether-tab-guide::before,
+.noether-compact-doc .noether-indent-guides .noether-tab-guide::before,
+.noether-compact-doc.tiptap-reading-view.noether-indent-guides .noether-tab-guide::before {
+  top: -0.45rem !important;
+  bottom: -0.35rem !important;
+}
+
 /* Terminal guideline: stops cleanly at the line boundary matching the selection box height without extending downwards into the margin */
 .noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before,
 .tiptap-reading-view.noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before,
 .noether-tab-guide.noether-tab-guide-end::before {
   bottom: -0.25em !important;
+}
+
+.noether-compact-doc .noether-tab-guide.noether-tab-guide-end::before,
+.noether-compact-doc .noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before,
+.noether-compact-doc.tiptap-reading-view.noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before {
+  bottom: -0.15em !important;
 }
 
 /* Number stem alignment: centered through stem of digit 1 and tabular digits */

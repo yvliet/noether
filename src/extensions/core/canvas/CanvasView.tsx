@@ -1128,73 +1128,343 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]
   );
 
-  const handleDuplicateSelectedNodes = useCallback(async () => {
-    if (canvasReadOnlyRef.current) return;
-    const targetIds = selectedNodeIdsRef.current.length > 0
-      ? selectedNodeIdsRef.current
-      : selectedNodeId ? [selectedNodeId] : [];
+  const canvasClipboardRef = useRef<{ nodes: CanvasNode[]; edges?: CanvasEdge[] } | null>(null);
 
-    if (targetIds.length === 0) return;
+  const handleDuplicateSelectedNodes = useCallback(
+    async (explicitNodeId?: string) => {
+      if (canvasReadOnlyRef.current) return;
+      const targetIds = explicitNodeId
+        ? selectedNodeIdsRef.current.includes(explicitNodeId) &&
+          selectedNodeIdsRef.current.length > 1
+          ? selectedNodeIdsRef.current
+          : [explicitNodeId]
+        : selectedNodeIdsRef.current.length > 0
+          ? selectedNodeIdsRef.current
+          : selectedNodeId
+            ? [selectedNodeId]
+            : [];
 
-    recordSnapshot();
-    const step = gridSizeRef.current || 20;
-    const offset = step;
-    const targetSet = new Set(targetIds);
-    const toClone = nodesRef.current.filter((n) => targetSet.has(n.id));
+      if (targetIds.length === 0) return;
 
-    const newNodes: CanvasNode[] = [];
-    const newIds: string[] = [];
-    const oldToNewIdMap = new Map<string, string>();
+      recordSnapshot();
+      const step = gridSizeRef.current || 20;
+      const offset = step;
+      const targetSet = new Set(targetIds);
+      const toClone = nodesRef.current.filter((n) => targetSet.has(n.id));
 
-    for (let i = 0; i < toClone.length; i++) {
-      const src = toClone[i];
-      const newId = `node-${Date.now()}-${i}`;
-      oldToNewIdMap.set(src.id, newId);
-      const clone: CanvasNode = {
-        ...src,
-        id: newId,
-        x: src.x + offset,
-        y: src.y + offset,
-      };
-      newNodes.push(clone);
-      newIds.push(newId);
-      await saveCanvasNode(clone);
-    }
+      const newNodes: CanvasNode[] = [];
+      const newIds: string[] = [];
+      const oldToNewIdMap = new Map<string, string>();
 
-    // Clone internal edges connecting duplicated cards
-    const newEdges: CanvasEdge[] = [];
-    for (const edge of edgesRef.current) {
-      if (oldToNewIdMap.has(edge.from_node_id) && oldToNewIdMap.has(edge.to_node_id)) {
-        const clonedEdge: CanvasEdge = {
-          ...edge,
-          id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
-          board_id: effectiveBoardId,
-          from_node_id: oldToNewIdMap.get(edge.from_node_id)!,
-          to_node_id: oldToNewIdMap.get(edge.to_node_id)!,
+      for (let i = 0; i < toClone.length; i++) {
+        const src = toClone[i];
+        const newId = `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+        oldToNewIdMap.set(src.id, newId);
+        const clone: CanvasNode = {
+          ...src,
+          id: newId,
+          x: src.x + offset,
+          y: src.y + offset,
         };
-        newEdges.push(clonedEdge);
-        await saveCanvasEdge(clonedEdge);
+        newNodes.push(clone);
+        newIds.push(newId);
+        await saveCanvasNode(clone);
       }
-    }
 
-    triggerDiskSync(effectiveBoardId);
-    setNodes((prev) => {
-      const next = [...prev, ...newNodes];
-      nodesRef.current = next;
-      return next;
-    });
-    if (newEdges.length > 0) {
-      setEdges((prev) => {
-        const next = [...prev, ...newEdges];
-        edgesRef.current = next;
+      // Clone internal edges connecting duplicated cards
+      const newEdges: CanvasEdge[] = [];
+      for (const edge of edgesRef.current) {
+        if (oldToNewIdMap.has(edge.from_node_id) && oldToNewIdMap.has(edge.to_node_id)) {
+          const clonedEdge: CanvasEdge = {
+            ...edge,
+            id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+            board_id: effectiveBoardId,
+            from_node_id: oldToNewIdMap.get(edge.from_node_id)!,
+            to_node_id: oldToNewIdMap.get(edge.to_node_id)!,
+          };
+          newEdges.push(clonedEdge);
+          await saveCanvasEdge(clonedEdge);
+        }
+      }
+
+      triggerDiskSync(effectiveBoardId);
+      setNodes((prev) => {
+        const next = [...prev, ...newNodes];
+        nodesRef.current = next;
         return next;
       });
-    }
-    setSelectedNodeIds(newIds);
-    selectedNodeIdsRef.current = newIds;
-    setSelectedNodeId(newIds[newIds.length - 1] || null);
-    showToast(newNodes.length > 1 ? `Duplicated ${newNodes.length} cards` : 'Duplicated card', 'info');
-  }, [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]);
+      if (newEdges.length > 0) {
+        setEdges((prev) => {
+          const next = [...prev, ...newEdges];
+          edgesRef.current = next;
+          return next;
+        });
+      }
+      setSelectedNodeIds(newIds);
+      selectedNodeIdsRef.current = newIds;
+      setSelectedNodeId(newIds[newIds.length - 1] || null);
+      showToast(
+        newNodes.length > 1 ? `Duplicated ${newNodes.length} cards` : 'Duplicated card',
+        'info'
+      );
+    },
+    [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]
+  );
+
+  const handleCopyCards = useCallback(
+    async (explicitNodeId?: string) => {
+      const targetIds = explicitNodeId
+        ? selectedNodeIdsRef.current.includes(explicitNodeId) &&
+          selectedNodeIdsRef.current.length > 1
+          ? selectedNodeIdsRef.current
+          : [explicitNodeId]
+        : selectedNodeIdsRef.current.length > 0
+          ? selectedNodeIdsRef.current
+          : selectedNodeId
+            ? [selectedNodeId]
+            : [];
+
+      if (targetIds.length === 0) return;
+
+      const targetSet = new Set(targetIds);
+      const toCopyNodes = nodesRef.current.filter((n) => targetSet.has(n.id));
+      if (toCopyNodes.length === 0) return;
+
+      const toCopyEdges = edgesRef.current.filter(
+        (e) => targetSet.has(e.from_node_id) && targetSet.has(e.to_node_id)
+      );
+
+      canvasClipboardRef.current = {
+        nodes: toCopyNodes,
+        edges: toCopyEdges,
+      };
+
+      try {
+        const payload = JSON.stringify({
+          __noether_canvas__: true,
+          version: 1,
+          nodes: toCopyNodes,
+          edges: toCopyEdges,
+        });
+        await navigator.clipboard.writeText(payload);
+      } catch {
+        // Fallback to canvasClipboardRef
+      }
+
+      showToast(
+        toCopyNodes.length > 1 ? `Copied ${toCopyNodes.length} cards` : 'Copied card',
+        'info'
+      );
+    },
+    [selectedNodeId, showToast]
+  );
+
+  const handlePasteAtCoordinates = useCallback(
+    async (canvasX: number, canvasY: number) => {
+      if (canvasReadOnlyRef.current) {
+        showToast('Canvas is in read-only mode', 'warning');
+        return;
+      }
+
+      let clipboardText = '';
+      try {
+        clipboardText = await navigator.clipboard.readText();
+      } catch {
+        // Clipboard read was blocked or empty
+      }
+
+      let canvasPayload: { nodes: CanvasNode[]; edges?: CanvasEdge[] } | null = null;
+
+      if (clipboardText.trim()) {
+        try {
+          const parsed = JSON.parse(clipboardText.trim());
+          if (
+            parsed &&
+            parsed.__noether_canvas__ === true &&
+            Array.isArray(parsed.nodes) &&
+            parsed.nodes.length > 0
+          ) {
+            canvasPayload = {
+              nodes: parsed.nodes,
+              edges: Array.isArray(parsed.edges) ? parsed.edges : [],
+            };
+          }
+        } catch {
+          // Not JSON or not Noether canvas format
+        }
+      }
+
+      // Fallback to internal ref if clipboard text was inaccessible or empty, but internal ref has cards
+      if (!canvasPayload && !clipboardText.trim() && canvasClipboardRef.current?.nodes?.length) {
+        canvasPayload = canvasClipboardRef.current;
+      }
+
+      const step = gridSizeRef.current || 20;
+
+      // If we have canvas card(s) to paste:
+      if (canvasPayload && canvasPayload.nodes.length > 0) {
+        recordSnapshot();
+        const sourceNodes = canvasPayload.nodes;
+        const sourceEdges = canvasPayload.edges || [];
+
+        // Calculate bounding box of source nodes to center them around (canvasX, canvasY)
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        for (const n of sourceNodes) {
+          if (n.x < minX) minX = n.x;
+          if (n.y < minY) minY = n.y;
+          if (n.x + n.width > maxX) maxX = n.x + n.width;
+          if (n.y + n.height > maxY) maxY = n.y + n.height;
+        }
+
+        const groupCenterX = (minX + maxX) / 2;
+        const groupCenterY = (minY + maxY) / 2;
+        let deltaX = canvasX - groupCenterX;
+        let deltaY = canvasY - groupCenterY;
+
+        if (canvasSnapGridRef.current) {
+          deltaX = Math.round(deltaX / step) * step;
+          deltaY = Math.round(deltaY / step) * step;
+        }
+
+        const newNodes: CanvasNode[] = [];
+        const newIds: string[] = [];
+        const oldToNewIdMap = new Map<string, string>();
+
+        for (let i = 0; i < sourceNodes.length; i++) {
+          const src = sourceNodes[i];
+          const newId = `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
+          oldToNewIdMap.set(src.id, newId);
+
+          let finalX = src.x + deltaX;
+          let finalY = src.y + deltaY;
+          if (canvasSnapGridRef.current) {
+            finalX = Math.round(finalX / step) * step;
+            finalY = Math.round(finalY / step) * step;
+          }
+
+          const clone: CanvasNode = {
+            ...src,
+            id: newId,
+            board_id: effectiveBoardId,
+            x: Math.round(finalX),
+            y: Math.round(finalY),
+          };
+          newNodes.push(clone);
+          newIds.push(newId);
+          await saveCanvasNode(clone);
+        }
+
+        // Reconnect any internal edges
+        const newEdges: CanvasEdge[] = [];
+        for (const edge of sourceEdges) {
+          if (oldToNewIdMap.has(edge.from_node_id) && oldToNewIdMap.has(edge.to_node_id)) {
+            const clonedEdge: CanvasEdge = {
+              ...edge,
+              id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+              board_id: effectiveBoardId,
+              from_node_id: oldToNewIdMap.get(edge.from_node_id)!,
+              to_node_id: oldToNewIdMap.get(edge.to_node_id)!,
+            };
+            newEdges.push(clonedEdge);
+            await saveCanvasEdge(clonedEdge);
+          }
+        }
+
+        triggerDiskSync(effectiveBoardId);
+        setNodes((prev) => {
+          const next = [...prev, ...newNodes];
+          nodesRef.current = next;
+          return next;
+        });
+        if (newEdges.length > 0) {
+          setEdges((prev) => {
+            const next = [...prev, ...newEdges];
+            edgesRef.current = next;
+            return next;
+          });
+        }
+        setSelectedNodeIds(newIds);
+        selectedNodeIdsRef.current = newIds;
+        setSelectedNodeId(newIds[newIds.length - 1] || null);
+        showToast(
+          newNodes.length > 1 ? `Pasted ${newNodes.length} cards` : 'Pasted card',
+          'success'
+        );
+        return;
+      }
+
+      // Otherwise, handle regular text/url from clipboard
+      if (!clipboardText.trim()) {
+        showToast('Clipboard is empty', 'info');
+        return;
+      }
+
+      const trimmed = clipboardText.trim();
+      const isUrl = /^https?:\/\//i.test(trimmed);
+
+      recordSnapshot();
+
+      if (isUrl) {
+        const cardWidth = 320;
+        const cardHeight = 200;
+        let finalX = canvasX - cardWidth / 2;
+        let finalY = canvasY - cardHeight / 2;
+        if (canvasSnapGridRef.current) {
+          finalX = Math.round(finalX / step) * step;
+          finalY = Math.round(finalY / step) * step;
+        }
+        const newNode: CanvasNode = {
+          id: `node-${Date.now()}`,
+          board_id: effectiveBoardId,
+          type: 'link',
+          x: Math.round(finalX),
+          y: Math.round(finalY),
+          width: cardWidth,
+          height: cardHeight,
+          url: trimmed,
+          text_content: trimmed,
+          color: '',
+        };
+        await saveCanvasNode(newNode);
+        triggerDiskSync(effectiveBoardId);
+        setNodes((prev) => [...prev, newNode]);
+        nodesRef.current = [...nodesRef.current, newNode];
+        selectSingleNode(newNode.id);
+        showToast('Pasted web page link', 'success');
+      } else {
+        const cardWidth = 260;
+        const cardHeight = 4 * step;
+        let finalX = canvasX - cardWidth / 2;
+        let finalY = canvasY - cardHeight / 2;
+        if (canvasSnapGridRef.current) {
+          finalX = Math.round(finalX / step) * step;
+          finalY = Math.round(finalY / step) * step;
+        }
+        const newNode: CanvasNode = {
+          id: `node-${Date.now()}`,
+          board_id: effectiveBoardId,
+          type: 'text',
+          x: Math.round(finalX),
+          y: Math.round(finalY),
+          width: cardWidth,
+          height: cardHeight,
+          text_content: trimmed,
+          color: '',
+        };
+        await saveCanvasNode(newNode);
+        triggerDiskSync(effectiveBoardId);
+        setNodes((prev) => [...prev, newNode]);
+        nodesRef.current = [...nodesRef.current, newNode];
+        selectSingleNode(newNode.id);
+        showToast('Pasted note card', 'success');
+      }
+    },
+    [effectiveBoardId, recordSnapshot, selectSingleNode, showToast, triggerDiskSync]
+  );
 
   const handleNudgeSelectedNodes = useCallback(
     (dx: number, dy: number) => {
@@ -2257,6 +2527,36 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         e.preventDefault();
         e.stopPropagation();
         handleDuplicateSelectedNodes();
+        return;
+      }
+
+      // Ctrl+C / Cmd+C: Copy selected card(s)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
+        const targetIds =
+          selectedNodeIdsRef.current.length > 0
+            ? selectedNodeIdsRef.current
+            : selectedNodeId
+              ? [selectedNodeId]
+              : [];
+        if (targetIds.length > 0) {
+          e.preventDefault();
+          e.stopPropagation();
+          handleCopyCards();
+          return;
+        }
+      }
+
+      // Ctrl+V / Cmd+V: Paste card(s) or clipboard text at viewport center
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
+        e.preventDefault();
+        e.stopPropagation();
+        const el = containerRef.current;
+        const ct = currentTransformRef.current;
+        const width = el ? el.clientWidth : 800;
+        const height = el ? el.clientHeight : 600;
+        const centerX = (width / 2 - ct.x) / ct.scale;
+        const centerY = (height / 2 - ct.y) / ct.scale;
+        handlePasteAtCoordinates(centerX, centerY);
         return;
       }
 
@@ -4096,89 +4396,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [effectiveBoardId, openInputDialog, recordSnapshot, selectSingleNode, showToast, triggerDiskSync]
   );
 
-  const handlePasteAtCoordinates = useCallback(
-    async (canvasX: number, canvasY: number) => {
-      if (canvasReadOnlyRef.current) {
-        showToast('Canvas is in read-only mode', 'warning');
-        return;
-      }
-
-      let clipboardText = '';
-      try {
-        clipboardText = await navigator.clipboard.readText();
-      } catch {
-        // Clipboard read was blocked or empty
-      }
-
-      if (!clipboardText.trim()) {
-        showToast('Clipboard is empty', 'info');
-        return;
-      }
-
-      const trimmed = clipboardText.trim();
-      const isUrl = /^https?:\/\//i.test(trimmed);
-
-      recordSnapshot();
-      const step = gridSizeRef.current || 20;
-
-      if (isUrl) {
-        const cardWidth = 320;
-        const cardHeight = 200;
-        let finalX = canvasX - cardWidth / 2;
-        let finalY = canvasY - cardHeight / 2;
-        if (canvasSnapGridRef.current) {
-          finalX = Math.round(finalX / step) * step;
-          finalY = Math.round(finalY / step) * step;
-        }
-        const newNode: CanvasNode = {
-          id: `node-${Date.now()}`,
-          board_id: effectiveBoardId,
-          type: 'link',
-          x: Math.round(finalX),
-          y: Math.round(finalY),
-          width: cardWidth,
-          height: cardHeight,
-          url: trimmed,
-          text_content: trimmed,
-          color: '',
-        };
-        await saveCanvasNode(newNode);
-        triggerDiskSync(effectiveBoardId);
-        setNodes((prev) => [...prev, newNode]);
-        nodesRef.current = [...nodesRef.current, newNode];
-        selectSingleNode(newNode.id);
-        showToast('Pasted web page link', 'success');
-      } else {
-        const cardWidth = 260;
-        const cardHeight = 4 * step;
-        let finalX = canvasX - cardWidth / 2;
-        let finalY = canvasY - cardHeight / 2;
-        if (canvasSnapGridRef.current) {
-          finalX = Math.round(finalX / step) * step;
-          finalY = Math.round(finalY / step) * step;
-        }
-        const newNode: CanvasNode = {
-          id: `node-${Date.now()}`,
-          board_id: effectiveBoardId,
-          type: 'text',
-          x: Math.round(finalX),
-          y: Math.round(finalY),
-          width: cardWidth,
-          height: cardHeight,
-          text_content: trimmed,
-          color: '',
-        };
-        await saveCanvasNode(newNode);
-        triggerDiskSync(effectiveBoardId);
-        setNodes((prev) => [...prev, newNode]);
-        nodesRef.current = [...nodesRef.current, newNode];
-        selectSingleNode(newNode.id);
-        showToast('Pasted note card', 'success');
-      }
-    },
-    [effectiveBoardId, recordSnapshot, selectSingleNode, showToast, triggerDiskSync]
-  );
-
   const handleCanvasContextMenu = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
@@ -4335,6 +4552,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           handlePasteAtCoordinates(canvasX, canvasY);
         },
         canPaste: true,
+        onFitToCenter: handleFitToCenter,
         snapToGrid: canvasSnapGrid,
         onToggleSnapToGrid: () => setCanvasSnapGrid(!canvasSnapGrid),
         snapToObjects: canvasSnapObjects,
@@ -4363,6 +4581,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       getCardDimensions,
       handleAddStickyCard,
       handleAddWebPageCard,
+      handleFitToCenter,
       handlePasteAtCoordinates,
       handleRedo,
       handleUndo,
@@ -4399,7 +4618,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const items = buildMultiSelectContextMenu({
           selectedCount: currentSelectedIds.length,
           onFitToCenter: handleFitToCenter,
-          onDuplicate: handleDuplicateSelectedNodes,
+          onDuplicate: () => handleDuplicateSelectedNodes(),
+          onCopy: () => handleCopyCards(),
           onColorChange: (color) => {
             for (const id of currentSelectedIds) {
               handleColorChange(id, color);
@@ -4442,6 +4662,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           node,
           doc,
           onFitToCenter: () => handleFitNodeToCenter(node.id),
+          onDuplicate: () => handleDuplicateSelectedNodes(node.id),
+          onCopy: () => handleCopyCards(node.id),
           onSwapFile: () => {
             setSwappingNodeId(node.id);
             setSearchModalState({
@@ -4545,6 +4767,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const items = buildLinkCardContextMenu({
           node,
           onFitToCenter: () => handleFitNodeToCenter(node.id),
+          onDuplicate: () => handleDuplicateSelectedNodes(node.id),
+          onCopy: () => handleCopyCards(node.id),
           onOpenLink: () => {
             if (node.url) window.open(node.url, '_blank');
           },
@@ -4584,6 +4808,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const items = buildTextCardContextMenu({
         node,
         onFitToCenter: () => handleFitNodeToCenter(node.id),
+        onDuplicate: () => handleDuplicateSelectedNodes(node.id),
+        onCopy: () => handleCopyCards(node.id),
         onEdit: () => setAutoEditingNodeId(node.id),
         onConvertToFile: () => handleConvertCardToFile(node.id),
         currentColor: node.color,
@@ -4599,6 +4825,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       effectiveBoardId,
       handleColorChange,
       handleConvertCardToFile,
+      handleCopyCards,
       handleDeleteNode,
       handleDeleteSelectedNodes,
       handleDuplicateSelectedNodes,

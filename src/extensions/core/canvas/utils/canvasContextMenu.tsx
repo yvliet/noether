@@ -76,6 +76,7 @@ export interface CanvasBackgroundMenuParams {
   canRedo: boolean;
   onPaste: () => void;
   canPaste: boolean;
+  onFitToCenter: () => void;
   snapToGrid: boolean;
   onToggleSnapToGrid: () => void;
   snapToObjects: boolean;
@@ -147,6 +148,12 @@ export function buildCanvasBackgroundContextMenu(
       disabled: !params.canPaste,
       onClick: params.onPaste,
     },
+    {
+      id: 'canvas-fit-to-center',
+      title: 'Fit to center',
+      icon: <CenterFocusIcon size={14} />,
+      onClick: params.onFitToCenter,
+    },
     { type: 'separator' },
     {
       id: 'canvas-snap-grid',
@@ -197,6 +204,8 @@ export interface NoteCardMenuParams {
   node: CanvasNode;
   doc: DocumentItem | null;
   onFitToCenter: () => void;
+  onDuplicate: () => void;
+  onCopy: () => void;
   onSwapFile: () => void;
   onEdit?: () => void;
   onOpenInNewTab: () => void;
@@ -223,6 +232,20 @@ export function buildNoteCardContextMenu(params: NoteCardMenuParams): ContextMen
       title: 'Fit to center',
       icon: <CenterFocusIcon size={14} />,
       onClick: params.onFitToCenter,
+    },
+    {
+      id: 'card-duplicate',
+      title: 'Duplicate card',
+      icon: <Copy01Icon size={14} />,
+      shortcut: 'Ctrl+D',
+      onClick: params.onDuplicate,
+    },
+    {
+      id: 'card-copy',
+      title: 'Copy',
+      icon: <Copy01Icon size={14} />,
+      shortcut: 'Ctrl+C',
+      onClick: params.onCopy,
     },
     {
       id: 'card-swap-file',
@@ -342,6 +365,8 @@ export function buildNoteCardContextMenu(params: NoteCardMenuParams): ContextMen
 export interface TextCardMenuParams {
   node: CanvasNode;
   onFitToCenter: () => void;
+  onDuplicate: () => void;
+  onCopy: () => void;
   onEdit: () => void;
   onConvertToFile: () => void;
   currentColor?: string;
@@ -356,6 +381,20 @@ export function buildTextCardContextMenu(params: TextCardMenuParams): ContextMen
       title: 'Fit to center',
       icon: <CenterFocusIcon size={14} />,
       onClick: params.onFitToCenter,
+    },
+    {
+      id: 'card-duplicate',
+      title: 'Duplicate card',
+      icon: <Copy01Icon size={14} />,
+      shortcut: 'Ctrl+D',
+      onClick: params.onDuplicate,
+    },
+    {
+      id: 'card-copy',
+      title: 'Copy',
+      icon: <Copy01Icon size={14} />,
+      shortcut: 'Ctrl+C',
+      onClick: params.onCopy,
     },
     {
       id: 'card-edit',
@@ -390,6 +429,8 @@ export function buildTextCardContextMenu(params: TextCardMenuParams): ContextMen
 export interface LinkCardMenuParams {
   node: CanvasNode;
   onFitToCenter: () => void;
+  onDuplicate: () => void;
+  onCopy: () => void;
   onOpenLink: () => void;
   onCopyUrl: () => void;
   onEditUrl: () => void;
@@ -405,6 +446,20 @@ export function buildLinkCardContextMenu(params: LinkCardMenuParams): ContextMen
       title: 'Fit to center',
       icon: <CenterFocusIcon size={14} />,
       onClick: params.onFitToCenter,
+    },
+    {
+      id: 'card-duplicate',
+      title: 'Duplicate card',
+      icon: <Copy01Icon size={14} />,
+      shortcut: 'Ctrl+D',
+      onClick: params.onDuplicate,
+    },
+    {
+      id: 'card-copy',
+      title: 'Copy',
+      icon: <Copy01Icon size={14} />,
+      shortcut: 'Ctrl+C',
+      onClick: params.onCopy,
     },
     {
       id: 'card-open-link',
@@ -446,6 +501,7 @@ export interface MultiSelectMenuParams {
   selectedCount: number;
   onFitToCenter: () => void;
   onDuplicate: () => void;
+  onCopy?: () => void;
   onColorChange: (color: string) => void;
   onDelete: () => void;
 }
@@ -465,6 +521,17 @@ export function buildMultiSelectContextMenu(params: MultiSelectMenuParams): Cont
       shortcut: 'Ctrl+D',
       onClick: params.onDuplicate,
     },
+    ...(params.onCopy
+      ? [
+          {
+            id: 'multi-copy',
+            title: `Copy ${params.selectedCount} cards`,
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+C',
+            onClick: params.onCopy,
+          },
+        ]
+      : []),
     {
       id: 'multi-color',
       title: 'Color',

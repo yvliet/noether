@@ -195,6 +195,21 @@ export const COMPACT_DOC_CSS = `
     color: #dcdcdc !important;
     overflow-x: auto !important;
   }
+  .noether-compact-doc .noether-tab-guide::before,
+  .noether-compact-doc .noether-indent-guides .noether-tab-guide::before,
+  .noether-compact-doc.tiptap-reading-view.noether-indent-guides .noether-tab-guide::before {
+    top: -0.45rem !important;
+    bottom: -0.35rem !important;
+  }
+  .noether-compact-doc .noether-tab-guide.noether-tab-guide-end::before,
+  .noether-compact-doc .noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before,
+  .noether-compact-doc.tiptap-reading-view.noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before {
+    bottom: -0.15em !important;
+  }
+  .tiptap-reading-view .task-list-item input[type="checkbox"] {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+  }
 `;
 
 export function ensureCompactDocStyles(): void {
