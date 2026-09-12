@@ -195,11 +195,6 @@ export function useKeyboardShortcuts() {
 
       // 4. Command Palette / Quick Open: Ctrl + K, Ctrl + P
       if (isMatch('workspace:command-palette', ['Ctrl+K', 'Ctrl+P']) || isMatch('workspace:quick-open', ['Ctrl+K', 'Ctrl+P'])) {
-        // If user is inside an editor, allow Ctrl+K for editor link wrapping/insertion instead of hijacking
-        const isEditor = Boolean(target?.closest('.ProseMirror'));
-        if (isEditor && (e.key === 'k' || e.key === 'K')) {
-          return;
-        }
         e.preventDefault();
         ws.setIsCommandPaletteOpen(true);
         return;

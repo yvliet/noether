@@ -86,20 +86,28 @@ export interface ExtensionSettingTab {
 export interface CommandItem {
   /** Unique command identifier. */
   id: string;
-  /** Display title shown in the command palette. */
-  title: string;
+  /** Display title shown in the command palette, or a dynamic function returning the current stateful title. */
+  title: string | ((app: NoetherApp) => string);
   /** Grouping section name (e.g., 'Navigation', 'Editor', 'Files'). */
   section?: string;
-  /** Icon displayed next to the command title. */
-  icon?: React.ReactNode;
+  /** Icon displayed next to the command title, or a dynamic function returning the current stateful icon. */
+  icon?: React.ReactNode | ((app: NoetherApp) => React.ReactNode);
   /** Keyboard shortcut combo string (e.g., 'Ctrl+Shift+B', 'Alt+.'). */
   hotkey?: string;
+  /** Optional search aliases/keywords to match in the command palette (e.g. ['toggle', 'sidebar']). */
+  aliases?: string[];
   /** Whether the hotkey should fire even when an input/textarea element has focus. */
   allowInInput?: boolean;
   /** Handler function executed when the command is triggered. */
   action: (app: NoetherApp) => void | Promise<void>;
   /** Optional predicate determining if the command should appear in the palette. */
   isVisible?: (app: NoetherApp) => boolean;
+  /** Optional predicate determining if the command is currently executable in this context. */
+  isEnabled?: (app: NoetherApp) => boolean;
+  /** Optional extension identifier that registered this command. */
+  extensionId?: string;
+  /** Optional extension display name that registered this command. */
+  extensionName?: string;
 }
 
 /**

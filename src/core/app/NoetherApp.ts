@@ -302,10 +302,22 @@ export class NoetherApp {
           storeRefs.workspace?.getState()?.setActiveRightTab(tabId);
         }
       },
+      isSidebarOpen: (side: 'left' | 'right'): boolean => {
+        const ws = storeRefs.workspace?.getState();
+        return side === 'left' ? Boolean(ws?.isLeftSidebarOpen) : Boolean(ws?.isRightSidebarOpen);
+      },
+      revealInFileTree: (documentId: string): void => {
+        storeRefs.workspace?.getState()?.setIsLeftSidebarOpen(true);
+        storeRefs.workspace?.getState()?.setActiveLeftView('files');
+        storeRefs.document?.getState()?.selectSingleDoc(documentId);
+      },
 
       // ── Split View ──
       toggleSplitView: (): void => {
         storeRefs.workspace?.getState()?.toggleSplitView();
+      },
+      isSplitViewOpen: (): boolean => {
+        return Boolean(storeRefs.workspace?.getState()?.isSplitView);
       },
       openSplitTab: (
         documentId: string,

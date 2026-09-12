@@ -35,6 +35,8 @@ export interface ConfirmDialogConfig {
   title: string;
   /** Informational message body describing the action to confirm. */
   message: string;
+  /** Optional secondary explanatory text or warning detail. */
+  subtext?: string;
   /** Text label for the confirmation button (defaults to 'OK' or 'Confirm'). */
   confirmText?: string;
   /** Text label for the cancel button (defaults to 'Cancel'). */
@@ -45,6 +47,8 @@ export interface ConfirmDialogConfig {
   onConfirm: () => void | Promise<void>;
   /** Optional callback invoked when the user cancels the dialog. */
   onCancel?: () => void;
+  /** Optional callback invoked when user checks don't ask again. */
+  onDontAskAgain?: () => void;
 }
 
 /**
@@ -233,6 +237,21 @@ export interface WorkspaceAPI {
    */
   setActiveSidebarTab(side: 'left' | 'right', tabId: string): void;
 
+  /**
+   * Checks whether a sidebar panel is currently open.
+   * @param side - Which sidebar to check ('left' or 'right').
+   * @since 0.5.0
+   */
+  isSidebarOpen(side: 'left' | 'right'): boolean;
+
+  /**
+   * Reveals and highlights a document in the file explorer sidebar.
+   * Expands the left sidebar and switches to the files tab if closed.
+   * @param documentId - The unique document identifier.
+   * @since 0.5.0
+   */
+  revealInFileTree(documentId: string): void;
+
   // ── Split View ──
 
   /**
@@ -240,6 +259,12 @@ export interface WorkspaceAPI {
    * @since 0.2.0
    */
   toggleSplitView(): void;
+
+  /**
+   * Checks whether split view is currently active.
+   * @since 0.5.0
+   */
+  isSplitViewOpen(): boolean;
 
   /**
    * Opens a document in the split pane.

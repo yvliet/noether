@@ -261,7 +261,12 @@ export abstract class Extension {
    * @since 0.1.0
    */
   public addCommand(command: CommandItem): Disposable {
-    const d = this.app.commands.registerCommand(command);
+    const enrichedCommand: CommandItem = {
+      ...command,
+      extensionId: command.extensionId || this.manifest.id,
+      extensionName: command.extensionName || this.manifest.name,
+    };
+    const d = this.app.commands.registerCommand(enrichedCommand);
     return this.registerDisposable(d);
   }
 
