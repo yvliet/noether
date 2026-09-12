@@ -1,4 +1,4 @@
-# Plugin Quick Start
+# Extension Quick Start
 
 Create and run your first Noether extension in under 5 minutes. This tutorial guides you through building a real-time word counter extension with a status bar widget, command palette action, and action rail button.
 
@@ -52,7 +52,7 @@ Create `manifest.json`:
 
 ---
 
-Extensions extend the `Extension` (or legacy `Plugin`) base class and implement the `onload()` lifecycle hook.
+Extensions extend the `Extension` base class and implement the `onload()` lifecycle hook.
 
 Create `main.js`:
 
@@ -165,7 +165,7 @@ For larger extensions, I strongly recommend authoring in TypeScript and compilin
 }
 ```
 
-Noether's runtime sandbox exposes `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`, and `@hugeicons` directly, so you can mark them external to keep your plugin bundle lightweight.
+Noether's runtime sandbox exposes `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`, and `@hugeicons` directly, so you can mark them external to keep your extension bundle lightweight.
 
 ### TypeScript Source (`src/index.ts`)
 ```typescript
@@ -192,7 +192,7 @@ npm run build
 Copy `manifest.json` and the resulting `main.js` into your Vault's extension directory.
 
 
-## 5. Next Steps
+## 6. Next Steps
 
 ---
 

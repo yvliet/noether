@@ -1,27 +1,27 @@
 /**
- * @file IconifyPickerModal.tsx
+ * @file MoreIconsPickerModal.tsx
  * @description
- * Unified icon selector modal leveraging the noether IconPicker component.
+ * Unified icon selector modal leveraging the Noether IconPicker component.
  * Allows choosing custom icons for both folders and files.
  *
  * @author Yuliet Li
- * @since 1.0.0
+ * @since 1.2.0
  */
 
 import React from 'react';
 import { IconPicker } from '@/components/common/IconPicker';
 import { Folder01Icon, File01Icon } from '@/components/common/Icons';
-import { useIconifyStore } from './iconifyStore';
+import { useMoreIconsStore } from './moreIconsStore';
 
-export const IconifyPickerModal: React.FC = () => {
-  const pickerTarget = useIconifyStore((s) => s.pickerTarget);
-  const closePicker = useIconifyStore((s) => s.closePicker);
-  const setIcon = useIconifyStore((s) => s.setIcon);
-  const removeIcon = useIconifyStore((s) => s.removeIcon);
-  const currentIconEntry = useIconifyStore((s) =>
+export const MoreIconsPickerModal: React.FC = () => {
+  const pickerTarget = useMoreIconsStore((s) => s.pickerTarget);
+  const closePicker = useMoreIconsStore((s) => s.closePicker);
+  const setIcon = useMoreIconsStore((s) => s.setIcon);
+  const removeIcon = useMoreIconsStore((s) => s.removeIcon);
+  const currentIconEntry = useMoreIconsStore((s) =>
     pickerTarget ? s.icons[pickerTarget.id] : undefined
   );
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
 
   if (!pickerTarget) return null;
 
@@ -57,4 +57,5 @@ export const IconifyPickerModal: React.FC = () => {
   );
 };
 
-export default IconifyPickerModal;
+export const IconifyPickerModal = MoreIconsPickerModal;
+export default MoreIconsPickerModal;

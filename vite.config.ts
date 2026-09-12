@@ -5,7 +5,7 @@ import path from 'path';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const tursoUrl = env.VITE_TURSO_DATABASE_URL || env.DATABASE_URL || 'https://flint-ricriya.aws-ap-northeast-1.turso.io';
+  const tursoUrl = env.VITE_TURSO_DATABASE_URL || env.DATABASE_URL || 'https://noether-ricriya.aws-ap-northeast-1.turso.io';
   const normalizedTursoUrl = tursoUrl.startsWith('turso://')
     ? 'https://' + tursoUrl.slice('turso://'.length)
     : tursoUrl.startsWith('libsql://')

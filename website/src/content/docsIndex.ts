@@ -20,13 +20,14 @@ import aiMcpRaw from './docs/user-guide/ai-and-mcp.md?raw';
 
 import dualStorageRaw from './docs/architecture/dual-storage.md?raw';
 import kernelDesignRaw from './docs/architecture/kernel-design.md?raw';
-import quickStartRaw from './docs/plugins/quick-start.md?raw';
-import manifestSpecRaw from './docs/plugins/manifest-spec.md?raw';
-import extensionPointsRaw from './docs/plugins/extension-points.md?raw';
-import mcpToolsRaw from './docs/plugins/mcp-tools.md?raw';
-import eventsStorageRaw from './docs/plugins/events-and-storage.md?raw';
-import publishingRaw from './docs/plugins/publishing.md?raw';
-import syncRaw from './docs/plugins/sync.md?raw';
+import quickStartRaw from './docs/extensions/quick-start.md?raw';
+import manifestSpecRaw from './docs/extensions/manifest-spec.md?raw';
+import extensionPointsRaw from './docs/extensions/extension-points.md?raw';
+import mcpToolsRaw from './docs/extensions/mcp-tools.md?raw';
+import eventsStorageRaw from './docs/extensions/events-and-storage.md?raw';
+import publishingRaw from './docs/extensions/publishing.md?raw';
+import syncRaw from './docs/extensions/sync.md?raw';
+import moreIconsRaw from './docs/extensions/more-icons.md?raw';
 
 export interface DocItem {
   id: string;
@@ -176,74 +177,84 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     path: 'website/src/content/docs/architecture/kernel-design.md',
     content: kernelDesignRaw,
   },
-  'plugins/quick-start': {
+  'extensions/quick-start': {
     id: 'quick-start',
-    slug: 'plugins/quick-start',
-    title: 'Plugin Quick Start',
+    slug: 'extensions/quick-start',
+    title: 'Extension Quick Start',
     description: 'Step-by-step guide to building your first Noether extension in under 5 minutes.',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'Rocket01Icon',
-    path: 'website/src/content/docs/plugins/quick-start.md',
+    path: 'website/src/content/docs/extensions/quick-start.md',
     content: quickStartRaw,
   },
-  'plugins/manifest-spec': {
+  'extensions/manifest-spec': {
     id: 'manifest-spec',
-    slug: 'plugins/manifest-spec',
+    slug: 'extensions/manifest-spec',
     title: 'Manifest Specification',
     description: 'Complete JSON schema and field reference for manifest.json.',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'FileCode01Icon',
-    path: 'website/src/content/docs/plugins/manifest-spec.md',
+    path: 'website/src/content/docs/extensions/manifest-spec.md',
     content: manifestSpecRaw,
   },
-  'plugins/extension-points': {
+  'extensions/extension-points': {
     id: 'extension-points',
-    slug: 'plugins/extension-points',
+    slug: 'extensions/extension-points',
     title: 'UI Extension Points',
     description: 'Registering Action Rail icons, Command Palette entries, Status Bar items, Context Menus, and Views.',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'Layout01Icon',
-    path: 'website/src/content/docs/plugins/extension-points.md',
+    path: 'website/src/content/docs/extensions/extension-points.md',
     content: extensionPointsRaw,
   },
-  'plugins/mcp-tools': {
+  'extensions/more-icons': {
+    id: 'more-icons',
+    slug: 'extensions/more-icons',
+    title: 'More icons Extension',
+    description: 'Custom file and folder icons, Lucide and Hugeicons catalogs, and automated MCP icon tools.',
+    category: 'Extension Development',
+    icon: 'SparklesIcon',
+    path: 'website/src/content/docs/extensions/more-icons.md',
+    content: moreIconsRaw,
+  },
+  'extensions/mcp-tools': {
     id: 'mcp-tools',
-    slug: 'plugins/mcp-tools',
+    slug: 'extensions/mcp-tools',
     title: 'Model Context Protocol (MCP)',
     description: 'Exposing native AI agent tools and prompts with JSON Schema and Zod validation.',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'AiChat01Icon',
-    path: 'website/src/content/docs/plugins/mcp-tools.md',
+    path: 'website/src/content/docs/extensions/mcp-tools.md',
     content: mcpToolsRaw,
   },
-  'plugins/events-and-storage': {
+  'extensions/events-and-storage': {
     id: 'events-and-storage',
-    slug: 'plugins/events-and-storage',
+    slug: 'extensions/events-and-storage',
     title: 'Events & Relational Storage',
     description: 'Subscribing to the EventBus, managing settings, and creating declarative SQLite tables.',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'Activity01Icon',
-    path: 'website/src/content/docs/plugins/events-and-storage.md',
+    path: 'website/src/content/docs/extensions/events-and-storage.md',
     content: eventsStorageRaw,
   },
-  'plugins/publishing': {
+  'extensions/publishing': {
     id: 'publishing',
-    slug: 'plugins/publishing',
+    slug: 'extensions/publishing',
     title: 'Publishing to Marketplace',
     description: 'Submitting extensions via the Web Portal or CLI to the Noether community marketplace.',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'Upload01Icon',
-    path: 'website/src/content/docs/plugins/publishing.md',
+    path: 'website/src/content/docs/extensions/publishing.md',
     content: publishingRaw,
   },
-  'plugins/sync': {
+  'extensions/sync': {
     id: 'sync',
-    slug: 'plugins/sync',
+    slug: 'extensions/sync',
     title: 'Sync',
     description: 'Sync notes across devices using free cloud databases (Supabase, Turso, Cloudflare D1, REST).',
-    category: 'Plugin Development',
+    category: 'Extension Development',
     icon: 'DatabaseSync01Icon',
-    path: 'website/src/content/docs/plugins/sync.md',
+    path: 'website/src/content/docs/extensions/sync.md',
     content: syncRaw,
   },
 };
@@ -285,17 +296,18 @@ export const docsTree: DocFolder[] = [
     ],
   },
   {
-    id: 'plugins',
-    title: 'Plugin Development',
+    id: 'extensions',
+    title: 'Extension Development',
     isFolder: true,
     children: [
-      DOC_ITEMS['plugins/quick-start'],
-      DOC_ITEMS['plugins/manifest-spec'],
-      DOC_ITEMS['plugins/extension-points'],
-      DOC_ITEMS['plugins/mcp-tools'],
-      DOC_ITEMS['plugins/events-and-storage'],
-      DOC_ITEMS['plugins/publishing'],
-      DOC_ITEMS['plugins/sync'],
+      DOC_ITEMS['extensions/quick-start'],
+      DOC_ITEMS['extensions/manifest-spec'],
+      DOC_ITEMS['extensions/extension-points'],
+      DOC_ITEMS['extensions/more-icons'],
+      DOC_ITEMS['extensions/mcp-tools'],
+      DOC_ITEMS['extensions/events-and-storage'],
+      DOC_ITEMS['extensions/publishing'],
+      DOC_ITEMS['extensions/sync'],
     ],
   },
 ];

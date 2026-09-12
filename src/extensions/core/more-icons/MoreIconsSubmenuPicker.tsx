@@ -1,5 +1,5 @@
 /**
- * @file IconifySubmenuPicker.tsx
+ * @file MoreIconsSubmenuPicker.tsx
  * @description
  * Unified flyout icon selector rendered docked beside the slash command palette
  * when typing `/icon`.
@@ -9,24 +9,27 @@
  * keyboard navigation.
  *
  * @author Yuliet Li
- * @since 1.1.0
+ * @since 1.2.0
  */
 
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { IconPicker, IconPickerHandle } from '@/components/common/IconPicker';
-import { SparklesIcon } from '@/components/common/Icons';
 
-export interface IconifySubmenuPickerHandle {
+export interface MoreIconsSubmenuPickerHandle {
   onKeyDown: (e: KeyboardEvent) => boolean;
 }
 
-export interface IconifySubmenuPickerProps {
+export type IconifySubmenuPickerHandle = MoreIconsSubmenuPickerHandle;
+
+export interface MoreIconsSubmenuPickerProps {
   onSelect: (data: { iconId: string; pack: string; color?: string }) => void;
   onClose: () => void;
 }
 
-export const IconifySubmenuPicker = React.memo(
-  forwardRef<IconifySubmenuPickerHandle, IconifySubmenuPickerProps>(
+export type IconifySubmenuPickerProps = MoreIconsSubmenuPickerProps;
+
+export const MoreIconsSubmenuPicker = React.memo(
+  forwardRef<MoreIconsSubmenuPickerHandle, MoreIconsSubmenuPickerProps>(
     ({ onSelect, onClose }, ref) => {
       const pickerRef = useRef<IconPickerHandle>(null);
 
@@ -57,6 +60,7 @@ export const IconifySubmenuPicker = React.memo(
     }
   )
 );
-IconifySubmenuPicker.displayName = 'IconifySubmenuPicker';
+MoreIconsSubmenuPicker.displayName = 'MoreIconsSubmenuPicker';
 
-export default IconifySubmenuPicker;
+export const IconifySubmenuPicker = MoreIconsSubmenuPicker;
+export default MoreIconsSubmenuPicker;

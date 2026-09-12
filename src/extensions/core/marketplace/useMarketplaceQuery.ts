@@ -29,8 +29,8 @@ import {
 } from '@/components/common/Icons';
 import { fetchTursoPlugins } from './tursoClient';
 
-export const PRIMARY_REGISTRY_URL = 'https://api.noethernotes.dev/api/v1/plugins';
-export const LOCALHOST_DEV_URL = 'http://localhost:3001/api/v1/plugins';
+export const PRIMARY_REGISTRY_URL = 'https://api.noethernotes.dev/api/v1/extensions';
+export const LOCALHOST_DEV_URL = 'http://localhost:3001/api/v1/extensions';
 export const STORAGE_CACHE_KEY = 'noether_marketplace_catalogue_cache';
 export const STORAGE_CACHE_TIME_KEY = 'noether_marketplace_catalogue_cache_time';
 
@@ -239,6 +239,7 @@ const CORE_EXTENSION_IDS = new Set([
   'tables',
   'bookmarks',
   'marketplace',
+  'more-icons',
   'iconify',
   'sketch',
   'default-commands',

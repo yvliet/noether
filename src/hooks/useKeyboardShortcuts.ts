@@ -496,7 +496,7 @@ export function useKeyboardShortcuts() {
         }
       }
 
-      // Generic Registered Plugin & App Commands Hotkey Dispatch
+      // Generic Registered Extension & App Commands Hotkey Dispatch
       const registeredCommands = appInstance.commands.getAllCommands();
       for (const cmd of registeredCommands) {
         const customHotkey = ss.customHotkeys[cmd.id];

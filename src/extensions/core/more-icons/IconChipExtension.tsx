@@ -8,16 +8,15 @@
  * Provides instant zero-animation popover for changing icons and color customization.
  *
  * @author Yuliet Li
- * @since 1.1.0
+ * @since 1.2.0
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Node, mergeAttributes, InputRule } from '@tiptap/core';
 import { ReactNodeViewRenderer, NodeViewWrapper, NodeViewProps } from '@tiptap/react';
 import { renderUnifiedIcon } from '@/components/common/IconPicker';
-import { useIconifyStore } from './iconifyStore';
+import { useMoreIconsStore } from './moreIconsStore';
 import {
-  SparklesIcon,
   Delete02Icon,
   Cancel01Icon,
 } from '@/components/common/Icons';
@@ -41,7 +40,6 @@ export const IconChipView: React.FC<NodeViewProps> = ({
 }) => {
   const { iconId, pack = 'hugeicons', color } = node.attrs;
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-  const [isPickerActive, setIsPickerActive] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const fullIdentifier = pack ? `${pack}:${iconId}` : iconId;
@@ -53,14 +51,12 @@ export const IconChipView: React.FC<NodeViewProps> = ({
     const handleDocumentClick = (e: MouseEvent) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target as unknown as globalThis.Node)) {
         setIsPopoverOpen(false);
-        setIsPickerActive(false);
       }
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsPopoverOpen(false);
-        setIsPickerActive(false);
       }
     };
 

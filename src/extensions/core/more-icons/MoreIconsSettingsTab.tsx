@@ -1,20 +1,21 @@
 /**
- * @file IconifySettingsTab.tsx
+ * @file MoreIconsSettingsTab.tsx
  * @description
- * Settings panel for the Iconify extension.
+ * Settings panel for the More icons extension.
  * Allows users to configure default icon visibility, inspect all folders and files
  * with active custom icons, filter by item type, and manage or reset icon assignments.
  * Zero artificial micro-interaction animations/transitions.
  *
  * @author Yuliet Li
- * @since 1.0.0
+ * @since 1.2.0
  */
 
 import React, { useState, useMemo } from 'react';
-import { useIconifyStore } from './iconifyStore';
+import { useMoreIconsStore } from './moreIconsStore';
+import { DEFAULT_MORE_ICONS_SETTINGS } from './moreIconsDb';
 import { useNoetherApp, useVaultDocuments } from 'noether';
 import { DynamicHugeIcon } from '@/components/common/IconPicker';
-import { EmojiRenderer, EmojiStyle, EMOJI_STYLE_LABELS } from '@/components/common/emoji';
+import { EmojiRenderer, EmojiStyle } from '@/components/common/emoji';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import {
@@ -23,25 +24,25 @@ import {
   Search01Icon,
 } from '@/components/common/Icons';
 
-export const IconifySettingsTab: React.FC = () => {
-  const icons = useIconifyStore((s) => s.icons);
-  const enableFolderIcons = useIconifyStore((s) => s.enableFolderIcons);
-  const setEnableFolderIcons = useIconifyStore((s) => s.setEnableFolderIcons);
-  const enableFileIcons = useIconifyStore((s) => s.enableFileIcons);
-  const setEnableFileIcons = useIconifyStore((s) => s.setEnableFileIcons);
-  const enableDocumentIcons = useIconifyStore((s) => s.enableDocumentIcons);
-  const setEnableDocumentIcons = useIconifyStore((s) => s.setEnableDocumentIcons);
-  const showDefaultFolderIcons = useIconifyStore((s) => s.showDefaultFolderIcons);
-  const setShowDefaultFolderIcons = useIconifyStore((s) => s.setShowDefaultFolderIcons);
-  const showDefaultFileIcons = useIconifyStore((s) => s.showDefaultFileIcons);
-  const setShowDefaultFileIcons = useIconifyStore((s) => s.setShowDefaultFileIcons);
-  const showEditorTitleIcon = useIconifyStore((s) => s.showEditorTitleIcon);
-  const setShowEditorTitleIcon = useIconifyStore((s) => s.setShowEditorTitleIcon);
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
-  const setEmojiStyle = useIconifyStore((s) => s.setEmojiStyle);
-  const removeIcon = useIconifyStore((s) => s.removeIcon);
-  const clearAllIcons = useIconifyStore((s) => s.clearAllIcons);
-  const openPicker = useIconifyStore((s) => s.openPicker);
+export const MoreIconsSettingsTab: React.FC = () => {
+  const icons = useMoreIconsStore((s) => s.icons);
+  const enableFolderIcons = useMoreIconsStore((s) => s.enableFolderIcons);
+  const setEnableFolderIcons = useMoreIconsStore((s) => s.setEnableFolderIcons);
+  const enableFileIcons = useMoreIconsStore((s) => s.enableFileIcons);
+  const setEnableFileIcons = useMoreIconsStore((s) => s.setEnableFileIcons);
+  const enableDocumentIcons = useMoreIconsStore((s) => s.enableDocumentIcons);
+  const setEnableDocumentIcons = useMoreIconsStore((s) => s.setEnableDocumentIcons);
+  const showDefaultFolderIcons = useMoreIconsStore((s) => s.showDefaultFolderIcons);
+  const setShowDefaultFolderIcons = useMoreIconsStore((s) => s.setShowDefaultFolderIcons);
+  const showDefaultFileIcons = useMoreIconsStore((s) => s.showDefaultFileIcons);
+  const setShowDefaultFileIcons = useMoreIconsStore((s) => s.setShowDefaultFileIcons);
+  const showEditorTitleIcon = useMoreIconsStore((s) => s.showEditorTitleIcon);
+  const setShowEditorTitleIcon = useMoreIconsStore((s) => s.setShowEditorTitleIcon);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
+  const setEmojiStyle = useMoreIconsStore((s) => s.setEmojiStyle);
+  const removeIcon = useMoreIconsStore((s) => s.removeIcon);
+  const clearAllIcons = useMoreIconsStore((s) => s.clearAllIcons);
+  const openPicker = useMoreIconsStore((s) => s.openPicker);
   const app = useNoetherApp();
   const documents = useVaultDocuments();
   const openConfirmDialog = (opts: any) => (app.workspace as any).openConfirmDialog?.(opts);
@@ -83,13 +84,13 @@ export const IconifySettingsTab: React.FC = () => {
   const fileCount = useMemo(() => allEntries.filter((e) => !e.isFolder).length, [allEntries]);
 
   const isModified =
-    !enableFolderIcons ||
-    !enableFileIcons ||
-    !enableDocumentIcons ||
-    !showDefaultFolderIcons ||
-    showDefaultFileIcons ||
-    !showEditorTitleIcon ||
-    emojiStyle !== 'native' ||
+    enableFolderIcons !== DEFAULT_MORE_ICONS_SETTINGS.enableFolderIcons ||
+    enableFileIcons !== DEFAULT_MORE_ICONS_SETTINGS.enableFileIcons ||
+    enableDocumentIcons !== DEFAULT_MORE_ICONS_SETTINGS.enableDocumentIcons ||
+    showDefaultFolderIcons !== DEFAULT_MORE_ICONS_SETTINGS.showDefaultFolderIcons ||
+    showDefaultFileIcons !== DEFAULT_MORE_ICONS_SETTINGS.showDefaultFileIcons ||
+    showEditorTitleIcon !== DEFAULT_MORE_ICONS_SETTINGS.showEditorTitleIcon ||
+    emojiStyle !== DEFAULT_MORE_ICONS_SETTINGS.emojiStyle ||
     allEntries.length > 0;
 
   const handleClearAll = () => {
@@ -105,13 +106,13 @@ export const IconifySettingsTab: React.FC = () => {
   };
 
   const handleRestoreDefaults = () => {
-    setEnableFolderIcons(true);
-    setEnableFileIcons(true);
-    setEnableDocumentIcons(true);
-    setShowDefaultFolderIcons(true);
-    setShowDefaultFileIcons(false);
-    setShowEditorTitleIcon(true);
-    setEmojiStyle('native');
+    setEnableFolderIcons(DEFAULT_MORE_ICONS_SETTINGS.enableFolderIcons);
+    setEnableFileIcons(DEFAULT_MORE_ICONS_SETTINGS.enableFileIcons);
+    setEnableDocumentIcons(DEFAULT_MORE_ICONS_SETTINGS.enableDocumentIcons);
+    setShowDefaultFolderIcons(DEFAULT_MORE_ICONS_SETTINGS.showDefaultFolderIcons);
+    setShowDefaultFileIcons(DEFAULT_MORE_ICONS_SETTINGS.showDefaultFileIcons);
+    setShowEditorTitleIcon(DEFAULT_MORE_ICONS_SETTINGS.showEditorTitleIcon);
+    setEmojiStyle(DEFAULT_MORE_ICONS_SETTINGS.emojiStyle);
     if (allEntries.length > 0) {
       handleClearAll();
     }
@@ -222,11 +223,11 @@ export const IconifySettingsTab: React.FC = () => {
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {!showDefaultFolderIcons && (
+            {showDefaultFolderIcons && (
               <button
                 type="button"
-                onClick={() => setShowDefaultFolderIcons(true)}
-                title="Restore default (Enabled)"
+                onClick={() => setShowDefaultFolderIcons(false)}
+                title="Restore default (Disabled)"
                 className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
@@ -469,4 +470,5 @@ export const IconifySettingsTab: React.FC = () => {
   );
 };
 
-export default IconifySettingsTab;
+export const IconifySettingsTab = MoreIconsSettingsTab;
+export default MoreIconsSettingsTab;

@@ -1,6 +1,6 @@
-export const iconifyReadme = `# More icons: Let Icons Live in All of Noether
+export const moreIconsReadme = `# More icons: Let Icons Live in All of Noether
 
-**Version**: 1.1.0  
+**Version**: 1.2.0  
 **Author**: Yuliet Li
 
 **More icons** transforms icons into first-class visual citizens across your entire Noether workspace. From folders, files, notes, canvas boards, and tabs to inline rich-text documents and notes, More icons lets icons live everywhere in Noether with an extensible multi-pack architecture and persistent SQLite storage.
@@ -33,6 +33,7 @@ export const iconifyReadme = `# More icons: Let Icons Live in All of Noether
   - **Folder Icons**: Toggle folder icon customization in the file tree and breadcrumbs.
   - **File Icons**: Toggle note, canvas, and file icon customization in the file tree.
   - **In-Document Icons**: Toggle the \`/icon\` slash command and inline document icon chips.
+  - **Default Folder Icons**: Toggle open and closed folder icons beside chevrons when no custom icon is assigned (disabled by default).
 
 ### 5. Zero-Latency Native Performance
 - In-memory Zustand state and dynamic SVG loading for instant 0ms rendering on app boot.
@@ -53,8 +54,10 @@ export const iconifyReadme = `# More icons: Let Icons Live in All of Noether
 
 ## MCP Tools Reference
 
-- \`iconify_list\`: List all items with custom icons assigned (optional \`type\` filter: \`all\`, \`folder\`, \`file\`).
-- \`iconify_get\`: Get the custom icon for a specific folder or file by ID.
-- \`iconify_set\`: Assign a custom icon to an item by ID with optional hex color.
-- \`iconify_remove\`: Remove a custom icon from an item, reverting it to the default icon.
+- \`more-icons_list\` (alias \`iconify_list\`): List all items with custom icons assigned (optional \`type\` filter: \`all\`, \`folder\`, \`file\`).
+- \`more-icons_get\` (alias \`iconify_get\`): Get the custom icon for a specific folder or file by ID.
+- \`more-icons_set\` (alias \`iconify_set\`): Assign a custom icon to an item by ID with optional hex color.
+- \`more-icons_remove\` (alias \`iconify_remove\`): Remove a custom icon from an item, reverting it to the default icon.
 `;
+
+export const iconifyReadme = moreIconsReadme;

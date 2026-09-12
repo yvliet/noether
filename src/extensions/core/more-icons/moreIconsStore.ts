@@ -1,12 +1,12 @@
 /**
- * @file iconifyStore.ts
+ * @file moreIconsStore.ts
  * @description
- * In-memory Zustand state store for Iconify.
+ * In-memory Zustand state store for the More icons extension.
  * Synchronizes with localStorage immediately for 0ms refresh hydration,
- * and maintains SQLite persistence via dbAdapter.
+ * and maintains SQLite persistence via dbAdapter with automatic legacy migration.
  *
  * @author Yuliet Li
- * @since 1.0.0
+ * @since 1.2.0
  */
 
 import { create } from 'zustand';
@@ -14,17 +14,17 @@ import { dbAdapter } from '@/lib/db/adapter';
 import {
   IconEntry,
   IconItemType,
-  loadIconifyFromLocalStorage,
-  saveIconifyToLocalStorage,
-  loadIconifySettingsFromLocalStorage,
-  saveIconifySettingsToLocalStorage,
-  initIconifyDb,
+  loadMoreIconsFromLocalStorage,
+  saveMoreIconsToLocalStorage,
+  loadMoreIconsSettingsFromLocalStorage,
+  saveMoreIconsSettingsToLocalStorage,
+  initMoreIconsDb,
   getAllIconsFromDb,
   setIconInDb,
   removeIconFromDb,
   clearAllIconsInDb,
-  DEFAULT_ICONIFY_SETTINGS,
-} from './iconifyDb';
+  DEFAULT_MORE_ICONS_SETTINGS,
+} from './moreIconsDb';
 
 export interface IconPickerTarget {
   id: string;
@@ -32,7 +32,7 @@ export interface IconPickerTarget {
   isFolder: boolean;
 }
 
-export interface IconifyState {
+export interface MoreIconsState {
   /** Map of itemId -> IconEntry */
   icons: Record<string, IconEntry>;
   /** Item currently targeted in the icon selector modal, or null if closed */
@@ -84,11 +84,13 @@ export interface IconifyState {
   restoreDefaults: () => void;
 }
 
-export const useIconifyStore = create<IconifyState>((set, get) => {
-  const initialSettings = loadIconifySettingsFromLocalStorage();
+export type IconifyState = MoreIconsState;
 
-  const persistCurrentSettings = (overrides?: Partial<import('./iconifyDb').IconifySettings>) => {
-    saveIconifySettingsToLocalStorage({
+export const useMoreIconsStore = create<MoreIconsState>((set, get) => {
+  const initialSettings = loadMoreIconsSettingsFromLocalStorage();
+
+  const persistCurrentSettings = (overrides?: Partial<import('./moreIconsDb').MoreIconsSettings>) => {
+    saveMoreIconsSettingsToLocalStorage({
       enableFolderIcons: get().enableFolderIcons,
       enableFileIcons: get().enableFileIcons,
       enableDocumentIcons: get().enableDocumentIcons,
@@ -102,7 +104,7 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
 
   return {
     // Synchronously load from localStorage so icons render on frame 0 upon refresh
-    icons: loadIconifyFromLocalStorage(),
+    icons: loadMoreIconsFromLocalStorage(),
     pickerTarget: null,
     isLoaded: false,
     enableFolderIcons: initialSettings.enableFolderIcons,
@@ -150,27 +152,27 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
 
     restoreDefaults: () => {
       set({
-        enableFolderIcons: DEFAULT_ICONIFY_SETTINGS.enableFolderIcons,
-        enableFileIcons: DEFAULT_ICONIFY_SETTINGS.enableFileIcons,
-        enableDocumentIcons: DEFAULT_ICONIFY_SETTINGS.enableDocumentIcons,
-        showDefaultFolderIcons: DEFAULT_ICONIFY_SETTINGS.showDefaultFolderIcons,
-        showDefaultFileIcons: DEFAULT_ICONIFY_SETTINGS.showDefaultFileIcons,
-        showEditorTitleIcon: DEFAULT_ICONIFY_SETTINGS.showEditorTitleIcon,
-        emojiStyle: DEFAULT_ICONIFY_SETTINGS.emojiStyle,
+        enableFolderIcons: DEFAULT_MORE_ICONS_SETTINGS.enableFolderIcons,
+        enableFileIcons: DEFAULT_MORE_ICONS_SETTINGS.enableFileIcons,
+        enableDocumentIcons: DEFAULT_MORE_ICONS_SETTINGS.enableDocumentIcons,
+        showDefaultFolderIcons: DEFAULT_MORE_ICONS_SETTINGS.showDefaultFolderIcons,
+        showDefaultFileIcons: DEFAULT_MORE_ICONS_SETTINGS.showDefaultFileIcons,
+        showEditorTitleIcon: DEFAULT_MORE_ICONS_SETTINGS.showEditorTitleIcon,
+        emojiStyle: DEFAULT_MORE_ICONS_SETTINGS.emojiStyle,
       });
-      saveIconifySettingsToLocalStorage(DEFAULT_ICONIFY_SETTINGS);
+      saveMoreIconsSettingsToLocalStorage(DEFAULT_MORE_ICONS_SETTINGS);
     },
 
     loadIcons: async () => {
       if (!dbAdapter.isReady()) {
         return;
       }
-      await initIconifyDb();
+      await initMoreIconsDb();
       const dbIcons = await getAllIconsFromDb();
       const current = get().icons;
       const merged = { ...current, ...dbIcons };
       set({ icons: merged, isLoaded: true });
-      saveIconifyToLocalStorage(merged);
+      saveMoreIconsToLocalStorage(merged);
     },
 
     openPicker: (target: IconPickerTarget) => {
@@ -191,7 +193,7 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
       set({ icons: next });
 
       // 2. Persist to localStorage immediately
-      saveIconifyToLocalStorage(next);
+      saveMoreIconsToLocalStorage(next);
 
       // 3. Persist to SQLite database
       if (dbAdapter.isReady()) {
@@ -207,7 +209,7 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
       set({ icons: next });
 
       // 2. Persist to localStorage immediately
-      saveIconifyToLocalStorage(next);
+      saveMoreIconsToLocalStorage(next);
 
       // 3. Delete from SQLite database
       if (dbAdapter.isReady()) {
@@ -217,10 +219,12 @@ export const useIconifyStore = create<IconifyState>((set, get) => {
 
     clearAllIcons: async () => {
       set({ icons: {} });
-      saveIconifyToLocalStorage({});
+      saveMoreIconsToLocalStorage({});
       if (dbAdapter.isReady()) {
         await clearAllIconsInDb();
       }
     },
   };
 });
+
+export const useIconifyStore = useMoreIconsStore;

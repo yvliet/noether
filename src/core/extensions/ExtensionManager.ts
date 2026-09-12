@@ -764,7 +764,7 @@ export class ExtensionManager {
 
   /**
    * Resets all persisted extension storage and restores default extension enablement state.
-   * Clears all localStorage keys prefixed with noether_extension_data_ and iconify storage caches,
+   * Clears all localStorage keys prefixed with noether_extension_data_ and extension storage caches,
    * restores core extension default activation states, saves clean config, and notifies subscribers.
    */
   public async resetAllExtensionData(): Promise<void> {
@@ -776,6 +776,7 @@ export class ExtensionManager {
         if (
           key &&
           (key.startsWith('noether_extension_data_') ||
+           key.startsWith('noether_more_icons_') ||
            key.startsWith('noether_iconify_settings_') ||
            key.startsWith('noether_iconify_icons_cache_'))
         ) {

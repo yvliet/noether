@@ -18,15 +18,17 @@ import dualStorageRaw from '../content/docs/architecture/dual-storage.md?raw';
 import kernelDesignRaw from '../content/docs/architecture/kernel-design.md?raw';
 import performanceEngineeringRaw from '../content/docs/architecture/performance-engineering.md?raw';
 
-import quickStartRaw from '../content/docs/plugins/quick-start.md?raw';
-import manifestSpecRaw from '../content/docs/plugins/manifest-spec.md?raw';
-import extensionPointsRaw from '../content/docs/plugins/extension-points.md?raw';
-import editorPluginsRaw from '../content/docs/plugins/editor-plugins.md?raw';
-import mcpToolsRaw from '../content/docs/plugins/mcp-tools.md?raw';
-import eventsStorageRaw from '../content/docs/plugins/events-and-storage.md?raw';
-import optimizeLoadTimeRaw from '../content/docs/plugins/optimize-load-time.md?raw';
-import publishingRaw from '../content/docs/plugins/publishing.md?raw';
-import starterTemplatesRaw from '../content/docs/plugins/starter-templates.md?raw';
+import quickStartRaw from '../content/docs/extensions/quick-start.md?raw';
+import manifestSpecRaw from '../content/docs/extensions/manifest-spec.md?raw';
+import extensionPointsRaw from '../content/docs/extensions/extension-points.md?raw';
+import editorExtensionsRaw from '../content/docs/extensions/editor-extensions.md?raw';
+import mcpToolsRaw from '../content/docs/extensions/mcp-tools.md?raw';
+import eventsStorageRaw from '../content/docs/extensions/events-and-storage.md?raw';
+import optimizeLoadTimeRaw from '../content/docs/extensions/optimize-load-time.md?raw';
+import publishingRaw from '../content/docs/extensions/publishing.md?raw';
+import starterTemplatesRaw from '../content/docs/extensions/starter-templates.md?raw';
+import moreIconsRaw from '../content/docs/extensions/more-icons.md?raw';
+import syncRaw from '../content/docs/extensions/sync.md?raw';
 
 import buildFirstThemeRaw from '../content/docs/themes/build-first-theme.md?raw';
 import submitThemeRaw from '../content/docs/themes/submit-theme.md?raw';
@@ -35,7 +37,7 @@ import foundationsRaw from '../content/docs/reference/css-variables/foundations.
 import windowVariablesRaw from '../content/docs/reference/css-variables/window.md?raw';
 import editorVariablesRaw from '../content/docs/reference/css-variables/editor.md?raw';
 import componentsVariablesRaw from '../content/docs/reference/css-variables/components.md?raw';
-import pluginsVariablesRaw from '../content/docs/reference/css-variables/plugins.md?raw';
+import extensionsVariablesRaw from '../content/docs/reference/css-variables/extensions.md?raw';
 import publishVariablesRaw from '../content/docs/reference/css-variables/publish.md?raw';
 import aboutStylingRaw from '../content/docs/reference/css-variables/about-styling.md?raw';
 
@@ -200,9 +202,9 @@ export const DOCS_TREE: DocNode[] = [
     children: [
       {
         id: 'build-first-extension',
-        title: 'Plugin Quick Start',
+        title: 'Extension Quick Start',
         slug: 'build-first-extension',
-        aliases: ['Build your first extension', 'Quick Start', 'First Plugin', 'Word Counter'],
+        aliases: ['Build your first extension', 'Quick Start', 'First Extension', 'Word Counter'],
         content: quickStartRaw,
       },
       {
@@ -235,11 +237,18 @@ export const DOCS_TREE: DocNode[] = [
         content: extensionPointsRaw,
       },
       {
-        id: 'editor-plugins',
+        id: 'editor-extensions',
         title: 'ProseMirror & Editor Bridge',
-        slug: 'editor-plugins',
-        aliases: ['Editor plugins', 'TipTap Bridge', 'ProseMirror Bridge'],
-        content: editorPluginsRaw,
+        slug: 'editor-extensions',
+        aliases: ['Editor extensions', 'Editor plugins', 'TipTap Bridge', 'ProseMirror Bridge'],
+        content: editorExtensionsRaw,
+      },
+      {
+        id: 'more-icons',
+        title: 'More icons Extension',
+        slug: 'more-icons',
+        aliases: ['More icons', 'Iconify', 'File Tree Icons', 'Custom Icons', 'more-icons'],
+        content: moreIconsRaw,
       },
       {
         id: 'mcp-tools',
@@ -254,6 +263,13 @@ export const DOCS_TREE: DocNode[] = [
         slug: 'events-storage',
         aliases: ['Events and storage', 'EventBus', 'Event Bus', 'Relational Storage', 'WASM SQLite Storage'],
         content: eventsStorageRaw,
+      },
+      {
+        id: 'sync',
+        title: 'Sync',
+        slug: 'sync',
+        aliases: ['Sync', 'Cloud Sync', 'Database Sync', 'Multi-device Sync'],
+        content: syncRaw,
       },
       {
         id: 'optimize-load-time',
@@ -328,11 +344,11 @@ export const DOCS_TREE: DocNode[] = [
             content: foundationsRaw,
           },
           {
-            id: 'plugins-variables',
-            title: 'Plugins',
-            slug: 'plugins-variables',
-            aliases: ['Plugins CSS Variables', 'Extension Tokens', 'Portal Tokens'],
-            content: pluginsVariablesRaw,
+            id: 'extensions-variables',
+            title: 'Extensions',
+            slug: 'extensions-variables',
+            aliases: ['Extensions CSS Variables', 'Plugins CSS Variables', 'Extension Tokens', 'Portal Tokens'],
+            content: extensionsVariablesRaw,
           },
           {
             id: 'publish-variables',

@@ -1,12 +1,12 @@
 /**
- * @file IconifyNode.tsx
+ * @file MoreIconsNode.tsx
  * @description
  * Tree node icon component for custom and default icons in the Vault file tree.
  * Renders custom icons for both folders and files (notes, canvases, media).
  * Zero artificial micro-interaction animations/transitions.
  *
  * @author Yuliet Li
- * @since 1.0.0
+ * @since 1.2.0
  */
 
 import React from 'react';
@@ -16,13 +16,13 @@ import {
   File01Icon,
   Layout01Icon,
 } from '@/components/common/Icons';
-import { HugeIconRenderer, DynamicHugeIcon } from '@/components/common/IconPicker';
+import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
-import { useIconifyStore } from './iconifyStore';
+import { useMoreIconsStore } from './moreIconsStore';
 import { DocumentItem } from '@/types';
 import { fileTypeRegistry } from '@/sdk';
 
-export interface IconifyNodeProps {
+export interface MoreIconsNodeProps {
   itemId: string;
   isFolder: boolean;
   docType?: string;
@@ -34,7 +34,7 @@ export interface IconifyNodeProps {
   showDefaultFileIcon?: boolean;
 }
 
-export const IconifyNode: React.FC<IconifyNodeProps> = React.memo(({
+export const MoreIconsNode: React.FC<MoreIconsNodeProps> = React.memo(({
   isFolder,
   docType,
   title,
@@ -44,7 +44,7 @@ export const IconifyNode: React.FC<IconifyNodeProps> = React.memo(({
   showDefaultFolderIcon = true,
   showDefaultFileIcon = false,
 }) => {
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
 
   if (iconId?.startsWith('emoji:')) {
     const char = iconId.slice(6);
@@ -97,9 +97,9 @@ export const IconifyNode: React.FC<IconifyNodeProps> = React.memo(({
   );
 });
 
-IconifyNode.displayName = 'IconifyNode';
+MoreIconsNode.displayName = 'MoreIconsNode';
 
-export interface IconifyFileIconSlotProps {
+export interface MoreIconsFileIconSlotProps {
   doc: DocumentItem;
 }
 
@@ -109,10 +109,10 @@ export interface IconifyFileIconSlotProps {
  * If no icon is set, renders null, preserving the 16px empty space so all filenames
  * on the same depth level start at the exact same horizontal X!
  */
-export const IconifyFileIconSlot: React.FC<IconifyFileIconSlotProps> = ({ doc }) => {
-  const entry = useIconifyStore((s) => s.icons[doc.id]);
-  const showDefaultFileIcons = useIconifyStore((s) => s.showDefaultFileIcons);
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+export const MoreIconsFileIconSlot: React.FC<MoreIconsFileIconSlotProps> = ({ doc }) => {
+  const entry = useMoreIconsStore((s) => s.icons[doc.id]);
+  const showDefaultFileIcons = useMoreIconsStore((s) => s.showDefaultFileIcons);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
 
   if (!entry && !showDefaultFileIcons) {
     return null;
@@ -155,7 +155,7 @@ export const IconifyFileIconSlot: React.FC<IconifyFileIconSlotProps> = ({ doc })
   return null;
 };
 
-export interface IconifyFolderPrefixSlotProps {
+export interface MoreIconsFolderPrefixSlotProps {
   doc: DocumentItem;
   isOpen?: boolean;
 }
@@ -163,13 +163,13 @@ export interface IconifyFolderPrefixSlotProps {
 /**
  * Reactive folder prefix component rendered in the prefix slot (between chevron and folder title).
  */
-export const IconifyFolderPrefixSlot: React.FC<IconifyFolderPrefixSlotProps> = ({
+export const MoreIconsFolderPrefixSlot: React.FC<MoreIconsFolderPrefixSlotProps> = ({
   doc,
   isOpen = false,
 }) => {
-  const entry = useIconifyStore((s) => s.icons[doc.id]);
-  const showDefaultFolderIcons = useIconifyStore((s) => s.showDefaultFolderIcons);
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+  const entry = useMoreIconsStore((s) => s.icons[doc.id]);
+  const showDefaultFolderIcons = useMoreIconsStore((s) => s.showDefaultFolderIcons);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
 
   if (!entry && !showDefaultFolderIcons) {
     return null;
@@ -209,22 +209,22 @@ export const IconifyFolderPrefixSlot: React.FC<IconifyFolderPrefixSlotProps> = (
   return null;
 };
 
-export interface IconifySlotProps {
+export interface MoreIconsSlotProps {
   doc: DocumentItem;
   isOpen?: boolean;
 }
 
 /**
- * Reactive slot component subscribed to `useIconifyStore`.
+ * Reactive slot component subscribed to `useMoreIconsStore`.
  * Guarantees immediate UI updates whenever an icon is assigned or removed.
  */
-export const IconifySlot: React.FC<IconifySlotProps> = ({
+export const MoreIconsSlot: React.FC<MoreIconsSlotProps> = ({
   doc,
   isOpen = false,
 }) => {
-  const entry = useIconifyStore((s) => s.icons[doc.id]);
-  const showDefaultFolderIcons = useIconifyStore((s) => s.showDefaultFolderIcons);
-  const showDefaultFileIcons = useIconifyStore((s) => s.showDefaultFileIcons);
+  const entry = useMoreIconsStore((s) => s.icons[doc.id]);
+  const showDefaultFolderIcons = useMoreIconsStore((s) => s.showDefaultFolderIcons);
+  const showDefaultFileIcons = useMoreIconsStore((s) => s.showDefaultFileIcons);
 
   const isFolder = Boolean(doc.is_folder);
 
@@ -234,7 +234,7 @@ export const IconifySlot: React.FC<IconifySlotProps> = ({
   }
 
   return (
-    <IconifyNode
+    <MoreIconsNode
       itemId={doc.id}
       isFolder={isFolder}
       docType={doc.doc_type}
@@ -248,23 +248,23 @@ export const IconifySlot: React.FC<IconifySlotProps> = ({
   );
 };
 
-export interface IconifyBreadcrumbIconProps {
+export interface MoreIconsBreadcrumbIconProps {
   itemId: string;
   isFolder: boolean;
 }
 
 /**
- * Reactive breadcrumb icon component subscribed to `useIconifyStore`.
+ * Reactive breadcrumb icon component subscribed to `useMoreIconsStore`.
  * Displays custom icons or default folder/file icons in subheader breadcrumbs.
  */
-export const IconifyBreadcrumbIcon: React.FC<IconifyBreadcrumbIconProps> = ({
+export const MoreIconsBreadcrumbIcon: React.FC<MoreIconsBreadcrumbIconProps> = ({
   itemId,
   isFolder,
 }) => {
-  const entry = useIconifyStore((s) => s.icons[itemId]);
-  const showDefaultFolderIcons = useIconifyStore((s) => s.showDefaultFolderIcons);
-  const showDefaultFileIcons = useIconifyStore((s) => s.showDefaultFileIcons);
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+  const entry = useMoreIconsStore((s) => s.icons[itemId]);
+  const showDefaultFolderIcons = useMoreIconsStore((s) => s.showDefaultFolderIcons);
+  const showDefaultFileIcons = useMoreIconsStore((s) => s.showDefaultFileIcons);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
 
   // 1. Custom assigned icon
   if (entry) {
@@ -312,18 +312,18 @@ export const IconifyBreadcrumbIcon: React.FC<IconifyBreadcrumbIconProps> = ({
   );
 };
 
-export interface IconifyTabIconProps {
+export interface MoreIconsTabIconProps {
   docId: string;
 }
 
 /**
- * Reactive tab icon component subscribed to `useIconifyStore`.
+ * Reactive tab icon component subscribed to `useMoreIconsStore`.
  * Guarantees that tab icons atomically re-render on the exact frame
  * whenever an icon or emojiStyle is changed in settings or picker.
  */
-export const IconifyTabIcon: React.FC<IconifyTabIconProps> = ({ docId }) => {
-  const entry = useIconifyStore((s) => s.icons[docId]);
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
+export const MoreIconsTabIcon: React.FC<MoreIconsTabIconProps> = ({ docId }) => {
+  const entry = useMoreIconsStore((s) => s.icons[docId]);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
 
   if (!entry) return null;
 
@@ -349,3 +349,17 @@ export const IconifyTabIcon: React.FC<IconifyTabIconProps> = ({ docId }) => {
     </span>
   );
 };
+
+// ── Backward Compatibility Aliases ──
+export const IconifyNode = MoreIconsNode;
+export type IconifyNodeProps = MoreIconsNodeProps;
+export const IconifyFileIconSlot = MoreIconsFileIconSlot;
+export type IconifyFileIconSlotProps = MoreIconsFileIconSlotProps;
+export const IconifyFolderPrefixSlot = MoreIconsFolderPrefixSlot;
+export type IconifyFolderPrefixSlotProps = MoreIconsFolderPrefixSlotProps;
+export const IconifySlot = MoreIconsSlot;
+export type IconifySlotProps = MoreIconsSlotProps;
+export const IconifyBreadcrumbIcon = MoreIconsBreadcrumbIcon;
+export type IconifyBreadcrumbIconProps = MoreIconsBreadcrumbIconProps;
+export const IconifyTabIcon = MoreIconsTabIcon;
+export type IconifyTabIconProps = MoreIconsTabIconProps;

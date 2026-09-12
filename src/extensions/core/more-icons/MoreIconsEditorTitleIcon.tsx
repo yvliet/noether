@@ -1,26 +1,34 @@
+/**
+ * @file MoreIconsEditorTitleIcon.tsx
+ * @description
+ * Clickable icon rendered immediately to the left of the note title in the editor.
+ * Matched to the exact height and line-box of the document title heading.
+ * If no custom icon is assigned, or if the setting is disabled, returns null.
+ *
+ * @author Yuliet Li
+ * @since 1.2.0
+ */
+
 import React from 'react';
-import { useIconifyStore } from './iconifyStore';
+import { useMoreIconsStore } from './moreIconsStore';
 import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
 
-export interface IconifyEditorTitleIconProps {
+export interface MoreIconsEditorTitleIconProps {
   docId: string;
   title: string;
 }
 
-/**
- * Clickable icon rendered immediately to the left of the note title in the editor.
- * Matched to the exact height and line-box of the document title heading.
- * If no custom icon is assigned, or if the setting is disabled, returns null.
- */
-export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
+export type IconifyEditorTitleIconProps = MoreIconsEditorTitleIconProps;
+
+export const MoreIconsEditorTitleIcon: React.FC<MoreIconsEditorTitleIconProps> = ({
   docId,
   title,
 }) => {
-  const entry = useIconifyStore((s) => s.icons[docId]);
-  const showEditorTitleIcon = useIconifyStore((s) => s.showEditorTitleIcon);
-  const emojiStyle = useIconifyStore((s) => s.emojiStyle);
-  const openPicker = useIconifyStore((s) => s.openPicker);
+  const entry = useMoreIconsStore((s) => s.icons[docId]);
+  const showEditorTitleIcon = useMoreIconsStore((s) => s.showEditorTitleIcon);
+  const emojiStyle = useMoreIconsStore((s) => s.emojiStyle);
+  const openPicker = useMoreIconsStore((s) => s.openPicker);
 
   // If user disabled showing icon in editor title, or no icon assigned:
   // Render null (preserves 100% natural undisturbed note title layout)
@@ -82,3 +90,6 @@ export const IconifyEditorTitleIcon: React.FC<IconifyEditorTitleIconProps> = ({
     </button>
   );
 };
+
+export const IconifyEditorTitleIcon = MoreIconsEditorTitleIcon;
+export default MoreIconsEditorTitleIcon;

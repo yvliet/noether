@@ -17,8 +17,9 @@ Welcome to Noether! This guide walks you through organizing your notes, building
 9. [Full-Text Search & Quick Open](#9-full-text-search--quick-open)
 10. [Model Context Protocol (MCP) AI Integration](#10-model-context-protocol-mcp-ai-integration)
 11. [Themes & Customization](#11-themes--customization)
-12. [Client Updates & Release Management](#12-client-updates--release-management)
-13. [Keyboard Shortcuts Cheat Sheet](#13-keyboard-shortcuts-cheat-sheet)
+12. [More icons & Visual Customization](#12-more-icons--visual-customization)
+13. [Client Updates & Release Management](#13-client-updates--release-management)
+14. [Keyboard Shortcuts Cheat Sheet](#14-keyboard-shortcuts-cheat-sheet)
 
 ---
 
@@ -239,7 +240,20 @@ Open **Settings** (`Ctrl+,`) → **Appearance**:
 
 ---
 
-## 12. Client Updates & Release Management
+## 12. More icons & Visual Customization
+
+---
+
+Noether includes the built-in **More icons** extension to personalize files, folders, and notes with icons from Lucide and Hugeicons collections:
+
+- **Custom Folder & File Icons**: Right-click any note or folder in the sidebar file tree and choose **Change icon** to open the icon picker. Search through thousands of SVG icons and pick custom accent colors.
+- **Title Icons & Inline Chips**: Click the icon badge above any document title in the editor to assign a header icon. You can also insert icon chips directly inside editor documents.
+- **Folder Prefix Icons**: Toggle prefix icons in **Settings** (`Ctrl+,`) → **More icons** to show custom icons alongside folder chevrons.
+- **MCP Integration**: AI assistants can query, assign, or remove custom note and folder icons via the `more-icons_list`, `more-icons_get`, `more-icons_update_icon`, and `more-icons_delete_icon` tools.
+
+---
+
+## 13. Client Updates & Release Management
 
 ---
 
@@ -251,7 +265,7 @@ Noether features an integrated updater that monitors official GitHub releases:
 
 ---
 
-## 13. Keyboard Shortcuts Cheat Sheet
+## 14. Keyboard Shortcuts Cheat Sheet
 
 ---
 

@@ -2446,6 +2446,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       handleInsertTable(e.detail);
     };
 
+    if (typeof window !== 'undefined') {
+      (window as any).__noetherEditor = editor;
+    }
+
     window.addEventListener('noether:insert-table-command', onCustomEvent);
     return () => {
       d.dispose();
