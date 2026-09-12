@@ -24,7 +24,7 @@ export const DEFAULT_BACKLINKS_SETTINGS = {
 function getInitialBacklinksSettings() {
   if (typeof window === 'undefined') return DEFAULT_BACKLINKS_SETTINGS;
   try {
-    const raw = localStorage.getItem('flint_plugin_data_backlinks');
+    const raw = localStorage.getItem('noether_extension_data_backlinks');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed && parsed.state) {
@@ -55,7 +55,7 @@ export const useBacklinksSettings = create<BacklinksSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_BACKLINKS_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_backlinks',
+      name: 'noether_extension_data_backlinks',
       version: 1,
       migrate: (persistedState: any, version: number) => {
         if (!version || version < 1) {

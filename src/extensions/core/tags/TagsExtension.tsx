@@ -1,7 +1,7 @@
 /**
  * @module TagsExtension
  * @description
- * Built-in core extension that parses hashtag taxonomy across all hearth documents
+ * Built-in core extension that parses hashtag taxonomy across all vault documents
  * and renders an interactive hierarchical nested tags tree in the right sidebar.
  *
  * @since 0.2.0
@@ -10,7 +10,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { Tag01Icon } from '@/components/common/Icons';
 import { getAllVaultTags, buildTagTree } from '@/lib/db/tags';
 import { tagsReadme } from './readme';
@@ -26,7 +26,7 @@ export const TAGS_MANIFEST: ExtensionManifest = {
   id: 'tags-explorer',
   name: 'Tags Explorer',
   version: '1.0.0',
-  description: 'Hierarchical nested tags tree view across all documents in the hearth.',
+  description: 'Hierarchical nested tags tree view across all documents in the vault.',
   author: 'Yuliet Li',
   isCore: true,
   tags: ['tags', 'categories', 'organization', 'taxonomy', 'explorer'],
@@ -34,7 +34,7 @@ export const TAGS_MANIFEST: ExtensionManifest = {
 };
 
 export class TagsExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = TAGS_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = TAGS_MANIFEST) {
     super(app, manifest);
   }
 
@@ -69,7 +69,7 @@ export class TagsExtension extends Extension {
     // ── Tool: list_all ──
     this.registerTool({
       name: 'list_all',
-      description: 'List all tags in the Hearth with their occurrence frequencies and document references.',
+      description: 'List all tags in the Vault with their occurrence frequencies and document references.',
       parameters: {
         type: 'object',
         properties: {},
@@ -102,7 +102,7 @@ export class TagsExtension extends Extension {
     // ── Tool: get_tree ──
     this.registerTool({
       name: 'get_tree',
-      description: 'Get nested hierarchical tag tree (e.g. #parent/subtag) across all documents in the Hearth.',
+      description: 'Get nested hierarchical tag tree (e.g. #parent/subtag) across all documents in the Vault.',
       parameters: {
         type: 'object',
         properties: {},

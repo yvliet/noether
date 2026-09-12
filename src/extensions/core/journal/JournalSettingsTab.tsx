@@ -1,6 +1,6 @@
 import React from 'react';
 import { useJournalSettings, DEFAULT_JOURNAL_SETTINGS } from './journalSettings';
-import { useFlintApp, useToast } from 'flint';
+import { useNoetherApp, useToast } from 'noether';
 import { RotateCcwIcon, Folder01Icon } from '@/components/common/Icons';
 import { SettingCard, SettingItem, TextInput, Toggle, Button } from '@/components/ui';
 
@@ -17,7 +17,7 @@ export const JournalSettingsTab: React.FC = () => {
     restoreDefaults,
   } = useJournalSettings();
 
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const showToast = useToast();
   const promptFolderSelection = (opts: any) => (app.workspace as any).promptFolderSelection?.(opts);
   const setIsSettingsOpen = (open: boolean, tabId?: string) => (app.workspace as any).setIsSettingsOpen?.(open, tabId);
@@ -29,7 +29,7 @@ export const JournalSettingsTab: React.FC = () => {
       onSelect: (folderPath: string) => {
         setDailyFolder(folderPath);
         setIsSettingsOpen(true, 'journal-settings');
-        showToast(folderPath ? `Journal location set to "${folderPath}"` : 'Journal location set to Hearth root', 'success');
+        showToast(folderPath ? `Journal location set to "${folderPath}"` : 'Journal location set to Vault root', 'success');
       },
       onCancel: () => {
         setIsSettingsOpen(true, 'journal-settings');
@@ -90,14 +90,14 @@ export const JournalSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handlePickFolder}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
             title="Click to select folder in File Explorer"
           >
             <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
-            <span className="max-w-[130px] truncate text-[var(--flint-text-secondary,#dcddde)]">
-              {dailyFolder ? dailyFolder : 'Hearth root ( / )'}
+            <span className="max-w-[130px] truncate text-[var(--noether-text-secondary,#dcddde)]">
+              {dailyFolder ? dailyFolder : 'Vault root ( / )'}
             </span>
-            <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[var(--flint-bg-card-hover,#282828)] px-1.5 py-0.5 rounded border border-[var(--flint-border-strong,#383838)]">
+            <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[var(--noether-bg-card-hover,#282828)] px-1.5 py-0.5 rounded border border-[var(--noether-border-strong,#383838)]">
               Set
             </span>
           </button>
@@ -106,7 +106,7 @@ export const JournalSettingsTab: React.FC = () => {
         {/* Open on startup */}
         <SettingItem
           name="Open on startup"
-          description="Automatically open or create today's journal entry when Flint launches."
+          description="Automatically open or create today's journal entry when Noether launches."
         >
           <Toggle
             checked={openOnStartup}

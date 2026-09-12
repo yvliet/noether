@@ -1,7 +1,7 @@
 /**
  * @file iconifyCatalog.ts
  * @description
- * Re-exports the unified Flint icon catalog for the Iconify extension.
+ * Re-exports the unified Noether icon catalog for the Iconify extension.
  * Guarantees zero code duplication and synchronizes available icons across the entire app.
  *
  * @author Yuliet Li

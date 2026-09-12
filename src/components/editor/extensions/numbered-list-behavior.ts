@@ -602,7 +602,7 @@ export const NumberedListBehavior = Extension.create({
 
         // 2. Shift-Enter on a List item (Number, Letter a./aa., or Bullet/Dash):
         // Use an inline hardBreak node (<br>) without injecting manual spaces.
-        // Because the paragraph has visual hanging indent (.flint-list-hanging), continuation lines
+        // Because the paragraph has visual hanging indent (.noether-list-hanging), continuation lines
         // after <br> are already visually aligned flush beneath the list item text (Google Docs style)
         // while preserving clean markdown and effortless single-keystroke Backspace deletion.
         const listInfo = matchLineListPrefix(lineText);

@@ -169,18 +169,18 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
   [key: string]: any;
 }
 
-export const FlintLogoIcon = React.memo<IconProps>(({ size = 20, className = '', ...props }) => {
+export const NoetherLogoIcon = React.memo<IconProps>(({ size = 20, className = '', ...props }) => {
   const accentColor = useSettingsStore((s) => s.accentColor);
-  const isDefaultAccent = !accentColor || accentColor.toLowerCase() === '#ea580c';
+  const isDefaultAccent = !accentColor || accentColor.toLowerCase() === '#eb584d';
 
   if (isDefaultAccent) {
     return (
       <img
-        src="/flint-icon.png"
+        src="/noether-icon.png"
         width={size}
         height={size}
         className={className}
-        alt="Flint"
+        alt="Noether"
         draggable={false}
         {...(props as any)}
       />
@@ -201,10 +201,10 @@ export const FlintLogoIcon = React.memo<IconProps>(({ size = 20, className = '',
       {...(props as any)}
     >
       <img
-        src="/flint-icon-mono.png"
+        src="/noether-icon-mono.png"
         width={size}
         height={size}
-        alt="Flint"
+        alt="Noether"
         draggable={false}
         style={{ display: 'block', width: size, height: size }}
       />
@@ -212,10 +212,10 @@ export const FlintLogoIcon = React.memo<IconProps>(({ size = 20, className = '',
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundColor: 'var(--flint-accent, ' + accentColor + ')',
+          backgroundColor: 'var(--noether-accent, ' + accentColor + ')',
           mixBlendMode: 'overlay',
-          WebkitMaskImage: 'url(/flint-icon-mono.png)',
-          maskImage: 'url(/flint-icon-mono.png)',
+          WebkitMaskImage: 'url(/noether-icon-mono.png)',
+          maskImage: 'url(/noether-icon-mono.png)',
           WebkitMaskSize: 'contain',
           maskSize: 'contain',
           WebkitMaskRepeat: 'no-repeat',

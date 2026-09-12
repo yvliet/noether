@@ -5,7 +5,7 @@
  * Registers the canvas view, action rail button, command, settings tab,
  * and file tree action button.
  *
- * Uses native FlintApp APIs (app.workspace.setMainViewMode, app.hearth.createNewCanvas).
+ * Uses native NoetherApp APIs (app.workspace.setMainViewMode, app.vault.createNewCanvas).
  *
  * @since 0.2.0
  */
@@ -13,7 +13,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { Layout01Icon } from '@/components/common/Icons';
 import { CanvasSettingsTab } from './CanvasSettingsTab';
 import { canvasReadme } from './readme';
@@ -45,7 +45,7 @@ export const CANVAS_MANIFEST: ExtensionManifest = {
 };
 
 export class CanvasExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = CANVAS_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = CANVAS_MANIFEST) {
     super(app, manifest);
   }
 
@@ -76,7 +76,7 @@ export class CanvasExtension extends Extension {
       <Layout01Icon size={16} />,
       'Create new spatial canvas',
       async (app) => {
-        await app.hearth.createNewCanvas();
+        await app.vault.createNewCanvas();
       },
       40,
       (app) => {
@@ -98,7 +98,7 @@ export class CanvasExtension extends Extension {
       section: 'Navigation',
       icon: <Layout01Icon size={16} />,
       action: async (app) => {
-        await app.hearth.createNewCanvas();
+        await app.vault.createNewCanvas();
       },
     });
 
@@ -117,7 +117,7 @@ export class CanvasExtension extends Extension {
       icon: <Layout01Icon size={14} />,
       order: 20,
       onClick: async (app) => {
-        await app.hearth.createNewCanvas();
+        await app.vault.createNewCanvas();
       },
     });
 
@@ -161,12 +161,12 @@ export class CanvasExtension extends Extension {
         },
         required: [],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
           const title = (args.title as string) || 'Untitled Canvas';
-          const doc = await app.hearth.createNewCanvas();
+          const doc = await app.vault.createNewCanvas();
           if (doc && args.title) {
-            await app.hearth.renameDocument(doc.id, title);
+            await app.vault.renameDocument(doc.id, title);
             doc.title = title;
           }
           return {
@@ -206,7 +206,7 @@ export class CanvasExtension extends Extension {
         },
         required: ['boardId'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const boardId = (args.boardId as string) || 'default';
           const [nodes, edges] = await Promise.all([
@@ -280,7 +280,7 @@ export class CanvasExtension extends Extension {
         },
         required: ['boardId', 'type', 'x', 'y'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const boardId = (args.boardId as string) || 'default';
           const type = args.type as 'note' | 'text' | 'link';
@@ -350,7 +350,7 @@ export class CanvasExtension extends Extension {
         },
         required: ['boardId', 'fromNodeId', 'toNodeId'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const boardId = (args.boardId as string) || 'default';
           const fromNodeId = args.fromNodeId as string;
@@ -401,7 +401,7 @@ export class CanvasExtension extends Extension {
         },
         required: ['nodeId'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const nodeId = args.nodeId as string;
           if (!nodeId) {

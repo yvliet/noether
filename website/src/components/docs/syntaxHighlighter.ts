@@ -1,5 +1,5 @@
 /**
- * Lightweight, zero-dependency syntax highlighter for Flint documentation.
+ * Lightweight, zero-dependency syntax highlighter for Noether documentation.
  * Tailored for TypeScript, TSX, JavaScript, JSON, YAML, SQL, Shell, and Markdown.
  */
 
@@ -28,7 +28,7 @@ const TS_BUILTIN_TYPES = new Set([
   'Promise', 'Partial', 'Omit', 'Pick', 'Required', 'Readonly', 'Extract',
   'Exclude', 'NonNullable', 'Parameters', 'ReturnType', 'InstanceType',
   'React', 'ReactNode', 'FC', 'Component', 'useState', 'useEffect', 'useMemo', 'useCallback', 'useRef',
-  'Extension', 'ExtensionManifest', 'FlintApp',
+  'Extension', 'ExtensionManifest', 'NoetherApp',
 ]);
 
 const SQL_KEYWORDS = new Set([

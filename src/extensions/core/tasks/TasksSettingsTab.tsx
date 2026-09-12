@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTasksSettings, DEFAULT_TASKS_SETTINGS, TaskSortBy } from './tasksSettings';
-import { useToast } from 'flint';
+import { useToast } from 'noether';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -39,7 +39,7 @@ export const TasksSettingsTab: React.FC = () => {
               restoreDefaults();
               showToast('Restored Tasks defaults', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Restore defaults</span>

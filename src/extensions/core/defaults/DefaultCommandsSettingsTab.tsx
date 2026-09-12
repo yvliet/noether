@@ -1,9 +1,9 @@
 import React from 'react';
-import { useFlintApp, useToast } from 'flint';
+import { useNoetherApp, useToast } from 'noether';
 import { Search01Icon } from '@/components/common/Icons';
 
 export const DefaultCommandsSettingsTab: React.FC = () => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const showToast = useToast();
 
   const handleOpenPalette = () => {
@@ -33,7 +33,7 @@ export const DefaultCommandsSettingsTab: React.FC = () => {
         <button
           type="button"
           onClick={handleOpenPalette}
-          className="flint-btn flint-btn-primary flex items-center gap-1.5"
+          className="noether-btn noether-btn-primary flex items-center gap-1.5"
         >
           <Search01Icon size={13} />
           <span>Open Command Palette</span>

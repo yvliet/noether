@@ -10,7 +10,7 @@ The **Tasks** extension aggregates checklist items (\`- [ ]\`, \`- [x]\`) from a
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension showcases custom main view registration, bidirectional text updates, and sidebar integration.
 

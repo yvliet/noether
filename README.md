@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="docs/assets/flint-ascii.svg" alt="      ___                                   ___                 
+  <img src="docs/assets/noether-ascii.svg" alt="      ___                                   ___                 
      /  /\                    ___          /__/\          ___   
     /  /:/_                  /  /\         \  \:\        /  /\  
    /  /:/ /\  ___     ___   /  /:/          \  \:\      /  /:/  
@@ -15,13 +15,13 @@
 ### A fast, local-first note-taking app that respects your plain text.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
-[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-ea580c.svg?logo=tauri&logoColor=white)](src-tauri)
+[![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-eb584d.svg?logo=tauri&logoColor=white)](src-tauri)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=61dafb)](package.json)
-[![Docs](https://img.shields.io/badge/Docs-Website-ea580c.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/Flint/)
+[![Docs](https://img.shields.io/badge/Docs-Website-eb584d.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/noether/)
 
-[Documentation](https://yvliet.github.io/Flint/) •
+[Documentation](https://yvliet.github.io/noether/) •
 [Availability](#1-availability) •
-[Why Flint?](#2-why-flint) •
+[Why Noether?](#2-why-noether) •
 [Features](#3-key-capabilities) •
 [Developer Quickstart](#4-developer-quickstart)
 
@@ -35,9 +35,9 @@ Official pre-compiled desktop binaries and one-click installers will be availabl
 - **macOS**: `.dmg` package (Universal binary for Apple Silicon and Intel)
 - **Linux**: `.AppImage` portable package and `.deb` Debian/Ubuntu package (x86_64, ARM64)
 
-Until pre-built binaries are published, you can compile and run Flint locally from source (see [Developer Quickstart](#4-developer-quickstart)).
+Until pre-built binaries are published, you can compile and run Noether locally from source (see [Developer Quickstart](#4-developer-quickstart)).
 
-## 2. Why Flint?
+## 2. Why Noether?
 
 I wanted a note-taking app that feels like a native desktop utility: fast, lightweight, and completely local. No forced cloud accounts, no proprietary database locks, and no heavy Electron bundles eating memory in the background.
 
@@ -53,7 +53,7 @@ I wanted a note-taking app that feels like a native desktop utility: fast, light
 
 - **Live Preview Editor**: Clean markdown editing with inline MathLive formula chips, syntax highlighting, and table formatting.
 - **2D Knowledge Graph**: Interactive force-directed graph visualizing connections and backlinks across your notes.
-- **Infinite 2D Spatial Canvas**: Visual whiteboard supporting note cards, text blocks, group containers, and connector lines stored directly in `.flint/canvas`.
+- **Infinite 2D Spatial Canvas**: Visual whiteboard supporting note cards, text blocks, group containers, and connector lines stored directly in `.noether/canvas`.
 - **Embedded FSRS Spaced Repetition**: Modern flashcard scheduling (`ts-fsrs`) generated directly from Markdown notes using basic (`::`), bi-directional (`;;`), and cloze (`{...}`) syntax.
 - **Centralized Tasks & Daily Journal**: Aggregates all `- [ ]` and `- [x]` checklist items across your entire vault into an actionable kanban board, paired with one-click daily scratchpad notes.
 - **Modular Extension SDK**: Build custom extensions with dynamic React portal slots, declarative SQLite tables with automatic migrations, and auto-generated MCP tools.
@@ -69,8 +69,8 @@ I wanted a note-taking app that feels like a native desktop utility: fast, light
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yvliet/Flint.git
-cd flint
+git clone https://github.com/yvliet/Noether.git
+cd noether
 
 # 2. Install dependencies
 npm install
@@ -91,15 +91,15 @@ npm run tauri:build
 
 ## 5. Documentation
 
-Documentation and guides are available on the website at **[yvliet.github.io/Flint](https://yvliet.github.io/Flint/)** or in the `docs/` folder:
+Documentation and guides are available on the website at **[yvliet.github.io/noether](https://yvliet.github.io/noether/)** or in the `docs/` folder:
 
 - **[User Guide](docs/USER_GUIDE.md)**: Daily note-taking, flashcards, visual canvas, and vault organization.
 - **[Architecture Specification](docs/ARCHITECTURE.md)**: System design, storage pipeline, and editor performance.
-- **[Extension Developer Guide](docs/EXTENSION_GUIDE.md)**: Building custom extensions using React portal slots and the Flint SDK.
+- **[Extension Developer Guide](docs/EXTENSION_GUIDE.md)**: Building custom extensions using React portal slots and the Noether SDK.
 - **[Model Context Protocol (MCP) Setup](docs/mcp-setup-guide.md)**: Connecting Claude Desktop, Cursor, and other AI assistants to your notes.
 - **[Keyboard Shortcuts](docs/KEYBOARD_SHORTCUTS.md)**: Complete reference table of all hotkeys and commands.
 - **[Contributing Guidelines](docs/CONTRIBUTING.md)**: Development setup and guidelines.
 
 ## 6. License
 
-Flint is free and open-source software licensed under the **[GNU General Public License v3.0 (GPLv3)](LICENSE)**.
+Noether is free and open-source software licensed under the **[GNU General Public License v3.0 (GPLv3)](LICENSE)**.

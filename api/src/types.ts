@@ -1,7 +1,7 @@
 /**
  * @module RegistryTypes
  * @description
- * Complete TypeScript interfaces and models for the Flint Community Plugin Registry API.
+ * Complete TypeScript interfaces and models for the Noether Community Extension Registry API.
  * Encapsulates database row shapes, API request schemas, response models, and manifests.
  */
 
@@ -57,7 +57,7 @@ export interface PluginVersionRow {
 }
 
 /**
- * Public extension manifest shape conforming to Flint extension specifications.
+ * Public extension manifest shape conforming to Noether extension specifications.
  */
 export const ExtensionManifestSchema = z.object({
   id: z.string().regex(/^[a-z0-9-_]+$/, 'Plugin ID must be lowercase alphanumeric with hyphens or underscores'),

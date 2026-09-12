@@ -137,7 +137,7 @@ export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React
                   />
                 </div>
 
-                {/* Flint's Custom Color Picker */}
+                {/* Noether's Custom Color Picker */}
                 {showAdvancedPicker && (
                   <div className="mt-2.5 pt-2 border-t border-[#2d2d2d] w-full flex justify-center">
                     <InlineColorPicker

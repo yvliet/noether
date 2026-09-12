@@ -88,7 +88,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
     >
       {/* Node Row */}
       <div
-        id={`flint-tree-item-${id}`}
+        id={`noether-tree-item-${id}`}
         data-folder-picker-target={isFolderPickerTarget ? 'true' : undefined}
         data-folder-name={
           isFolderPickerTarget
@@ -105,18 +105,18 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         style={{ paddingLeft: `${8 + level * 16}px` }}
         className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md w-full overflow-visible ${
           isDisabled
-            ? 'cursor-not-allowed opacity-35 text-[var(--flint-text-muted,#888888)] hover:bg-transparent'
+            ? 'cursor-not-allowed opacity-35 text-[var(--noether-text-muted,#888888)] hover:bg-transparent'
             : isFolderPickerTarget
-            ? 'cursor-pointer text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-accent,#ea580c)]/20 hover:border-[var(--flint-accent,#ea580c)]/40 border border-transparent font-medium'
+            ? 'cursor-pointer text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-accent,#eb584d)]/20 hover:border-[var(--noether-accent,#eb584d)]/40 border border-transparent font-medium'
             : isBeingDragged
-            ? 'cursor-pointer opacity-40 bg-[var(--flint-bg-main,#1c1c1c)]'
+            ? 'cursor-pointer opacity-40 bg-[var(--noether-bg-main,#1c1c1c)]'
             : isHighlighted
             ? 'cursor-pointer bg-[#82691b] text-white font-normal shadow-sm'
             : isDropTarget
-            ? 'cursor-pointer bg-transparent text-[var(--flint-text-primary,#ffffff)] font-normal'
+            ? 'cursor-pointer bg-transparent text-[var(--noether-text-primary,#ffffff)] font-normal'
             : isSelected || isMultiSelected || (isActive && !isFolder) || isEditing
-            ? 'cursor-pointer bg-[var(--flint-bg-sidebar-active,#2a2a2a)] text-[var(--flint-text-primary,#ffffff)] font-normal'
-            : 'cursor-pointer text-[var(--flint-text-muted,#888888)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary,#dcddde)] font-normal'
+            ? 'cursor-pointer bg-[var(--noether-bg-sidebar-active,#2a2a2a)] text-[var(--noether-text-primary,#ffffff)] font-normal'
+            : 'cursor-pointer text-[var(--noether-text-muted,#888888)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary,#dcddde)] font-normal'
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-visible">
@@ -153,7 +153,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
 
           {/* Optional Type Badge (e.g. CANVAS, PNG) */}
           {typeBadge && !isEditing && (
-            <span className="text-[10px] font-mono text-[var(--flint-text-muted,#777777)] uppercase tracking-wider shrink-0 ml-1.5 select-none">
+            <span className="text-[10px] font-mono text-[var(--noether-text-muted,#777777)] uppercase tracking-wider shrink-0 ml-1.5 select-none">
               {typeBadge}
             </span>
           )}

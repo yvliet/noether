@@ -1,7 +1,7 @@
 /**
  * @file IconRegistry.ts
  * @description
- * Host-level Inversion of Control (IoC) registry for icon providers in Flint.
+ * Host-level Inversion of Control (IoC) registry for icon providers in Noether.
  * Manages icon pack providers (e.g. HugeIcons, Emoji, Lucide, React Icons)
  * allowing native components, rich text documents, file trees, and extensions
  * to render and query icons through a unified identifier interface (<pack>:<iconId>).
@@ -53,7 +53,7 @@ export class IconRegistry {
   private cachedProviders: IconPackProvider[] = [];
 
   /**
-   * Registers a new icon pack provider into Flint.
+   * Registers a new icon pack provider into Noether.
    * Enables automatic rendering for `<packId>:<iconId>` shortcodes.
    */
   public registerProvider(provider: IconPackProvider): Disposable {

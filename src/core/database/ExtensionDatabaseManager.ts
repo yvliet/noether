@@ -1,14 +1,14 @@
 /**
  * @module ExtensionDatabaseManager
  * @description
- * Relational schema and lifecycle manager for Flint extensions.
+ * Relational schema and lifecycle manager for Noether extensions.
  * Provides declarative table definition, automated versioned migrations,
  * foreign key cascade cleanup, and orphan table teardown on uninstallation.
  *
  * Technical Rationale:
  * - Scoped Namespacing: Automatically prefixes extension tables (`ext_{extensionId}_{tableName}`)
  *   to avoid cross-plugin collision and preserve clean separation of concerns.
- * - Atomic Version Tracking: Persists schema versions in `flint_extension_tables`, executing
+ * - Atomic Version Tracking: Persists schema versions in `noether_extension_tables`, executing
  *   migrations inside atomic SQLite transactions to prevent schema corruption.
  * - Cascade Guarantee: Subscribes to host EventBus `document:deleted` events for foreign-keyed
  *   columns, ensuring orphan rows are purged even across external file sync operations.
@@ -19,7 +19,7 @@
  */
 
 import { dbAdapter } from '@/lib/db/adapter';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type {
   TableDefinition,
   ColumnDefinition,
@@ -42,11 +42,11 @@ interface ExtensionTableMeta {
 }
 
 export class ExtensionDatabaseManager {
-  private app: FlintApp;
+  private app: NoetherApp;
   private isMetaTableReady = false;
   private cascadeListeners: Map<string, Map<string, Disposable>> = new Map();
 
-  constructor(app: FlintApp) {
+  constructor(app: NoetherApp) {
     this.app = app;
   }
 
@@ -60,7 +60,7 @@ export class ExtensionDatabaseManager {
     }
 
     await dbAdapter.execute(`
-      CREATE TABLE IF NOT EXISTS flint_extension_tables (
+      CREATE TABLE IF NOT EXISTS noether_extension_tables (
         extension_id TEXT NOT NULL,
         table_name TEXT NOT NULL,
         physical_table_name TEXT NOT NULL,
@@ -155,7 +155,7 @@ export class ExtensionDatabaseManager {
 
     // 1. Query existing metadata
     const existing = await dbAdapter.query<ExtensionTableMeta>(
-      `SELECT * FROM flint_extension_tables WHERE extension_id = ? AND table_name = ?`,
+      `SELECT * FROM noether_extension_tables WHERE extension_id = ? AND table_name = ?`,
       [extensionId, def.tableName]
     );
 
@@ -175,7 +175,7 @@ export class ExtensionDatabaseManager {
 
       // Record metadata
       await dbAdapter.execute(
-        `INSERT INTO flint_extension_tables (extension_id, table_name, physical_table_name, version, teardown_policy, created_at, updated_at)
+        `INSERT INTO noether_extension_tables (extension_id, table_name, physical_table_name, version, teardown_policy, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [extensionId, def.tableName, physicalName, def.version, teardownPolicy, now, now]
       );
@@ -223,7 +223,7 @@ export class ExtensionDatabaseManager {
 
         // Update stored metadata version
         await dbAdapter.execute(
-          `UPDATE flint_extension_tables SET version = ?, teardown_policy = ?, updated_at = ? WHERE extension_id = ? AND table_name = ?`,
+          `UPDATE noether_extension_tables SET version = ?, teardown_policy = ?, updated_at = ? WHERE extension_id = ? AND table_name = ?`,
           [def.version, teardownPolicy, now, extensionId, def.tableName]
         );
       }
@@ -500,7 +500,7 @@ export class ExtensionDatabaseManager {
     this.cleanupExtension(extensionId);
 
     const tables = await dbAdapter.query<ExtensionTableMeta>(
-      `SELECT * FROM flint_extension_tables WHERE extension_id = ? AND teardown_policy = 'drop-on-uninstall'`,
+      `SELECT * FROM noether_extension_tables WHERE extension_id = ? AND teardown_policy = 'drop-on-uninstall'`,
       [extensionId]
     );
 
@@ -521,7 +521,7 @@ export class ExtensionDatabaseManager {
     }
 
     await dbAdapter.execute(
-      `DELETE FROM flint_extension_tables WHERE extension_id = ? AND teardown_policy = 'drop-on-uninstall'`,
+      `DELETE FROM noether_extension_tables WHERE extension_id = ? AND teardown_policy = 'drop-on-uninstall'`,
       [extensionId]
     );
 

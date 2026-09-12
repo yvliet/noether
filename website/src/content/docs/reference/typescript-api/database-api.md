@@ -1,6 +1,6 @@
 # TypeScript API: Relational SQLite (`defineTable`)
 
-Flint enables extensions to declare type-safe relational SQLite tables directly in TypeScript, complete with automatic column migrations, version tracking, and cascade cleanup.
+Noether enables extensions to declare type-safe relational SQLite tables directly in TypeScript, complete with automatic column migrations, version tracking, and cascade cleanup.
 
 
 ## 1. Defining a Table

@@ -1,7 +1,7 @@
 /**
  * @file IconChipExtension.tsx
  * @description
- * TipTap rich text inline atom node extension for in-document icons in Flint.
+ * TipTap rich text inline atom node extension for in-document icons in Noether.
  * Visually renders as an inline icon in WYSIWYG mode, backed by lossless
  * :<pack>:<iconId>: shortcode serialization in raw Markdown.
  *
@@ -24,7 +24,7 @@ import {
 
 const COLOR_PRESETS = [
   { label: 'Default', value: undefined, bg: 'bg-[#555]' },
-  { label: 'Orange', value: '#ea580c', bg: 'bg-[#ea580c]' },
+  { label: 'Coral', value: '#eb584d', bg: 'bg-[#eb584d]' },
   { label: 'Amber', value: '#f59e0b', bg: 'bg-[#f59e0b]' },
   { label: 'Emerald', value: '#10b981', bg: 'bg-[#10b981]' },
   { label: 'Blue', value: '#3b82f6', bg: 'bg-[#3b82f6]' },
@@ -88,8 +88,8 @@ export const IconChipView: React.FC<NodeViewProps> = ({
       as="span"
       data-icon-chip="true"
       data-selected={selected ? 'true' : undefined}
-      className={`flint-icon-chip inline-flex items-center justify-center relative select-none cursor-pointer ${
-        selected ? 'bg-[var(--flint-selection-bg,#4a4e57)]' : ''
+      className={`noether-icon-chip inline-flex items-center justify-center relative select-none cursor-pointer ${
+        selected ? 'bg-[var(--noether-selection-bg,#4a4e57)]' : ''
       }`}
       style={{
         height: '1lh',
@@ -102,12 +102,12 @@ export const IconChipView: React.FC<NodeViewProps> = ({
       <span
         className="inline-flex items-center justify-center leading-none"
         style={{
-          color: color || (selected ? 'var(--flint-selection-text,#ffffff)' : 'inherit'),
+          color: color || (selected ? 'var(--noether-selection-text,#ffffff)' : 'inherit'),
         }}
       >
         {renderUnifiedIcon(fullIdentifier, {
           size: '1.15em',
-          color: color || (selected ? 'var(--flint-selection-text,#ffffff)' : 'currentColor'),
+          color: color || (selected ? 'var(--noether-selection-text,#ffffff)' : 'currentColor'),
           className: 'shrink-0',
         })}
       </span>
@@ -122,7 +122,7 @@ export const IconChipView: React.FC<NodeViewProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-[#282828]">
             <div className="flex items-center gap-1.5 min-w-0">
-              <span className="shrink-0 text-[var(--flint-accent,#ea580c)]">
+              <span className="shrink-0 text-[var(--noether-accent,#eb584d)]">
                 {renderUnifiedIcon(fullIdentifier, { size: 13, color: color || undefined })}
               </span>
               <span className="font-mono text-[11px] text-[#ccc] truncate">
@@ -220,7 +220,7 @@ export const IconChipExtension = Node.create({
   parseHTML() {
     return [
       {
-        tag: 'span[data-flint-icon="true"]',
+        tag: 'span[data-noether-icon="true"]',
       },
       {
         tag: 'span[data-type="icon-chip"]',
@@ -233,8 +233,8 @@ export const IconChipExtension = Node.create({
       'span',
       mergeAttributes(
         {
-          'data-flint-icon': 'true',
-          class: 'flint-icon-chip-node',
+          'data-noether-icon': 'true',
+          class: 'noether-icon-chip-node',
         },
         HTMLAttributes
       ),

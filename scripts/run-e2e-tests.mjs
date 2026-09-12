@@ -47,7 +47,7 @@ async function runTests() {
     // Wait for stores and extensions to hydrate
     await page.waitForFunction(() => {
       const win = window;
-      return Boolean(win.__flintStores?.workspaceStore && win.appInstance?.extensions?.isReady);
+      return Boolean(win.__noetherStores?.workspaceStore && win.appInstance?.extensions?.isReady);
     }, { timeout: 10000 }).catch(() => {
       console.log('ℹ️ Waiting extra tick for store readiness...');
     });
@@ -105,7 +105,7 @@ async function runTests() {
     await page.waitForTimeout(500);
 
     const graphTabActive = await page.evaluate(() => {
-      const ws = window.__flintStores.workspaceStore.getState();
+      const ws = window.__noetherStores.workspaceStore.getState();
       const activePane = ws.panes[ws.focusedPaneId] || ws.panes['main'];
       const activeTab = activePane?.tabs.find((t) => t.id === activePane.activeTabId);
       return {
@@ -130,7 +130,7 @@ async function runTests() {
     await page.waitForTimeout(500);
 
     const canvasTabActive = await page.evaluate(() => {
-      const ws = window.__flintStores.workspaceStore.getState();
+      const ws = window.__noetherStores.workspaceStore.getState();
       const activePane = ws.panes[ws.focusedPaneId] || ws.panes['main'];
       const activeTab = activePane?.tabs.find((t) => t.id === activePane.activeTabId);
       return {
@@ -154,7 +154,7 @@ async function runTests() {
     await page.waitForTimeout(500);
 
     const tasksTabActive = await page.evaluate(() => {
-      const ws = window.__flintStores.workspaceStore.getState();
+      const ws = window.__noetherStores.workspaceStore.getState();
       const activePane = ws.panes[ws.focusedPaneId] || ws.panes['main'];
       const activeTab = activePane?.tabs.find((t) => t.id === activePane.activeTabId);
       return {
@@ -178,7 +178,7 @@ async function runTests() {
     await page.waitForTimeout(500);
 
     const marketplaceTabActive = await page.evaluate(() => {
-      const ws = window.__flintStores.workspaceStore.getState();
+      const ws = window.__noetherStores.workspaceStore.getState();
       const activePane = ws.panes[ws.focusedPaneId] || ws.panes['main'];
       const activeTab = activePane?.tabs.find((t) => t.id === activePane.activeTabId);
       return {
@@ -202,8 +202,8 @@ async function runTests() {
     await page.waitForTimeout(1000);
 
     const journalState = await page.evaluate(() => {
-      const ws = window.__flintStores.workspaceStore.getState();
-      const ds = window.__flintStores.documentStore.getState();
+      const ws = window.__noetherStores.workspaceStore.getState();
+      const ds = window.__noetherStores.documentStore.getState();
       const activePane = ws.panes[ws.focusedPaneId] || ws.panes['main'];
       const activeTab = activePane?.tabs.find((t) => t.id === activePane.activeTabId);
       return {
@@ -231,7 +231,7 @@ async function runTests() {
     await page.waitForTimeout(300);
 
     const afterGraph = await page.evaluate(() => {
-      const ws = window.__flintStores.workspaceStore.getState();
+      const ws = window.__noetherStores.workspaceStore.getState();
       const activePane = ws.panes[ws.focusedPaneId] || ws.panes['main'];
       const activeTab = activePane?.tabs.find((t) => t.id === activePane.activeTabId);
       return activeTab?.view_type;
@@ -244,7 +244,7 @@ async function runTests() {
       await journalTabHeader.click();
       await page.waitForTimeout(300);
       const afterBack = await page.evaluate(() => {
-        const ds = window.__flintStores.documentStore.getState();
+        const ds = window.__noetherStores.documentStore.getState();
         return ds.activeDocument?.id;
       });
       assert.strictEqual(afterBack, journalState.activeDocId, 'Should switch back to active document');

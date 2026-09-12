@@ -1,12 +1,12 @@
 # Tasks Dashboard & Daily Journal
 
-Flint eliminates the separation between note-taking, project tracking, and daily reflection. Through the **Global Tasks Dashboard** and **Daily Journal Engine**, your action items and daily scratchpads stay organized without requiring fragmented third-party productivity apps.
+Noether eliminates the separation between note-taking, project tracking, and daily reflection. Through the **Global Tasks Dashboard** and **Daily Journal Engine**, your action items and daily scratchpads stay organized without requiring fragmented third-party productivity apps.
 
 ---
 
 ## 1. Centralized Tasks Dashboard
 
-In traditional Markdown systems, task checkboxes (`- [ ]`) scattered across dozens of project notes often go forgotten. Flint indexes every task in your Hearth into a unified, actionable control center.
+In traditional Markdown systems, task checkboxes (`- [ ]`) scattered across dozens of project notes often go forgotten. Noether indexes every task in your Vault into a unified, actionable control center.
 
 ### Task Syntax
 Write tasks naturally in any note:
@@ -38,7 +38,7 @@ Write tasks naturally in any note:
 
 ### Atomic Two-Way Synchronization
 When you check off a task or drag it into the *Completed* column in the Tasks Dashboard:
-1. Flint locates the source `.md` file on disk.
+1. Noether locates the source `.md` file on disk.
 2. Applies the state change (`- [ ]` $\to$ `- [x]`) using the atomic temp-and-rename pipeline.
 3. Updates the `blocks` table in SQLite.
 4. Suppresses echo file reload loops, ensuring smooth UI continuity.
@@ -52,7 +52,7 @@ The **Journal** feature provides zero-friction capture for morning plans, meetin
 ### Creating Today's Journal Note
 - Click the **Calendar / Journal** icon on the left Action Rail.
 - Or press `Ctrl+Alt+J`.
-- Flint instantly opens today's note (e.g. `Journal/2026-09-06.md`). If it doesn't exist yet, it creates it instantly using your configured template.
+- Noether instantly opens today's note (e.g. `Journal/2026-09-06.md`). If it doesn't exist yet, it creates it instantly using your configured template.
 
 ### Configuring Journal Settings
 Navigate to *Settings → Extensions → Journal*:
@@ -65,7 +65,7 @@ Navigate to *Settings → Extensions → Journal*:
 - **Default Template**: Specify boilerplate content to preload into new daily notes (e.g. Daily Standup, Priorities, Gratitude).
 
 ### Chronological Navigation
-At the top of each daily note, Flint displays a lightweight sub-header bar with:
+At the top of each daily note, Noether displays a lightweight sub-header bar with:
 - **Previous Day (`Alt+←`)**: Navigates to the preceding daily note.
 - **Next Day (`Alt+→`)**: Navigates to the following daily note.
 - **Calendar Date Picker**: Jump directly to any historical date in your archive.

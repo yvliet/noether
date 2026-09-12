@@ -59,7 +59,7 @@ fn normalize_path(p: &Path) -> PathBuf {
     normalized
 }
 
-/// Helper to normalize and ensure a target path stays strictly inside the vault root or .flint directory
+/// Helper to normalize and ensure a target path stays strictly inside the vault root or .noether directory
 pub fn is_safe_vault_path(target_vault: &Path, candidate: &Path) -> bool {
     if target_vault.as_os_str().is_empty() || candidate.as_os_str().is_empty() {
         return false;
@@ -127,7 +127,7 @@ pub struct RecentVaultItem {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct FlintConfig {
+pub struct NoetherConfig {
     pub current_vault_path: String,
     pub recent_vaults: Vec<RecentVaultItem>,
 }
@@ -164,26 +164,26 @@ pub struct PluginBundle {
 }
 
 pub struct AppState {
-    pub config: Mutex<FlintConfig>,
+    pub config: Mutex<NoetherConfig>,
 }
 
 fn get_default_vault_path() -> String {
     let docs = dirs::document_dir().unwrap_or_else(|| PathBuf::from("."));
-    docs.join("Flint Vault").to_string_lossy().to_string()
+    docs.join("Noether Vault").to_string_lossy().to_string()
 }
 
 pub fn get_config_path() -> PathBuf {
     let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
-    let flint_config_dir = config_dir.join("flint");
-    let _ = fs::create_dir_all(&flint_config_dir);
-    flint_config_dir.join("flint-config.json")
+    let noether_config_dir = config_dir.join("noether");
+    let _ = fs::create_dir_all(&noether_config_dir);
+    noether_config_dir.join("noether-config.json")
 }
 
-pub fn load_config() -> FlintConfig {
+pub fn load_config() -> NoetherConfig {
     let path = get_config_path();
     if path.exists() {
         if let Ok(content) = fs::read_to_string(&path) {
-            if let Ok(cfg) = serde_json::from_str::<FlintConfig>(&content) {
+            if let Ok(cfg) = serde_json::from_str::<NoetherConfig>(&content) {
                 return cfg;
             }
         }
@@ -191,17 +191,17 @@ pub fn load_config() -> FlintConfig {
 
     let default_vault = get_default_vault_path();
     let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
-    FlintConfig {
+    NoetherConfig {
         current_vault_path: default_vault.clone(),
         recent_vaults: vec![RecentVaultItem {
             path: default_vault,
-            name: "Flint Vault".to_string(),
+            name: "Noether Vault".to_string(),
             last_opened: now,
         }],
     }
 }
 
-pub fn save_config(cfg: &FlintConfig) {
+pub fn save_config(cfg: &NoetherConfig) {
     let path = get_config_path();
     if let Ok(serialized) = serde_json::to_string_pretty(cfg) {
         let _ = fs::write(path, serialized);
@@ -214,7 +214,7 @@ pub fn get_current_vault(state: tauri::State<AppState>) -> Value {
     let vault_name = Path::new(&cfg.current_vault_path)
         .file_name()
         .map(|n| n.to_string_lossy().to_string())
-        .unwrap_or_else(|| "Flint Vault".to_string());
+        .unwrap_or_else(|| "Noether Vault".to_string());
 
     json!({
         "path": cfg.current_vault_path,
@@ -283,7 +283,7 @@ pub fn create_new_vault(
 }
 
 #[tauri::command]
-pub fn rename_hearth(
+pub fn rename_vault(
     app: AppHandle,
     state: tauri::State<AppState>,
     target_path: String,
@@ -319,7 +319,7 @@ pub fn rename_hearth(
 
             // Cross-platform rename with retry loop and case-insensitive intermediate rename support
             if is_case_only {
-                let temp_path = parent.join(format!("{}.__flint_tmp_rename__", clean_name));
+                let temp_path = parent.join(format!("{}.__noether_tmp_rename__", clean_name));
                 let _ = fs::rename(&target_path_buf, &temp_path);
                 if let Err(e) = fs::rename(&temp_path, &target_new_path) {
                     return json!({ "success": false, "error": format!("Failed to rename folder: {}", e) });
@@ -362,24 +362,12 @@ pub fn rename_hearth(
         "success": true,
         "path": final_path,
         "name": clean_name,
-        "recentHearths": cfg.recent_vaults,
         "recentVaults": cfg.recent_vaults,
     });
 
-    let _ = app.emit("hearth-changed", payload.clone());
     let _ = app.emit("vault-changed", payload.clone());
 
     payload
-}
-
-#[tauri::command]
-pub fn rename_vault(
-    app: AppHandle,
-    state: tauri::State<AppState>,
-    target_path: String,
-    new_name: String,
-) -> Value {
-    rename_hearth(app, state, target_path, new_name)
 }
 
 #[tauri::command]
@@ -771,7 +759,7 @@ pub fn rename_markdown_file(
 #[tauri::command]
 pub fn open_plugins_folder(state: tauri::State<AppState>) -> Value {
     let cfg = state.config.lock();
-    let plugins_dir = Path::new(&cfg.current_vault_path).join(".flint").join("plugins");
+    let plugins_dir = Path::new(&cfg.current_vault_path).join(".noether").join("extensions");
     let _ = fs::create_dir_all(&plugins_dir);
 
     #[cfg(target_os = "windows")]
@@ -920,9 +908,9 @@ pub fn empty_trash_folder(state: tauri::State<AppState>) -> Value {
 pub fn list_installed_plugins(state: tauri::State<AppState>) -> Vec<PluginManifest> {
     let cfg = state.config.lock();
     let target_vault = Path::new(&cfg.current_vault_path);
-    let plugins_dir = target_vault.join(".flint").join("plugins");
-    let extensions_dir = target_vault.join(".flint").join("extensions");
-    let _ = fs::create_dir_all(&plugins_dir);
+    let plugins_dir = target_vault.join(".noether").join("plugins");
+    let extensions_dir = target_vault.join(".noether").join("extensions");
+    let _ = fs::create_dir_all(&extensions_dir);
 
     let mut plugins = Vec::new();
     let mut seen_ids = std::collections::HashSet::new();
@@ -1000,8 +988,8 @@ pub fn read_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) 
         };
     }
 
-    let plugins_dir = target_vault.join(".flint").join("plugins").join(&safe_folder);
-    let extensions_dir = target_vault.join(".flint").join("extensions").join(&safe_folder);
+    let plugins_dir = target_vault.join(".noether").join("plugins").join(&safe_folder);
+    let extensions_dir = target_vault.join(".noether").join("extensions").join(&safe_folder);
 
     if !is_safe_vault_path(&target_vault, &plugins_dir) || !is_safe_vault_path(&target_vault, &extensions_dir) {
         return PluginBundle {
@@ -1012,7 +1000,7 @@ pub fn read_plugin_bundle(state: tauri::State<AppState>, plugin_folder: String) 
         };
     }
 
-    // Check .flint/plugins/ first, then fall back to .flint/extensions/
+    // Check .noether/plugins/ first, then fall back to .noether/extensions/
     let resolved_dir = if plugins_dir.join("main.js").exists() {
         plugins_dir
     } else if extensions_dir.join("main.js").exists() {
@@ -1048,7 +1036,7 @@ pub fn install_plugin_bundle(
     mark_internal_write();
     let cfg = state.config.lock();
     let target_vault = PathBuf::from(&cfg.current_vault_path);
-    let extensions_dir = target_vault.join(".flint").join("extensions");
+    let extensions_dir = target_vault.join(".noether").join("extensions");
     let safe_folder = plugin_folder.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>', '.'], "_");
     let target_dir = extensions_dir.join(&safe_folder);
 
@@ -1074,8 +1062,8 @@ pub fn install_plugin_bundle(
         }
     }
 
-    // Clean up legacy .flint/plugins location if it exists
-    let legacy_plugins_dir = target_vault.join(".flint").join("plugins");
+    // Clean up legacy .noether/plugins location if it exists
+    let legacy_plugins_dir = target_vault.join(".noether").join("plugins");
     let legacy_target = legacy_plugins_dir.join(&safe_folder);
     if legacy_target.exists() && legacy_target != legacy_plugins_dir && is_safe_vault_path(&target_vault, &legacy_target) {
         let _ = fs::remove_dir_all(&legacy_target);
@@ -1099,15 +1087,15 @@ pub fn uninstall_plugin_bundle(state: tauri::State<AppState>, plugin_folder: Str
         return json!({ "success": false, "error": "Invalid plugin folder name" });
     }
 
-    // Remove from .flint/plugins directory if present
-    let plugins_dir = target_vault.join(".flint").join("plugins");
+    // Remove from .noether/plugins directory if present
+    let plugins_dir = target_vault.join(".noether").join("plugins");
     let target_dir = plugins_dir.join(&safe_folder);
     if target_dir != plugins_dir && is_safe_vault_path(&target_vault, &target_dir) && target_dir.exists() {
         let _ = fs::remove_dir_all(&target_dir);
     }
 
-    // Also remove from .flint/extensions directory if present
-    let extensions_dir = target_vault.join(".flint").join("extensions");
+    // Also remove from .noether/extensions directory if present
+    let extensions_dir = target_vault.join(".noether").join("extensions");
     let target_ext_dir = extensions_dir.join(&safe_folder);
     if target_ext_dir != extensions_dir && is_safe_vault_path(&target_vault, &target_ext_dir) && target_ext_dir.exists() {
         let _ = fs::remove_dir_all(&target_ext_dir);
@@ -1366,7 +1354,7 @@ pub fn unregister_global_shortcut(id: String) -> Value {
 #[tauri::command]
 pub async fn download_remote_text(url: String) -> Value {
     let client = match reqwest::Client::builder()
-        .user_agent("Flint-Desktop/0.4.6")
+        .user_agent("Noether-Desktop/0.4.6")
         .timeout(std::time::Duration::from_secs(12))
         .build()
     {
@@ -1410,8 +1398,8 @@ mod tests {
     #[test]
     fn test_strip_unc_prefix() {
         assert_eq!(strip_unc_prefix(r"\\?\UNC\server\share\folder"), r"\\server\share\folder");
-        assert_eq!(strip_unc_prefix(r"\\?\C:\Users\Flint"), r"C:\Users\Flint");
-        assert_eq!(strip_unc_prefix(r"C:\Users\Flint"), r"C:\Users\Flint");
+        assert_eq!(strip_unc_prefix(r"\\?\C:\Users\Noether"), r"C:\Users\Noether");
+        assert_eq!(strip_unc_prefix(r"C:\Users\Noether"), r"C:\Users\Noether");
         assert_eq!(strip_unc_prefix(r"\\server\share\folder"), r"\\server\share\folder");
     }
 
@@ -1431,7 +1419,7 @@ mod tests {
 
     #[test]
     fn test_is_safe_vault_path_nonexistent_file() {
-        let temp_dir = std::env::temp_dir().join("flint_vault_test");
+        let temp_dir = std::env::temp_dir().join("noether_vault_test");
         let _ = fs::create_dir_all(&temp_dir);
         let non_existent = temp_dir.join("subfolder").join("non_existent_note.md");
         assert!(is_safe_vault_path(&temp_dir, &non_existent));

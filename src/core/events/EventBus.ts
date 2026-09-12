@@ -2,7 +2,7 @@
  * @module EventBus
  * @description
  * High-performance, lightweight publish-subscribe event bus for decoupled
- * communication across Flint plugins and core systems.
+ * communication across Noether plugins and core systems.
  *
  * Supports synchronous execution for critical document lifecycle events
  * and microtask deferred execution for non-blocking UI notifications.

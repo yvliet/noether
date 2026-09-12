@@ -24,7 +24,7 @@ import { getUniqueTitleForMove, getDocumentPath, isDescendant } from '@/lib/db/d
 import { FileSortOrder, sortDocuments } from '@/components/layout/LeftSidebar';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { platform } from '@/lib/platform/platformAdapter';
-import { useFileTreeDecorators, useFlintApp } from '@/core/app/AppContext';
+import { useFileTreeDecorators, useNoetherApp } from '@/core/app/AppContext';
 import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 import { TreeNodeRow, TreeNodeAction } from './TreeNodeRow';
 import { TreeNodeRenameInput } from './TreeNodeRenameInput';
@@ -34,7 +34,7 @@ export function getVisibleTreeItemIds(targetEl?: HTMLElement | null): string[] {
   if (typeof document === 'undefined') return [];
   const sectionContainer =
     targetEl?.closest('[data-tree-section]') ||
-    document.querySelector('[data-tree-section="hearth-files"]') ||
+    document.querySelector('[data-tree-section="vault-files"]') ||
     document.querySelector('[data-tree-section="vault-files"]') ||
     document.querySelector('[data-tree-section="search-results"]') ||
     document.querySelector('[data-sidebar-root]');
@@ -89,7 +89,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
   const openTab = useWorkspaceStore((s) => s.openTab);
@@ -115,7 +115,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const originalTitleRef = useRef(item.title);
   const prevIsEditingRef = useRef(false);
 
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) || null, [tabs, activeTabId]);
@@ -438,7 +438,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       if (isMulti) {
         openConfirmDialog({
           title: `Delete ${currentSelectedIds.length} items?`,
-          message: `Are you sure you want to delete these ${currentSelectedIds.length} items? They will be permanently deleted from your Hearth.`,
+          message: `Are you sure you want to delete these ${currentSelectedIds.length} items? They will be permanently deleted from your Vault.`,
           confirmText: 'Delete all',
           isDanger: true,
           onConfirm: async () => {
@@ -449,7 +449,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         openConfirmDialog({
           title: `Delete ${isFolder ? 'Folder' : 'File'}`,
           message: `Are you sure you want to delete "${item.title}"? ${
-            isFolder ? 'All contents inside this folder will also be deleted.' : 'It will be permanently deleted from your Hearth.'
+            isFolder ? 'All contents inside this folder will also be deleted.' : 'It will be permanently deleted from your Vault.'
           }`,
           confirmText: 'Delete',
           isDanger: true,
@@ -469,12 +469,12 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         navigator.clipboard.writeText(relPath);
         showToast('Relative path copied to clipboard', 'info');
       } else {
-        const full = hearthPath ? `${hearthPath}/${relPath}`.replace(/\/+/g, '/') : relPath;
+        const full = vaultPath ? `${vaultPath}/${relPath}`.replace(/\/+/g, '/') : relPath;
         navigator.clipboard.writeText(full);
         showToast('Absolute path copied to clipboard', 'info');
       }
     },
-    [allDocs, item, showToast, hearthPath]
+    [allDocs, item, showToast, vaultPath]
   );
 
   const executeMoveToTarget = useCallback(
@@ -489,7 +489,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         const result = await moveDocument(item.id, targetParentId);
         if (result.success) {
           if (targetParentId) {
-            window.dispatchEvent(new CustomEvent('flint:expand-folder', { detail: { id: targetParentId } }));
+            window.dispatchEvent(new CustomEvent('noether:expand-folder', { detail: { id: targetParentId } }));
           }
           const movedTitle = result.newTitle || proposedTitle || item.title;
           if (targetParentId) {
@@ -522,7 +522,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           openConfirmDialog({
             title: `${typeLabel} already exists`,
             message: `A ${typeLabel.toLowerCase()} named “${item.title}” already exists in ${
-              targetParentId ? `“${targetTitle}”` : 'Hearth root'
+              targetParentId ? `“${targetTitle}”` : 'Vault root'
             }. Would you like to rename it to “${candidateTitle}”?`,
             subtext: `It will be renamed to “${candidateTitle}” and moved.`,
             confirmText: 'Rename and move',
@@ -558,7 +558,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         if (res.success) {
           if (targetParentId) {
             const targetFolder = allDocs.find((d) => d.id === targetParentId);
-            window.dispatchEvent(new CustomEvent('flint:expand-folder', { detail: { id: targetParentId } }));
+            window.dispatchEvent(new CustomEvent('noether:expand-folder', { detail: { id: targetParentId } }));
             showToast(`Moved ${res.movedCount} items into “${targetFolder?.title || 'folder'}”`, 'success');
           } else {
             showToast(`Moved ${res.movedCount} items to root`, 'success');
@@ -697,7 +697,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             onClick: () => {
               openConfirmDialog({
                 title: `Delete ${currentSelectedIds.length} items?`,
-                message: `Are you sure you want to delete these ${currentSelectedIds.length} items? They will be permanently deleted from your Hearth.`,
+                message: `Are you sure you want to delete these ${currentSelectedIds.length} items? They will be permanently deleted from your Vault.`,
                 confirmText: 'Delete all',
                 isDanger: true,
                 onConfirm: async () => {
@@ -850,9 +850,9 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <FolderOpenIcon size={14} />,
             onClick: () => {
               if (platform.isDesktop()) {
-                platform.openHearthInExplorer(hearthPath);
+                platform.openVaultInExplorer(vaultPath);
               } else {
-                showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
+                showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
               }
             },
           },
@@ -876,7 +876,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         showContextMenu(e, items, { scope: 'file-tree', data: item });
       }
     },
-    [allDocs, createNewFolder, createNewNote, customType, displayTitle, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, hearthPath, app]
+    [allDocs, createNewFolder, createNewNote, customType, displayTitle, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, vaultPath, app]
   );
 
   return (

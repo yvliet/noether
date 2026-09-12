@@ -124,14 +124,14 @@ export const Bug01Icon = createIcon(HugeBug01Icon);
 export const Sun01Icon = createIcon(HugeSun01Icon);
 export const Moon02Icon = createIcon(HugeMoon02Icon);
 
-export const FlintLogoIcon: React.FC<{ size?: number; className?: string }> = ({ size = 28, className = '' }) => {
+export const NoetherLogoIcon: React.FC<{ size?: number; className?: string }> = ({ size = 28, className = '' }) => {
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img
-        src="./flint-icon.png"
+        src="./noether-icon.png"
         width={size}
         height={size}
-        alt="Flint"
+        alt="Noether"
         className="shrink-0"
       />
     </div>

@@ -1,7 +1,7 @@
 /**
- * @module @flint/react
+ * @module @noether/react
  * @description
- * Official reactive React hooks for Flint extensions.
+ * Official reactive React hooks for Noether extensions.
  *
  * Technical Rationale:
  * Provides zero-boilerplate reactive subscriptions for extension UI components.
@@ -13,7 +13,7 @@
 
 import { useSyncExternalStore } from 'react';
 import { storeRefs } from '../core/app/storeBridge';
-import { appInstance, FlintApp } from '../core/app/FlintApp';
+import { appInstance, NoetherApp } from '../core/app/NoetherApp';
 import type {
   DocumentItem,
   TabItem,
@@ -26,12 +26,16 @@ import type {
 } from '../types';
 
 /**
- * Accesses the central FlintApp host application instance.
+ * Accesses the central NoetherApp host application instance.
  * @since 0.4.6
  */
-export function useFlintApp(): FlintApp {
+export function useNoetherApp(): NoetherApp {
   return appInstance;
 }
+
+// Static referentially stable singletons for useSyncExternalStore snapshots to prevent infinite render loops
+const EMPTY_ARRAY: readonly any[] = Object.freeze([]);
+const EMPTY_OBJECT: Record<string, any> = Object.freeze({});
 
 /**
  * Subscribes to a slice of an internal host store with full reactivity.
@@ -75,11 +79,11 @@ export function useActiveDocument(): DocumentItem | null {
 }
 
 /**
- * Subscribes to all documents and folders currently loaded in the active Hearth.
+ * Subscribes to all documents and folders currently loaded in the active Vault.
  * @since 0.4.6
  */
-export function useHearthDocuments(): DocumentItem[] {
-  return useStoreSlice('document', (s: any) => s?.documents ?? [], []);
+export function useVaultDocuments(): DocumentItem[] {
+  return useStoreSlice('document', (s: any) => s?.documents ?? EMPTY_ARRAY, EMPTY_ARRAY as DocumentItem[]);
 }
 
 /**
@@ -107,11 +111,11 @@ export function useWorkspaceTabs(): readonly TabItem[] {
   return useStoreSlice(
     'workspace',
     (s: any) => {
-      if (!s) return [];
+      if (!s) return EMPTY_ARRAY;
       const focusedPane = s.panes?.[s.focusedPaneId] || s.panes?.['main'];
-      return focusedPane?.tabs ?? s.tabs ?? [];
+      return focusedPane?.tabs ?? s.tabs ?? EMPTY_ARRAY;
     },
-    []
+    EMPTY_ARRAY
   );
 }
 
@@ -131,13 +135,13 @@ export function useDocumentHeadings(docId?: string): HeadingItem[] {
   return useStoreSlice(
     'document',
     (s: any) => {
-      if (!s) return [];
+      if (!s) return EMPTY_ARRAY;
       if (!docId || s.activeDocument?.id === docId) {
-        return s.headings ?? [];
+        return s.headings ?? EMPTY_ARRAY;
       }
-      return [];
+      return EMPTY_ARRAY;
     },
-    []
+    EMPTY_ARRAY as HeadingItem[]
   );
 }
 
@@ -149,13 +153,13 @@ export function useDocumentBacklinks(docId?: string): BacklinkItem[] {
   return useStoreSlice(
     'document',
     (s: any) => {
-      if (!s) return [];
+      if (!s) return EMPTY_ARRAY;
       if (!docId || s.activeDocument?.id === docId) {
-        return s.backlinks ?? [];
+        return s.backlinks ?? EMPTY_ARRAY;
       }
-      return [];
+      return EMPTY_ARRAY;
     },
-    []
+    EMPTY_ARRAY as BacklinkItem[]
   );
 }
 
@@ -167,13 +171,13 @@ export function useDocumentOutgoingLinks(docId?: string): OutgoingLinkItem[] {
   return useStoreSlice(
     'document',
     (s: any) => {
-      if (!s) return [];
+      if (!s) return EMPTY_ARRAY;
       if (!docId || s.activeDocument?.id === docId) {
-        return s.outgoingLinks ?? [];
+        return s.outgoingLinks ?? EMPTY_ARRAY;
       }
-      return [];
+      return EMPTY_ARRAY;
     },
-    []
+    EMPTY_ARRAY as OutgoingLinkItem[]
   );
 }
 
@@ -185,47 +189,48 @@ export function useDocumentUnlinkedMentions(docId?: string): UnlinkedMentionItem
   return useStoreSlice(
     'document',
     (s: any) => {
-      if (!s) return [];
+      if (!s) return EMPTY_ARRAY;
       if (!docId || s.activeDocument?.id === docId) {
-        return s.unlinkedMentions ?? [];
+        return s.unlinkedMentions ?? EMPTY_ARRAY;
       }
-      return [];
+      return EMPTY_ARRAY;
     },
-    []
+    EMPTY_ARRAY as UnlinkedMentionItem[]
   );
 }
 
 /**
- * Subscribes to the list of unique tags indexed across the entire Hearth.
+ * Subscribes to the list of unique tags indexed across the entire Vault.
  * @since 0.4.6
  */
 export function useVaultTags(): TagItem[] {
-  return useStoreSlice('document', (s: any) => s?.vaultTags ?? [], []);
+  return useStoreSlice('document', (s: any) => s?.vaultTags ?? EMPTY_ARRAY, EMPTY_ARRAY as TagItem[]);
 }
 
 /**
- * Subscribes to all interactive tasks found across all documents in the Hearth.
+ * Subscribes to all interactive tasks found across all documents in the Vault.
  * @since 0.4.6
  */
 export function useGlobalTasks(): GlobalTaskItem[] {
-  return useStoreSlice('document', (s: any) => s?.globalTasks ?? [], []);
+  return useStoreSlice('document', (s: any) => s?.globalTasks ?? EMPTY_ARRAY, EMPTY_ARRAY as GlobalTaskItem[]);
 }
 
 /**
  * Subscribes to the frontmatter properties of the active document or specified docId.
+ * Returns a stable frozen empty object when properties are absent to prevent re-render thrashing.
  * @since 0.4.6
  */
 export function useDocumentProperties(docId?: string): Record<string, any> {
   return useStoreSlice(
     'document',
     (s: any) => {
-      if (!s) return {};
+      if (!s) return EMPTY_OBJECT;
       if (!docId || s.activeDocument?.id === docId) {
-        return s.activeDocumentProperties ?? s.activeDocument?.properties ?? {};
+        return s.documentProperties ?? EMPTY_OBJECT;
       }
-      return {};
+      return EMPTY_OBJECT;
     },
-    {}
+    EMPTY_OBJECT
   );
 }
 
@@ -234,7 +239,7 @@ export function useDocumentProperties(docId?: string): Record<string, any> {
  * Provides safe fallback via useSyncExternalStore in decoupled sandboxes.
  * @since 0.4.6
  */
-export function useFlintStore<TSelected = any>(
+export function useNoetherStore<TSelected = any>(
   storeKey: 'document' | 'workspace' | 'settings' | 'sidebarDock',
   selector: (state: any) => TSelected
 ): TSelected {

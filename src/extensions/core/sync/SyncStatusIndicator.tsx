@@ -7,12 +7,12 @@
  */
 
 import React from 'react';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { DatabaseIcon, DatabaseSync01Icon } from '@/components/common/Icons';
 import { useSyncStore } from './syncStore';
 
 interface SyncStatusIndicatorProps {
-  app: FlintApp;
+  app: NoetherApp;
 }
 
 export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ app }) => {

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useSyncExternalStore, useMemo } from 'react';
-import { FlintApp, appInstance } from './FlintApp';
+import { NoetherApp, appInstance } from './NoetherApp';
 import {
   ActionRailItem,
   CommandItem,
@@ -30,9 +30,9 @@ import {
 
 import { ExtensionListSnapshot } from '../extensions/ExtensionManager';
 
-const AppContext = createContext<FlintApp | null>(null);
+const AppContext = createContext<NoetherApp | null>(null);
 
-export const AppProvider: React.FC<{ children: React.ReactNode; app?: FlintApp }> = ({
+export const AppProvider: React.FC<{ children: React.ReactNode; app?: NoetherApp }> = ({
   children,
   app,
 }) => {
@@ -40,14 +40,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode; app?: FlintApp }
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-export const useFlintApp = (): FlintApp => {
+export const useNoetherApp = (): NoetherApp => {
   const ctx = useContext(AppContext);
   if (ctx) return ctx;
   return appInstance;
 };
 
 export const useActionRailItems = (): ActionRailItem[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.actionRail.subscribe(onStoreChange);
@@ -58,7 +58,7 @@ export const useActionRailItems = (): ActionRailItem[] => {
 };
 
 export const useCommands = (): CommandItem[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.commands.subscribe(onStoreChange);
@@ -69,7 +69,7 @@ export const useCommands = (): CommandItem[] => {
 };
 
 export const useViews = (): ViewDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.views.subscribe(onStoreChange);
@@ -80,7 +80,7 @@ export const useViews = (): ViewDefinition[] => {
 };
 
 export const useSidebarTabs = (side?: 'left' | 'right'): SidebarTabDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.sidebars.subscribe(onStoreChange);
@@ -91,7 +91,7 @@ export const useSidebarTabs = (side?: 'left' | 'right'): SidebarTabDefinition[] 
 };
 
 export const useFileTreeActions = (): FileTreeActionDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.sidebars.subscribe(onStoreChange);
@@ -102,7 +102,7 @@ export const useFileTreeActions = (): FileTreeActionDefinition[] => {
 };
 
 export const useStatusBarItems = (alignment?: 'left' | 'right'): StatusBarItem[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.statusBar.subscribe(onStoreChange);
@@ -113,7 +113,7 @@ export const useStatusBarItems = (alignment?: 'left' | 'right'): StatusBarItem[]
 };
 
 export const useSettingTabs = (): ExtensionSettingTab[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.settingsRegistry.subscribe(onStoreChange);
@@ -124,7 +124,7 @@ export const useSettingTabs = (): ExtensionSettingTab[] => {
 };
 
 export const useDocumentHeaders = (): import('../extensions/types').DocumentHeaderDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -135,7 +135,7 @@ export const useDocumentHeaders = (): import('../extensions/types').DocumentHead
 };
 
 export const useDocumentFooters = (): import('../extensions/types').DocumentFooterDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -146,7 +146,7 @@ export const useDocumentFooters = (): import('../extensions/types').DocumentFoot
 };
 
 export const useDocMenuActions = (): DocMenuActionDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -157,7 +157,7 @@ export const useDocMenuActions = (): DocMenuActionDefinition[] => {
 };
 
 export const usePlaceholderHints = (): EditorPlaceholderHint[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -168,7 +168,7 @@ export const usePlaceholderHints = (): EditorPlaceholderHint[] => {
 };
 
 export const useExtensionList = (): ExtensionListSnapshot => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.extensions.subscribe(onStoreChange);
@@ -182,7 +182,7 @@ export const useContextMenuItems = (
   scope?: ContextMenuScope,
   data?: any
 ): ContextMenuItemDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const allItems = useSyncExternalStore(
     (onStoreChange) => {
       const d = app.contextMenu.subscribe(onStoreChange);
@@ -197,7 +197,7 @@ export const useContextMenuItems = (
 };
 
 export const useModals = (): ModalDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.modals.subscribe(onStoreChange);
@@ -208,7 +208,7 @@ export const useModals = (): ModalDefinition[] => {
 };
 
 export const usePropertyTypes = (): PropertyTypeDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.properties.subscribe(onStoreChange);
@@ -219,7 +219,7 @@ export const usePropertyTypes = (): PropertyTypeDefinition[] => {
 };
 
 export const usePropertyFilters = (): PropertyFilterDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.properties.subscribe(onStoreChange);
@@ -230,7 +230,7 @@ export const usePropertyFilters = (): PropertyFilterDefinition[] => {
 };
 
 export const useCustomPropertyIcons = (): PropertyIconDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.properties.subscribe(onStoreChange);
@@ -241,7 +241,7 @@ export const useCustomPropertyIcons = (): PropertyIconDefinition[] => {
 };
 
 export const useFileTreeSections = (): FileTreeSectionDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.sidebars.subscribe(onStoreChange);
@@ -252,7 +252,7 @@ export const useFileTreeSections = (): FileTreeSectionDefinition[] => {
 };
 
 export const useFileTreeDecorators = (): FileTreeItemDecorator[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.sidebars.subscribe(onStoreChange);
@@ -263,7 +263,7 @@ export const useFileTreeDecorators = (): FileTreeItemDecorator[] => {
 };
 
 export const useTabDecorators = (): TabDecoratorDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       return app.tabDecorators.subscribe(onStoreChange);
@@ -273,7 +273,7 @@ export const useTabDecorators = (): TabDecoratorDefinition[] => {
 };
 
 export const useBreadcrumbProviders = (): BreadcrumbProviderDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -284,7 +284,7 @@ export const useBreadcrumbProviders = (): BreadcrumbProviderDefinition[] => {
 };
 
 export const useBreadcrumbDecorators = (): BreadcrumbDecoratorDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -295,7 +295,7 @@ export const useBreadcrumbDecorators = (): BreadcrumbDecoratorDefinition[] => {
 };
 
 export const useDocumentTitleDecorators = (): DocumentTitleDecoratorDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);
@@ -309,7 +309,7 @@ export const usePortalSlots = (
   location: PortalSlotLocation,
   context?: PortalSlotContext
 ): readonly PortalSlotDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const rawSlots = useSyncExternalStore(
     (onStoreChange) => {
       const d = app.slots.subscribe(onStoreChange);
@@ -341,7 +341,7 @@ export const usePortalSlots = (
 };
 
 export const useEditorPlugins = (): EditorPluginDefinition[] => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   return useSyncExternalStore(
     (onStoreChange) => {
       const d = app.editor.subscribe(onStoreChange);

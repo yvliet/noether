@@ -1,28 +1,28 @@
-# Flint SDK API Reference
+# Noether SDK API Reference
 
-The Flint Extension SDK (`src/sdk/index.ts`) is the official public programming interface for building extensions and themes. It exposes base classes, typed service registries, event subscribers, and data models while maintaining strict separation from host application internals.
+The Noether Extension SDK (`src/sdk/index.ts`) is the official public programming interface for building extensions and themes. It exposes base classes, typed service registries, event subscribers, and data models while maintaining strict separation from host application internals.
 
 
 ## 1. The `Extension` Base Class
 
 ---
 
-Every Flint extension extends the `Extension` (or `Plugin`) base class. It provides automated resource tracking so that all commands, event listeners, status bar widgets, and tools registered through its methods are automatically disposed of when the extension is disabled or reloaded.
+Every Noether extension extends the `Extension` (or `Plugin`) base class. It provides automated resource tracking so that all commands, event listeners, status bar widgets, and tools registered through its methods are automatically disposed of when the extension is disabled or reloaded.
 
 ```typescript
-import { Extension, FlintApp } from 'flint';
+import { Extension, NoetherApp } from 'noether';
 
 export default class MyCustomExtension extends Extension {
   /**
-   * Called once when the extension is loaded into the active Hearth.
+   * Called once when the extension is loaded into the active Vault.
    * Initialize state, register commands, bind event listeners, and register MCP tools here.
    */
   async onload(): Promise<void> {
-    console.log('Extension loaded in Hearth:', this.app.hearth.activeHearthPath);
+    console.log('Extension loaded in Vault:', this.app.vault.vaultPath);
   }
 
   /**
-   * Called when the extension is disabled, uninstalled, or when Flint is switching Hearths.
+   * Called when the extension is disabled, uninstalled, or when Noether is switching Vaults.
    * Clean up non-tracked resources, custom WebSockets, or worker threads here.
    */
   async onunload(): Promise<void> {
@@ -38,7 +38,7 @@ export default class MyCustomExtension extends Extension {
 | `this.addCommand(command: CommandItem): void` | Registers an action into the Command Palette (`Ctrl+K` / `Cmd+K`). |
 | `this.addActionRailIcon(id, icon, tooltip, callback, order?): void` | Adds a high-frequency icon trigger to the left vertical Action Rail / Ribbon. |
 | `this.addStatusBarItem(item: StatusBarItem): HTMLElement` | Adds a status indicator or live counter to the bottom status bar. |
-| `this.addSettingTab(tab: ExtensionSettingTab): void` | Injects a custom configuration panel into Flint Settings. |
+| `this.addSettingTab(tab: ExtensionSettingTab): void` | Injects a custom configuration panel into Noether Settings. |
 | `this.registerEvent(disposable: Disposable): void` | Binds an EventBus listener and tracks it for automatic disposal. |
 | `this.registerTool(tool: McpToolDefinition): void` | Exposes a Model Context Protocol tool to AI agents. |
 | `this.registerView(viewType, factory): void` | Registers a custom main content view or tab mode. |
@@ -46,18 +46,18 @@ export default class MyCustomExtension extends Extension {
 | `this.registerWorkerTask(task: WorkerTaskDefinition): void` | Registers an off-thread background Web Worker routine. |
 
 
-## 2. The `FlintApp` Container
+## 2. The `NoetherApp` Container
 
 ---
 
-Extensions access host capabilities through the `FlintApp` instance (`this.app`).
+Extensions access host capabilities through the `NoetherApp` instance (`this.app`).
 
 ```typescript
-export interface FlintApp {
+export interface NoetherApp {
   /** Document navigation, tab management, dialogs, and notifications */
   workspace: WorkspaceAPI;
-  /** Active Hearth directory, recent vaults, and workspace switching */
-  hearth: HearthAPI;
+  /** Active Vault directory, recent vaults, and workspace switching */
+  vault: VaultAPI;
   /** File read, write, rename, and directory operations */
   vault: VaultAPI;
   /** In-memory and disk SQLite database operations */
@@ -77,24 +77,24 @@ export interface FlintApp {
 - `app.workspace.showConfirmDialog(config: ConfirmDialogConfig)`: Opens an interactive confirmation modal dialog.
 - `app.workspace.showInputDialog(config: InputDialogConfig)`: Opens a text prompt dialog.
 
-### Hearth API (`app.hearth`)
+### Vault API (`app.vault`)
 
-- `app.hearth.activeHearthPath`: Absolute filesystem path to the currently opened Hearth.
-- `app.hearth.switchHearth(path: string)`: Programmatically switches the active Hearth.
-- `app.hearth.getRecentHearths()`: Returns a list of recently opened Hearth paths and names.
+- `app.vault.vaultPath`: Absolute filesystem path to the currently opened Vault.
+- `app.vault.switchVault(path: string)`: Programmatically switches the active Vault.
+- `app.vault.getRecentVaults()`: Returns a list of recently opened Vault paths and names.
 
 ### Vault API (`app.vault`)
 
-- `app.vault.read(path: string): Promise<string>`: Reads a raw UTF-8 file from the Hearth.
+- `app.vault.read(path: string): Promise<string>`: Reads a raw UTF-8 file from the Vault.
 - `app.vault.write(path: string, content: string): Promise<void>`: Writes text to disk.
-- `app.vault.delete(path: string): Promise<void>`: Moves a file to the Hearth `.trash/` folder or deletes it.
+- `app.vault.delete(path: string): Promise<void>`: Moves a file to the Vault `.trash/` folder or deletes it.
 
 
 ## 3. The `EventBus`
 
 ---
 
-The `EventBus` enables loosely coupled communication between the Flint core and extensions. Always subscribe through `this.registerEvent(this.app.events.on(...))` to prevent memory leaks:
+The `EventBus` enables loosely coupled communication between the Noether core and extensions. Always subscribe through `this.registerEvent(this.app.events.on(...))` to prevent memory leaks:
 
 ```typescript
 // Subscribing to document creation
@@ -111,10 +111,10 @@ this.registerEvent(
   })
 );
 
-// Subscribing to Hearth switching
+// Subscribing to Vault switching
 this.registerEvent(
-  this.app.events.on('hearth:switched', ({ hearthPath }) => {
-    this.reloadExtensionState(hearthPath);
+  this.app.events.on('vault:switched', ({ vaultPath }) => {
+    this.reloadExtensionState(vaultPath);
   })
 );
 ```
@@ -126,8 +126,8 @@ this.registerEvent(
 | `document:created` | `{ documentId, path, title }` | A new markdown note is created. |
 | `document:changed` | `{ documentId, content }` | Editor content is edited by the user. |
 | `document:saved` | `{ documentId, path }` | Document is debounced and persisted to disk. |
-| `document:deleted` | `{ documentId, path }` | Note is removed from the Hearth. |
-| `hearth:switched` | `{ hearthPath }` | User switches to a different Hearth folder. |
+| `document:deleted` | `{ documentId, path }` | Note is removed from the Vault. |
+| `vault:switched` | `{ vaultPath }` | User switches to a different Vault folder. |
 | `tag:renamed` | `{ oldTag, newTag }` | A tag taxonomy is refactored across notes. |
 
 
@@ -135,10 +135,10 @@ this.registerEvent(
 
 ---
 
-Flint provides dynamic React portal slots that allow extensions to mount UI components directly into native application shell regions:
+Noether provides dynamic React portal slots that allow extensions to mount UI components directly into native application shell regions:
 
 ```typescript
-import { PortalSlotLocation } from 'flint';
+import { PortalSlotLocation } from 'noether';
 
 this.registerPortalSlot({
   id: 'header-reading-timer',
@@ -176,18 +176,18 @@ const result = await this.app.workerPool.runTask({
 ```
 
 
-## 6. Reactive React Hooks (`@flint/react` and `flint`)
+## 6. Reactive React Hooks (`@noether/react` and `noether`)
 
 ---
 
-Extensions rendering React components can import reactive hooks directly from `flint` or `@flint/react`. These hooks subscribe directly to host state changes using React 18 external store synchronization with zero state leakage:
+Extensions rendering React components can import reactive hooks directly from `noether` or `@noether/react`. These hooks subscribe directly to host state changes using React 18 external store synchronization with zero state leakage:
 
 ```typescript
 import React from 'react';
 import {
-  useFlintApp,
+  useNoetherApp,
   useActiveDocument,
-  useHearthDocuments,
+  useVaultDocuments,
   useActiveTab,
   useWorkspaceTabs,
   useMainViewMode,
@@ -197,14 +197,14 @@ import {
   useVaultTags,
   useGlobalTasks,
   useDocumentProperties,
-  useFlintStore,
+  useNoetherStore,
   useToast,
-} from 'flint';
+} from 'noether';
 
 export const MyExtensionView: React.FC = () => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const activeDoc = useActiveDocument();
-  const documents = useHearthDocuments();
+  const documents = useVaultDocuments();
   const backlinks = useDocumentBacklinks();
   const showToast = useToast();
 
@@ -222,9 +222,9 @@ export const MyExtensionView: React.FC = () => {
 
 | Hook | Return Type | Description |
 | :--- | :--- | :--- |
-| `useFlintApp()` | `FlintApp` | Returns the host application instance. |
+| `useNoetherApp()` | `NoetherApp` | Returns the host application instance. |
 | `useActiveDocument()` | `DocumentItem \| null` | Subscribes to the active document in the primary editor. |
-| `useHearthDocuments()` | `DocumentItem[]` | Subscribes to all documents in the active Hearth. |
+| `useVaultDocuments()` | `DocumentItem[]` | Subscribes to all documents in the active Vault. |
 | `useActiveTab()` | `TabItem \| null` | Subscribes to the active workspace tab. |
 | `useWorkspaceTabs()` | `readonly TabItem[]` | Subscribes to all open workspace tabs. |
 | `useMainViewMode()` | `string` | Subscribes to the current main view mode (e.g. `'document'`, `'canvas'`). |
@@ -232,10 +232,10 @@ export const MyExtensionView: React.FC = () => {
 | `useDocumentBacklinks(docId?)` | `BacklinkItem[]` | Subscribes to incoming backlinks for a note. |
 | `useDocumentOutgoingLinks(docId?)` | `OutgoingLinkItem[]` | Subscribes to outgoing wikilinks from a note. |
 | `useDocumentUnlinkedMentions(docId?)` | `UnlinkedMentionItem[]` | Subscribes to unlinked text mentions of a note title. |
-| `useVaultTags()` | `TagItem[]` | Subscribes to all indexed hashtags across the Hearth. |
+| `useVaultTags()` | `TagItem[]` | Subscribes to all indexed hashtags across the Vault. |
 | `useGlobalTasks()` | `GlobalTaskItem[]` | Subscribes to interactive checklist items across all notes. |
 | `useDocumentProperties(docId?)` | `Record<string, any>` | Subscribes to frontmatter properties of a note. |
-| `useFlintStore(key, selector)` | `TSelected` | Subscribes to host store slices with a selector function. |
+| `useNoetherStore(key, selector)` | `TSelected` | Subscribes to host store slices with a selector function. |
 | `useToast()` | `(msg, type?) => void` | Returns a toast notification dispatcher. |
 
 
@@ -243,7 +243,7 @@ export const MyExtensionView: React.FC = () => {
 
 ---
 
-Flint decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:
+Noether decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:
 
 - **`DocumentHeaderActionRegistry`**: Registers action icons and buttons into the document subheader toolbar (`PageSubHeader`). Used by core extensions like Backlinks and Document Properties.
 - **`FileContextMenuRegistry`**: Injects contextual action items into the file explorer tree context menu (`FileTreeNode`).

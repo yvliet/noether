@@ -1,6 +1,6 @@
-# Flint MCP Setup Guide
+# Noether MCP Setup Guide
 
-How to connect AI assistants like Claude Desktop, Cursor, and Antigravity directly to your Flint notes and tasks.
+How to connect AI assistants like Claude Desktop, Cursor, and Antigravity directly to your Noether notes and tasks.
 
 ---
 
@@ -8,7 +8,7 @@ How to connect AI assistants like Claude Desktop, Cursor, and Antigravity direct
 
 ---
 
-Model Context Protocol (MCP) is an open standard that allows AI agents to discover and call tools exposed by applications. Flint implements a native MCP tool registry that lets AI assistants interact directly with your notes, tasks, flashcards, graph, and more.
+Model Context Protocol (MCP) is an open standard that allows AI agents to discover and call tools exposed by applications. Noether implements a native MCP tool registry that lets AI assistants interact directly with your notes, tasks, flashcards, graph, and more.
 
 ---
 
@@ -16,9 +16,9 @@ Model Context Protocol (MCP) is an open standard that allows AI agents to discov
 
 ---
 
-Flint exposes tools at two levels:
+Noether exposes tools at two levels:
 
-1. **Native Core Tools** (`flint_*`): Always available to search, read, create, update, delete notes, manage properties, bookmarks, tags, and backlinks.
+1. **Native Core Tools** (`noether_*`): Always available to search, read, create, update, delete notes, manage properties, bookmarks, tags, and backlinks.
 2. **Extension Tools** (`{extensionId}_*`): Available when the extension is enabled (tasks, flashcards, canvas, journal, cascade, etc.). Disabling an extension removes its tools automatically.
 
 ---
@@ -30,14 +30,14 @@ Flint exposes tools at two levels:
 If you are writing an extension or internal feature, you can call tools directly in-process:
 
 ```typescript
-import { appInstance } from 'flint';
+import { appInstance } from 'noether';
 
 // List all available tools
 const tools = appInstance.tools.getAllTools();
 console.log(tools.map(t => t.name));
 
 // Execute a tool
-const result = await appInstance.tools.executeTool('flint_search_notes', { query: 'meeting notes' });
+const result = await appInstance.tools.executeTool('noether_search_notes', { query: 'meeting notes' });
 console.log(result.content);
 
 // Get MCP-formatted schemas for LLM function calling
@@ -50,13 +50,13 @@ const schemas = appInstance.tools.getMcpToolSchemas();
 
 ---
 
-Flint discovers all your Hearths automatically without requiring you to hardcode folder paths in your AI client settings.
+Noether discovers all your Vaults automatically without requiring you to hardcode folder paths in your AI client settings.
 
-When an AI agent connects to Flint:
-1. It automatically attaches to the currently active Hearth.
-2. It can call `flint_list_hearths` to discover all other known Hearths on your computer.
-3. It can switch workspaces via `flint_switch_hearth` without restarting the connection.
-4. It can search across all workspaces via `flint_search_across_hearths`.
+When an AI agent connects to Noether:
+1. It automatically attaches to the currently active Vault.
+2. It can call `noether_list_vaults` to discover all other known Vaults on your computer.
+3. It can switch workspaces via `noether_switch_vault` without restarting the connection.
+4. It can search across all workspaces via `noether_search_across_vaults`.
 
 ---
 
@@ -64,18 +64,18 @@ When an AI agent connects to Flint:
 
 ---
 
-Because Flint finds your active vault on its own, connecting external assistants only requires pointing them to the Flint MCP server script:
+Because Noether finds your active vault on its own, connecting external assistants only requires pointing them to the Noether MCP server script:
 
 ### Claude Desktop
 
-Add Flint to `claude_desktop_config.json`:
+Add Noether to `claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
-    "flint": {
+    "noether": {
       "command": "node",
-      "args": ["<path-to-flint>/bin/flint-mcp-server.cjs"]
+      "args": ["<path-to-noether>/bin/noether-mcp-server.cjs"]
     }
   }
 }
@@ -88,9 +88,9 @@ Add to `.cursor/mcp.json` in your project or home directory:
 ```json
 {
   "mcpServers": {
-    "flint": {
+    "noether": {
       "command": "node",
-      "args": ["<path-to-flint>/bin/flint-mcp-server.cjs"]
+      "args": ["<path-to-noether>/bin/noether-mcp-server.cjs"]
     }
   }
 }
@@ -98,7 +98,7 @@ Add to `.cursor/mcp.json` in your project or home directory:
 
 ### Antigravity & Agent CLI
 
-Flint tools are auto-discovered when the MCP server is configured in your agent workspace settings.
+Noether tools are auto-discovered when the MCP server is configured in your agent workspace settings.
 
 ---
 
@@ -108,24 +108,24 @@ Flint tools are auto-discovered when the MCP server is configured in your agent 
 
 | Tool | Description |
 |:---|:---|
-| `flint_search_notes` | Full-text search across all notes |
-| `flint_read_note` | Read a note's content and frontmatter |
-| `flint_create_note` | Create a new markdown note |
-| `flint_update_note` | Update a note's content |
-| `flint_delete_note` | Delete a note to .trash/ |
-| `flint_rename_note` | Rename a note |
-| `flint_list_all_notes` | List all notes in the active Hearth |
-| `flint_get_note_properties` | Get frontmatter properties |
-| `flint_set_note_properties` | Set frontmatter properties |
-| `flint_toggle_bookmark` | Toggle bookmark status |
-| `flint_get_backlinks` | Get incoming backlinks and references |
-| `flint_get_tags` | List all tags with counts |
-| `flint_get_documents_by_tag` | Find documents by tag |
-| `flint_list_hearths` | List all known Hearths (workspaces) |
-| `flint_get_active_hearth` | Get name, path, and stats for the active Hearth |
-| `flint_switch_hearth` | Switch the active Hearth workspace on the fly |
-| `flint_create_hearth` | Create a new Hearth workspace |
-| `flint_search_across_hearths` | Search for notes across all known Hearths |
+| `noether_search_notes` | Full-text search across all notes |
+| `noether_read_note` | Read a note's content and frontmatter |
+| `noether_create_note` | Create a new markdown note |
+| `noether_update_note` | Update a note's content |
+| `noether_delete_note` | Delete a note to .trash/ |
+| `noether_rename_note` | Rename a note |
+| `noether_list_all_notes` | List all notes in the active Vault |
+| `noether_get_note_properties` | Get frontmatter properties |
+| `noether_set_note_properties` | Set frontmatter properties |
+| `noether_toggle_bookmark` | Toggle bookmark status |
+| `noether_get_backlinks` | Get incoming backlinks and references |
+| `noether_get_tags` | List all tags with counts |
+| `noether_get_documents_by_tag` | Find documents by tag |
+| `noether_list_vaults` | List all known Vaults (workspaces) |
+| `noether_get_active_vault` | Get name, path, and stats for the active Vault |
+| `noether_switch_vault` | Switch the active Vault workspace on the fly |
+| `noether_create_vault` | Create a new Vault workspace |
+| `noether_search_across_vaults` | Search for notes across all known Vaults |
 
 ---
 
@@ -133,13 +133,13 @@ Flint tools are auto-discovered when the MCP server is configured in your agent 
 
 ---
 
-Flint includes ready-to-use prompts to help AI models understand your notes and workflows right away:
+Noether includes ready-to-use prompts to help AI models understand your notes and workflows right away:
 
 | Prompt Name | Description | Arguments |
 |:---|:---|:---|
-| `flint_system_instructions` | Teaches the AI model about Flint's formatting, wikilink syntax, and flashcards | `mode?: "concise" \| "comprehensive"` |
-| `flint_daily_review` | Pulls together today's journal entry, open tasks, and due flashcards for a morning or evening review | `date?: string` (YYYY-MM-DD) |
-| `flint_synthesize_topic` | Collects relevant notes and backlinks on a subject to provide context for summaries or research | `topic: string` (required) |
+| `noether_system_instructions` | Teaches the AI model about Noether's formatting, wikilink syntax, and flashcards | `mode?: "concise" \| "comprehensive"` |
+| `noether_daily_review` | Pulls together today's journal entry, open tasks, and due flashcards for a morning or evening review | `date?: string` (YYYY-MM-DD) |
+| `noether_synthesize_topic` | Collects relevant notes and backlinks on a subject to provide context for summaries or research | `topic: string` (required) |
 
 ---
 
@@ -153,11 +153,11 @@ When extensions are enabled, their custom tools become available automatically:
 - `fsrs-spaced-repetition_get_due_cards`: Retrieve flashcards due for review.
 - `canvas_get_board`: Retrieve canvas nodes and connection edges.
 - `journal_open_today`: Open or create today's journal note.
-- `flint-cascade_list`: List all sequential cascade books.
+- `noether-cascade_list`: List all sequential cascade books.
 
 ### Registering Tools in Extensions
 
-Extensions register tools in their `onload()` method via the Flint SDK:
+Extensions register tools in their `onload()` method via the Noether SDK:
 
 ```typescript
 // Inside Extension.onload()

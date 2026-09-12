@@ -10,7 +10,7 @@ import linksGraphRaw from '../content/docs/user-guide/links-and-graph.md?raw';
 import spatialCanvasRaw from '../content/docs/user-guide/spatial-canvas.md?raw';
 import spacedRepetitionRaw from '../content/docs/user-guide/spaced-repetition.md?raw';
 import tasksJournalRaw from '../content/docs/user-guide/tasks-and-journal.md?raw';
-import hearthsStorageRaw from '../content/docs/user-guide/hearths-and-storage.md?raw';
+import vaultsStorageRaw from '../content/docs/user-guide/vaults-and-storage.md?raw';
 import shortcutsCommandsRaw from '../content/docs/user-guide/shortcuts-and-commands.md?raw';
 import aiMcpRaw from '../content/docs/user-guide/ai-and-mcp.md?raw';
 
@@ -65,7 +65,7 @@ export const DOCS_TREE: DocNode[] = [
     id: 'home',
     title: 'Home',
     slug: 'home',
-    aliases: ['Flint Developer Docs', 'Overview', 'Developer Portal'],
+    aliases: ['Noether Developer Docs', 'Overview', 'Developer Portal'],
     content: homeRaw,
   },
   {
@@ -76,9 +76,9 @@ export const DOCS_TREE: DocNode[] = [
     children: [
       {
         id: 'introduction',
-        title: 'Introduction to Flint',
+        title: 'Introduction to Noether',
         slug: 'introduction',
-        aliases: ['Introduction', 'Intro', 'Core Philosophy', 'Hearth'],
+        aliases: ['Introduction', 'Intro', 'Core Philosophy', 'Vault'],
         content: introRaw,
       },
       {
@@ -132,11 +132,11 @@ export const DOCS_TREE: DocNode[] = [
         content: tasksJournalRaw,
       },
       {
-        id: 'hearths-and-storage',
-        title: 'Hearths & Workspace Storage',
-        slug: 'hearths-and-storage',
-        aliases: ['Hearths', 'Workspaces', 'Full-Text Search', 'FTS5', 'Trash Bin', 'Sync'],
-        content: hearthsStorageRaw,
+        id: 'vaults-and-storage',
+        title: 'Vaults & Workspace Storage',
+        slug: 'vaults-and-storage',
+        aliases: ['Vaults', 'Workspaces', 'Full-Text Search', 'FTS5', 'Trash Bin', 'Sync'],
+        content: vaultsStorageRaw,
       },
       {
         id: 'shortcuts-and-commands',
@@ -369,7 +369,7 @@ export const DOCS_TREE: DocNode[] = [
         id: 'typescript-api',
         title: 'TypeScript API',
         slug: 'typescript-api',
-        aliases: ['TypeScript API Reference', 'TypeScript API', 'TS API', 'Flint TypeScript API'],
+        aliases: ['TypeScript API Reference', 'TypeScript API', 'TS API', 'Noether TypeScript API'],
         isFolder: true,
         children: [
           {
@@ -388,9 +388,9 @@ export const DOCS_TREE: DocNode[] = [
           },
           {
             id: 'app-api',
-            title: 'FlintApp API',
+            title: 'NoetherApp API',
             slug: 'app-api',
-            aliases: ['FlintApp API', 'Workspace API', 'Vault API'],
+            aliases: ['NoetherApp API', 'Workspace API', 'Vault API'],
             content: appApiRaw,
           },
           {
@@ -432,9 +432,9 @@ export const DOCS_TREE: DocNode[] = [
       },
       {
         id: 'components',
-        title: 'Flint UI Components',
+        title: 'Noether UI Components',
         slug: 'components',
-        aliases: ['Components', 'Flint UI', 'Button', 'TextInput', 'SettingBuilder', 'Toggle', 'Select', 'Slider'],
+        aliases: ['Components', 'Noether UI', 'Button', 'TextInput', 'SettingBuilder', 'Toggle', 'Select', 'Slider'],
         content: componentsRaw,
       },
       {
@@ -443,9 +443,9 @@ export const DOCS_TREE: DocNode[] = [
         slug: 'sdk-api',
         aliases: [
           'SDK Quick Reference',
-          'Flint SDK Overview',
-          'Flint SDK API Reference',
-          'Flint SDK',
+          'Noether SDK Overview',
+          'Noether SDK API Reference',
+          'Noether SDK',
           'SDK API Reference',
           'SDK Reference',
           'SDK API',

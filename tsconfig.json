@@ -22,9 +22,9 @@
 
     "paths": {
       "@/*": ["./src/*"],
-      "flint": ["./src/sdk/index.ts"],
-      "flint/*": ["./src/sdk/*"],
-      "@flint/react": ["./src/sdk/react.ts"]
+      "noether": ["./src/sdk/index.ts"],
+      "noether/*": ["./src/sdk/*"],
+      "@noether/react": ["./src/sdk/react.ts"]
     }
   },
   "include": ["src"]

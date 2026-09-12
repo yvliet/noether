@@ -4,7 +4,7 @@
  * Built-in core extension for discovering, browsing, and installing community extensions.
  * Registers the marketplace tab view, action rail icon button, and settings tab.
  *
- * Uses native FlintApp APIs (app.workspace.openCustomTab, app.workspace.getTabs).
+ * Uses native NoetherApp APIs (app.workspace.openCustomTab, app.workspace.getTabs).
  *
  * @since 0.1.0
  */
@@ -12,7 +12,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { Store01Icon } from '@/components/common/Icons';
 import { marketplaceReadme } from './readme';
 import { COMMUNITY_MARKETPLACE_CATALOGUE } from './MarketplaceView';
@@ -28,7 +28,7 @@ export const MARKETPLACE_MANIFEST: ExtensionManifest = {
   id: 'marketplace',
   name: 'Community Extensions Marketplace',
   version: '1.0.0',
-  description: 'Browse, discover, and install community extensions into your Hearth.',
+  description: 'Browse, discover, and install community extensions into your Vault.',
   author: 'Yuliet Li',
   isCore: true,
   tags: ['marketplace', 'extensions', 'community', 'themes'],
@@ -36,7 +36,7 @@ export const MARKETPLACE_MANIFEST: ExtensionManifest = {
 };
 
 export class MarketplaceExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = MARKETPLACE_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = MARKETPLACE_MANIFEST) {
     super(app, manifest);
   }
 

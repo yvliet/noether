@@ -20,7 +20,7 @@ export interface AutoPairingStorage {
 }
 
 /**
- * Smart Auto-Pairing and Autowrapping Extension for Flint.
+ * Smart Auto-Pairing and Autowrapping Extension for Noether.
  *
  * 1. Soft Undo: Immediately pressing Backspace after an auto-pair removes ONLY the auto-inserted
  *    closing character, allowing typists to type single characters (e.g. emoticons or footnotes)

@@ -12,7 +12,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useIconifyStore } from './iconifyStore';
-import { useFlintApp, useHearthDocuments } from 'flint';
+import { useNoetherApp, useVaultDocuments } from 'noether';
 import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer, EmojiStyle, EMOJI_STYLE_LABELS } from '@/components/common/emoji';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
@@ -42,8 +42,8 @@ export const IconifySettingsTab: React.FC = () => {
   const removeIcon = useIconifyStore((s) => s.removeIcon);
   const clearAllIcons = useIconifyStore((s) => s.clearAllIcons);
   const openPicker = useIconifyStore((s) => s.openPicker);
-  const app = useFlintApp();
-  const documents = useHearthDocuments();
+  const app = useNoetherApp();
+  const documents = useVaultDocuments();
   const openConfirmDialog = (opts: any) => (app.workspace as any).openConfirmDialog?.(opts);
 
   const [filterType, setFilterType] = useState<'all' | 'folder' | 'file'>('all');
@@ -124,14 +124,14 @@ export const IconifySettingsTab: React.FC = () => {
         <div>
           <h3 className="text-sm font-semibold text-white mb-0.5">More icons</h3>
           <p className="text-[11px] text-[#777]">
-            Let icons live in all of Flint. Customize folders, files, tabs, and documents with persistent SQLite storage.
+            Let icons live in all of Noether. Customize folders, files, tabs, and documents with persistent SQLite storage.
           </p>
         </div>
         {isModified && (
           <button
             type="button"
             onClick={handleRestoreDefaults}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Restore defaults</span>
@@ -412,7 +412,7 @@ export const IconifySettingsTab: React.FC = () => {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div
-                      className="w-6 h-6 rounded bg-[#282828] flex items-center justify-center text-[var(--flint-accent,#ea580c)] shrink-0"
+                      className="w-6 h-6 rounded bg-[#282828] flex items-center justify-center text-[var(--noether-accent,#eb584d)] shrink-0"
                       style={item.color ? { color: item.color } : undefined}
                     >
                       {item.iconId.startsWith('emoji:') ? (

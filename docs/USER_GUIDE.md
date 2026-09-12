@@ -1,13 +1,13 @@
-# Flint User Guide
+# Noether User Guide
 
-Welcome to Flint! This guide walks you through organizing your notes, building a personal knowledge graph, reviewing flashcards, brainstorming on an infinite canvas, and connecting local AI assistants.
+Welcome to Noether! This guide walks you through organizing your notes, building a personal knowledge graph, reviewing flashcards, brainstorming on an infinite canvas, and connecting local AI assistants.
 
 ---
 
 ## Table of Contents
 
 1. [Core Philosophy & Architecture](#1-core-philosophy--architecture)
-2. [Workspaces & Hearths](#2-workspaces--hearths)
+2. [Workspaces & Vaults](#2-workspaces--vaults)
 3. [Live Preview Editor & Markdown](#3-live-preview-editor--markdown)
 4. [Bidirectional Linking & Knowledge Graph](#4-bidirectional-linking--knowledge-graph)
 5. [Infinite 2D Spatial Canvas](#5-infinite-2d-spatial-canvas)
@@ -26,30 +26,30 @@ Welcome to Flint! This guide walks you through organizing your notes, building a
 
 ---
 
-Flint is an open-source, local-first note-taking app built around four simple principles:
+Noether is an open-source, local-first note-taking app built around four simple principles:
 
 - **Plain Markdown on disk**: Your notes are standard `.md` files on your computer. No vendor lock-in, proprietary database wrappers, or encrypted blobs. You can open, edit, or back up your files with any text editor at any time.
 - **Fast native search & links**: Notes, tags, and links are indexed into a local SQLite database in Rust. Search and backlink lookups are instant without any laggy WebAssembly overhead.
 - **Fast, fluid typing**: The Live Preview editor stays snappy and responsive even when writing long notes with thousands of words, complex tables, and math formulas.
-- **AI-ready when you want it**: Flint includes a local Model Context Protocol (MCP) server so AI assistants like Claude Desktop, Antigravity, and Cursor can read or update your notes safely if you choose to connect them.
+- **AI-ready when you want it**: Noether includes a local Model Context Protocol (MCP) server so AI assistants like Claude Desktop, Antigravity, and Cursor can read or update your notes safely if you choose to connect them.
 
 ---
 
-## 2. Workspaces & Hearths
+## 2. Workspaces & Vaults
 
 ---
 
-In Flint, individual note vaults are called **Hearths**.
+In Noether, individual note vaults are called **Vaults**.
 
-### Creating or Opening a Hearth
+### Creating or Opening a Vault
 - On first launch, select an existing directory on your drive or create a new empty folder.
-- Flint initializes a hidden `.flint/` directory inside that folder to store local relational indexes (`flint.sqlite`), canvas workspaces, and extension settings.
-- **Switching Hearths (`Ctrl+Shift+O`)**: Press `Ctrl+Shift+O` to open the Hearth Switcher modal. Switch between *Work*, *Personal*, or *Research* vaults instantly without restarting the app.
+- Noether initializes a hidden `.noether/` directory inside that folder to store local relational indexes (`noether.sqlite`), canvas workspaces, and extension settings.
+- **Switching Vaults (`Ctrl+Shift+O`)**: Press `Ctrl+Shift+O` to open the Vault Switcher modal. Switch between *Work*, *Personal*, or *Research* vaults instantly without restarting the app.
 
 ### File Safety & The `.trash/` Folder
-When you delete a note, Flint never immediately destroys the file on disk. Instead:
-- The `.md` file is moved into the hidden `.trash/` directory inside your Hearth.
-- Flint remembers where the file came from and when it was deleted, so you can restore it anytime.
+When you delete a note, Noether never immediately destroys the file on disk. Instead:
+- The `.md` file is moved into the hidden `.trash/` directory inside your Vault.
+- Noether remembers where the file came from and when it was deleted, so you can restore it anytime.
 - Files can be restored to their exact prior location at any time from *Settings → File Safety*.
 
 ---
@@ -58,7 +58,7 @@ When you delete a note, Flint never immediately destroys the file on disk. Inste
 
 ---
 
-Flint provides a hybrid WYSIWYG / Markdown editor built on TipTap 2.x and ProseMirror.
+Noether provides a hybrid WYSIWYG / Markdown editor built on TipTap 2.x and ProseMirror.
 
 ### Modes
 - **Live Preview (Default)**: Markdown formatting renders interactively as you write. Clicking on a formatted token reveals the underlying syntax for precise inline editing.
@@ -102,7 +102,7 @@ Pasting text copied from research articles, Wikipedia, or web pages automaticall
 
 ---
 
-Flint turns independent notes into a structured web of thoughts.
+Noether turns independent notes into a structured web of thoughts.
 
 ### Wiki-Link Syntax
 - Type `[[` to open the **Fuzzy Note Linker**.
@@ -120,7 +120,7 @@ Located in the right sidebar, the Backlinks Pane displays:
 - **Color Graph Nodes**: Master toggle in Settings → Graph view → Coloring to switch between classic neutral gray and custom color schemes. When disabled, all subordinate coloring controls are cleanly dimmed and disabled.
 - **Node Coloring Schemes**: Choose between **Random** (default uniform palette cycling), **By File Type**, **By Folder Hierarchy**, or **By First Tag**.
 - **Tactile Aesthetic Palettes**: Select from 6 curated single-word palettes: **Amber**, **Emerald**, **Neon**, **Ocean**, **Sunset**, and **Pastel**, rendered with tactile 3D button styling.
-- **In-App Color Picker**: In **By File Type** mode, click any category swatch (Notes, Canvases, Images, Media, Documents, Tags, Other) to open Flint's custom color picker popover with 2D saturation/brightness spectrum, hue slider, eyedropper, RGB/HEX inputs, and active palette presets.
+- **In-App Color Picker**: In **By File Type** mode, click any category swatch (Notes, Canvases, Images, Media, Documents, Tags, Other) to open Noether's custom color picker popover with 2D saturation/brightness spectrum, hue slider, eyedropper, RGB/HEX inputs, and active palette presets.
 - **Display Toggles**:
   - **Directional link arrows**: Render clean arrowheads along connections indicating wiki link directions.
   - **Orphan node filter**: Toggle visibility of unconnected notes without links.
@@ -148,7 +148,7 @@ For visual brainstorming, concept maps, flowcharts, and moodboards:
 
 ---
 
-Flint features an integrated flashcard scheduler powered by **FSRS-4.5 (Free Spaced Repetition Scheduler)** via `ts-fsrs`.
+Noether features an integrated flashcard scheduler powered by **FSRS-4.5 (Free Spaced Repetition Scheduler)** via `ts-fsrs`.
 
 ### Card Syntax
 Create flashcards directly in your notes:
@@ -208,19 +208,19 @@ Never lose track of action items scattered across project notes:
 
 ---
 
-Flint includes a built-in stdio Model Context Protocol server (`bin/flint-mcp-server.cjs`). External AI assistants can query and modify your notes directly.
+Noether includes a built-in stdio Model Context Protocol server (`bin/noether-mcp-server.cjs`). External AI assistants can query and modify your notes directly.
 
 ### 13 Built-in MCP Tools
-`flint_search_notes`, `flint_read_note`, `flint_create_note`, `flint_update_note`, `flint_delete_note`, `flint_list_all_notes`, `flint_list_hearths`, `flint_get_active_hearth`, `flint_switch_hearth`, `flint_search_across_hearths`, `flint_get_backlinks`, `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`.
+`noether_search_notes`, `noether_read_note`, `noether_create_note`, `noether_update_note`, `noether_delete_note`, `noether_list_all_notes`, `noether_list_vaults`, `noether_get_active_vault`, `noether_switch_vault`, `noether_search_across_vaults`, `noether_get_backlinks`, `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`.
 
 ### Quick Configuration (Claude Desktop / Antigravity / Cursor)
 Add to your client configuration file:
 ```json
 {
   "mcpServers": {
-    "flint": {
+    "noether": {
       "command": "node",
-      "args": ["<path-to-flint>/bin/flint-mcp-server.cjs"]
+      "args": ["<path-to-noether>/bin/noether-mcp-server.cjs"]
     }
   }
 }
@@ -233,7 +233,7 @@ Add to your client configuration file:
 ---
 
 Open **Settings** (`Ctrl+,`) → **Appearance**:
-- **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Flint Dark/Light, Forest Emerald, and Minimal.
+- **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Noether Dark/Light, Forest Emerald, and Minimal.
 - **Tactile buttons**: Clean physical button styling with crisp borders and snappy, instant feedback.
 - **Link Styling**: Choose between theme accent, classic browser blue/purple, or neutral link palettes.
 
@@ -243,9 +243,9 @@ Open **Settings** (`Ctrl+,`) → **Appearance**:
 
 ---
 
-Flint features an integrated updater that monitors official GitHub releases:
+Noether features an integrated updater that monitors official GitHub releases:
 
-- **Automatic Background Checks**: When enabled in **Settings** (`Ctrl+,`) → **General**, Flint checks GitHub Releases after startup (with a 4-hour cooldown) and notifies you when new releases are available.
+- **Automatic Background Checks**: When enabled in **Settings** (`Ctrl+,`) → **General**, Noether checks GitHub Releases after startup (with a 4-hour cooldown) and notifies you when new releases are available.
 - **Manual Check**: Click **Check for updates** in the General settings tab anytime to immediately check against the remote repository.
 - **Direct Installer Download**: Launch the update modal to review release notes and download the matching `.exe` or `.msi` Windows installer directly.
 
@@ -260,7 +260,7 @@ Flint features an integrated updater that monitors official GitHub releases:
 | **Command Palette / Quick Open** | `Ctrl + K` or `Ctrl + O` | `Cmd + K` or `Cmd + O` |
 | **Toggle Left Sidebar** | `Ctrl + \` | `Cmd + \` |
 | **Toggle Right Sidebar** | `Ctrl + Shift + \` | `Cmd + Shift + \` |
-| **Switch Hearth Workspace** | `Ctrl + Shift + O` | `Cmd + Shift + O` |
+| **Switch Vault Workspace** | `Ctrl + Shift + O` | `Cmd + Shift + O` |
 | **Create New Note** | `Ctrl + N` | `Cmd + N` |
 | **Split Editor Side-by-Side** | `Ctrl + Alt + S` | `Cmd + Alt + S` |
 | **New Tab / Close Tab** | `Ctrl + T` / `Ctrl + W` | `Cmd + T` / `Cmd + W` |

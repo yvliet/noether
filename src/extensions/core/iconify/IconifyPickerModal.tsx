@@ -1,7 +1,7 @@
 /**
  * @file IconifyPickerModal.tsx
  * @description
- * Unified icon selector modal leveraging the flint IconPicker component.
+ * Unified icon selector modal leveraging the noether IconPicker component.
  * Allows choosing custom icons for both folders and files.
  *
  * @author Yuliet Li
@@ -36,9 +36,9 @@ export const IconifyPickerModal: React.FC = () => {
       title={`Icon for “${pickerTarget.title}”`}
       headerIcon={
         isFolder ? (
-          <Folder01Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+          <Folder01Icon size={14} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
         ) : (
-          <File01Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+          <File01Icon size={14} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
         )
       }
       currentIconId={currentIconEntry?.iconId}

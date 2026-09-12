@@ -1,13 +1,13 @@
 /**
- * @module FlintSDK
+ * @module NoetherSDK
  * @description
- * Public Extension Development Kit for Flint.
+ * Public Extension Development Kit for Noether.
  * Re-exports the complete set of base classes, interfaces, type definitions,
- * and API contracts necessary to build rich Flint extensions.
+ * and API contracts necessary to build rich Noether extensions.
  *
  * @example
  * ```ts
- * import { Extension, ExtensionManifest, FlintApp } from 'flint';
+ * import { Extension, ExtensionManifest, NoetherApp } from 'noether';
  *
  * export const MANIFEST: ExtensionManifest = {
  *   id: 'my-extension',
@@ -33,7 +33,7 @@
 // ── Core Classes & Singletons ──
 export { Extension } from '../core/extensions/Extension';
 export { ExtensionManager } from '../core/extensions/ExtensionManager';
-export { FlintApp, appInstance } from '../core/app/FlintApp';
+export { NoetherApp, appInstance } from '../core/app/NoetherApp';
 export { storeRefs } from '../core/app/storeBridge';
 export { SlotRegistry } from '../core/registries/SlotRegistry';
 export { DocumentHeaderActionRegistry, documentHeaderActionRegistry } from '../core/registries/DocumentHeaderActionRegistry';
@@ -53,9 +53,9 @@ export { usePortalSlots, useEditorPlugins } from '../core/app/AppContext';
 
 // ── Reactive React Hooks ──
 export {
-  useFlintApp,
+  useNoetherApp,
   useActiveDocument,
-  useHearthDocuments,
+  useVaultDocuments,
   useActiveTab,
   useWorkspaceTabs,
   useMainViewMode,
@@ -66,7 +66,7 @@ export {
   useVaultTags,
   useGlobalTasks,
   useDocumentProperties,
-  useFlintStore,
+  useNoetherStore,
   useToast,
 } from './react';
 export { renderHugeIconSvg } from '../components/common/Icons';
@@ -117,7 +117,7 @@ export type { DocumentViewProps } from '../components/editor/DocumentView';
 // ── Public API Contracts ──
 export type {
   WorkspaceAPI,
-  HearthAPI,
+  VaultAPI,
   SettingsAPI,
   ConfirmDialogConfig,
   InputDialogConfig,
@@ -222,6 +222,6 @@ export type {
   MainViewMode,
   SidebarTab,
   LeftNavView,
-  HearthDiskItem,
-  RecentHearthItem,
+  VaultDiskItem,
+  RecentVaultItem,
 } from '../types';

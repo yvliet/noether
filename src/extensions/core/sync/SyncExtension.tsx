@@ -1,7 +1,7 @@
 /**
  * @module SyncExtension
  * @description
- * First-party core extension providing bidirectional cloud synchronization for Flint.
+ * First-party core extension providing bidirectional cloud synchronization for Noether.
  * Integrates natively with Supabase, Turso, Cloudflare D1, and Custom REST endpoints.
  * Disabled by default to respect local-first privacy until configured by the user.
  */
@@ -9,7 +9,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { DatabaseSync01Icon } from '@/components/common/Icons';
 import { SyncConfig, SyncTelemetry, DEFAULT_CONFIG } from './types';
 import { SyncEngine, SyncEngineState } from './engine/SyncEngine';
@@ -32,7 +32,7 @@ export const SYNC_MANIFEST: ExtensionManifest = {
 };
 
 const SyncSettingsWrapper: React.FC<{
-  app: FlintApp;
+  app: NoetherApp;
   onSaveConfig: (cfg: SyncConfig) => void;
 }> = ({ app, onSaveConfig }) => {
   const config = useSyncStore((s) => s.config);
@@ -54,7 +54,7 @@ export class SyncExtension extends Extension {
   private config: SyncConfig = { ...DEFAULT_CONFIG };
   private engine: SyncEngine | null = null;
 
-  constructor(app: FlintApp, manifest: ExtensionManifest = SYNC_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = SYNC_MANIFEST) {
     super(app, manifest);
   }
 

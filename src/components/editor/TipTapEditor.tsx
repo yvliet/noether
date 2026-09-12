@@ -4,7 +4,7 @@ import { TextSelection, Plugin as ProseMirrorPlugin, PluginKey, EditorState } fr
 import { DecorationSet } from '@tiptap/pm/view';
 import { useEditor, EditorContent, ReactRenderer } from '@tiptap/react';
 import type { EditorPluginDefinition, EditorPluginContext } from '@/core/extensions/types';
-import type { FlintApp } from '@/core/app/FlintApp';
+import type { NoetherApp } from '@/core/app/NoetherApp';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import Typography from '@tiptap/extension-typography';
@@ -42,7 +42,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { platform } from '@/lib/platform/platformAdapter';
 import { markLinkVisited } from '@/lib/visitedLinks';
 import { getDocumentPath } from '@/lib/db/documents';
-import { useFlintApp, useExtensionList, usePlaceholderHints } from '@/core/app/AppContext';
+import { useNoetherApp, useExtensionList, usePlaceholderHints } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { ColorPicker, InlineColorPicker } from '@/components/common/ColorPicker';
 import {
@@ -251,7 +251,7 @@ function extractLinkTargetFromEvent(
   );
 
   // 0. Ignore clicks inside embeds
-  if (targetElem?.closest('.flint-embed-wrapper, .flint-embed-media, .flint-image-embed, [data-embed-action]')) {
+  if (targetElem?.closest('.noether-embed-wrapper, .noether-embed-media, .noether-image-embed, [data-embed-action]')) {
     return null;
   }
 
@@ -544,7 +544,7 @@ const EditorSuggestionPopups = React.memo(
         const handlePointerDown = (e: MouseEvent | PointerEvent) => {
           const rawTarget = e.target as Node | null;
           const targetEl = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
-          if (targetEl?.closest?.('[data-flint-suggestion-popup="true"]')) {
+          if (targetEl?.closest?.('[data-noether-suggestion-popup="true"]')) {
             return;
           }
           setSlashMenuProps(null);
@@ -554,7 +554,7 @@ const EditorSuggestionPopups = React.memo(
         const handleScroll = (e: Event) => {
           const rawTarget = e.target as Node | null;
           const targetEl = rawTarget instanceof Element ? rawTarget : rawTarget?.parentElement;
-          if (targetEl?.closest?.('[data-flint-suggestion-popup="true"]')) {
+          if (targetEl?.closest?.('[data-noether-suggestion-popup="true"]')) {
             return;
           }
           setSlashMenuProps(null);
@@ -619,7 +619,7 @@ function computeCommunityDecorations(
           combinedSet = combinedSet.add(state.doc, result.find());
         }
       } catch (err) {
-        console.error(`[FlintCommunityEditorBridge] Error computing decorations for "${p.id}":`, err);
+        console.error(`[NoetherCommunityEditorBridge] Error computing decorations for "${p.id}":`, err);
       }
     }
   }
@@ -627,10 +627,10 @@ function computeCommunityDecorations(
   return combinedSet;
 }
 
-const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
+const createCommunityEditorBridge = (app: NoetherApp, documentId?: string) => {
   const docId = documentId || '';
   return Extension.create({
-    name: 'flintCommunityEditorBridge',
+    name: 'noetherCommunityEditorBridge',
 
     addProseMirrorPlugins() {
       const plugins = app.editor.getEditorPlugins();
@@ -649,14 +649,14 @@ const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
               pmPlugins.push(...returned);
             }
           } catch (err) {
-            console.error(`[FlintCommunityEditorBridge] Error initializing ProseMirror plugins for "${p.id}":`, err);
+            console.error(`[NoetherCommunityEditorBridge] Error initializing ProseMirror plugins for "${p.id}":`, err);
           }
         }
       }
 
       // High-performance transaction mapping decoration plugin for sub-8ms typing latency
       const decorationPlugin = new ProseMirrorPlugin({
-        key: new PluginKey('flint_community_decorations'),
+        key: new PluginKey('noether_community_decorations'),
         state: {
           init(_, state) {
             return computeCommunityDecorations(plugins, state, ctx);
@@ -697,7 +697,7 @@ const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
               inputRules.push(...rules);
             }
           } catch (err) {
-            console.error(`[FlintCommunityEditorBridge] Error initializing input rules for "${p.id}":`, err);
+            console.error(`[NoetherCommunityEditorBridge] Error initializing input rules for "${p.id}":`, err);
           }
         }
       }
@@ -721,7 +721,7 @@ const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
               pasteRules.push(...rules);
             }
           } catch (err) {
-            console.error(`[FlintCommunityEditorBridge] Error initializing paste rules for "${p.id}":`, err);
+            console.error(`[NoetherCommunityEditorBridge] Error initializing paste rules for "${p.id}":`, err);
           }
         }
       }
@@ -739,7 +739,7 @@ const createCommunityEditorBridge = (app: FlintApp, documentId?: string) => {
               try {
                 return handler({ editor: this.editor, event: window.event as KeyboardEvent });
               } catch (err) {
-                console.error(`[FlintCommunityEditorBridge] Error in shortcut "${key}" for "${p.id}":`, err);
+                console.error(`[NoetherCommunityEditorBridge] Error in shortcut "${key}" for "${p.id}":`, err);
                 return false;
               }
             };
@@ -804,7 +804,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   onChange,
   onEditorReady,
 }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const extensionList = useExtensionList();
   const placeholderHints = usePlaceholderHints();
   const createNewNote = useDocumentStore((s) => s.createNewNote);
@@ -1117,7 +1117,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   if (
                     typeof document !== 'undefined' &&
                     document.activeElement &&
-                    document.activeElement.closest?.('[data-flint-suggestion-popup="true"]')
+                    document.activeElement.closest?.('[data-noether-suggestion-popup="true"]')
                   ) {
                     return;
                   }
@@ -1274,7 +1274,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       Table.configure({
         resizable: true,
         HTMLAttributes: {
-          class: 'flint-table',
+          class: 'noether-table',
         },
       }),
       TableRow,
@@ -1328,7 +1328,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
           // Track image pointer down coordinate for click vs drag discrimination
           const target = me.target as HTMLElement | null;
-          const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+          const imgEl = target?.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
           if (imgEl && imgEl.src && me.button === 0) {
             imgMouseDownPosRef.current = { x: me.clientX, y: me.clientY };
             return false;
@@ -1346,7 +1346,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           if (me.button !== 0) return false;
 
           const target = me.target as HTMLElement | null;
-          const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+          const imgEl = target?.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
           if (imgEl && imgEl.src) {
             if (imgMouseDownPosRef.current) {
               const dist = Math.hypot(me.clientX - imgMouseDownPosRef.current.x, me.clientY - imgMouseDownPosRef.current.y);
@@ -1366,7 +1366,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           if (me.button !== 0) return false;
 
           const target = me.target as HTMLElement | null;
-          const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+          const imgEl = target?.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
           if (imgEl && imgEl.src) {
             if (imgMouseDownPosRef.current) {
               const dist = Math.hypot(me.clientX - imgMouseDownPosRef.current.x, me.clientY - imgMouseDownPosRef.current.y);
@@ -2276,10 +2276,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       }, 10);
     };
 
-    window.addEventListener('flint:select-heading', handleSelectHeading as EventListener);
+    window.addEventListener('noether:select-heading', handleSelectHeading as EventListener);
 
     return () => {
-      window.removeEventListener('flint:select-heading', handleSelectHeading as EventListener);
+      window.removeEventListener('noether:select-heading', handleSelectHeading as EventListener);
     };
   }, [editor]);
 
@@ -2446,10 +2446,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       handleInsertTable(e.detail);
     };
 
-    window.addEventListener('flint:insert-table-command', onCustomEvent);
+    window.addEventListener('noether:insert-table-command', onCustomEvent);
     return () => {
       d.dispose();
-      window.removeEventListener('flint:insert-table-command', onCustomEvent);
+      window.removeEventListener('noether:insert-table-command', onCustomEvent);
     };
   }, [editor, app]);
 

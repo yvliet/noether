@@ -1,28 +1,28 @@
 # Plugin Quick Start
 
-Create and run your first Flint extension in under 5 minutes. This tutorial guides you through building a real-time word counter extension with a status bar widget, command palette action, and action rail button.
+Create and run your first Noether extension in under 5 minutes. This tutorial guides you through building a real-time word counter extension with a status bar widget, command palette action, and action rail button.
 
 
 ## 1. Directory Structure
 
 ---
 
-Extensions live within the active Hearth's `.flint/extensions/` directory:
+Extensions live within the active Vault's `.noether/extensions/` directory:
 
 ```
-<My-Hearth>/
-└── .flint/
+<My-Vault>/
+└── .noether/
     └── extensions/
         └── word-counter/
             ├── manifest.json   # Extension metadata
             └── main.js         # Compiled JavaScript entry point
 ```
 
-Create a new directory named `word-counter` inside your Hearth's `.flint/extensions/` folder:
+Create a new directory named `word-counter` inside your Vault's `.noether/extensions/` folder:
 
 ```bash
-mkdir -p .flint/extensions/word-counter
-cd .flint/extensions/word-counter
+mkdir -p .noether/extensions/word-counter
+cd .noether/extensions/word-counter
 ```
 
 
@@ -57,7 +57,7 @@ Extensions extend the `Extension` (or legacy `Plugin`) base class and implement 
 Create `main.js`:
 
 ```javascript
-const { Extension } = require('flint');
+const { Extension } = require('noether');
 const React = require('react');
 
 module.exports = class WordCounterExtension extends Extension {
@@ -134,8 +134,8 @@ module.exports = class WordCounterExtension extends Extension {
 
 ---
 
-1. Open Flint.
-2. Open the Hearth containing your `.flint/extensions/word-counter/` directory.
+1. Open Noether.
+2. Open the Vault containing your `.noether/extensions/word-counter/` directory.
 3. Open **Settings** (`Ctrl + ,` / `Cmd + ,`) and navigate to the **Extensions** tab.
 4. Locate **Word & Reading Time Counter** in the list of installed extensions and toggle it **On**.
 5. Observe:
@@ -153,10 +153,10 @@ For larger extensions, I strongly recommend authoring in TypeScript and compilin
 ### Minimal `package.json`
 ```json
 {
-  "name": "flint-word-counter",
+  "name": "noether-word-counter",
   "version": "1.0.0",
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --outfile=main.js --external:flint --external:react --external:react-dom --external:clsx --external:tailwind-merge --external:zustand --external:@hugeicons/* --external:zod"
+    "build": "esbuild src/index.ts --bundle --platform=neutral --format=cjs --outfile=main.js --external:noether --external:react --external:react-dom --external:clsx --external:tailwind-merge --external:zustand --external:@hugeicons/* --external:zod"
   },
   "devDependencies": {
     "esbuild": "^0.23.0",
@@ -165,11 +165,11 @@ For larger extensions, I strongly recommend authoring in TypeScript and compilin
 }
 ```
 
-Flint's runtime sandbox exposes `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`, and `@hugeicons` directly, so you can mark them external to keep your plugin bundle lightweight.
+Noether's runtime sandbox exposes `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`, and `@hugeicons` directly, so you can mark them external to keep your plugin bundle lightweight.
 
 ### TypeScript Source (`src/index.ts`)
 ```typescript
-import { Extension, FlintApp } from 'flint';
+import { Extension, NoetherApp } from 'noether';
 import React from 'react';
 
 export default class WordCounterExtension extends Extension {
@@ -177,7 +177,7 @@ export default class WordCounterExtension extends Extension {
     this.addCommand({
       id: 'show-stats',
       title: 'Word Counter: Show Document Statistics',
-      action: (app: FlintApp) => {
+      action: (app: NoetherApp) => {
         app.workspace.showToast('Statistics calculated!', 'info');
       },
     });
@@ -189,7 +189,7 @@ Build your bundle:
 ```bash
 npm run build
 ```
-Copy `manifest.json` and the resulting `main.js` into your Hearth's extension directory.
+Copy `manifest.json` and the resulting `main.js` into your Vault's extension directory.
 
 
 ## 5. Next Steps
@@ -198,4 +198,4 @@ Copy `manifest.json` and the resulting `main.js` into your Hearth's extension di
 
 - Explore full copyable project boilerplates in [[Starter Templates & Boilerplates]].
 - Discover all available ribbons, commands, and status bar hooks in [[UI Extension Points]].
-- Browse interactive UI primitives in [[Flint UI Components]].
+- Browse interactive UI primitives in [[Noether UI Components]].

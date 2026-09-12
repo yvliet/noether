@@ -1,11 +1,11 @@
 /**
  * @module IconifyExtension
  * @description
- * Built-in core extension for customizing icons across Flint.
+ * Built-in core extension for customizing icons across Noether.
  * Allows assigning curated HugeIcons to folders, notes, canvases, files, and tabs.
  * Renders in the file tree, tab bar, context menus, and provides full MCP management.
  *
- * Exclusively integrates via the Flint SDK, IoC Registries, and EventBus.
+ * Exclusively integrates via the Noether SDK, IoC Registries, and EventBus.
  *
  * @author Yuliet Li
  * @since 1.0.0
@@ -14,7 +14,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { DocumentItem, TabItem } from '@/types';
 import {
   MaskTheater02Icon,
@@ -47,7 +47,7 @@ export const ICONIFY_MANIFEST: ExtensionManifest = {
   id: 'iconify',
   name: 'More icons',
   version: '1.1.0',
-  description: 'Let icons live in all of Flint. Customize folders, files, tabs, and rich text documents with an extensible multi-pack icon system and SQLite persistence.',
+  description: 'Let icons live in all of Noether. Customize folders, files, tabs, and rich text documents with an extensible multi-pack icon system and SQLite persistence.',
   author: 'Yuliet Li',
   isCore: true,
   tags: ['icons', 'customization', 'file-tree', 'tabs', 'notes', 'ui', 'editor'],
@@ -55,7 +55,7 @@ export const ICONIFY_MANIFEST: ExtensionManifest = {
 };
 
 export class IconifyExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = ICONIFY_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = ICONIFY_MANIFEST) {
     super(app, manifest);
   }
 
@@ -189,9 +189,9 @@ export class IconifyExtension extends Extension {
             title={`Icon for “${doc.title}”`}
             headerIcon={
               isFolder ? (
-                <Folder01Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+                <Folder01Icon size={14} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
               ) : (
-                <File01Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+                <File01Icon size={14} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
               )
             }
             currentIconId={entry?.iconId}
@@ -252,7 +252,7 @@ export class IconifyExtension extends Extension {
       customSubmenu: ({ data, onClose }) => {
         const tab = data as TabItem;
         const docId = tab.document_id!;
-        const doc = this.app.hearth.documents.find((d) => d.id === docId);
+        const doc = this.app.vault.documents.find((d) => d.id === docId);
         const isFolder = Boolean(doc?.is_folder);
         const entry = useIconifyStore.getState().icons[docId];
         const title = tab.title || doc?.title || 'Tab';
@@ -266,9 +266,9 @@ export class IconifyExtension extends Extension {
             title={`Icon for “${title}”`}
             headerIcon={
               isFolder ? (
-                <Folder01Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+                <Folder01Icon size={14} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
               ) : (
-                <File01Icon size={14} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+                <File01Icon size={14} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
               )
             }
             currentIconId={entry?.iconId}
@@ -319,7 +319,7 @@ export class IconifyExtension extends Extension {
       group: 'tools',
       order: 25,
       onClick: (app) => {
-        const doc = app.hearth.activeDocument;
+        const doc = app.vault.activeDocument;
         if (doc) {
           useIconifyStore.getState().openPicker({
             id: doc.id,
@@ -455,7 +455,7 @@ export class IconifyExtension extends Extension {
     // ── Tool: list ──
     this.registerTool({
       name: 'list',
-      description: 'List all folders and files with customized icons in the current Hearth.',
+      description: 'List all folders and files with customized icons in the current Vault.',
       parameters: {
         type: 'object',
         properties: {
@@ -471,7 +471,7 @@ export class IconifyExtension extends Extension {
         try {
           const typeFilter = String(args.type || 'all').toLowerCase();
           const icons = useIconifyStore.getState().icons;
-          const documents = this.app.hearth.documents;
+          const documents = this.app.vault.documents;
 
           const entries = Object.entries(icons).filter(([itemId, entry]) => {
             const doc = documents.find((d) => d.id === itemId);
@@ -554,7 +554,7 @@ export class IconifyExtension extends Extension {
             };
           }
 
-          const doc = this.app.hearth.documents.find((d) => d.id === itemId);
+          const doc = this.app.vault.documents.find((d) => d.id === itemId);
           const isFolder = entry.itemType === 'folder' || (doc ? Boolean(doc.is_folder) : false);
           const iconDef = getIconifyIconDef(entry.iconId);
           return {
@@ -601,7 +601,7 @@ export class IconifyExtension extends Extension {
           },
           color: {
             type: 'string',
-            description: 'Optional hex color (e.g. "#ea580c")',
+            description: 'Optional hex color (e.g. "#eb584d")',
           },
           itemType: {
             type: 'string',

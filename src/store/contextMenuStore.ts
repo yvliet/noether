@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import React from 'react';
-import { bindFlintStores } from '@/core/app/storeBridge';
+import { bindNoetherStores } from '@/core/app/storeBridge';
 
 
 export type ContextMenuItemType = 'item' | 'separator' | 'header';
@@ -101,5 +101,5 @@ export const useContextMenuStore = create<ContextMenuState>((set, get) => ({
   },
 }));
 
-bindFlintStores({ contextMenu: useContextMenuStore });
+bindNoetherStores({ contextMenu: useContextMenuStore });
 

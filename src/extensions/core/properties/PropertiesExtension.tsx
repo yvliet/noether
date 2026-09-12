@@ -4,7 +4,7 @@
  * Built-in core extension managing structured YAML frontmatter note properties.
  * Registers the properties sidebar tab, in-document header editor, and doc menu action.
  *
- * Uses native FlintApp APIs (app.workspace.setActiveSidebarTab, app.workspace.showToast).
+ * Uses native NoetherApp APIs (app.workspace.setActiveSidebarTab, app.workspace.showToast).
  *
  * @since 0.1.0
  */
@@ -12,7 +12,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { PackageIcon, PlusCircleIcon } from '@/components/common/Icons';
 import { propertiesReadme } from './readme';
 import { PropertiesView } from './PropertiesView';
@@ -32,7 +32,7 @@ export const PROPERTIES_MANIFEST: ExtensionManifest = {
 };
 
 export class PropertiesExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = PROPERTIES_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = PROPERTIES_MANIFEST) {
     super(app, manifest);
   }
 
@@ -100,7 +100,7 @@ export class PropertiesExtension extends Extension {
           if (!documentId) {
             throw new Error("Parameter 'documentId' is required.");
           }
-          const properties = this.app.hearth.getDocumentProperties(documentId);
+          const properties = this.app.vault.getDocumentProperties(documentId);
           return {
             content: [
               {
@@ -164,8 +164,8 @@ export class PropertiesExtension extends Extension {
             }
           }
 
-          await this.app.hearth.updateDocumentProperties(documentId, { [key]: value });
-          const updated = this.app.hearth.getDocumentProperties(documentId);
+          await this.app.vault.updateDocumentProperties(documentId, { [key]: value });
+          const updated = this.app.vault.getDocumentProperties(documentId);
 
           return {
             content: [
@@ -221,8 +221,8 @@ export class PropertiesExtension extends Extension {
             throw new Error("Parameter 'key' is required.");
           }
 
-          await this.app.hearth.updateDocumentProperties(documentId, { [key]: null });
-          const updated = this.app.hearth.getDocumentProperties(documentId);
+          await this.app.vault.updateDocumentProperties(documentId, { [key]: null });
+          const updated = this.app.vault.getDocumentProperties(documentId);
 
           return {
             content: [

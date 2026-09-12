@@ -1,5 +1,5 @@
 import React from 'react';
-import { appInstance } from '@/core/app/FlintApp';
+import { appInstance } from '@/core/app/NoetherApp';
 import { getAppInstanceBridge } from '@/core/app/storeBridge';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {

@@ -1,22 +1,22 @@
 # Starter Templates & Boilerplates
 
-Kickstart your Flint extension or theme with production-ready, copyable starter boilerplates. Every boilerplate includes strict TypeScript types, bundling configurations, and instant lifecycle integration with the Flint SDK.
+Kickstart your Noether extension or theme with production-ready, copyable starter boilerplates. Every boilerplate includes strict TypeScript types, bundling configurations, and instant lifecycle integration with the Noether SDK.
 
 
 ## 1. Official Extension Starter Template Repository
 
 ---
 
-The quickest way to build a Flint extension is using the official standalone starter template repository at [yvliet/flint-extension-starter](https://github.com/yvliet/flint-extension-starter):
+The quickest way to build a Noether extension is using the official standalone starter template repository at [yvliet/noether-extension-starter](https://github.com/yvliet/noether-extension-starter):
 
 ```bash
 # Option 1: Create directly from GitHub's template engine
-gh repo create my-flint-extension --template yvliet/flint-extension-starter --public --clone
-cd my-flint-extension
+gh repo create my-noether-extension --template yvliet/noether-extension-starter --public --clone
+cd my-noether-extension
 
 # Option 2: Clone directly via Git
-git clone https://github.com/yvliet/flint-extension-starter.git my-flint-extension
-cd my-flint-extension
+git clone https://github.com/yvliet/noether-extension-starter.git my-noether-extension
+cd my-noether-extension
 
 # Install dependencies and build
 npm install
@@ -26,8 +26,8 @@ npm run build
 The template comes pre-configured with:
 - **TypeScript & React JSX**: Strict types out of the box with zero runtime React bloat.
 - **esbuild Bundler**: Fast, single-file compilation targeting `dist/main.js`.
-- **Sandbox Configuration**: Automatically externalizes host packages (`flint`, `@flint/sdk`, `react`, `react-dom`, `zod`).
-- **GitHub Actions Publishing**: Automated CI/CD workflow in `.github/workflows/publish.yml` that builds and publishes releases to the Flint Turso Registry whenever a version tag (`v*`) is pushed.
+- **Sandbox Configuration**: Automatically externalizes host packages (`noether`, `@noether/sdk`, `react`, `react-dom`, `zod`).
+- **GitHub Actions Publishing**: Automated CI/CD workflow in `.github/workflows/publish.yml` that builds and publishes releases to the Noether Turso Registry whenever a version tag (`v*`) is pushed.
 
 
 ## 2. Minimal Extension Starter
@@ -43,7 +43,7 @@ A lightweight, zero-bloat extension template registering an Action Rail icon, a 
   "name": "Minimal Extension Starter",
   "version": "1.0.0",
   "minAppVersion": "0.2.0",
-  "description": "Clean foundation for building custom Flint UI and command extensions.",
+  "description": "Clean foundation for building custom Noether UI and command extensions.",
   "author": "Yuliet Li",
   "authorUrl": "https://github.com/yvliet",
   "tags": ["utility", "starter"]
@@ -53,7 +53,7 @@ A lightweight, zero-bloat extension template registering an Action Rail icon, a 
 #### `package.json`
 ```json
 {
-  "name": "flint-minimal-extension",
+  "name": "noether-minimal-extension",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -67,7 +67,7 @@ A lightweight, zero-bloat extension template registering an Action Rail icon, a 
     "typescript": "^5.7.0"
   },
   "peerDependencies": {
-    "flint": "^0.2.0"
+    "noether": "^0.2.0"
   }
 }
 ```
@@ -92,7 +92,7 @@ A lightweight, zero-bloat extension template registering an Action Rail icon, a 
 
 #### `src/main.ts`
 ```typescript
-import { Extension, FlintApp } from 'flint';
+import { Extension, NoetherApp } from 'noether';
 
 export default class MinimalStarterExtension extends Extension {
   async onload(): Promise<void> {
@@ -103,7 +103,7 @@ export default class MinimalStarterExtension extends Extension {
       'starter-action-btn',
       '⚡',
       'Trigger Starter Action',
-      (app: FlintApp) => {
+      (app: NoetherApp) => {
         const title = app.workspace.activeDocument?.title || 'No active note';
         app.workspace.showToast(`Active document: "${title}"`, 'info');
       }
@@ -114,7 +114,7 @@ export default class MinimalStarterExtension extends Extension {
       id: 'quick-action',
       title: 'Minimal Starter: Run Quick Action',
       hotkey: 'Ctrl+Shift+P',
-      action: (app: FlintApp) => {
+      action: (app: NoetherApp) => {
         app.workspace.showToast('Starter command executed successfully!', 'success');
       },
     });
@@ -124,7 +124,7 @@ export default class MinimalStarterExtension extends Extension {
       id: 'starter-status',
       alignment: 'right',
       render: () => '⚡ Ready',
-      onClick: (app: FlintApp) => {
+      onClick: (app: NoetherApp) => {
         app.workspace.showToast('Status bar clicked', 'info');
       },
     });
@@ -148,7 +148,7 @@ const buildOptions = {
   outfile: 'main.js',
   format: 'cjs',
   target: 'es2022',
-  external: ['flint', 'react', 'react-dom'],
+  external: ['noether', 'react', 'react-dom'],
   sourcemap: 'inline',
 };
 
@@ -169,7 +169,7 @@ if (isWatch) {
 
 ---
 
-A specialized extension template that exposes structured AI Agent tools to LLM copilots via Flint's Model Context Protocol bridge.
+A specialized extension template that exposes structured AI Agent tools to LLM copilots via Noether's Model Context Protocol bridge.
 
 #### `manifest.json`
 ```json
@@ -187,7 +187,7 @@ A specialized extension template that exposes structured AI Agent tools to LLM c
 
 #### `src/main.ts`
 ```typescript
-import { Extension, McpToolDefinition, McpToolResult } from 'flint';
+import { Extension, McpToolDefinition, McpToolResult } from 'noether';
 
 export default class McpStarterExtension extends Extension {
   async onload(): Promise<void> {
@@ -196,7 +196,7 @@ export default class McpStarterExtension extends Extension {
     // Register Structured Tool: search_tagged_notes
     this.registerTool({
       name: 'search_tagged_notes',
-      description: 'Search for markdown notes matching a specific tag or keyword in the active Hearth.',
+      description: 'Search for markdown notes matching a specific tag or keyword in the active Vault.',
       parameters: {
         type: 'object',
         properties: {
@@ -214,7 +214,7 @@ export default class McpStarterExtension extends Extension {
       handler: async (args: { tag: string; maxResults?: number }): Promise<McpToolResult> => {
         const { tag, maxResults = 10 } = args;
 
-        // Query in-memory metadata index via Flint host
+        // Query in-memory metadata index via Noether host
         const notes = await this.app.db.query(
           `SELECT id, title, path FROM documents 
            WHERE tags LIKE ? 
@@ -245,7 +245,7 @@ export default class McpStarterExtension extends Extension {
 
 ---
 
-Template demonstrating how to dynamically create custom SQLite tables, execute queries, and subscribe to relational updates via the Flint EventBus.
+Template demonstrating how to dynamically create custom SQLite tables, execute queries, and subscribe to relational updates via the Noether EventBus.
 
 #### `manifest.json`
 ```json
@@ -263,7 +263,7 @@ Template demonstrating how to dynamically create custom SQLite tables, execute q
 
 #### `src/main.ts`
 ```typescript
-import { Extension } from 'flint';
+import { Extension } from 'noether';
 
 export default class RelationalStorageExtension extends Extension {
   async onload(): Promise<void> {
@@ -339,34 +339,34 @@ A clean theme package template customizing surface background tokens, typography
 
 #### `theme.css`
 ```css
-/* Nordic Frost Theme for Flint */
+/* Nordic Frost Theme for Noether */
 .theme-nordic-frost {
   /* Surfaces */
-  --flint-surface-base: #2e3440;
-  --flint-surface-card: #3b4252;
-  --flint-surface-popover: #434c5e;
-  --flint-surface-active: #4c566a;
+  --noether-surface-base: #2e3440;
+  --noether-surface-card: #3b4252;
+  --noether-surface-popover: #434c5e;
+  --noether-surface-active: #4c566a;
 
   /* Borders */
-  --flint-border-subtle: #3b4252;
-  --flint-border-base: #4c566a;
-  --flint-border-strong: #81a1c1;
+  --noether-border-subtle: #3b4252;
+  --noether-border-base: #4c566a;
+  --noether-border-strong: #81a1c1;
 
   /* Typography */
-  --flint-text-base: #eceff4;
-  --flint-text-muted: #d8dee9;
-  --flint-text-faint: #4c566a;
+  --noether-text-base: #eceff4;
+  --noether-text-muted: #d8dee9;
+  --noether-text-faint: #4c566a;
 
   /* Accent & Interactive States */
-  --flint-accent-primary: #88c0d0;
-  --flint-accent-hover: #8fbcbb;
-  --flint-accent-active: #5e81ac;
+  --noether-accent-primary: #88c0d0;
+  --noether-accent-hover: #8fbcbb;
+  --noether-accent-active: #5e81ac;
 
   /* Syntax Highlighting */
-  --flint-syntax-keyword: #81a1c1;
-  --flint-syntax-string: #a3be8c;
-  --flint-syntax-number: #b48ead;
-  --flint-syntax-comment: #616e88;
+  --noether-syntax-keyword: #81a1c1;
+  --noether-syntax-string: #a3be8c;
+  --noether-syntax-number: #b48ead;
+  --noether-syntax-comment: #616e88;
 }
 ```
 
@@ -376,6 +376,6 @@ A clean theme package template customizing surface background tokens, typography
 ---
 
 - Explore the [[UI Extension Points]] to discover all action ribbons, command palette slots, and modal dialogs.
-- Browse the [[Flint UI Components]] to preview live interactive buttons, text inputs, toggles, and setting cards.
+- Browse the [[Noether UI Components]] to preview live interactive buttons, text inputs, toggles, and setting cards.
 - Learn about tool registration in [[Model Context Protocol (MCP) Tools]].
 - Review distribution invariants in [[Developer Policies & Guidelines]].

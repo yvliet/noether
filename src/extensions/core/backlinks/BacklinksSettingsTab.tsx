@@ -1,6 +1,6 @@
 import React from 'react';
 import { useBacklinksSettings, DEFAULT_BACKLINKS_SETTINGS } from './backlinksSettings';
-import { useToast } from 'flint';
+import { useToast } from 'noether';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
 
@@ -40,7 +40,7 @@ export const BacklinksSettingsTab: React.FC = () => {
               restoreDefaults();
               showToast('Restored Backlinks defaults', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Restore defaults</span>

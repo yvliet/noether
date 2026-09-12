@@ -1,10 +1,10 @@
 /**
  * @module SketchToolbar
  * @description
- * Floating icon-only HUD toolbar for Flint Sketch.
+ * Floating icon-only HUD toolbar for Noether Sketch.
  * Houses pen, highlighter, eraser, color palette presets, stroke widths,
  * anchoring toggles, undo/redo, and keyboard shortcut listeners.
- * Adheres strictly to Flint's unbloated dark desktop aesthetic with instant response.
+ * Adheres strictly to Noether's unbloated dark desktop aesthetic with instant response.
  */
 
 import React, { useCallback, useEffect } from 'react';
@@ -23,7 +23,7 @@ import {
 } from '@/components/common/Icons';
 
 const COLOR_PRESETS = [
-  { label: 'Flint Accent', value: '#3b82f6' },
+  { label: 'Noether Accent', value: '#3b82f6' },
   { label: 'Highlighter Yellow', value: '#eab308' },
   { label: 'Signal Red', value: '#ef4444' },
   { label: 'Emerald Green', value: '#22c55e' },

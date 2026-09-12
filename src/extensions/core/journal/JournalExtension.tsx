@@ -4,7 +4,7 @@
  * Built-in core extension for creating and navigating to daily journal notes.
  * Registers action rail shortcut, command palette hotkey, and startup open hook.
  *
- * Uses native FlintApp APIs (app.workspace.setMainViewMode, app.hearth.openJournal).
+ * Uses native NoetherApp APIs (app.workspace.setMainViewMode, app.vault.openJournal).
  *
  * @since 0.2.0
  */
@@ -12,11 +12,11 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { Calendar01Icon } from '@/components/common/Icons';
 import { DocumentItem } from '@/types';
 import { getDocumentById, getAllDocuments } from '@/lib/db/documents';
-import { storeRefs } from 'flint';
+import { storeRefs } from 'noether';
 import { useJournalSettings } from './journalSettings';
 import { journalReadme } from './readme';
 
@@ -66,7 +66,7 @@ function formatDailyDate(date: Date, formatStr: string): string {
 }
 
 export class JournalExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = JOURNAL_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = JOURNAL_MANIFEST) {
     super(app, manifest);
   }
 
@@ -83,7 +83,7 @@ export class JournalExtension extends Extension {
     const dateFormatted = formatDailyDate(date, format);
     const dateTitle = dateFormatted;
 
-    let docs = this.app.hearth.documents;
+    let docs = this.app.vault.documents;
     let targetFolderId: string | null = null;
     if (folder) {
       const cleanFolder = folder.replace(/^\/+|\/+$/g, '');
@@ -109,8 +109,8 @@ export class JournalExtension extends Extension {
       );
       if (!existingFolder) {
         // Automatically create the folder if it does not yet exist
-        existingFolder = await this.app.hearth.createNewFolder(cleanFolder);
-        docs = this.app.hearth.documents;
+        existingFolder = await this.app.vault.createNewFolder(cleanFolder);
+        docs = this.app.vault.documents;
       }
       if (existingFolder) {
         targetFolderId = existingFolder.id;
@@ -136,7 +136,7 @@ export class JournalExtension extends Extension {
 
     if (existingNote) {
       // Ensure existing note retrieved from SQLite is immediately hydrated into documentStore memory
-      const currentDocs = this.app.hearth.documents;
+      const currentDocs = this.app.vault.documents;
       if (!currentDocs.some((d: DocumentItem) => d.id === existingNote!.id)) {
         (storeRefs.document as any)?.setState?.((state: any) => ({
           documents: [existingNote!, ...(state?.documents || [])],
@@ -145,7 +145,7 @@ export class JournalExtension extends Extension {
       return existingNote;
     }
 
-    const newDoc = await this.app.hearth.createNewNote(dateTitle, targetFolderId, 'base', false);
+    const newDoc = await this.app.vault.createNewNote(dateTitle, targetFolderId, 'base', false);
     if (!newDoc) {
       throw new Error(`Failed to create daily journal note: "${dateTitle}"`);
     }
@@ -186,7 +186,7 @@ export class JournalExtension extends Extension {
     }
 
     // 4. Force immediate synchronous activation in documentStore so EditorCanvas has the note without waiting for any async ticks
-    await this.app.hearth.openDocument(doc.id);
+    await this.app.vault.openDocument(doc.id);
 
     return doc;
   }
@@ -202,7 +202,7 @@ export class JournalExtension extends Extension {
       },
       40,
       (app) => {
-        const activeDoc = app.hearth.activeDocument;
+        const activeDoc = app.vault.activeDocument;
         if (!activeDoc) return false;
         const { dailyFormat } = useJournalSettings.getState();
         const format = dailyFormat || 'YYYY-MM-DD';
@@ -245,7 +245,7 @@ export class JournalExtension extends Extension {
         await this.openJournalNote();
       };
 
-      if (this.app.hearth.documents.length > 0) {
+      if (this.app.vault.documents.length > 0) {
         tryOpen();
       } else {
         const sub = this.onEvent('vault:loaded', async () => {
@@ -394,7 +394,7 @@ export class JournalExtension extends Extension {
           }
 
           const updatedJson = JSON.stringify(docContent);
-          this.app.hearth.saveDocument(doc.id, updatedJson, doc.title);
+          this.app.vault.saveDocument(doc.id, updatedJson, doc.title);
 
           return {
             content: [

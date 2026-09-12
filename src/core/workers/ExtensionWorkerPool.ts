@@ -9,14 +9,14 @@
  * - Thread Boundary Isolation: Prevents heavy JavaScript workloads from blocking
  *   the ProseMirror transaction dispatch loop or frame paint cycles.
  * - Bidirectional EventBus Bridge: Workers can emit domain events directly into
- *   Flint's central EventBus via structured postMessage multiplexing.
+ *   Noether's central EventBus via structured postMessage multiplexing.
  * - Clean Lifecycle Guarantee: Tracks active workers and pending tasks per extension ID,
  *   terminating workers immediately when an extension is disabled or unloaded.
  *
  * @since 0.4.0
  */
 
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type {
   WorkerTaskDefinition,
   RunTaskOptions,
@@ -30,7 +30,7 @@ interface PendingJob {
 }
 
 export class ExtensionWorkerPool {
-  private app: FlintApp;
+  private app: NoetherApp;
   /** Active Web Worker instances mapped by extensionId */
   private workers: Map<string, Worker> = new Map();
   /** Object URLs generated for blob workers, tracked for revocation */
@@ -41,7 +41,7 @@ export class ExtensionWorkerPool {
   private pendingJobs: Map<string, PendingJob> = new Map();
   private jobCounter = 0;
 
-  constructor(app: FlintApp) {
+  constructor(app: NoetherApp) {
     this.app = app;
   }
 

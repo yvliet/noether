@@ -41,7 +41,7 @@ export interface CollapseAllButtonProps {
 }
 
 /**
- * Standardized Flint Collapse All / Expand All toggle button.
+ * Standardized Noether Collapse All / Expand All toggle button.
  * Standard instant hover and click with zero artificial animation delay.
  */
 export const CollapseAllButton: React.FC<CollapseAllButtonProps> = React.memo(({
@@ -68,8 +68,8 @@ export const CollapseAllButton: React.FC<CollapseAllButtonProps> = React.memo(({
       aria-label={computedTitle}
       className={`p-1.5 rounded select-none ${
         disabled
-          ? 'opacity-35 text-[var(--flint-text-muted)] cursor-not-allowed pointer-events-none'
-          : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+          ? 'opacity-35 text-[var(--noether-text-muted)] cursor-not-allowed pointer-events-none'
+          : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
       } ${className}`}
     >
       {isCollapsed ? (

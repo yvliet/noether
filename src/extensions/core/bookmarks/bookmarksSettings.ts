@@ -26,7 +26,7 @@ export const useBookmarksSettings = create<BookmarksSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_BOOKMARKS_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_bookmarks',
+      name: 'noether_extension_data_bookmarks',
     }
   )
 );

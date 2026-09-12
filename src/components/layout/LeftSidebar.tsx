@@ -17,7 +17,7 @@ import {
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useFlintApp, useExtensionList, useFileTreeActions, useFileTreeSections, useSidebarTabs } from '@/core/app/AppContext';
+import { useNoetherApp, useExtensionList, useFileTreeActions, useFileTreeSections, useSidebarTabs } from '@/core/app/AppContext';
 import { FileTreeNode, getVisibleTreeItemIds } from '@/components/file-tree/FileTreeNode';
 
 import { DocumentItem } from '@/types';
@@ -40,7 +40,7 @@ export type { FileSortOrder };
 export { SORT_OPTIONS, sortDocuments };
 
 export const LeftSidebar: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const extensionList = useExtensionList();
   const fileTreeActions = useFileTreeActions();
   const fileTreeSections = useFileTreeSections();
@@ -49,11 +49,11 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const activeLeftView = useWorkspaceStore((s) => s.activeLeftView);
   const leftSidebarWidth = useWorkspaceStore((s) => s.leftSidebarWidth);
   const setLeftSidebarWidth = useWorkspaceStore((s) => s.setLeftSidebarWidth);
-  const hearthName = useWorkspaceStore((s) => s.hearthName);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+  const vaultName = useWorkspaceStore((s) => s.vaultName);
+  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
-  const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);
+  const setIsVaultModalOpen = useWorkspaceStore((s) => s.setIsVaultModalOpen);
   const triggerCollapseAll = useWorkspaceStore((s) => s.triggerCollapseAll);
   const collapseAllFolders = useWorkspaceStore((s) => s.collapseAllFolders);
   const expandAllFolders = useWorkspaceStore((s) => s.expandAllFolders);
@@ -317,7 +317,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
         if (isInsideSidebar) {
           e.preventDefault();
           const currentAnchor = lastSelectedDocId || currentSelected[currentSelected.length - 1];
-          const anchorEl = currentAnchor ? document.getElementById(`flint-tree-item-${currentAnchor}`) : null;
+          const anchorEl = currentAnchor ? document.getElementById(`noether-tree-item-${currentAnchor}`) : null;
           const visibleIds = getVisibleTreeItemIds(anchorEl);
           if (visibleIds.length === 0) return;
 
@@ -338,7 +338,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             }
           }
 
-          const targetNode = document.getElementById(`flint-tree-item-${nextId}`);
+          const targetNode = document.getElementById(`noether-tree-item-${nextId}`);
           if (targetNode) {
             targetNode.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           }
@@ -391,7 +391,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
       }
 
       setTimeout(() => {
-        const domNode = document.getElementById(`flint-tree-item-${targetId}`);
+        const domNode = document.getElementById(`noether-tree-item-${targetId}`);
         if (domNode) {
           domNode.scrollIntoView({ behavior: 'smooth', block: 'center' });
           domNode.classList.add('!bg-[#82691b]', '!text-white');
@@ -402,12 +402,12 @@ export const LeftSidebar: React.FC = React.memo(() => {
       }, 80);
     };
 
-    window.addEventListener('flint:expand-folder', handleExpandFolder);
-    window.addEventListener('flint:reveal-tree-item', handleRevealTreeItem);
+    window.addEventListener('noether:expand-folder', handleExpandFolder);
+    window.addEventListener('noether:reveal-tree-item', handleRevealTreeItem);
 
     return () => {
-      window.removeEventListener('flint:expand-folder', handleExpandFolder);
-      window.removeEventListener('flint:reveal-tree-item', handleRevealTreeItem);
+      window.removeEventListener('noether:expand-folder', handleExpandFolder);
+      window.removeEventListener('noether:reveal-tree-item', handleRevealTreeItem);
     };
   }, []);
 
@@ -502,9 +502,9 @@ export const LeftSidebar: React.FC = React.memo(() => {
       data-sidebar-side="left"
       style={{
         width: `${leftSidebarWidth}px`,
-        background: 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar))',
+        background: 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar))',
       }}
-      className="flint-sidebar-left flex flex-col h-full select-none shrink-0 relative border-r border-[var(--flint-border-base)]"
+      className="noether-sidebar-left flex flex-col h-full select-none shrink-0 relative border-r border-[var(--noether-border-base)]"
     >
       {activeDrag?.targetDockZone === 'left-bottom' && (
         <div
@@ -533,18 +533,18 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       {/* Top Action Header (Centered Minimal Obsidian Toolbar) - Hide if viewing docked pane or in search view */}
       {isFilesActive && (
-        <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--flint-text-muted)]">
+        <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)]">
           <button
             onClick={handleCreateNote}
             title="New note (Ctrl+N)"
-            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+            className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <FileAddIcon size={14} />
           </button>
           <button
             onClick={handleCreateFolder}
             title="New folder"
-            className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+            className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <FolderAddIcon size={14} />
           </button>
@@ -555,7 +555,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               key={action.id}
               onClick={() => action.onClick(app)}
               title={action.title}
-              className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+              className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
             >
               {action.icon}
             </button>
@@ -586,15 +586,15 @@ export const LeftSidebar: React.FC = React.memo(() => {
         <div className="pt-2 px-2 pb-1.5 flex flex-col gap-1.5">
           {/* Top Search Input Row */}
           <div className="flex items-center gap-1.5">
-            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)]">
-              <Search01Icon size={14} className="text-[var(--flint-text-muted)] shrink-0" />
+            <div className="flex-1 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus-within:border-[var(--noether-accent)]">
+              <Search01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
               <input
                 ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search..."
-                className="bg-transparent outline-none flex-1 text-xs text-[var(--flint-text-primary)] placeholder-[var(--flint-text-faint)] min-w-0"
+                className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] min-w-0"
               />
               <button
                 type="button"
@@ -602,8 +602,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
                 title={isCaseSensitive ? 'Match case: ON' : 'Match case: OFF'}
                 className={`px-1 py-0.5 rounded text-[11px] font-semibold leading-none cursor-pointer ${
                   isCaseSensitive
-                    ? 'bg-[var(--flint-accent)] text-white'
-                    : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
+                    ? 'bg-[var(--noether-accent)] text-white'
+                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
                 }`}
               >
                 Aa
@@ -613,7 +613,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
                   type="button"
                   onClick={() => setSearchQuery('')}
                   title="Clear search"
-                  className="p-0.5 rounded text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+                  className="p-0.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
                 >
                   <CancelCircleIcon size={13} />
                 </button>
@@ -622,7 +622,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           </div>
 
           {/* Results Count & Sort Dropdown Row */}
-          <div className="flex items-center justify-between px-1 text-xs text-[var(--flint-text-muted)] select-none">
+          <div className="flex items-center justify-between px-1 text-xs text-[var(--noether-text-muted)] select-none">
             <span className="text-[11px]">
               {searchFilteredDocs.length} {searchFilteredDocs.length === 1 ? 'result' : 'results'}
             </span>
@@ -636,7 +636,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           </div>
 
           {/* Subtle separator line */}
-          <div className="border-b border-[var(--flint-border-base)] -mx-2 mt-0.5 opacity-60" />
+          <div className="border-b border-[var(--noether-border-base)] -mx-2 mt-0.5 opacity-60" />
         </div>
       )}
 
@@ -664,7 +664,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           activeCustomTab.render(app)
         ) : isSearchActive ? (
           !searchQuery.trim() ? null : searchFilteredDocs.length === 0 ? (
-            <div className="px-2 py-4 text-xs text-[var(--flint-text-muted)] select-none">
+            <div className="px-2 py-4 text-xs text-[var(--noether-text-muted)] select-none">
               No matches found.
             </div>
           ) : (
@@ -683,15 +683,15 @@ export const LeftSidebar: React.FC = React.memo(() => {
               </div>
             ))}
 
-            {/* Standard Hearth Root Documents & Folders */}
-            <div data-tree-section="hearth-files" className="flex flex-col gap-0.5">
+            {/* Standard Vault Root Documents & Folders */}
+            <div data-tree-section="vault-files" className="flex flex-col gap-0.5">
               {rootDocs.map((doc) => (
                 <FileTreeNode key={doc.id} item={doc} allDocs={documents} sortOrder={sortOrder} />
               ))}
             </div>
             {rootDocs.length === 0 && fileTreeSections.length === 0 && (
-              <div className="text-center py-8 text-xs text-[var(--flint-text-muted)] leading-relaxed">
-                No files in Hearth. Click{' '}
+              <div className="text-center py-8 text-xs text-[var(--noether-text-muted)] leading-relaxed">
+                No files in Vault. Click{' '}
                 <FileAddIcon
                   size={14}
                   className="inline-block align-[-2.5px]"
@@ -722,7 +722,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           >
             <div
               className={`w-full h-[1px] ${
-                isVerticalSplitResizing ? 'bg-white' : 'bg-[var(--flint-border-base)] group-hover:bg-white/50'
+                isVerticalSplitResizing ? 'bg-white' : 'bg-[var(--noether-border-base)] group-hover:bg-white/50'
               }`}
             />
           </div>
@@ -736,44 +736,44 @@ export const LeftSidebar: React.FC = React.memo(() => {
       )}
 
 
-      {/* Bottom Hearth Footer */}
-      <div className="h-10 pr-2 flex items-center justify-between text-xs text-[var(--flint-text-muted)] bg-[var(--flint-bg-sidebar)] border-t border-[var(--flint-border-base)]">
+      {/* Bottom Vault Footer */}
+      <div className="h-10 pr-2 flex items-center justify-between text-xs text-[var(--noether-text-muted)] bg-[var(--noether-bg-sidebar)] border-t border-[var(--noether-border-base)]">
         <button
-          onClick={() => setIsHearthModalOpen(true)}
+          onClick={() => setIsVaultModalOpen(true)}
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
             showContextMenu(e, [
               {
                 id: 'open-switcher',
-                title: 'Open Hearth switcher',
+                title: 'Open Vault switcher',
                 icon: <ArrowUpDownIcon size={14} />,
-                onClick: () => setIsHearthModalOpen(true),
+                onClick: () => setIsVaultModalOpen(true),
               },
               { type: 'separator' },
               {
                 id: 'reveal-in-explorer',
-                title: 'Reveal Hearth in file explorer',
+                title: 'Reveal Vault in file explorer',
                 icon: <FolderOpenIcon size={14} />,
                 onClick: () => {
-                  platform.openHearthInExplorer(hearthPath);
+                  platform.openVaultInExplorer(vaultPath);
                 },
               },
             ]);
           }}
-          className="flex-1 min-w-0 h-full pl-3 pr-2 flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer group text-left"
-          data-tooltip="Hearth switcher"
+          className="flex-1 min-w-0 h-full pl-3 pr-2 flex items-center gap-1.5 text-xs text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer group text-left"
+          data-tooltip="Vault switcher"
           data-tooltip-shortcut="Ctrl+Shift+O"
           data-tooltip-position="top"
-          data-tooltip-anchor="[data-hearth-name]"
+          data-tooltip-anchor="[data-vault-name]"
         >
-          <ArrowUpDownIcon size={15} className="shrink-0 text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)]" />
+          <ArrowUpDownIcon size={15} className="shrink-0 text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)]" />
           <span
-            data-hearth-name
+            data-vault-name
             style={{ overflowClipMargin: '4px' }}
-            className="overflow-clip text-ellipsis whitespace-nowrap font-medium text-xs text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] leading-tight"
+            className="overflow-clip text-ellipsis whitespace-nowrap font-medium text-xs text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] leading-tight"
           >
-            {hearthName || 'Flint Hearth'}
+            {vaultName || 'Noether Vault'}
           </span>
         </button>
 
@@ -781,7 +781,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           <button
             onClick={() => setIsHelpModalOpen(true)}
             title="Help & shortcuts (F1)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <HelpCircleIcon size={16} />
           </button>
@@ -795,7 +795,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               }
             }}
             title="Settings (Ctrl+,)"
-            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+            className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <Settings02Icon size={16} />
           </button>

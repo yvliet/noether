@@ -1,7 +1,7 @@
 import { ThemeDefinition, ThemeColorTokens } from './types';
 import { CORE_THEME, PREINSTALLED_THEMES } from './preinstalled';
 
-const CUSTOM_THEMES_STORAGE_KEY = 'flint_custom_themes_v1';
+const CUSTOM_THEMES_STORAGE_KEY = 'noether_custom_themes_v1';
 
 class ThemeRegistry {
   private coreTheme: ThemeDefinition = CORE_THEME;
@@ -72,13 +72,13 @@ class ThemeRegistry {
 
     // Alias matches for standard theme IDs
     const aliasMap: Record<string, string> = {
-      default: 'default',
-      dark: 'default',
-      'flint-dark': 'default',
-      'flint dark': 'default',
-      light: 'flint-light',
-      'flint-light': 'flint-light',
-      'flint light': 'flint-light',
+      default: 'noether-dark',
+      dark: 'noether-dark',
+      'noether-dark': 'noether-dark',
+      'noether dark': 'noether-dark',
+      light: 'noether-light',
+      'noether-light': 'noether-light',
+      'noether light': 'noether-light',
     };
 
     const mapped = aliasMap[cleanId];
@@ -86,7 +86,7 @@ class ThemeRegistry {
       return this.preinstalledThemes.get(mapped)!;
     }
 
-    // Fallback to core engine baseline theme (Flint Dark)
+    // Fallback to core engine baseline theme (Noether Dark)
     return this.coreTheme;
   }
 
@@ -139,7 +139,7 @@ class ThemeRegistry {
     customCss?: string;
   }): ThemeDefinition {
     const isLight = params.type === 'light';
-    const baseTheme = this.getTheme(isLight ? 'flint-light' : 'default');
+    const baseTheme = this.getTheme(isLight ? 'noether-light' : 'default');
 
     const fullTokens: ThemeColorTokens = {
       ...baseTheme.variables,
@@ -214,7 +214,7 @@ class ThemeRegistry {
     tokens: ThemeColorTokens,
     customAccent?: string
   ): Record<string, string> {
-    const accent = customAccent || tokens.accent || '#ea580c';
+    const accent = customAccent || tokens.accent || '#eb584d';
     const accentHover = tokens.accentHover || accent;
     const accentActive = tokens.accentActive || accent;
     const accentSubtle = tokens.accentSubtle || `${accent}25`;
@@ -222,78 +222,78 @@ class ThemeRegistry {
 
     const vars: Record<string, string> = {
       // Backgrounds
-      '--flint-bg-app': tokens.bgApp,
-      '--flint-bg-topbar': tokens.bgTopBar,
-      '--flint-bg-ribbon': tokens.bgRibbon || tokens.bgSidebar,
-      '--flint-bg-sidebar': tokens.bgSidebar,
-      '--flint-bg-sidebar-hover': tokens.bgSidebarHover,
-      '--flint-bg-sidebar-active': tokens.bgSidebarActive,
-      '--flint-bg-main': tokens.bgMain,
-      '--flint-bg-card': tokens.bgCard,
-      '--flint-bg-card-hover': tokens.bgCardHover,
-      '--flint-bg-popover': tokens.bgPopover || tokens.bgCard,
-      '--flint-bg-input': tokens.bgInput,
-      '--flint-bg-input-focus': tokens.bgInputFocus || tokens.bgCardHover,
-      '--flint-bg-tab-active': tokens.bgTabActive || tokens.bgMain,
-      '--flint-bg-tab-hover': tokens.bgTabHover || tokens.bgCardHover,
-      '--flint-bg-tab-inactive': tokens.bgTabInactive || 'transparent',
-      '--flint-tab-corner-fill': tokens.tabCornerFill || tokens.bgMain,
-      '--flint-tab-corner-hover-fill': tokens.tabCornerHoverFill || tokens.bgCardHover,
-      '--flint-bg-statusbar': tokens.bgStatusBar || tokens.bgCard,
+      '--noether-bg-app': tokens.bgApp,
+      '--noether-bg-topbar': tokens.bgTopBar,
+      '--noether-bg-ribbon': tokens.bgRibbon || tokens.bgSidebar,
+      '--noether-bg-sidebar': tokens.bgSidebar,
+      '--noether-bg-sidebar-hover': tokens.bgSidebarHover,
+      '--noether-bg-sidebar-active': tokens.bgSidebarActive,
+      '--noether-bg-main': tokens.bgMain,
+      '--noether-bg-card': tokens.bgCard,
+      '--noether-bg-card-hover': tokens.bgCardHover,
+      '--noether-bg-popover': tokens.bgPopover || tokens.bgCard,
+      '--noether-bg-input': tokens.bgInput,
+      '--noether-bg-input-focus': tokens.bgInputFocus || tokens.bgCardHover,
+      '--noether-bg-tab-active': tokens.bgTabActive || tokens.bgMain,
+      '--noether-bg-tab-hover': tokens.bgTabHover || tokens.bgCardHover,
+      '--noether-bg-tab-inactive': tokens.bgTabInactive || 'transparent',
+      '--noether-tab-corner-fill': tokens.tabCornerFill || tokens.bgMain,
+      '--noether-tab-corner-hover-fill': tokens.tabCornerHoverFill || tokens.bgCardHover,
+      '--noether-bg-statusbar': tokens.bgStatusBar || tokens.bgCard,
 
       // Borders
-      '--flint-border-subtle': tokens.borderSubtle,
-      '--flint-border-base': tokens.borderBase,
-      '--flint-border-strong': tokens.borderStrong,
+      '--noether-border-subtle': tokens.borderSubtle,
+      '--noether-border-base': tokens.borderBase,
+      '--noether-border-strong': tokens.borderStrong,
 
       // Text
-      '--flint-text-primary': tokens.textPrimary,
-      '--flint-text-secondary': tokens.textSecondary,
-      '--flint-text-muted': tokens.textMuted,
-      '--flint-text-faint': tokens.textFaint,
+      '--noether-text-primary': tokens.textPrimary,
+      '--noether-text-secondary': tokens.textSecondary,
+      '--noether-text-muted': tokens.textMuted,
+      '--noether-text-faint': tokens.textFaint,
 
       // Accents
-      '--flint-accent': accent,
-      '--flint-accent-hover': accentHover,
-      '--flint-accent-active': accentActive,
-      '--flint-accent-subtle': accentSubtle,
-      '--flint-accent-gradient': accentGradient,
+      '--noether-accent': accent,
+      '--noether-accent-hover': accentHover,
+      '--noether-accent-active': accentActive,
+      '--noether-accent-subtle': accentSubtle,
+      '--noether-accent-gradient': accentGradient,
 
       // Selection & Code
-      '--flint-selection-bg': tokens.selectionBg || '#4a4e57',
-      '--flint-selection-text': tokens.selectionText || '#ffffff',
-      '--flint-code-bg': tokens.codeBg || tokens.bgInput,
-      '--flint-code-text': tokens.codeText || tokens.textSecondary,
+      '--noether-selection-bg': tokens.selectionBg || '#4a4e57',
+      '--noether-selection-text': tokens.selectionText || '#ffffff',
+      '--noether-code-bg': tokens.codeBg || tokens.bgInput,
+      '--noether-code-text': tokens.codeText || tokens.textSecondary,
 
       // Tooltips
-      '--flint-tooltip-bg': tokens.tooltipBg || '#0d0d0d',
-      '--flint-tooltip-text': tokens.tooltipText || tokens.textPrimary || '#ffffff',
-      '--flint-tooltip-muted': tokens.tooltipMuted || tokens.textMuted || '#888888',
-      '--flint-tooltip-border': tokens.tooltipBorder || tokens.borderBase || '#333333',
+      '--noether-tooltip-bg': tokens.tooltipBg || '#0d0d0d',
+      '--noether-tooltip-text': tokens.tooltipText || tokens.textPrimary || '#ffffff',
+      '--noether-tooltip-muted': tokens.tooltipMuted || tokens.textMuted || '#888888',
+      '--noether-tooltip-border': tokens.tooltipBorder || tokens.borderBase || '#333333',
 
       // Shadows & Elevation
-      '--flint-shadow-1': tokens.shadow1 || '0 1px 3px 0 rgba(0, 0, 0, 0.25)',
-      '--flint-shadow-2': tokens.shadow2 || '0 4px 16px 0 rgba(0, 0, 0, 0.4)',
-      '--flint-shadow-3': tokens.shadow3 || '0 8px 32px 0 rgba(0, 0, 0, 0.6)',
+      '--noether-shadow-1': tokens.shadow1 || '0 1px 3px 0 rgba(0, 0, 0, 0.25)',
+      '--noether-shadow-2': tokens.shadow2 || '0 4px 16px 0 rgba(0, 0, 0, 0.4)',
+      '--noether-shadow-3': tokens.shadow3 || '0 8px 32px 0 rgba(0, 0, 0, 0.6)',
     };
 
     // Gradients
     if (tokens.topBarGradient) {
-      vars['--flint-bg-topbar-gradient'] = tokens.topBarGradient;
+      vars['--noether-bg-topbar-gradient'] = tokens.topBarGradient;
     } else {
-      vars['--flint-bg-topbar-gradient'] = tokens.bgTopBar;
+      vars['--noether-bg-topbar-gradient'] = tokens.bgTopBar;
     }
 
     if (tokens.sidebarGradient) {
-      vars['--flint-bg-sidebar-gradient'] = tokens.sidebarGradient;
+      vars['--noether-bg-sidebar-gradient'] = tokens.sidebarGradient;
     } else {
-      vars['--flint-bg-sidebar-gradient'] = tokens.bgSidebar;
+      vars['--noether-bg-sidebar-gradient'] = tokens.bgSidebar;
     }
 
     if (tokens.mainGradient) {
-      vars['--flint-bg-main-gradient'] = tokens.mainGradient;
+      vars['--noether-bg-main-gradient'] = tokens.mainGradient;
     } else {
-      vars['--flint-bg-main-gradient'] = tokens.bgMain;
+      vars['--noether-bg-main-gradient'] = tokens.bgMain;
     }
 
     return vars;

@@ -1,6 +1,6 @@
 # TypeScript API: Dynamic React Portal Slots
 
-Flint allows extensions to mount React components directly into host layout regions (`workspace:root`, `editor:floating-toolbar`, `editor:minimap`) without DOM mutation or CSS monkey-patching.
+Noether allows extensions to mount React components directly into host layout regions (`workspace:root`, `editor:floating-toolbar`, `editor:minimap`) without DOM mutation or CSS monkey-patching.
 
 
 ## 1. Registering a Portal Slot
@@ -9,7 +9,7 @@ Flint allows extensions to mount React components directly into host layout regi
 
 ```typescript
 import React from 'react';
-import { PortalSlotLocation } from 'flint';
+import { PortalSlotLocation } from 'noether';
 
 this.registerPortalSlot({
   id: 'reading-time-pill',

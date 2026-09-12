@@ -10,7 +10,7 @@ The **Interactive Graph View** renders your entire vault as a dynamic, force-dir
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension showcases full-page custom views, 2D simulation engines, and filter search syntax.
 

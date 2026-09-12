@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module DocumentHeaderActionRegistry
  * @description
  * Inversion of Control (IoC) registry allowing extensions to register custom
@@ -9,14 +9,14 @@
  */
 
 import React from 'react';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type { DocumentItem, TabItem } from '@/types';
 import type { Disposable } from '../extensions/types';
 
 export interface DocumentHeaderActionContext {
   document: DocumentItem | null;
   activeTab: TabItem | null;
-  app: FlintApp;
+  app: NoetherApp;
 }
 
 export interface DocumentHeaderActionDefinition {

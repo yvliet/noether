@@ -10,7 +10,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { LeftToRightListBulletIcon } from '@/components/common/Icons';
 import { HeadingItem } from '@/types';
 import { getDocumentById } from '@/lib/db/documents';
@@ -75,7 +75,7 @@ export function buildHeadingOutlineTree(headings: HeadingItem[]): OutlineHeading
 }
 
 export class OutlineExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = OUTLINE_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = OUTLINE_MANIFEST) {
     super(app, manifest);
   }
 
@@ -128,7 +128,7 @@ export class OutlineExtension extends Extension {
             throw new Error("Parameter 'documentId' is required.");
           }
 
-          let doc = this.app.hearth.getDocumentById(documentId);
+          let doc = this.app.vault.getDocumentById(documentId);
           if (!doc || !doc.content_json) {
             const dbDoc = await getDocumentById(documentId);
             if (dbDoc) doc = dbDoc;

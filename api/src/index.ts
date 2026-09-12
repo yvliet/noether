@@ -1,7 +1,7 @@
 /**
  * @module RegistryServer
  * @description
- * Flint Community Plugin Registry API entry point.
+ * Noether Community Extension Registry API entry point.
  * Configured with permissive CORS for desktop and web applications,
  * real-time request logging, structured error handling, and libSQL initialization.
  */
@@ -39,10 +39,10 @@ app.use('*', async (c, next) => {
 // Root metadata endpoint
 app.get('/', (c) => {
   return c.json({
-    name: 'Flint Community Extension Registry API',
+    name: 'Noether Community Extension Registry API',
     version: '1.0.0',
-    description: 'Serverless REST API providing discovery, distribution, and publishing for Flint community extensions.',
-    documentation: 'https://flintnotes.dev/docs/extensions',
+    description: 'Serverless REST API providing discovery, distribution, and publishing for Noether community extensions.',
+    documentation: 'https://noethernotes.dev/docs/extensions',
     endpoints: {
       extensions: '/api/v1/extensions',
       extensionDetail: '/api/v1/extensions/:id',
@@ -104,14 +104,14 @@ if (isDirectRun || process.env.STANDALONE_SERVER === 'true') {
   const port = Number(process.env.PORT) || 3001;
   initDatabase()
     .then(() => {
-      console.log(`[Flint Registry] Server listening on http://localhost:${port}`);
+      console.log(`[Noether Registry] Server listening on http://localhost:${port}`);
       serve({
         fetch: app.fetch,
         port,
       });
     })
     .catch((err) => {
-      console.error('[Flint Registry] Failed to boot database:', err);
+      console.error('[Noether Registry] Failed to boot database:', err);
     });
 }
 

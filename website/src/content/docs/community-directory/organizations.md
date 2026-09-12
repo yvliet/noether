@@ -1,6 +1,6 @@
 # Organizations & Teams
 
-Open-source teams, research labs, and collective developer groups can publish and maintain Flint extensions collaboratively.
+Open-source teams, research labs, and collective developer groups can publish and maintain Noether extensions collaboratively.
 
 
 ## 1. Collaborative Ownership

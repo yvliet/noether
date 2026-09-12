@@ -1,7 +1,7 @@
 /**
  * @module SketchExtension
  * @description
- * Flint Sketch core extension.
+ * Noether Sketch core extension.
  * Provides freehand vector drawing and markup overlays directly over markdown notes.
  * Integrates via general-purpose subheader and content overlay portal slots,
  * event-driven cascade cleanup, and document export/import transform hooks.
@@ -14,7 +14,7 @@ import React from 'react';
 import { z } from 'zod';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { sketchReadme } from './readme';
 import { initSketchDb, loadSketchFromDb, saveSketchToDb, deleteSketchFromDb, SKETCH_TABLE_DEFINITION } from './sketchDb';
 import { serializeSketchToComment, parseSketchFromComment, exportStrokesToSvg } from './sketchEngine';
@@ -36,7 +36,7 @@ export const SKETCH_MANIFEST: ExtensionManifest = {
 };
 
 export class SketchExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = SKETCH_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = SKETCH_MANIFEST) {
     super(app, manifest);
   }
 
@@ -83,7 +83,7 @@ export class SketchExtension extends Extension {
 
     // 5. Register Document Transform Hook for Markdown HTML Comment Sync
     this.registerDocumentTransformHook({
-      id: 'flint-sketch-sync',
+      id: 'noether-sketch-sync',
       transformExport: async ({ documentId, markdown }) => {
         if (!documentId) return markdown;
         const sketch = await loadSketchFromDb(documentId);

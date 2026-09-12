@@ -1,6 +1,6 @@
 # TypeScript API: `Extension` Base Class
 
-The `Extension` base class (`src/sdk/Extension.ts`) is the primary entry point for all Flint plugins. It handles automatic lifecycle disposal, registry binding, and EventBus tracking.
+The `Extension` base class (`src/sdk/Extension.ts`) is the primary entry point for all Noether plugins. It handles automatic lifecycle disposal, registry binding, and EventBus tracking.
 
 
 ## 1. Class Overview
@@ -8,7 +8,7 @@ The `Extension` base class (`src/sdk/Extension.ts`) is the primary entry point f
 ---
 
 ```typescript
-import { Extension, FlintApp, CommandItem, StatusBarItem } from 'flint';
+import { Extension, NoetherApp, CommandItem, StatusBarItem } from 'noether';
 
 export default class MyExtension extends Extension {
   /**

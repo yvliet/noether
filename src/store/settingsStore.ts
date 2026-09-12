@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { themeRegistry, ThemeDefinition } from '@/core/themes';
 import { platform } from '@/lib/platform/platformAdapter';
-import { bindFlintStores } from '@/core/app/storeBridge';
+import { bindNoetherStores } from '@/core/app/storeBridge';
 
 export type ThemeMode = 'dark' | 'light' | 'system';
 export type ThemePalette = string;
@@ -148,7 +148,7 @@ export const DEFAULT_SETTINGS = {
   language: 'English',
 
   themeMode: 'dark' as ThemeMode,
-  accentColor: '#ea580c',
+  accentColor: '#eb584d',
   highlightColor: '#ffd54f',
   colorHistory: ['#ffd54f', '#86efac', '#67e8f9', '#93c5fd', '#d8b4fe', '#f472b6', '#fb923c', '#f87171'],
   activeTheme: 'default' as ThemePalette,
@@ -235,7 +235,7 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
   const baseThemeDef = themeRegistry.getTheme(rawThemeId);
 
   // 2. Determine Dark vs Light mode:
-  // If user selected an explicit light theme (e.g. 'flint-light'), prioritize light.
+  // If user selected an explicit light theme (e.g. 'noether-light'), prioritize light.
   // Otherwise, respect explicit themeMode ('light', 'dark', 'system').
   let isDark = baseThemeDef.type === 'dark';
   if (current.themeMode === 'light') {
@@ -249,7 +249,7 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
   // 3. Resolve effective Theme definition
   let themeDef = baseThemeDef;
   if (!isDark && baseThemeDef.type === 'dark') {
-    themeDef = themeRegistry.getTheme('flint-light');
+    themeDef = themeRegistry.getTheme('noether-light');
   } else if (isDark && baseThemeDef.type === 'light') {
     themeDef = themeRegistry.getTheme('default');
   }
@@ -279,7 +279,7 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
       }
     });
 
-    const effectiveAccent = current.accentColor || themeDef.variables.accent || '#ea580c';
+    const effectiveAccent = current.accentColor || themeDef.variables.accent || '#eb584d';
     platform.setAccentIcon(effectiveAccent);
 
     root.setAttribute('data-theme', themeDef.id);
@@ -294,11 +294,11 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
   // 5. Injected Custom Theme CSS
   if (appliedAppearanceCache.customCss !== (themeDef.customCss || '')) {
     appliedAppearanceCache.customCss = themeDef.customCss || '';
-    let customStyleEl = document.getElementById('flint-theme-custom-css') as HTMLStyleElement | null;
+    let customStyleEl = document.getElementById('noether-theme-custom-css') as HTMLStyleElement | null;
     if (themeDef.customCss) {
       if (!customStyleEl) {
         customStyleEl = document.createElement('style');
-        customStyleEl.id = 'flint-theme-custom-css';
+        customStyleEl.id = 'noether-theme-custom-css';
         document.head.appendChild(customStyleEl);
       }
       customStyleEl.textContent = themeDef.customCss;
@@ -369,10 +369,10 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     appliedAppearanceCache.colorLinksWithAccent = colorLinksWithAccent;
     if (colorLinksWithAccent) {
       root.removeAttribute('data-no-link-accent');
-      root.classList.remove('flint-no-link-accent');
+      root.classList.remove('noether-no-link-accent');
     } else {
       root.setAttribute('data-no-link-accent', 'true');
-      root.classList.add('flint-no-link-accent');
+      root.classList.add('noether-no-link-accent');
     }
   }
 
@@ -382,10 +382,10 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     appliedAppearanceCache.blueLinks = blueLinks;
     if (blueLinks) {
       root.setAttribute('data-blue-links', 'true');
-      root.classList.add('flint-blue-links');
+      root.classList.add('noether-blue-links');
     } else {
       root.removeAttribute('data-blue-links');
-      root.classList.remove('flint-blue-links');
+      root.classList.remove('noether-blue-links');
     }
   }
 
@@ -395,10 +395,10 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     appliedAppearanceCache.underlineLinks = underlineLinks;
     if (underlineLinks) {
       root.removeAttribute('data-no-link-underline');
-      root.classList.remove('flint-no-link-underline');
+      root.classList.remove('noether-no-link-underline');
     } else {
       root.setAttribute('data-no-link-underline', 'true');
-      root.classList.add('flint-no-link-underline');
+      root.classList.add('noether-no-link-underline');
     }
   }
 
@@ -408,10 +408,10 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     appliedAppearanceCache.matchLinkUnderlineColor = matchLinkUnderlineColor;
     if (matchLinkUnderlineColor) {
       root.setAttribute('data-color-link-underline', 'true');
-      root.classList.add('flint-color-link-underline');
+      root.classList.add('noether-color-link-underline');
     } else {
       root.removeAttribute('data-color-link-underline');
-      root.classList.remove('flint-color-link-underline');
+      root.classList.remove('noether-color-link-underline');
     }
   }
 }
@@ -456,10 +456,10 @@ export const useSettingsStore = create<SettingsState>()(
         let activeTheme = get().activeTheme;
         if (themeMode === 'light') {
           if (!activeTheme || activeTheme === 'default' || themeRegistry.getTheme(activeTheme).type === 'dark') {
-            activeTheme = 'flint-light';
+            activeTheme = 'noether-light';
           }
         } else if (themeMode === 'dark') {
-          if (activeTheme === 'flint-light' || themeRegistry.getTheme(activeTheme).type === 'light') {
+          if (activeTheme === 'noether-light' || themeRegistry.getTheme(activeTheme).type === 'light') {
             activeTheme = 'default';
           }
         }
@@ -511,7 +511,7 @@ export const useSettingsStore = create<SettingsState>()(
           try {
             // If disabled, remove saved tabs session for all vaults / default
             Object.keys(localStorage).forEach((key) => {
-              if (key.startsWith('flint_workspace_tabs_v1')) {
+              if (key.startsWith('noether_workspace_tabs_v1')) {
                 localStorage.removeItem(key);
               }
             });
@@ -570,13 +570,13 @@ export const useSettingsStore = create<SettingsState>()(
 
       setSkipDeleteConfirmation: (skipDeleteConfirmation) => {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('flint_skip_delete_confirmation', skipDeleteConfirmation ? 'true' : 'false');
+          localStorage.setItem('noether_skip_delete_confirmation', skipDeleteConfirmation ? 'true' : 'false');
         }
         set({ skipDeleteConfirmation });
       },
       setSkipRenameConfirmation: (skipRenameConfirmation) => {
         if (typeof window !== 'undefined') {
-          localStorage.setItem('flint_skip_rename_confirmation', skipRenameConfirmation ? 'true' : 'false');
+          localStorage.setItem('noether_skip_rename_confirmation', skipRenameConfirmation ? 'true' : 'false');
         }
         set({ skipRenameConfirmation });
       },
@@ -677,8 +677,8 @@ export const useSettingsStore = create<SettingsState>()(
           });
         } else if (tabId === 'files') {
           if (typeof window !== 'undefined') {
-            localStorage.setItem('flint_skip_delete_confirmation', 'false');
-            localStorage.setItem('flint_skip_rename_confirmation', 'false');
+            localStorage.setItem('noether_skip_delete_confirmation', 'false');
+            localStorage.setItem('noether_skip_rename_confirmation', 'false');
           }
           set({
             skipDeleteConfirmation: DEFAULT_SETTINGS.skipDeleteConfirmation,
@@ -695,7 +695,7 @@ export const useSettingsStore = create<SettingsState>()(
       },
     }),
     {
-      name: 'flint_app_settings_v1',
+      name: 'noether_app_settings_v1',
       onRehydrateStorage: () => (state) => {
         if (state) {
           if (!state.fontSize || state.fontSize === 12) {
@@ -705,8 +705,8 @@ export const useSettingsStore = create<SettingsState>()(
           const skipDel = state.skipDeleteConfirmation ?? false;
           const skipRen = state.skipRenameConfirmation ?? false;
           if (typeof window !== 'undefined') {
-            localStorage.setItem('flint_skip_delete_confirmation', skipDel ? 'true' : 'false');
-            localStorage.setItem('flint_skip_rename_confirmation', skipRen ? 'true' : 'false');
+            localStorage.setItem('noether_skip_delete_confirmation', skipDel ? 'true' : 'false');
+            localStorage.setItem('noether_skip_rename_confirmation', skipRen ? 'true' : 'false');
           }
         }
       },
@@ -717,7 +717,7 @@ export const useSettingsStore = create<SettingsState>()(
 // Cross-window storage synchronizer for multi-window electron setups
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
-    if (event.key === 'flint_app_settings_v1' && event.newValue) {
+    if (event.key === 'noether_app_settings_v1' && event.newValue) {
       try {
         const parsed = JSON.parse(event.newValue);
         if (parsed.state) {
@@ -730,8 +730,8 @@ if (typeof window !== 'undefined') {
             applyAppearanceDOM(parsed.state);
             const skipDel = parsed.state.skipDeleteConfirmation ?? false;
             const skipRen = parsed.state.skipRenameConfirmation ?? false;
-            localStorage.setItem('flint_skip_delete_confirmation', skipDel ? 'true' : 'false');
-            localStorage.setItem('flint_skip_rename_confirmation', skipRen ? 'true' : 'false');
+            localStorage.setItem('noether_skip_delete_confirmation', skipDel ? 'true' : 'false');
+            localStorage.setItem('noether_skip_rename_confirmation', skipRen ? 'true' : 'false');
           }
         }
       } catch (e) {
@@ -749,5 +749,5 @@ if (typeof window !== 'undefined') {
   });
 }
 
-bindFlintStores({ settings: useSettingsStore });
+bindNoetherStores({ settings: useSettingsStore });
 

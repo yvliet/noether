@@ -1,17 +1,17 @@
 # Publishing Extensions & Marketplace Registry
 
-Share your creations with the Flint community. This guide walks you through preparing, packaging, and publishing your extensions to the Turso-backed Community Marketplace registry.
+Share your creations with the Noether community. This guide walks you through preparing, packaging, and publishing your extensions to the Turso-backed Community Marketplace registry.
 
 
 ## 1. Turso libSQL Registry Architecture
 
 ---
 
-The Flint Community Registry is powered by a serverless Turso / libSQL edge database. When you publish an extension:
+The Noether Community Registry is powered by a serverless Turso / libSQL edge database. When you publish an extension:
 
 - **Edge Metadata & Release Indexing**: Author profiles, extension manifests, tags, and SemVer version histories are indexed across global edge replicas.
 - **Direct Bundle Distribution**: Your compiled JavaScript `main.js` and optional `styles.css` bundles are stored directly in the database or served via high-speed CDN URLs.
-- **Instant In-App Installation**: Flint users can browse, search, and install your extension with a single click in the Marketplace view without manually copying files or restarting the app.
+- **Instant In-App Installation**: Noether users can browse, search, and install your extension with a single click in the Marketplace view without manually copying files or restarting the app.
 
 
 ## 2. Release Preparation Checklist
@@ -28,10 +28,10 @@ Before publishing your extension, verify that your package satisfies the followi
   - `author`: Your name or organization.
   - `category`: One of `Productivity`, `Visualization`, `Integration`, `Formatting`.
   - `tags`: Relevant keywords (e.g. `["mindmap", "graph", "diagram"]`).
-  - `minAppVersion`: Minimum supported Flint version (defaults to `0.4.0`).
+  - `minAppVersion`: Minimum supported Noether version (defaults to `0.4.0`).
 - [ ] **Compiled `main.js`**:
   - Bundled as CommonJS (`cjs`) targeting modern browser/desktop environments (`es2022`).
-  - Core dependencies (`flint`, `@flint/api`, `@flint/sdk`, `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`) must be marked as **external** so duplicate runtimes are not bundled.
+  - Core dependencies (`noether`, `@noether/api`, `@noether/sdk`, `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`) must be marked as **external** so duplicate runtimes are not bundled.
 - [ ] **Optional `styles.css`**: Scoped styles prefixed with your extension identifier to avoid polluting host styling.
 - [ ] **`README.md`**: Clear documentation detailing features, keyboard shortcuts, and registered Model Context Protocol (MCP) tools.
 - [ ] **Native Desktop Feel**: Verified that custom settings, buttons, and menus open and respond immediately without slow cosmetic transitions.
@@ -41,7 +41,7 @@ Before publishing your extension, verify that your package satisfies the followi
 
 ---
 
-You can publish new extensions or version updates through the official Publish Extension REST API or using the Flint CLI tool.
+You can publish new extensions or version updates through the official Publish Extension REST API or using the Noether CLI tool.
 
 ### Publishing Endpoint
 
@@ -85,11 +85,11 @@ Content-Type: application/json
 By default, publishing an existing version returns a `409 Conflict` to protect against unintentional regressions. If you need to update an asset or hotfix an existing version during development, pass `"overwrite": true` in your payload.
 
 
-## 4. Publishing via the Flint CLI Tool
+## 4. Publishing via the Noether CLI Tool
 
 ---
 
-Flint provides a command-line tool that inspects your extension folder, reads `manifest.json`, extracts `dist/main.js` and `README.md`, calculates the SHA256 integrity hash, and dispatches the payload to the registry:
+Noether provides a command-line tool that inspects your extension folder, reads `manifest.json`, extracts `dist/main.js` and `README.md`, calculates the SHA256 integrity hash, and dispatches the payload to the registry:
 
 ```bash
 # Build the production bundle
@@ -116,7 +116,7 @@ npm run extensions:publish
 You can automate publishing whenever a new GitHub Release is created. Add the following workflow to `.github/workflows/publish.yml` in your extension repository:
 
 ```yaml
-name: Publish Extension to Flint Registry
+name: Publish Extension to Noether Registry
 
 on:
   release:
@@ -139,9 +139,9 @@ jobs:
           npm install
           npm run build
 
-      - name: Dispatch publication to Flint Registry
+      - name: Dispatch publication to Noether Registry
         run: |
-          curl -s -X POST https://api.flintnotes.dev/api/v1/extensions/publish \
+          curl -s -X POST https://api.noethernotes.dev/api/v1/extensions/publish \
             -H "Content-Type: application/json" \
             -d @- << EOF
           {
@@ -167,5 +167,5 @@ To test your extension locally before publishing:
    ```bash
    npm run build
    ```
-2. Copy your folder containing `manifest.json` and `dist/main.js` into `<your-hearth>/.flint/extensions/<your-extension-id>/`.
-3. Open Flint, navigate to **Settings → Community Extensions**, and toggle your extension on to verify UI elements, commands, and MCP tools in real time.
+2. Copy your folder containing `manifest.json` and `dist/main.js` into `<your-vault>/.noether/extensions/<your-extension-id>/`.
+3. Open Noether, navigate to **Settings → Community Extensions**, and toggle your extension on to verify UI elements, commands, and MCP tools in real time.

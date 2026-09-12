@@ -2,7 +2,7 @@
  * @module SyncTypes
  * @description
  * Shared type definitions, provider contracts, and configuration schemas
- * for the Flint Universal External Sync extension.
+ * for the Noether Universal External Sync extension.
  */
 
 export type SyncProviderType = 'supabase' | 'turso' | 'cloudflare_d1' | 'custom_rest';
@@ -99,18 +99,18 @@ export const DEFAULT_CONFIG: SyncConfig = {
   supabase: {
     projectUrl: '',
     anonKey: '',
-    tableName: 'flint_sync_documents',
+    tableName: 'noether_sync_documents',
   },
   turso: {
     databaseUrl: '',
     authToken: '',
-    tableName: 'flint_sync_documents',
+    tableName: 'noether_sync_documents',
   },
   cloudflareD1: {
     accountId: '',
     databaseId: '',
     apiToken: '',
-    tableName: 'flint_sync_documents',
+    tableName: 'noether_sync_documents',
   },
   customRest: {
     endpointUrl: '',

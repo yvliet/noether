@@ -10,7 +10,7 @@
  * @since 0.2.0
  */
 
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import type { ExtensionManifest } from '@/core/extensions/types';
 import {
   downloadExtensionBundle,
@@ -26,7 +26,7 @@ import {
  * 5. Loads and evaluates the bundle into the active runtime.
  */
 export async function installMarketplaceExtension(
-  app: FlintApp,
+  app: NoetherApp,
   ext: {
     id: string;
     name: string;

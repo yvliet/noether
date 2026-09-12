@@ -1,7 +1,7 @@
 /**
  * @module schema
  * @description
- * Canonical SQLite relational schema statements for Flint's core database engine.
+ * Canonical SQLite relational schema statements for Noether's core database engine.
  *
  * Design Decisions:
  * 1. Native Isolation: The core schema defines only universal knowledge objects:
@@ -98,13 +98,13 @@ export const FTS4_BLOCKS_STATEMENT = `CREATE VIRTUAL TABLE IF NOT EXISTS blocks_
   content_text
 );`;
 
-export const INITIAL_WELCOME_DOC_ID = 'welcome-to-flint';
+export const INITIAL_WELCOME_DOC_ID = 'welcome-to-noether';
 
 export const INITIAL_DOCUMENTS_SEED = [
   {
     id: INITIAL_WELCOME_DOC_ID,
     parent_id: null,
-    title: 'Welcome to Flint',
+    title: 'Welcome to Noether',
     is_daily_note: 0,
     is_folder: 0,
     is_bookmarked: 0,
@@ -116,7 +116,7 @@ export const INITIAL_DOCUMENTS_SEED = [
         {
           type: 'heading',
           attrs: { level: 1 },
-          content: [{ type: 'text', text: 'Welcome to Flint' }]
+          content: [{ type: 'text', text: 'Welcome to Noether' }]
         },
         {
           type: 'paragraph',
@@ -131,7 +131,7 @@ export const INITIAL_DOCUMENTS_SEED = [
         {
           type: 'paragraph',
           content: [
-            { type: 'text', text: 'Flint is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.' }
+            { type: 'text', text: 'Noether is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.' }
           ]
         },
         {
@@ -164,7 +164,7 @@ export const INITIAL_DOCUMENTS_SEED = [
         {
           type: 'paragraph',
           content: [
-            { type: 'text', text: "- **Link your ideas**: Type `[[` to create a bi-directional link to any other note. If the note doesn't exist yet, Flint creates it for you on the fly." }
+            { type: 'text', text: "- **Link your ideas**: Type `[[` to create a bi-directional link to any other note. If the note doesn't exist yet, Noether creates it for you on the fly." }
           ]
         },
         {
@@ -191,7 +191,7 @@ export const INITIAL_DOCUMENTS_SEED = [
         {
           type: 'paragraph',
           content: [
-            { type: 'text', text: 'There is no proprietary lock-in here. Your notes live in your Hearth folder as standard `.md` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.' }
+            { type: 'text', text: 'There is no proprietary lock-in here. Your notes live in your Vault folder as standard `.md` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.' }
           ]
         },
         {

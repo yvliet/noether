@@ -1,6 +1,6 @@
 export const bookmarksReadme = `# Bookmarks Extension
 
-Organize and quickly access your most important files, searches, and bookmarks in Flint.
+Organize and quickly access your most important files, searches, and bookmarks in Noether.
 
 ## Features
 - **Fast Navigation**: Bookmark essential notes for 1-click access in the left sidebar.

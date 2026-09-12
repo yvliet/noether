@@ -8,7 +8,7 @@ Every extension managing queryable state can expose native AI agent tools and pr
 ---
 
 ```typescript
-import { z } from 'flint';
+import { z } from 'noether';
 
 this.registerTool({
   name: 'calculate_reading_metrics',

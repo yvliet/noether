@@ -1,6 +1,6 @@
-# Flint Keyboard Shortcuts Reference
+# Noether Keyboard Shortcuts Reference
 
-A comprehensive, categorized reference for all keyboard shortcuts and commands in Flint.
+A comprehensive, categorized reference for all keyboard shortcuts and commands in Noether.
 
 ---
 
@@ -11,7 +11,7 @@ A comprehensive, categorized reference for all keyboard shortcuts and commands i
 | **Command Palette / Quick Open** | `Ctrl + K` or `Ctrl + O` | `Cmd + K` or `Cmd + O` |
 | **Open Help & Shortcuts Dialog** | `F1` | `F1` |
 | **Open Settings Window** | `Ctrl + ,` | `Cmd + ,` |
-| **Switch Active Hearth Workspace** | `Ctrl + Shift + O` | `Cmd + Shift + O` |
+| **Switch Active Vault Workspace** | `Ctrl + Shift + O` | `Cmd + Shift + O` |
 | **Vault-Wide Full-Text Search** | `Ctrl + Shift + F` | `Cmd + Shift + F` |
 
 ---

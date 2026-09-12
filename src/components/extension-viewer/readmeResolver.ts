@@ -1,7 +1,7 @@
 /**
  * @module readmeResolver
  * @description
- * Multi-tier documentation and README resolver for Flint extensions.
+ * Multi-tier documentation and README resolver for Noether extensions.
  *
  * Technical Rationale:
  * - Dynamically resolves raw markdown from live GitHub repositories (e.g. raw.githubusercontent.com)
@@ -26,7 +26,7 @@ export interface ExtensionResolvedMeta {
   isCore: boolean;
 }
 
-const DEFAULT_TURSO_URL = 'https://flint-ricriya.aws-ap-northeast-1.turso.io';
+const DEFAULT_TURSO_URL = 'https://noether-ricriya.aws-ap-northeast-1.turso.io';
 const DEFAULT_TURSO_AUTH_TOKEN =
   'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODg2MzIxNDUsImlkIjoiMDFhMDcyYzEtMmUxMC03MTViLTk1ZDEtNmYyNzc5YWNiYjI0Iiwia2lkIjoiZ19GZi1OeUdDTTJBelpadnhkYjdwek9YSXpNa0FGOHMwQ2RPMmtUQWRoMCIsInJpZCI6IjQ1MjJhZjNiLTdlOTEtNDJkYi05M2Y5LWVkNzRjY2RkYmJiMiJ9.HZ8mk6RKqstJB-66oCYu6XP5pGreS2tEfQ5xX0vjB0RYwDYVQ2aZe9cL_Zqx2qbD5SQop1wjWB5wAhx0FNJrDw';
 
@@ -139,8 +139,8 @@ export async function fetchTursoReadme(
     let token = DEFAULT_TURSO_AUTH_TOKEN;
 
     if (typeof window !== 'undefined') {
-      const customUrl = localStorage.getItem('flint_turso_db_url');
-      const customToken = localStorage.getItem('flint_turso_auth_token');
+      const customUrl = localStorage.getItem('noether_turso_db_url');
+      const customToken = localStorage.getItem('noether_turso_auth_token');
       if (customUrl) rawUrl = customUrl;
       if (customToken) token = customToken;
     }
@@ -205,7 +205,7 @@ export async function fetchTursoReadme(
 export function getCachedReadme(extensionId: string): string | null {
   if (typeof window === 'undefined') return null;
   try {
-    return localStorage.getItem(`flint_ext_readme_${extensionId}`);
+    return localStorage.getItem(`noether_ext_readme_${extensionId}`);
   } catch {
     return null;
   }
@@ -217,7 +217,7 @@ export function getCachedReadme(extensionId: string): string | null {
 export function setCachedReadme(extensionId: string, content: string): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(`flint_ext_readme_${extensionId}`, content);
+    localStorage.setItem(`noether_ext_readme_${extensionId}`, content);
   } catch {}
 }
 
@@ -255,14 +255,14 @@ export function resolveExtensionMetadata(
   // Check cached marketplace catalogue
   if (typeof window !== 'undefined') {
     try {
-      const rawCache = localStorage.getItem('flint_marketplace_catalogue_cache');
+      const rawCache = localStorage.getItem('noether_marketplace_catalogue_cache');
       if (rawCache) {
         const parsed = JSON.parse(rawCache);
         if (Array.isArray(parsed)) {
           const match = parsed.find(
             (p: any) =>
               p.id === targetExtensionId ||
-              p.id === targetExtensionId.replace(/^flint-/, '') ||
+              p.id === targetExtensionId.replace(/^noether-/, '') ||
               (p.name && p.name.toLowerCase() === targetExtensionId.toLowerCase())
           );
           if (match) {

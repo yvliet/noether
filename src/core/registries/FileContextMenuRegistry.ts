@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module FileContextMenuRegistry
  * @description
  * Inversion of Control (IoC) registry allowing extensions to register contextual
@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type { DocumentItem } from '@/types';
 import type { Disposable } from '../extensions/types';
 
@@ -16,7 +16,7 @@ export interface FileContextMenuContext {
   item: DocumentItem;
   selectedDocIds: string[];
   isMulti: boolean;
-  app: FlintApp;
+  app: NoetherApp;
 }
 
 export interface FileContextMenuActionDefinition {

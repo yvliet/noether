@@ -258,7 +258,7 @@
     <!-- Node: SQLite Database -->
     <g transform="translate(777, 295)">
       <rect class="node-box-accent-purple" x="0" y="0" width="230" height="60" />
-      <text class="node-title" x="115" y="26">flint.sqlite &amp; WAL</text>
+      <text class="node-title" x="115" y="26">noether.sqlite &amp; WAL</text>
       <text class="node-sub" x="115" y="44">Relational Graph &amp; FTS5 Index</text>
     </g>
 
@@ -293,7 +293,7 @@
     <text class="edge-label-text" x="34" y="9">Tauri IPC</text>
   </g>
 
-  <!-- 4. Track B: rusqlite WAL Commits to flint.sqlite -->
+  <!-- 4. Track B: rusqlite WAL Commits to noether.sqlite -->
   <path class="edge-path-purple" d="M 685, 428 C 735, 428 735, 325 769, 325" marker-end="url(#arrow-purple)" />
   <g transform="translate(688, 385)">
     <rect class="edge-label-bg" x="0" y="0" width="86" height="18" />

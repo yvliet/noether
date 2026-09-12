@@ -7,15 +7,15 @@ Tokens and asset guidelines for theme distribution, marketplace previews, banner
 
 ---
 
-When themes or extensions appear in the Flint Community Marketplace, cards format using these CSS tokens:
+When themes or extensions appear in the Noether Community Marketplace, cards format using these CSS tokens:
 
 | Token | Dark Default | Description |
 | :--- | :--- | :--- |
-| `--flint-market-card-bg` | `#1c1c1c` | Background of marketplace item card. |
-| `--flint-market-card-border` | `#2d2d2d` | Border around item card. |
-| `--flint-market-card-hover` | `#242424` | Hover background. |
-| `--flint-market-tag-bg` | `#292929` | Background of classification pill tags. |
-| `--flint-market-tag-text` | `#b8b8b8` | Tag text color. |
+| `--noether-market-card-bg` | `#1c1c1c` | Background of marketplace item card. |
+| `--noether-market-card-border` | `#2d2d2d` | Border around item card. |
+| `--noether-market-card-hover` | `#242424` | Hover background. |
+| `--noether-market-tag-bg` | `#292929` | Background of classification pill tags. |
+| `--noether-market-tag-text` | `#b8b8b8` | Tag text color. |
 
 
 ## 2. Banner Image Standards
@@ -33,7 +33,7 @@ Themes and extensions can bundle a `banner.png` image for marketplace display:
 
 ---
 
-Flint includes clean `@media print` rules:
+Noether includes clean `@media print` rules:
 
 ```css
 @media print {

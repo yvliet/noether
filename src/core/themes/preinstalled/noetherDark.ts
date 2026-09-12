@@ -1,15 +1,15 @@
 import { ThemeDefinition } from '../types';
 
-export const FLINT_DARK_THEME: ThemeDefinition = {
-  id: 'default',
-  name: 'Flint Dark',
-  description: 'The signature Flint dark experience with deep obsidian surfaces and warm amber accents.',
-  author: 'Flint Core',
+export const NOETHER_DARK_THEME: ThemeDefinition = {
+  id: 'noether-dark',
+  name: 'Noether Dark',
+  description: 'The signature Noether dark experience with deep obsidian surfaces and warm coral accents.',
+  author: 'Noether Core',
   type: 'dark',
   isCore: true,
   isBuiltIn: true,
   hasGradient: false,
-  previewColors: ['#0d0d0d', '#151515', '#1c1c1c', '#ea580c'],
+  previewColors: ['#0d0d0d', '#151515', '#1c1c1c', '#eb584d'],
   variables: {
     bgApp: '#141414',
     bgTopBar: '#0d0d0d',
@@ -36,11 +36,11 @@ export const FLINT_DARK_THEME: ThemeDefinition = {
     textSecondary: '#dcddde',
     textMuted: '#888888',
     textFaint: '#555555',
-    accent: '#ea580c',
-    accentHover: '#c2410c',
-    accentActive: '#9a3412',
-    accentSubtle: 'rgba(234, 88, 12, 0.15)',
-    accentGradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+    accent: '#eb584d',
+    accentHover: '#d94338',
+    accentActive: '#b83228',
+    accentSubtle: 'rgba(235, 88, 77, 0.15)',
+    accentGradient: 'linear-gradient(135deg, #eb584d 0%, #f07167 100%)',
     selectionBg: '#4a4e57',
     selectionText: '#ffffff',
     codeBg: '#242424',
@@ -50,3 +50,5 @@ export const FLINT_DARK_THEME: ThemeDefinition = {
     shadow3: '0 8px 32px 0 rgba(0, 0, 0, 0.6)',
   },
 };
+
+export const noetherDark = NOETHER_DARK_THEME;

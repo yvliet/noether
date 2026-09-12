@@ -5,7 +5,7 @@
  * and hotkeys for file creation, sidebar toggling, zoom controls, tab switching,
  * navigation history, undo/redo, and settings.
  *
- * Exclusively uses the native FlintApp API (app.workspace, app.vault, app.settings).
+ * Exclusively uses the native NoetherApp API (app.workspace, app.vault, app.settings).
  *
  * @since 0.1.0
  */
@@ -13,7 +13,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import {
   FileAddIcon,
   LayoutLeftIcon,
@@ -46,7 +46,7 @@ export const DEFAULT_COMMANDS_MANIFEST: ExtensionManifest = {
 };
 
 export class DefaultCommandsExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = DEFAULT_COMMANDS_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = DEFAULT_COMMANDS_MANIFEST) {
     super(app, manifest);
   }
 
@@ -60,7 +60,7 @@ export class DefaultCommandsExtension extends Extension {
       hotkey: 'Ctrl+N',
       action: async (app) => {
         app.workspace.setMainViewMode('document');
-        await app.hearth.createNewNote('Untitled');
+        await app.vault.createNewNote('Untitled');
       },
     });
 
@@ -288,7 +288,7 @@ export class DefaultCommandsExtension extends Extension {
     // 16. Register MCP Tools
     this.registerTool({
       name: 'create_note',
-      description: 'Create a new markdown note in the active Hearth.',
+      description: 'Create a new markdown note in the active Vault.',
       category: 'workspace',
       parameters: {
         type: 'object',
@@ -300,11 +300,11 @@ export class DefaultCommandsExtension extends Extension {
         },
         required: ['title'],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
           const title = (args.title as string) || 'Untitled';
           app.workspace.setMainViewMode('document');
-          const doc = await app.hearth.createNewNote(title);
+          const doc = await app.vault.createNewNote(title);
           return {
             content: [
               {
@@ -341,7 +341,7 @@ export class DefaultCommandsExtension extends Extension {
         },
         required: ['side'],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         const side = args.side === 'right' ? 'right' : 'left';
         if (side === 'right') {
           app.workspace.toggleRightSidebar();
@@ -363,7 +363,7 @@ export class DefaultCommandsExtension extends Extension {
         properties: {},
         required: [],
       },
-      handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         app.workspace.toggleSplitView();
         return {
           content: [{ type: 'text', text: JSON.stringify({ success: true, splitViewToggled: true }) }],

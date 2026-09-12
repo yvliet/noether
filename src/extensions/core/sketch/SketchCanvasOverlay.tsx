@@ -1,7 +1,7 @@
 /**
  * @module SketchCanvasOverlay
  * @description
- * High-performance vector drawing overlay component for Flint Sketch.
+ * High-performance vector drawing overlay component for Noether Sketch.
  * Renders smooth SVG vector paths directly over note content or screen viewport.
  * Supports drawing (pen, highlighter), erasure, and Photoshop-style selection & translation
  * with dashed outlines, marquee highlight selection, and 8-point transform handles.

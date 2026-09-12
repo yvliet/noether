@@ -133,21 +133,21 @@ function CustomSelectInner<T extends string | number>({
 
   return (
     <div className={`relative inline-block ${className}`}>
-      {/* Trigger Button (Flint Styled) */}
+      {/* Trigger Button (Noether Styled) */}
       <button
         ref={triggerRef}
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`group flint-btn flex items-center justify-center gap-2 cursor-pointer select-none outline-none focus-visible:border-[var(--flint-accent,#ea580c)] disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
+        className={`group noether-btn flex items-center justify-center gap-2 cursor-pointer select-none outline-none focus-visible:border-[var(--noether-accent,#eb584d)] disabled:opacity-50 disabled:cursor-not-allowed ${buttonClassName}`}
       >
-        <span className="truncate text-xs font-normal text-[var(--flint-text-secondary)] group-hover:text-[var(--flint-text-primary)]">
+        <span className="truncate text-xs font-normal text-[var(--noether-text-secondary)] group-hover:text-[var(--noether-text-primary)]">
           {selectedOption ? selectedOption.label : placeholder}
         </span>
-        <span className="shrink-0 flex items-center justify-center text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)]">
+        <span className="shrink-0 flex items-center justify-center text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)]">
           <ChevronsUpDownIcon
             size={12}
-            className={isOpen ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted)]'}
+            className={isOpen ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted)]'}
           />
         </span>
       </button>
@@ -166,9 +166,9 @@ function CustomSelectInner<T extends string | number>({
               minWidth: `${menuPosition.minWidth}px`,
               maxHeight: `${menuPosition.maxHeight}px`,
               zIndex: 99999,
-              boxShadow: 'var(--flint-shadow-2)',
+              boxShadow: 'var(--noether-shadow-2)',
             }}
-            className={`w-max max-w-[320px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 overflow-y-auto overflow-x-hidden select-none ${menuClassName}`}
+            className={`w-max max-w-[320px] bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 overflow-y-auto overflow-x-hidden select-none ${menuClassName}`}
           >
             {options.map((opt) => {
               const isSelected = opt.value === value;
@@ -182,18 +182,18 @@ function CustomSelectInner<T extends string | number>({
                   }}
                   className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[5px] flex items-center justify-between gap-3 cursor-pointer ${
                     isSelected
-                      ? 'bg-[var(--flint-bg-sidebar-active,var(--flint-bg-card-hover))] text-[var(--flint-text-primary)] font-medium'
-                      : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
+                      ? 'bg-[var(--noether-bg-sidebar-active,var(--noether-bg-card-hover))] text-[var(--noether-text-primary)] font-medium'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)]'
                   }`}
                 >
                   <div className="flex flex-col pr-2">
                     <span className="truncate">{opt.label}</span>
                     {opt.description && (
-                      <span className="text-[10px] text-[var(--flint-text-muted)] font-normal">{opt.description}</span>
+                      <span className="text-[10px] text-[var(--noether-text-muted)] font-normal">{opt.description}</span>
                     )}
                   </div>
                   {isSelected && (
-                    <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0" />
+                    <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0" />
                   )}
                 </button>
               );

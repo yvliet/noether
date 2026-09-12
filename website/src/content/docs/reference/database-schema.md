@@ -1,18 +1,18 @@
 # Database Schema Reference
 
-Flint implements a high-performance, embedded SQLite relational engine (`.flint/flint.sqlite`) that serves as a real-time query accelerator alongside your disk Markdown files. This document details the canonical database schema, indexes, virtual full-text search tables, and conventions for extension-defined tables.
+Noether implements a high-performance, embedded SQLite relational engine (`.noether/noether.sqlite`) that serves as a real-time query accelerator alongside your disk Markdown files. This document details the canonical database schema, indexes, virtual full-text search tables, and conventions for extension-defined tables.
 
 
 ## 1. Architectural Role of SQLite
 
 ---
 
-In Flint's [[Dual-Storage Architecture]], the physical CommonMark files on your storage drive are the primary source of truth. The SQLite database is an embedded metadata cache:
+In Noether's [[Dual-Storage Architecture]], the physical CommonMark files on your storage drive are the primary source of truth. The SQLite database is an embedded metadata cache:
 
 - **Sub-Millisecond Graph Traversal**: Bidirectional Wikilink resolution across thousands of notes executes in less than 2ms.
 - **Hierarchical Taxonomies**: Tags and folder trees are indexed for instant search and filtering.
 - **FTS5 Full-Text Search**: Note bodies are tokenized into an SQLite FTS5 virtual table for instant BM25-ranked searches without scanning files.
-- **Disposability**: If the database file is ever deleted, Flint scans the Hearth's markdown files and reconstructs the entire database automatically.
+- **Disposability**: If the database file is ever deleted, Noether scans the Vault's markdown files and reconstructs the entire database automatically.
 
 
 ## 2. Core Relational Tables
@@ -21,7 +21,7 @@ In Flint's [[Dual-Storage Architecture]], the physical CommonMark files on your 
 
 ### The `documents` Table
 
-Stores metadata, frontmatter properties, and tree hierarchy for all files and folders in the Hearth.
+Stores metadata, frontmatter properties, and tree hierarchy for all files and folders in the Vault.
 
 ```sql
 CREATE TABLE IF NOT EXISTS documents (
@@ -136,7 +136,7 @@ CREATE INDEX IF NOT EXISTS idx_trash_deleted_at ON trash_items(deleted_at);
 
 ---
 
-Flint indexes block content into an SQLite FTS5 table with Unicode diacritic removal for typo-tolerant, instant search:
+Noether indexes block content into an SQLite FTS5 table with Unicode diacritic removal for typo-tolerant, instant search:
 
 ```sql
 CREATE VIRTUAL TABLE IF NOT EXISTS blocks_fts USING fts5(
@@ -170,7 +170,7 @@ LIMIT 20;
 In accordance with [[Micro-Kernel & Extension Architecture]], extensions must never alter core tables. Instead, extensions register their own dynamic schemas upon `onload()`:
 
 ```typescript
-import { Extension } from 'flint';
+import { Extension } from 'noether';
 
 export default class FlashcardsExtension extends Extension {
   async onload() {

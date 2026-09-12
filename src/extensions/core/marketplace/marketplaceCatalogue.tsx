@@ -33,12 +33,12 @@ export interface MarketplaceExtensionItem {
  */
 export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
   {
-    id: 'flint-cascade',
+    id: 'noether-cascade',
     name: 'Cascade',
     version: '1.0.1',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-cascade',
+    repoUrl: 'https://github.com/yvliet/noether-cascade',
     description:
       'Organize notes into sequential cascades (books) with status-bar linking, graph backlinks, and custom sidebar folders.',
     downloads: '128',
@@ -48,12 +48,12 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     featured: true,
   },
   {
-    id: 'flint-copilot',
+    id: 'noether-copilot',
     name: 'Copilot',
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-copilot',
+    repoUrl: 'https://github.com/yvliet/noether-copilot',
     description:
       'Native AI assistant with local LLM integration, multimodal reasoning, automated summarization, and context-aware chat.',
     downloads: '128',
@@ -68,7 +68,7 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-quicknote',
+    repoUrl: 'https://github.com/yvliet/noether-quicknote',
     description:
       'Instant floating scratchpad for capturing thoughts, web snippets, and ideas without leaving your current note.',
     downloads: '128',
@@ -83,9 +83,9 @@ export const COMMUNITY_MARKETPLACE_CATALOGUE: MarketplaceExtensionItem[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-fsrs',
+    repoUrl: 'https://github.com/yvliet/noether-fsrs',
     description:
-      'State-of-the-art Free Spaced Repetition Scheduler (FSRS) flashcard review system built right inside Flint.',
+      'State-of-the-art Free Spaced Repetition Scheduler (FSRS) flashcard review system built right inside Noether.',
     downloads: '128',
     stars: 5,
     category: 'Productivity',

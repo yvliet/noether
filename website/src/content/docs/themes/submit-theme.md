@@ -1,6 +1,6 @@
 # Submitting Themes
 
-Ready to share your custom theme with the Flint developer community? This guide outlines packaging requirements, preview standards, and sharing workflows.
+Ready to share your custom theme with the Noether developer community? This guide outlines packaging requirements, preview standards, and sharing workflows.
 
 
 ## 1. Theme Submission Checklist
@@ -36,17 +36,17 @@ solar-ember-theme/
 
 ---
 
-Flint is currently developing an automated community directory. In the current release, users install themes manually by cloning or copying the theme folder into their local workspace:
+Noether is currently developing an automated community directory. In the current release, users install themes manually by cloning or copying the theme folder into their local workspace:
 
 ```bash
-# Clone directly into the Hearth's themes folder
+# Clone directly into the Vault's themes folder
 
 ---
-cd /path/to/my-hearth/.flint/themes/
+cd /path/to/my-vault/.noether/themes/
 git clone https://github.com/yvliet/solar-ember-theme.git solar-ember
 ```
 
-Once placed in `.flint/themes/`, the theme appears immediately under **Settings > Appearance** without requiring an application restart.
+Once placed in `.noether/themes/`, the theme appears immediately under **Settings > Appearance** without requiring an application restart.
 
 
 ## 4. Community Showcase on GitHub
@@ -56,7 +56,7 @@ Once placed in `.flint/themes/`, the theme appears immediately under **Settings 
 While the centralized marketplace registry is in development:
 
 1. Push your theme repository to GitHub.
-2. Tag your repository with the topics `flint-theme` and `flint-notes`.
-3. Share your theme in the [Flint GitHub Discussions Showcase](https://github.com/yvliet/Flint/discussions) with a screenshot and installation steps.
+2. Tag your repository with the topics `noether-theme` and `noether-notes`.
+3. Share your theme in the [Noether GitHub Discussions Showcase](https://github.com/yvliet/Noether/discussions) with a screenshot and installation steps.
 
 To learn more about developer standards, read [[Developer Policies & Guidelines]].

@@ -2,17 +2,17 @@
  * @module ExtensionUpdateManager
  * @description
  * Coordinates checking, downloading, persisting, and hot-reloading
- * updates for community extensions in Flint.
+ * updates for community extensions in Noether.
  *
  * Implements a resilient 5-tier distribution retrieval pipeline:
  * 1. Primary and custom registry endpoints (/api/v1/extensions/:id/download)
  * 2. Turso libSQL Hrana edge database
  * 3. GitHub Releases (latest and version-tagged assets)
  * 4. Raw GitHub CDN distribution bundles
- * 5. Local Hearth / filesystem discovery
+ * 5. Local Vault / filesystem discovery
  */
 
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type { ExtensionManifest } from './types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { fetchTursoPluginBundle, getRegistryUrl } from '@/lib/registry/tursoRegistryClient';
@@ -136,8 +136,8 @@ function resolveGitHubRepo(target: ExtensionDownloadTarget): { owner: string; re
   const known = KNOWN_COMMUNITY_EXTENSIONS.find(
     (e) =>
       e.id === cleanId ||
-      e.id === `flint-${cleanId}` ||
-      e.id.replace(/^flint-/, '') === cleanId
+      e.id === `noether-${cleanId}` ||
+      e.id.replace(/^noether-/, '') === cleanId
   );
   if (known?.repoUrl) {
     const match = known.repoUrl.match(/github\.com\/([^/]+)\/([^/?#]+)/i);
@@ -171,7 +171,7 @@ export async function downloadExtensionBundle(
     target.downloadUrl,
     `${registryBase}/api/v1/extensions/${target.id}/download`,
     `${registryBase}/api/v1/plugins/${target.id}/download`,
-    `https://api.flintnotes.dev/api/v1/extensions/${target.id}/download`,
+    `https://api.noethernotes.dev/api/v1/extensions/${target.id}/download`,
   ]
     .filter(Boolean)
     .filter((url, idx, arr) => arr.indexOf(url) === idx) as string[];
@@ -231,10 +231,10 @@ export async function downloadExtensionBundle(
   if (ghRepo) {
     const { owner, repo } = ghRepo;
 
-    // Generate possible repository names (with and without 'flint-' prefix)
+    // Generate possible repository names (with and without 'noether-' prefix)
     const repoCandidates = [
       repo,
-      repo.startsWith('flint-') ? repo.replace(/^flint-/, '') : `flint-${repo}`,
+      repo.startsWith('noether-') ? repo.replace(/^noether-/, '') : `noether-${repo}`,
     ];
 
     for (const candidateRepo of repoCandidates) {
@@ -299,7 +299,7 @@ export async function downloadExtensionBundle(
     const { owner, repo } = ghRepo;
     const repoCandidates = [
       repo,
-      repo.startsWith('flint-') ? repo.replace(/^flint-/, '') : `flint-${repo}`,
+      repo.startsWith('noether-') ? repo.replace(/^noether-/, '') : `noether-${repo}`,
     ];
 
     for (const candidateRepo of repoCandidates) {
@@ -358,7 +358,7 @@ export async function downloadExtensionBundle(
   }
 
   // -------------------------------------------------------------
-  // Tier 5: Local Hearth / Filesystem Cache
+  // Tier 5: Local Vault / Filesystem Cache
   // -------------------------------------------------------------
   if (platform.isDesktop()) {
     try {
@@ -389,14 +389,14 @@ export async function downloadExtensionBundle(
  * Manages the lifecycle of community extension updates.
  */
 export class ExtensionUpdateManager {
-  private app: FlintApp;
+  private app: NoetherApp;
   private updatesAvailable: Map<string, ExtensionUpdateInfo> = new Map();
   private isChecking = false;
   private updatingExtensions: Set<string> = new Set();
   private listeners: Set<() => void> = new Set();
   private autoCheckTimer: any = null;
 
-  constructor(app: FlintApp) {
+  constructor(app: NoetherApp) {
     this.app = app;
   }
 
@@ -447,7 +447,7 @@ export class ExtensionUpdateManager {
 
       if (targetExtensionId) {
         installedCommunity = installedCommunity.filter(
-          (e) => e.id === targetExtensionId || e.id === targetExtensionId.replace(/^flint-/, '')
+          (e) => e.id === targetExtensionId || e.id === targetExtensionId.replace(/^noether-/, '')
         );
       }
 
@@ -458,7 +458,7 @@ export class ExtensionUpdateManager {
       const catalogueMap = new Map<string, KnownExtensionMetadata>();
       for (const item of KNOWN_COMMUNITY_EXTENSIONS) {
         catalogueMap.set(item.id, item);
-        catalogueMap.set(item.id.replace(/^flint-/, ''), item);
+        catalogueMap.set(item.id.replace(/^noether-/, ''), item);
       }
 
       const discoveredUpdates: ExtensionUpdateInfo[] = [];
@@ -530,7 +530,7 @@ export class ExtensionUpdateManager {
   }
 
   /**
-   * Downloads the latest distribution bundle, updates physical files in the Hearth,
+   * Downloads the latest distribution bundle, updates physical files in the Vault,
    * and hot-reloads the extension in memory.
    */
   public async updateExtension(extensionId: string): Promise<boolean> {

@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  useFlintApp,
+  useNoetherApp,
   useActiveDocument,
-  useHearthDocuments,
+  useVaultDocuments,
   useDocumentProperties,
-} from 'flint';
+} from 'noether';
 import { usePropertiesSettings } from './propertiesSettings';
 import { DocumentProperties } from '@/types';
 import {
@@ -26,12 +26,12 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
   mode = 'Visible',
   isFolded = false,
 }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const documentProperties = useDocumentProperties(documentId);
   const activeDocument = useActiveDocument();
-  const documents = useHearthDocuments();
+  const documents = useVaultDocuments();
   const updateProperties = useCallback((docId: string, props: Record<string, any>) => {
-    return app.hearth.setDocumentProperties(docId, props);
+    return app.vault.setDocumentProperties(docId, props);
   }, [app]);
 
   const { propertyIcons, setPropertyIcon, removePropertyIcon, defaultPropertyType, showInDocument } = usePropertiesSettings();
@@ -185,7 +185,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
     });
   }, [currentDoc?.updated_at]);
 
-  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || app.hearth.isDocumentLocked(documentId);
+  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || app.vault.isDocumentLocked(documentId);
 
   const handleToggleLock = useCallback(async (_key: string, val: any) => {
     const lockKey = currentProps.Locked !== undefined ? 'Locked' : 'locked';
@@ -223,6 +223,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         {/* 1. Created Date (Human-readable, read-only) */}
         {createdDateStr && (
           <PropertyRow
+            key="system-created"
             propertyKey="Created"
             value={createdDateStr}
             isReadOnlyKey
@@ -240,6 +241,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         {/* 2. Modified Date (Human-readable, updated on save) */}
         {modifiedDateStr && (
           <PropertyRow
+            key="system-modified"
             propertyKey="Modified"
             value={modifiedDateStr}
             isReadOnlyKey
@@ -256,6 +258,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
         {/* 3. Read Only / Lock (Clickable yes/no toggle) */}
         <PropertyRow
+          key="system-locked"
           propertyKey="Locked"
           value={isLocked ? 'Yes' : 'No'}
           isReadOnlyKey
@@ -269,29 +272,29 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         />
 
         {/* 4. Tags Row */}
-        <div className="flex items-center gap-2 flex-wrap min-h-[28px]">
+        <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px]">
           <div className="relative flex items-center shrink-0 w-24">
             <span
               title={getPropertyIconName('Tags', propertyIcons)}
-              className="p-1 -ml-1 text-[var(--flint-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
+              className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
             >
-              {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)]' })}
+              {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)]' })}
             </span>
 
             <span
               title={`Note Tags\nCategorize and filter notes with tags`}
-              className="text-[11px] font-medium text-[var(--flint-text-muted)] cursor-default"
+              className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
             >
               Tags
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 flex-wrap flex-1">
-            {tags.map((tag) => (
+            {tags.map((tag, idx) => (
               <span
-                key={tag}
+                key={`${tag}-${idx}`}
                 title={`Tag: #${tag}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--flint-bg-card)] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-secondary)] hover:text-[var(--flint-text-primary)] border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] shadow-xs transition-all font-medium text-xs"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs transition-all font-medium text-xs"
               >
                 #{tag}
                 {!isLocked && (
@@ -299,7 +302,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
                     title={`Remove #${tag}\nDelete this tag`}
-                    className="text-[var(--flint-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
                   >
                     <Cancel01Icon size={10} />
                   </button>
@@ -309,7 +312,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
             {!isLocked && (
               isAddingTag ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--flint-bg-card)] text-[var(--flint-text-primary)] border border-[var(--flint-border-base)] shadow-xs font-medium text-xs">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
                   <span className="inline-flex items-center">
                     <span>#</span>
                     <input
@@ -341,7 +344,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                         }
                       }}
                       placeholder=""
-                      className="bg-transparent border-none outline-none text-[var(--flint-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                      className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
                     />
                   </span>
                   <button
@@ -352,7 +355,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                       setIsAddingTag(false);
                     }}
                     title={`Cancel\nDiscard tag input`}
-                    className="text-[var(--flint-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
                   >
                     <Cancel01Icon size={10} />
                   </button>
@@ -362,7 +365,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                   type="button"
                   onClick={() => setIsAddingTag(true)}
                   title={`Add Tag\nAttach a new tag to this note`}
-                  className="text-[11px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer"
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer"
                 >
                   + Add tag
                 </button>
@@ -394,12 +397,12 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
         {/* Seamless Add Property Button */}
         {!isLocked && (
-          <div className="pt-0.5">
+          <div key="system-add-property" className="pt-0.5">
             <button
               type="button"
               onClick={handleAddDirectProperty}
               title={`Add Property\nCreate a new metadata field for this note`}
-              className="text-[11px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] flex items-center gap-1 cursor-pointer transition-colors py-0.5 px-1 rounded hover:bg-[var(--flint-bg-card-hover)]"
+              className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer transition-colors py-0.5 px-1 rounded hover:bg-[var(--noether-bg-card-hover)]"
             >
               <PlusSignIcon size={11} /> Add property
             </button>
@@ -408,7 +411,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
       </div>
 
       {/* Header Bottom Divider */}
-      <div className="border-b border-[var(--flint-border-subtle)] mt-3" />
+      <div className="border-b border-[var(--noether-border-subtle)] mt-3" />
     </div>
   );
 };

@@ -50,12 +50,12 @@ export interface TursoBundlePayload {
   version: string | null;
 }
 
-export const PRIMARY_REGISTRY_URL = 'https://api.flintnotes.com/api/v1/plugins';
+export const PRIMARY_REGISTRY_URL = 'https://api.noethernotes.dev/api/v1/plugins';
 export const LOCALHOST_DEV_URL = 'http://localhost:3001/api/v1/plugins';
-export const STORAGE_CACHE_KEY = 'flint_marketplace_catalogue_cache';
-export const STORAGE_CACHE_TIME_KEY = 'flint_marketplace_catalogue_cache_time';
+export const STORAGE_CACHE_KEY = 'noether_marketplace_catalogue_cache';
+export const STORAGE_CACHE_TIME_KEY = 'noether_marketplace_catalogue_cache_time';
 
-const DEFAULT_TURSO_URL = 'https://flint-ricriya.aws-ap-northeast-1.turso.io';
+const DEFAULT_TURSO_URL = 'https://noether-ricriya.aws-ap-northeast-1.turso.io';
 const DEFAULT_TURSO_AUTH_TOKEN =
   'eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJhIjoicnciLCJpYXQiOjE3ODg2MzIxNDUsImlkIjoiMDFhMDcyYzEtMmUxMC03MTViLTk1ZDEtNmYyNzc5YWNiYjI0Iiwia2lkIjoiZ19GZi1OeUdDTTJBelpadnhkYjdwek9YSXpNa0FGOHMwQ2RPMmtUQWRoMCIsInJpZCI6IjQ1MjJhZjNiLTdlOTEtNDJkYi05M2Y5LWVkNzRjY2RkYmJiMiJ9.HZ8mk6RKqstJB-66oCYu6XP5pGreS2tEfQ5xX0vjB0RYwDYVQ2aZe9cL_Zqx2qbD5SQop1wjWB5wAhx0FNJrDw';
 
@@ -64,7 +64,7 @@ const DEFAULT_TURSO_AUTH_TOKEN =
  */
 export function getRegistryUrl(): string {
   try {
-    const custom = localStorage.getItem('flint_custom_plugin_registry');
+    const custom = localStorage.getItem('noether_custom_plugin_registry');
     if (custom && custom.trim()) {
       return custom.trim();
     }
@@ -83,8 +83,8 @@ export function getTursoConfig(): TursoConfig {
 
   if (typeof window !== 'undefined') {
     try {
-      rawUrl = localStorage.getItem('flint_turso_db_url');
-      token = localStorage.getItem('flint_turso_auth_token');
+      rawUrl = localStorage.getItem('noether_turso_db_url');
+      token = localStorage.getItem('noether_turso_auth_token');
     } catch {
       // LocalStorage access restricted
     }

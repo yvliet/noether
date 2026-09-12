@@ -1,7 +1,7 @@
 /**
  * @module SyncCoreExtension
  * @description
- * Entry point and exports for Flint Sync core extension.
+ * Entry point and exports for Noether Sync core extension.
  */
 
 export {

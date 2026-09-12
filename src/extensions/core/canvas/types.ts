@@ -2,7 +2,7 @@
  * @module CanvasPluginTypes
  * @description
  * Domain models and data structures for the Infinite Canvas extension.
- * Kept strictly within the Canvas plugin directory to prevent type leakage into Flint native core.
+ * Kept strictly within the Canvas plugin directory to prevent type leakage into Noether native core.
  */
 
 export interface CanvasNode {

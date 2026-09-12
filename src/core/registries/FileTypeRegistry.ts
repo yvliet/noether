@@ -1,7 +1,7 @@
 /**
  * @module FileTypeRegistry
  * @description
- * Registry for custom file types and extensions supported in Flint.
+ * Registry for custom file types and extensions supported in Noether.
  * Extensions register custom file types (e.g., .canvas, .excalidraw, .sheet) during onload(),
  * enabling native core features (file tree badges, vault disk scanning, tab view routing,
  * and document stores) to operate purely via Inversion of Control without hardcoded extension rules.

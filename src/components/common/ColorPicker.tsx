@@ -305,8 +305,8 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
 
   return (
     <div
-      data-flint-colorpicker="true"
-      className={`w-[220px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden select-none ${className}`}
+      data-noether-colorpicker="true"
+      className={`w-[220px] bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg shadow-[var(--noether-shadow-2)] overflow-hidden select-none ${className}`}
       onClick={(e) => e.stopPropagation()}
     >
       {/* 1. Saturation / Value 2D Box */}
@@ -495,7 +495,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
 });
 
 export interface ColorPickerProps {
-  value: string; // HEX color string, e.g. '#ea580c'
+  value: string; // HEX color string, e.g. '#eb584d'
   onChange: (color: string) => void;
   className?: string;
   triggerClassName?: string;
@@ -619,7 +619,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = React.memo(({
         createPortal(
           <div
             ref={popoverRef}
-            data-flint-colorpicker="true"
+            data-noether-colorpicker="true"
             style={{
               position: 'fixed',
               top: popoverPosition.top !== undefined ? `${popoverPosition.top}px` : undefined,

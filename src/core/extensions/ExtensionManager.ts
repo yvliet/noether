@@ -1,11 +1,11 @@
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import { Extension } from './Extension';
 import { ExtensionManifest, ViewDefinition } from './types';
 import { ExternalExtensionLoader } from './ExternalExtensionLoader';
 import { ExtensionUpdateManager } from './ExtensionUpdateManager';
 import { platform } from '@/lib/platform/platformAdapter';
 
-export type ExtensionConstructor = new (app: FlintApp, manifest: ExtensionManifest) => Extension;
+export type ExtensionConstructor = new (app: NoetherApp, manifest: ExtensionManifest) => Extension;
 export type PluginConstructor = ExtensionConstructor;
 
 export interface ExtensionConfig {
@@ -22,7 +22,7 @@ export interface ExtensionListSnapshot {
 export type PluginListSnapshot = ExtensionListSnapshot;
 
 export class ExtensionManager {
-  private app: FlintApp;
+  private app: NoetherApp;
   private instances: Map<string, Extension> = new Map();
   private manifests: Map<string, ExtensionManifest> = new Map();
   private constructors: Map<string, ExtensionConstructor> = new Map();
@@ -45,7 +45,7 @@ export class ExtensionManager {
 
   private cachedSnapshot: ExtensionListSnapshot = { core: [], community: [], all: [] };
 
-  constructor(app: FlintApp) {
+  constructor(app: NoetherApp) {
     this.app = app;
     this.externalLoader = new ExternalExtensionLoader(app);
     this.updateManager = new ExtensionUpdateManager(app);
@@ -107,7 +107,7 @@ export class ExtensionManager {
     // 4. Listen for changes from other windows (e.g., Settings window)
     if (typeof window !== 'undefined') {
       window.addEventListener('storage', (e) => {
-        if (e.key === 'flint_plugins_config' || e.key === 'flint_extensions_config') {
+        if (e.key === 'noether_extensions_config') {
           this.syncFromStorage();
         }
       });
@@ -341,7 +341,7 @@ export class ExtensionManager {
    * Hot-reloads an individual extension from disk or registered constructor:
    * 1. Unloads the running instance if active.
    * 2. Cleans up injected styles and cached constructor.
-   * 3. Re-discovers bundle files from Hearth `.flint/extensions/<id>/` on desktop.
+   * 3. Re-discovers bundle files from Vault `.noether/extensions/<id>/` on desktop.
    * 4. Re-enables the extension if it was previously enabled.
    */
   public async reloadExtension(extensionId: string): Promise<boolean> {
@@ -361,10 +361,10 @@ export class ExtensionManager {
 
       this.constructors.delete(targetId);
       this.constructors.delete(extensionId);
-      if (targetId.startsWith('flint-')) {
+      if (targetId.startsWith('noether-')) {
         this.constructors.delete(targetId.slice(6));
       } else {
-        this.constructors.delete(`flint-${targetId}`);
+        this.constructors.delete(`noether-${targetId}`);
       }
 
       let loaded = false;
@@ -458,10 +458,10 @@ export class ExtensionManager {
       this.constructors.delete(extensionId);
 
       if (typeof localStorage !== 'undefined') {
-        localStorage.removeItem(`flint_extension_data_${targetId}`);
-        localStorage.removeItem(`flint_plugin_data_${targetId}`);
-        localStorage.removeItem(`flint_extension_data_${extensionId}`);
-        localStorage.removeItem(`flint_plugin_data_${extensionId}`);
+        localStorage.removeItem(`noether_extension_data_${targetId}`);
+        localStorage.removeItem(`noether_extension_data_${targetId}`);
+        localStorage.removeItem(`noether_extension_data_${extensionId}`);
+        localStorage.removeItem(`noether_extension_data_${extensionId}`);
 
         const cleanLocalStorageArray = (key: string) => {
           try {
@@ -475,8 +475,8 @@ export class ExtensionManager {
             }
           } catch {}
         };
-        cleanLocalStorageArray('flint_installed_community_extensions');
-        cleanLocalStorageArray('flint_installed_community_plugins');
+        cleanLocalStorageArray('noether_installed_community_extensions');
+        cleanLocalStorageArray('noether_installed_community_plugins');
       }
 
       this.saveConfig();
@@ -504,16 +504,16 @@ export class ExtensionManager {
     }
     const targetId = manifest.id;
     const aliases = new Set<string>([targetId, extensionId]);
-    if (targetId.startsWith('flint-')) {
+    if (targetId.startsWith('noether-')) {
       aliases.add(targetId.slice(6));
     } else {
-      aliases.add(`flint-${targetId}`);
+      aliases.add(`noether-${targetId}`);
     }
     if (extensionId) {
-      if (extensionId.startsWith('flint-')) {
+      if (extensionId.startsWith('noether-')) {
         aliases.add(extensionId.slice(6));
       } else {
-        aliases.add(`flint-${extensionId}`);
+        aliases.add(`noether-${extensionId}`);
       }
     }
 
@@ -591,11 +591,11 @@ export class ExtensionManager {
   public getExtensionManifest(id: string): ExtensionManifest | undefined {
     if (!id) return undefined;
     if (this.manifests.has(id)) return this.manifests.get(id);
-    if (id.startsWith('flint-') && this.manifests.has(id.slice(6))) {
+    if (id.startsWith('noether-') && this.manifests.has(id.slice(6))) {
       return this.manifests.get(id.slice(6));
     }
-    if (!id.startsWith('flint-') && this.manifests.has(`flint-${id}`)) {
-      return this.manifests.get(`flint-${id}`);
+    if (!id.startsWith('noether-') && this.manifests.has(`noether-${id}`)) {
+      return this.manifests.get(`noether-${id}`);
     }
     const lower = id.toLowerCase();
     for (const [mId, manifest] of this.manifests.entries()) {
@@ -711,20 +711,15 @@ export class ExtensionManager {
   // Configuration persistence
   private loadConfig(): void {
     try {
-      const raw = localStorage.getItem('flint_extensions_config') || localStorage.getItem('flint_plugins_config');
+      const raw = localStorage.getItem('noether_extensions_config');
       if (raw) {
         const config = JSON.parse(raw);
         const disabledCore =
           config.disabledCoreExtensions ||
-          config.disabledCorePlugins ||
-          config.disabledCorePluginIds ||
           [];
         this.disabledCoreExtensionIds = new Set(Array.isArray(disabledCore) ? disabledCore : []);
-        const enabled = config.enabledExtensions || config.enabledPlugins;
+        const enabled = config.enabledExtensions;
         this.enabledExtensionIds = new Set(Array.isArray(enabled) ? enabled : []);
-        if (this.enabledExtensionIds.has('flint-folder-icons')) {
-          this.enabledExtensionIds.delete('flint-folder-icons');
-        }
       } else {
         this.enabledExtensionIds = new Set();
       }
@@ -740,12 +735,8 @@ export class ExtensionManager {
       const config = {
         enabledExtensions: enabledList,
         disabledCoreExtensions: disabledList,
-        enabledPlugins: enabledList,
-        disabledCorePlugins: disabledList,
-        disabledCorePluginIds: disabledList,
       };
-      localStorage.setItem('flint_extensions_config', JSON.stringify(config));
-      localStorage.setItem('flint_plugins_config', JSON.stringify(config));
+      localStorage.setItem('noether_extensions_config', JSON.stringify(config));
     } catch (e) {
       console.warn('[ExtensionManager] Error saving extension config:', e);
     }
@@ -754,7 +745,7 @@ export class ExtensionManager {
   // Extension data storage
   public async loadExtensionData(extensionId: string): Promise<any> {
     try {
-      const raw = localStorage.getItem(`flint_extension_data_${extensionId}`);
+      const raw = localStorage.getItem(`noether_extension_data_${extensionId}`);
       return raw ? JSON.parse(raw) : null;
     } catch (e) {
       console.warn(`[ExtensionManager] Failed to load data for extension ${extensionId}:`, e);
@@ -765,7 +756,7 @@ export class ExtensionManager {
   public async saveExtensionData(extensionId: string, data: any): Promise<void> {
     try {
       const json = JSON.stringify(data);
-      localStorage.setItem(`flint_extension_data_${extensionId}`, json);
+      localStorage.setItem(`noether_extension_data_${extensionId}`, json);
     } catch (e) {
       console.warn(`[ExtensionManager] Failed to save data for extension ${extensionId}:`, e);
     }

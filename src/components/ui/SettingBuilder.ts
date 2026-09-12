@@ -24,16 +24,16 @@ export class SettingBuilder {
   constructor(containerEl: HTMLElement) {
     this.settingEl = document.createElement('div');
     this.settingEl.className =
-      'flint-setting-item flex items-center justify-between p-4 border-b border-[var(--flint-border-subtle,#282828)] last:border-b-0';
+      'noether-setting-item flex items-center justify-between p-4 border-b border-[var(--noether-border-subtle,#282828)] last:border-b-0';
 
     this.infoEl = document.createElement('div');
     this.infoEl.className = 'flex flex-col pr-4 min-w-0 flex-1';
 
     this.nameEl = document.createElement('span');
-    this.nameEl.className = 'text-[13px] font-normal text-[var(--flint-text-secondary,#dcddde)]';
+    this.nameEl.className = 'text-[13px] font-normal text-[var(--noether-text-secondary,#dcddde)]';
 
     this.descEl = document.createElement('span');
-    this.descEl.className = 'text-[11px] text-[var(--flint-text-muted,#777777)] mt-0.5';
+    this.descEl.className = 'text-[11px] text-[var(--noether-text-muted,#777777)] mt-0.5';
 
     this.infoEl.appendChild(this.nameEl);
     this.infoEl.appendChild(this.descEl);
@@ -67,10 +67,10 @@ export class SettingBuilder {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.setAttribute('role', 'switch');
-    btn.className = 'flint-switch w-[34px] h-[20px]';
+    btn.className = 'noether-switch w-[34px] h-[20px]';
 
     const knob = document.createElement('span');
-    knob.className = 'flint-switch-knob h-[14px] w-[14px] translate-x-0';
+    knob.className = 'noether-switch-knob h-[14px] w-[14px] translate-x-0';
     btn.appendChild(knob);
 
     let isChecked = false;
@@ -79,9 +79,9 @@ export class SettingBuilder {
     const renderState = () => {
       btn.setAttribute('aria-checked', String(isChecked));
       if (isChecked) {
-        knob.className = 'flint-switch-knob h-[14px] w-[14px] translate-x-[14px]';
+        knob.className = 'noether-switch-knob h-[14px] w-[14px] translate-x-[14px]';
       } else {
-        knob.className = 'flint-switch-knob h-[14px] w-[14px] translate-x-0';
+        knob.className = 'noether-switch-knob h-[14px] w-[14px] translate-x-0';
       }
     };
 
@@ -127,7 +127,7 @@ export class SettingBuilder {
   ): this {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'flint-btn px-3 py-1.5 text-xs cursor-pointer';
+    button.className = 'noether-btn px-3 py-1.5 text-xs cursor-pointer';
 
     this.controlEl.appendChild(button);
 
@@ -137,11 +137,11 @@ export class SettingBuilder {
         return controller;
       },
       setCta: () => {
-        button.className = 'flint-btn flint-btn-primary px-3 py-1.5 text-xs cursor-pointer';
+        button.className = 'noether-btn noether-btn-primary px-3 py-1.5 text-xs cursor-pointer';
         return controller;
       },
       setWarning: () => {
-        button.className = 'flint-btn flint-btn-danger px-3 py-1.5 text-xs cursor-pointer';
+        button.className = 'noether-btn noether-btn-danger px-3 py-1.5 text-xs cursor-pointer';
         return controller;
       },
       onClick: (cb: () => void) => {
@@ -169,7 +169,7 @@ export class SettingBuilder {
     const input = document.createElement('input');
     input.type = 'text';
     input.className =
-      'bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-strong,#383838)] focus:border-[var(--flint-accent,#ea580c)] text-[var(--flint-text-primary,#ffffff)] text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]';
+      'bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-strong,#383838)] focus:border-[var(--noether-accent,#eb584d)] text-[var(--noether-text-primary,#ffffff)] text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]';
 
     this.controlEl.appendChild(input);
 
@@ -207,7 +207,7 @@ export class SettingBuilder {
   ): this {
     const select = document.createElement('select');
     select.className =
-      'bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-strong,#383838)] focus:border-[var(--flint-accent,#ea580c)] text-[var(--flint-text-secondary,#dcddde)] text-xs rounded-[5px] px-3 py-1.5 outline-none cursor-pointer';
+      'bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-strong,#383838)] focus:border-[var(--noether-accent,#eb584d)] text-[var(--noether-text-secondary,#dcddde)] text-xs rounded-[5px] px-3 py-1.5 outline-none cursor-pointer';
 
     this.controlEl.appendChild(select);
 

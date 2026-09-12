@@ -1,5 +1,5 @@
 import { ContextMenuItemDefinition, ContextMenuScope, Disposable } from '../extensions/types';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 
 export class ContextMenuRegistry {
   private items: Map<string, ContextMenuItemDefinition> = new Map();
@@ -35,7 +35,7 @@ export class ContextMenuRegistry {
   public getItemsForScope(
     scope?: ContextMenuScope,
     data?: any,
-    app?: FlintApp
+    app?: NoetherApp
   ): ContextMenuItemDefinition[] {
     return this.cachedItems.filter((item) => {
       // 1. Scope filter

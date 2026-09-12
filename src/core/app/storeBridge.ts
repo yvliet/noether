@@ -1,7 +1,7 @@
 /**
  * @module storeBridge
  * @description
- * Zero-dependency bridge connecting internal Zustand state stores to the FlintApp
+ * Zero-dependency bridge connecting internal Zustand state stores to the NoetherApp
  * singleton. Kept in an isolated module to prevent circular dependency TDZ errors
  * during ES module evaluation.
  *
@@ -12,7 +12,7 @@ export interface StoreGetter<T = any> {
   getState: () => T;
 }
 
-export interface FlintStoreRefs {
+export interface NoetherStoreRefs {
   workspace: StoreGetter | null;
   sidebarDock: StoreGetter | null;
   document: StoreGetter | null;
@@ -22,7 +22,7 @@ export interface FlintStoreRefs {
   appInstance: any | null;
 }
 
-const internalStores: FlintStoreRefs = {
+const internalStores: NoetherStoreRefs = {
   workspace: null,
   sidebarDock: null,
   document: null,
@@ -32,7 +32,7 @@ const internalStores: FlintStoreRefs = {
   appInstance: null,
 };
 
-const STORE_KEYS: Array<keyof FlintStoreRefs> = [
+const STORE_KEYS: Array<keyof NoetherStoreRefs> = [
   'workspace',
   'sidebarDock',
   'document',
@@ -42,8 +42,8 @@ const STORE_KEYS: Array<keyof FlintStoreRefs> = [
   'appInstance',
 ];
 
-const createProtectedStoreRefs = (): FlintStoreRefs => {
-  const target = {} as FlintStoreRefs;
+const createProtectedStoreRefs = (): NoetherStoreRefs => {
+  const target = {} as NoetherStoreRefs;
 
   for (const key of STORE_KEYS) {
     Object.defineProperty(target, key, {
@@ -66,11 +66,11 @@ const createProtectedStoreRefs = (): FlintStoreRefs => {
 };
 
 // Global-safe singleton object that survives circular imports without TDZ
-export var storeRefs: FlintStoreRefs = createProtectedStoreRefs();
+export var storeRefs: NoetherStoreRefs = createProtectedStoreRefs();
 
 if (typeof globalThis !== 'undefined') {
   try {
-    Object.defineProperty(globalThis, '__flintStoreRefs', {
+    Object.defineProperty(globalThis, '__noetherStoreRefs', {
       get: () => storeRefs,
       set: (_val) => {
         // Silently preserve host store container against global reassignments
@@ -80,18 +80,18 @@ if (typeof globalThis !== 'undefined') {
     });
   } catch {
     // If already defined or non-configurable in some test runner environments
-    (globalThis as any).__flintStoreRefs = storeRefs;
+    (globalThis as any).__noetherStoreRefs = storeRefs;
   }
 }
 
 /**
- * Connects internal Zustand state stores to the FlintApp bridge.
+ * Connects internal Zustand state stores to the NoetherApp bridge.
  * Host stores become immutable once bound to prevent third-party extension hijacking.
  *
  * @param stores - Map of store getters.
  * @since 0.1.0
  */
-export function bindFlintStores(stores: {
+export function bindNoetherStores(stores: {
   workspace?: StoreGetter;
   sidebarDock?: StoreGetter;
   document?: StoreGetter;

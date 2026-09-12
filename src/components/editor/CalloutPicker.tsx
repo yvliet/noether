@@ -63,13 +63,13 @@ export const CalloutPicker = forwardRef<CalloutPickerHandle, CalloutPickerProps>
 
     return (
       <div
-        data-flint-suggestion-popup="true"
+        data-noether-suggestion-popup="true"
         onMouseDown={(e) => e.preventDefault()}
         onClick={(e) => e.stopPropagation()}
-        style={{ boxShadow: 'var(--flint-shadow-2)' }}
-        className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-lg overflow-hidden w-64 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
+        style={{ boxShadow: 'var(--noether-shadow-2)' }}
+        className="pointer-events-auto bg-[var(--noether-bg-popover,var(--noether-bg-card,#232323))] border border-[var(--noether-border-base,#292929)] rounded-lg overflow-hidden w-64 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
       >
-        <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
+        <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--noether-text-muted)] uppercase tracking-wider">
           Callout Types
         </div>
         {definitions.map((def, idx) => {
@@ -90,25 +90,25 @@ export const CalloutPicker = forwardRef<CalloutPickerHandle, CalloutPickerProps>
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left cursor-pointer transition-none ${
                 isSelected
-                  ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)]'
-                  : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)]'
+                  ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)]'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)]'
               }`}
             >
               <div
                 className={`w-6 h-6 rounded flex items-center justify-center border shrink-0 ${
                   isSelected
-                    ? 'border-[var(--flint-border-strong)] bg-[var(--flint-bg-card-hover)]'
-                    : 'border-[var(--flint-border-subtle)] bg-[var(--flint-bg-input)]'
+                    ? 'border-[var(--noether-border-strong)] bg-[var(--noether-bg-card-hover)]'
+                    : 'border-[var(--noether-border-subtle)] bg-[var(--noether-bg-input)]'
                 }`}
                 style={{ color: def.accentHex }}
               >
                 <IconComp size={14} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-medium text-xs text-[var(--flint-text-primary)] truncate">
+                <div className="font-medium text-xs text-[var(--noether-text-primary)] truncate">
                   {def.title}
                 </div>
-                <div className="text-[10.5px] text-[var(--flint-text-muted)] truncate">
+                <div className="text-[10.5px] text-[var(--noether-text-muted)] truncate">
                   {def.description}
                 </div>
               </div>

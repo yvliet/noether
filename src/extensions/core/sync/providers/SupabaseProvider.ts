@@ -36,7 +36,7 @@ export class SupabaseProvider extends BaseProvider {
   }
 
   private getTableName(): string {
-    return (this.config.tableName || 'flint_sync_documents').trim();
+    return (this.config.tableName || 'noether_sync_documents').trim();
   }
 
   private getHeaders(): Record<string, string> {
@@ -234,7 +234,7 @@ export class SupabaseProvider extends BaseProvider {
 
   public getSchemaScript(): string {
     const table = this.getTableName();
-    return `-- 1. Create the Flint Sync Documents table
+    return `-- 1. Create the Noether Sync Documents table
 CREATE TABLE IF NOT EXISTS ${table} (
   id TEXT PRIMARY KEY,
   parent_id TEXT,
@@ -258,8 +258,8 @@ CREATE INDEX IF NOT EXISTS idx_${table}_deleted ON ${table}(deleted_at);
 -- 3. Enable Row Level Security (RLS) and permit CRUD access for your API key
 ALTER TABLE ${table} ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Allow Flint Sync CRUD" ON ${table};
-CREATE POLICY "Allow Flint Sync CRUD" ON ${table}
+DROP POLICY IF EXISTS "Allow Noether Sync CRUD" ON ${table};
+CREATE POLICY "Allow Noether Sync CRUD" ON ${table}
   FOR ALL
   USING (true)
   WITH CHECK (true);

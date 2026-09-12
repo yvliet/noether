@@ -30,7 +30,7 @@ export const useOutlineSettings = create<OutlineSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_OUTLINE_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_outline',
+      name: 'noether_extension_data_outline',
     }
   )
 );

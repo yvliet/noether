@@ -183,27 +183,27 @@ function renderInlineMarkdown(text: string): string {
     // Restore HTML line break tags
     .replace(/&lt;br\s*\/?&gt;/gi, '<br />');
 
-  // 4. Obsidian Wikilinks: [[Target|Label]] or [[Target]] with Flint orange accent
+  // 4. Obsidian Wikilinks: [[Target|Label]] or [[Target]] with Noether orange accent
   processed = processed
     .replace(
       /\[\[([^\]|]+)\|([^\]]+)\]\]/g,
-      '<a href="#docs/$1" data-wikilink="$1" class="internal-link text-[#ea580c] hover:text-[#f97316] underline underline-offset-2 font-normal cursor-pointer">$2</a>'
+      '<a href="#docs/$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$2</a>'
     )
     .replace(
       /\[\[([^\]]+)\]\]/g,
-      '<a href="#docs/$1" data-wikilink="$1" class="internal-link text-[#ea580c] hover:text-[#f97316] underline underline-offset-2 font-normal cursor-pointer">$1</a>'
+      '<a href="#docs/$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$1</a>'
     );
 
-  // 5. Standard markdown links [text](url) with Flint orange accent
+  // 5. Standard markdown links [text](url) with Noether orange accent
   processed = processed.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noreferrer" class="text-[#ea580c] hover:text-[#f97316] underline underline-offset-2 font-normal">$1</a>'
+    '<a href="$2" target="_blank" rel="noreferrer" class="text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal">$1</a>'
   );
 
   // 6. Highlight ==text==
   processed = processed.replace(
     /==([^=]+)==/g,
-    '<mark class="px-1.5 py-0.5 rounded bg-[#ea580c]/20 text-[#f97316] font-medium border border-[#ea580c]/30">$1</mark>'
+    '<mark class="px-1.5 py-0.5 rounded bg-[#eb584d]/20 text-[#d94338] font-medium border border-[#eb584d]/30">$1</mark>'
   );
 
   // 7. Bold **text** or __text__
@@ -274,7 +274,7 @@ const DocsCalloutItem: React.FC<DocsCalloutItemProps> = ({
         {isFoldable && (
           <button
             type="button"
-            className="text-[var(--flint-text-muted,#888)] hover:text-white p-0.5 rounded transition-none"
+            className="text-[var(--noether-text-muted,#888)] hover:text-white p-0.5 rounded transition-none"
             aria-label={isCollapsed ? 'Expand callout' : 'Collapse callout'}
           >
             {isCollapsed ? <ChevronRightIcon size={14} /> : <ChevronDownIcon size={14} />}
@@ -487,7 +487,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
                         type="checkbox"
                         checked={item.checked}
                         readOnly
-                        className="w-[14px] h-[14px] cursor-default accent-[#ea580c] rounded"
+                        className="w-[14px] h-[14px] cursor-default accent-[#eb584d] rounded"
                       />
                     </label>
                     <span
@@ -989,7 +989,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
           );
         } catch {
           nodes.push(
-            <div key={`math-${i}`} className="my-4 p-4 rounded-lg bg-[#161616] border border-[#2e2e2e] text-center font-mono text-[#ea580c]">
+            <div key={`math-${i}`} className="my-4 p-4 rounded-lg bg-[#161616] border border-[#2e2e2e] text-center font-mono text-[#eb584d]">
               {mathCode}
             </div>
           );
@@ -1015,7 +1015,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
             );
           } catch {
             nodes.push(
-              <div key={`math-${mathIndex}`} className="my-4 p-4 rounded-lg bg-[#161616] border border-[#2e2e2e] text-center font-mono text-[#ea580c]">
+              <div key={`math-${mathIndex}`} className="my-4 p-4 rounded-lg bg-[#161616] border border-[#2e2e2e] text-center font-mono text-[#eb584d]">
                 {mathCode}
               </div>
             );
@@ -1149,8 +1149,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
               aria-label={`Copy link to section ${headingText}`}
               className={`inline-flex items-center align-middle ml-1.5 p-0 rounded cursor-pointer transition-none ${
                 isCopied
-                  ? 'opacity-100 text-[#ea580c]'
-                  : 'opacity-0 group-hover:opacity-100 text-[#777777] hover:text-[#ea580c]'
+                  ? 'opacity-100 text-[#eb584d]'
+                  : 'opacity-0 group-hover:opacity-100 text-[#777777] hover:text-[#eb584d]'
               }`}
             >
               {isCopied ? (
@@ -1163,7 +1163,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
         );
       };
 
-      // Headings (h1 - h6, matching Flint desktop typography & spacing)
+      // Headings (h1 - h6, matching Noether desktop typography & spacing)
       const h1Match = line.match(/^#\s+(.+)$/);
       if (h1Match) {
         flushList(i);
@@ -1360,7 +1360,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
         );
       } catch {
         nodes.push(
-          <div key="math-end" className="my-4 p-4 rounded-lg bg-[#161616] border border-[#2e2e2e] text-center font-mono text-[#ea580c]">
+          <div key="math-end" className="my-4 p-4 rounded-lg bg-[#161616] border border-[#2e2e2e] text-center font-mono text-[#eb584d]">
             {mathCode}
           </div>
         );
@@ -1400,7 +1400,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
                     onSelectDoc(b);
                   }}
                   title={b.title}
-                  className="text-left text-[13.5px] text-[#ea580c] hover:text-[#f97316] underline underline-offset-2 font-normal cursor-pointer py-0.5 leading-snug transition-none"
+                  className="text-left text-[13.5px] text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer py-0.5 leading-snug transition-none"
                 >
                   {b.title}
                 </a>
@@ -1420,7 +1420,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
               <ArrowLeft01Icon size={14} className="shrink-0 text-[#888888]" />
               <div className="min-w-0">
                 <div className="text-[10px] text-[#777777] uppercase tracking-wider">Previous</div>
-                <div className="text-xs font-medium text-[#dadada] truncate hover:text-[#ea580c]">{prevDoc.title}</div>
+                <div className="text-xs font-medium text-[#dadada] truncate hover:text-[#eb584d]">{prevDoc.title}</div>
               </div>
             </button>
           ) : <div />}
@@ -1433,7 +1433,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
             >
               <div className="min-w-0">
                 <div className="text-[10px] text-[#777777] uppercase tracking-wider">Next</div>
-                <div className="text-xs font-medium text-[#dadada] truncate hover:text-[#ea580c]">{nextDoc.title}</div>
+                <div className="text-xs font-medium text-[#dadada] truncate hover:text-[#eb584d]">{nextDoc.title}</div>
               </div>
               <ArrowRight01Icon size={14} className="shrink-0 text-[#888888]" />
             </button>

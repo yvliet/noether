@@ -67,7 +67,7 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
       const target = e.target as HTMLElement | null;
 
       // 1. If mouse is directly over the button itself, keep active
-      if (target?.closest('.flint-table-edge-btn-container')) {
+      if (target?.closest('.noether-table-edge-btn-container')) {
         return;
       }
 
@@ -175,7 +175,7 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
     <>
       {/* Right edge: Add Column button */}
       <div
-        className="flint-table-edge-btn-container"
+        className="noether-table-edge-btn-container"
         style={{
           position: 'fixed',
           top: `${rect.top + rect.height / 2 - 11}px`,
@@ -187,7 +187,7 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
           type="button"
           onClick={handleAddColumn}
           title="Add column"
-          className="w-[22px] h-[22px] rounded-full bg-[var(--flint-bg-card,#222222)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] active:bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-base,#333333)] hover:border-[var(--flint-border-strong,#555555)] text-[var(--flint-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
+          className="w-[22px] h-[22px] rounded-full bg-[var(--noether-bg-card,#222222)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] active:bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-base,#333333)] hover:border-[var(--noether-border-strong,#555555)] text-[var(--noether-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
         >
           <PlusSignIcon size={12} className="group-hover:text-white" />
         </button>
@@ -195,7 +195,7 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
 
       {/* Bottom edge: Add Row button */}
       <div
-        className="flint-table-edge-btn-container"
+        className="noether-table-edge-btn-container"
         style={{
           position: 'fixed',
           top: `${rect.bottom + 6}px`,
@@ -207,7 +207,7 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
           type="button"
           onClick={handleAddRow}
           title="Add row"
-          className="w-[22px] h-[22px] rounded-full bg-[var(--flint-bg-card,#222222)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] active:bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-base,#333333)] hover:border-[var(--flint-border-strong,#555555)] text-[var(--flint-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
+          className="w-[22px] h-[22px] rounded-full bg-[var(--noether-bg-card,#222222)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] active:bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-base,#333333)] hover:border-[var(--noether-border-strong,#555555)] text-[var(--noether-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
         >
           <PlusSignIcon size={12} className="group-hover:text-white" />
         </button>

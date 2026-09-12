@@ -36,7 +36,7 @@ export const useTagsSettings = create<TagsSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_TAGS_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_tags',
+      name: 'noether_extension_data_tags',
     }
   )
 );

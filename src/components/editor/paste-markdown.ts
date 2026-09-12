@@ -1,7 +1,7 @@
 /**
- * HTML-to-Markdown clipboard paste transformation engine for Flint.
+ * HTML-to-Markdown clipboard paste transformation engine for Noether.
  *
- * Flint uses a pure Markdown architecture where all styling (bold, italic, links)
+ * Noether uses a pure Markdown architecture where all styling (bold, italic, links)
  * is represented as Markdown text tokens decorated by LivePreviewSyntax.
  * When pasting rich text from web browsers (Wikipedia, articles), Google Docs, or Word,
  * browsers provide an HTML clipboard representation containing <a>, <b>, <strong>, <i>, <em>, etc.
@@ -18,7 +18,7 @@
  */
 
 /**
- * Transforms clipboard HTML into markdown-enhanced HTML suitable for Flint's editor.
+ * Transforms clipboard HTML into markdown-enhanced HTML suitable for Noether's editor.
  */
 export function transformPastedHtmlToMarkdown(html: string): string {
   if (!html || typeof html !== 'string') return html;

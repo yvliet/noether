@@ -1,6 +1,6 @@
 # Systems & Performance Engineering
 
-Flint is engineered with explicit performance invariants designed to maintain fluid 60 FPS rendering, sub-8ms typing latency, and sub-150MB memory footprint even across vaults containing tens of thousands of notes.
+Noether is engineered with explicit performance invariants designed to maintain fluid 60 FPS rendering, sub-8ms typing latency, and sub-150MB memory footprint even across vaults containing tens of thousands of notes.
 
 
 ## 1. Performance Invariants

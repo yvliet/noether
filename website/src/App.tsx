@@ -7,7 +7,7 @@ import { InteractiveGraphWidget } from './components/graph/InteractiveGraphWidge
 import { OnThisPageOutline } from './components/docs/OnThisPageOutline';
 import { Menu01Icon, Sun01Icon, Moon02Icon } from './components/common/Icons';
 
-const THEME_STORAGE_KEY = 'flint_docs_theme';
+const THEME_STORAGE_KEY = 'noether_docs_theme';
 
 export const App: React.FC = () => {
   // Find doc recursively by slug or id
@@ -444,12 +444,12 @@ export const App: React.FC = () => {
             className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer"
           >
             <img
-              src="./flint-icon.png"
-              alt="Flint"
+              src="./noether-icon.png"
+              alt="Noether"
               className="h-[18px] w-auto object-contain shrink-0"
             />
             <span className="text-[17px] font-bold tracking-tight text-white leading-none">
-              Flint Docs
+              Noether Docs
             </span>
           </a>
         </div>

@@ -8,7 +8,7 @@ import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
-import { useFlintApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
+import { useNoetherApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import type { PortalSlotContext } from '@/core/extensions/types';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
@@ -89,7 +89,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const renameDocument = useDocumentStore((s) => s.renameDocument);
   const updateProperties = useDocumentStore((s) => s.updateProperties);
 
-  const app = useFlintApp();
+  const app = useNoetherApp();
   useExtensionList(); // Subscribe to reactive extension state changes
   const documentHeaders = useDocumentHeaders();
   const documentFooters = useDocumentFooters();
@@ -359,8 +359,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         setEditorMinHeight(undefined);
       }
     };
-    window.addEventListener('flint:backlinks-toggled', handleBacklinksToggle);
-    return () => window.removeEventListener('flint:backlinks-toggled', handleBacklinksToggle);
+    window.addEventListener('noether:backlinks-toggled', handleBacklinksToggle);
+    return () => window.removeEventListener('noether:backlinks-toggled', handleBacklinksToggle);
   }, []);
 
   useEffect(() => {
@@ -388,7 +388,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const [isHeaderFolded, setIsHeaderFolded] = useState<boolean>(() => {
     if (!currentDoc) return defaultHeaderFolded;
     try {
-      const stored = localStorage.getItem(`flint_props_folded_${currentDoc.id}`);
+      const stored = localStorage.getItem(`noether_props_folded_${currentDoc.id}`);
       return stored !== null ? JSON.parse(stored) : defaultHeaderFolded;
     } catch {
       return defaultHeaderFolded;
@@ -422,12 +422,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       });
     };
 
-    window.addEventListener('flint:find-in-note', handleFindEvent);
-    window.addEventListener('flint:replace-in-note', handleReplaceEvent);
+    window.addEventListener('noether:find-in-note', handleFindEvent);
+    window.addEventListener('noether:replace-in-note', handleReplaceEvent);
 
     return () => {
-      window.removeEventListener('flint:find-in-note', handleFindEvent);
-      window.removeEventListener('flint:replace-in-note', handleReplaceEvent);
+      window.removeEventListener('noether:find-in-note', handleFindEvent);
+      window.removeEventListener('noether:replace-in-note', handleReplaceEvent);
     };
   }, [currentPaneId]);
 
@@ -439,7 +439,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   useEffect(() => {
     if (currentDoc) {
       try {
-        const stored = localStorage.getItem(`flint_props_folded_${currentDoc.id}`);
+        const stored = localStorage.getItem(`noether_props_folded_${currentDoc.id}`);
         setIsHeaderFolded(stored !== null ? JSON.parse(stored) : defaultHeaderFolded);
       } catch {
         setIsHeaderFolded(defaultHeaderFolded);
@@ -452,7 +452,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       const detail = (e as CustomEvent).detail;
       const nextStartFolded = detail?.startFolded ?? defaultHeaderFolded;
       if (currentDoc) {
-        const stored = localStorage.getItem(`flint_props_folded_${currentDoc.id}`);
+        const stored = localStorage.getItem(`noether_props_folded_${currentDoc.id}`);
         if (stored === null) {
           setIsHeaderFolded(nextStartFolded);
         }
@@ -460,9 +460,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         setIsHeaderFolded(nextStartFolded);
       }
     };
-    window.addEventListener('flint:header-fold-default-changed', handleDefaultFoldChanged);
+    window.addEventListener('noether:header-fold-default-changed', handleDefaultFoldChanged);
     return () => {
-      window.removeEventListener('flint:header-fold-default-changed', handleDefaultFoldChanged);
+      window.removeEventListener('noether:header-fold-default-changed', handleDefaultFoldChanged);
     };
   }, [currentDoc?.id, defaultHeaderFolded]);
 
@@ -471,7 +471,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     setIsHeaderFolded((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem(`flint_props_folded_${currentDoc.id}`, JSON.stringify(next));
+        localStorage.setItem(`noether_props_folded_${currentDoc.id}`, JSON.stringify(next));
       } catch {}
       return next;
     });
@@ -639,13 +639,13 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     window.addEventListener('beforeunload', handleBlurOrUnload);
     window.addEventListener('pagehide', handleBlurOrUnload);
     document.addEventListener('visibilitychange', handleBlurOrUnload);
-    window.addEventListener('flint:save-note', handleBlurOrUnload);
+    window.addEventListener('noether:save-note', handleBlurOrUnload);
     return () => {
       window.removeEventListener('blur', handleBlurOrUnload);
       window.removeEventListener('beforeunload', handleBlurOrUnload);
       window.removeEventListener('pagehide', handleBlurOrUnload);
       document.removeEventListener('visibilitychange', handleBlurOrUnload);
-      window.removeEventListener('flint:save-note', handleBlurOrUnload);
+      window.removeEventListener('noether:save-note', handleBlurOrUnload);
     };
   }, [flushPendingSave]);
 
@@ -806,8 +806,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       data-main={isSidebarMode ? undefined : 'true'}
       data-sidebar-mode={isSidebarMode ? 'true' : undefined}
       style={{ touchAction: 'pan-x pan-y' }}
-      className={`flint-doc-wrapper editor-canvas flex-1 flex flex-col h-full overflow-hidden ${
-        isSidebarMode ? 'bg-transparent' : 'bg-[var(--flint-bg-tab-active,var(--flint-bg-main))]'
+      className={`noether-doc-wrapper editor-canvas flex-1 flex flex-col h-full overflow-hidden ${
+        isSidebarMode ? 'bg-transparent' : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
       }`}
     >
 
@@ -864,7 +864,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   }
                   setActiveLeftView('files');
                   window.dispatchEvent(
-                    new CustomEvent('flint:reveal-tree-item', {
+                    new CustomEvent('noether:reveal-tree-item', {
                       detail: { id: targetId },
                     })
                   );
@@ -919,7 +919,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
                           title={collapsedTooltip || undefined}
-                          className="text-[#666] hover:text-[#999] hover:bg-[var(--flint-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--noether-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
                         >
                           ...
                         </span>
@@ -1087,7 +1087,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         <div
           data-main={isSidebarMode ? undefined : 'true'}
           className={`flex-1 flex flex-col items-center justify-center select-none p-6 gap-3 ${
-            isSidebarMode ? 'bg-transparent' : 'bg-[var(--flint-bg-tab-active,var(--flint-bg-main))]'
+            isSidebarMode ? 'bg-transparent' : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
           }`}
         >
 
@@ -1216,7 +1216,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                     <button
                       type="button"
                       onClick={() => window.open(mediaSrc, '_blank')}
-                      className="flint-btn"
+                      className="noether-btn"
                     >
                       Open PDF
                     </button>
@@ -1263,7 +1263,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                             {effectiveReadingMode ? (
                               <h1
                                 style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
-                                className="w-full font-bold text-[var(--flint-text-primary)] font-text tracking-tight leading-tight cursor-default select-text"
+                                className="w-full font-bold text-[var(--noether-text-primary)] font-text tracking-tight leading-tight cursor-default select-text"
                               >
                                 {breadcrumbTitleOverride || title || 'Untitled'}
                               </h1>
@@ -1293,7 +1293,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                     }
                                   }}
                                   placeholder="Untitled"
-                                  className="w-full font-bold bg-transparent text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] placeholder:opacity-40 outline-none font-text tracking-tight leading-tight"
+                                  className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none font-text tracking-tight leading-tight"
                                 />
 
                                 {/* Duplicate Name Warning Tooltip */}
@@ -1311,7 +1311,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         ) : effectiveReadingMode ? (
                           <h1
                             style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
-                            className="w-full font-bold text-[var(--flint-text-primary)] pb-2 font-text tracking-tight leading-tight cursor-default select-text"
+                            className="w-full font-bold text-[var(--noether-text-primary)] pb-2 font-text tracking-tight leading-tight cursor-default select-text"
                           >
                             {breadcrumbTitleOverride || title || 'Untitled'}
                           </h1>
@@ -1341,7 +1341,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                 }
                               }}
                               placeholder="Untitled"
-                              className="w-full font-bold bg-transparent text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] placeholder:opacity-40 outline-none pb-2 font-text tracking-tight leading-tight"
+                              className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none pb-2 font-text tracking-tight leading-tight"
                             />
 
                             {/* Duplicate Name Warning Tooltip */}
@@ -1382,11 +1382,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                     ref={editorWrapperRef}
                     style={editorMinHeight ? { minHeight: `${editorMinHeight}px` } : undefined}
                     className={`flex-1 flex flex-col ${
-                      lineNumbers ? 'flint-line-numbers' : ''
-                    } ${indentationGuides ? 'flint-indent-guides' : ''} ${
-                      accentListPrefixes ? 'flint-accent-lists' : ''
-                    } ${strictLineBreaks ? 'flint-strict-line-breaks' : ''} ${
-                      showExternalLinkIcon ? 'flint-show-link-icon' : ''
+                      lineNumbers ? 'noether-line-numbers' : ''
+                    } ${indentationGuides ? 'noether-indent-guides' : ''} ${
+                      accentListPrefixes ? 'noether-accent-lists' : ''
+                    } ${strictLineBreaks ? 'noether-strict-line-breaks' : ''} ${
+                      showExternalLinkIcon ? 'noether-show-link-icon' : ''
                     } ${
                       !isEditable ? 'tiptap-reading-view cursor-default' : ''
                     }`}

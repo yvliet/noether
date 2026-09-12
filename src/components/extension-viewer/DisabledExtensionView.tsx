@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { Alert02Icon } from '@/components/common/Icons';
-import { useFlintApp } from '@/core/app/AppContext';
+import { useNoetherApp } from '@/core/app/AppContext';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 
 export interface DisabledExtensionViewProps {
@@ -16,7 +16,7 @@ export const DisabledExtensionView: React.FC<DisabledExtensionViewProps> = React
   extensionName,
   viewTitle,
 }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const showToast = useWorkspaceStore((s) => s.showToast);
 
   const targetId = extensionId || '';
@@ -41,20 +41,20 @@ export const DisabledExtensionView: React.FC<DisabledExtensionViewProps> = React
   }, [app.extensions, targetId, targetName, showToast]);
 
   return (
-    <div className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--flint-bg-main)]">
+    <div className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--noether-bg-main)]">
       {/* 1. View Subheader with interactive inline link */}
       <PageSubHeader
         title={viewTitle || targetName}
         icon={<Alert02Icon size={14} className="text-amber-400" />}
         centerContent={
-          <div className="text-[11px] text-[var(--flint-text-muted)] truncate max-w-lg px-2 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans">
+          <div className="text-[11px] text-[var(--noether-text-muted)] truncate max-w-lg px-2 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans">
             <Alert02Icon size={12} className="text-amber-400 shrink-0" />
             <span className="truncate">
-              This view belonged to <strong className="text-[var(--flint-text-secondary)] font-medium">{targetName}</strong>, but you disabled it.{' '}
+              This view belonged to <strong className="text-[var(--noether-text-secondary)] font-medium">{targetName}</strong>, but you disabled it.{' '}
               <button
                 type="button"
                 onClick={handleEnableExtension}
-                className="text-[var(--flint-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline"
+                className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline"
               >
                 Enable it back?
               </button>

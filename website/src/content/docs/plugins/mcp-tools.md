@@ -1,24 +1,24 @@
 # Model Context Protocol (MCP) Tools
 
-Model Context Protocol (MCP) is an open standard that allows AI agents and Large Language Models (LLMs) to discover and invoke tools exposed by local applications. In Flint, MCP is a first-class architectural primitive: **every extension that manages queryable data or performs state changes can expose tools to AI agents**.
+Model Context Protocol (MCP) is an open standard that allows AI agents and Large Language Models (LLMs) to discover and invoke tools exposed by local applications. In Noether, MCP is a first-class architectural primitive: **every extension that manages queryable data or performs state changes can expose tools to AI agents**.
 
 
-## 1. How MCP Operates in Flint
+## 1. How MCP Operates in Noether
 
 ---
 
-Flint implements a native, in-process MCP tool registry. When an extension registers a tool via `this.registerTool()`, it becomes immediately available to:
+Noether implements a native, in-process MCP tool registry. When an extension registers a tool via `this.registerTool()`, it becomes immediately available to:
 
-1. **In-App AI Copilots & Assistants**: Agents running inside Flint can search, create, summarize, and reorganize notes directly in memory with zero IPC serialization latency.
-2. **External Desktop Clients**: Applications like **Claude Desktop**, **Cursor**, and **Antigravity** connect to Flint over standard I/O (`flint-mcp-server`) and discover all core and extension tools automatically.
+1. **In-App AI Copilots & Assistants**: Agents running inside Noether can search, create, summarize, and reorganize notes directly in memory with zero IPC serialization latency.
+2. **External Desktop Clients**: Applications like **Claude Desktop**, **Cursor**, and **Antigravity** connect to Noether over standard I/O (`noether-mcp-server`) and discover all core and extension tools automatically.
 
 | Client & Protocol Layer | In-Process Resolution Pipeline |
 |:---|:---|
 | **AI Client Layer** | Applications communicating via standard Model Context Protocol (MCP) |
 | **Supported Clients** | In-App AI Copilot, Claude Desktop, Cursor, Antigravity, custom LLM orchestrators |
-| **Transport Layer** | In-memory direct call (In-App) or JSON-RPC 2.0 over standard I/O (`flint-mcp-server`) |
-| **Flint `ToolRegistry` Engine** | Central discovery and dispatch coordinator |
-| **Core Built-in Tools** | `flint_search_notes`, `flint_read_note`, `tasks_get_all`, `fsrs_get_due_cards`, etc. |
+| **Transport Layer** | In-memory direct call (In-App) or JSON-RPC 2.0 over standard I/O (`noether-mcp-server`) |
+| **Noether `ToolRegistry` Engine** | Central discovery and dispatch coordinator |
+| **Core Built-in Tools** | `noether_search_notes`, `noether_read_note`, `tasks_get_all`, `fsrs_get_due_cards`, etc. |
 | **Extension Registered Tools** | Dynamic tools registered during extension lifecycle via `this.registerTool()` |
 | **Execution Handlers** | Type-safe async handlers querying SQLite database or in-memory stores with zero UI lag |
 
@@ -45,7 +45,7 @@ When authoring MCP tools in your extensions:
 Use standard MCP JSON Schema definitions when you prefer raw schema declarations without extra dependencies:
 
 ```typescript
-import { Extension, McpToolDefinition, McpToolResult } from 'flint';
+import { Extension, McpToolDefinition, McpToolResult } from 'noether';
 
 export default class ReadingStatsExtension extends Extension {
   async onload() {
@@ -72,7 +72,7 @@ export default class ReadingStatsExtension extends Extension {
         const docId = String(args.documentId);
         const wpm = Number(args.wordsPerMinute) || 200;
 
-        // Query the document via Flint's database or workspace
+        // Query the document via Noether's database or workspace
         const doc = await app.workspace.getDocument(docId);
         if (!doc) {
           return {
@@ -110,10 +110,10 @@ export default class ReadingStatsExtension extends Extension {
 
 ---
 
-For end-to-end type safety, Flint supports [Zod](https://zod.dev) schemas. Flint automatically infers TypeScript handler argument types and compiles the Zod schema into MCP-compliant JSON Schema at runtime:
+For end-to-end type safety, Noether supports [Zod](https://zod.dev) schemas. Noether automatically infers TypeScript handler argument types and compiles the Zod schema into MCP-compliant JSON Schema at runtime:
 
 ```typescript
-import { Extension, McpToolResult } from 'flint';
+import { Extension, McpToolResult } from 'noether';
 import { z } from 'zod';
 
 export default class TaskExtension extends Extension {
@@ -190,15 +190,15 @@ this.registerPrompt({
 
 ---
 
-Because Flint's native MCP server auto-discovers all known Hearths, configuring external AI tools requires zero file path arguments:
+Because Noether's native MCP server auto-discovers all known Vaults, configuring external AI tools requires zero file path arguments:
 
 ### Claude Desktop Configuration
 Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "flint": {
-      "command": "flint-mcp-server"
+    "noether": {
+      "command": "noether-mcp-server"
     }
   }
 }
@@ -209,21 +209,21 @@ Add to `.cursor/mcp.json`:
 ```json
 {
   "mcpServers": {
-    "flint": {
-      "command": "flint-mcp-server"
+    "noether": {
+      "command": "noether-mcp-server"
     }
   }
 }
 ```
 
-External agents can now search your notes (`flint_search_notes`), query your tasks (`tasks_get_all`), and invoke your custom extension tools seamlessly.
+External agents can now search your notes (`noether_search_notes`), query your tasks (`tasks_get_all`), and invoke your custom extension tools seamlessly.
 
 
 ## 7. Related Reading & References
 
 ---
 
-- [[Flint SDK API Reference]]: Complete MCP interfaces, Zod helpers, and tool definitions.
+- [[Noether SDK API Reference]]: Complete MCP interfaces, Zod helpers, and tool definitions.
 - [[Events & Relational Storage]]: Coordinate AI actions with database transactions.
 - [[Dual-Storage Architecture]]: How AI tools query SQLite indexes with sub-millisecond latency.
 - [[Database Schema Reference]]: Inspect tables exposed to AI query handlers.

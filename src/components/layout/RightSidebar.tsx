@@ -131,9 +131,9 @@ export const RightSidebar: React.FC = React.memo(() => {
       data-sidebar-side="right"
       style={{
         width: `${rightSidebarWidth}px`,
-        background: 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar))',
+        background: 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar))',
       }}
-      className="flint-sidebar-right flex flex-col h-full select-none shrink-0 text-xs relative"
+      className="noether-sidebar-right flex flex-col h-full select-none shrink-0 text-xs relative"
     >
       {activeDrag?.targetDockZone === 'right-bottom' && (
         <div
@@ -188,7 +188,7 @@ export const RightSidebar: React.FC = React.memo(() => {
           >
             <div
               className={`w-full h-[1px] ${
-                isVerticalSplitResizing ? 'bg-white' : 'bg-[var(--flint-border-base)] group-hover:bg-white/50'
+                isVerticalSplitResizing ? 'bg-white' : 'bg-[var(--noether-border-base)] group-hover:bg-white/50'
               }`}
             />
           </div>

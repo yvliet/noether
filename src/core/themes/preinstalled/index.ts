@@ -1,21 +1,23 @@
 import { ThemeDefinition } from '../types';
-import { FLINT_DARK_THEME } from './flintDark';
-import { FLINT_LIGHT_THEME } from './flintLight';
+import { NOETHER_DARK_THEME, noetherDark } from './noetherDark';
+import { NOETHER_LIGHT_THEME, noetherLight } from './noetherLight';
 
 export {
-  FLINT_DARK_THEME,
-  FLINT_LIGHT_THEME,
+  NOETHER_DARK_THEME,
+  NOETHER_LIGHT_THEME,
+  noetherDark,
+  noetherLight,
 };
 
 /**
- * The sole core baseline theme required by the Flint engine as fallback.
+ * The sole core baseline theme required by the Noether engine as fallback.
  */
-export const CORE_THEME: ThemeDefinition = FLINT_DARK_THEME;
+export const CORE_THEME: ThemeDefinition = NOETHER_DARK_THEME;
 
 /**
- * All preinstalled modular themes shipped with Flint.
+ * All preinstalled modular themes shipped with Noether.
  */
 export const PREINSTALLED_THEMES: ThemeDefinition[] = [
-  FLINT_DARK_THEME,
-  FLINT_LIGHT_THEME,
+  NOETHER_DARK_THEME,
+  NOETHER_LIGHT_THEME,
 ];

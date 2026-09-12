@@ -22,7 +22,7 @@ import { Tooltip } from '@/components/common/Tooltip';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import type { DocumentItem } from '@/types';
 import { platform } from '@/lib/platform/platformAdapter';
-import { useFlintApp, storeRefs } from 'flint';
+import { useNoetherApp, storeRefs } from 'noether';
 
 function getGraphNodeTitle(doc: DocumentItem, allDocs: DocumentItem[]): string {
   return getDocumentPath(doc, allDocs) || doc.title || 'Untitled';
@@ -77,18 +77,18 @@ function hashStringToUnit(str: string): number {
 
 function getStorageKey(vaultPath?: string): string {
   const vp = vaultPath || (storeRefs.workspace?.getState?.() as any)?.vaultPath || 'default';
-  return `flint_graph_positions_v6:${vp}`;
+  return `noether_graph_positions_v6:${vp}`;
 }
 
 function getTransformStorageKey(vaultPath?: string): string {
   const vp = vaultPath || (storeRefs.workspace?.getState?.() as any)?.vaultPath || 'default';
-  return `flint_graph_transform_v1:${vp}`;
+  return `noether_graph_transform_v1:${vp}`;
 }
 
 function getSavedPositions(vaultPath?: string): Record<string, { x: number; y: number }> {
   try {
     const key = getStorageKey(vaultPath);
-    const raw = localStorage.getItem(key) || localStorage.getItem('flint_graph_positions_v5');
+    const raw = localStorage.getItem(key) || localStorage.getItem('noether_graph_positions_v5');
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return {};
@@ -269,7 +269,7 @@ export interface GraphViewProps {
 
 function getFloatingTabsStorageKey(vaultPath?: string): string {
   const vp = (vaultPath || 'default').trim();
-  return `flint_graph_floating_tabs_v1:${vp}`;
+  return `noether_graph_floating_tabs_v1:${vp}`;
 }
 
 function isTabFloating(tabId?: string, vaultPath?: string): boolean {
@@ -353,11 +353,11 @@ function setTabFloatingState(tabId: string | undefined, isFloating: boolean, vau
 }
 
 export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: propIsSidebar, tabId: propTabId, documentId: propDocId }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
   const openTab = useCallback((docId: string, title?: string, opts?: any) => app.workspace.openTab(docId, title, opts), [app]);
-  const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
-  const vaultPath = app.hearth.hearthPath;
+  const setActiveDocumentById = useCallback((id: string) => app.vault.openDocument(id), [app]);
+  const vaultPath = app.vault.vaultPath;
   const activeTabId = app.workspace.activeTabId;
   const resolvedTabId = propTabId || activeTabId || propDocId || 'graph-main';
 
@@ -866,7 +866,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     async function loadData(incomingDocs?: DocumentItem[]) {
       const loadSeq = ++loadSeqRef.current;
       try {
-        const storeDocs = app.hearth.documents;
+        const storeDocs = app.vault.documents;
         const allDocs = Array.isArray(incomingDocs)
           ? incomingDocs
           : Array.isArray(storeDocs)
@@ -1355,7 +1355,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         }
         startAnimationRef.current();
       } catch (error) {
-        console.error('[Flint Graph] Failed to load graph data:', error);
+        console.error('[Noether Graph] Failed to load graph data:', error);
       }
     }
 
@@ -2272,7 +2272,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         animFrameRef.current = requestAnimationFrame(render);
       }
     } catch (err) {
-      console.error('[Flint Graph] Error during render:', err);
+      console.error('[Noether Graph] Error during render:', err);
     }
   }, [filterText, stepPhysics]);
 
@@ -3242,7 +3242,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         return;
       }
       const targetId = targetCandidate.id;
-      const allDocs = app.hearth.documents;
+      const allDocs = app.vault.documents;
       const targetDoc = allDocs.find((d: any) => d.id === targetId);
       openTab(targetId, targetDoc?.title || targetCandidate.title);
       await setActiveDocumentById(targetId);
@@ -3308,11 +3308,11 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       style={{
         touchAction: 'none',
         background: isSidebar
-          ? 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar, #151515))'
-          : 'var(--flint-bg-main-gradient, var(--flint-bg-main, #1c1c1c))',
+          ? 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar, #151515))'
+          : 'var(--noether-bg-main-gradient, var(--noether-bg-main, #1c1c1c))',
       }}
-      className={`flint-graph-view flint-pinchable relative flex-1 h-full w-full overflow-hidden select-none touch-none ${
-        isSidebar ? 'bg-transparent' : 'bg-[var(--flint-bg-main)]'
+      className={`noether-graph-view noether-pinchable relative flex-1 h-full w-full overflow-hidden select-none touch-none ${
+        isSidebar ? 'bg-transparent' : 'bg-[var(--noether-bg-main)]'
       }`}
     >
       {/* Shared Modular Document Sub-Header */}

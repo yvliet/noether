@@ -5,15 +5,15 @@
 :root {
   color-scheme: dark;
 
-  /* Obsidian dark surface & Flint design tokens */
-  --flint-bg-app: #151515;
-  --flint-bg-sidebar: #151515;
-  --flint-bg-sidebar-hover: #1f1f1f;
-  --flint-bg-sidebar-active: #272727;
-  --flint-bg-main: #151515;
-  --flint-bg-card: #1c1c1c;
-  --flint-bg-card-hover: #242424;
-  --flint-bg-input: #1f1f1f;
+  /* Obsidian dark surface & Noether design tokens */
+  --noether-bg-app: #151515;
+  --noether-bg-sidebar: #151515;
+  --noether-bg-sidebar-hover: #1f1f1f;
+  --noether-bg-sidebar-active: #272727;
+  --noether-bg-main: #151515;
+  --noether-bg-card: #1c1c1c;
+  --noether-bg-card-hover: #242424;
+  --noether-bg-input: #1f1f1f;
 
   /* Obsidian theme aliases */
   --background-primary: #151515;
@@ -26,36 +26,36 @@
   --border-width: 1px;
 
   /* Border tokens */
-  --flint-border-subtle: #202020;
-  --flint-border-base: #292929;
-  --flint-border-strong: #383838;
+  --noether-border-subtle: #202020;
+  --noether-border-base: #292929;
+  --noether-border-strong: #383838;
 
   /* Text tokens */
-  --flint-text-primary: #dadada;
-  --flint-text-secondary: #b3b3b3;
-  --flint-text-muted: #888888;
-  --flint-text-faint: #666666;
+  --noether-text-primary: #dadada;
+  --noether-text-secondary: #b3b3b3;
+  --noether-text-muted: #888888;
+  --noether-text-faint: #666666;
   --text-normal: #dadada;
   --text-muted: #b3b3b3;
   --text-faint: #666666;
 
-  /* Accent tokens (Flint signature flame orange accent) */
-  --flint-accent: #ea580c;
-  --flint-accent-hover: #f97316;
-  --flint-accent-active: #9a3412;
-  --flint-accent-subtle: rgba(234, 88, 12, 0.15);
-  --text-accent: #ea580c;
-  --text-accent-hover: #f97316;
+  /* Accent tokens (Noether signature flame orange accent) */
+  --noether-accent: #eb584d;
+  --noether-accent-hover: #d94338;
+  --noether-accent-active: #b83228;
+  --noether-accent-subtle: rgba(235, 88, 77, 0.15);
+  --text-accent: #eb584d;
+  --text-accent-hover: #d94338;
 
   /* Graph tokens */
   --graph-line: #333333;
   --graph-node: #9e9e9e;
   --graph-node-unresolved: #555555;
-  --graph-node-focused: #ea580c;
-  --graph-node-tag: #ea580c;
+  --graph-node-focused: #eb584d;
+  --graph-node-tag: #eb584d;
   --graph-text: #dadada;
 
-  /* Native system font stack (matching Flint desktop editor exactly) */
+  /* Native system font stack (matching Noether desktop editor exactly) */
   --font-interface-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
   --font-text-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
   --font-monospace-fallback: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -70,15 +70,15 @@ html.theme-light,
 html.light {
   color-scheme: light;
 
-  /* Obsidian light surface & Flint design tokens - balanced soft lightness */
-  --flint-bg-app: #ffffff;
-  --flint-bg-sidebar: #fafafa;
-  --flint-bg-sidebar-hover: #f3f4f6;
-  --flint-bg-sidebar-active: #e5e7eb;
-  --flint-bg-main: #ffffff;
-  --flint-bg-card: #f9fafb;
-  --flint-bg-card-hover: #f3f4f6;
-  --flint-bg-input: #ffffff;
+  /* Obsidian light surface & Noether design tokens - balanced soft lightness */
+  --noether-bg-app: #ffffff;
+  --noether-bg-sidebar: #fafafa;
+  --noether-bg-sidebar-hover: #f3f4f6;
+  --noether-bg-sidebar-active: #e5e7eb;
+  --noether-bg-main: #ffffff;
+  --noether-bg-card: #f9fafb;
+  --noether-bg-card-hover: #f3f4f6;
+  --noether-bg-input: #ffffff;
 
   /* Obsidian theme aliases */
   --background-primary: #ffffff;
@@ -91,33 +91,33 @@ html.light {
   --border-width: 1px;
 
   /* Soft, balanced border tokens */
-  --flint-border-subtle: #f4f4f6;
-  --flint-border-base: #e8e8ec;
-  --flint-border-strong: #dcdde2;
+  --noether-border-subtle: #f4f4f6;
+  --noether-border-base: #e8e8ec;
+  --noether-border-strong: #dcdde2;
 
   /* Warm, natural text tokens */
-  --flint-text-primary: #22252a;
-  --flint-text-secondary: #4b5563;
-  --flint-text-muted: #6b7280;
-  --flint-text-faint: #9ca3af;
+  --noether-text-primary: #22252a;
+  --noether-text-secondary: #4b5563;
+  --noether-text-muted: #6b7280;
+  --noether-text-faint: #9ca3af;
   --text-normal: #22252a;
   --text-muted: #6b7280;
   --text-faint: #9ca3af;
 
-  /* Accent tokens (Flint signature flame orange accent) */
-  --flint-accent: #ea580c;
-  --flint-accent-hover: #f97316;
-  --flint-accent-active: #c2410c;
-  --flint-accent-subtle: rgba(234, 88, 12, 0.12);
-  --text-accent: #ea580c;
-  --text-accent-hover: #f97316;
+  /* Accent tokens (Noether signature flame orange accent) */
+  --noether-accent: #eb584d;
+  --noether-accent-hover: #d94338;
+  --noether-accent-active: #d94338;
+  --noether-accent-subtle: rgba(235, 88, 77, 0.12);
+  --text-accent: #eb584d;
+  --text-accent-hover: #d94338;
 
   /* Graph tokens */
   --graph-line: #e2e4e9;
   --graph-node: #94a3b8;
   --graph-node-unresolved: #cbd5e1;
-  --graph-node-focused: #ea580c;
-  --graph-node-tag: #ea580c;
+  --graph-node-focused: #eb584d;
+  --graph-node-tag: #eb584d;
   --graph-text: #22252a;
 }
 
@@ -139,7 +139,7 @@ body,
   touch-action: pan-y;
 }
 
-/* Ensure numbers in text and UI use proportional digits matching Flint desktop */
+/* Ensure numbers in text and UI use proportional digits matching Noether desktop */
 body, input, button, select, textarea, span, div, h1, h2, h3, h4, p, a {
   font-variant-numeric: normal !important;
 }
@@ -151,8 +151,8 @@ input,
 select,
 textarea,
 [role="button"],
-.flint-btn,
-.flint-tree-item,
+.noether-btn,
+.noether-tree-item,
 .tab-pill {
   transition: none !important;
   animation-duration: 0s !important;
@@ -265,8 +265,8 @@ textarea,
   scrollbar-width: none;
 }
 
-/* Flint Native Desktop Button & Form Controls */
-.flint-btn {
+/* Noether Native Desktop Button & Form Controls */
+.noether-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -285,21 +285,21 @@ textarea,
   transition: none;
 }
 
-.flint-btn:hover {
+.noether-btn:hover {
   background-color: var(--interactive-hover, #3f3f3f);
   color: #ffffff;
 }
 
-.flint-btn:active {
+.noether-btn:active {
   background-color: #2e2e2e;
 }
 
-.flint-btn-primary {
+.noether-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background-color: var(--flint-accent, #ea580c);
+  background-color: var(--noether-accent, #eb584d);
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 5px;
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 1px 3px 0 rgba(0, 0, 0, 0.32);
@@ -313,8 +313,8 @@ textarea,
   transition: none;
 }
 
-.flint-btn-primary:hover {
-  background-color: var(--flint-accent-hover, #f97316);
+.noether-btn-primary:hover {
+  background-color: var(--noether-accent-hover, #d94338);
   color: #ffffff;
 }
 

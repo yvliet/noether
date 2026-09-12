@@ -216,7 +216,7 @@ export class ViewRegistry {
 
 /**
  * Shared central ViewRegistry singleton instance.
- * Exposed on FlintApp.views and imported directly across layout headers and stores.
+ * Exposed on NoetherApp.views and imported directly across layout headers and stores.
  * @since 0.4.6
  */
 export const viewRegistry = new ViewRegistry();

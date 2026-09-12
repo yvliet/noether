@@ -134,7 +134,7 @@ export async function getAllVaultTags(): Promise<TagItem[]> {
 
     return result.sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag));
   } catch (err) {
-    console.error('[Flint Tags] Error fetching vault tags:', err);
+    console.error('[Noether Tags] Error fetching vault tags:', err);
     return [];
   }
 }

@@ -1,7 +1,7 @@
 /**
  * @module HelpModal
  * @description
- * Native overlay dialog displaying core Flint documentation, hotkeys, and markdown guide.
+ * Native overlay dialog displaying core Noether documentation, hotkeys, and markdown guide.
  * Extension-specific documentation is rendered on-demand via the extension documentation viewer.
  *
  * @since 0.1.0
@@ -29,30 +29,30 @@ export const HelpModal: React.FC = React.memo(() => {
       <div
         data-card="true"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-subtle,#2e2e2e)] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-xs max-h-[600px]"
+        className="w-full max-w-xl bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-subtle,#2e2e2e)] rounded-2xl shadow-2xl overflow-hidden flex flex-col text-xs max-h-[600px]"
       >
         {/* Header */}
-        <div className="h-12 px-5 border-b border-[var(--flint-border-subtle,#282828)] flex items-center justify-between bg-[var(--flint-bg-topbar,#181818)] shrink-0">
-          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--flint-text-primary)]">
-            <HelpCircleIcon size={16} className="text-[var(--flint-text-muted)]" />
-            <span>Flint Guide & Keyboard Shortcuts</span>
+        <div className="h-12 px-5 border-b border-[var(--noether-border-subtle,#282828)] flex items-center justify-between bg-[var(--noether-bg-topbar,#181818)] shrink-0">
+          <div className="flex items-center gap-2 text-sm font-semibold text-[var(--noether-text-primary)]">
+            <HelpCircleIcon size={16} className="text-[var(--noether-text-muted)]" />
+            <span>Noether Guide & Keyboard Shortcuts</span>
           </div>
           <button
             onClick={() => setIsHelpModalOpen(false)}
-            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+            className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <Cancel01Icon size={16} />
           </button>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex items-center gap-2 px-5 pt-3 border-b border-[var(--flint-border-subtle,#262626)] bg-[var(--flint-bg-sidebar,#1a1a1a)] shrink-0">
+        <div className="flex items-center gap-2 px-5 pt-3 border-b border-[var(--noether-border-subtle,#262626)] bg-[var(--noether-bg-sidebar,#1a1a1a)] shrink-0">
           <button
             onClick={() => setTab('shortcuts')}
             className={`pb-2 px-1 font-medium border-b-2 cursor-pointer ${
               tab === 'shortcuts'
-                ? 'border-[var(--flint-accent)] text-[var(--flint-text-primary)]'
-                : 'border-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-secondary)]'
+                ? 'border-[var(--noether-accent)] text-[var(--noether-text-primary)]'
+                : 'border-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-secondary)]'
             }`}
           >
             Keyboard Shortcuts
@@ -61,8 +61,8 @@ export const HelpModal: React.FC = React.memo(() => {
             onClick={() => setTab('markdown')}
             className={`pb-2 px-1 font-medium border-b-2 cursor-pointer ${
               tab === 'markdown'
-                ? 'border-[var(--flint-accent)] text-[var(--flint-text-primary)]'
-                : 'border-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-secondary)]'
+                ? 'border-[var(--noether-accent)] text-[var(--noether-text-primary)]'
+                : 'border-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-secondary)]'
             }`}
           >
             Markdown Formatting
@@ -102,7 +102,7 @@ export const HelpModal: React.FC = React.memo(() => {
               </div>
 
               <div className="flex items-center justify-between py-1.5 border-b border-[#282828]">
-                <span className="text-[#dcddde]">Hearth Switcher</span>
+                <span className="text-[#dcddde]">Vault Switcher</span>
                 <span className="flex items-center gap-1 font-mono text-[11px] text-[#aaa]">
                   <kbd className="bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#383838]">Ctrl</kbd> + <kbd className="bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#383838]">Shift</kbd> + <kbd className="bg-[#2a2a2a] px-1.5 py-0.5 rounded border border-[#383838]">O</kbd>
                 </span>
@@ -184,7 +184,7 @@ export const HelpModal: React.FC = React.memo(() => {
             <div className="flex flex-col gap-3 leading-relaxed text-[#bbb]">
               <div>
                 <span className="font-semibold text-white">#tag and #topic/subtopic</span>
-                <p className="text-[11px] text-[#777]">Categorizes notes across your Hearth and organizes them in the Tags pane.</p>
+                <p className="text-[11px] text-[#777]">Categorizes notes across your Vault and organizes them in the Tags pane.</p>
               </div>
 
               <div>

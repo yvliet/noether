@@ -167,11 +167,11 @@ export function useTreeDragDrop({
           const targetNode = hoveredEl?.closest('[data-tree-item-id], [data-sidebar-root]');
           if (targetNode) {
             if (targetNode.hasAttribute('data-sidebar-root') && !targetNode.hasAttribute('data-tree-item-id')) {
-              const { hearthName } = useWorkspaceStore.getState();
-              const currentHearth = hearthName || 'Flint Hearth';
+              const { vaultName } = useWorkspaceStore.getState();
+              const currentVault = vaultName || 'Noether Vault';
               if (item.parent_id || isMultiDrag) {
                 setDragOverFolder(null, true);
-                dragTooltipManager.updateSubtitle(`Move into “${currentHearth}”`);
+                dragTooltipManager.updateSubtitle(`Move into “${currentVault}”`);
               } else {
                 setDragOverFolder(null, false);
                 dragTooltipManager.updateSubtitle(null);
@@ -208,7 +208,7 @@ export function useTreeDragDrop({
 
                   if (!hoverTimeoutRef.current) {
                     hoverTimeoutRef.current = setTimeout(() => {
-                      window.dispatchEvent(new CustomEvent('flint:expand-folder', { detail: { id: targetId } }));
+                      window.dispatchEvent(new CustomEvent('noether:expand-folder', { detail: { id: targetId } }));
                       hoverTimeoutRef.current = null;
                     }, 500);
                   }
@@ -242,11 +242,11 @@ export function useTreeDragDrop({
                     dragTooltipManager.updateSubtitle(null);
                   }
                 } else {
-                  const { hearthName } = useWorkspaceStore.getState();
-                  const currentHearth = hearthName || 'Flint Hearth';
+                  const { vaultName } = useWorkspaceStore.getState();
+                  const currentVault = vaultName || 'Noether Vault';
                   if (item.parent_id || isMultiDrag) {
                     setDragOverFolder(null, true);
-                    dragTooltipManager.updateSubtitle(`Move into “${currentHearth}”`);
+                    dragTooltipManager.updateSubtitle(`Move into “${currentVault}”`);
                   } else {
                     setDragOverFolder(null, false);
                     dragTooltipManager.updateSubtitle(null);
@@ -360,7 +360,7 @@ export function useTreeDragDrop({
           }
 
           // 3. Generic Custom Drop Event
-          const customDropEvent = new CustomEvent('flint:custom-drop', {
+          const customDropEvent = new CustomEvent('noether:custom-drop', {
             detail: {
               item,
               selectedIds: isMultiDrag ? currentSelectedIds : [item.id],
@@ -389,7 +389,7 @@ export function useTreeDragDrop({
               if (res.success) {
                 if (targetParentId) {
                   const targetFolder = allDocs.find((d) => d.id === targetParentId);
-                  window.dispatchEvent(new CustomEvent('flint:expand-folder', { detail: { id: targetParentId } }));
+                  window.dispatchEvent(new CustomEvent('noether:expand-folder', { detail: { id: targetParentId } }));
                   showToast(`Moved ${res.movedCount} items into “${targetFolder?.title || 'folder'}”`, 'success');
                 } else {
                   showToast(`Moved ${res.movedCount} items to root`, 'success');

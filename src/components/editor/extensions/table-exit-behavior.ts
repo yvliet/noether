@@ -218,7 +218,7 @@ export const TableExitBehavior = Extension.create({
               const target = event.target as HTMLElement | null;
               const isTableRelated = Boolean(
                 target?.closest('table') ||
-                target?.closest('.flint-table') ||
+                target?.closest('.noether-table') ||
                 target?.closest('.column-resize-handle')
               );
 

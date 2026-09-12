@@ -64,7 +64,7 @@ export const DocTreeNodeRow: React.FC<DocTreeNodeRowProps> = React.memo(({
         style={{ paddingLeft: level === 0 ? (isFolder ? 6 : 22) : (isFolder ? 0 : 14) }}
         className={`group relative flex items-start justify-between py-1 pr-2 my-0 cursor-pointer transition-none bg-transparent ${
           isActive && !isFolder
-            ? 'text-[#ea580c] hover:text-[#f97316] font-normal'
+            ? 'text-[#eb584d] hover:text-[#d94338] font-normal'
             : isHighlighted
             ? 'text-[#fef08a] font-normal'
             : isFolder
@@ -81,7 +81,7 @@ export const DocTreeNodeRow: React.FC<DocTreeNodeRowProps> = React.memo(({
             }}
             className={`absolute top-0 bottom-0 pointer-events-none transition-none ${
               isActive && !isFolder
-                ? 'bg-[#ea580c] z-10'
+                ? 'bg-[#eb584d] z-10'
                 : 'bg-transparent group-hover:bg-white z-10'
             }`}
           />

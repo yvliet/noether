@@ -5,7 +5,7 @@ import { updateDocumentTitle, updateInternalLinksAcrossDocuments, moveDocument a
 import { useDocumentStore } from './documentStore';
 import { useWorkspaceStore } from './workspaceStore';
 import { useSettingsStore } from './settingsStore';
-import { bindFlintStores } from '@/core/app/storeBridge';
+import { bindNoetherStores } from '@/core/app/storeBridge';
 
 export interface CreateFileAction {
   type: 'create';
@@ -254,7 +254,7 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
       }));
       return true;
     } catch (err) {
-      console.error('[Flint History] Undo error:', err);
+      console.error('[Noether History] Undo error:', err);
       set({ isExecuting: false });
       return false;
     }
@@ -349,7 +349,7 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
       }));
       return true;
     } catch (err) {
-      console.error('[Flint History] Redo error:', err);
+      console.error('[Noether History] Redo error:', err);
       set({ isExecuting: false });
       return false;
     }
@@ -358,5 +358,5 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
   clearHistory: () => set({ undoStack: [], redoStack: [] }),
 }));
 
-bindFlintStores({ fileHistory: useFileHistoryStore });
+bindNoetherStores({ fileHistory: useFileHistoryStore });
 

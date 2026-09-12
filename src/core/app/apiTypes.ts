@@ -1,7 +1,7 @@
 /**
  * @module apiTypes
  * @description
- * Public API type contracts for the FlintApp plugin surface.
+ * Public API type contracts for the NoetherApp plugin surface.
  * These interfaces define the shape of `app.workspace`, `app.vault`,
  * and `app.settings`, the primary ways plugins interact with the
  * application without importing internal stores.
@@ -396,25 +396,25 @@ export interface WorkspaceAPI {
   readonly backlinkCount: number;
 }
 
-// ─── Hearth API (formerly Vault API) ────────────────────────────
+// ─── Vault API (formerly Vault API) ────────────────────────────
 
 /**
- * The Hearth API provides methods for interacting with documents,
- * notes, and the underlying Hearth storage layer.
- * Accessed via `app.hearth` inside any Extension.
+ * The Vault API provides methods for interacting with documents,
+ * notes, and the underlying Vault storage layer.
+ * Accessed via `app.vault` inside any Extension.
  *
  * @example
  * ```ts
  * // Get the active document
- * const doc = app.hearth.activeDocument;
+ * const doc = app.vault.activeDocument;
  *
  * // Create a new note
- * const newDoc = await app.hearth.createNewNote('My Note');
+ * const newDoc = await app.vault.createNewNote('My Note');
  * ```
  *
  * @since 0.1.0
  */
-export interface HearthAPI {
+export interface VaultAPI {
   /**
    * Active document currently loaded in the primary editor.
    * @since 0.1.0
@@ -422,26 +422,26 @@ export interface HearthAPI {
   readonly activeDocument: DocumentItem | null;
 
   /**
-   * All documents and folders currently loaded in the Hearth.
+   * All documents and folders currently loaded in the Vault.
    * @since 0.2.0
    */
   readonly documents: DocumentItem[];
 
   /**
-   * Display name of the currently open Hearth.
+   * Display name of the currently open Vault.
    * @since 0.1.0
    */
-  readonly hearthName: string;
+  readonly vaultName: string;
 
   /**
-   * Filesystem path of the currently open Hearth root directory.
+   * Filesystem path of the currently open Vault root directory.
    * @since 0.1.0
    */
-  readonly hearthPath: string;
+  readonly vaultPath: string;
 
   /**
    * Retrieves a document by its unique ID.
-   * Returns `undefined` if no document with that ID exists in the Hearth.
+   * Returns `undefined` if no document with that ID exists in the Vault.
    *
    * @param docId - The document's unique identifier.
    * @since 0.2.0
@@ -457,7 +457,7 @@ export interface HearthAPI {
   readDocument(docId: string): Promise<DocumentItem | undefined>;
 
   /**
-   * Creates a new note document in the Hearth.
+   * Creates a new note document in the Vault.
    *
    * @param title - Initial title for the note (default: 'Untitled').
    * @param parentId - Optional parent folder ID for nesting.
@@ -474,7 +474,7 @@ export interface HearthAPI {
   ): Promise<DocumentItem | undefined>;
 
   /**
-   * Creates a new folder in the Hearth.
+   * Creates a new folder in the Vault.
    *
    * @param name - Initial folder name (default: 'Untitled').
    * @param parentId - Optional parent folder ID for nesting.
@@ -523,7 +523,7 @@ export interface HearthAPI {
   saveDocument(docId: string, contentJson: string, title?: string): Promise<void>;
 
   /**
-   * Permanently deletes a document from the Hearth.
+   * Permanently deletes a document from the Vault.
    *
    * @param docId - The document's unique identifier.
    * @since 0.1.0
@@ -625,7 +625,7 @@ export interface HearthAPI {
   getOutgoingLinks(docId?: string): Promise<OutgoingLinkItem[]>;
 
   /**
-   * Finds unlinked text mentions of a document title across the Hearth.
+   * Finds unlinked text mentions of a document title across the Vault.
    * @param docId - The target document ID.
    * @param title - Optional title override to search for.
    * @since 0.4.6
@@ -649,7 +649,7 @@ export interface HearthAPI {
   loadLinksAndMentions(docId: string, title: string): Promise<void>;
 
   /**
-   * Retrieves the complete list of unique tags indexed in the Hearth.
+   * Retrieves the complete list of unique tags indexed in the Vault.
    * @since 0.4.6
    */
   getTags(): Promise<TagItem[]>;
@@ -684,7 +684,7 @@ export interface HearthAPI {
   toggleTask(docId: string, lineIndexOrText: number | string, completed?: boolean): Promise<boolean>;
 
   /**
-   * Refreshes the cached global tasks across all Hearth documents.
+   * Refreshes the cached global tasks across all Vault documents.
    * @since 0.4.6
    */
   refreshGlobalTasks(): Promise<void>;

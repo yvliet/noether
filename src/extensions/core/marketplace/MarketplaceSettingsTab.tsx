@@ -1,10 +1,10 @@
 import React from 'react';
-import { useFlintApp, useToast } from 'flint';
+import { useNoetherApp, useToast } from 'noether';
 import { platform } from '@/lib/platform/platformAdapter';
 import { Store01Icon, FolderOpenIcon, RotateCcwIcon } from '@/components/common/Icons';
 
 export const MarketplaceSettingsTab: React.FC = () => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const showToast = useToast();
 
   const handleOpenMarketplace = () => {
@@ -19,7 +19,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .flint/extensions/ inside Hearth', 'info');
+      showToast('Extensions folder: .noether/extensions/ inside Vault', 'info');
     }
   };
 
@@ -49,7 +49,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenMarketplace}
-            className="flint-btn flint-btn-primary flex items-center gap-1.5"
+            className="noether-btn noether-btn-primary flex items-center gap-1.5"
           >
             <Store01Icon size={13} />
             <span>Open Marketplace</span>
@@ -61,13 +61,13 @@ export const MarketplaceSettingsTab: React.FC = () => {
           <div className="flex flex-col pr-4">
             <span className="text-[13px] font-normal text-[#dcddde]">Reload installed extensions</span>
             <span className="text-[11px] text-[#777] mt-0.5">
-              Scan the `.flint/extensions/` directory and refresh all active extensions.
+              Scan the `.noether/extensions/` directory and refresh all active extensions.
             </span>
           </div>
           <button
             type="button"
             onClick={handleReloadExtensions}
-            className="flint-btn flex items-center gap-1.5"
+            className="noether-btn flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Reload from Disk</span>
@@ -85,7 +85,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={handleOpenExtensionsFolder}
-            className="flint-btn flex items-center gap-1.5"
+            className="noether-btn flex items-center gap-1.5"
           >
             <FolderOpenIcon size={12} />
             <span>Open Folder</span>

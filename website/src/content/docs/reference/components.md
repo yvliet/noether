@@ -1,6 +1,6 @@
-# Flint UI Components
+# Noether UI Components
 
-Flint provides a suite of native UI primitives and setting builders directly via the Flint Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components use Flint's design tokens and are designed to feel like native desktop controls: clean, tactile, and responding instantly to clicks and keyboard navigation without cosmetic animation delays.
+Noether provides a suite of native UI primitives and setting builders directly via the Noether Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components use Noether's design tokens and are designed to feel like native desktop controls: clean, tactile, and responding instantly to clicks and keyboard navigation without cosmetic animation delays.
 
 Extension authors should use these components to build custom settings tabs, modal dialogs, status bar widgets, and workspace panels that seamlessly blend with the host application.
 
@@ -9,7 +9,7 @@ Extension authors should use these components to build custom settings tabs, mod
 
 ---
 
-All UI components and their TypeScript prop types are exported from the Flint SDK:
+All UI components and their TypeScript prop types are exported from the Noether SDK:
 
 ```typescript
 import {
@@ -21,7 +21,7 @@ import {
   SettingCard,
   SettingItem,
   SettingBuilder,
-} from 'flint';
+} from 'noether';
 ```
 
 
@@ -35,7 +35,7 @@ The `Button` component provides standard desktop button behaviors with unified s
 
 ```typescript
 import React from 'react';
-import { Button } from 'flint';
+import { Button } from 'noether';
 
 export const MyActionToolbar: React.FC = () => {
   return (
@@ -89,7 +89,7 @@ export const MyActionToolbar: React.FC = () => {
 
 ```typescript
 import React, { useState } from 'react';
-import { TextInput } from 'flint';
+import { TextInput } from 'noether';
 
 export const SearchField: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -124,13 +124,13 @@ export const SearchField: React.FC = () => {
 
 ---
 
-The `Toggle` component provides clean, accessible boolean switches. Like other native desktop controls in Flint, toggles flip state immediately on click.
+The `Toggle` component provides clean, accessible boolean switches. Like other native desktop controls in Noether, toggles flip state immediately on click.
 
 :::preview toggle
 
 ```typescript
 import React, { useState } from 'react';
-import { Toggle } from 'flint';
+import { Toggle } from 'noether';
 
 export const AutoSaveSetting: React.FC = () => {
   const [enabled, setEnabled] = useState(true);
@@ -161,13 +161,13 @@ export const AutoSaveSetting: React.FC = () => {
 
 ---
 
-A native desktop dropdown selector matching Flint's theme popovers and keyboard navigation.
+A native desktop dropdown selector matching Noether's theme popovers and keyboard navigation.
 
 :::preview select
 
 ```typescript
 import React, { useState } from 'react';
-import { Select, SelectOption } from 'flint';
+import { Select, SelectOption } from 'noether';
 
 const VIEW_OPTIONS: SelectOption[] = [
   { value: 'source', label: 'Raw Markdown' },
@@ -199,7 +199,7 @@ A continuous or stepped numerical range input with a real-time value display bad
 
 ```typescript
 import React, { useState } from 'react';
-import { Slider } from 'flint';
+import { Slider } from 'noether';
 
 export const SpacingSetting: React.FC = () => {
   const [fontSize, setFontSize] = useState(16);
@@ -222,13 +222,13 @@ export const SpacingSetting: React.FC = () => {
 
 ---
 
-Settings pages in Flint follow an organized card-and-row structure. `SettingCard` acts as a group container, while `SettingItem` pairs a title and description with an interactive control slot.
+Settings pages in Noether follow an organized card-and-row structure. `SettingCard` acts as a group container, while `SettingItem` pairs a title and description with an interactive control slot.
 
 :::preview settingbuilder
 
 ```typescript
 import React, { useState } from 'react';
-import { SettingCard, SettingItem, Toggle, TextInput } from 'flint';
+import { SettingCard, SettingItem, Toggle, TextInput } from 'noether';
 
 export const ExtensionSettingsTab: React.FC = () => {
   const [apiKey, setApiKey] = useState('');
@@ -244,7 +244,7 @@ export const ExtensionSettingsTab: React.FC = () => {
           <TextInput
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="flint_..."
+            placeholder="noether_..."
           />
         </SettingItem>
 
@@ -268,16 +268,16 @@ export const ExtensionSettingsTab: React.FC = () => {
 
 ---
 
-For extensions that prefer a procedural, Obsidian-style settings tab configuration without writing raw JSX, Flint provides the `SettingBuilder`:
+For extensions that prefer a procedural, Obsidian-style settings tab configuration without writing raw JSX, Noether provides the `SettingBuilder`:
 
 ```typescript
-import { Extension, ExtensionSettingTab, SettingBuilder, FlintApp } from 'flint';
+import { Extension, ExtensionSettingTab, SettingBuilder, NoetherApp } from 'noether';
 
 export class MySettingsTab implements ExtensionSettingTab {
   id = 'my-extension-settings';
   name = 'Word Counter Settings';
 
-  display(containerEl: HTMLElement, app: FlintApp): void {
+  display(containerEl: HTMLElement, app: NoetherApp): void {
     containerEl.innerHTML = ''; // Clear container
 
     new SettingBuilder(containerEl)
@@ -323,7 +323,7 @@ export class MySettingsTab implements ExtensionSettingTab {
 
 ---
 
-Flint provides built-in dialog helpers on `app.workspace` for user confirmations and prompts:
+Noether provides built-in dialog helpers on `app.workspace` for user confirmations and prompts:
 
 - `app.workspace.showConfirmDialog({ title, message, confirmText, onConfirm })`: Displays an alert modal with confirm and cancel buttons.
 - `app.workspace.showInputDialog({ title, message, placeholder, onConfirm })`: Requests user text input.

@@ -3,7 +3,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useFileHistoryStore } from '@/store/fileHistoryStore';
-import { appInstance } from '@/core/app/FlintApp';
+import { appInstance } from '@/core/app/NoetherApp';
 import { platform } from '@/lib/platform/platformAdapter';
 
 function matchesHotkey(e: KeyboardEvent, hotkeyStr?: string): boolean {
@@ -101,9 +101,9 @@ export function useKeyboardShortcuts() {
           ws.setIsHelpModalOpen(false);
           return;
         }
-        if (ws.isHearthModalOpen) {
+        if (ws.isVaultModalOpen) {
           e.preventDefault();
-          ws.setIsHearthModalOpen(false);
+          ws.setIsVaultModalOpen(false);
           return;
         }
         if (ws.mainViewMode !== 'document') {
@@ -174,7 +174,7 @@ export function useKeyboardShortcuts() {
         ws.isReviewModalOpen ||
         ws.isSettingsOpen ||
         ws.isHelpModalOpen ||
-        ws.isHearthModalOpen
+        ws.isVaultModalOpen
       ) {
         return;
       }
@@ -262,10 +262,10 @@ export function useKeyboardShortcuts() {
         }
       }
 
-      // 11. Hearth Switcher: Ctrl + Shift + O
-      if (isMatch('workspace:hearth-switcher', ['Ctrl+Shift+O']) || isMatch('workspace:vault-switcher', ['Ctrl+Shift+O'])) {
+      // 11. Vault Switcher: Ctrl + Shift + O
+      if (isMatch('workspace:vault-switcher', ['Ctrl+Shift+O']) || isMatch('workspace:vault-switcher', ['Ctrl+Shift+O'])) {
         e.preventDefault();
-        ws.setIsHearthModalOpen(true);
+        ws.setIsVaultModalOpen(true);
         return;
       }
 
@@ -306,13 +306,13 @@ export function useKeyboardShortcuts() {
       // In-Document Find: Ctrl + F
       if (isMatch('editor:find-in-note', ['Ctrl+F'])) {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent('flint:find-in-note', { detail: { paneId: ws.focusedPaneId } }));
+        window.dispatchEvent(new CustomEvent('noether:find-in-note', { detail: { paneId: ws.focusedPaneId } }));
         return;
       }
       // In-Document Replace: Ctrl + H
       if (isMatch('editor:replace-in-note', ['Ctrl+H'])) {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent('flint:replace-in-note', { detail: { paneId: ws.focusedPaneId } }));
+        window.dispatchEvent(new CustomEvent('noether:replace-in-note', { detail: { paneId: ws.focusedPaneId } }));
         return;
       }
 
@@ -440,7 +440,7 @@ export function useKeyboardShortcuts() {
       // 16b. Explicit Save: Ctrl + S / Cmd + S
       if ((keyLower === 's' || code === 'KeyS') && isCtrlOrMeta && !isAlt && !isShift) {
         e.preventDefault();
-        window.dispatchEvent(new CustomEvent('flint:save-note'));
+        window.dispatchEvent(new CustomEvent('noether:save-note'));
         return;
       }
 
@@ -459,13 +459,13 @@ export function useKeyboardShortcuts() {
         Boolean(target?.closest('[contenteditable="true"]')) ||
         Boolean(target?.closest('.ProseMirror')) ||
         Boolean(target?.closest('.tiptap')) ||
-        Boolean(target?.closest('.flint-doc-wrapper')) ||
+        Boolean(target?.closest('.noether-doc-wrapper')) ||
         Boolean(target?.closest('.editor-canvas')) ||
         Boolean(activeEl?.isContentEditable) ||
         Boolean(activeEl?.closest('[contenteditable="true"]')) ||
         Boolean(activeEl?.closest('.ProseMirror')) ||
         Boolean(activeEl?.closest('.tiptap')) ||
-        Boolean(activeEl?.closest('.flint-doc-wrapper')) ||
+        Boolean(activeEl?.closest('.noether-doc-wrapper')) ||
         Boolean(activeEl?.closest('.editor-canvas'));
       const isAnyEditorOrInput = isInput || isContentEditor;
       const isSidebarFocused = Boolean(target?.closest('[data-sidebar="true"]') || activeEl?.closest('[data-sidebar="true"]'));

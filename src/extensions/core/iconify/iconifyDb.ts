@@ -31,11 +31,11 @@ export interface IconEntry {
 }
 
 function getLocalStorageKey(): string {
-  return 'flint_iconify_icons_cache_v1';
+  return 'noether_iconify_icons_cache_v1';
 }
 
 function getSettingsLocalStorageKey(): string {
-  return 'flint_iconify_settings_v1';
+  return 'noether_iconify_settings_v1';
 }
 
 export interface IconifySettings {

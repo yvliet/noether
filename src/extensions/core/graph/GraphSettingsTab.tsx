@@ -6,7 +6,7 @@ import {
   GraphNodeType,
   GRAPH_PALETTES,
 } from './graphSettings';
-import { useToast } from 'flint';
+import { useToast } from 'noether';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { CustomSelect } from '@/components/common/CustomSelect';
@@ -141,7 +141,7 @@ export const GraphSettingsTab: React.FC = () => {
               restoreDefaults();
               showToast('Restored Graph view defaults', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Restore defaults</span>
@@ -583,7 +583,7 @@ export const GraphSettingsTab: React.FC = () => {
                     type="button"
                     onClick={() => setPaletteId(DEFAULT_GRAPH_SETTINGS.paletteId)}
                     title="Restore default palette (Amber)"
-                    className="flint-btn text-xs py-1 px-2 flex items-center gap-1 text-[#888] hover:text-white"
+                    className="noether-btn text-xs py-1 px-2 flex items-center gap-1 text-[#888] hover:text-white"
                   >
                     <RotateCcwIcon size={12} />
                     <span>Reset palette</span>
@@ -654,7 +654,7 @@ export const GraphSettingsTab: React.FC = () => {
                       type="button"
                       onClick={resetCustomTypeColors}
                       title="Reset all colors to active palette"
-                      className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5 text-[#888] hover:text-white"
+                      className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5 text-[#888] hover:text-white"
                     >
                       <RotateCcwIcon size={12} />
                       <span>Reset all to palette</span>
@@ -676,7 +676,7 @@ export const GraphSettingsTab: React.FC = () => {
                         className="flex items-center justify-between p-2.5 rounded-lg bg-[#181818] border border-[#2e2e2e]"
                       >
                         <div className="flex items-center gap-3">
-                          {/* Flint Custom ColorPicker Popover */}
+                          {/* Noether Custom ColorPicker Popover */}
                           <ColorPicker
                             value={currentColor}
                             onChange={(hex) => setCustomTypeColor(type, hex)}

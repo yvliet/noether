@@ -2,7 +2,7 @@
  * @module SketchSubheaderButton
  * @description
  * Quick-action toolbar button mounted in the document subheader next to the
- * Reading/Editing view toggle. Follows Flint's native desktop geometry and palette.
+ * Reading/Editing view toggle. Follows Noether's native desktop geometry and palette.
  */
 
 import React, { useEffect } from 'react';

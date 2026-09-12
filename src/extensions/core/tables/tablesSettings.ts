@@ -30,7 +30,7 @@ export const useTablesSettings = create<TablesSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_TABLES_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_tables',
+      name: 'noether_extension_data_tables',
     }
   )
 );

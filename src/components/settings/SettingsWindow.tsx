@@ -55,8 +55,8 @@ import {
   NewNoteLocation,
   LinkFormat,
 } from '@/store/settingsStore';
-import { appInstance } from '@/core/app/FlintApp';
-import { AppProvider, useFlintApp, useExtensionList, useSettingTabs, useCommands } from '@/core/app/AppContext';
+import { appInstance } from '@/core/app/NoetherApp';
+import { AppProvider, useNoetherApp, useExtensionList, useSettingTabs, useCommands } from '@/core/app/AppContext';
 import { ExtensionSettingTab } from '@/core/extensions/types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { dbAdapter } from '@/lib/db/adapter';
@@ -79,7 +79,7 @@ const FieldResetButton: React.FC<{
         onReset();
       }}
       title={title}
-      className="p-1 rounded-md text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer shrink-0 flex items-center justify-center"
+      className="p-1 rounded-md text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 flex items-center justify-center"
     >
       <RotateCcwIcon size={13} />
     </button>
@@ -269,7 +269,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
       <div className="px-4 flex items-center justify-between">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-xs text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer -ml-1 w-fit"
+          className="flex items-center gap-1.5 text-xs text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer -ml-1 w-fit"
         >
           <ArrowLeft01Icon size={14} />
           <span className="font-medium">Files and links / Trash</span>
@@ -286,7 +286,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                   showToast('Failed to open .trash folder', 'warning');
                 }
               }}
-              className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
               title="Open .trash folder in system file manager"
             >
               <Folder01Icon size={12} />
@@ -308,7 +308,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                   },
                 });
               }}
-              className="flint-btn flint-btn-danger text-xs py-1 px-2.5 flex items-center gap-1.5"
+              className="noether-btn noether-btn-danger text-xs py-1 px-2.5 flex items-center gap-1.5"
             >
               <Delete02Icon size={12} />
               <span>Empty trash</span>
@@ -319,7 +319,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
 
       <div className="px-4">
         <p className="text-xs text-[#777]">
-          Items in trash are automatically cleared after 48 hours. You can restore them back to your Hearth anytime before they expire.
+          Items in trash are automatically cleared after 48 hours. You can restore them back to your Vault anytime before they expire.
         </p>
       </div>
 
@@ -354,10 +354,10 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
               return (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between p-3 hover:bg-[var(--flint-bg-card-hover)] group"
+                  className="flex items-center justify-between p-3 hover:bg-[var(--noether-bg-card-hover)] group"
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1 pr-3">
-                    <div className="w-7 h-7 rounded-lg bg-[var(--flint-bg-card)] flex items-center justify-center text-[var(--flint-text-muted)] shrink-0">
+                    <div className="w-7 h-7 rounded-lg bg-[var(--noether-bg-card)] flex items-center justify-center text-[var(--noether-text-muted)] shrink-0">
                       {item.is_folder ? (
                         <Folder01Icon size={15} />
                       ) : customType ? (
@@ -369,21 +369,21 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
 
                     <div className="flex flex-col min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-medium text-[var(--flint-text-primary)] truncate">
+                        <span className="text-xs font-medium text-[var(--noether-text-primary)] truncate">
                           {customType ? fileTypeRegistry.cleanTitle(item.title) : item.title}
                         </span>
                         {customType && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] uppercase font-semibold">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] uppercase font-semibold">
                             {customType.badgeLabel || customType.extension}
                           </span>
                         )}
                         {item.is_folder ? (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] uppercase font-semibold">
+                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] uppercase font-semibold">
                             Folder
                           </span>
                         ) : null}
                       </div>
-                      <div className="flex items-center gap-2 text-[10px] text-[var(--flint-text-muted)] mt-0.5 truncate">
+                      <div className="flex items-center gap-2 text-[10px] text-[var(--noether-text-muted)] mt-0.5 truncate">
                         <span>{formatRelativeTime(item.deleted_at)}</span>
                         <span>•</span>
                         <span className="text-amber-500/80 font-medium">
@@ -398,8 +398,8 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                       onClick={async () => {
                         await restoreFromTrash(item.id);
                       }}
-                      title="Restore to Hearth"
-                      className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+                      title="Restore to Vault"
+                      className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
                     >
                       <RotateCcwIcon size={12} />
                       <span>Restore</span>
@@ -418,7 +418,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                         });
                       }}
                       title="Delete permanently"
-                      className="p-1.5 text-[var(--flint-text-muted)] hover:text-rose-400 hover:bg-[var(--flint-bg-card-hover)] rounded-[5px] cursor-pointer"
+                      className="p-1.5 text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-[var(--noether-bg-card-hover)] rounded-[5px] cursor-pointer"
                     >
                       <Delete02Icon size={14} />
                     </button>
@@ -463,7 +463,7 @@ const GeneralTab: React.FC = React.memo(() => {
               restoreTabDefaults('general');
               showToast('Restored General settings to default', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default general settings"
           >
             <RotateCcwIcon size={12} />
@@ -479,7 +479,7 @@ const GeneralTab: React.FC = React.memo(() => {
             <div className="text-sm font-medium text-white">Version {APP_VERSION}</div>
             <div className="text-xs text-[#888] mt-0.5">Installer version: {APP_VERSION}</div>
             <a
-              href="https://github.com/yvliet/Flint/releases"
+              href="https://github.com/yvliet/Noether/releases"
               target="_blank"
               rel="noreferrer"
               className="text-xs text-[#38bdf8] hover:underline mt-0.5 inline-block w-fit"
@@ -492,7 +492,7 @@ const GeneralTab: React.FC = React.memo(() => {
               <button
                 type="button"
                 onClick={() => setIsUpdateModalOpen(true, latestRelease)}
-                className="flint-btn flint-btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer"
+                className="noether-btn noether-btn-primary text-xs py-1.5 px-3 flex items-center gap-1.5 cursor-pointer"
               >
                 <SparklesIcon size={13} />
                 <span>Update to v{latestRelease.version}</span>
@@ -502,7 +502,7 @@ const GeneralTab: React.FC = React.memo(() => {
               type="button"
               onClick={checkForUpdatesNow}
               disabled={isChecking}
-              className="flint-btn text-xs py-1.5 px-3 disabled:opacity-50 cursor-pointer"
+              className="noether-btn text-xs py-1.5 px-3 disabled:opacity-50 cursor-pointer"
             >
               {isChecking ? 'Checking...' : 'Check for updates'}
             </button>
@@ -560,12 +560,12 @@ const GeneralTab: React.FC = React.memo(() => {
           <div className="flex flex-col pr-4">
             <span className="text-[13px] font-normal text-[#dcddde]">Help</span>
             <span className="text-[11px] text-[#777] mt-0.5">
-              Learn how to use Flint and get help from the community.
+              Learn how to use Noether and get help from the community.
             </span>
           </div>
           <button
             onClick={() => useWorkspaceStore.getState().setIsHelpModalOpen(true)}
-            className="flint-btn"
+            className="noether-btn"
           >
             Open
           </button>
@@ -617,7 +617,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
   const [newThemeSidebar, setNewThemeSidebar] = useState('#151515');
   const [newThemeMain, setNewThemeMain] = useState('#1c1c1c');
   const [newThemeCard, setNewThemeCard] = useState('#222222');
-  const [newThemeAccent, setNewThemeAccent] = useState('#ea580c');
+  const [newThemeAccent, setNewThemeAccent] = useState('#eb584d');
   const [newThemeCss, setNewThemeCss] = useState('');
 
   const allThemes = useMemo(() => {
@@ -658,7 +658,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .flint/extensions/ inside Hearth', 'info');
+      showToast('Extensions folder: .noether/extensions/ inside Vault', 'info');
     }
   }, [showToast]);
 
@@ -675,7 +675,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               restoreTabDefaults('appearance');
               showToast('Restored Appearance settings to default', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default appearance settings"
           >
             <RotateCcwIcon size={12} />
@@ -696,7 +696,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             {/* Quick Accent Swatches */}
             <div className="flex items-center gap-1.5 mt-2.5">
               {[
-                { name: 'Flint Ember', color: '#ea580c' },
+                { name: 'Noether Coral', color: '#eb584d' },
                 { name: 'Electric Blue', color: '#3b82f6' },
                 { name: 'Emerald Green', color: '#10b981' },
                 { name: 'Amethyst', color: '#8b5cf6' },
@@ -723,7 +723,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             <FieldResetButton
               isModified={accentColor !== DEFAULT_SETTINGS.accentColor}
               onReset={() => setAccentColor(DEFAULT_SETTINGS.accentColor)}
-              title="Restore default accent color (#ea580c)"
+              title="Restore default accent color (#eb584d)"
             />
             <ColorPicker value={accentColor} onChange={setAccentColor} />
           </div>
@@ -754,7 +754,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 showToast(`Exported "${currentDef.name}" JSON to clipboard`, 'success');
               }}
               title="Export current theme as JSON"
-              className="flint-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
+              className="noether-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
             >
               <Copy01Icon size={13} />
               <span>Export</span>
@@ -763,7 +763,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             <button
               onClick={() => setIsImportingTheme(true)}
               title="Import theme JSON"
-              className="flint-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
+              className="noether-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
             >
               <Download01Icon size={13} />
               <span>Import</span>
@@ -779,11 +779,11 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 setNewThemeSidebar('#151515');
                 setNewThemeMain('#1c1c1c');
                 setNewThemeCard('#222222');
-                setNewThemeAccent('#ea580c');
+                setNewThemeAccent('#eb584d');
                 setNewThemeCss('');
                 setIsCreatingTheme(true);
               }}
-              className="flint-btn flint-btn-primary flex items-center gap-1.5"
+              className="noether-btn noether-btn-primary flex items-center gap-1.5"
             >
               <PlusSignIcon size={13} />
               <span>New Theme</span>
@@ -845,7 +845,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 }}
                 className={`group relative flex flex-col rounded-xl overflow-hidden border cursor-pointer select-none ${
                   isActive
-                    ? 'bg-[#242424] border-[var(--flint-accent)] ring-1 ring-[var(--flint-accent)] shadow-md'
+                    ? 'bg-[#242424] border-[var(--noether-accent)] ring-1 ring-[var(--noether-accent)] shadow-md'
                     : 'bg-[#1e1e1e] border-[#2a2a2a] hover:border-[#3a3a3a] hover:bg-[#222222]'
                 }`}
               >
@@ -892,7 +892,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                       />
                       <div
                         className="w-2.5 h-2.5 rounded-full shadow-xs"
-                        style={{ background: accentColor || v.accent || '#ea580c' }}
+                        style={{ background: accentColor || v.accent || '#eb584d' }}
                       />
                     </div>
                   </div>
@@ -902,7 +902,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 <div className="p-3 flex flex-col justify-between flex-1 gap-2">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-white group-hover:text-[var(--flint-accent)]">
+                      <span className="text-xs font-semibold text-white group-hover:text-[var(--noether-accent)]">
                         {theme.name}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -933,7 +933,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   {/* Card Footer: Status & Actions */}
                   <div className="flex items-center justify-between pt-1 border-t border-[#262626]">
                     <span className="text-[10px] text-[#666]">
-                      By {theme.author || 'Flint'}
+                      By {theme.author || 'Noether'}
                     </span>
 
                     <div className="flex items-center gap-1.5">
@@ -956,7 +956,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                       )}
 
                       {isActive ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--flint-accent)]">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--noether-accent)]">
                           <CheckIcon size={12} />
                           <span>Active</span>
                         </span>
@@ -1000,7 +1000,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
           <div className="w-full max-w-lg bg-[#1c1c1c] border border-[#333] rounded-xl shadow-2xl p-5 flex flex-col gap-4 text-xs text-[#dcddde]">
             <div className="flex items-center justify-between pb-2 border-b border-[#282828]">
               <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">
-                <SparklesIcon size={16} className="text-[var(--flint-accent)]" />
+                <SparklesIcon size={16} className="text-[var(--noether-accent)]" />
                 <span>Create Custom Theme</span>
               </h4>
               <button
@@ -1062,7 +1062,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   value={newThemeName}
                   onChange={(e) => setNewThemeName(e.target.value)}
                   placeholder="e.g. Neon Emerald"
-                  className="bg-[#141414] border border-[#2a2a2a] focus:border-[var(--flint-accent)] rounded px-2.5 py-1.5 text-xs text-white outline-none"
+                  className="bg-[#141414] border border-[#2a2a2a] focus:border-[var(--noether-accent)] rounded px-2.5 py-1.5 text-xs text-white outline-none"
                 />
               </div>
 
@@ -1145,7 +1145,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               <button
                 type="button"
                 onClick={() => setIsCreatingTheme(false)}
-                className="flint-btn"
+                className="noether-btn"
               >
                 Cancel
               </button>
@@ -1182,7 +1182,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   setIsCreatingTheme(false);
                   showToast(`Created & applied theme "${newThemeName}"`, 'success');
                 }}
-                className="flint-btn flint-btn-primary"
+                className="noether-btn noether-btn-primary"
               >
                 Save & Apply Theme
               </button>
@@ -1197,7 +1197,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
           <div className="w-full max-w-md bg-[#1c1c1c] border border-[#333] rounded-xl shadow-2xl p-5 flex flex-col gap-4 text-xs text-[#dcddde]">
             <div className="flex items-center justify-between pb-2 border-b border-[#282828]">
               <h4 className="text-sm font-semibold text-white flex items-center gap-1.5">
-                <Download01Icon size={16} className="text-[var(--flint-accent)]" />
+                <Download01Icon size={16} className="text-[var(--noether-accent)]" />
                 <span>Import Theme JSON</span>
               </h4>
               <button
@@ -1223,7 +1223,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               <button
                 type="button"
                 onClick={() => setIsImportingTheme(false)}
-                className="flint-btn"
+                className="noether-btn"
               >
                 Cancel
               </button>
@@ -1241,7 +1241,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                     showToast('Invalid theme JSON format', 'warning');
                   }
                 }}
-                className="flint-btn flint-btn-primary"
+                className="noether-btn noether-btn-primary"
               >
                 Import & Apply
               </button>
@@ -1264,7 +1264,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             <div className="flex flex-col pr-4">
               <span className="text-[13px] font-normal text-[#dcddde]">Interface font</span>
               <span className="text-[11px] text-[#777] mt-0.5">
-                Set base font for all of Flint.
+                Set base font for all of Noether.
               </span>
             </div>
             <div className="flex items-center gap-2 text-xs text-[#888]">
@@ -1382,7 +1382,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             </div>
             <button
               onClick={() => showToast('Custom app icon feature active', 'info')}
-              className="flint-btn"
+              className="noether-btn"
             >
               Choose
             </button>
@@ -1436,7 +1436,7 @@ const InterfaceTab: React.FC = React.memo(() => {
               restoreTabDefaults('interface');
               showToast('Restored Interface settings to default', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default interface settings"
           >
             <RotateCcwIcon size={12} />
@@ -1570,7 +1570,7 @@ const InterfaceTab: React.FC = React.memo(() => {
             <div className="flex flex-col pr-4">
               <span className="text-[13px] font-normal text-[#dcddde]">Window frame style</span>
               <span className="text-[11px] text-[#777] mt-0.5">
-                Determines the styling of the title bar of Flint windows. Requires a full restart to take effect.
+                Determines the styling of the title bar of Noether windows. Requires a full restart to take effect.
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -1707,7 +1707,7 @@ const EditorTab: React.FC = React.memo(() => {
               restoreTabDefaults('editor');
               showToast('Restored Editor settings to default', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default editor settings"
           >
             <RotateCcwIcon size={12} />
@@ -2223,9 +2223,9 @@ interface FilesTabProps {
 }
 
 const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
-  const hearthName = useWorkspaceStore((s) => s.hearthName);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
-  const renameHearth = useWorkspaceStore((s) => s.renameHearth);
+  const vaultName = useWorkspaceStore((s) => s.vaultName);
+  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
+  const renameVault = useWorkspaceStore((s) => s.renameVault);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
 
@@ -2253,21 +2253,21 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
 
-  const [tempHearthName, setTempHearthName] = useState(hearthName);
+  const [tempVaultName, setTempVaultName] = useState(vaultName);
 
   useEffect(() => {
     loadTrash();
   }, [loadTrash]);
 
   useEffect(() => {
-    setTempHearthName(hearthName);
-  }, [hearthName]);
+    setTempVaultName(vaultName);
+  }, [vaultName]);
 
-  const handleSaveHearthName = useCallback(async () => {
-    if (tempHearthName.trim()) {
-      await renameHearth(hearthPath, tempHearthName.trim());
+  const handleSaveVaultName = useCallback(async () => {
+    if (tempVaultName.trim()) {
+      await renameVault(vaultPath, tempVaultName.trim());
     }
-  }, [tempHearthName, hearthPath, renameHearth]);
+  }, [tempVaultName, vaultPath, renameVault]);
 
   const handlePickAttachmentFolder = useCallback(() => {
     promptFolderSelection({
@@ -2276,7 +2276,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
       onSelect: (folderPath) => {
         setAttachmentFolder(folderPath);
         setIsSettingsOpen(true, 'files');
-        showToast(folderPath ? `Attachment location set to "${folderPath}"` : 'Attachment location set to Hearth root', 'success');
+        showToast(folderPath ? `Attachment location set to "${folderPath}"` : 'Attachment location set to Vault root', 'success');
       },
       onCancel: () => {
         setIsSettingsOpen(true, 'files');
@@ -2299,7 +2299,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
       <div className="flex items-center justify-between px-4">
         <div>
           <h3 className="text-sm font-semibold text-white mb-0.5">Files and links</h3>
-          <p className="text-[11px] text-[#777]">Hearth management, link formats, and internal link syncing.</p>
+          <p className="text-[11px] text-[#777]">Vault management, link formats, and internal link syncing.</p>
         </div>
         {isFilesModified && (
           <button
@@ -2307,7 +2307,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               restoreTabDefaults('files');
               showToast('Restored Files & links settings to default', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Restore default files & links settings"
           >
             <RotateCcwIcon size={12} />
@@ -2316,33 +2316,33 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
         )}
       </div>
 
-      {/* Section: Hearth config */}
+      {/* Section: Vault config */}
       <div>
         <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Hearth</h3>
+          <h3 className="text-sm font-semibold text-white">Vault</h3>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
           <div className="flex items-center justify-between p-4">
             <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Hearth name</span>
+              <span className="text-[13px] font-normal text-[#dcddde]">Vault name</span>
               <span className="text-[11px] text-[#777] mt-0.5">
-                Change the display name of this Hearth.
+                Change the display name of this Vault.
               </span>
             </div>
             <div className="flex items-center gap-2">
               <input
                 type="text"
-                value={tempHearthName}
-                onChange={(e) => setTempHearthName(e.target.value)}
+                value={tempVaultName}
+                onChange={(e) => setTempVaultName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveHearthName();
+                  if (e.key === 'Enter') handleSaveVaultName();
                 }}
                 className="bg-[#2a2a2a] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none w-44 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
               />
-              {tempHearthName !== hearthName && (
+              {tempVaultName !== vaultName && (
                 <button
-                  onClick={handleSaveHearthName}
-                  className="flint-btn flint-btn-primary"
+                  onClick={handleSaveVaultName}
+                  className="noether-btn noether-btn-primary"
                 >
                   Save
                 </button>
@@ -2438,13 +2438,13 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
               <FieldResetButton
                 isModified={newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation}
                 onReset={() => setNewNoteLocation(DEFAULT_SETTINGS.newNoteLocation)}
-                title="Restore default (Hearth root)"
+                title="Restore default (Vault root)"
               />
               <CustomSelect
                 value={newNoteLocation}
                 onChange={(val) => setNewNoteLocation(val as NewNoteLocation)}
                 options={[
-                  { value: 'root', label: 'Hearth root folder' },
+                  { value: 'root', label: 'Vault root folder' },
                   { value: 'same', label: 'Same folder as current file' },
                 ]}
               />
@@ -2456,24 +2456,24 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
             <div className="flex flex-col pr-4">
               <span className="text-[13px] font-normal text-[#dcddde]">Default location for new attachments</span>
               <span className="text-[11px] text-[#777] mt-0.5">
-                Folder where pasted images and media attachments are placed (leave blank for Hearth root).
+                Folder where pasted images and media attachments are placed (leave blank for Vault root).
               </span>
             </div>
             <div className="flex items-center gap-2">
               <FieldResetButton
                 isModified={attachmentFolder !== DEFAULT_SETTINGS.attachmentFolder}
                 onReset={() => setAttachmentFolder(DEFAULT_SETTINGS.attachmentFolder)}
-                title="Restore default (Hearth root)"
+                title="Restore default (Vault root)"
               />
               <button
                 type="button"
                 onClick={handlePickAttachmentFolder}
-                className="flint-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
+                className="noether-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
                 title="Click to select folder in File Explorer"
               >
                 <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
                 <span className="max-w-[130px] truncate text-[#dcddde]">
-                  {attachmentFolder ? attachmentFolder : 'Hearth root ( / )'}
+                  {attachmentFolder ? attachmentFolder : 'Vault root ( / )'}
                 </span>
                 <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[#282828] px-1.5 py-0.5 rounded border border-[#383838]">
                   Set
@@ -2523,7 +2523,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                 options={[
                   { value: 'shortest', label: 'Shortest path when possible' },
                   { value: 'relative', label: 'Relative path from file' },
-                  { value: 'absolute', label: 'Absolute path in Hearth' },
+                  { value: 'absolute', label: 'Absolute path in Vault' },
                 ]}
               />
             </div>
@@ -2597,7 +2597,7 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
                   },
                 });
               }}
-              className="flint-btn flint-btn-danger flex items-center gap-1.5"
+              className="noether-btn noether-btn-danger flex items-center gap-1.5"
             >
               <Delete02Icon size={12} />
               <span>Empty Trash</span>
@@ -2675,7 +2675,7 @@ const HotkeysTab: React.FC = React.memo(() => {
               resetAllHotkeys();
               showToast('Reset all customized shortcuts to defaults', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
             title="Reset all customized shortcuts to defaults"
           >
             <RotateCcwIcon size={12} />
@@ -2686,13 +2686,13 @@ const HotkeysTab: React.FC = React.memo(() => {
 
       {recordingCommandId && (
         <div
-          style={{ borderColor: 'var(--flint-accent, #ea580c)' }}
+          style={{ borderColor: 'var(--noether-accent, #eb584d)' }}
           className="mx-4 p-3 bg-[#242424] border rounded-xl flex items-center justify-between text-xs text-white"
         >
           <span>Press your desired key combination (e.g. <b>Ctrl+Shift+K</b>)...</span>
           <button
             onClick={() => setRecordingCommandId(null)}
-            className="flint-btn text-xs !py-0.5 !px-2"
+            className="noether-btn text-xs !py-0.5 !px-2"
           >
             Cancel (Esc)
           </button>
@@ -2732,9 +2732,9 @@ const HotkeysTab: React.FC = React.memo(() => {
                 {isRecording ? (
                   <span
                     style={{
-                      backgroundColor: 'var(--flint-accent-subtle, rgba(234,88,12,0.2))',
-                      borderColor: 'var(--flint-accent, #ea580c)',
-                      color: 'var(--flint-accent, #ea580c)',
+                      backgroundColor: 'var(--noether-accent-subtle, rgba(235, 88, 77,0.2))',
+                      borderColor: 'var(--noether-accent, #eb584d)',
+                      color: 'var(--noether-accent, #eb584d)',
                     }}
                     className="px-2.5 py-1 border text-xs font-mono rounded-[5px] animate-pulse"
                   >
@@ -2744,7 +2744,7 @@ const HotkeysTab: React.FC = React.memo(() => {
                   <button
                     onClick={() => setRecordingCommandId(cmd.id)}
                     title="Click to reassign hotkey"
-                    className="flint-btn text-xs font-mono text-[#bbb] hover:text-white py-1 px-2.5"
+                    className="noether-btn text-xs font-mono text-[#bbb] hover:text-white py-1 px-2.5"
                   >
                     {activeHotkey}
                   </button>
@@ -2791,7 +2791,7 @@ interface CoreExtensionsTabProps {
 }
 
 const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavigateTab, onClose }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const extensionList = useExtensionList();
   const allSettingTabs = useSettingTabs();
 
@@ -2843,7 +2843,7 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
                   <button
                     type="button"
                     onClick={() => {
-                      localStorage.setItem('flint_open_extension_doc', JSON.stringify({ extensionId: ext.id, title: ext.name, timestamp: Date.now() }));
+                      localStorage.setItem('noether_open_extension_doc', JSON.stringify({ extensionId: ext.id, title: ext.name, timestamp: Date.now() }));
                       useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name);
                       if (onClose) {
                         onClose();
@@ -2891,7 +2891,7 @@ interface CommunityExtensionsTabProps {
 }
 
 const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo(({ onNavigateTab, onClose }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const extensionList = useExtensionList();
   const allSettingTabs = useSettingTabs();
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -2936,7 +2936,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .flint/extensions/ inside Hearth', 'info');
+      showToast('Extensions folder: .noether/extensions/ inside Vault', 'info');
     }
   }, [showToast]);
 
@@ -2989,14 +2989,14 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
         <div>
           <h3 className="text-sm font-semibold text-white mb-1">Community extensions</h3>
           <p className="text-[11px] text-[#777]">
-            Installed community extensions in your Hearth.
+            Installed community extensions in your Vault.
           </p>
         </div>
         <div className="flex items-center gap-2">
           {availableUpdates.length > 0 && (
             <button
               onClick={handleUpdateAll}
-              className="flint-btn flint-btn-primary flex items-center gap-1.5"
+              className="noether-btn noether-btn-primary flex items-center gap-1.5"
             >
               <Download01Icon size={12} />
               <span>Update all ({availableUpdates.length})</span>
@@ -3005,7 +3005,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
           <button
             onClick={handleCheckUpdates}
             disabled={isCheckingUpdates || app.extensions.updater.checking}
-            className="flint-btn flex items-center gap-1.5 disabled:opacity-50"
+            className="noether-btn flex items-center gap-1.5 disabled:opacity-50"
           >
             <RotateCcwIcon
               size={12}
@@ -3015,14 +3015,14 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
           </button>
           <button
             onClick={handleReloadExtensions}
-            className="flint-btn flex items-center gap-1.5"
+            className="noether-btn flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Reload</span>
           </button>
           <button
             onClick={handleOpenExtensionsFolder}
-            className="flint-btn flex items-center gap-1.5"
+            className="noether-btn flex items-center gap-1.5"
           >
             <FolderOpenIcon size={12} />
             <span>Open extensions folder</span>
@@ -3059,7 +3059,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                       type="button"
                       onClick={() => handleUpdateExtension(ext.id)}
                       disabled={isUpdating}
-                      className="flint-btn flint-btn-primary text-[11px] !py-1 !px-2.5 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="noether-btn noether-btn-primary text-[11px] !py-1 !px-2.5 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <Download01Icon size={12} className={isUpdating ? 'animate-bounce' : ''} />
                       <span>{isUpdating ? 'Updating...' : `Update to v${updateInfo.latestVersion}`}</span>
@@ -3069,7 +3069,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                     <button
                       type="button"
                       onClick={() => {
-                        localStorage.setItem('flint_open_extension_doc', JSON.stringify({ extensionId: ext.id, title: ext.name, timestamp: Date.now() }));
+                        localStorage.setItem('noether_open_extension_doc', JSON.stringify({ extensionId: ext.id, title: ext.name, timestamp: Date.now() }));
                         useWorkspaceStore.getState().openExtensionDocTab(ext.id, ext.name);
                         if (onClose) {
                           onClose();
@@ -3114,12 +3114,12 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
         </div>
       ) : (
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 text-center mt-1 flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--flint-accent)]/10 border border-[var(--flint-accent)]/20 flex items-center justify-center text-[var(--flint-accent)] mb-3 shadow-xs">
+          <div className="w-12 h-12 rounded-2xl bg-[var(--noether-accent)]/10 border border-[var(--noether-accent)]/20 flex items-center justify-center text-[var(--noether-accent)] mb-3 shadow-xs">
             <Store01Icon size={24} />
           </div>
           <h4 className="text-sm font-semibold text-white mb-1">Discover Community Extensions</h4>
           <p className="text-xs text-[#888] max-w-md leading-relaxed mb-5">
-            Extend Flint with community extensions for enhanced workflows, visualizations, and integrations.
+            Extend Noether with community extensions for enhanced workflows, visualizations, and integrations.
           </p>
           <div className="flex items-center gap-3">
             <button
@@ -3134,14 +3134,14 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
                   platform.closeSettingsWindow();
                 }
               }}
-              className="flint-btn flint-btn-primary flex items-center gap-2 !py-2 !px-4"
+              className="noether-btn noether-btn-primary flex items-center gap-2 !py-2 !px-4"
             >
               <Store01Icon size={14} />
               <span>Browse Extension Marketplace</span>
             </button>
             <button
               onClick={handleOpenExtensionsFolder}
-              className="flint-btn flex items-center gap-1.5 !py-2 !px-3.5"
+              className="noether-btn flex items-center gap-1.5 !py-2 !px-3.5"
             >
               Open extensions folder
             </button>
@@ -3159,11 +3159,11 @@ export interface SettingsWindowContentProps {
 }
 
 export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React.memo(({ onClose, isModal = false, initialTab }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const allSettingTabs = useSettingTabs();
 
-  const hearthName = useWorkspaceStore((s) => s.hearthName);
-  const setHearthName = useWorkspaceStore((s) => s.setHearthName);
+  const vaultName = useWorkspaceStore((s) => s.vaultName);
+  const setVaultName = useWorkspaceStore((s) => s.setVaultName);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const restoreAllDefaults = useSettingsStore((s) => s.restoreAllDefaults);
 
@@ -3181,19 +3181,19 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   }, [initialTab]);
 
   useEffect(() => {
-    platform.getCurrentHearth().then((data) => {
+    platform.getCurrentVault().then((data) => {
       if (data?.name) {
-        setHearthName(data.name);
+        setVaultName(data.name);
       }
     });
     app.extensions.init();
     dbAdapter.init().then(() => {
       useDocumentStore.getState().loadTrash();
     });
-  }, [app, setHearthName]);
+  }, [app, setVaultName]);
 
   useEffect(() => {
-    const unsub = platform.onHearthFilesChanged(async () => {
+    const unsub = platform.onVaultFilesChanged(async () => {
       await dbAdapter.resetAndReload();
       useDocumentStore.getState().loadTrash();
     });
@@ -3204,11 +3204,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
   // When closing or unmounting Settings, apply any pending appearance/zoom updates to DOM
   useEffect(() => {
-    platform.setWindowTitle(`Settings﹕${hearthName || 'Hearth'}﹕Flint`);
+    platform.setWindowTitle(`Settings﹕${vaultName || 'Vault'}﹕Noether`);
     return () => {
       applyAppearanceDOM();
     };
-  }, [hearthName]);
+  }, [vaultName]);
 
   const isMaximized = useIsMaximized();
 
@@ -3239,7 +3239,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     { id: 'appearance', label: 'Appearance', icon: <PaletteIcon size={14} />, keywords: ['appearance', 'theme', 'color', 'accent', 'font', 'dark', 'light'] },
     { id: 'interface', label: 'Interface', icon: <MonitorIcon size={14} />, keywords: ['interface', 'zoom', 'ribbon', 'window', 'tab', 'action rail'] },
     { id: 'editor', label: 'Editor', icon: <Edit02Icon size={14} />, keywords: ['editor', 'line', 'preview', 'indent', 'heading', 'pairing', 'properties', 'reading', 'math', 'formulas', 'dollar', 'auto-pair'] },
-    { id: 'files', label: 'Files and links', icon: <Folder01Icon size={14} />, keywords: ['files and links', 'files', 'links', 'trash', 'deleted', 'delete', 'hearth', 'vault', 'wikilink'] },
+    { id: 'files', label: 'Files and links', icon: <Folder01Icon size={14} />, keywords: ['files and links', 'files', 'links', 'trash', 'deleted', 'delete', 'vault', 'vault', 'wikilink'] },
     { id: 'hotkeys', label: 'Hotkeys', icon: <KeyIcon size={14} />, keywords: ['hotkeys', 'shortcuts', 'keys', 'commands'] },
     { id: 'core-extensions', label: 'Built-in extensions', icon: <PackageIcon size={14} />, keywords: ['built-in extensions', 'core extensions', 'core plugins', 'plugins', 'modules', 'extensions'] },
     { id: 'community-extensions', label: 'Community extensions', icon: <PuzzleIcon size={14} />, keywords: ['community extensions', 'community plugins', 'plugins', 'marketplace', 'extensions'] },
@@ -3363,9 +3363,9 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
       data-card="true"
       className={`${
         isModal
-          ? 'relative w-[960px] h-[660px] max-w-[calc(100%-32px)] max-h-[calc(100%-32px)] rounded-xl border border-[var(--flint-border-subtle,#2c2c2c)] shadow-2xl'
+          ? 'relative w-[960px] h-[660px] max-w-[calc(100%-32px)] max-h-[calc(100%-32px)] rounded-xl border border-[var(--noether-border-subtle,#2c2c2c)] shadow-2xl'
           : 'w-full h-full'
-      } flex flex-col bg-[var(--flint-bg-main,#181818)] text-[var(--flint-text-secondary,#dcddde)] select-none font-sans overflow-hidden`}
+      } flex flex-col bg-[var(--noether-bg-main,#181818)] text-[var(--noether-text-secondary,#dcddde)] select-none font-sans overflow-hidden`}
     >
       {/* 1. Obsidian Window Header Bar */}
       <header
@@ -3381,19 +3381,19 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           }
         }}
         style={{ WebkitAppRegion: isModal ? undefined : 'drag' } as React.CSSProperties}
-        className="relative h-10 bg-[var(--flint-bg-topbar,#141414)] border-b border-[var(--flint-border-subtle,#242424)] flex items-center justify-between px-3 select-none z-30 shrink-0 text-xs cursor-default"
+        className="relative h-10 bg-[var(--noether-bg-topbar,#141414)] border-b border-[var(--noether-border-subtle,#242424)] flex items-center justify-between px-3 select-none z-30 shrink-0 text-xs cursor-default"
       >
         {/* Left spacer */}
         <div className={`${isModal ? 'w-11' : 'w-16'} h-full`} />
 
-        {/* Centered Window Title: Settings / <HearthName> / Flint 0.1.0 */}
+        {/* Centered Window Title: Settings / <VaultName> / Noether 0.1.0 */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="font-medium text-xs text-[var(--flint-text-muted,#888)] flex items-center gap-1.5 select-none">
-            <span className="text-[var(--flint-text-secondary,#ccc)]">Settings</span>
-            <span className="text-[var(--flint-text-faint,#555)]">﹕</span>
-            <span className="text-[var(--flint-text-primary)] font-medium">{hearthName || 'Flint Hearth'}</span>
-            <span className="text-[var(--flint-text-faint,#555)]">﹕</span>
-            <span className="text-[var(--flint-text-muted,#888)]">Flint</span>
+          <span className="font-medium text-xs text-[var(--noether-text-muted,#888)] flex items-center gap-1.5 select-none">
+            <span className="text-[var(--noether-text-secondary,#ccc)]">Settings</span>
+            <span className="text-[var(--noether-text-faint,#555)]">﹕</span>
+            <span className="text-[var(--noether-text-primary)] font-medium">{vaultName || 'Noether Vault'}</span>
+            <span className="text-[var(--noether-text-faint,#555)]">﹕</span>
+            <span className="text-[var(--noether-text-muted,#888)]">Noether</span>
           </span>
         </div>
 
@@ -3412,7 +3412,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   e.stopPropagation();
                   handleMinimize();
                 }}
-                className="h-full w-11 hover:bg-[var(--flint-bg-card-hover,#252525)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer"
+                className="h-full w-11 hover:bg-[var(--noether-bg-card-hover,#252525)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary)] flex items-center justify-center cursor-pointer"
                 title="Minimize"
               >
                 <WindowMinimizeIcon />
@@ -3424,7 +3424,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   e.stopPropagation();
                   handleMaximize();
                 }}
-                className="h-full w-11 hover:bg-[var(--flint-bg-card-hover,#252525)] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary)] flex items-center justify-center cursor-pointer"
+                className="h-full w-11 hover:bg-[var(--noether-bg-card-hover,#252525)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary)] flex items-center justify-center cursor-pointer"
                 title={isMaximized ? 'Restore' : 'Maximize'}
               >
                 {isMaximized ? <WindowRestoreIcon /> : <WindowMaximizeIcon />}
@@ -3438,7 +3438,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               e.stopPropagation();
               handleClose();
             }}
-            className="h-full w-11 hover:bg-[#e81123] text-[var(--flint-text-muted,#888)] hover:text-white flex items-center justify-center cursor-pointer"
+            className="h-full w-11 hover:bg-[#e81123] text-[var(--noether-text-muted,#888)] hover:text-white flex items-center justify-center cursor-pointer"
             title="Close"
           >
             <WindowCloseIcon />
@@ -3449,16 +3449,16 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
       {/* 2. Main 2-Column Obsidian Layout */}
       <div className="flex-1 flex min-h-0 overflow-hidden">
         {/* LEFT COLUMN: Navigation Sidebar */}
-        <aside className="w-[230px] bg-[var(--flint-bg-sidebar,#141414)] border-r border-[var(--flint-border-subtle,#242424)] h-full flex flex-col p-3 shrink-0 overflow-hidden">
+        <aside className="w-[230px] bg-[var(--noether-bg-sidebar,#141414)] border-r border-[var(--noether-border-subtle,#242424)] h-full flex flex-col p-3 shrink-0 overflow-hidden">
           {/* Search Box */}
           <div className="relative mb-3 shrink-0">
-            <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--flint-text-muted,#666)]" />
+            <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted,#666)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search settings..."
-              className="w-full bg-[var(--flint-bg-input,#1e1e1e)] border border-[var(--flint-border-base,#2c2c2c)] focus:border-[var(--flint-border-strong,#444)] rounded-lg pl-8 pr-2.5 py-1 text-xs text-[var(--flint-text-primary)] placeholder-[var(--flint-text-muted,#666)] outline-none"
+              className="w-full bg-[var(--noether-bg-input,#1e1e1e)] border border-[var(--noether-border-base,#2c2c2c)] focus:border-[var(--noether-border-strong,#444)] rounded-lg pl-8 pr-2.5 py-1 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-muted,#666)] outline-none"
             />
           </div>
 
@@ -3467,7 +3467,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             {/* Section 1: Options */}
             {filteredOptions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <div className="text-[11px] font-medium text-[var(--flint-text-muted,#666)] px-2.5 py-1">Options</div>
+                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Options</div>
                 {filteredOptions.map((item) => {
                   const isActive = (activeTab === item.id || (isTrashViewOpen && item.id === 'files')) && !fontPickerMode;
                   return (
@@ -3480,11 +3480,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
-                          ? 'bg-[var(--flint-bg-sidebar-active,#252525)] text-[var(--flint-text-primary)] font-medium shadow-xs'
-                          : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
+                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
+                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)]'
                       }`}
                     >
-                      <span className={isActive ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted,#888)]'}>{item.icon}</span>
+                      <span className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted,#888)]'}>{item.icon}</span>
                       <span>{item.label}</span>
                     </button>
                   );
@@ -3495,7 +3495,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             {/* Section 2: Built-in Extensions */}
             {filteredCoreExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <div className="text-[11px] font-medium text-[var(--flint-text-muted,#666)] px-2.5 py-1">Built-in extensions</div>
+                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Built-in extensions</div>
                 {filteredCoreExtensions.map((item) => {
                   const isActive = isTabMatch(item, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
@@ -3508,11 +3508,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
-                          ? 'bg-[var(--flint-bg-sidebar-active,#252525)] text-[var(--flint-text-primary)] font-medium shadow-xs'
-                          : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
+                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
+                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)]'
                       }`}
                     >
-                      <span className={isActive ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted,#888)]'}>{item.icon || <PackageIcon size={14} />}</span>
+                      <span className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted,#888)]'}>{item.icon || <PackageIcon size={14} />}</span>
                       <span>{item.name}</span>
                     </button>
                   );
@@ -3523,7 +3523,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             {/* Section 3: Community Extensions Settings */}
             {filteredCommunityExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <div className="text-[11px] font-medium text-[var(--flint-text-muted,#666)] px-2.5 py-1">Community extensions</div>
+                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Community extensions</div>
                 {filteredCommunityExtensions.map((tab) => {
                   const isActive = isTabMatch(tab, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
@@ -3536,11 +3536,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
-                          ? 'bg-[var(--flint-bg-sidebar-active,#252525)] text-[var(--flint-text-primary)] font-medium shadow-xs'
-                          : 'text-[var(--flint-text-secondary,#999)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] hover:text-[var(--flint-text-primary)]'
+                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
+                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)]'
                       }`}
                     >
-                      <span className={isActive ? 'text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-muted,#888)]'}>{tab.icon || <PuzzleIcon size={14} />}</span>
+                      <span className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted,#888)]'}>{tab.icon || <PuzzleIcon size={14} />}</span>
                       <span>{tab.name}</span>
                     </button>
                   );
@@ -3550,13 +3550,13 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           </div>
 
           {/* Bottom Global Reset Action */}
-          <div className="pt-2 mt-auto border-t border-[var(--flint-border-subtle,#242424)] shrink-0">
+          <div className="pt-2 mt-auto border-t border-[var(--noether-border-subtle,#242424)] shrink-0">
             <button
               onClick={() => {
                 restoreAllDefaults();
                 showToast('Restored all settings to default values', 'info');
               }}
-              className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--flint-text-muted,#777)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-sidebar-hover,#202020)] cursor-pointer border border-transparent hover:border-[var(--flint-border-base)]"
+              className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--noether-text-muted,#777)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] cursor-pointer border border-transparent hover:border-[var(--noether-border-base)]"
               title="Restore all settings across all tabs to default"
             >
               <RotateCcwIcon size={12} />
@@ -3566,7 +3566,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         </aside>
 
         {/* RIGHT COLUMN: Tab Content */}
-        <main className="flex-1 bg-[var(--flint-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6">
+        <main className="flex-1 bg-[var(--noether-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6">
           <div className="max-w-2xl mx-auto">
             {/* TAB: GENERAL */}
             {!fontPickerMode && !isTrashViewOpen && activeTab === 'general' && (
@@ -3659,7 +3659,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         <button
                           type="button"
                           onClick={() => {
-                            localStorage.setItem('flint_open_extension_doc', JSON.stringify({ extensionId: extId, title: tabName, timestamp: Date.now() }));
+                            localStorage.setItem('noether_open_extension_doc', JSON.stringify({ extensionId: extId, title: tabName, timestamp: Date.now() }));
                             useWorkspaceStore.getState().openExtensionDocTab(extId, tabName);
                             handleClose();
                           }}
@@ -3696,7 +3696,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                           await app.extensions.enableExtension(extId);
                           showToast(`Enabled ${tabName}`, 'success');
                         }}
-                        className="flint-btn flint-btn-primary"
+                        className="noether-btn noether-btn-primary"
                       >
                         Enable {tabName}
                       </button>

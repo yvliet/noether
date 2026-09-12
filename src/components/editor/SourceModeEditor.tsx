@@ -115,7 +115,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
     onChange(newContentJson, undefined, parsedProps);
   }, [onChange]);
 
-  // Handle changes and sync back to Flint document models
+  // Handle changes and sync back to Noether document models
   const handleChange = useCallback((newText: string, immediate = false) => {
     setText(newText);
 
@@ -546,7 +546,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
             fontSize: 'calc(var(--editor-font-size, 16px) * 0.75)',
             lineHeight: '1.75',
           }}
-          className="absolute -left-9 top-0 bottom-0 w-7 select-none text-right pr-2 text-[var(--flint-text-muted,#555)] pointer-events-none overflow-hidden"
+          className="absolute -left-9 top-0 bottom-0 w-7 select-none text-right pr-2 text-[var(--noether-text-muted,#555)] pointer-events-none overflow-hidden"
         >
           {lines.map((_, idx) => (
             <div
@@ -592,7 +592,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
           fontSize: 'var(--editor-font-size, 16px)',
           lineHeight: '1.75',
         }}
-        className="w-full flex-1 bg-transparent text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] outline-none border-none resize-none p-0 selection:bg-[var(--flint-selection-bg,#384152)] selection:text-[var(--flint-selection-text,#ffffff)] caret-[var(--flint-accent,#58a6ff)] whitespace-pre-wrap break-words overflow-hidden"
+        className="w-full flex-1 bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] outline-none border-none resize-none p-0 selection:bg-[var(--noether-selection-bg,#384152)] selection:text-[var(--noether-selection-text,#ffffff)] caret-[var(--noether-accent,#58a6ff)] whitespace-pre-wrap break-words overflow-hidden"
       />
     </div>
   );

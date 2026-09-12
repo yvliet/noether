@@ -1,18 +1,18 @@
 import React from 'react';
 import { useBookmarksSettings, DEFAULT_BOOKMARKS_SETTINGS } from './bookmarksSettings';
 import {
-  useFlintApp,
-  useHearthDocuments,
+  useNoetherApp,
+  useVaultDocuments,
   useToast,
-  useFlintStore,
-} from 'flint';
+  useNoetherStore,
+} from 'noether';
 import { Bookmark01Icon, RotateCcwIcon } from '@/components/common/Icons';
 import { SettingCard, SettingItem, Button, Toggle } from '@/components/ui';
 
 export const BookmarksSettingsTab: React.FC = () => {
-  const app = useFlintApp();
-  const documents = useHearthDocuments();
-  const isLeftSidebarOpen = useFlintStore('workspace', (s) => s?.isLeftSidebarOpen ?? true);
+  const app = useNoetherApp();
+  const documents = useVaultDocuments();
+  const isLeftSidebarOpen = useNoetherStore('workspace', (s) => s?.isLeftSidebarOpen ?? true);
   const showToast = useToast();
 
   const {
@@ -91,7 +91,7 @@ export const BookmarksSettingsTab: React.FC = () => {
           name="Toggle shortcut"
           description="Quickly bookmark or unbookmark the active note while editing."
         >
-          <kbd className="px-2 py-1 bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-strong,#383838)] rounded text-[11px] font-mono text-[var(--flint-text-muted,#888)]">
+          <kbd className="px-2 py-1 bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-strong,#383838)] rounded text-[11px] font-mono text-[var(--noether-text-muted,#888)]">
             Ctrl+Shift+B
           </kbd>
         </SettingItem>

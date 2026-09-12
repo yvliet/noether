@@ -312,7 +312,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
           isPanActive || isPanning || isDragging ? 'pointer-events-none' : ''
         } ${
           isDraggable
-            ? 'cursor-grab active:cursor-grabbing [&_.flint-compact-doc]:!cursor-grab [&_.flint-compact-doc]:active:!cursor-grabbing [&_.tiptap-reading-view]:!cursor-grab [&_.tiptap-reading-view]:active:!cursor-grabbing [&_.ProseMirror]:!cursor-grab [&_.ProseMirror]:active:!cursor-grabbing [&_img]:!cursor-grab [&_img]:active:!cursor-grabbing [&_a]:!cursor-pointer [&_button]:!cursor-pointer'
+            ? 'cursor-grab active:cursor-grabbing [&_.noether-compact-doc]:!cursor-grab [&_.noether-compact-doc]:active:!cursor-grabbing [&_.tiptap-reading-view]:!cursor-grab [&_.tiptap-reading-view]:active:!cursor-grabbing [&_.ProseMirror]:!cursor-grab [&_.ProseMirror]:active:!cursor-grabbing [&_img]:!cursor-grab [&_img]:active:!cursor-grabbing [&_a]:!cursor-pointer [&_button]:!cursor-pointer'
             : ''
         }`}>
           <CardContentRenderer

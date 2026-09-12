@@ -1,4 +1,4 @@
--- Flint Community Plugin Registry Database Schema
+-- Noether Community Extension Registry Database Schema
 -- Compatible with SQLite3, libSQL, and Cloudflare D1 / Turso edge databases.
 
 PRAGMA foreign_keys = ON;

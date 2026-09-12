@@ -177,12 +177,12 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
 
 
   return (
-    <div className="absolute top-0 left-0 right-0 w-full bg-[var(--flint-bg-main)] border-b border-[var(--flint-border-subtle)] shadow-[var(--flint-shadow-1)] px-6 py-2 select-none z-30">
+    <div className="absolute top-0 left-0 right-0 w-full bg-[var(--noether-bg-main)] border-b border-[var(--noether-border-subtle)] shadow-[var(--noether-shadow-1)] px-6 py-2 select-none z-30">
       {/* 2-Column Grid: Fixed right column keeps Search and Replace fields identically sized across both states */}
       <div className="grid grid-cols-[1fr_160px] gap-x-2.5 gap-y-1.5 items-center">
         {/* Row 1, Col 1: Search Input Box */}
-        <div className="flex items-center bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)] rounded-[6px] px-2.5 py-1 min-w-0">
-          <Search01Icon size={14} className="text-[var(--flint-text-muted)] shrink-0" />
+        <div className="flex items-center bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus-within:border-[var(--noether-accent)] rounded-[6px] px-2.5 py-1 min-w-0">
+          <Search01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
           <input
             ref={searchInputRef}
             type="text"
@@ -218,12 +218,12 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
               }
             }}
             placeholder="Find..."
-            className="w-full bg-transparent text-xs text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] outline-none ml-2 font-normal min-w-0"
+            className="w-full bg-transparent text-xs text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] outline-none ml-2 font-normal min-w-0"
           />
 
           {/* Results Count Indicator */}
           {searchTerm && (
-            <span className="text-[11px] text-[var(--flint-text-muted)] font-normal shrink-0 mr-1.5 select-none">
+            <span className="text-[11px] text-[var(--noether-text-muted)] font-normal shrink-0 mr-1.5 select-none">
               {results.length > 0 ? `${currentIndex + 1} of ${results.length}` : 'No results'}
             </span>
           )}
@@ -239,8 +239,8 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
             title="Match Case (Aa)"
             className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer shrink-0 ${
               caseSensitive
-                ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)] font-bold border border-[var(--flint-border-strong)]'
-                : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)]'
+                ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-bold border border-[var(--noether-border-strong)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             Aa
@@ -255,7 +255,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
             onClick={handlePrev}
             disabled={results.length === 0}
             title="Previous match (Shift+Enter)"
-            className="p-1.5 rounded-[4px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--flint-text-muted)] cursor-pointer shrink-0"
+            className="p-1.5 rounded-[4px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--noether-text-muted)] cursor-pointer shrink-0"
           >
             <ArrowUp01Icon size={14} />
           </button>
@@ -266,7 +266,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
             onClick={handleNext}
             disabled={results.length === 0}
             title="Next match (Enter)"
-            className="p-1.5 rounded-[4px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--flint-text-muted)] cursor-pointer shrink-0"
+            className="p-1.5 rounded-[4px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-[var(--noether-text-muted)] cursor-pointer shrink-0"
           >
             <ArrowDown01Icon size={14} />
           </button>
@@ -279,8 +279,8 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
               title={isReplaceOpen ? 'Hide replace (Ctrl+H)' : 'Show replace (Ctrl+H)'}
               className={`p-1.5 rounded-[5px] border cursor-pointer shrink-0 ${
                 isReplaceOpen
-                  ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-sidebar-active)] border-[var(--flint-border-strong)]'
-                  : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] hover:bg-[var(--flint-bg-sidebar-active)] border-[var(--flint-border-base)]'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-sidebar-active)] border-[var(--noether-border-strong)]'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] hover:bg-[var(--noether-bg-sidebar-active)] border-[var(--noether-border-base)]'
               }`}
             >
               {isReplaceOpen ? <ChevronDownIcon size={13} /> : <ChevronRightIcon size={13} />}
@@ -295,7 +295,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
               if (editor) editor.commands.focus();
             }}
             title="Close (Escape)"
-            className="p-1.5 rounded-[4px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer shrink-0"
+            className="p-1.5 rounded-[4px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0"
           >
             <Cancel01Icon size={14} />
           </button>
@@ -305,8 +305,8 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
         {isReplaceOpen && (
           <>
             {/* Row 2, Col 1: Replace Input Box (Identical width to Search Box with its own icon) */}
-            <div className="flex items-center bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus-within:border-[var(--flint-accent)] rounded-[6px] px-2.5 py-1 min-w-0">
-              <ReplaceIcon size={14} className="text-[var(--flint-text-muted)] shrink-0" />
+            <div className="flex items-center bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus-within:border-[var(--noether-accent)] rounded-[6px] px-2.5 py-1 min-w-0">
+              <ReplaceIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
               <input
                 ref={replaceInputRef}
                 type="text"
@@ -342,7 +342,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
                   }
                 }}
                 placeholder="Replace..."
-                className="w-full bg-transparent text-xs text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] outline-none ml-2 font-normal min-w-0"
+                className="w-full bg-transparent text-xs text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] outline-none ml-2 font-normal min-w-0"
               />
             </div>
 
@@ -353,7 +353,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
                 type="button"
                 onClick={handleReplaceCurrent}
                 disabled={results.length === 0}
-                className="flint-btn flex-1 !py-1 text-xs text-center mr-1.5"
+                className="noether-btn flex-1 !py-1 text-xs text-center mr-1.5"
               >
                 Replace
               </button>
@@ -363,7 +363,7 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
                 type="button"
                 onClick={handleReplaceAll}
                 disabled={results.length === 0}
-                className="flint-btn flex-1 !py-1 text-xs text-center whitespace-nowrap"
+                className="noether-btn flex-1 !py-1 text-xs text-center whitespace-nowrap"
               >
                 Replace all
               </button>

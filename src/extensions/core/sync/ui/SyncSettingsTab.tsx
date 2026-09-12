@@ -217,7 +217,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
                 onClick={() => updateConfig({ activeProvider: prov.id as SyncProviderType })}
                 className={`p-3 rounded-xl text-left border cursor-pointer transition-none ${
                   isSelected
-                    ? 'bg-[#242424] border-[var(--flint-accent,#ea580c)] shadow-sm'
+                    ? 'bg-[#242424] border-[var(--noether-accent,#eb584d)] shadow-sm'
                     : 'bg-[#1c1c1c] border-[#2a2a2a] hover:bg-[#202020] text-[#999]'
                 }`}
               >
@@ -301,7 +301,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
                 href="https://turso.tech/app"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-[var(--flint-accent,#ea580c)] hover:underline"
+                className="inline-flex items-center gap-1 text-xs text-[var(--noether-accent,#eb584d)] hover:underline"
               >
                 <span>Open Turso Dashboard</span>
                 <ExternalLinkIcon size={11} />
@@ -387,7 +387,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
                 href="https://dash.cloudflare.com"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-[var(--flint-accent,#ea580c)] hover:underline"
+                className="inline-flex items-center gap-1 text-xs text-[var(--noether-accent,#eb584d)] hover:underline"
               >
                 <span>Open Cloudflare Dashboard</span>
                 <ExternalLinkIcon size={11} />
@@ -500,7 +500,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
           <select
             value={localConfig.periodicIntervalSeconds}
             onChange={(e) => updateConfig({ periodicIntervalSeconds: Number(e.target.value) })}
-            className="bg-[#181818] border border-[#333333] text-xs text-white rounded-[6px] px-3 py-1.5 cursor-pointer outline-none focus:border-[var(--flint-accent,#ea580c)]"
+            className="bg-[#181818] border border-[#333333] text-xs text-white rounded-[6px] px-3 py-1.5 cursor-pointer outline-none focus:border-[var(--noether-accent,#eb584d)]"
           >
             <option value={0}>Disabled</option>
             <option value={60}>Every 1 minute</option>
@@ -521,7 +521,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
           <select
             value={localConfig.conflictStrategy}
             onChange={(e) => updateConfig({ conflictStrategy: e.target.value as ConflictStrategy })}
-            className="bg-[#181818] border border-[#333333] text-xs text-white rounded-[6px] px-3 py-1.5 cursor-pointer outline-none focus:border-[var(--flint-accent,#ea580c)]"
+            className="bg-[#181818] border border-[#333333] text-xs text-white rounded-[6px] px-3 py-1.5 cursor-pointer outline-none focus:border-[var(--noether-accent,#eb584d)]"
           >
             <option value="last_write_wins">Last Write Wins (Recommended)</option>
             <option value="keep_both">Keep Both (Create [Conflict Copy])</option>

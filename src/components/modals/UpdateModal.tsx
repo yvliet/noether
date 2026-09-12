@@ -1,7 +1,7 @@
 /**
  * @module UpdateModal
  * @description
- * Modal dialog presenting newly discovered Flint application updates from GitHub releases.
+ * Modal dialog presenting newly discovered Noether application updates from GitHub releases.
  * Allows users to inspect changelogs, download compiled installer packages (.exe, .msi),
  * or navigate to the GitHub release page.
  */
@@ -44,7 +44,7 @@ export const UpdateModal: React.FC = React.memo(() => {
   const handleDownload = async () => {
     setIsDownloading(true);
     try {
-      showToast(`Opening installer for Flint v${release.version}...`, 'info');
+      showToast(`Opening installer for Noether v${release.version}...`, 'info');
       await downloadAndInstallRelease(release);
     } catch (err: any) {
       showToast(`Could not open installer: ${err?.message || err}`, 'warning');
@@ -83,13 +83,13 @@ export const UpdateModal: React.FC = React.memo(() => {
           <div className="p-4 rounded-xl bg-[#252525] border border-[#333] flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <span className="text-base font-bold text-white tracking-tight">
-                Flint v{release.version}
+                Noether v{release.version}
               </span>
               <span className="text-[11px] text-[#888]">
                 Current: v{APP_VERSION} → Newest: v{release.version}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 text-[var(--flint-accent,#ea580c)] text-[11px] font-semibold">
+            <div className="flex items-center gap-1.5 text-[var(--noether-accent,#eb584d)] text-[11px] font-semibold">
               <CheckmarkCircle02Icon size={13} />
               <span>Ready to Install</span>
             </div>
@@ -138,7 +138,7 @@ export const UpdateModal: React.FC = React.memo(() => {
             <button
               type="button"
               onClick={() => setIsUpdateModalOpen(false)}
-              className="flint-btn text-xs py-1.5 px-3 cursor-pointer"
+              className="noether-btn text-xs py-1.5 px-3 cursor-pointer"
             >
               Later
             </button>
@@ -146,7 +146,7 @@ export const UpdateModal: React.FC = React.memo(() => {
               type="button"
               onClick={handleDownload}
               disabled={isDownloading}
-              className="flint-btn flint-btn-primary text-xs py-1.5 px-3.5 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              className="noether-btn noether-btn-primary text-xs py-1.5 px-3.5 flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
               <Download01Icon size={14} className={isDownloading ? 'animate-bounce' : ''} />
               <span>{isDownloading ? 'Opening...' : 'Download Update'}</span>

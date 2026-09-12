@@ -1,10 +1,10 @@
 /**
- * Visited links tracking utility for Flint.
+ * Visited links tracking utility for Noether.
  * Maintains a persistent set of visited external URLs and wikilink targets
  * so links accurately render visited styling (e.g. classic browser purple).
  */
 
-const STORAGE_KEY = 'flint_visited_links';
+const STORAGE_KEY = 'noether_visited_links';
 const MAX_STORED_ENTRIES = 5000;
 
 let visitedSet: Set<string> | null = null;
@@ -72,7 +72,7 @@ function notifyListeners(): void {
   }
 
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('flint:visited-links-changed'));
+    window.dispatchEvent(new CustomEvent('noether:visited-links-changed'));
   }
 }
 

@@ -6,11 +6,11 @@ Core application command palette actions and global keyboard hotkeys.
 
 ## Overview
 
-The **Default Commands** extension populates Flint's central Command Palette (\`Ctrl+P\` / \`Cmd+P\`) with essential workspace, editor, window, and view management actions.
+The **Default Commands** extension populates Noether's central Command Palette (\`Ctrl+P\` / \`Cmd+P\`) with essential workspace, editor, window, and view management actions.
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension showcases how to register global commands, modal openers, and keyboard hotkeys.
 

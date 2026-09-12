@@ -1,7 +1,7 @@
 /**
- * @module FlintApp
+ * @module NoetherApp
  * @description
- * Central application singleton and host context aggregator for Flint.
+ * Central application singleton and host context aggregator for Noether.
  * Serves as the primary public API surface for plugins, exposing registries,
  * the EventBus, PluginManager, and convenience proxies for Workspace, Vault,
  * and Settings state.
@@ -35,7 +35,7 @@ import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
-import { storeRefs, bindFlintStores, setAppInstanceBridge } from './storeBridge';
+import { storeRefs, bindNoetherStores, setAppInstanceBridge } from './storeBridge';
 import {
   getDocumentPath as dbGetDocumentPath,
   isDocumentLocked as dbIsDocumentLocked,
@@ -50,7 +50,7 @@ import { getAllVaultTags, buildTagTree } from '@/lib/db/tags';
 import { dbAdapter } from '@/lib/db/adapter';
 import type {
   WorkspaceAPI,
-  HearthAPI,
+  VaultAPI,
   SettingsAPI,
   ConfirmDialogConfig,
   InputDialogConfig,
@@ -69,13 +69,13 @@ import type {
 } from '@/types';
 import type { ContextMenuItemDefinition, OpenTabOptions } from '../extensions/types';
 
-export { bindFlintStores };
+export { bindNoetherStores };
 
 const LazyExtensionDocViewer = React.lazy(() =>
   import('@/components/extension-viewer/ExtensionDocViewer').then((m) => ({ default: m.ExtensionDocViewer }))
 );
 
-export class FlintApp {
+export class NoetherApp {
   /** Command registry managing keyboard hotkeys and command palette actions. */
   public commands: CommandRegistry;
   /** View registry managing main content view tabs (Graph, Canvas, Marketplace, etc.). */
@@ -387,11 +387,11 @@ export class FlintApp {
   }
 
   /**
-   * Hearth API: interacts with notes, documents, and database persistence.
-   * @see HearthAPI
+   * Vault API: interacts with notes, documents, and database persistence.
+   * @see VaultAPI
    * @since 0.1.0
    */
-  public get hearth(): HearthAPI {
+  public get vault(): VaultAPI {
     return {
       get documents(): DocumentItem[] {
         return storeRefs.document?.getState()?.documents ?? [];
@@ -399,11 +399,11 @@ export class FlintApp {
       get activeDocument(): DocumentItem | null {
         return storeRefs.document?.getState()?.activeDocument ?? null;
       },
-      get hearthName(): string {
-        return storeRefs.workspace?.getState()?.hearthName ?? storeRefs.workspace?.getState()?.vaultName ?? '';
+      get vaultName(): string {
+        return storeRefs.workspace?.getState()?.vaultName ?? '';
       },
-      get hearthPath(): string {
-        return storeRefs.workspace?.getState()?.hearthPath ?? storeRefs.workspace?.getState()?.vaultPath ?? '';
+      get vaultPath(): string {
+        return storeRefs.workspace?.getState()?.vaultPath ?? '';
       },
       getDocumentById: (docId: string): DocumentItem | undefined => {
         return storeRefs.document?.getState()?.documents.find((d: DocumentItem) => d.id === docId);
@@ -621,4 +621,4 @@ export class FlintApp {
 }
 
 // Global Singleton Instance
-export const appInstance = new FlintApp();
+export const appInstance = new NoetherApp();

@@ -108,8 +108,8 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
   return (
     <div
       onClick={(e) => e.stopPropagation()}
-      style={{ boxShadow: 'var(--flint-shadow-2)' }}
-      className="bg-[var(--flint-bg-popover,var(--flint-bg-card,#232323))] border border-[var(--flint-border-base,#292929)] rounded-lg p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
+      style={{ boxShadow: 'var(--noether-shadow-2)' }}
+      className="bg-[var(--noether-bg-popover,var(--noether-bg-card,#232323))] border border-[var(--noether-border-base,#292929)] rounded-lg p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
     >
 
       {/* Visual Grid Selector directly on popover background */}
@@ -143,7 +143,7 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
       </div>
 
       {/* Dimension Label (standard font, centered, no 'Table' suffix) */}
-      <div className="text-center text-xs font-medium text-[var(--flint-text-primary,#fff)] pt-0.5">
+      <div className="text-center text-xs font-medium text-[var(--noether-text-primary,#fff)] pt-0.5">
         {hovered.cols} × {hovered.rows}
       </div>
     </div>

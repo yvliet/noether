@@ -69,7 +69,7 @@ function getCalloutKey(node: any, idx: number): string {
 
 function getFoldStorageKey(docId?: string): string {
   const id = docId || useDocumentStore.getState().activeDocument?.id || 'default';
-  return `flint_fold_state_${id}`;
+  return `noether_fold_state_${id}`;
 }
 
 function saveFoldState(
@@ -392,11 +392,11 @@ function deleteCollapsedHeading(view: any, targetPos: number): boolean {
 
 function createFoldPlaceholder(onClick: () => void, onDelete?: () => void): HTMLElement {
   const container = document.createElement('span');
-  container.className = 'flint-fold-placeholder-wrap';
+  container.className = 'noether-fold-placeholder-wrap';
   container.contentEditable = 'false';
 
   const badge = document.createElement('span');
-  badge.className = 'flint-fold-placeholder';
+  badge.className = 'noether-fold-placeholder';
   badge.textContent = '\u2026';
   badge.setAttribute('role', 'button');
   badge.setAttribute('aria-label', 'Expand folded section');
@@ -414,7 +414,7 @@ function createFoldPlaceholder(onClick: () => void, onDelete?: () => void): HTML
 
   // Editable trailing tail for natural browser caret positioning after the ellipsis
   const tail = document.createElement('span');
-  tail.className = 'flint-fold-tail';
+  tail.className = 'noether-fold-tail';
   tail.contentEditable = 'true';
   tail.textContent = '\u200B';
   tail.style.userSelect = 'text';
@@ -522,12 +522,12 @@ function buildFoldDecorations(
           h.pos + 1,
           (view) => {
             const container = document.createElement('span');
-            container.className = 'flint-fold-widget';
+            container.className = 'noether-fold-widget';
             container.contentEditable = 'false';
 
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = `flint-fold-btn flint-fold-h${h.level} ${isFolded ? 'is-folded' : 'is-unfolded'}`;
+            btn.className = `noether-fold-btn noether-fold-h${h.level} ${isFolded ? 'is-folded' : 'is-unfolded'}`;
             btn.innerHTML = getHeadingChevronSvg(h.level, isFolded);
             btn.setAttribute('data-tooltip', isFolded ? 'Unfold section' : 'Fold section');
             btn.removeAttribute('title');
@@ -559,7 +559,7 @@ function buildFoldDecorations(
             if (pos >= startPos && pos < endPos && node.isBlock && node.type.name !== 'heading') {
               decorations.push(
                 Decoration.node(pos, pos + node.nodeSize, {
-                  class: 'flint-folded-node',
+                  class: 'noether-folded-node',
                 })
               );
             }
@@ -606,12 +606,12 @@ function buildFoldDecorations(
             block.pos + 1 + block.leadingLen,
             (view) => {
               const container = document.createElement('span');
-              container.className = 'flint-fold-widget';
+              container.className = 'noether-fold-widget';
               container.contentEditable = 'false';
 
               const btn = document.createElement('button');
               btn.type = 'button';
-              btn.className = `flint-fold-btn flint-fold-list-btn ${isFolded ? 'is-folded' : 'is-unfolded'}`;
+              btn.className = `noether-fold-btn noether-fold-list-btn ${isFolded ? 'is-folded' : 'is-unfolded'}`;
               btn.innerHTML = isFolded ? CHEVRON_RIGHT_SVG : CHEVRON_DOWN_SVG;
               btn.setAttribute('data-tooltip', isFolded ? 'Unfold list' : 'Fold list');
               btn.removeAttribute('title');
@@ -632,7 +632,7 @@ function buildFoldDecorations(
           childBlocks.forEach((child) => {
             decorations.push(
               Decoration.node(child.pos, child.pos + child.nodeSize, {
-                class: 'flint-folded-node',
+                class: 'noether-folded-node',
               })
             );
           });
@@ -686,12 +686,12 @@ function buildFoldDecorations(
               pos + 1,
               (view) => {
                 const container = document.createElement('span');
-                container.className = 'flint-fold-widget';
+                container.className = 'noether-fold-widget';
                 container.contentEditable = 'false';
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = `flint-fold-btn flint-fold-list-btn ${isFolded ? 'is-folded' : 'is-unfolded'}`;
+                btn.className = `noether-fold-btn noether-fold-list-btn ${isFolded ? 'is-folded' : 'is-unfolded'}`;
                 btn.innerHTML = isFolded ? CHEVRON_RIGHT_SVG : CHEVRON_DOWN_SVG;
                 btn.setAttribute('data-tooltip', isFolded ? 'Unfold list' : 'Fold list');
                 btn.removeAttribute('title');
@@ -711,7 +711,7 @@ function buildFoldDecorations(
           if (isFolded) {
             decorations.push(
               Decoration.node(nestedListPos, nestedListPos + nestedListSize, {
-                class: 'flint-folded-node',
+                class: 'noether-folded-node',
               })
             );
 
@@ -753,7 +753,7 @@ function buildFoldDecorations(
       c.bodyBlocks.forEach((child) => {
         decorations.push(
           Decoration.node(child.pos, child.pos + child.nodeSize, {
-            class: 'flint-folded-node flint-callout-collapsed',
+            class: 'noether-folded-node noether-callout-collapsed',
           })
         );
       });
@@ -1124,8 +1124,8 @@ export const Fold = Extension.create<FoldOptions>({
             const target = event.target as HTMLElement;
             const textBlock = target.closest('.ProseMirror p, .ProseMirror h1, .ProseMirror h2, .ProseMirror h3, .ProseMirror li');
             if (textBlock) {
-              const placeholder = textBlock.querySelector('.flint-fold-placeholder');
-              const tail = textBlock.querySelector('.flint-fold-tail');
+              const placeholder = textBlock.querySelector('.noether-fold-placeholder');
+              const tail = textBlock.querySelector('.noether-fold-tail');
               if (placeholder && tail && tail.firstChild) {
                 const phRect = placeholder.getBoundingClientRect();
                 // If user clicked in front of the ellipsis (to the right of the ellipsis dots)
@@ -1149,9 +1149,9 @@ export const Fold = Extension.create<FoldOptions>({
             const domSel = window.getSelection();
             const isInTail = Boolean(
               domSel?.anchorNode &&
-              ((domSel.anchorNode as HTMLElement).classList?.contains('flint-fold-tail') ||
-               domSel.anchorNode.parentElement?.classList?.contains('flint-fold-tail') ||
-               (domSel.anchorNode as HTMLElement).closest?.('.flint-fold-tail'))
+              ((domSel.anchorNode as HTMLElement).classList?.contains('noether-fold-tail') ||
+               domSel.anchorNode.parentElement?.classList?.contains('noether-fold-tail') ||
+               (domSel.anchorNode as HTMLElement).closest?.('.noether-fold-tail'))
             );
 
             if (isInTail) {
@@ -1186,16 +1186,16 @@ export const Fold = Extension.create<FoldOptions>({
             const foldedHeadings = pluginState?.foldedHeadings || new Set<number>();
             const foldedIndents = pluginState?.foldedIndents || new Set<number>();
 
-            // Check if DOM selection is inside .flint-fold-tail (in front of the ellipsis)
+            // Check if DOM selection is inside .noether-fold-tail (in front of the ellipsis)
             const domSel = window.getSelection();
             const isInTail = Boolean(
               domSel?.anchorNode &&
-              ((domSel.anchorNode as HTMLElement).classList?.contains('flint-fold-tail') ||
-               domSel.anchorNode.parentElement?.classList?.contains('flint-fold-tail') ||
-               (domSel.anchorNode as HTMLElement).closest?.('.flint-fold-tail'))
+              ((domSel.anchorNode as HTMLElement).classList?.contains('noether-fold-tail') ||
+               domSel.anchorNode.parentElement?.classList?.contains('noether-fold-tail') ||
+               (domSel.anchorNode as HTMLElement).closest?.('.noether-fold-tail'))
             );
 
-            // 1. If currently inside .flint-fold-tail (after the ellipsis)
+            // 1. If currently inside .noether-fold-tail (after the ellipsis)
             if (isInTail) {
               const anchorEl = (domSel?.anchorNode as HTMLElement)?.nodeType === 1
                 ? (domSel?.anchorNode as HTMLElement)
@@ -1294,7 +1294,7 @@ export const Fold = Extension.create<FoldOptions>({
                 // When at the end of the text, pressing ArrowRight steps into the tail after the ellipsis
                 if (event.key === 'ArrowRight') {
                   const domNode = view.nodeDOM(parentPos) as HTMLElement || (view.domAtPos(parentPos).node as HTMLElement);
-                  const tail = domNode?.querySelector?.('.flint-fold-tail') || document.querySelector('.flint-fold-tail');
+                  const tail = domNode?.querySelector?.('.noether-fold-tail') || document.querySelector('.noether-fold-tail');
                   if (tail && tail.firstChild) {
                     event.preventDefault();
                     event.stopPropagation();

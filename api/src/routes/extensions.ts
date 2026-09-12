@@ -1,9 +1,9 @@
 /**
  * @module ExtensionRoutes
  * @description
- * REST API routes for the Flint Community Extension Registry.
+ * REST API routes for the Noether Community Extension Registry.
  * Provides querying, searching, filtering, downloading, and publishing endpoints
- * for Flint desktop and web clients.
+ * for Noether desktop and web clients.
  */
 
 import { Hono } from 'hono';

@@ -1,7 +1,7 @@
 /**
  * @module sketchReadme
  * @description
- * Documentation rendered for Flint Sketch in Extension Settings and the Marketplace.
+ * Documentation rendered for Noether Sketch in Extension Settings and the Marketplace.
  */
 
 export const sketchReadme = `
@@ -23,7 +23,7 @@ You can circle words, highlight paragraphs, write handwritten margin notes, and 
 ## 2. Key Features
 ---
 
-- **Zero Markdown Pollution**: The drawing data is stored in a clean SQLite index and synchronized as a hidden HTML comment (\`<!-- flint-sketch: ... -->\`) at the bottom of the \`.md\` file on disk. In Obsidian, GitHub, and VS Code, your notes stay 100% clean and readable.
+- **Zero Markdown Pollution**: The drawing data is stored in a clean SQLite index and synchronized as a hidden HTML comment (\`<!-- noether-sketch: ... -->\`) at the bottom of the \`.md\` file on disk. In Obsidian, GitHub, and VS Code, your notes stay 100% clean and readable.
 - **Select & Move Mode**: Marquee drag to select strokes with Photoshop-style dashed bounding outlines, 8-point transform handles, and real-time translation.
 - **Two Anchoring Modes**:
   - **Text Flow**: Drawings are anchored to the document content column and scroll naturally with your paragraphs.

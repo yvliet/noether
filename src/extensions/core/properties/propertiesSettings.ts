@@ -52,7 +52,7 @@ export const usePropertiesSettings = create<PropertiesSettingsState>()(
         set({ startFolded });
         if (typeof window !== 'undefined') {
           try {
-            window.dispatchEvent(new CustomEvent('flint:header-fold-default-changed', { detail: { startFolded } }));
+            window.dispatchEvent(new CustomEvent('noether:header-fold-default-changed', { detail: { startFolded } }));
           } catch {}
         }
       },
@@ -82,7 +82,7 @@ export const usePropertiesSettings = create<PropertiesSettingsState>()(
         if (typeof window !== 'undefined') {
           try {
             window.dispatchEvent(
-              new CustomEvent('flint:header-fold-default-changed', {
+              new CustomEvent('noether:header-fold-default-changed', {
                 detail: { startFolded: DEFAULT_PROPERTIES_SETTINGS.startFolded },
               })
             );
@@ -91,7 +91,7 @@ export const usePropertiesSettings = create<PropertiesSettingsState>()(
       },
     }),
     {
-      name: 'flint_plugin_data_properties',
+      name: 'noether_extension_data_properties',
     }
   )
 );

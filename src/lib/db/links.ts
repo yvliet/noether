@@ -22,7 +22,7 @@ export async function getBacklinksForDocument(targetDocId: string): Promise<Back
       updated_at: r.updated_at,
     }));
   } catch (err) {
-    console.error('[Flint Links] Backlinks error:', err);
+    console.error('[Noether Links] Backlinks error:', err);
     return [];
   }
 }
@@ -129,7 +129,7 @@ export async function getOutgoingLinksWithDetails(sourceDocId: string): Promise<
 
     return outgoingLinks;
   } catch (err) {
-    console.error('[Flint Links] Outgoing links error:', err);
+    console.error('[Noether Links] Outgoing links error:', err);
     return [];
   }
 }
@@ -217,7 +217,7 @@ export async function getUnlinkedMentionsForDocument(
 
     return unlinked;
   } catch (err) {
-    console.error('[Flint Links] Unlinked mentions error:', err);
+    console.error('[Noether Links] Unlinked mentions error:', err);
     return [];
   }
 }
@@ -274,7 +274,7 @@ export async function convertUnlinkedMentionToLink(
 
     return false;
   } catch (err) {
-    console.error('[Flint Links] Failed to convert unlinked mention to link:', err);
+    console.error('[Noether Links] Failed to convert unlinked mention to link:', err);
     return false;
   }
 }

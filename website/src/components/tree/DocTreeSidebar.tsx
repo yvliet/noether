@@ -11,8 +11,8 @@ export interface DocTreeSidebarProps {
   onClose?: () => void;
 }
 
-const STORAGE_KEY = 'flint_docs_open_folders';
-const THEME_STORAGE_KEY = 'flint_docs_theme';
+const STORAGE_KEY = 'noether_docs_open_folders';
+const THEME_STORAGE_KEY = 'noether_docs_theme';
 
 const findAncestorFolderIds = (targetId: string, list: DocNode[], path: string[] = []): string[] | null => {
   if (!targetId) return null;
@@ -243,12 +243,12 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
           className="flex items-start gap-1.5 text-white hover:text-white cursor-pointer"
         >
           <img
-            src="./flint-icon.png"
-            alt="Flint"
+            src="./noether-icon.png"
+            alt="Noether"
             className="h-[21px] w-auto object-contain shrink-0 translate-y-[1.5px]"
           />
           <span className="text-[21px] font-bold tracking-tight text-white leading-tight">
-            Flint Docs
+            Noether Docs
           </span>
         </a>
 
@@ -337,7 +337,7 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
               style={{ paddingLeft: 28 }}
               className={`flex items-center pr-2 py-1 cursor-pointer text-[13.5px] font-normal transition-none bg-transparent ${
                 activeDocId === 'home' || activeDocId === homeNode.slug || activeDocId === homeNode.id
-                  ? 'text-[#ea580c] hover:text-[#f97316]'
+                  ? 'text-[#eb584d] hover:text-[#d94338]'
                   : 'text-[#999999] hover:text-[#ffffff]'
               }`}
             >

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { TabItem } from '@/types';
 import { useWorkspaceStore } from './workspaceStore';
-import { bindFlintStores } from '@/core/app/storeBridge';
+import { bindNoetherStores } from '@/core/app/storeBridge';
 
 export type DockZone = 'left-top' | 'left-bottom' | 'right-top' | 'right-bottom';
 
@@ -28,7 +28,7 @@ export interface SidebarDockState {
 
   // Actions
   loadSession: (
-    hearthPath?: string,
+    vaultPath?: string,
     sessionData?: Partial<{
       items: DockItem[];
       activeItemByZone: Record<DockZone, string | null>;
@@ -47,10 +47,10 @@ export interface SidebarDockState {
   syncExtensionTabs: (tabs: Array<{ id: string; title: string; side: 'left' | 'right'; order?: number }>) => void;
 }
 
-const GLOBAL_STORAGE_KEY = 'flint_sidebar_dock_state_v1';
+const GLOBAL_STORAGE_KEY = 'noether_sidebar_dock_state_v1';
 
-export function getDockStorageKey(hearthPath?: string): string {
-  const hp = (hearthPath || '').trim();
+export function getDockStorageKey(vaultPath?: string): string {
+  const hp = (vaultPath || '').trim();
   if (!hp || hp === 'default') return GLOBAL_STORAGE_KEY;
   return `${GLOBAL_STORAGE_KEY}:${hp}`;
 }
@@ -103,14 +103,14 @@ function ensureActiveItemsEnabled(
   });
 }
 
-function loadPersistedState(hearthPath?: string): {
+function loadPersistedState(vaultPath?: string): {
   items: DockItem[];
   activeItemByZone: Record<DockZone, string | null>;
   splitRatioLeft: number;
   splitRatioRight: number;
 } {
   try {
-    const key = getDockStorageKey(hearthPath);
+    const key = getDockStorageKey(vaultPath);
     let raw = localStorage.getItem(key);
     if (!raw && key !== GLOBAL_STORAGE_KEY) {
       raw = localStorage.getItem(GLOBAL_STORAGE_KEY);
@@ -170,7 +170,7 @@ function saveState(
     splitRatioLeft: number;
     splitRatioRight: number;
   },
-  hearthPath?: string
+  vaultPath?: string
 ) {
   try {
     const payload = JSON.stringify({
@@ -179,7 +179,7 @@ function saveState(
       splitRatioLeft: state.splitRatioLeft,
       splitRatioRight: state.splitRatioRight,
     });
-    const key = getDockStorageKey(hearthPath);
+    const key = getDockStorageKey(vaultPath);
     localStorage.setItem(key, payload);
     if (key !== GLOBAL_STORAGE_KEY) {
       localStorage.setItem(GLOBAL_STORAGE_KEY, payload);
@@ -316,7 +316,7 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
   splitRatioLeft: initialPersisted.splitRatioLeft,
   splitRatioRight: initialPersisted.splitRatioRight,
 
-  loadSession: (hearthPath, sessionData) => {
+  loadSession: (vaultPath, sessionData) => {
     let nextState: {
       items: DockItem[];
       activeItemByZone: Record<DockZone, string | null>;
@@ -341,11 +341,11 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
         splitRatioRight: typeof sessionData.splitRatioRight === 'number' ? sessionData.splitRatioRight : 0.5,
       };
     } else {
-      nextState = loadPersistedState(hearthPath);
+      nextState = loadPersistedState(vaultPath);
     }
 
     set(nextState);
-    saveState(nextState, hearthPath);
+    saveState(nextState, vaultPath);
   },
 
   dockTab: (tab, zone, insertIndex) => {
@@ -825,5 +825,5 @@ export const useSidebarDockStore = create<SidebarDockState>((set, get) => ({
   },
 }));
 
-bindFlintStores({ sidebarDock: useSidebarDockStore });
+bindNoetherStores({ sidebarDock: useSidebarDockStore });
 

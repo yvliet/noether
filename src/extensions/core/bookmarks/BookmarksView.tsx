@@ -1,12 +1,12 @@
 import React, { useMemo, useCallback } from 'react';
 import {
-  useFlintApp,
-  useHearthDocuments,
+  useNoetherApp,
+  useVaultDocuments,
   useActiveDocument,
   useActiveTab,
   useMainViewMode,
-  useFlintStore,
-} from 'flint';
+  useNoetherStore,
+} from 'noether';
 import {
   Bookmark01Icon,
   File01Icon,
@@ -19,22 +19,22 @@ import { getDocumentPath } from '@/lib/db/documents';
 import { useBookmarksSettings } from './bookmarksSettings';
 
 export const BookmarksView: React.FC = React.memo(() => {
-  const app = useFlintApp();
-  const documents = useHearthDocuments();
+  const app = useNoetherApp();
+  const documents = useVaultDocuments();
   const activeDocument = useActiveDocument();
   const currentTab = useActiveTab();
   const mainViewMode = useMainViewMode();
 
-  const isSplitView = useFlintStore('workspace', (s) => s?.isSplitView ?? false);
-  const activePane = useFlintStore('workspace', (s) => s?.activePane ?? 'main');
-  const splitActiveDocumentId = useFlintStore('workspace', (s) => s?.splitActiveDocumentId);
-  const hearthPath = useFlintStore('workspace', (s) => s?.hearthPath ?? app.hearth.hearthPath);
+  const isSplitView = useNoetherStore('workspace', (s) => s?.isSplitView ?? false);
+  const activePane = useNoetherStore('workspace', (s) => s?.activePane ?? 'main');
+  const splitActiveDocumentId = useNoetherStore('workspace', (s) => s?.splitActiveDocumentId);
+  const vaultPath = useNoetherStore('workspace', (s) => s?.vaultPath) ?? app.vault.vaultPath;
 
   const setActiveDocumentById = useCallback((id: string, _opts?: any) => {
-    app.hearth.openDocument(id);
+    app.vault.openDocument(id);
   }, [app]);
   const toggleBookmark = useCallback((id: string) => {
-    return app.hearth.toggleBookmark(id);
+    return app.vault.toggleBookmark(id);
   }, [app]);
   const openTab = useCallback((docId: string, title?: string, opts?: any) => {
     app.workspace.openTab(docId, title, opts);

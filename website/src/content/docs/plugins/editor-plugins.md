@@ -1,6 +1,6 @@
 # ProseMirror & Editor Bridge
 
-Extensions in Flint can integrate directly into the TipTap 2.x and ProseMirror Live Preview editor engine using `this.registerEditorPlugin()`.
+Extensions in Noether can integrate directly into the TipTap 2.x and ProseMirror Live Preview editor engine using `this.registerEditorPlugin()`.
 
 
 ## 1. Registering an Editor Plugin
@@ -28,4 +28,4 @@ this.registerEditorPlugin({
 
 ---
 
-Flint maps editor decorations through ProseMirror transaction steps (`mapping.map(decorations)`), running in $O(K)$ time over active decorations rather than rescanning the whole document, preserving sub-8ms typing latency on documents with over 100,000 words.
+Noether maps editor decorations through ProseMirror transaction steps (`mapping.map(decorations)`), running in $O(K)$ time over active decorations rather than rescanning the whole document, preserving sub-8ms typing latency on documents with over 100,000 words.

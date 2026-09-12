@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
-import { useFlintApp } from '@/core/app/AppContext';
+import { useNoetherApp } from '@/core/app/AppContext';
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -83,7 +83,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
 
   const isSidebar = propIsSidebar ?? isSidebarDetected;
   const isFrameless = Boolean(floating || hideBar);
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const mainViewMode = useWorkspaceStore((s) => s.mainViewMode);
@@ -196,8 +196,8 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find (Ctrl+F)'}
             className={`p-1.5 rounded-md ${
               isFindOpen
-                ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]'
-                : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
+                ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
             } cursor-pointer`}
           >
             <Search01Icon size={14} />
@@ -226,7 +226,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canBack}
           data-tooltip="Navigate back"
           data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-          className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer disabled:cursor-default"
+          className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
         >
           <ArrowLeft01Icon size={14} />
         </button>
@@ -236,7 +236,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canForward}
           data-tooltip="Navigate forward"
           data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-          className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer disabled:cursor-default"
+          className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
         >
           <ArrowRight01Icon size={14} />
         </button>
@@ -252,7 +252,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
         ) : (
           <div className={`text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans ${isFrameless ? 'pointer-events-auto' : ''}`}>
             {resolvedIcon && (
-              <span className="shrink-0 text-[var(--flint-text-secondary)] flex items-center">
+              <span className="shrink-0 text-[var(--noether-text-secondary)] flex items-center">
                 {React.isValidElement(resolvedIcon)
                   ? React.cloneElement(resolvedIcon as React.ReactElement<any>, {
                       size: 13,
@@ -261,7 +261,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
                   : resolvedIcon}
               </span>
             )}
-            <span className="text-[var(--flint-text-secondary)] font-medium truncate">
+            <span className="text-[var(--noether-text-secondary)] font-medium truncate">
               {title}
             </span>
           </div>
@@ -289,10 +289,10 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             }
             className={`p-1 rounded ${
               !onToggleReadingMode
-                ? 'opacity-20 cursor-default text-[var(--flint-text-muted)]'
+                ? 'opacity-20 cursor-default text-[var(--noether-text-muted)]'
                 : isLocked
-                ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted)] hover:bg-transparent'
-                : 'hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer'
+                ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
+                : 'hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer'
             }`}
           >
             {effectiveReadingMode ? <BookOpen01Icon size={14} /> : <Edit02Icon size={14} />}
@@ -315,7 +315,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
               title={titleStr}
               className={`p-1 rounded ${
                 classNameStr ||
-                'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+                'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
               }`}
             >
               {action.icon(actionContext)}
@@ -331,8 +331,8 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             title={document?.is_bookmarked || isBookmarked ? 'Remove bookmark' : 'Bookmark note'}
             className={`p-1 rounded ${
               document?.is_bookmarked || isBookmarked
-                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
-                : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
             }`}
           >
             <Bookmark01Icon
@@ -352,9 +352,9 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             className={`p-1 rounded ${
               onToggleFind
                 ? isFindOpen
-                  ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] cursor-pointer'
-                  : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
-                : 'opacity-20 cursor-default text-[var(--flint-text-muted)]'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] cursor-pointer'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
+                : 'opacity-20 cursor-default text-[var(--noether-text-muted)]'
             }`}
           >
             <Search01Icon size={14} />

@@ -17,10 +17,10 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { searchFullText, FTSResult } from '@/lib/db/fts';
 import { getDocumentPath } from '@/lib/db/documents';
-import { useFlintApp, useCommands } from '@/core/app/AppContext';
+import { useNoetherApp, useCommands } from '@/core/app/AppContext';
 
 export const CommandPalette: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const registeredCommands = useCommands();
 
   const isCommandPaletteOpen = useWorkspaceStore((s) => s.isCommandPaletteOpen);
@@ -268,7 +268,7 @@ export const CommandPalette: React.FC = React.memo(() => {
             <span><kbd className="bg-[#242424] px-1 py-0.5 rounded text-[#9ca3af]">Enter</kbd> to select</span>
             <span><kbd className="bg-[#242424] px-1 py-0.5 rounded text-[#9ca3af]">Esc</kbd> to close</span>
           </div>
-          <span>Flint FTS Search</span>
+          <span>Noether FTS Search</span>
         </div>
       </div>
     </div>

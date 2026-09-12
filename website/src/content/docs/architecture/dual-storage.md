@@ -1,6 +1,6 @@
 # Dual-Storage Architecture
 
-Flint combines the transparency of plain-text Markdown files with the query power of an embedded relational database. This document details how Flint separates document files on disk from the SQLite metadata engine, how synchronization occurs, and the performance characteristics of this design.
+Noether combines the transparency of plain-text Markdown files with the query power of an embedded relational database. This document details how Noether separates document files on disk from the SQLite metadata engine, how synchronization occurs, and the performance characteristics of this design.
 
 
 ## 1. Architectural Motivation
@@ -16,11 +16,11 @@ Note-taking systems typically select one of two extremes:
    - *Pros*: O(1) indexed queries, fast graph traversal, and instant full-text search.
    - *Cons*: Vendor lock-in, proprietary storage formats, inability to inspect raw notes, and complex conflict resolution.
 
-Flint eliminates this trade-off with a **Dual-Storage Engine**:
+Noether eliminates this trade-off with a **Dual-Storage Engine**:
 - **Disk Markdown Files (`.md`)**: The authoritative source of truth.
-- **Relational SQLite Database (`.flint/flint.sqlite`)**: A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) acting as an instant metadata cache and query accelerator.
+- **Relational SQLite Database (`.noether/noether.sqlite`)**: A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) acting as an instant metadata cache and query accelerator.
 
-If `.flint/flint.sqlite` is ever deleted or corrupted, Flint simply re-scans the Markdown files in the Hearth using the differential `file_manifest` and rebuilds the relational cache in seconds.
+If `.noether/noether.sqlite` is ever deleted or corrupted, Noether simply re-scans the Markdown files in the Vault using the differential `file_manifest` and rebuilds the relational cache in seconds.
 
 
 ## 2. Synchronization Pipeline
@@ -32,7 +32,7 @@ Synchronization between the file system and SQLite operates through a bidirectio
 | Storage Layer | Synchronization Pipeline |
 |:---|:---|
 | **Track 1: Authoritative Disk Storage** | Local filesystem Markdown (`*.md`) serving as the permanent source of truth |
-| **Atomic Write Engine** | Writes to temp file `.flint-tmp-*` then atomic-renames to prevent data loss |
+| **Atomic Write Engine** | Writes to temp file `.noether-tmp-*` then atomic-renames to prevent data loss |
 | **Filesystem Watcher** | Debounced cross-platform file monitoring for external edits |
 | **AST Metadata Tokenizer** | Extracts frontmatter, `[[wikilinks]]`, `#tags`, headings, and task checkboxes |
 | **Track 2: SQLite Relational Index** | Embedded `rusqlite` WAL-mode cache for high-speed indexing & graph queries |
@@ -62,7 +62,7 @@ Synchronization between the file system and SQLite operates through a bidirectio
 
 ---
 
-The embedded SQLite schema lives in `.flint/flint.sqlite`. Key tables include:
+The embedded SQLite schema lives in `.noether/noether.sqlite`. Key tables include:
 
 ### `documents`
 Stores file metadata and hierarchy:
@@ -130,7 +130,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_documents USING fts5(
 
 ---
 
-Resolving backlinks in pure file-based editors requires searching every file in the directory. In Flint, resolving incoming backlinks for any document is a sub-millisecond query:
+Resolving backlinks in pure file-based editors requires searching every file in the directory. In Noether, resolving incoming backlinks for any document is a sub-millisecond query:
 
 ```sql
 SELECT
@@ -148,14 +148,14 @@ ORDER BY d.mtime DESC;
 When a document is renamed from `Project Alpha` to `Project Beta`:
 1. The filesystem file is renamed on disk.
 2. The `documents` table updates `title = 'Project Beta'`.
-3. Flint triggers an automated link refactoring pass, updating all referencing Markdown files and relational rows within the same atomic operation.
+3. Noether triggers an automated link refactoring pass, updating all referencing Markdown files and relational rows within the same atomic operation.
 
 
 ## 5. Storage Engine Implementation
 
 ---
 
-Flint runs on a native compiled SQLite engine (`rusqlite`) communicating directly with the Tauri host:
+Noether runs on a native compiled SQLite engine (`rusqlite`) communicating directly with the Tauri host:
 
 - Uses native C/Rust SQLite compiled directly into the Tauri binary.
 - Configured with `PRAGMA journal_mode = WAL;` (Write-Ahead Logging) and `PRAGMA synchronous = NORMAL;`.

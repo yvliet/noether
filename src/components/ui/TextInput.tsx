@@ -19,7 +19,7 @@ export const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(({
     <input
       ref={ref}
       type={type}
-      className={`bg-[var(--flint-bg-input,#181818)] border border-[var(--flint-border-strong,#383838)] focus:border-[var(--flint-accent,#ea580c)] text-[var(--flint-text-primary,#ffffff)] text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] disabled:opacity-40 disabled:cursor-not-allowed ${
+      className={`bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-strong,#383838)] focus:border-[var(--noether-accent,#eb584d)] text-[var(--noether-text-primary,#ffffff)] text-xs rounded-[5px] px-3 py-1.5 outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] disabled:opacity-40 disabled:cursor-not-allowed ${
         isMono ? 'font-mono' : ''
       } ${className}`}
       {...props}

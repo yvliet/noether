@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTagsSettings, DEFAULT_TAGS_SETTINGS, TagSortBy } from './tagsSettings';
-import { useToast } from 'flint';
+import { useToast } from 'noether';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { RotateCcwIcon } from '@/components/common/Icons';
@@ -39,7 +39,7 @@ export const TagsSettingsTab: React.FC = () => {
               restoreDefaults();
               showToast('Restored Tags explorer defaults', 'info');
             }}
-            className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
           >
             <RotateCcwIcon size={12} />
             <span>Restore defaults</span>

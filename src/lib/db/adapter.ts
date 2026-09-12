@@ -2,7 +2,7 @@
  * @module NativeSqliteAdapter
  * @description
  * High-performance native SQLite persistence adapter communicating directly with
- * Flint's compiled Rust database engine via Tauri IPC.
+ * Noether's compiled Rust database engine via Tauri IPC.
  *
  * Architectural Rationale:
  * 1. Zero WASM Footprint: Replaces in-browser `sql.js` WebAssembly execution with
@@ -24,8 +24,8 @@ export interface QueryResult<T = any> {
 
 class NativeSqliteAdapter {
   private isInitialized = false;
-  private activeHearthPath: string = '';
-  private isSwitchingHearth: boolean = false;
+  private activeVaultPath: string = '';
+  private isSwitchingVault: boolean = false;
   private statusListeners: Set<(isActive: boolean) => void> = new Set();
   private readyPromise: Promise<void> | null = null;
 
@@ -37,12 +37,12 @@ class NativeSqliteAdapter {
     return true;
   }
 
-  public setSwitchingHearth(switching: boolean) {
-    this.isSwitchingHearth = switching;
+  public setSwitchingVault(switching: boolean) {
+    this.isSwitchingVault = switching;
   }
 
-  public setActiveHearthPath(path: string) {
-    this.activeHearthPath = path || '';
+  public setActiveVaultPath(path: string) {
+    this.activeVaultPath = path || '';
   }
 
   public isReady(): boolean {
@@ -62,28 +62,28 @@ class NativeSqliteAdapter {
       try {
         fn(isActive);
       } catch (e) {
-        console.error('[Flint Native DB] Status listener error:', e);
+        console.error('[Noether Native DB] Status listener error:', e);
       }
     });
   }
 
-  public async init(hearthPath?: string): Promise<void> {
-    if (hearthPath) {
-      this.setActiveHearthPath(hearthPath);
+  public async init(vaultPath?: string): Promise<void> {
+    if (vaultPath) {
+      this.setActiveVaultPath(vaultPath);
     }
-    if (this.isInitialized && !hearthPath) return;
+    if (this.isInitialized && !vaultPath) return;
 
     if (!this.readyPromise) {
       this.readyPromise = (async () => {
         try {
           if (platform.isTauri()) {
-            await platform.dbInit(this.activeHearthPath || undefined);
-            console.log('[Flint Native DB] Connected to native rusqlite engine for Hearth:', this.activeHearthPath || 'default');
+            await platform.dbInit(this.activeVaultPath || undefined);
+            console.log('[Noether Native DB] Connected to native rusqlite engine for Vault:', this.activeVaultPath || 'default');
           }
           this.isInitialized = true;
           this.notifyStatus(true);
         } catch (err) {
-          console.error('[Flint Native DB] Initialization error:', err);
+          console.error('[Noether Native DB] Initialization error:', err);
           this.isInitialized = false;
           this.notifyStatus(false);
           throw err;
@@ -96,21 +96,21 @@ class NativeSqliteAdapter {
     return this.readyPromise;
   }
 
-  public async resetAndReload(newHearthPath?: string): Promise<void> {
+  public async resetAndReload(newVaultPath?: string): Promise<void> {
     this.isInitialized = false;
     this.notifyStatus(false);
-    if (newHearthPath) {
-      this.setActiveHearthPath(newHearthPath);
+    if (newVaultPath) {
+      this.setActiveVaultPath(newVaultPath);
     }
-    await this.init(this.activeHearthPath);
+    await this.init(this.activeVaultPath);
   }
 
   private async ensureReady(): Promise<void> {
     if (!this.isInitialized) {
-      await this.init(this.activeHearthPath);
+      await this.init(this.activeVaultPath);
     }
     if (!this.isInitialized) {
-      throw new Error('[Flint Native DB] Native SQLite connection is not ready.');
+      throw new Error('[Noether Native DB] Native SQLite connection is not ready.');
     }
   }
 
@@ -127,14 +127,14 @@ class NativeSqliteAdapter {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
       return await platform.dbQuery<T>(sql, cleanParams);
     } catch (err) {
-      console.error('[Flint Native DB] Query error:', sql, params, err);
+      console.error('[Noether Native DB] Query error:', sql, params, err);
       throw err;
     }
   }
 
   public executeSync(sql: string, params: any[] = []): void {
     this.execute(sql, params).catch((err) => {
-      console.error('[Flint Native DB] ExecuteSync error:', sql, params, err);
+      console.error('[Noether Native DB] ExecuteSync error:', sql, params, err);
     });
   }
 
@@ -147,7 +147,7 @@ class NativeSqliteAdapter {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
       await platform.dbExecute(sql, cleanParams);
     } catch (err) {
-      console.error('[Flint Native DB] Execute error:', sql, params, err);
+      console.error('[Noether Native DB] Execute error:', sql, params, err);
       throw err;
     }
   }
@@ -164,7 +164,7 @@ class NativeSqliteAdapter {
       }));
       await platform.dbTransaction(cleanQueries);
     } catch (err) {
-      console.error('[Flint Native DB] Transaction error:', err);
+      console.error('[Noether Native DB] Transaction error:', err);
       throw err;
     }
   }

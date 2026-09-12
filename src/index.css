@@ -6,102 +6,102 @@
 :root {
   color-scheme: dark;
 
-  /* Theme surface tokens (defaults to Flint Dark) */
-  --flint-bg-app: #141414;
-  --flint-bg-topbar: #0d0d0d;
-  --flint-bg-topbar-gradient: #0d0d0d;
-  --flint-bg-ribbon: #111111;
-  --flint-bg-sidebar: #151515;
-  --flint-bg-sidebar-gradient: #151515;
-  --flint-bg-sidebar-hover: #1f1f1f;
-  --flint-bg-sidebar-active: #272727;
-  --flint-bg-main: #1c1c1c;
-  --flint-bg-main-gradient: #1c1c1c;
-  --flint-bg-card: #222222;
-  --flint-bg-card-hover: #2a2a2a;
-  --flint-bg-popover: #232323;
-  --flint-bg-input: #181818;
-  --flint-bg-input-focus: #222222;
-  --flint-bg-tab-active: #1c1c1c;
-  --flint-bg-tab-hover: #232323;
-  --flint-bg-tab-inactive: transparent;
-  --flint-tab-corner-fill: #1c1c1c;
-  --flint-tab-corner-hover-fill: #232323;
-  --flint-bg-statusbar: #1f1f1f;
+  /* Theme surface tokens (defaults to Noether Dark) */
+  --noether-bg-app: #141414;
+  --noether-bg-topbar: #0d0d0d;
+  --noether-bg-topbar-gradient: #0d0d0d;
+  --noether-bg-ribbon: #111111;
+  --noether-bg-sidebar: #151515;
+  --noether-bg-sidebar-gradient: #151515;
+  --noether-bg-sidebar-hover: #1f1f1f;
+  --noether-bg-sidebar-active: #272727;
+  --noether-bg-main: #1c1c1c;
+  --noether-bg-main-gradient: #1c1c1c;
+  --noether-bg-card: #222222;
+  --noether-bg-card-hover: #2a2a2a;
+  --noether-bg-popover: #232323;
+  --noether-bg-input: #181818;
+  --noether-bg-input-focus: #222222;
+  --noether-bg-tab-active: #1c1c1c;
+  --noether-bg-tab-hover: #232323;
+  --noether-bg-tab-inactive: transparent;
+  --noether-tab-corner-fill: #1c1c1c;
+  --noether-tab-corner-hover-fill: #232323;
+  --noether-bg-statusbar: #1f1f1f;
 
   /* Border tokens */
-  --flint-border-subtle: #202020;
-  --flint-border-base: #292929;
-  --flint-border-strong: #383838;
+  --noether-border-subtle: #202020;
+  --noether-border-base: #292929;
+  --noether-border-strong: #383838;
 
   /* Text tokens */
-  --flint-text-primary: #ffffff;
-  --flint-text-secondary: #dcddde;
-  --flint-text-muted: #888888;
-  --flint-text-faint: #555555;
+  --noether-text-primary: #ffffff;
+  --noether-text-secondary: #dcddde;
+  --noether-text-muted: #888888;
+  --noether-text-faint: #555555;
 
   /* Accent tokens */
-  --flint-accent: #ea580c;
-  --flint-accent-hover: #c2410c;
-  --flint-accent-active: #9a3412;
-  --flint-accent-subtle: rgba(234, 88, 12, 0.15);
-  --flint-accent-gradient: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+  --noether-accent: #eb584d;
+  --noether-accent-hover: #d94338;
+  --noether-accent-active: #b83228;
+  --noether-accent-subtle: rgba(235, 88, 77, 0.15);
+  --noether-accent-gradient: linear-gradient(135deg, #eb584d 0%, #f07167 100%);
 
   /* Link tokens */
-  --flint-link-color: var(--flint-accent);
-  --flint-link-hover: var(--flint-accent-hover, var(--flint-accent));
-  --flint-link-visited: var(--flint-accent);
-  --flint-link-decoration-color: var(--flint-border-strong);
+  --noether-link-color: var(--noether-accent);
+  --noether-link-hover: var(--noether-accent-hover, var(--noether-accent));
+  --noether-link-visited: var(--noether-accent);
+  --noether-link-decoration-color: var(--noether-border-strong);
 }
 
 :root[data-no-link-accent="true"],
-.flint-no-link-accent {
-  --flint-link-color: var(--flint-text-secondary, #dcddde);
-  --flint-link-hover: var(--flint-text-primary, #ffffff);
-  --flint-link-visited: var(--flint-text-secondary, #dcddde);
+.noether-no-link-accent {
+  --noether-link-color: var(--noether-text-secondary, #dcddde);
+  --noether-link-hover: var(--noether-text-primary, #ffffff);
+  --noether-link-visited: var(--noether-text-secondary, #dcddde);
 }
 
 .theme-light:root[data-no-link-accent="true"],
-.theme-light.flint-no-link-accent {
-  --flint-link-color: var(--flint-text-primary, #0f172a);
-  --flint-link-hover: #000000;
-  --flint-link-visited: var(--flint-text-primary, #0f172a);
+.theme-light.noether-no-link-accent {
+  --noether-link-color: var(--noether-text-primary, #0f172a);
+  --noether-link-hover: #000000;
+  --noether-link-visited: var(--noether-text-primary, #0f172a);
 }
 
 :root[data-no-link-accent="true"][data-blue-links="true"],
-:root.flint-no-link-accent.flint-blue-links,
-.flint-no-link-accent.flint-blue-links {
-  --flint-link-color: #58a6ff;
-  --flint-link-hover: #79b8ff;
-  --flint-link-visited: #bc8cff;
+:root.noether-no-link-accent.noether-blue-links,
+.noether-no-link-accent.noether-blue-links {
+  --noether-link-color: #58a6ff;
+  --noether-link-hover: #79b8ff;
+  --noether-link-visited: #bc8cff;
 }
 
 :root.theme-light[data-no-link-accent="true"][data-blue-links="true"],
 .theme-light:root[data-no-link-accent="true"][data-blue-links="true"],
-:root.theme-light.flint-no-link-accent.flint-blue-links,
-.theme-light.flint-no-link-accent.flint-blue-links {
-  --flint-link-color: #0000ee;
-  --flint-link-hover: #0000cc;
-  --flint-link-visited: #551a8b;
+:root.theme-light.noether-no-link-accent.noether-blue-links,
+.theme-light.noether-no-link-accent.noether-blue-links {
+  --noether-link-color: #0000ee;
+  --noether-link-hover: #0000cc;
+  --noether-link-visited: #551a8b;
 }
 
 :root[data-color-link-underline="true"],
-.flint-color-link-underline {
-  --flint-link-decoration-color: currentColor;
+.noether-color-link-underline {
+  --noether-link-decoration-color: currentColor;
 }
 
 :root {
 
   /* Selection & Code */
-  --flint-selection-bg: #4a4e57;
-  --flint-selection-text: #ffffff;
-  --flint-code-bg: #242424;
-  --flint-code-text: #e5e7eb;
+  --noether-selection-bg: #4a4e57;
+  --noether-selection-text: #ffffff;
+  --noether-code-bg: #242424;
+  --noether-code-text: #e5e7eb;
 
   /* Shadows & Elevation */
-  --flint-shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
-  --flint-shadow-2: 0 4px 16px 0 rgba(0, 0, 0, 0.4);
-  --flint-shadow-3: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+  --noether-shadow-1: 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+  --noether-shadow-2: 0 4px 16px 0 rgba(0, 0, 0, 0.4);
+  --noether-shadow-3: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
 
   /* Native System Font Stacks */
   --font-interface-fallback: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
@@ -129,14 +129,14 @@ body,
 
 /* Spatial pinchable views (Graph View and Canvas) handle custom multi-touch & pointer gestures */
 [data-pinchable="true"],
-.flint-pinchable,
-.flint-graph-view,
-.flint-canvas-view {
+.noether-pinchable,
+.noether-graph-view,
+.noether-canvas-view {
   touch-action: none !important;
 }
 
 /* Document layouts and editor surfaces: locked against touch zooming */
-.flint-doc-wrapper,
+.noether-doc-wrapper,
 [data-doc-view="true"],
 .editor-canvas,
 .ProseMirror,
@@ -163,8 +163,8 @@ body::-webkit-scrollbar {
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--flint-bg-main);
-  color: var(--flint-text-secondary);
+  background-color: var(--noether-bg-main);
+  color: var(--noether-text-secondary);
   font-family: var(--font-interface);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -193,7 +193,7 @@ input[type="search"],
 input:not([type]),
 textarea,
 .tree-node-title,
-.flint-tree-item-title {
+.noether-tree-item-title {
   overflow-clip-margin: 4px;
 }
 
@@ -203,36 +203,36 @@ textarea,
 
 /* Top bar surfaces */
 [data-top-bar="true"] {
-  background: var(--flint-bg-topbar-gradient, var(--flint-bg-topbar)) !important;
+  background: var(--noether-bg-topbar-gradient, var(--noether-bg-topbar)) !important;
 }
 
 /* Sidebars & Ribbon */
 [data-sidebar="true"] {
-  background: var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar)) !important;
+  background: var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar)) !important;
 }
 
 [data-ribbon="true"] {
-  background: var(--flint-bg-ribbon) !important;
+  background: var(--noether-bg-ribbon) !important;
 }
 
 /* Main workspace & canvas */
 [data-main="true"],
-.flint-doc-wrapper:not([data-sidebar-mode="true"]) {
-  background: var(--flint-bg-main-gradient, var(--flint-bg-main)) !important;
+.noether-doc-wrapper:not([data-sidebar-mode="true"]) {
+  background: var(--noether-bg-main-gradient, var(--noether-bg-main)) !important;
 }
 
 /* Cards, Modals, Panels */
 [data-card="true"] {
-  background-color: var(--flint-bg-card) !important;
+  background-color: var(--noether-bg-card) !important;
 }
 
 /* Inputs & Form Controls */
 input:not([type="checkbox"]):not([type="radio"]):not(.bg-transparent),
 select,
 textarea {
-  background-color: var(--flint-bg-input) !important;
-  color: var(--flint-text-primary) !important;
-  border-color: var(--flint-border-base) !important;
+  background-color: var(--noether-bg-input) !important;
+  color: var(--noether-text-primary) !important;
+  border-color: var(--noether-border-base) !important;
 }
 
 .bg-transparent,
@@ -256,8 +256,8 @@ textarea.bg-transparent {
 .theme-light input::selection,
 .theme-light textarea::selection,
 .theme-light .ProseMirror ::selection {
-  background-color: var(--flint-selection-bg, #bae6fd) !important;
-  color: var(--flint-selection-text, #09090b) !important;
+  background-color: var(--noether-selection-bg, #bae6fd) !important;
+  color: var(--noether-selection-text, #09090b) !important;
 }
 
 /* Light text colors */
@@ -277,7 +277,7 @@ textarea.bg-transparent {
 .theme-light .text-\[\#cdd6f4\],
 .theme-light .text-\[\#c0caf5\],
 .theme-light .text-\[\#e0def4\] {
-  color: var(--flint-text-primary) !important;
+  color: var(--noether-text-primary) !important;
 }
 
 /* Light placeholders */
@@ -287,21 +287,21 @@ textarea.bg-transparent {
 .theme-light .placeholder\:text-\[\#484848\]::placeholder,
 .theme-light .placeholder\:text-\[\#555\]::placeholder,
 .theme-light .placeholder-\[\#555\]::placeholder {
-  color: var(--flint-text-muted) !important;
+  color: var(--noether-text-muted) !important;
   opacity: 0.8 !important;
 }
 
 /* Light mode subtle in-between dividers */
 .theme-light .divide-y > :not([hidden]) ~ :not([hidden]),
 .theme-light .divide-x > :not([hidden]) ~ :not([hidden]) {
-  border-color: var(--flint-border-subtle, #f0f0f2) !important;
+  border-color: var(--noether-border-subtle, #f0f0f2) !important;
 }
 
 /* Light Mode Softened Optical Elevations (Cards, Popovers, Dropdowns, Context Menus, Modals) */
 .theme-light [data-card="true"] {
-  background-color: var(--flint-bg-card) !important;
-  border-color: var(--flint-border-base, #e4e4e7) !important;
-  box-shadow: var(--flint-shadow-1, 0 1px 2px 0 rgba(0, 0, 0, 0.03)) !important;
+  background-color: var(--noether-bg-card) !important;
+  border-color: var(--noether-border-base, #e4e4e7) !important;
+  box-shadow: var(--noether-shadow-1, 0 1px 2px 0 rgba(0, 0, 0, 0.03)) !important;
 }
 
 .theme-light [role="menu"],
@@ -311,7 +311,7 @@ textarea.bg-transparent {
 .theme-light .shadow,
 .theme-light .shadow-\[0_8px_24px_rgba\(0\,0\,0\,0\.6\)\,0_2px_6px_rgba\(0\,0\,0\,0\.3\)\],
 .theme-light .shadow-\[0_8px_24px_rgba\(0\,0\,0\,0\.4\)\] {
-  box-shadow: var(--flint-shadow-2, 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03)) !important;
+  box-shadow: var(--noether-shadow-2, 0 4px 12px -2px rgba(0, 0, 0, 0.06), 0 2px 4px -1px rgba(0, 0, 0, 0.03)) !important;
 }
 
 .theme-light .shadow-2xl,
@@ -319,25 +319,25 @@ textarea.bg-transparent {
 .theme-light .shadow-lg,
 .theme-light [role="dialog"],
 .theme-light .fixed.z-50 > div {
-  box-shadow: var(--flint-shadow-3, 0 10px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04)) !important;
+  box-shadow: var(--noether-shadow-3, 0 10px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04)) !important;
 }
 
 /* Editor typography in light theme */
 .theme-light .ProseMirror {
-  color: var(--flint-text-secondary);
+  color: var(--noether-text-secondary);
 }
 
 .theme-light .ProseMirror strong,
 .theme-light .ProseMirror b,
 .theme-light .md-bold {
-  color: var(--flint-text-primary) !important;
+  color: var(--noether-text-primary) !important;
   font-weight: 600;
 }
 
 .theme-light .ProseMirror em,
 .theme-light .ProseMirror i,
 .theme-light .md-italic {
-  color: var(--flint-text-secondary) !important;
+  color: var(--noether-text-secondary) !important;
 }
 
 .theme-light .ProseMirror h1,
@@ -346,75 +346,75 @@ textarea.bg-transparent {
 .theme-light .ProseMirror h4,
 .theme-light .ProseMirror h5,
 .theme-light .ProseMirror h6 {
-  color: var(--flint-text-primary) !important;
+  color: var(--noether-text-primary) !important;
   font-weight: 700;
 }
 
 .theme-light .ProseMirror blockquote {
-  border-left-color: var(--flint-border-strong) !important;
-  color: var(--flint-text-secondary) !important;
+  border-left-color: var(--noether-border-strong) !important;
+  color: var(--noether-text-secondary) !important;
 }
 
 .theme-light .ProseMirror code,
 .theme-light .md-code {
-  background-color: var(--flint-code-bg, var(--flint-bg-input)) !important;
-  color: var(--flint-code-text, var(--flint-text-primary)) !important;
-  border: 1px solid var(--flint-border-subtle);
+  background-color: var(--noether-code-bg, var(--noether-bg-input)) !important;
+  color: var(--noether-code-text, var(--noether-text-primary)) !important;
+  border: 1px solid var(--noether-border-subtle);
 }
 
 .theme-light .ProseMirror pre {
-  background-color: var(--flint-bg-input) !important;
-  border: 1px solid var(--flint-border-subtle) !important;
+  background-color: var(--noether-bg-input) !important;
+  border: 1px solid var(--noether-border-subtle) !important;
 }
 
 .theme-light .ProseMirror pre code {
   background: transparent !important;
   border: none !important;
-  color: var(--flint-text-primary) !important;
+  color: var(--noether-text-primary) !important;
 }
 
 .theme-light .md-wikilink,
 .theme-light .md-link,
-.theme-light .flint-link,
+.theme-light .noether-link,
 .theme-light .ProseMirror .md-wikilink,
 .theme-light .ProseMirror .md-link,
 .theme-light .tiptap-reading-view .md-wikilink,
 .theme-light .tiptap-reading-view .md-link,
-.theme-light .flint-doc-wrapper a:not(.flint-btn),
+.theme-light .noether-doc-wrapper a:not(.noether-btn),
 .theme-light .ProseMirror a {
-  color: var(--flint-link-color) !important;
-  text-decoration-color: var(--flint-link-decoration-color) !important;
+  color: var(--noether-link-color) !important;
+  text-decoration-color: var(--noether-link-decoration-color) !important;
 }
 
 .theme-light .md-wikilink.is-visited,
 .theme-light .md-wikilink[data-visited="true"],
 .theme-light .md-link.is-visited,
 .theme-light .md-link[data-visited="true"],
-.theme-light .flint-link.is-visited,
-.theme-light .flint-link[data-visited="true"],
+.theme-light .noether-link.is-visited,
+.theme-light .noether-link[data-visited="true"],
 .theme-light .ProseMirror .md-wikilink.is-visited,
 .theme-light .ProseMirror .md-link.is-visited,
 .theme-light .tiptap-reading-view .md-wikilink.is-visited,
 .theme-light .tiptap-reading-view .md-link.is-visited,
-.theme-light .flint-doc-wrapper a:visited,
+.theme-light .noether-doc-wrapper a:visited,
 .theme-light .ProseMirror a:visited,
 .theme-light .tiptap-reading-view a:visited,
 .theme-light a.is-visited,
 .theme-light a[data-visited="true"] {
-  color: var(--flint-link-visited) !important;
+  color: var(--noether-link-visited) !important;
 }
 
 .theme-light .md-wikilink:hover,
 .theme-light .md-link:hover,
-.theme-light .flint-link:hover,
+.theme-light .noether-link:hover,
 .theme-light .ProseMirror .md-wikilink:hover,
 .theme-light .ProseMirror .md-link:hover,
 .theme-light .tiptap-reading-view .md-wikilink:hover,
 .theme-light .tiptap-reading-view .md-link:hover,
-.theme-light .flint-doc-wrapper a:not(.flint-btn):hover,
+.theme-light .noether-doc-wrapper a:not(.noether-btn):hover,
 .theme-light .ProseMirror a:hover {
-  color: var(--flint-link-hover) !important;
-  text-decoration-color: var(--flint-link-hover) !important;
+  color: var(--noether-link-hover) !important;
+  text-decoration-color: var(--noether-link-hover) !important;
 }
 
 /* Global Selection Style (Obsidian visible neutral selection) */
@@ -497,14 +497,14 @@ textarea::selection {
   -webkit-app-region: no-drag;
 }
 
-/* Quicknote is a floating card, so its full-screen backdrop must not block Flint controls. */
-.flint-modal-host:has(.quicknote-prosemirror) > div {
+/* Quicknote is a floating card, so its full-screen backdrop must not block Noether controls. */
+.noether-modal-host:has(.quicknote-prosemirror) > div {
   pointer-events: none !important;
   background: transparent !important;
 }
 
-.flint-modal-host:has(.quicknote-prosemirror) > div .quicknote-prosemirror,
-.flint-modal-host:has(.quicknote-prosemirror) > div:has(.quicknote-prosemirror) > div {
+.noether-modal-host:has(.quicknote-prosemirror) > div .quicknote-prosemirror,
+.noether-modal-host:has(.quicknote-prosemirror) > div:has(.quicknote-prosemirror) > div {
   pointer-events: auto;
 }
 
@@ -515,7 +515,7 @@ textarea::selection {
   font-family: var(--font-text);
   font-size: var(--editor-font-size, 16px);
   line-height: 1.75;
-  color: var(--flint-text-primary);
+  color: var(--noether-text-primary);
 }
 
 code,
@@ -527,12 +527,12 @@ kbd,
 
 .ProseMirror ::selection,
 .markdown-prose ::selection {
-  background-color: var(--flint-selection-bg, #4a4e57);
-  color: var(--flint-selection-text, #ffffff);
+  background-color: var(--noether-selection-bg, #4a4e57);
+  color: var(--noether-selection-text, #ffffff);
 }
 
 .ProseMirror .node-iconChip,
-.ProseMirror .flint-icon-chip {
+.ProseMirror .noether-icon-chip {
   display: inline-flex;
   vertical-align: top;
   height: 1lh;
@@ -541,10 +541,10 @@ kbd,
 }
 
 .ProseMirror .node-iconChip.ProseMirror-selectednode,
-.ProseMirror .flint-icon-chip.ProseMirror-selectednode,
-.flint-icon-chip[data-selected="true"] {
-  background-color: var(--flint-selection-bg, #4a4e57) !important;
-  color: var(--flint-selection-text, #ffffff) !important;
+.ProseMirror .noether-icon-chip.ProseMirror-selectednode,
+.noether-icon-chip[data-selected="true"] {
+  background-color: var(--noether-selection-bg, #4a4e57) !important;
+  color: var(--noether-selection-text, #ffffff) !important;
   outline: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
@@ -561,7 +561,7 @@ kbd,
 .markdown-prose strong,
 .markdown-prose b {
   font-weight: 700;
-  color: var(--flint-text-primary);
+  color: var(--noether-text-primary);
 }
 
 .ProseMirror em,
@@ -569,14 +569,14 @@ kbd,
 .markdown-prose em,
 .markdown-prose i {
   font-style: italic;
-  color: var(--flint-text-secondary);
+  color: var(--noether-text-secondary);
 }
 
 .ProseMirror h1,
 .markdown-prose h1 {
   font-size: calc(var(--editor-font-size, 16px) * 1.85);
   font-weight: 700;
-  color: var(--flint-text-primary);
+  color: var(--noether-text-primary);
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   line-height: 1.3;
@@ -586,7 +586,7 @@ kbd,
 .markdown-prose h2 {
   font-size: calc(var(--editor-font-size, 16px) * 1.45);
   font-weight: 600;
-  color: var(--flint-text-primary);
+  color: var(--noether-text-primary);
   margin-top: 1.25rem;
   margin-bottom: 0.5rem;
   line-height: 1.35;
@@ -596,7 +596,7 @@ kbd,
 .markdown-prose h3 {
   font-size: calc(var(--editor-font-size, 16px) * 1.2);
   font-weight: 600;
-  color: var(--flint-text-secondary);
+  color: var(--noether-text-secondary);
   margin-top: 1rem;
   margin-bottom: 0.5rem;
   line-height: 1.4;
@@ -606,7 +606,7 @@ kbd,
 .markdown-prose h4 {
   font-size: calc(var(--editor-font-size, 16px) * 1.08);
   font-weight: 600;
-  color: var(--flint-text-secondary);
+  color: var(--noether-text-secondary);
   margin-top: 0.75rem;
   margin-bottom: 0.4rem;
   line-height: 1.45;
@@ -616,7 +616,7 @@ kbd,
 .markdown-prose h5 {
   font-size: calc(var(--editor-font-size, 16px) * 0.95);
   font-weight: 600;
-  color: var(--flint-text-muted);
+  color: var(--noether-text-muted);
   margin-top: 0.5rem;
   margin-bottom: 0.35rem;
 }
@@ -625,7 +625,7 @@ kbd,
 .markdown-prose h6 {
   font-size: calc(var(--editor-font-size, 16px) * 0.88);
   font-weight: 600;
-  color: var(--flint-text-muted);
+  color: var(--noether-text-muted);
   margin-top: 0.5rem;
   margin-bottom: 0.3rem;
 }
@@ -648,31 +648,31 @@ kbd,
 
 .ProseMirror blockquote,
 .markdown-prose blockquote {
-  border-left: 3px solid var(--flint-border-strong);
+  border-left: 3px solid var(--noether-border-strong);
   padding-left: 1rem;
   margin-left: 0;
   margin-right: 0;
   margin-top: 0.75rem;
   margin-bottom: 0.75rem;
-  color: var(--flint-text-muted);
+  color: var(--noether-text-muted);
   font-style: italic;
 }
 
 .ProseMirror code,
 .markdown-prose code {
-  background-color: var(--flint-code-bg, var(--flint-bg-card));
-  color: var(--flint-code-text, var(--flint-text-primary));
+  background-color: var(--noether-code-bg, var(--noether-bg-card));
+  color: var(--noether-code-text, var(--noether-text-primary));
   padding: 0.15rem 0.35rem;
   border-radius: 0.25rem;
   font-size: 0.875em;
   font-family: var(--font-monospace) !important;
-  border: 1px solid var(--flint-border-subtle);
+  border: 1px solid var(--noether-border-subtle);
 }
 
 .ProseMirror pre,
 .markdown-prose pre {
-  background-color: var(--flint-bg-input);
-  border: 1px solid var(--flint-border-subtle);
+  background-color: var(--noether-bg-input);
+  border: 1px solid var(--noether-border-subtle);
   border-radius: 0.5rem;
   padding: 0.85rem 1rem;
   margin-top: 0.75rem;
@@ -686,7 +686,7 @@ kbd,
   background: transparent;
   padding: 0;
   border: none;
-  color: var(--flint-text-primary);
+  color: var(--noether-text-primary);
   font-size: 0.85rem;
   font-family: var(--font-monospace) !important;
 }
@@ -694,7 +694,7 @@ kbd,
 .ProseMirror hr,
 .markdown-prose hr {
   border: none;
-  border-top: 1px solid var(--flint-border-subtle);
+  border-top: 1px solid var(--noether-border-subtle);
   margin: 1.75rem 0;
 }
 
@@ -959,23 +959,23 @@ li[data-type="taskItem"][data-checked="true"] > div {
 
 /* Live Preview & Reading View List Item Hanging Indent (Google Docs style)
    Aligns wrapped lines flush beneath the first character of the list item text */
-.flint-list-hanging {
-  padding-left: var(--flint-hang-indent, 0px) !important;
-  text-indent: calc(-1 * var(--flint-hang-indent, 0px)) !important;
+.noether-list-hanging {
+  padding-left: var(--noether-hang-indent, 0px) !important;
+  text-indent: calc(-1 * var(--noether-hang-indent, 0px)) !important;
 }
 
 /* Plain Text List Prefix Dimming (Numbers & Dashes/Bullets - Obsidian style)
    Ensures numbers/lists remain dimmed (and normal font weight) even when inside or marked with bold */
-.flint-numbered-prefix,
-.flint-list-prefix,
-.md-bold.flint-numbered-prefix,
-.md-bold.flint-list-prefix,
-.md-bold .flint-numbered-prefix,
-.md-bold .flint-list-prefix,
-strong .flint-numbered-prefix,
-strong .flint-list-prefix,
-b .flint-numbered-prefix,
-b .flint-list-prefix {
+.noether-numbered-prefix,
+.noether-list-prefix,
+.md-bold.noether-numbered-prefix,
+.md-bold.noether-list-prefix,
+.md-bold .noether-numbered-prefix,
+.md-bold .noether-list-prefix,
+strong .noether-numbered-prefix,
+strong .noether-list-prefix,
+b .noether-numbered-prefix,
+b .noether-list-prefix {
   color: #777777 !important;
   font-weight: 400 !important;
   font-style: normal;
@@ -987,34 +987,34 @@ b .flint-list-prefix {
  * Why font-size: 0 + ::after instead of text-replace: the underlying text stays as '-'
  * for markdown compatibility and cursor navigation; this is purely cosmetic.
  */
-.flint-bullet-marker {
+.noether-bullet-marker {
   font-size: 0;
 }
-.flint-bullet-marker::after {
+.noether-bullet-marker::after {
   content: '•';
   font-size: 1rem;
 }
 
-.theme-light .flint-numbered-prefix,
-.theme-light .flint-list-prefix,
-.theme-light .md-bold.flint-numbered-prefix,
-.theme-light .md-bold.flint-list-prefix,
-.theme-light .md-bold .flint-numbered-prefix,
-.theme-light .md-bold .flint-list-prefix,
-.theme-light strong .flint-numbered-prefix,
-.theme-light strong .flint-list-prefix,
-.theme-light b .flint-numbered-prefix,
-.theme-light b .flint-list-prefix {
+.theme-light .noether-numbered-prefix,
+.theme-light .noether-list-prefix,
+.theme-light .md-bold.noether-numbered-prefix,
+.theme-light .md-bold.noether-list-prefix,
+.theme-light .md-bold .noether-numbered-prefix,
+.theme-light .md-bold .noether-list-prefix,
+.theme-light strong .noether-numbered-prefix,
+.theme-light strong .noether-list-prefix,
+.theme-light b .noether-numbered-prefix,
+.theme-light b .noether-list-prefix {
   color: #94a3b8 !important;
   font-weight: 400 !important;
 }
 
-.tiptap-reading-view .flint-numbered-prefix,
-.tiptap-reading-view .flint-list-prefix,
-.tiptap-reading-view .md-bold.flint-numbered-prefix,
-.tiptap-reading-view .md-bold.flint-list-prefix,
-.tiptap-reading-view .md-bold .flint-numbered-prefix,
-.tiptap-reading-view .md-bold .flint-list-prefix {
+.tiptap-reading-view .noether-numbered-prefix,
+.tiptap-reading-view .noether-list-prefix,
+.tiptap-reading-view .md-bold.noether-numbered-prefix,
+.tiptap-reading-view .md-bold.noether-list-prefix,
+.tiptap-reading-view .md-bold .noether-numbered-prefix,
+.tiptap-reading-view .md-bold .noether-list-prefix {
   color: #777777 !important;
   font-size: inherit !important;
   line-height: inherit !important;
@@ -1023,20 +1023,20 @@ b .flint-list-prefix {
   font-weight: 400 !important;
 }
 /* Preserve bullet → centered dot visual replacement in reading view */
-.tiptap-reading-view .flint-bullet-marker {
+.tiptap-reading-view .noether-bullet-marker {
   font-size: 0 !important;
 }
-.tiptap-reading-view .flint-bullet-marker::after {
+.tiptap-reading-view .noether-bullet-marker::after {
   content: '•';
   font-size: 1rem !important;
 }
 
-.theme-light .tiptap-reading-view .flint-numbered-prefix,
-.theme-light .tiptap-reading-view .flint-list-prefix,
-.theme-light .tiptap-reading-view .md-bold.flint-numbered-prefix,
-.theme-light .tiptap-reading-view .md-bold.flint-list-prefix,
-.theme-light .tiptap-reading-view .md-bold .flint-numbered-prefix,
-.theme-light .tiptap-reading-view .md-bold .flint-list-prefix {
+.theme-light .tiptap-reading-view .noether-numbered-prefix,
+.theme-light .tiptap-reading-view .noether-list-prefix,
+.theme-light .tiptap-reading-view .md-bold.noether-numbered-prefix,
+.theme-light .tiptap-reading-view .md-bold.noether-list-prefix,
+.theme-light .tiptap-reading-view .md-bold .noether-numbered-prefix,
+.theme-light .tiptap-reading-view .md-bold .noether-list-prefix {
   color: #94a3b8 !important;
   font-weight: 400 !important;
 }
@@ -1058,53 +1058,53 @@ ul > li::marker,
 }
 
 /* Accent Recolor for Numbers & Lists (when accent list markers toggle is on) */
-.flint-accent-lists .flint-numbered-prefix,
-.flint-accent-lists .flint-list-prefix,
-.flint-accent-lists .md-bold.flint-numbered-prefix,
-.flint-accent-lists .md-bold.flint-list-prefix,
-.flint-accent-lists .md-bold .flint-numbered-prefix,
-.flint-accent-lists .md-bold .flint-list-prefix,
-.flint-accent-lists .tiptap-reading-view .flint-numbered-prefix,
-.flint-accent-lists .tiptap-reading-view .flint-list-prefix,
-.flint-accent-lists ol > li::marker,
-.flint-accent-lists ul > li::marker,
-.flint-accent-lists .ProseMirror ol > li::marker,
-.flint-accent-lists .ProseMirror ul > li::marker {
-  color: var(--flint-accent) !important;
+.noether-accent-lists .noether-numbered-prefix,
+.noether-accent-lists .noether-list-prefix,
+.noether-accent-lists .md-bold.noether-numbered-prefix,
+.noether-accent-lists .md-bold.noether-list-prefix,
+.noether-accent-lists .md-bold .noether-numbered-prefix,
+.noether-accent-lists .md-bold .noether-list-prefix,
+.noether-accent-lists .tiptap-reading-view .noether-numbered-prefix,
+.noether-accent-lists .tiptap-reading-view .noether-list-prefix,
+.noether-accent-lists ol > li::marker,
+.noether-accent-lists ul > li::marker,
+.noether-accent-lists .ProseMirror ol > li::marker,
+.noether-accent-lists .ProseMirror ul > li::marker {
+  color: var(--noether-accent) !important;
   opacity: 0.82 !important;
   font-weight: 400 !important;
 }
 
-.theme-dark .flint-accent-lists .flint-numbered-prefix,
-.theme-dark .flint-accent-lists .flint-list-prefix,
-.theme-dark .flint-accent-lists .md-bold.flint-numbered-prefix,
-.theme-dark .flint-accent-lists .md-bold.flint-list-prefix,
-.theme-dark .flint-accent-lists .md-bold .flint-numbered-prefix,
-.theme-dark .flint-accent-lists .md-bold .flint-list-prefix,
-.theme-dark .flint-accent-lists .tiptap-reading-view .flint-numbered-prefix,
-.theme-dark .flint-accent-lists .tiptap-reading-view .flint-list-prefix,
-.theme-dark .flint-accent-lists ol > li::marker,
-.theme-dark .flint-accent-lists ul > li::marker,
-.theme-dark .flint-accent-lists .ProseMirror ol > li::marker,
-.theme-dark .flint-accent-lists .ProseMirror ul > li::marker {
-  color: color-mix(in srgb, var(--flint-accent) 80%, #d4d4d8 20%) !important;
+.theme-dark .noether-accent-lists .noether-numbered-prefix,
+.theme-dark .noether-accent-lists .noether-list-prefix,
+.theme-dark .noether-accent-lists .md-bold.noether-numbered-prefix,
+.theme-dark .noether-accent-lists .md-bold.noether-list-prefix,
+.theme-dark .noether-accent-lists .md-bold .noether-numbered-prefix,
+.theme-dark .noether-accent-lists .md-bold .noether-list-prefix,
+.theme-dark .noether-accent-lists .tiptap-reading-view .noether-numbered-prefix,
+.theme-dark .noether-accent-lists .tiptap-reading-view .noether-list-prefix,
+.theme-dark .noether-accent-lists ol > li::marker,
+.theme-dark .noether-accent-lists ul > li::marker,
+.theme-dark .noether-accent-lists .ProseMirror ol > li::marker,
+.theme-dark .noether-accent-lists .ProseMirror ul > li::marker {
+  color: color-mix(in srgb, var(--noether-accent) 80%, #d4d4d8 20%) !important;
   opacity: 0.85 !important;
   font-weight: 400 !important;
 }
 
-.theme-light .flint-accent-lists .flint-numbered-prefix,
-.theme-light .flint-accent-lists .flint-list-prefix,
-.theme-light .flint-accent-lists .md-bold.flint-numbered-prefix,
-.theme-light .flint-accent-lists .md-bold.flint-list-prefix,
-.theme-light .flint-accent-lists .md-bold .flint-numbered-prefix,
-.theme-light .flint-accent-lists .md-bold .flint-list-prefix,
-.theme-light .flint-accent-lists .tiptap-reading-view .flint-numbered-prefix,
-.theme-light .flint-accent-lists .tiptap-reading-view .flint-list-prefix,
-.theme-light .flint-accent-lists ol > li::marker,
-.theme-light .flint-accent-lists ul > li::marker,
-.theme-light .flint-accent-lists .ProseMirror ol > li::marker,
-.theme-light .flint-accent-lists .ProseMirror ul > li::marker {
-  color: color-mix(in srgb, var(--flint-accent) 85%, #09090b 15%) !important;
+.theme-light .noether-accent-lists .noether-numbered-prefix,
+.theme-light .noether-accent-lists .noether-list-prefix,
+.theme-light .noether-accent-lists .md-bold.noether-numbered-prefix,
+.theme-light .noether-accent-lists .md-bold.noether-list-prefix,
+.theme-light .noether-accent-lists .md-bold .noether-numbered-prefix,
+.theme-light .noether-accent-lists .md-bold .noether-list-prefix,
+.theme-light .noether-accent-lists .tiptap-reading-view .noether-numbered-prefix,
+.theme-light .noether-accent-lists .tiptap-reading-view .noether-list-prefix,
+.theme-light .noether-accent-lists ol > li::marker,
+.theme-light .noether-accent-lists ul > li::marker,
+.theme-light .noether-accent-lists .ProseMirror ol > li::marker,
+.theme-light .noether-accent-lists .ProseMirror ul > li::marker {
+  color: color-mix(in srgb, var(--noether-accent) 85%, #09090b 15%) !important;
   opacity: 0.82 !important;
   font-weight: 400 !important;
 }
@@ -1121,7 +1121,7 @@ ul > li::marker,
 .tiptap-reading-view [role="button"],
 .tiptap-reading-view input[type="checkbox"],
 .tiptap-reading-view .md-wikilink,
-.tiptap-reading-view .flint-fold-btn {
+.tiptap-reading-view .noether-fold-btn {
   cursor: pointer !important;
 }
 
@@ -1147,27 +1147,27 @@ ul > li::marker,
 /* Obsidian Live Preview: Formatted Markdown Styles */
 .md-bold {
   font-weight: 700;
-  color: var(--flint-text-primary);
+  color: var(--noether-text-primary);
 }
 
 .md-italic {
   font-style: italic;
-  color: var(--flint-text-secondary);
+  color: var(--noether-text-secondary);
 }
 
 .md-code {
   font-family: var(--font-monospace) !important;
-  background-color: var(--flint-code-bg, var(--flint-bg-card));
-  color: var(--flint-code-text, var(--flint-text-primary));
+  background-color: var(--noether-code-bg, var(--noether-bg-card));
+  color: var(--noether-code-text, var(--noether-text-primary));
   padding: 0.12rem 0.35rem;
   border-radius: 0.25rem;
   font-size: 0.88em;
-  border: 1px solid var(--flint-border-subtle);
+  border: 1px solid var(--noether-border-subtle);
 }
 
 .md-strike {
   text-decoration: line-through;
-  color: var(--flint-text-muted);
+  color: var(--noether-text-muted);
 }
 
 .md-highlight {
@@ -1184,16 +1184,16 @@ ul > li::marker,
 
 .md-wikilink,
 .md-link,
-.flint-link,
+.noether-link,
 .ProseMirror .md-wikilink,
 .ProseMirror .md-link,
 .tiptap-reading-view .md-wikilink,
 .tiptap-reading-view .md-link,
-.flint-doc-wrapper a:not(.flint-btn),
+.noether-doc-wrapper a:not(.noether-btn),
 .ProseMirror a {
-  color: var(--flint-link-color);
+  color: var(--noether-link-color);
   text-decoration: underline;
-  text-decoration-color: var(--flint-link-decoration-color);
+  text-decoration-color: var(--noether-link-decoration-color);
   text-underline-offset: 3px;
   cursor: pointer !important;
   pointer-events: auto !important;
@@ -1204,73 +1204,73 @@ ul > li::marker,
 .md-wikilink[data-visited="true"],
 .md-link.is-visited,
 .md-link[data-visited="true"],
-.flint-link.is-visited,
-.flint-link[data-visited="true"],
+.noether-link.is-visited,
+.noether-link[data-visited="true"],
 .ProseMirror .md-wikilink.is-visited,
 .ProseMirror .md-link.is-visited,
 .tiptap-reading-view .md-wikilink.is-visited,
 .tiptap-reading-view .md-link.is-visited,
-.flint-doc-wrapper a:visited,
+.noether-doc-wrapper a:visited,
 .ProseMirror a:visited,
 .tiptap-reading-view a:visited,
 a.is-visited,
 a[data-visited="true"] {
-  color: var(--flint-link-visited);
+  color: var(--noether-link-visited);
 }
 
 .md-wikilink:hover,
 .md-link:hover,
-.flint-link:hover,
+.noether-link:hover,
 .ProseMirror .md-wikilink:hover,
 .ProseMirror .md-link:hover,
 .tiptap-reading-view .md-wikilink:hover,
 .tiptap-reading-view .md-link:hover,
-.flint-doc-wrapper a:not(.flint-btn):hover,
+.noether-doc-wrapper a:not(.noether-btn):hover,
 .ProseMirror a:hover {
-  color: var(--flint-link-hover);
-  text-decoration-color: var(--flint-link-hover);
+  color: var(--noether-link-hover);
+  text-decoration-color: var(--noether-link-hover);
 }
 
 /* Underline links toggle: when disabled, no underline by default, underline on hover */
 :root[data-no-link-underline="true"] .md-link,
 :root[data-no-link-underline="true"] .md-wikilink,
-:root[data-no-link-underline="true"] .flint-link,
+:root[data-no-link-underline="true"] .noether-link,
 :root[data-no-link-underline="true"] .ProseMirror .md-wikilink,
 :root[data-no-link-underline="true"] .ProseMirror .md-link,
 :root[data-no-link-underline="true"] .tiptap-reading-view .md-wikilink,
 :root[data-no-link-underline="true"] .tiptap-reading-view .md-link,
-:root[data-no-link-underline="true"] .flint-doc-wrapper a:not(.flint-btn),
+:root[data-no-link-underline="true"] .noether-doc-wrapper a:not(.noether-btn),
 :root[data-no-link-underline="true"] .ProseMirror a,
-.flint-no-link-underline .md-link,
-.flint-no-link-underline .md-wikilink,
-.flint-no-link-underline .flint-link,
-.flint-no-link-underline .ProseMirror .md-wikilink,
-.flint-no-link-underline .ProseMirror .md-link,
-.flint-no-link-underline .tiptap-reading-view .md-wikilink,
-.flint-no-link-underline .tiptap-reading-view .md-link,
-.flint-no-link-underline .flint-doc-wrapper a:not(.flint-btn),
-.flint-no-link-underline .ProseMirror a {
+.noether-no-link-underline .md-link,
+.noether-no-link-underline .md-wikilink,
+.noether-no-link-underline .noether-link,
+.noether-no-link-underline .ProseMirror .md-wikilink,
+.noether-no-link-underline .ProseMirror .md-link,
+.noether-no-link-underline .tiptap-reading-view .md-wikilink,
+.noether-no-link-underline .tiptap-reading-view .md-link,
+.noether-no-link-underline .noether-doc-wrapper a:not(.noether-btn),
+.noether-no-link-underline .ProseMirror a {
   text-decoration: none !important;
 }
 
 :root[data-no-link-underline="true"] .md-link:hover,
 :root[data-no-link-underline="true"] .md-wikilink:hover,
-:root[data-no-link-underline="true"] .flint-link:hover,
+:root[data-no-link-underline="true"] .noether-link:hover,
 :root[data-no-link-underline="true"] .ProseMirror .md-wikilink:hover,
 :root[data-no-link-underline="true"] .ProseMirror .md-link:hover,
 :root[data-no-link-underline="true"] .tiptap-reading-view .md-wikilink:hover,
 :root[data-no-link-underline="true"] .tiptap-reading-view .md-link:hover,
-:root[data-no-link-underline="true"] .flint-doc-wrapper a:not(.flint-btn):hover,
+:root[data-no-link-underline="true"] .noether-doc-wrapper a:not(.noether-btn):hover,
 :root[data-no-link-underline="true"] .ProseMirror a:hover,
-.flint-no-link-underline .md-link:hover,
-.flint-no-link-underline .md-wikilink:hover,
-.flint-no-link-underline .flint-link:hover,
-.flint-no-link-underline .ProseMirror .md-wikilink:hover,
-.flint-no-link-underline .ProseMirror .md-link:hover,
-.flint-no-link-underline .tiptap-reading-view .md-wikilink:hover,
-.flint-no-link-underline .tiptap-reading-view .md-link:hover,
-.flint-no-link-underline .flint-doc-wrapper a:not(.flint-btn):hover,
-.flint-no-link-underline .ProseMirror a:hover {
+.noether-no-link-underline .md-link:hover,
+.noether-no-link-underline .md-wikilink:hover,
+.noether-no-link-underline .noether-link:hover,
+.noether-no-link-underline .ProseMirror .md-wikilink:hover,
+.noether-no-link-underline .ProseMirror .md-link:hover,
+.noether-no-link-underline .tiptap-reading-view .md-wikilink:hover,
+.noether-no-link-underline .tiptap-reading-view .md-link:hover,
+.noether-no-link-underline .noether-doc-wrapper a:not(.noether-btn):hover,
+.noether-no-link-underline .ProseMirror a:hover {
   text-decoration: underline !important;
 }
 
@@ -1280,10 +1280,10 @@ a[data-visited="true"] {
 }
 
 /* External link trailing icon: LinkSquare02Icon indicator for markdown & HTML links */
-.flint-show-link-icon .md-link:not(.is-focused)::after,
-.flint-show-link-icon .tiptap-reading-view a:not(:has(.md-link))::after,
-.flint-show-link-icon .ProseMirror a:not(:has(.md-link)):not(.md-link):not(.is-focused)::after,
-.flint-show-link-icon .flint-doc-wrapper a[target="_blank"]:not(:has(.md-link)):not(.md-link)::after {
+.noether-show-link-icon .md-link:not(.is-focused)::after,
+.noether-show-link-icon .tiptap-reading-view a:not(:has(.md-link))::after,
+.noether-show-link-icon .ProseMirror a:not(:has(.md-link)):not(.md-link):not(.is-focused)::after,
+.noether-show-link-icon .noether-doc-wrapper a[target="_blank"]:not(:has(.md-link)):not(.md-link)::after {
   content: '';
   display: inline-block;
   width: 0.85em;
@@ -1305,8 +1305,8 @@ a[data-visited="true"] {
 }
 
 /* Prevent double icons when .md-link is nested inside or wraps an <a> tag */
-.flint-show-link-icon a:has(.md-link)::after,
-.flint-show-link-icon .md-link a::after {
+.noether-show-link-icon a:has(.md-link)::after,
+.noether-show-link-icon .md-link a::after {
   display: none !important;
   content: none !important;
 }
@@ -1327,30 +1327,30 @@ a:has(.md-syntax-hidden)::after {
   content: none !important;
 }
 
-.flint-show-link-icon .md-link:hover::after,
-.flint-show-link-icon .ProseMirror a:hover::after,
-.flint-show-link-icon .tiptap-reading-view a:hover::after,
-.flint-show-link-icon .flint-doc-wrapper a[target="_blank"]:hover::after {
+.noether-show-link-icon .md-link:hover::after,
+.noether-show-link-icon .ProseMirror a:hover::after,
+.noether-show-link-icon .tiptap-reading-view a:hover::after,
+.noether-show-link-icon .noether-doc-wrapper a[target="_blank"]:hover::after {
   opacity: 1;
 }
 
 /* Defensive exclusions: buttons, images inside links */
 .ProseMirror a:has(img)::after,
 .tiptap-reading-view a:has(img)::after,
-.flint-doc-wrapper a:has(img)::after,
-a.flint-btn::after {
+.noether-doc-wrapper a:has(img)::after,
+a.noether-btn::after {
   display: none !important;
   content: none !important;
 }
 
 /* Obsidian Heading Target Focus Highlight (Zero text nudge / Zero layout shift) */
-.ProseMirror h1.flint-heading-target,
-.ProseMirror h2.flint-heading-target,
-.ProseMirror h3.flint-heading-target,
-.ProseMirror h4.flint-heading-target,
-.ProseMirror h5.flint-heading-target,
-.ProseMirror h6.flint-heading-target,
-.flint-heading-target {
+.ProseMirror h1.noether-heading-target,
+.ProseMirror h2.noether-heading-target,
+.ProseMirror h3.noether-heading-target,
+.ProseMirror h4.noether-heading-target,
+.ProseMirror h5.noether-heading-target,
+.ProseMirror h6.noether-heading-target,
+.noether-heading-target {
   width: fit-content !important;
   max-width: 100% !important;
   display: inline-block !important;
@@ -1374,7 +1374,7 @@ a.flint-btn::after {
   position: relative;
 }
 
-.flint-fold-widget {
+.noether-fold-widget {
   position: relative;
   display: inline-block;
   width: 0;
@@ -1385,7 +1385,7 @@ a.flint-btn::after {
   pointer-events: none;
 }
 
-.flint-fold-btn {
+.noether-fold-btn {
   position: absolute;
   top: -0.38em;
   transform: translateY(-50%);
@@ -1408,79 +1408,79 @@ a.flint-btn::after {
   z-index: 5;
 }
 
-.flint-fold-btn.flint-fold-h1 {
+.noether-fold-btn.noether-fold-h1 {
   right: 6px;
   width: 24px;
   height: 24px;
 }
 
-.flint-fold-btn.flint-fold-h2 {
+.noether-fold-btn.noether-fold-h2 {
   right: 6px;
   width: 22px;
   height: 22px;
 }
 
-.flint-fold-btn.flint-fold-h3 {
+.noether-fold-btn.noether-fold-h3 {
   right: 5px;
   width: 20px;
   height: 20px;
 }
 
-.flint-fold-btn.flint-fold-h4,
-.flint-fold-btn.flint-fold-h5,
-.flint-fold-btn.flint-fold-h6 {
+.noether-fold-btn.noether-fold-h4,
+.noether-fold-btn.noether-fold-h5,
+.noether-fold-btn.noether-fold-h6 {
   right: 4px;
   width: 18px;
   height: 18px;
 }
 
 /* Offset fold chevrons when live preview markdown prefix indicators (#) are active */
-.ProseMirror h1.is-active-h1 .flint-fold-btn.flint-fold-h1 {
+.ProseMirror h1.is-active-h1 .noether-fold-btn.noether-fold-h1 {
   right: calc(6px + 1.25ch);
 }
 
-.ProseMirror h2.is-active-h2 .flint-fold-btn.flint-fold-h2 {
+.ProseMirror h2.is-active-h2 .noether-fold-btn.noether-fold-h2 {
   right: calc(6px + 2.25ch);
 }
 
-.ProseMirror h3.is-active-h3 .flint-fold-btn.flint-fold-h3 {
+.ProseMirror h3.is-active-h3 .noether-fold-btn.noether-fold-h3 {
   right: calc(5px + 3.25ch);
 }
 
-.ProseMirror h4.is-active-h4 .flint-fold-btn.flint-fold-h4 {
+.ProseMirror h4.is-active-h4 .noether-fold-btn.noether-fold-h4 {
   right: calc(4px + 4.25ch);
 }
 
-.ProseMirror h5.is-active-h5 .flint-fold-btn.flint-fold-h5 {
+.ProseMirror h5.is-active-h5 .noether-fold-btn.noether-fold-h5 {
   right: calc(4px + 5.25ch);
 }
 
-.ProseMirror h6.is-active-h6 .flint-fold-btn.flint-fold-h6 {
+.ProseMirror h6.is-active-h6 .noether-fold-btn.noether-fold-h6 {
   right: calc(4px + 6.25ch);
 }
 
-.flint-fold-btn.flint-fold-list-btn {
+.noether-fold-btn.noether-fold-list-btn {
   right: 4px;
   width: 18px;
   height: 18px;
 }
 
-.ProseMirror h1:hover .flint-fold-btn,
-.ProseMirror h2:hover .flint-fold-btn,
-.ProseMirror h3:hover .flint-fold-btn,
-.ProseMirror h4:hover .flint-fold-btn,
-.ProseMirror h5:hover .flint-fold-btn,
-.ProseMirror h6:hover .flint-fold-btn,
-.ProseMirror p:hover .flint-fold-btn,
-.ProseMirror li:hover .flint-fold-btn,
-.flint-fold-btn.is-folded {
+.ProseMirror h1:hover .noether-fold-btn,
+.ProseMirror h2:hover .noether-fold-btn,
+.ProseMirror h3:hover .noether-fold-btn,
+.ProseMirror h4:hover .noether-fold-btn,
+.ProseMirror h5:hover .noether-fold-btn,
+.ProseMirror h6:hover .noether-fold-btn,
+.ProseMirror p:hover .noether-fold-btn,
+.ProseMirror li:hover .noether-fold-btn,
+.noether-fold-btn.is-folded {
   opacity: 1;
 }
 
-.flint-fold-btn:hover,
-.flint-fold-btn:active,
-.flint-fold-btn:focus,
-.flint-fold-btn:focus-visible {
+.noether-fold-btn:hover,
+.noether-fold-btn:active,
+.noether-fold-btn:focus,
+.noether-fold-btn:focus-visible {
   color: #dcddde;
   background: transparent !important;
   background-color: transparent !important;
@@ -1488,20 +1488,20 @@ a.flint-btn::after {
   box-shadow: none !important;
 }
 
-.flint-fold-placeholder-wrap {
+.noether-fold-placeholder-wrap {
   display: inline;
   vertical-align: baseline;
 }
 
-.flint-fold-placeholder,
-.flint-fold-ellipsis {
+.noether-fold-placeholder,
+.noether-fold-ellipsis {
   display: inline;
   margin-left: 0.35em;
   font-size: inherit;
   font-weight: normal;
   font-family: inherit;
   letter-spacing: 0.08em;
-  color: var(--flint-text-muted, #777777);
+  color: var(--noether-text-muted, #777777);
   opacity: 0.8;
   background: transparent !important;
   border: none !important;
@@ -1513,14 +1513,14 @@ a.flint-btn::after {
   vertical-align: baseline;
 }
 
-.flint-fold-placeholder:hover,
-.flint-fold-ellipsis:hover {
-  color: var(--flint-text-primary, #dcddde);
+.noether-fold-placeholder:hover,
+.noether-fold-ellipsis:hover {
+  color: var(--noether-text-primary, #dcddde);
   opacity: 1;
   background: transparent !important;
 }
 
-.flint-fold-tail {
+.noether-fold-tail {
   display: inline;
   font-size: inherit;
   line-height: inherit;
@@ -1529,61 +1529,61 @@ a.flint-btn::after {
   cursor: text;
 }
 
-.flint-folded-node {
+.noether-folded-node {
   display: none !important;
 }
 
 /* When a line is folded, clip the indent guide so it doesn't bleed past the ellipsis */
-.ProseMirror p:has(.flint-fold-placeholder-wrap) .flint-tab-guide::before,
-.ProseMirror h1:has(.flint-fold-placeholder-wrap) .flint-tab-guide::before,
-.ProseMirror h2:has(.flint-fold-placeholder-wrap) .flint-tab-guide::before,
-.ProseMirror h3:has(.flint-fold-placeholder-wrap) .flint-tab-guide::before,
-.ProseMirror li:has(.flint-fold-placeholder-wrap) .flint-tab-guide::before {
+.ProseMirror p:has(.noether-fold-placeholder-wrap) .noether-tab-guide::before,
+.ProseMirror h1:has(.noether-fold-placeholder-wrap) .noether-tab-guide::before,
+.ProseMirror h2:has(.noether-fold-placeholder-wrap) .noether-tab-guide::before,
+.ProseMirror h3:has(.noether-fold-placeholder-wrap) .noether-tab-guide::before,
+.ProseMirror li:has(.noether-fold-placeholder-wrap) .noether-tab-guide::before {
   display: none !important;
 }
 
 /* Line numbers (Obsidian-style gutter counter) */
-.flint-line-numbers .ProseMirror {
-  counter-reset: flint-lines;
+.noether-line-numbers .ProseMirror {
+  counter-reset: noether-lines;
   padding-left: 3.25rem;
   position: relative;
 }
 
-.flint-line-numbers .ProseMirror > p,
-.flint-line-numbers .ProseMirror > h1,
-.flint-line-numbers .ProseMirror > h2,
-.flint-line-numbers .ProseMirror > h3,
-.flint-line-numbers .ProseMirror > h4,
-.flint-line-numbers .ProseMirror > h5,
-.flint-line-numbers .ProseMirror > h6,
-.flint-line-numbers .ProseMirror > blockquote,
-.flint-line-numbers .ProseMirror > pre,
-.flint-line-numbers .ProseMirror > hr,
-.flint-line-numbers .ProseMirror > table,
-.flint-line-numbers .ProseMirror > ul > li,
-.flint-line-numbers .ProseMirror > ol > li {
+.noether-line-numbers .ProseMirror > p,
+.noether-line-numbers .ProseMirror > h1,
+.noether-line-numbers .ProseMirror > h2,
+.noether-line-numbers .ProseMirror > h3,
+.noether-line-numbers .ProseMirror > h4,
+.noether-line-numbers .ProseMirror > h5,
+.noether-line-numbers .ProseMirror > h6,
+.noether-line-numbers .ProseMirror > blockquote,
+.noether-line-numbers .ProseMirror > pre,
+.noether-line-numbers .ProseMirror > hr,
+.noether-line-numbers .ProseMirror > table,
+.noether-line-numbers .ProseMirror > ul > li,
+.noether-line-numbers .ProseMirror > ol > li {
   position: relative;
 }
 
-.flint-line-numbers .ProseMirror > p::before,
-.flint-line-numbers .ProseMirror > h1::before,
-.flint-line-numbers .ProseMirror > h2::before,
-.flint-line-numbers .ProseMirror > h3::before,
-.flint-line-numbers .ProseMirror > h4::before,
-.flint-line-numbers .ProseMirror > h5::before,
-.flint-line-numbers .ProseMirror > h6::before,
-.flint-line-numbers .ProseMirror > blockquote::before,
-.flint-line-numbers .ProseMirror > pre::before,
-.flint-line-numbers .ProseMirror > hr::before,
-.flint-line-numbers .ProseMirror > table::before {
-  counter-increment: flint-lines;
-  content: counter(flint-lines);
+.noether-line-numbers .ProseMirror > p::before,
+.noether-line-numbers .ProseMirror > h1::before,
+.noether-line-numbers .ProseMirror > h2::before,
+.noether-line-numbers .ProseMirror > h3::before,
+.noether-line-numbers .ProseMirror > h4::before,
+.noether-line-numbers .ProseMirror > h5::before,
+.noether-line-numbers .ProseMirror > h6::before,
+.noether-line-numbers .ProseMirror > blockquote::before,
+.noether-line-numbers .ProseMirror > pre::before,
+.noether-line-numbers .ProseMirror > hr::before,
+.noether-line-numbers .ProseMirror > table::before {
+  counter-increment: noether-lines;
+  content: counter(noether-lines);
   position: absolute;
   left: -3.25rem;
   top: 0;
   width: 2rem;
   text-align: right;
-  color: var(--flint-text-muted, #555555);
+  color: var(--noether-text-muted, #555555);
   font-size: calc(var(--editor-font-size, 16px) * 0.78);
   font-family: var(--font-monospace);
   font-variant-numeric: tabular-nums;
@@ -1593,16 +1593,16 @@ a.flint-btn::after {
 }
 
 /* List items line numbers aligned back to the primary gutter */
-.flint-line-numbers .ProseMirror > ul > li::before,
-.flint-line-numbers .ProseMirror > ol > li::before {
-  counter-increment: flint-lines;
-  content: counter(flint-lines);
+.noether-line-numbers .ProseMirror > ul > li::before,
+.noether-line-numbers .ProseMirror > ol > li::before {
+  counter-increment: noether-lines;
+  content: counter(noether-lines);
   position: absolute;
   left: calc(-3.25rem - 1.5rem);
   top: 0;
   width: 2rem;
   text-align: right;
-  color: var(--flint-text-muted, #555555);
+  color: var(--noether-text-muted, #555555);
   font-size: calc(var(--editor-font-size, 16px) * 0.78);
   font-family: var(--font-monospace);
   font-variant-numeric: tabular-nums;
@@ -1617,17 +1617,17 @@ a.flint-btn::after {
    - Highlights the active downward branch when the caret is on a parent list/numbered item.
    - Recalors to theme accent when the 'Accent number & list markers' setting is enabled.
    ========================================================================== */
-.flint-indent-guides .flint-tab-guide,
-.flint-tab-guide {
+.noether-indent-guides .noether-tab-guide,
+.noether-tab-guide {
   position: relative;
   display: inline;
   line-height: inherit;
-  caret-color: var(--flint-text-primary, #ffffff);
+  caret-color: var(--noether-text-primary, #ffffff);
 }
 
-.flint-indent-guides .flint-tab-guide::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide::before,
-.flint-tab-guide::before {
+.noether-indent-guides .noether-tab-guide::before,
+.tiptap-reading-view.noether-indent-guides .noether-tab-guide::before,
+.noether-tab-guide::before {
   content: '';
   position: absolute;
   top: -0.85rem;
@@ -1640,84 +1640,84 @@ a.flint-btn::after {
 }
 
 /* Terminal guideline: stops cleanly at the line boundary matching the selection box height without extending downwards into the margin */
-.flint-indent-guides .flint-tab-guide.flint-tab-guide-end::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide.flint-tab-guide-end::before,
-.flint-tab-guide.flint-tab-guide-end::before {
+.noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before,
+.tiptap-reading-view.noether-indent-guides .noether-tab-guide.noether-tab-guide-end::before,
+.noether-tab-guide.noether-tab-guide-end::before {
   bottom: -0.25em !important;
 }
 
 /* Number stem alignment: centered through stem of digit 1 and tabular digits */
-.flint-indent-guides .flint-tab-guide-number::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide-number::before,
-.flint-tab-guide-number::before {
+.noether-indent-guides .noether-tab-guide-number::before,
+.tiptap-reading-view.noether-indent-guides .noether-tab-guide-number::before,
+.noether-tab-guide-number::before {
   left: 0.25em;
 }
 
 /* Bullet dot alignment: centered through center of bullet glyph */
-.flint-indent-guides .flint-tab-guide-bullet::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide-bullet::before,
-.flint-tab-guide-bullet::before {
+.noether-indent-guides .noether-tab-guide-bullet::before,
+.tiptap-reading-view.noether-indent-guides .noether-tab-guide-bullet::before,
+.noether-tab-guide-bullet::before {
   left: 0.22em;
 }
 
-.theme-light .flint-indent-guides .flint-tab-guide::before,
-.theme-light .tiptap-reading-view.flint-indent-guides .flint-tab-guide::before,
-.theme-light .flint-tab-guide::before {
+.theme-light .noether-indent-guides .noether-tab-guide::before,
+.theme-light .tiptap-reading-view.noether-indent-guides .noether-tab-guide::before,
+.theme-light .noether-tab-guide::before {
   border-left-color: #e4e4e7;
 }
 
 /* Active Indent Guide (Neutral mode: clean high-contrast highlight when caret is on parent item) */
-.flint-indent-guides .flint-tab-guide.flint-tab-guide-active::before,
-.flint-indent-guides .flint-tab-guide-active::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide.flint-tab-guide-active::before,
-.tiptap-reading-view.flint-indent-guides .flint-tab-guide-active::before {
+.noether-indent-guides .noether-tab-guide.noether-tab-guide-active::before,
+.noether-indent-guides .noether-tab-guide-active::before,
+.tiptap-reading-view.noether-indent-guides .noether-tab-guide.noether-tab-guide-active::before,
+.tiptap-reading-view.noether-indent-guides .noether-tab-guide-active::before {
   border-left: 1.5px solid #a1a1aa !important;
   opacity: 1 !important;
 }
 
-.theme-light .flint-indent-guides .flint-tab-guide.flint-tab-guide-active::before,
-.theme-light .flint-indent-guides .flint-tab-guide-active::before,
-.theme-light .tiptap-reading-view.flint-indent-guides .flint-tab-guide.flint-tab-guide-active::before,
-.theme-light .tiptap-reading-view.flint-indent-guides .flint-tab-guide-active::before {
+.theme-light .noether-indent-guides .noether-tab-guide.noether-tab-guide-active::before,
+.theme-light .noether-indent-guides .noether-tab-guide-active::before,
+.theme-light .tiptap-reading-view.noether-indent-guides .noether-tab-guide.noether-tab-guide-active::before,
+.theme-light .tiptap-reading-view.noether-indent-guides .noether-tab-guide-active::before {
   border-left: 1.5px solid #475569 !important;
   opacity: 1 !important;
 }
 
 /* Active Indent Guide (Accent mode: glowing theme accent highlight matching dimmed accent list markers) */
-.flint-accent-lists .flint-tab-guide.flint-tab-guide-active::before,
-.flint-accent-lists .flint-indent-guides .flint-tab-guide.flint-tab-guide-active::before,
-.flint-accent-lists .flint-tab-guide-active::before,
-.flint-accent-lists.tiptap-reading-view .flint-tab-guide.flint-tab-guide-active::before,
-.flint-accent-lists.tiptap-reading-view .flint-tab-guide-active::before,
-.theme-dark .flint-accent-lists .flint-tab-guide.flint-tab-guide-active::before,
-.theme-dark .flint-accent-lists .flint-tab-guide-active::before,
-.theme-light .flint-accent-lists .flint-tab-guide.flint-tab-guide-active::before,
-.theme-light .flint-accent-lists .flint-tab-guide-active::before {
-  border-left: 1.5px solid var(--flint-accent) !important;
+.noether-accent-lists .noether-tab-guide.noether-tab-guide-active::before,
+.noether-accent-lists .noether-indent-guides .noether-tab-guide.noether-tab-guide-active::before,
+.noether-accent-lists .noether-tab-guide-active::before,
+.noether-accent-lists.tiptap-reading-view .noether-tab-guide.noether-tab-guide-active::before,
+.noether-accent-lists.tiptap-reading-view .noether-tab-guide-active::before,
+.theme-dark .noether-accent-lists .noether-tab-guide.noether-tab-guide-active::before,
+.theme-dark .noether-accent-lists .noether-tab-guide-active::before,
+.theme-light .noether-accent-lists .noether-tab-guide.noether-tab-guide-active::before,
+.theme-light .noether-accent-lists .noether-tab-guide-active::before {
+  border-left: 1.5px solid var(--noether-accent) !important;
   opacity: 0.95 !important;
 }
 
-.flint-indent-guides ul ul,
-.flint-indent-guides ol ol,
-.flint-indent-guides ul ol,
-.flint-indent-guides ol ul,
-.flint-indent-guides ul[data-type="taskList"] ul[data-type="taskList"] {
+.noether-indent-guides ul ul,
+.noether-indent-guides ol ol,
+.noether-indent-guides ul ol,
+.noether-indent-guides ol ul,
+.noether-indent-guides ul[data-type="taskList"] ul[data-type="taskList"] {
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   margin-left: 0.25rem;
   padding-left: 1.25rem;
 }
 
-/* Flint Native Desktop Button & Form Controls */
-.flint-btn {
+/* Noether Native Desktop Button & Form Controls */
+.noether-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background-color: var(--flint-bg-card-hover, #2a2a2a);
+  background-color: var(--noether-bg-card-hover, #2a2a2a);
   border: 1px solid rgba(0, 0, 0, 0.25);
   border-radius: 5px;
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.28);
-  color: var(--flint-text-secondary, #dcddde);
+  color: var(--noether-text-secondary, #dcddde);
   font-size: 12px;
   font-weight: 500;
   padding: 5px 12px;
@@ -1727,25 +1727,25 @@ a.flint-btn::after {
   transition: none;
 }
 
-.flint-btn:hover {
+.noether-btn:hover {
   filter: brightness(1.12);
-  color: var(--flint-text-primary, #ffffff);
+  color: var(--noether-text-primary, #ffffff);
   outline: none !important;
 }
 
-.flint-btn:active {
+.noether-btn:active {
   filter: brightness(0.94);
   box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
   transform: translateY(0.5px);
   outline: none !important;
 }
 
-.flint-btn:focus,
-.flint-btn:focus-visible {
+.noether-btn:focus,
+.noether-btn:focus-visible {
   outline: none !important;
 }
 
-.flint-btn:disabled {
+.noether-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
@@ -1754,12 +1754,12 @@ a.flint-btn::after {
   outline: none !important;
 }
 
-.flint-btn-primary {
+.noether-btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background-color: var(--flint-accent, #ea580c);
+  background-color: var(--noether-accent, #eb584d);
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 5px;
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
@@ -1773,25 +1773,25 @@ a.flint-btn::after {
   transition: none;
 }
 
-.flint-btn-primary:hover {
+.noether-btn-primary:hover {
   filter: brightness(1.12);
   color: #ffffff;
   outline: none !important;
 }
 
-.flint-btn-primary:active {
+.noether-btn-primary:active {
   filter: brightness(0.92);
   box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
   transform: translateY(0.5px);
   outline: none !important;
 }
 
-.flint-btn-primary:focus,
-.flint-btn-primary:focus-visible {
+.noether-btn-primary:focus,
+.noether-btn-primary:focus-visible {
   outline: none !important;
 }
 
-.flint-btn-primary:disabled {
+.noether-btn-primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
@@ -1800,7 +1800,7 @@ a.flint-btn::after {
   outline: none !important;
 }
 
-.flint-btn-danger {
+.noether-btn-danger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1819,24 +1819,24 @@ a.flint-btn::after {
   transition: none;
 }
 
-.flint-btn-danger:hover {
+.noether-btn-danger:hover {
   filter: brightness(1.12);
   outline: none !important;
 }
 
-.flint-btn-danger:active {
+.noether-btn-danger:active {
   filter: brightness(0.92);
   box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.35);
   transform: translateY(0.5px);
   outline: none !important;
 }
 
-.flint-btn-danger:focus,
-.flint-btn-danger:focus-visible {
+.noether-btn-danger:focus,
+.noether-btn-danger:focus-visible {
   outline: none !important;
 }
 
-.flint-btn-danger:disabled {
+.noether-btn-danger:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
@@ -1845,8 +1845,8 @@ a.flint-btn::after {
   outline: none !important;
 }
 
-/* Flint Native Desktop Switch & Controls */
-.flint-switch {
+/* Noether Native Desktop Switch & Controls */
+.noether-switch {
   position: relative;
   display: inline-flex;
   flex-shrink: 0;
@@ -1858,22 +1858,22 @@ a.flint-btn::after {
   transition: none;
 }
 
-.flint-switch:focus,
-.flint-switch:focus-visible {
+.noether-switch:focus,
+.noether-switch:focus-visible {
   outline: none !important;
 }
 
-.flint-switch:hover {
+.noether-switch:hover {
   filter: brightness(1.12);
   outline: none !important;
 }
 
-.flint-switch:active {
+.noether-switch:active {
   filter: brightness(0.94);
   outline: none !important;
 }
 
-.flint-switch:disabled {
+.noether-switch:disabled {
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
@@ -1881,22 +1881,22 @@ a.flint-btn::after {
   outline: none !important;
 }
 
-/* Unchecked track: matching .flint-btn dark depth */
-.flint-switch[aria-checked="false"] {
-  background-color: var(--flint-bg-card-hover, #2a2a2a);
+/* Unchecked track: matching .noether-btn dark depth */
+.noether-switch[aria-checked="false"] {
+  background-color: var(--noether-bg-card-hover, #2a2a2a);
   border: 1px solid rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.28);
 }
 
-/* Checked track: matching .flint-btn-primary accent depth */
-.flint-switch[aria-checked="true"] {
-  background-color: var(--flint-accent, #ea580c);
+/* Checked track: matching .noether-btn-primary accent depth */
+.noether-switch[aria-checked="true"] {
+  background-color: var(--noether-accent, #eb584d);
   border: 1px solid rgba(0, 0, 0, 0.2);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
 }
 
 /* 3D Tactile Knob */
-.flint-switch-knob {
+.noether-switch-knob {
   pointer-events: none;
   display: inline-block;
   border-radius: 9999px;
@@ -1906,47 +1906,47 @@ a.flint-btn::after {
 }
 
 /* Light Theme Overrides for Controls */
-.theme-light .flint-btn {
-  background-color: var(--flint-bg-card, #f4f4f5);
-  border-color: var(--flint-border-base, #d4d4d8);
-  color: var(--flint-text-secondary, #09090b);
+.theme-light .noether-btn {
+  background-color: var(--noether-bg-card, #f4f4f5);
+  border-color: var(--noether-border-base, #d4d4d8);
+  color: var(--noether-text-secondary, #09090b);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.8), 0 1px 3px 0 rgba(0, 0, 0, 0.08);
 }
 
-.theme-light .flint-btn:hover {
+.theme-light .noether-btn:hover {
   filter: brightness(0.97);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 2px 4px 0 rgba(0, 0, 0, 0.1);
-  color: var(--flint-text-primary, #09090b);
+  color: var(--noether-text-primary, #09090b);
 }
 
-.theme-light .flint-btn:active {
+.theme-light .noether-btn:active {
   filter: brightness(0.93);
   box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.12);
   transform: translateY(0.5px);
 }
 
-.theme-light .flint-switch[aria-checked="false"],
+.theme-light .noether-switch[aria-checked="false"],
 .theme-light button[role="switch"][aria-checked="false"] {
-  background-color: var(--flint-border-base, #d4d4d8) !important;
-  border-color: var(--flint-border-subtle, #e4e4e7) !important;
+  background-color: var(--noether-border-base, #d4d4d8) !important;
+  border-color: var(--noether-border-subtle, #e4e4e7) !important;
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.5), 0 1px 2px 0 rgba(0, 0, 0, 0.08);
 }
 
-.theme-light .flint-switch[aria-checked="false"]:hover,
+.theme-light .noether-switch[aria-checked="false"]:hover,
 .theme-light button[role="switch"][aria-checked="false"]:hover {
-  background-color: var(--flint-border-strong, #a1a1aa) !important;
+  background-color: var(--noether-border-strong, #a1a1aa) !important;
   filter: none;
 }
 
-.theme-light .flint-switch-knob {
+.theme-light .noether-switch-knob {
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.9), 0 1px 3px 0 rgba(0, 0, 0, 0.15);
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   FLINT MODULAR DESKTOP LAYOUT ARCHITECTURE
+   NOETHER MODULAR DESKTOP LAYOUT ARCHITECTURE
    Enables themes to rearrange layout zones via semantic classes & CSS order/grid
    ══════════════════════════════════════════════════════════════════════════ */
-.flint-app-shell {
+.noether-app-shell {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -1955,11 +1955,11 @@ a.flint-btn::after {
   user-select: none;
 }
 
-.flint-header {
-  order: var(--flint-order-header, 0);
+.noether-header {
+  order: var(--noether-order-header, 0);
 }
 
-.flint-workspace-layout {
+.noether-workspace-layout {
   display: flex;
   flex: 1 1 0%;
   min-height: 0;
@@ -1967,53 +1967,53 @@ a.flint-btn::after {
   position: relative;
 }
 
-.flint-ribbon,
-.flint-action-rail {
-  order: var(--flint-order-ribbon, 1);
+.noether-ribbon,
+.noether-action-rail {
+  order: var(--noether-order-ribbon, 1);
 }
 
-.flint-sidebar-left {
-  order: var(--flint-order-sidebar-left, 2);
+.noether-sidebar-left {
+  order: var(--noether-order-sidebar-left, 2);
 }
 
-.flint-main-viewport {
-  order: var(--flint-order-viewport, 3);
+.noether-main-viewport {
+  order: var(--noether-order-viewport, 3);
 }
 
-.flint-sidebar-right {
-  order: var(--flint-order-sidebar-right, 4);
+.noether-sidebar-right {
+  order: var(--noether-order-sidebar-right, 4);
 }
 
-.flint-status-bar {
-  order: var(--flint-order-statusbar, 5);
-  position: var(--flint-statusbar-position, absolute);
-  bottom: var(--flint-statusbar-bottom, 0);
-  right: var(--flint-statusbar-right, 0);
-  top: var(--flint-statusbar-top, auto);
-  left: var(--flint-statusbar-left, auto);
+.noether-status-bar {
+  order: var(--noether-order-statusbar, 5);
+  position: var(--noether-statusbar-position, absolute);
+  bottom: var(--noether-statusbar-bottom, 0);
+  right: var(--noether-statusbar-right, 0);
+  top: var(--noether-statusbar-top, auto);
+  left: var(--noether-statusbar-left, auto);
   z-index: 20;
 }
 
 /* In-Editor Find & Replace Match Highlights */
-.flint-find-match {
+.noether-find-match {
   background-color: rgba(234, 179, 8, 0.35);
   border-radius: 2px;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-.flint-find-active {
-  background-color: #ea580c !important;
+.noether-find-active {
+  background-color: #eb584d !important;
   color: #ffffff !important;
   border-radius: 2px;
   outline: 1px solid #fb923c;
-  box-shadow: 0 0 6px rgba(234, 88, 12, 0.6);
+  box-shadow: 0 0 6px rgba(235, 88, 77, 0.6);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
 
-/* Flint Tag Boxes & Filter Pills Design Language */
-.flint-tag,
+/* Noether Tag Boxes & Filter Pills Design Language */
+.noether-tag,
 .md-tag {
   display: inline-flex;
   align-items: center;
@@ -2032,14 +2032,14 @@ a.flint-btn::after {
   pointer-events: auto !important;
 }
 
-.flint-tag:hover,
+.noether-tag:hover,
 .md-tag:hover {
   background-color: #2d2d2d;
   border-color: #484848;
   color: #ffffff;
 }
 
-.flint-filter-pill {
+.noether-filter-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2054,69 +2054,69 @@ a.flint-btn::after {
   outline: none;
 }
 
-.flint-filter-pill-inactive {
+.noether-filter-pill-inactive {
   background-color: #242424;
   border: 1px solid #383838;
   color: #999999;
 }
 
-.flint-filter-pill-inactive:hover {
+.noether-filter-pill-inactive:hover {
   background-color: #2e2e2e;
   border-color: #484848;
   color: #ffffff;
 }
 
-.flint-filter-pill-inactive:active {
+.noether-filter-pill-inactive:active {
   background-color: #1e1e1e;
   box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.4);
 }
 
-.flint-filter-pill-active {
-  background-color: var(--flint-accent, #ea580c);
+.noether-filter-pill-active {
+  background-color: var(--noether-accent, #eb584d);
   border: 1px solid rgba(0, 0, 0, 0.2);
   color: #ffffff;
   font-weight: 600;
 }
 
-.flint-filter-pill-active:hover {
-  background-color: var(--flint-accent-hover, #c2410c);
+.noether-filter-pill-active:hover {
+  background-color: var(--noether-accent-hover, #d94338);
 }
 
-.flint-filter-pill-active:active {
-  background-color: var(--flint-accent-active, #9a3412);
+.noether-filter-pill-active:active {
+  background-color: var(--noether-accent-active, #b83228);
   box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.4);
 }
 
-.theme-light .flint-tag,
+.theme-light .noether-tag,
 .theme-light .md-tag {
-  background-color: var(--flint-bg-card);
-  border-color: var(--flint-border-base);
-  color: var(--flint-text-secondary);
-  box-shadow: var(--flint-shadow-1);
+  background-color: var(--noether-bg-card);
+  border-color: var(--noether-border-base);
+  color: var(--noether-text-secondary);
+  box-shadow: var(--noether-shadow-1);
 }
 
-.theme-light .flint-tag:hover,
+.theme-light .noether-tag:hover,
 .theme-light .md-tag:hover {
-  background-color: var(--flint-bg-card-hover);
-  border-color: var(--flint-border-strong);
-  color: var(--flint-text-primary);
+  background-color: var(--noether-bg-card-hover);
+  border-color: var(--noether-border-strong);
+  color: var(--noether-text-primary);
 }
 
-.theme-light .flint-filter-pill-inactive {
-  background-color: var(--flint-bg-card);
-  border-color: var(--flint-border-base);
-  color: var(--flint-text-muted);
-  box-shadow: var(--flint-shadow-1);
+.theme-light .noether-filter-pill-inactive {
+  background-color: var(--noether-bg-card);
+  border-color: var(--noether-border-base);
+  color: var(--noether-text-muted);
+  box-shadow: var(--noether-shadow-1);
 }
 
-.theme-light .flint-filter-pill-inactive:hover {
-  background-color: var(--flint-bg-card-hover);
-  border-color: var(--flint-border-strong);
-  color: var(--flint-text-primary);
+.theme-light .noether-filter-pill-inactive:hover {
+  background-color: var(--noether-bg-card-hover);
+  border-color: var(--noether-border-strong);
+  color: var(--noether-text-primary);
 }
 
 /* ==========================================================================
-   Flint Table Block & ProseMirror Tables Styling
+   Noether Table Block & ProseMirror Tables Styling
    ========================================================================== */
 
 .ProseMirror .tableWrapper {
@@ -2130,7 +2130,7 @@ a.flint-btn::after {
 
 .ProseMirror table,
 .markdown-prose table,
-.flint-table {
+.noether-table {
   border-collapse: collapse;
   border-spacing: 0;
   table-layout: fixed;
@@ -2141,43 +2141,43 @@ a.flint-btn::after {
   font-size: 13.5px;
   line-height: 1.5;
   background-color: transparent;
-  border: 1px solid var(--flint-border-base, #292929);
+  border: 1px solid var(--noether-border-base, #292929);
 }
 
 .ProseMirror table td,
 .ProseMirror table th,
 .markdown-prose table td,
 .markdown-prose table th,
-.flint-table td,
-.flint-table th {
+.noether-table td,
+.noether-table th {
   min-width: 80px;
   padding: 8px 12px;
   vertical-align: top;
   box-sizing: border-box;
   position: relative;
-  border: 1px solid var(--flint-border-base, #292929);
+  border: 1px solid var(--noether-border-base, #292929);
   background-color: transparent;
-  color: var(--flint-text-secondary, #dcddde);
+  color: var(--noether-text-secondary, #dcddde);
   font-weight: normal;
   text-align: left;
 }
 
 .ProseMirror table .selectedCell,
-.flint-table .selectedCell,
+.noether-table .selectedCell,
 .ProseMirror table td.selectedCell,
 .ProseMirror table th.selectedCell {
-  background-color: var(--flint-selection-bg, #4a4e57) !important;
-  color: var(--flint-selection-text, #ffffff) !important;
-  border-color: var(--flint-border-strong, #383838) !important;
+  background-color: var(--noether-selection-bg, #4a4e57) !important;
+  color: var(--noether-selection-text, #ffffff) !important;
+  border-color: var(--noether-border-strong, #383838) !important;
 }
 
 .ProseMirror table .selectedCell::after,
-.flint-table .selectedCell::after {
+.noether-table .selectedCell::after {
   display: none !important;
 }
 
 .ProseMirror table .column-resize-handle,
-.flint-table .column-resize-handle {
+.noether-table .column-resize-handle {
   position: absolute;
   right: -2px;
   top: 0;
@@ -2191,8 +2191,8 @@ a.flint-btn::after {
 
 .ProseMirror table th:hover .column-resize-handle,
 .ProseMirror table td:hover .column-resize-handle,
-.flint-table th:hover .column-resize-handle,
-.flint-table td:hover .column-resize-handle {
+.noether-table th:hover .column-resize-handle,
+.noether-table td:hover .column-resize-handle {
   opacity: 0 !important;
   background-color: transparent !important;
 }
@@ -2213,7 +2213,7 @@ a.flint-btn::after {
 
 .theme-light .ProseMirror table,
 .theme-light .markdown-prose table,
-.theme-light .flint-table {
+.theme-light .noether-table {
   border-color: #e4e4e7;
 }
 
@@ -2221,15 +2221,15 @@ a.flint-btn::after {
 .theme-light .ProseMirror table th,
 .theme-light .markdown-prose table td,
 .theme-light .markdown-prose table th,
-.theme-light .flint-table td,
-.theme-light .flint-table th {
+.theme-light .noether-table td,
+.theme-light .noether-table th {
   border-color: #e4e4e7;
   background-color: transparent;
   color: #27272a;
 }
 
 .theme-light .ProseMirror table .selectedCell,
-.theme-light .flint-table .selectedCell,
+.theme-light .noether-table .selectedCell,
 .theme-light .ProseMirror table td.selectedCell,
 .theme-light .ProseMirror table th.selectedCell {
   background-color: #d1d5db !important;
@@ -2248,7 +2248,7 @@ a.flint-btn::after {
   display: inline;
   vertical-align: baseline;
   user-select: text;
-  color: var(--flint-text-primary, #ffffff);
+  color: var(--noether-text-primary, #ffffff);
 }
 
 .md-math-render:hover {
@@ -2266,13 +2266,13 @@ a.flint-btn::after {
 .md-math-inline {
   display: inline;
   vertical-align: baseline;
-  color: var(--flint-text-primary, #ffffff);
+  color: var(--noether-text-primary, #ffffff);
   background: transparent;
   border: none;
 }
 
 .theme-light .md-math-inline {
-  color: var(--flint-text-primary, #0f172a);
+  color: var(--noether-text-primary, #0f172a);
 }
 
 /* Block Math Display - Clean, centered equation */
@@ -2281,14 +2281,14 @@ a.flint-btn::after {
   text-align: center;
   margin: 0.75rem 0;
   padding: 0.35rem 0;
-  color: var(--flint-text-primary, #ffffff);
+  color: var(--noether-text-primary, #ffffff);
   background: transparent;
   border: none;
   overflow-x: auto;
 }
 
 .theme-light .md-math-block {
-  color: var(--flint-text-primary, #0f172a);
+  color: var(--noether-text-primary, #0f172a);
 }
 
 .md-math-error {
@@ -2302,7 +2302,7 @@ a.flint-btn::after {
 
 /* Interactive Live MathField (when focused/editing) */
 math-field,
-math-field.flint-live-math-field,
+math-field.noether-live-math-field,
 .wce-math-field {
   display: inline-block;
   background: transparent !important;
@@ -2310,16 +2310,16 @@ math-field.flint-live-math-field,
   outline: none !important;
   font-size: 1.05em !important;
   line-height: inherit !important;
-  color: var(--flint-text-primary, #ffffff) !important;
+  color: var(--noether-text-primary, #ffffff) !important;
   padding: 0 1px !important;
   margin: 0 !important;
   vertical-align: baseline;
   box-shadow: none !important;
-  caret-color: var(--flint-text-primary, #ffffff) !important;
-  --caret-color: var(--flint-text-primary, #ffffff);
-  --selection-background-color: var(--flint-selection-bg, #4a4e57) !important;
-  --selection-color: var(--flint-selection-text, #ffffff) !important;
-  --primary: var(--flint-text-primary, #ffffff);
+  caret-color: var(--noether-text-primary, #ffffff) !important;
+  --caret-color: var(--noether-text-primary, #ffffff);
+  --selection-background-color: var(--noether-selection-bg, #4a4e57) !important;
+  --selection-color: var(--noether-selection-text, #ffffff) !important;
+  --primary: var(--noether-text-primary, #ffffff);
   --contains-highlight-background-color: transparent !important;
   --contains-highlight-border-color: transparent !important;
   --highlight-color: transparent !important;
@@ -2328,8 +2328,8 @@ math-field.flint-live-math-field,
 
 math-field:focus,
 math-field:focus-within,
-math-field.flint-live-math-field:focus,
-math-field.flint-live-math-field:focus-within,
+math-field.noether-live-math-field:focus,
+math-field.noether-live-math-field:focus-within,
 .wce-math-field:focus,
 .wce-math-field:focus-within {
   outline: none !important;
@@ -2343,11 +2343,11 @@ math-field::part(menu-toggle),
 math-field::part(action-list),
 math-field::part(mode-bar),
 math-field::part(button),
-.flint-live-math-field::part(virtual-keyboard-toggle),
-.flint-live-math-field::part(menu-toggle),
-.flint-live-math-field::part(action-list),
-.flint-live-math-field::part(mode-bar),
-.flint-live-math-field::part(button),
+.noether-live-math-field::part(virtual-keyboard-toggle),
+.noether-live-math-field::part(menu-toggle),
+.noether-live-math-field::part(action-list),
+.noether-live-math-field::part(mode-bar),
+.noether-live-math-field::part(button),
 .wce-math-field::part(virtual-keyboard-toggle),
 .wce-math-field::part(menu-toggle) {
   display: none !important;
@@ -2372,21 +2372,21 @@ math-field::part(content) {
 }
 
 .theme-light math-field,
-.theme-light math-field.flint-live-math-field,
+.theme-light math-field.noether-live-math-field,
 .theme-light .wce-math-field {
-  color: var(--flint-text-primary, #0f172a) !important;
-  caret-color: var(--flint-text-primary, #0f172a) !important;
-  --caret-color: var(--flint-text-primary, #0f172a);
-  --selection-background-color: var(--flint-selection-bg, #bae6fd) !important;
-  --selection-color: var(--flint-selection-text, #09090b) !important;
-  --primary: var(--flint-text-primary, #0f172a);
+  color: var(--noether-text-primary, #0f172a) !important;
+  caret-color: var(--noether-text-primary, #0f172a) !important;
+  --caret-color: var(--noether-text-primary, #0f172a);
+  --selection-background-color: var(--noether-selection-bg, #bae6fd) !important;
+  --selection-color: var(--noether-selection-text, #09090b) !important;
+  --primary: var(--noether-text-primary, #0f172a);
   --contains-highlight-background-color: transparent !important;
   --contains-highlight-border-color: transparent !important;
   --highlight-color: transparent !important;
 }
 
 .md-math-block math-field,
-.md-math-block math-field.flint-live-math-field {
+.md-math-block math-field.noether-live-math-field {
   display: block;
   text-align: center;
   margin: 0.5rem auto;
@@ -2401,17 +2401,17 @@ math-field::part(content) {
 
 .wce-chip:focus,
 .wce-chip.ProseMirror-selectednode,
-.flint-math-node.ProseMirror-selectednode,
+.noether-math-node.ProseMirror-selectednode,
 .ProseMirror-selectednode {
   outline: none !important;
-  background: var(--flint-selection-bg, #4a4e57) !important;
+  background: var(--noether-selection-bg, #4a4e57) !important;
   border-radius: 4px;
   box-shadow: none !important;
 }
 
 .theme-light .wce-chip.ProseMirror-selectednode,
-.theme-light .flint-math-node.ProseMirror-selectednode {
-  background: var(--flint-selection-bg, #bae6fd) !important;
+.theme-light .noether-math-node.ProseMirror-selectednode {
+  background: var(--noether-selection-bg, #bae6fd) !important;
 }
 
 .wce-math {
@@ -2433,7 +2433,7 @@ math-field::part(content) {
   font-size: 1.05em !important;
 }
 
-.flint-math-delim {
+.noether-math-delim {
   opacity: 0.35;
   font-family: inherit;
   font-size: 0.9em;
@@ -2447,22 +2447,22 @@ math-field::part(content) {
   border: none;
 }
 
-.wce-chip.wce-editing .flint-math-delim {
+.wce-chip.wce-editing .noether-math-delim {
   opacity: 0.6;
 }
 
-.wce-chip.wce-editing .flint-live-math-field {
+.wce-chip.wce-editing .noether-live-math-field {
   min-width: 2.2em;
   border-bottom: 1px dashed rgba(156, 163, 175, 0.6) !important;
   margin: 0 1px !important;
 }
 
-.theme-light .wce-chip.wce-editing .flint-live-math-field {
+.theme-light .wce-chip.wce-editing .noether-live-math-field {
   border-bottom: 1px dashed rgba(107, 114, 128, 0.6) !important;
 }
 
 /* Block Math display and edit modes - centered in the middle of the page */
-.flint-math-node.wce-block,
+.noether-math-node.wce-block,
 .wce-math.wce-block {
   display: flex !important;
   align-items: center;
@@ -2472,7 +2472,7 @@ math-field::part(content) {
   text-align: center;
 }
 
-.flint-math-node.wce-block.wce-editing {
+.noether-math-node.wce-block.wce-editing {
   display: flex !important;
   align-items: center;
   justify-content: center;
@@ -2481,7 +2481,7 @@ math-field::part(content) {
   text-align: center;
 }
 
-.flint-math-node.wce-block .wce-math-render {
+.noether-math-node.wce-block .wce-math-render {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2489,16 +2489,16 @@ math-field::part(content) {
   text-align: center;
 }
 
-.flint-math-node.wce-block .wce-math-render .katex-display {
+.noether-math-node.wce-block .wce-math-render .katex-display {
   margin: 0 !important;
 }
 
-.flint-math-node.wce-block .flint-live-math-field {
+.noether-math-node.wce-block .noether-live-math-field {
   text-align: center;
   margin: 0 4px !important;
 }
 
-/* MathLive Virtual Keyboard Theming to match Flint */
+/* MathLive Virtual Keyboard Theming to match Noether */
 :root {
   --keyboard-background: #181818;
   --keycap-background: #242424;
@@ -2508,8 +2508,8 @@ math-field::part(content) {
   --keycap-text: #dcddde;
   --keycap-text-active: #ffffff;
   --keyboard-toolbar-text: #888888;
-  --keyboard-toolbar-text-active: #ea580c;
-  --keyboard-accent-color: #ea580c;
+  --keyboard-toolbar-text-active: #eb584d;
+  --keyboard-accent-color: #eb584d;
 }
 
 .math-virtual-keyboard {
@@ -2519,7 +2519,7 @@ math-field::part(content) {
   box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45) !important;
 }
 
-.flint-math-key {
+.noether-math-key {
   background-color: #242424 !important;
   color: #e5e7eb !important;
   border: 1px solid #333333 !important;
@@ -2527,18 +2527,18 @@ math-field::part(content) {
   font-size: 1.1rem !important;
 }
 
-.flint-math-key:hover {
+.noether-math-key:hover {
   background-color: #333333 !important;
   border-color: #444444 !important;
 }
 
-.flint-math-key:active {
+.noether-math-key:active {
   background-color: #404040 !important;
   transform: scale(0.96);
 }
 
 /* Native Math Keyboard Styling */
-.flint-key {
+.noether-key {
   height: 2.45rem;
   min-width: 2.2rem;
   padding: 0 0.5rem;
@@ -2554,107 +2554,107 @@ math-field::part(content) {
   user-select: none;
 }
 
-.flint-key:hover {
+.noether-key:hover {
   background-color: #2e2e2e;
   border-color: #404040;
   color: #ffffff;
 }
 
-.flint-key:active {
+.noether-key:active {
   background-color: #383838;
   transform: scale(0.96);
 }
 
 /* ==========================================================================
-   Flint Embeds & Transclusions (Notes, Images, Audio, Video, PDF, YouTube)
+   Noether Embeds & Transclusions (Notes, Images, Audio, Video, PDF, YouTube)
    Zero micro-interaction transition latency (Snappy native desktop feel)
    ========================================================================== */
 
-.flint-embed-wrapper {
+.noether-embed-wrapper {
   display: block;
   width: 100%;
   clear: both;
 }
 
-.flint-embed-card {
+.noether-embed-card {
   transition: none !important;
 }
 
-.flint-embed-header {
+.noether-embed-header {
   transition: none !important;
 }
 
-.flint-embed-body {
+.noether-embed-body {
   transition: none !important;
 }
 
-.theme-light .flint-embed-card {
+.theme-light .noether-embed-card {
   background-color: #f6f6f7 !important;
   border-color: #e2e2e4 !important;
 }
 
-.theme-light .flint-embed-header {
+.theme-light .noether-embed-header {
   background-color: #eaecef !important;
   border-color: #e2e2e4 !important;
   color: #222222 !important;
 }
 
-.theme-light .flint-embed-body {
+.theme-light .noether-embed-body {
   color: #333333 !important;
 }
 
-.theme-light .flint-embed-action {
+.theme-light .noether-embed-action {
   background-color: #e4e4e7 !important;
   color: #3f3f46 !important;
 }
 
-.theme-light .flint-embed-action:hover {
+.theme-light .noether-embed-action:hover {
   background-color: #d4d4d8 !important;
   color: #18181b !important;
 }
 
-.flint-media-image {
+.noether-media-image {
   max-width: 100%;
   height: auto;
   display: block;
   cursor: zoom-in;
 }
 
-.flint-embed-media.flint-image-embed {
+.noether-embed-media.noether-image-embed {
   display: inline-block;
   line-height: 0;
   vertical-align: top;
 }
 
-.flint-embed-media.flint-image-embed img {
+.noether-embed-media.noether-image-embed img {
   display: block;
   margin: 0;
   cursor: zoom-in;
 }
 
 /* Eliminate phantom line box and excess margins in ProseMirror paragraphs hosting embeds */
-.ProseMirror p:has(.flint-embed-wrapper) {
+.ProseMirror p:has(.noether-embed-wrapper) {
   margin-top: 0.25rem !important;
   margin-bottom: 0.25rem !important;
   line-height: 0 !important;
   font-size: 0 !important;
 }
 
-.ProseMirror p:has(.flint-embed-wrapper) > .ProseMirror-trailingBreak,
-.flint-embed-wrapper ~ .ProseMirror-trailingBreak,
-.flint-embed-wrapper + .ProseMirror-trailingBreak {
+.ProseMirror p:has(.noether-embed-wrapper) > .ProseMirror-trailingBreak,
+.noether-embed-wrapper ~ .ProseMirror-trailingBreak,
+.noether-embed-wrapper + .ProseMirror-trailingBreak {
   display: none !important;
 }
 
 /* ==========================================================================
-   Flint Obsidian-Compatible Callouts & Blockquotes
+   Noether Obsidian-Compatible Callouts & Blockquotes
    Matches website documentation theme (3px solid colored border, 10% subtle tint background,
    uppercase badge, icons, custom titles, collapsible toggles, nested support).
    Zero micro-interaction latency (snappy native desktop feel).
    ========================================================================== */
 
 /* Base Callout Container & Paragraph Lines */
-.flint-callout {
+.noether-callout {
   position: relative;
   box-sizing: border-box;
   border-left: 3px solid var(--callout-border, rgba(59, 130, 246, 0.5));
@@ -2665,44 +2665,44 @@ math-field::part(content) {
   margin-bottom: 0 !important;
   font-size: 14px;
   line-height: 1.65;
-  color: var(--flint-text-primary, #ffffff);
+  color: var(--noether-text-primary, #ffffff);
 }
 
-.flint-callout-first {
+.noether-callout-first {
   margin-top: 0.75rem !important;
   padding-top: 0.75rem !important;
   border-top-right-radius: 6px;
 }
 
-.flint-callout-last {
+.noether-callout-last {
   margin-bottom: 0.75rem !important;
   padding-bottom: 0.75rem !important;
   border-bottom-right-radius: 6px;
 }
 
-.flint-callout-first.flint-callout-last {
+.noether-callout-first.noether-callout-last {
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
 }
 
-.flint-callout-collapsed {
+.noether-callout-collapsed {
   display: none !important;
 }
 
-.flint-callout-body {
-  color: var(--flint-text-secondary, #dadada);
+.noether-callout-body {
+  color: var(--noether-text-secondary, #dadada);
   font-size: 13.5px;
   line-height: 1.6;
 }
 
 /* Callout Header & Integrated Widget Bar */
-.flint-callout-header {
+.noether-callout-header {
   font-size: 14px;
   font-weight: 500;
-  color: var(--flint-text-primary, #ffffff);
+  color: var(--noether-text-primary, #ffffff);
 }
 
-.flint-callout-header-bar {
+.noether-callout-header-bar {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -2714,7 +2714,7 @@ math-field::part(content) {
   margin-right: 0.35rem;
 }
 
-.flint-callout-icon {
+.noether-callout-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2724,27 +2724,27 @@ math-field::part(content) {
   top: -1px;
 }
 
-.flint-callout-icon svg {
+.noether-callout-icon svg {
   display: block;
   width: 14px;
   height: 14px;
 }
 
-.flint-callout-badge {
+.noether-callout-badge {
   font-weight: 600;
   font-size: 14px;
   color: var(--callout-text, #60a5fa);
   text-transform: none;
 }
 
-.flint-callout-title-text {
+.noether-callout-title-text {
   font-weight: 600;
   color: var(--callout-text, #60a5fa);
   text-transform: none;
   font-size: 14px;
 }
 
-.flint-callout-fold-toggle {
+.noether-callout-fold-toggle {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2759,39 +2759,39 @@ math-field::part(content) {
   transition: none !important;
 }
 
-.flint-callout-fold-toggle:hover {
+.noether-callout-fold-toggle:hover {
   opacity: 1;
   background: rgba(255, 255, 255, 0.08);
 }
 
-.flint-callout-fold-toggle svg {
+.noether-callout-fold-toggle svg {
   width: 12px;
   height: 12px;
   display: block;
 }
 
-.flint-callout-raw-prefix {
+.noether-callout-raw-prefix {
   opacity: 0.45;
   font-family: var(--font-monospace);
   font-size: 0.9em;
 }
 
-.flint-callout-quote-marker {
+.noether-callout-quote-marker {
   opacity: 0.35;
   font-family: var(--font-monospace);
   font-size: 0.9em;
 }
 
 /* Callout Nested Depths */
-.flint-callout-nested {
+.noether-callout-nested {
   margin-left: 0.75rem;
 }
 
-.flint-callout-depth-2 {
+.noether-callout-depth-2 {
   margin-left: 0.75rem;
 }
 
-.flint-callout-depth-3 {
+.noether-callout-depth-3 {
   margin-left: 1.5rem;
 }
 
@@ -2800,7 +2800,7 @@ math-field::part(content) {
    ══════════════════════════════════════════════════════════════════════════ */
 
 /* 1. Note (Blue) */
-.flint-callout-type-note,
+.noether-callout-type-note,
 [data-callout="note"] {
   --callout-border: rgba(59, 130, 246, 0.5);
   --callout-bg: rgba(59, 130, 246, 0.1);
@@ -2808,7 +2808,7 @@ math-field::part(content) {
 }
 
 /* 2. Abstract / Summary / TL;DR (Cyan) */
-.flint-callout-type-abstract,
+.noether-callout-type-abstract,
 [data-callout="abstract"],
 [data-callout="summary"],
 [data-callout="tldr"] {
@@ -2818,7 +2818,7 @@ math-field::part(content) {
 }
 
 /* 3. Info (Sky Blue) */
-.flint-callout-type-info,
+.noether-callout-type-info,
 [data-callout="info"] {
   --callout-border: rgba(2, 132, 199, 0.5);
   --callout-bg: rgba(2, 132, 199, 0.1);
@@ -2826,7 +2826,7 @@ math-field::part(content) {
 }
 
 /* 4. Todo (Sky Blue / Slate Accent) */
-.flint-callout-type-todo,
+.noether-callout-type-todo,
 [data-callout="todo"] {
   --callout-border: rgba(14, 165, 233, 0.5);
   --callout-bg: rgba(14, 165, 233, 0.1);
@@ -2834,7 +2834,7 @@ math-field::part(content) {
 }
 
 /* 5. Tip / Hint / Important (Emerald) */
-.flint-callout-type-tip,
+.noether-callout-type-tip,
 [data-callout="tip"],
 [data-callout="hint"],
 [data-callout="important"] {
@@ -2844,7 +2844,7 @@ math-field::part(content) {
 }
 
 /* 6. Success / Check / Done (Green) */
-.flint-callout-type-success,
+.noether-callout-type-success,
 [data-callout="success"],
 [data-callout="check"],
 [data-callout="done"] {
@@ -2854,7 +2854,7 @@ math-field::part(content) {
 }
 
 /* 7. Question / Help / FAQ (Amber) */
-.flint-callout-type-question,
+.noether-callout-type-question,
 [data-callout="question"],
 [data-callout="help"],
 [data-callout="faq"] {
@@ -2864,7 +2864,7 @@ math-field::part(content) {
 }
 
 /* 8. Warning / Caution / Attention (Amber / Gold) */
-.flint-callout-type-warning,
+.noether-callout-type-warning,
 [data-callout="warning"],
 [data-callout="caution"],
 [data-callout="attention"] {
@@ -2874,7 +2874,7 @@ math-field::part(content) {
 }
 
 /* 9. Failure / Fail / Missing (Rose) */
-.flint-callout-type-failure,
+.noether-callout-type-failure,
 [data-callout="failure"],
 [data-callout="fail"],
 [data-callout="missing"] {
@@ -2884,7 +2884,7 @@ math-field::part(content) {
 }
 
 /* 10. Danger / Error (Red) */
-.flint-callout-type-danger,
+.noether-callout-type-danger,
 [data-callout="danger"],
 [data-callout="error"] {
   --callout-border: rgba(239, 68, 68, 0.5);
@@ -2893,7 +2893,7 @@ math-field::part(content) {
 }
 
 /* 11. Bug (Orange) */
-.flint-callout-type-bug,
+.noether-callout-type-bug,
 [data-callout="bug"] {
   --callout-border: rgba(249, 115, 22, 0.5);
   --callout-bg: rgba(249, 115, 22, 0.1);
@@ -2901,7 +2901,7 @@ math-field::part(content) {
 }
 
 /* 12. Example (Purple) */
-.flint-callout-type-example,
+.noether-callout-type-example,
 [data-callout="example"] {
   --callout-border: rgba(139, 92, 246, 0.5);
   --callout-bg: rgba(139, 92, 246, 0.1);
@@ -2909,7 +2909,7 @@ math-field::part(content) {
 }
 
 /* 13. Quote / Cite (Muted Neutral) */
-.flint-callout-type-quote,
+.noether-callout-type-quote,
 [data-callout="quote"],
 [data-callout="cite"] {
   --callout-border: #555555;
@@ -2918,22 +2918,22 @@ math-field::part(content) {
 }
 
 /* Light Theme Callout Palettes */
-.theme-light .flint-callout {
+.theme-light .noether-callout {
   color: #18181b;
 }
 
-.theme-light .flint-callout-body {
+.theme-light .noether-callout-body {
   color: #3f3f46;
 }
 
-.theme-light .flint-callout-type-note,
+.theme-light .noether-callout-type-note,
 .theme-light [data-callout="note"] {
   --callout-border: rgba(59, 130, 246, 0.6);
   --callout-bg: rgba(59, 130, 246, 0.08);
   --callout-text: #2563eb;
 }
 
-.theme-light .flint-callout-type-abstract,
+.theme-light .noether-callout-type-abstract,
 .theme-light [data-callout="abstract"],
 .theme-light [data-callout="summary"],
 .theme-light [data-callout="tldr"] {
@@ -2942,21 +2942,21 @@ math-field::part(content) {
   --callout-text: #0891b2;
 }
 
-.theme-light .flint-callout-type-info,
+.theme-light .noether-callout-type-info,
 .theme-light [data-callout="info"] {
   --callout-border: rgba(2, 132, 199, 0.6);
   --callout-bg: rgba(2, 132, 199, 0.08);
   --callout-text: #0284c7;
 }
 
-.theme-light .flint-callout-type-todo,
+.theme-light .noether-callout-type-todo,
 .theme-light [data-callout="todo"] {
   --callout-border: rgba(14, 165, 233, 0.6);
   --callout-bg: rgba(14, 165, 233, 0.08);
   --callout-text: #0284c7;
 }
 
-.theme-light .flint-callout-type-tip,
+.theme-light .noether-callout-type-tip,
 .theme-light [data-callout="tip"],
 .theme-light [data-callout="hint"],
 .theme-light [data-callout="important"] {
@@ -2965,7 +2965,7 @@ math-field::part(content) {
   --callout-text: #059669;
 }
 
-.theme-light .flint-callout-type-success,
+.theme-light .noether-callout-type-success,
 .theme-light [data-callout="success"],
 .theme-light [data-callout="check"],
 .theme-light [data-callout="done"] {
@@ -2974,7 +2974,7 @@ math-field::part(content) {
   --callout-text: #16a34a;
 }
 
-.theme-light .flint-callout-type-question,
+.theme-light .noether-callout-type-question,
 .theme-light [data-callout="question"],
 .theme-light [data-callout="help"],
 .theme-light [data-callout="faq"] {
@@ -2983,7 +2983,7 @@ math-field::part(content) {
   --callout-text: #d97706;
 }
 
-.theme-light .flint-callout-type-warning,
+.theme-light .noether-callout-type-warning,
 .theme-light [data-callout="warning"],
 .theme-light [data-callout="caution"],
 .theme-light [data-callout="attention"] {
@@ -2992,7 +2992,7 @@ math-field::part(content) {
   --callout-text: #d97706;
 }
 
-.theme-light .flint-callout-type-failure,
+.theme-light .noether-callout-type-failure,
 .theme-light [data-callout="failure"],
 .theme-light [data-callout="fail"],
 .theme-light [data-callout="missing"] {
@@ -3001,7 +3001,7 @@ math-field::part(content) {
   --callout-text: #e11d48;
 }
 
-.theme-light .flint-callout-type-danger,
+.theme-light .noether-callout-type-danger,
 .theme-light [data-callout="danger"],
 .theme-light [data-callout="error"] {
   --callout-border: rgba(239, 68, 68, 0.6);
@@ -3009,21 +3009,21 @@ math-field::part(content) {
   --callout-text: #dc2626;
 }
 
-.theme-light .flint-callout-type-bug,
+.theme-light .noether-callout-type-bug,
 .theme-light [data-callout="bug"] {
   --callout-border: rgba(249, 115, 22, 0.6);
   --callout-bg: rgba(249, 115, 22, 0.08);
-  --callout-text: #ea580c;
+  --callout-text: #eb584d;
 }
 
-.theme-light .flint-callout-type-example,
+.theme-light .noether-callout-type-example,
 .theme-light [data-callout="example"] {
   --callout-border: rgba(139, 92, 246, 0.6);
   --callout-bg: rgba(139, 92, 246, 0.08);
   --callout-text: #7c3aed;
 }
 
-.theme-light .flint-callout-type-quote,
+.theme-light .noether-callout-type-quote,
 .theme-light [data-callout="quote"],
 .theme-light [data-callout="cite"] {
   --callout-border: #d4d4d8;
@@ -3032,42 +3032,42 @@ math-field::part(content) {
 }
 
 /* ==========================================================================
-   Standard Blockquotes (.flint-blockquote)
+   Standard Blockquotes (.noether-blockquote)
    ========================================================================== */
 
-.flint-blockquote {
+.noether-blockquote {
   position: relative;
   box-sizing: border-box;
-  border-left: 3px solid var(--flint-border-strong, #484848);
-  background-color: var(--flint-bg-card, #1e1e1e);
+  border-left: 3px solid var(--noether-border-strong, #484848);
+  background-color: var(--noether-bg-card, #1e1e1e);
   padding-left: 0.875rem !important;
   padding-right: 0.875rem !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   font-size: 13.5px;
   line-height: 1.6;
-  color: var(--flint-text-secondary, #cccccc);
+  color: var(--noether-text-secondary, #cccccc);
   font-style: italic;
 }
 
-.flint-blockquote-first {
+.noether-blockquote-first {
   margin-top: 0.75rem !important;
   padding-top: 0.5rem !important;
   border-top-right-radius: 4px;
 }
 
-.flint-blockquote-last {
+.noether-blockquote-last {
   margin-bottom: 0.75rem !important;
   padding-bottom: 0.5rem !important;
   border-bottom-right-radius: 4px;
 }
 
-.flint-blockquote-first.flint-blockquote-last {
+.noether-blockquote-first.noether-blockquote-last {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }
 
-.theme-light .flint-blockquote {
+.theme-light .noether-blockquote {
   border-left-color: #d4d4d8;
   background-color: #f4f4f5;
   color: #52525b;

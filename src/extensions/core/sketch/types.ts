@@ -1,11 +1,11 @@
 /**
  * @module SketchTypes
  * @description
- * Domain models and type definitions for the Flint Sketch core extension.
+ * Domain models and type definitions for the Noether Sketch core extension.
  * Defines point coordinates, vector stroke representations, tool modes,
  * and serialization formats.
  *
- * Kept strictly within the Sketch extension directory to prevent type leakage into Flint native core.
+ * Kept strictly within the Sketch extension directory to prevent type leakage into Noether native core.
  */
 
 export interface SketchPoint {

@@ -36,7 +36,7 @@ export const useTasksSettings = create<TasksSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_TASKS_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_tasks',
+      name: 'noether_extension_data_tasks',
     }
   )
 );

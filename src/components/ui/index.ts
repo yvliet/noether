@@ -1,7 +1,7 @@
 /**
- * @module FlintUI
+ * @module NoetherUI
  * @description
- * Obsidian-grade native UI components and builders for Flint extensions and settings.
+ * Obsidian-grade native UI components and builders for Noether extensions and settings.
  * All components strictly adhere to theme CSS variables and instant micro-interaction guidelines.
  */
 

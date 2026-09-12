@@ -1,7 +1,7 @@
 /**
  * @module RegistryApiVerification
  * @description
- * End-to-end integration and verification suite for Flint Extension Registry API.
+ * End-to-end integration and verification suite for Noether Extension Registry API.
  * Verifies dynamic publishing, in-place version overwrite, author ownership security,
  * search, filter, pagination, download counting, direct asset delivery, and backward compatibility.
  */
@@ -10,7 +10,7 @@ import { app } from './src/index.js';
 import { initDatabase, getDb } from './src/db/database.js';
 
 async function runTests() {
-  console.log('=== Starting Flint Registry API Verification ===\n');
+  console.log('=== Starting Noether Registry API Verification ===\n');
 
   // 1. Initialize Database
   console.log('[Test 1] Initializing database and verifying connectivity...');
@@ -68,8 +68,8 @@ async function runTests() {
       repoUrl: 'https://github.com/developer/markdown-mindmap',
       minAppVersion: '0.4.0',
     },
-    bundleUrl: 'https://cdn.flintnotes.dev/plugins/markdown-mindmap/1.0.0/main.js',
-    stylesUrl: 'https://cdn.flintnotes.dev/plugins/markdown-mindmap/1.0.0/styles.css',
+    bundleUrl: 'https://cdn.noethernotes.dev/plugins/markdown-mindmap/1.0.0/main.js',
+    stylesUrl: 'https://cdn.noethernotes.dev/plugins/markdown-mindmap/1.0.0/styles.css',
     readme: '# Markdown Mindmap\n\nTransforms markdown lists into interactive node trees.',
     sha256: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
     author: {
@@ -105,8 +105,8 @@ async function runTests() {
       repoUrl: 'https://github.com/developer/code-runner',
       minAppVersion: '0.4.0',
     },
-    bundleUrl: 'https://cdn.flintnotes.dev/plugins/code-runner/1.0.0/main.js',
-    stylesUrl: 'https://cdn.flintnotes.dev/plugins/code-runner/1.0.0/styles.css',
+    bundleUrl: 'https://cdn.noethernotes.dev/plugins/code-runner/1.0.0/main.js',
+    stylesUrl: 'https://cdn.noethernotes.dev/plugins/code-runner/1.0.0/styles.css',
     readme: '# Code Runner\n\nInstant REPL in notes.',
     sha256: 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789',
     author: {
@@ -257,7 +257,7 @@ async function runTests() {
       ...ext1Payload.manifest,
       version: '1.0.1',
     },
-    bundleUrl: 'https://cdn.flintnotes.dev/plugins/markdown-mindmap/1.0.1/main.js',
+    bundleUrl: 'https://cdn.noethernotes.dev/plugins/markdown-mindmap/1.0.1/main.js',
   };
   const bumpRes = await app.request('/api/v1/extensions/publish', {
     method: 'POST',
@@ -338,7 +338,7 @@ async function runTests() {
   console.log('✓ Cleaned up test records from database.');
 
   console.log('\n======================================================');
-  console.log('  ALL FLINT REGISTRY API TESTS PASSED SUCCESSFULLY!   ');
+  console.log('  ALL NOETHER REGISTRY API TESTS PASSED SUCCESSFULLY!   ');
   console.log('======================================================\n');
 }
 

@@ -1,7 +1,7 @@
 /**
  * @module ToolRegistry
  * @description
- * Central registry managing Model Context Protocol (MCP) tool definitions in Flint.
+ * Central registry managing Model Context Protocol (MCP) tool definitions in Noether.
  * Enables extensions to register callable tools for AI agents and external MCP clients.
  *
  * Provides:
@@ -25,7 +25,7 @@ import {
 } from '../extensions/types';
 import { zodToMcpJsonSchema, formatZodIssues } from '@/lib/mcp/zodToJsonSchema';
 import type { z } from 'zod';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 
 export class ToolRegistry {
   private tools: Map<string, McpToolDefinition> = new Map();
@@ -34,7 +34,7 @@ export class ToolRegistry {
   private cachedTools: McpToolDefinition[] = [];
   private cachedPrompts: McpPromptDefinition[] = [];
 
-  constructor(private app: FlintApp) {}
+  constructor(private app: NoetherApp) {}
 
   /**
    * Registers an MCP Tool callable by AI agents and external clients.
@@ -59,7 +59,7 @@ export class ToolRegistry {
         category: zodTool.category,
         isDestructive: zodTool.isDestructive,
         parameters,
-        handler: async (args: Record<string, unknown>, app: FlintApp) => {
+        handler: async (args: Record<string, unknown>, app: NoetherApp) => {
           const parsed = zodTool.schema.safeParse(args);
           if (!parsed.success) {
             return {
@@ -140,7 +140,7 @@ export class ToolRegistry {
   /**
    * Executes an MCP tool by name with provided argument payload.
    * Wraps handler execution in a try/catch error boundary, timing duration,
-   * and emitting lifecycle telemetry on the Flint EventBus.
+   * and emitting lifecycle telemetry on the Noether EventBus.
    *
    * @param name - Tool identifier name to execute.
    * @param args - Key-value map of arguments conforming to tool schema.

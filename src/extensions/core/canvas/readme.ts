@@ -10,12 +10,12 @@ The **Infinite Canvas** extension provides an infinite 2D workspace to organize 
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
-This extension showcases how to build full-page custom views, register action rail entries, and manage custom tab types in Flint.
+This extension showcases how to build full-page custom views, register action rail entries, and manage custom tab types in Noether.
 
 ### 1. Registering Custom Main Views
-Flint allows custom view types to be registered in the central view registry:
+Noether allows custom view types to be registered in the central view registry:
 
 \`\`\`tsx
 this.app.views.registerView({

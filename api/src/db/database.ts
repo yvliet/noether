@@ -109,15 +109,15 @@ function getDefaultSqlitePath(): string {
   try {
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = path.dirname(__filename);
-    return path.resolve(__dirname, '../../flint_registry.db');
+    return path.resolve(__dirname, '../../noether_registry.db');
   } catch {
-    return 'flint_registry.db';
+    return 'noether_registry.db';
   }
 }
 
 /**
  * Resolves or initializes the global libSQL client.
- * Configured via `DATABASE_URL` (e.g. `file:flint_registry.db` or Turso `libsql://...`)
+ * Configured via `DATABASE_URL` (e.g. `file:noether_registry.db` or Turso `libsql://...`)
  * and optional `TURSO_AUTH_TOKEN`.
  */
 export function getDb(): Client {

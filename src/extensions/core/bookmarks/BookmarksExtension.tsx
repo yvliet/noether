@@ -3,7 +3,7 @@
  * @description
  * Built-in core extension for bookmarking notes and searches for 1-click sidebar access.
  *
- * Uses native FlintApp APIs (app.hearth.toggleBookmark, app.workspace.setActiveSidebarTab, app.workspace.showToast).
+ * Uses native NoetherApp APIs (app.vault.toggleBookmark, app.workspace.setActiveSidebarTab, app.workspace.showToast).
  *
  * @since 0.1.0
  */
@@ -11,7 +11,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { Bookmark01Icon } from '@/components/common/Icons';
 import { bookmarksReadme } from './readme';
 import { BookmarksView } from './BookmarksView';
@@ -32,7 +32,7 @@ export const BOOKMARKS_MANIFEST: ExtensionManifest = {
 };
 
 export class BookmarksExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = BOOKMARKS_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = BOOKMARKS_MANIFEST) {
     super(app, manifest);
   }
 
@@ -55,9 +55,9 @@ export class BookmarksExtension extends Extension {
       icon: <Bookmark01Icon size={16} />,
       hotkey: 'Ctrl+Shift+B',
       action: async (app) => {
-        const activeDoc = app.hearth.activeDocument;
+        const activeDoc = app.vault.activeDocument;
         if (activeDoc) {
-          const isNowBookmarked = await app.hearth.toggleBookmark(activeDoc.id);
+          const isNowBookmarked = await app.vault.toggleBookmark(activeDoc.id);
           app.workspace.showToast(
             isNowBookmarked ? `Bookmarked "${activeDoc.title}"` : `Removed bookmark for "${activeDoc.title}"`,
             'info'
@@ -101,11 +101,11 @@ export class BookmarksExtension extends Extension {
       ),
       className: (ctx) =>
         ctx.document?.is_bookmarked
-          ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
-          : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer',
+          ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
+          : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer',
       onClick: async (ctx) => {
         if (ctx.document) {
-          const isNowBookmarked = await ctx.app.hearth.toggleBookmark(ctx.document.id);
+          const isNowBookmarked = await ctx.app.vault.toggleBookmark(ctx.document.id);
           ctx.app.workspace.showToast(
             isNowBookmarked ? `Bookmarked "${ctx.document.title}"` : `Removed bookmark for "${ctx.document.title}"`,
             'info'
@@ -131,11 +131,11 @@ export class BookmarksExtension extends Extension {
       onClick: async (ctx) => {
         if (ctx.isMulti) {
           for (const id of ctx.selectedDocIds) {
-            await ctx.app.hearth.toggleBookmark(id);
+            await ctx.app.vault.toggleBookmark(id);
           }
           ctx.app.workspace.showToast(`Updated bookmarks for ${ctx.selectedDocIds.length} items`, 'info');
         } else {
-          const isNow = await ctx.app.hearth.toggleBookmark(ctx.item.id);
+          const isNow = await ctx.app.vault.toggleBookmark(ctx.item.id);
           ctx.app.workspace.showToast(
             isNow ? `Bookmarked "${ctx.item.title}"` : `Removed bookmark for "${ctx.item.title}"`,
             'info'
@@ -149,16 +149,16 @@ export class BookmarksExtension extends Extension {
     // 5. Tool: bookmarks_list
     this.registerTool({
       name: 'list',
-      description: 'List all bookmarked documents in the active hearth/vault.',
+      description: 'List all bookmarked documents in the active vault/vault.',
       category: 'bookmarks',
       parameters: {
         type: 'object',
         properties: {},
         required: [],
       },
-      handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder && Boolean(d.is_bookmarked));
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder && Boolean(d.is_bookmarked));
           const bookmarks = docs.map((d) => ({
             id: d.id,
             title: d.title,
@@ -194,7 +194,7 @@ export class BookmarksExtension extends Extension {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
           const documentId = args.documentId as string;
           if (!documentId) {
@@ -203,8 +203,8 @@ export class BookmarksExtension extends Extension {
               content: [{ type: 'text', text: 'documentId parameter is required' }],
             };
           }
-          const isBookmarked = await app.hearth.toggleBookmark(documentId);
-          const doc = app.hearth.getDocumentById(documentId);
+          const isBookmarked = await app.vault.toggleBookmark(documentId);
+          const doc = app.vault.getDocumentById(documentId);
           return {
             content: [
               {

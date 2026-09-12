@@ -1,7 +1,7 @@
 /**
  * @module ProvidersIndex
  * @description
- * Factory and provider exports for Flint Universal Sync.
+ * Factory and provider exports for Noether Universal Sync.
  */
 
 import { BaseProvider } from './BaseProvider';

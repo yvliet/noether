@@ -1,6 +1,6 @@
 export const backlinksReadme = `# Backlinks & Unlinked Mentions
 
-Discover incoming bidirectional backlinks and unlinked document mentions across your entire Flint vault.
+Discover incoming bidirectional backlinks and unlinked document mentions across your entire Noether vault.
 
 ---
 
@@ -10,7 +10,7 @@ The **Backlinks & Unlinked Mentions** extension analyzes internal WikiLinks (\`[
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension demonstrates document footers, status bar metrics, and sidebar tabs.
 
@@ -63,7 +63,7 @@ export class LinkGraphExtension extends Extension {
       id: 'graph:find-orphans',
       name: 'Find Orphaned Notes',
       callback: async () => {
-        // Query SQLite database through Flint adapter
+        // Query SQLite database through Noether adapter
         const orphans = await this.app.db.query(\`
           SELECT id, title FROM documents
           WHERE id NOT IN (SELECT DISTINCT target_id FROM document_links)

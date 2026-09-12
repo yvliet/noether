@@ -65,21 +65,21 @@ export const DeadDocumentView: React.FC<DeadDocumentViewProps> = React.memo(({
   }, [createNewNote, displayTitle, openTabInPane, paneId, tabId, showToast]);
 
   return (
-    <div className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--flint-bg-main)]">
+    <div className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--noether-bg-main)]">
       {/* 1. View Subheader with interactive inline action link */}
       <PageSubHeader
         title={displayTitle}
         icon={<Alert02Icon size={14} className="text-amber-400" />}
         centerContent={
-          <div className="text-[11px] text-[var(--flint-text-muted)] truncate max-w-lg px-2 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans">
+          <div className="text-[11px] text-[var(--noether-text-muted)] truncate max-w-lg px-2 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans">
             <Alert02Icon size={12} className="text-amber-400 shrink-0" />
             <span className="truncate">
-              This file <strong className="text-[var(--flint-text-secondary)] font-medium">{displayTitle}</strong> has been deleted or cannot be found.{' '}
+              This file <strong className="text-[var(--noether-text-secondary)] font-medium">{displayTitle}</strong> has been deleted or cannot be found.{' '}
               {matchingTrashItem ? (
                 <button
                   type="button"
                   onClick={handleRestore}
-                  className="text-[var(--flint-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline ml-1"
+                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline ml-1"
                 >
                   Restore it back?
                 </button>
@@ -87,7 +87,7 @@ export const DeadDocumentView: React.FC<DeadDocumentViewProps> = React.memo(({
                 <button
                   type="button"
                   onClick={handleRecreate}
-                  className="text-[var(--flint-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline ml-1"
+                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline ml-1"
                 >
                   Recreate note?
                 </button>

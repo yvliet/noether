@@ -14,7 +14,7 @@ import { TooltipProvider } from '@/components/common/TooltipProvider';
 import { ContextMenuRenderer } from '@/components/common/ContextMenu';
 
 const SettingsModal = React.lazy(() => import('@/components/modals/SettingsModal').then(m => ({ default: m.SettingsModal })));
-const HearthModal = React.lazy(() => import('@/components/modals/HearthModal').then(m => ({ default: m.HearthModal })));
+const VaultModal = React.lazy(() => import('@/components/modals/VaultModal').then(m => ({ default: m.VaultModal })));
 const CommandPalette = React.lazy(() => import('@/components/search/CommandPalette').then(m => ({ default: m.CommandPalette })));
 const HelpModal = React.lazy(() => import('@/components/modals/HelpModal').then(m => ({ default: m.HelpModal })));
 const ConfirmModal = React.lazy(() => import('@/components/modals/ConfirmModal').then(m => ({ default: m.ConfirmModal })));
@@ -23,12 +23,12 @@ const ImageLightboxModal = React.lazy(() => import('@/components/modals/ImageLig
 const UpdateModal = React.lazy(() => import('@/components/modals/UpdateModal').then(m => ({ default: m.UpdateModal })));
 import { dragTooltipManager, FOLDER_SVG } from '@/lib/dragTooltip';
 
-import { FlintLogoIcon } from '@/components/common/Icons';
+import { NoetherLogoIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useAutoUpdater } from '@/hooks/useAutoUpdater';
-import { appInstance } from '@/core/app/FlintApp';
-import { AppProvider, useFlintApp, useViews, useModals, useExtensionList } from '@/core/app/AppContext';
+import { appInstance } from '@/core/app/NoetherApp';
+import { AppProvider, useNoetherApp, useViews, useModals, useExtensionList } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import { platform } from '@/lib/platform/platformAdapter';
 
@@ -37,12 +37,12 @@ const LazyDisabledExtensionView = React.lazy(() =>
 );
 
 const DynamicModalHost: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const modals = useModals();
   return (
     <>
       {modals.map((m) => (
-        <div key={m.id} className="flint-modal-host">
+        <div key={m.id} className="noether-modal-host">
           {m.render(app)}
         </div>
       ))}
@@ -52,7 +52,7 @@ const DynamicModalHost: React.FC = React.memo(() => {
 
 
 const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   useViews();
   useExtensionList();
   const panes = useWorkspaceStore((s) => s.panes);
@@ -130,7 +130,7 @@ const TilingLayoutRenderer: React.FC<TilingLayoutRendererProps> = React.memo(({ 
           <React.Fragment key={child.id}>
             {index > 0 && (
               <div
-                className={`${isHorizontal ? 'border-l' : 'border-t'} border-[var(--flint-border-base)] shrink-0`}
+                className={`${isHorizontal ? 'border-l' : 'border-t'} border-[var(--noether-border-base)] shrink-0`}
               />
             )}
             <TilingLayoutRenderer node={child} />
@@ -148,7 +148,7 @@ const TilingLayoutRenderer: React.FC<TilingLayoutRendererProps> = React.memo(({ 
     <div
       data-pane-id={node.id}
       onClick={() => setFocusedPane(node.id)}
-      style={{ background: 'var(--flint-bg-main-gradient, var(--flint-bg-main))', flex: node.flex || 1 }}
+      style={{ background: 'var(--noether-bg-main-gradient, var(--noether-bg-main))', flex: node.flex || 1 }}
       className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden"
     >
       {showInlineHeader && <SplitTabHeader paneId={node.id} />}
@@ -170,8 +170,8 @@ const MainViewport: React.FC = React.memo(() => {
     if (!mainRef.current) return;
     const updatePaneWidth = (width: number) => {
       const halfWidth = Math.floor(width / 2);
-      document.documentElement.style.setProperty('--flint-main-width', `${width}px`);
-      document.documentElement.style.setProperty('--flint-split-pane-width', `${halfWidth}px`);
+      document.documentElement.style.setProperty('--noether-main-width', `${width}px`);
+      document.documentElement.style.setProperty('--noether-split-pane-width', `${halfWidth}px`);
     };
 
     updatePaneWidth(mainRef.current.getBoundingClientRect().width);
@@ -190,11 +190,11 @@ const MainViewport: React.FC = React.memo(() => {
   return (
     <main
       ref={mainRef}
-      data-flint-viewport="true"
-      style={{ background: 'var(--flint-bg-main-gradient, var(--flint-bg-main))' }}
-      className={`flint-main-viewport flex-1 flex min-w-0 h-full overflow-hidden ${
+      data-noether-viewport="true"
+      style={{ background: 'var(--noether-bg-main-gradient, var(--noether-bg-main))' }}
+      className={`noether-main-viewport flex-1 flex min-w-0 h-full overflow-hidden ${
         isRightSidebarOpen ? 'border-r' : ''
-      } border-[var(--flint-border-base)]`}
+      } border-[var(--noether-border-base)]`}
     >
       <TilingLayoutRenderer node={layoutTree} />
     </main>
@@ -202,7 +202,7 @@ const MainViewport: React.FC = React.memo(() => {
 });
 
 const WindowTitleSync: React.FC = React.memo(() => {
-  const hearthName = useWorkspaceStore((s) => s.hearthName);
+  const vaultName = useWorkspaceStore((s) => s.vaultName);
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const isSplitView = useWorkspaceStore((s) => s.isSplitView);
@@ -211,13 +211,13 @@ const WindowTitleSync: React.FC = React.memo(() => {
   const splitActiveTabId = useWorkspaceStore((s) => s.splitActiveTabId);
   const activeDocument = useDocumentStore((s) => s.activeDocument);
 
-  // Dynamic window title format: Tabname﹕Hearthname﹕Flint
+  // Dynamic window title format: Tabname﹕Vaultname﹕Noether
   useEffect(() => {
     const currentTabs = activePane === 'split' && isSplitView ? splitTabs : tabs;
     const currentActiveId = activePane === 'split' && isSplitView ? splitActiveTabId : activeTabId;
     const currentTab = currentTabs.find((t) => t.id === currentActiveId) || currentTabs[0] || tabs[0];
 
-    const effectiveHearth = hearthName || 'Hearth';
+    const effectiveVault = vaultName || 'Vault';
 
     if (currentTab) {
       let tabTitle = currentTab.title;
@@ -241,11 +241,11 @@ const WindowTitleSync: React.FC = React.memo(() => {
           tabTitle = 'Untitled';
         }
       }
-      platform.setWindowTitle(`${tabTitle}﹕${effectiveHearth}﹕Flint`);
+      platform.setWindowTitle(`${tabTitle}﹕${effectiveVault}﹕Noether`);
     } else {
-      platform.setWindowTitle(`${effectiveHearth}﹕Flint`);
+      platform.setWindowTitle(`${effectiveVault}﹕Noether`);
     }
-  }, [hearthName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, activeDocument]);
+  }, [vaultName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, activeDocument]);
 
   return null;
 });
@@ -257,7 +257,7 @@ export const AppShell: React.FC = React.memo(() => {
 
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const isRightSidebarOpen = useWorkspaceStore((s) => s.isRightSidebarOpen);
-  const initHearthInfo = useWorkspaceStore((s) => s.initHearthInfo);
+  const initVaultInfo = useWorkspaceStore((s) => s.initVaultInfo);
   const showActionRail = useSettingsStore((s) => s.showActionRail);
   const loadInitialData = useDocumentStore((s) => s.loadInitialData);
   const isLoading = useDocumentStore((s) => s.isLoading);
@@ -273,8 +273,8 @@ export const AppShell: React.FC = React.memo(() => {
       skipRenameConfirmation: skipRen,
     });
     if (typeof window !== 'undefined') {
-      localStorage.setItem('flint_skip_delete_confirmation', skipDel ? 'true' : 'false');
-      localStorage.setItem('flint_skip_rename_confirmation', skipRen ? 'true' : 'false');
+      localStorage.setItem('noether_skip_delete_confirmation', skipDel ? 'true' : 'false');
+      localStorage.setItem('noether_skip_rename_confirmation', skipRen ? 'true' : 'false');
     }
 
     // 1. Subscribe to SQLite database status
@@ -283,10 +283,10 @@ export const AppShell: React.FC = React.memo(() => {
     });
 
 
-    // 2. External Hearth files changed listener (Git pulls, external edits, sync)
+    // 2. External Vault files changed listener (Git pulls, external edits, sync)
     let syncTimeout: any = null;
-    const unsubFiles = platform.onHearthFilesChanged(() => {
-      // Suppress full hearth reload storm when the change was initiated internally by Flint
+    const unsubFiles = platform.onVaultFilesChanged(() => {
+      // Suppress full vault reload storm when the change was initiated internally by Noether
       if (platform.isRecentInternalWrite()) {
         return;
       }
@@ -300,29 +300,29 @@ export const AppShell: React.FC = React.memo(() => {
       }, 600);
     });
 
-    // 3. Initialize Hearth folder config, SQLite and load workspace
-    initHearthInfo()
+    // 3. Initialize Vault folder config, SQLite and load workspace
+    initVaultInfo()
       .then(() => dbAdapter.init())
       .catch((err) => {
-        console.error('[AppShell] Hearth/DB initialization error:', err);
+        console.error('[AppShell] Vault/DB initialization error:', err);
       })
       .finally(() => {
         loadInitialData();
       });
 
-    const unsubHearth = platform.onHearthChanged(async (data) => {
-      // If the current window state has already updated to the new Hearth path, do not reload
-      const currentPath = useWorkspaceStore.getState().hearthPath;
+    const unsubVault = platform.onVaultChanged(async (data) => {
+      // If the current window state has already updated to the new Vault path, do not reload
+      const currentPath = useWorkspaceStore.getState().vaultPath;
       if (currentPath && data?.path && currentPath.toLowerCase() === data.path.toLowerCase()) {
         return;
       }
-      // Reload window to start completely fresh for the new Hearth
+      // Reload window to start completely fresh for the new Vault
       window.location.reload();
     });
 
     // 4. Cross-window communication listener (e.g. opening tabs from Settings window)
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === 'flint_open_extension_doc' && e.newValue) {
+      if (e.key === 'noether_open_extension_doc' && e.newValue) {
         try {
           const { extensionId, title } = JSON.parse(e.newValue);
           if (extensionId) {
@@ -350,18 +350,18 @@ export const AppShell: React.FC = React.memo(() => {
     return () => {
       unsubDb();
       if (unsubFiles) unsubFiles();
-      if (unsubHearth) unsubHearth();
+      if (unsubVault) unsubVault();
       if (syncTimeout) clearTimeout(syncTimeout);
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('keydown', reportUserActivity);
       window.removeEventListener('pointerdown', reportUserActivity);
     };
-  }, [initHearthInfo, loadInitialData]);
+  }, [initVaultInfo, loadInitialData]);
 
   const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
   const cancelFolderSelection = useWorkspaceStore((s) => s.cancelFolderSelection);
 
-  // Folder Picker cursor tooltip using native Flint dragTooltipManager
+  // Folder Picker cursor tooltip using native Noether dragTooltipManager
   useEffect(() => {
     if (!folderPickerPrompt?.isOpen) {
       dragTooltipManager.hide();
@@ -418,14 +418,14 @@ export const AppShell: React.FC = React.memo(() => {
   if (isLoading) {
     return (
       <div
-        style={{ background: 'var(--flint-bg-main)', color: 'var(--flint-text-muted)' }}
+        style={{ background: 'var(--noether-bg-main)', color: 'var(--noether-text-muted)' }}
         className="w-full h-full flex flex-col items-center justify-center select-none font-sans"
       >
         <div className="mb-4">
-          <FlintLogoIcon size={36} className="animate-pulse text-[var(--flint-accent)]" />
+          <NoetherLogoIcon size={36} className="animate-pulse text-[var(--noether-accent)]" />
         </div>
-        <div className="text-sm font-medium text-[var(--flint-text-primary)]">Initializing Flint...</div>
-        <div className="text-xs text-[var(--flint-text-muted)] mt-1">Booting SQLite relational store & Modular Extensions</div>
+        <div className="text-sm font-medium text-[var(--noether-text-primary)]">Initializing Noether...</div>
+        <div className="text-xs text-[var(--noether-text-muted)] mt-1">Booting SQLite relational store & Modular Extensions</div>
       </div>
     );
   }
@@ -433,8 +433,8 @@ export const AppShell: React.FC = React.memo(() => {
   return (
     <AppProvider app={appInstance}>
       <div
-        style={{ background: 'var(--flint-bg-app)', color: 'var(--flint-text-secondary)' }}
-        className="flint-app-shell w-full h-full flex flex-col select-none overflow-hidden font-sans"
+        style={{ background: 'var(--noether-bg-app)', color: 'var(--noether-text-secondary)' }}
+        className="noether-app-shell w-full h-full flex flex-col select-none overflow-hidden font-sans"
       >
         <WindowTitleSync />
         {/* Top Window Bar */}
@@ -444,10 +444,10 @@ export const AppShell: React.FC = React.memo(() => {
         <div
           style={{
             background: isLeftSidebarOpen
-              ? 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar))'
-              : 'var(--flint-bg-ribbon, var(--flint-bg-sidebar))',
+              ? 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar))'
+              : 'var(--noether-bg-ribbon, var(--noether-bg-sidebar))',
           }}
-          className="flint-workspace-layout flex-1 flex min-h-0 overflow-hidden relative"
+          className="noether-workspace-layout flex-1 flex min-h-0 overflow-hidden relative"
         >
           {/* Left Action Rail (Slim) */}
           {showActionRail && <ActionRail />}
@@ -470,7 +470,7 @@ export const AppShell: React.FC = React.memo(() => {
           <CommandPalette />
           <DynamicModalHost />
           <SettingsModal />
-          <HearthModal />
+          <VaultModal />
           <HelpModal />
           <ConfirmModal />
           <PromptModal />

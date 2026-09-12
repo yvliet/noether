@@ -145,10 +145,10 @@ export const SlashMenu = React.memo(
       if (!items.length) {
         return (
           <div
-            data-flint-suggestion-popup="true"
+            data-noether-suggestion-popup="true"
             onMouseDown={(e) => e.preventDefault()}
-            style={{ boxShadow: 'var(--flint-shadow-2)' }}
-            className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-2 text-xs text-[var(--flint-text-muted)] w-64 select-none"
+            style={{ boxShadow: 'var(--noether-shadow-2)' }}
+            className="pointer-events-auto bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-2 text-xs text-[var(--noether-text-muted)] w-64 select-none"
           >
             No matching block commands
           </div>
@@ -162,17 +162,17 @@ export const SlashMenu = React.memo(
       return (
         <div className="relative flex items-start gap-2 pointer-events-none">
           <div
-            data-flint-suggestion-popup="true"
+            data-noether-suggestion-popup="true"
             onMouseDown={(e) => {
               const target = e.target as HTMLElement;
               if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
                 e.preventDefault();
               }
             }}
-            style={{ boxShadow: 'var(--flint-shadow-2)' }}
-            className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
+            style={{ boxShadow: 'var(--noether-shadow-2)' }}
+            className="pointer-events-auto bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg overflow-hidden w-72 max-h-80 overflow-y-auto py-1 z-50 text-xs select-none"
           >
-            <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
+            <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--noether-text-muted)] uppercase tracking-wider">
               Insert Block
             </div>
             {items.map((item, index) => {
@@ -211,32 +211,32 @@ export const SlashMenu = React.memo(
                   }}
                   className={`w-full flex items-center justify-between gap-3 px-3 py-2 text-left cursor-pointer ${
                     isSelected
-                      ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)]'
-                      : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)]'
+                      ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)]'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)]'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div
                       className={`w-7 h-7 rounded flex items-center justify-center border ${
                         isSelected
-                          ? 'border-[var(--flint-border-strong)] bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-primary)]'
-                          : 'border-[var(--flint-border-subtle)] bg-[var(--flint-bg-input)] text-[var(--flint-text-muted)]'
+                          ? 'border-[var(--noether-border-strong)] bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)]'
+                          : 'border-[var(--noether-border-subtle)] bg-[var(--noether-bg-input)] text-[var(--noether-text-muted)]'
                       }`}
                     >
                       {renderIcon(item.icon)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-1.5 min-w-0">
-                        <span className="font-medium text-sm text-[var(--flint-text-primary)] truncate">
+                        <span className="font-medium text-sm text-[var(--noether-text-primary)] truncate">
                           {item.title}
                         </span>
                         {item.badge && (
-                          <span className="text-[11px] font-normal text-[var(--flint-text-muted)] select-none shrink-0">
+                          <span className="text-[11px] font-normal text-[var(--noether-text-muted)] select-none shrink-0">
                             {item.badge}
                           </span>
                         )}
                       </div>
-                      <div className="text-[11px] text-[var(--flint-text-muted)] truncate">
+                      <div className="text-[11px] text-[var(--noether-text-muted)] truncate">
                         {item.description}
                       </div>
                     </div>
@@ -246,7 +246,7 @@ export const SlashMenu = React.memo(
                     <ChevronRightIcon
                       size={14}
                       className={`shrink-0 ${
-                        activeSubmenu === itemSubId ? 'text-white' : 'text-[var(--flint-text-muted)]'
+                        activeSubmenu === itemSubId ? 'text-white' : 'text-[var(--noether-text-muted)]'
                       }`}
                     />
                   )}
@@ -258,7 +258,7 @@ export const SlashMenu = React.memo(
           {/* Submenu Flyout (Table Grid, Callout Picker, Icon Picker, or Extension Submenu) */}
           {activeSubmenu && currentItem && (
             <div
-              data-flint-suggestion-popup="true"
+              data-noether-suggestion-popup="true"
               onMouseDown={(e) => {
                 const target = e.target as HTMLElement;
                 if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {

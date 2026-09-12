@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { appInstance, bindFlintStores } from '@/core/app/FlintApp';
+import { appInstance, bindNoetherStores } from '@/core/app/NoetherApp';
 import { registerAllCoreExtensions } from '@/extensions/core';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -11,7 +11,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useFileHistoryStore } from '@/store/fileHistoryStore';
 
 // Bind all core stores to the app singleton
-bindFlintStores({
+bindNoetherStores({
   workspace: useWorkspaceStore,
   document: useDocumentStore,
   contextMenu: useContextMenuStore,
@@ -25,7 +25,7 @@ appInstance.extensions.init();
 
 if (typeof window !== 'undefined') {
   (window as any).appInstance = appInstance;
-  (window as any).__flintStores = {
+  (window as any).__noetherStores = {
     documentStore: useDocumentStore,
     fileHistoryStore: useFileHistoryStore,
     workspaceStore: useWorkspaceStore,

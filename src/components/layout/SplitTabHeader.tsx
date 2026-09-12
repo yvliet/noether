@@ -2,7 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
-import { useFlintApp, useTabDecorators } from '@/core/app/AppContext';
+import { useNoetherApp, useTabDecorators } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { useTabReorder } from '@/hooks/useTabReorder';
 import { TabItem } from '@/types';
@@ -21,7 +21,7 @@ interface SplitTabHeaderProps {
 }
 
 export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneId }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const targetPaneId = paneId || 'split';
 
   const panes = useWorkspaceStore((s) => s.panes);
@@ -39,7 +39,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
   const setFocusedPane = useWorkspaceStore((s) => s.setFocusedPane);
   const splitPane = useWorkspaceStore((s) => s.splitPane);
 
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const documents = useDocumentStore((s) => s.documents);
   const { showContextMenu } = useAppContextMenu();
@@ -83,9 +83,9 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
       const iconColor = isActive
         ? isDimmed
-          ? 'text-[var(--flint-text-secondary)]'
-          : 'text-[var(--flint-text-primary)]'
-        : 'text-[var(--flint-text-muted)]';
+          ? 'text-[var(--noether-text-secondary)]'
+          : 'text-[var(--noether-text-primary)]'
+        : 'text-[var(--noether-text-muted)]';
 
       const viewType =
         tab.view_type ||
@@ -270,7 +270,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
               title: 'Copy absolute path',
               onClick: async () => {
                 const rel = getDocumentPath(doc, documents) + '.md';
-                const abs = hearthPath ? `${hearthPath}/${rel}` : `/${rel}`;
+                const abs = vaultPath ? `${vaultPath}/${rel}` : `/${rel}`;
                 await navigator.clipboard.writeText(abs);
                 showToast('Copied absolute path', 'success');
               },
@@ -281,7 +281,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
       showContextMenu(e, items, { scope: 'tab', data: tab });
     },
-    [splitTabs, targetPaneId, closeTabInPane, closePane, splitPane, documents, hearthPath, showToast, showContextMenu]
+    [splitTabs, targetPaneId, closeTabInPane, closePane, splitPane, documents, vaultPath, showToast, showContextMenu]
   );
 
   const handleHeaderContextMenu = useCallback(
@@ -321,9 +321,9 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       onClick={() => setFocusedPane(targetPaneId)}
       onContextMenu={handleHeaderContextMenu}
       style={{
-        background: 'var(--flint-bg-header, var(--flint-bg-sidebar))',
+        background: 'var(--noether-bg-header, var(--noether-bg-sidebar))',
       }}
-      className="h-[38px] flex items-end justify-between pl-6 pr-2 select-none border-b border-[var(--flint-border-base)] shrink-0 relative z-20"
+      className="h-[38px] flex items-end justify-between pl-6 pr-2 select-none border-b border-[var(--noether-border-base)] shrink-0 relative z-20"
     >
       {/* Split Tabs Row */}
       <div
@@ -363,15 +363,15 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
               onContextMenu={(e) => handleSplitTabContextMenu(e, tab, index)}
               style={{
                 color: isFocusedActive
-                  ? 'var(--flint-text-primary)'
+                  ? 'var(--noether-text-primary)'
                   : isInactiveActive
-                  ? 'var(--flint-text-secondary)'
-                  : 'var(--flint-text-muted)',
+                  ? 'var(--noether-text-secondary)'
+                  : 'var(--noether-text-muted)',
                 ...tabReorderStyle,
               } as React.CSSProperties}
               className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[34px] shrink border-0 ${
                 isTabActive
-                  ? 'rounded-t-[7px] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs overflow-visible'
+                  ? 'rounded-t-[7px] bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] font-normal z-20 shadow-xs overflow-visible'
                   : 'bg-transparent font-normal hover:z-30'
               }`}
             >
@@ -379,7 +379,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
               {!isTabActive && (
                 <div
                   style={{
-                    background: 'var(--flint-bg-tab-hover, var(--flint-bg-card-hover))',
+                    background: 'var(--noether-bg-tab-hover, var(--noether-bg-card-hover))',
                     opacity: isDraggingThis ? 1 : undefined,
                   }}
                   className={`absolute inset-x-0 top-0 bottom-[3px] rounded-[6px] pointer-events-none z-0 ${
@@ -399,7 +399,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                     <path
                       d="M 0 8 A 8 8 0 0 0 8 0 V 9 H 0 Z"
                       style={{
-                        fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
+                        fill: 'var(--noether-tab-corner-fill, var(--noether-bg-tab-active, var(--noether-bg-main)))',
                       }}
                     />
                   </svg>
@@ -412,7 +412,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                     <path
                       d="M 0 0 A 8 8 0 0 0 8 8 V 9 H 0 Z"
                       style={{
-                        fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
+                        fill: 'var(--noether-tab-corner-fill, var(--noether-bg-tab-active, var(--noether-bg-main)))',
                       }}
                     />
                   </svg>
@@ -420,7 +420,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                   {/* Active Tab Bottom 1px Border Canceler */}
                   <div
                     style={{
-                      background: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
+                      background: 'var(--noether-tab-corner-fill, var(--noether-bg-tab-active, var(--noether-bg-main)))',
                     }}
                     className="absolute -bottom-[1px] left-0 right-0 h-[2px] pointer-events-none z-30 opacity-100"
                   />
@@ -450,10 +450,10 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 <span
                   className={`truncate flex-1 min-w-0 text-[12px] ${
                     isFocusedActive
-                      ? 'text-[var(--flint-text-primary)]'
+                      ? 'text-[var(--noether-text-primary)]'
                       : isInactiveActive
-                      ? 'text-[var(--flint-text-secondary)] opacity-85'
-                      : 'text-[var(--flint-text-muted)]'
+                      ? 'text-[var(--noether-text-secondary)] opacity-85'
+                      : 'text-[var(--noether-text-muted)]'
                   }`}
                 >
                   {displayTitle}
@@ -468,7 +468,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                     e.stopPropagation();
                     closeTabInPane(targetPaneId, tab.id);
                   }}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]"
                 >
                   <Cancel01Icon size={13} />
                 </button>
@@ -491,7 +491,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
             openEmptyTabInPane(targetPaneId);
           }}
           title="New split tab"
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
         >
           <PlusSignIcon size={14} />
         </button>

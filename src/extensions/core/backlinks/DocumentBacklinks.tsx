@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  useFlintApp,
+  useNoetherApp,
   useDocumentBacklinks,
   useDocumentUnlinkedMentions,
-} from 'flint';
+} from 'noether';
 import { useBacklinksSettings } from './backlinksSettings';
 import { BacklinkItem, UnlinkedMentionItem } from '@/types';
 import {
@@ -38,17 +38,17 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
   documentId,
   documentTitle,
 }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const backlinks = useDocumentBacklinks(documentId);
   const unlinkedMentions = useDocumentUnlinkedMentions(documentId);
   const setActiveDocumentById = useCallback((id: string) => {
-    app.hearth.openDocument(id);
+    app.vault.openDocument(id);
   }, [app]);
   const convertUnlinkedMention = useCallback((sourceDocId: string, title: string) => {
-    return app.hearth.convertUnlinkedMention(sourceDocId, title);
+    return app.vault.convertUnlinkedMention(sourceDocId, title);
   }, [app]);
   const loadLinksAndMentions = useCallback((docId: string, title: string) => {
-    return app.hearth.loadLinksAndMentions(docId, title);
+    return app.vault.loadLinksAndMentions(docId, title);
   }, [app]);
 
   // Ensure backlinks & mentions are loaded for this document immediately upon mount or prop changes
@@ -161,7 +161,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
 
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
-          new CustomEvent('flint:backlinks-toggled', { detail: { isOpen: isAnyExpanded } })
+          new CustomEvent('noether:backlinks-toggled', { detail: { isOpen: isAnyExpanded } })
         );
       }
       return next;
@@ -178,7 +178,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
-        new CustomEvent('flint:backlinks-toggled', { detail: { isOpen: !nextCollapsed } })
+        new CustomEvent('noether:backlinks-toggled', { detail: { isOpen: !nextCollapsed } })
       );
     }
   }, [areAllCollapsed, groupedBacklinks]);
@@ -328,7 +328,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           e.stopPropagation();
                           setActiveDocumentById(group.docId);
                         }}
-                        className="flint-link font-normal text-xs hover:underline truncate"
+                        className="noether-link font-normal text-xs hover:underline truncate"
                       >
                         {group.docTitle}
                       </span>
@@ -393,7 +393,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
                           className="flex items-center gap-1.5 cursor-pointer truncate flex-1 min-w-0"
                         >
-                          <span className="flint-link font-medium hover:underline text-xs truncate">
+                          <span className="noether-link font-medium hover:underline text-xs truncate">
                             {unlinked.source_document_title}
                           </span>
                         </div>

@@ -2,7 +2,7 @@ import { dbAdapter } from './adapter';
 import { DocumentItem, TrashItem } from '@/types';
 import { jsonToMarkdown, getDocumentPath, saveDocumentAndSynchronize } from './documents';
 import { platform } from '@/lib/platform/platformAdapter';
-import { appInstance } from '@/core/app/FlintApp';
+import { appInstance } from '@/core/app/NoetherApp';
 import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 
 // 48 hours in milliseconds = 172,800,000 ms
@@ -24,7 +24,7 @@ export async function cleanExpiredTrash(): Promise<number> {
           try {
             await platform.deleteTrashFile(item.original_path || item.title);
           } catch (e) {
-            console.error('[Flint Trash] Failed to delete expired trash file:', e);
+            console.error('[Noether Trash] Failed to delete expired trash file:', e);
           }
         }
       }
@@ -37,7 +37,7 @@ export async function cleanExpiredTrash(): Promise<number> {
           } catch (e) {}
         }
       }
-      console.log(`[Flint Trash] Cleaned up ${expired.length} expired items from trash.`);
+      console.log(`[Noether Trash] Cleaned up ${expired.length} expired items from trash.`);
     }
     return expired.length;
   } catch (err) {
@@ -164,7 +164,7 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
   try {
     await dbAdapter.transaction(queries);
   } catch (err) {
-    console.error('[Flint Trash] Failed to move items to trash in transaction:', err);
+    console.error('[Noether Trash] Failed to move items to trash in transaction:', err);
     throw err;
   }
 
@@ -187,7 +187,7 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
           }
           await platform.deleteMarkdownFile(targetPath);
         } catch (e) {
-          console.error(`[Flint Trash] Failed to move physical file to trash: ${item.title}`, e);
+          console.error(`[Noether Trash] Failed to move physical file to trash: ${item.title}`, e);
         }
       })
     );
@@ -337,7 +337,7 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
             await platform.deleteTrashFile(item.original_path || item.title);
           }
         } catch (e) {
-          console.error('[Flint Trash] Error synchronizing restored document:', e);
+          console.error('[Noether Trash] Error synchronizing restored document:', e);
         }
       }
     }
@@ -380,7 +380,7 @@ export async function permanentlyDeleteTrashItem(trashOrOriginalId: string): Pro
       try {
         await platform.deleteTrashFile(item.original_path || item.title);
       } catch (e) {
-        console.error('[Flint Trash] Failed to delete trash file:', e);
+        console.error('[Noether Trash] Failed to delete trash file:', e);
       }
     }
     await dbAdapter.execute(`DELETE FROM trash_items WHERE id = ?`, [item.id]);
@@ -401,7 +401,7 @@ export async function emptyTrash(): Promise<void> {
     try {
       await platform.emptyTrashFolder();
     } catch (e) {
-      console.error('[Flint Trash] Failed to empty trash folder:', e);
+      console.error('[Noether Trash] Failed to empty trash folder:', e);
     }
   }
   await dbAdapter.execute(`DELETE FROM trash_items`);

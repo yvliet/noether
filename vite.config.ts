@@ -18,11 +18,11 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),
-        'flint': path.resolve(__dirname, './src/sdk/index.ts'),
-        '@flint/react': path.resolve(__dirname, './src/sdk/react.ts'),
-        '@flint/core': path.resolve(__dirname, './src/sdk/index.ts'),
-        'flint/sdk': path.resolve(__dirname, './src/sdk/index.ts'),
-        'flint-sdk': path.resolve(__dirname, './src/sdk/index.ts'),
+        'noether': path.resolve(__dirname, './src/sdk/index.ts'),
+        '@noether/react': path.resolve(__dirname, './src/sdk/react.ts'),
+        '@noether/core': path.resolve(__dirname, './src/sdk/index.ts'),
+        'noether/sdk': path.resolve(__dirname, './src/sdk/index.ts'),
+        'noether-sdk': path.resolve(__dirname, './src/sdk/index.ts'),
       },
     },
     define: {
@@ -41,7 +41,7 @@ export default defineConfig(({ mode }) => {
         '**/src-tauri/**',
         '**/src-tauri/target/**',
         '**/.git/**',
-        '**/.flint/**',
+        '**/.noether/**',
         '**/*.md',
         '**/*.markdown',
         '**/*.sqlite',

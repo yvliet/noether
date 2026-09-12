@@ -34,7 +34,7 @@ import {
   FileImageIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
-import { useFlintApp, useHearthDocuments, useActiveDocument, useToast } from 'flint';
+import { useNoetherApp, useVaultDocuments, useActiveDocument, useToast } from 'noether';
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
 import { CardActionPill, computePillScale } from './components/CardActionPill';
@@ -89,7 +89,7 @@ export interface CanvasViewProps {
 }
 
 export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabId }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
   const showToast = useToast();
   const canvasSnapGrid = useCanvasSettings((s: any) => s.canvasSnapGrid);
@@ -99,7 +99,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const canvasReadOnly = useCanvasSettings((s: any) => s.canvasReadOnly);
   const setCanvasReadOnly = useCanvasSettings((s: any) => s.setCanvasReadOnly);
   const gridSize = useCanvasSettings((s: any) => s.gridSize);
-  const documents = useHearthDocuments();
+  const documents = useVaultDocuments();
   const activeDocument = useActiveDocument();
   const isLightboxOpen = useWorkspaceStore((s) => Boolean(s.imageLightbox?.isOpen));
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
@@ -107,10 +107,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const openTab = useWorkspaceStore((s) => s.openTab);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
   const promptFolderSelection = useWorkspaceStore((s) => s.promptFolderSelection);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const { showContextMenu, closeContextMenu } = useAppContextMenu();
   const [swappingNodeId, setSwappingNodeId] = useState<string | null>(null);
-  const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
+  const setActiveDocumentById = useCallback((id: string) => app.vault.openDocument(id), [app]);
 
   const effectiveBoardId =
     boardId && !boardId.startsWith('__')
@@ -238,7 +238,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     let isMounted = true;
     missingIds.forEach(async (id) => {
       try {
-        const doc = await app.hearth.readDocument(id);
+        const doc = await app.vault.readDocument(id);
         if (isMounted && doc) {
           setDocContentMap((prev) => ({ ...prev, [id]: doc.content_json || '' }));
         }
@@ -248,7 +248,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     return () => {
       isMounted = false;
     };
-  }, [nodes, app.hearth, docContentMap]);
+  }, [nodes, app.vault, docContentMap]);
 
   const diskSyncTimerRef = useRef<any>(null);
 
@@ -706,7 +706,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         setNodes(savedNodes);
         setEdges(savedEdges);
       } else {
-        const currentDoc = app.hearth.documents.find((d: DocumentItem) => d.id === effectiveBoardId);
+        const currentDoc = app.vault.documents.find((d: DocumentItem) => d.id === effectiveBoardId);
         if (currentDoc?.content_json && currentDoc.content_json.trim().length > 0) {
           try {
             const { nodes: importedNodes, edges: importedEdges } = await importCanvasBoard(
@@ -723,8 +723,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
 
         if (effectiveBoardId === 'default') {
-          const currentDocs = app.hearth.documents;
-          const welcomeDoc = currentDocs.find((d: DocumentItem) => d.id === 'welcome-to-flint') || currentDocs[0];
+          const currentDocs = app.vault.documents;
+          const welcomeDoc = currentDocs.find((d: DocumentItem) => d.id === 'welcome-to-noether') || currentDocs[0];
           const initialNodes: CanvasNode[] = [
             {
               id: `node-${Date.now()}-1`,
@@ -1365,7 +1365,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           document.activeElement.tagName === 'INPUT' ||
           document.activeElement.tagName === 'TEXTAREA' ||
           document.activeElement.isContentEditable ||
-          document.activeElement.closest('.ProseMirror, .flint-compact-doc, .document-view-root')
+          document.activeElement.closest('.ProseMirror, .noether-compact-doc, .document-view-root')
         ) {
           document.activeElement.blur();
         }
@@ -2264,12 +2264,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     async (docId: string, newContentJson: string) => {
       setDocContentMap((prev) => ({ ...prev, [docId]: newContentJson }));
       try {
-        await app.hearth.saveDocument(docId, newContentJson);
+        await app.vault.saveDocument(docId, newContentJson);
       } catch (e) {
         console.error('Failed to save document from canvas card:', e);
       }
     },
-    [app.hearth]
+    [app.vault]
   );
 
   const handleTaskToggle = useCallback(
@@ -2328,7 +2328,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
         if (updatedContent !== raw) {
           setDocContentMap((prev) => ({ ...prev, [docId]: updatedContent }));
-          await app.hearth.saveDocument(docId, updatedContent);
+          await app.vault.saveDocument(docId, updatedContent);
         }
       } else if (targetNode.type === 'text' && targetNode.text_content) {
         // 2. Text sticky card
@@ -2347,7 +2347,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         handleTextChange(nodeId, updatedText);
       }
     },
-    [nodes, docContentMap, app.hearth, handleTextChange]
+    [nodes, docContentMap, app.vault, handleTextChange]
   );
 
   // Refs for real-time reads during continuous drag operations
@@ -3653,9 +3653,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       }
     };
 
-    window.addEventListener('flint:custom-drop', handleCustomDrop);
+    window.addEventListener('noether:custom-drop', handleCustomDrop);
     return () => {
-      window.removeEventListener('flint:custom-drop', handleCustomDrop);
+      window.removeEventListener('noether:custom-drop', handleCustomDrop);
     };
   }, [documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
 
@@ -3821,7 +3821,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
           if (targetNode.text_content) {
             try {
-              await app.hearth.saveDocument(newDoc.id, targetNode.text_content);
+              await app.vault.saveDocument(newDoc.id, targetNode.text_content);
             } catch (e) {
               console.error('Failed to save document content during card conversion:', e);
             }
@@ -3843,7 +3843,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         },
       });
     },
-    [app.hearth, effectiveBoardId, openInputDialog, recordSnapshot, showToast, triggerDiskSync]
+    [app.vault, effectiveBoardId, openInputDialog, recordSnapshot, showToast, triggerDiskSync]
   );
 
   const handleAddWebPageCard = useCallback(
@@ -4265,7 +4265,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             }
           },
           onOpenInNewWindow: () => {
-            platform.openHearthWindow();
+            platform.openVaultWindow();
           },
           onRename: () => {
             if (!doc) return;
@@ -4296,7 +4296,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           isBookmarked: Boolean(doc?.is_bookmarked),
           onToggleBookmark: async () => {
             if (!doc) return;
-            const isNow = await app.hearth.toggleBookmark(doc.id);
+            const isNow = await app.vault.toggleBookmark(doc.id);
             showToast(isNow ? `Bookmarked "${doc.title}"` : `Removed bookmark for "${doc.title}"`, 'info');
           },
           onCopyRelativePath: () => {
@@ -4308,15 +4308,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           onCopyAbsolutePath: () => {
             if (!doc) return;
             const relPath = getDocumentPath(doc, allDocs);
-            const full = hearthPath ? `${hearthPath}/${relPath}`.replace(/\/+/g, '/') : relPath;
+            const full = vaultPath ? `${vaultPath}/${relPath}`.replace(/\/+/g, '/') : relPath;
             navigator.clipboard.writeText(full);
             showToast('Absolute path copied', 'info');
           },
           onShowInExplorer: () => {
             if (platform.isDesktop()) {
-              platform.openHearthInExplorer(hearthPath);
+              platform.openVaultInExplorer(vaultPath);
             } else {
-              showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
+              showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
             }
           },
           currentColor: node.color,
@@ -4326,7 +4326,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             if (!doc) return;
             openConfirmDialog({
               title: `Delete "${doc.title}"?`,
-              message: `Are you sure you want to delete "${doc.title}"? It will be permanently removed from your Hearth.`,
+              message: `Are you sure you want to delete "${doc.title}"? It will be permanently removed from your Vault.`,
               confirmText: 'Delete file',
               isDanger: true,
               onConfirm: async () => {
@@ -4406,7 +4406,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       handleDuplicateSelectedNodes,
       handleFitNodeToCenter,
       handleFitToCenter,
-      hearthPath,
+      vaultPath,
       nodeMap,
       openConfirmDialog,
       openInputDialog,
@@ -4808,7 +4808,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       data-pinchable="true"
       data-canvas-view="true"
       data-main="true"
-      className="flint-canvas-view flint-pinchable relative flex-1 h-full w-full overflow-hidden bg-[var(--flint-bg-main)] text-[var(--flint-text-primary)] select-none"
+      className="noether-canvas-view noether-pinchable relative flex-1 h-full w-full overflow-hidden bg-[var(--noether-bg-main)] text-[var(--noether-text-primary)] select-none"
     >
       {/* 100% Consistent Page Subheader */}
       <PageSubHeader
@@ -4886,7 +4886,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         onDoubleClick={handleCanvasDoubleClick}
         onContextMenu={handleCanvasContextMenu}
         style={{ touchAction: 'none' }}
-        className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none outline-none ${
+        className={`noether-canvas-view noether-pinchable absolute inset-0 w-full h-full bg-[var(--noether-bg-main)] overflow-hidden select-none touch-none outline-none ${
           isDraggingNodeState || isPanningState || (dragGhost && !searchModalState.isOpen)
             ? '!cursor-grabbing [&_*]:!cursor-grabbing'
             : draftEdge
@@ -4901,7 +4901,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           <defs>
             <pattern
               ref={dotPatternRef}
-              id="flint-canvas-dots"
+              id="noether-canvas-dots"
               width={step}
               height={step}
               patternUnits="userSpaceOnUse"
@@ -4920,7 +4920,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             ref={dotGridRectRef}
             width="100%"
             height="100%"
-            fill="url(#flint-canvas-dots)"
+            fill="url(#noether-canvas-dots)"
             style={{ opacity: Math.min(1, Math.max(0, (zoom - 0.18) / 0.22)) }}
           />
         </svg>

@@ -2,9 +2,9 @@
  * @module ExternalExtensionLoader
  * @description
  * Discovers, sandboxes, and executes third-party community extensions
- * located in the active hearth's `.flint/extensions/` or `.flint/plugins/` directory.
+ * located in the active vault's `.noether/extensions/` or `.noether/plugins/` directory.
  *
- * Exposes a sandboxed module scope with access to React and the Flint SDK.
+ * Exposes a sandboxed module scope with access to React and the Noether SDK.
  *
  * @since 0.2.0
  */
@@ -13,7 +13,7 @@ import React from 'react';
 import * as ReactDOM from 'react-dom';
 import * as ReactDOMClient from 'react-dom/client';
 import { z } from 'zod';
-import { FlintApp } from '../app/FlintApp';
+import { NoetherApp } from '../app/NoetherApp';
 import { Extension } from './Extension';
 import { ExtensionManifest } from './types';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -27,15 +27,15 @@ import * as hugeiconsReactModule from '@hugeicons/react';
 import * as hugeiconsCoreModule from '@hugeicons/core-free-icons';
 
 export class ExternalExtensionLoader {
-  private app: FlintApp;
+  private app: NoetherApp;
   private injectedStyles: Map<string, HTMLStyleElement> = new Map();
 
-  constructor(app: FlintApp) {
+  constructor(app: NoetherApp) {
     this.app = app;
   }
 
   /**
-   * Scans and loads external extensions from the hearth extensions folder.
+   * Scans and loads external extensions from the vault extensions folder.
    * @since 0.2.0
    */
   public async discoverAndLoadExtensions(): Promise<void> {
@@ -100,16 +100,16 @@ export class ExternalExtensionLoader {
         this.injectExtensionStyle(manifest.id, cssCode);
       }
 
-      // Dynamically load the Flint SDK to break circular dependency during initialization
-      const FlintSdk = await import('@/sdk');
+      // Dynamically load the Noether SDK to break circular dependency during initialization
+      const NoetherSdk = await import('@/sdk');
 
       // Create sandboxed module evaluation environment
-      // We pass the complete Flint SDK exports to the extension module
-      const flintSdk = {
-        ...FlintSdk,
+      // We pass the complete Noether SDK exports to the extension module
+      const noetherSdk = {
+        ...NoetherSdk,
         Extension,
         Plugin: Extension,
-        FlintApp,
+        NoetherApp,
         appInstance: this.app,
         z,
       };
@@ -132,25 +132,25 @@ export class ExternalExtensionLoader {
           if (moduleName === '@hugeicons/react') return hugeiconsReactModule;
           if (moduleName === '@hugeicons/core-free-icons') return hugeiconsCoreModule;
           if (
-            moduleName === 'flint' ||
-            moduleName === 'flint/sdk' ||
-            moduleName === 'flint/react' ||
-            moduleName === 'flint-sdk' ||
-            moduleName === '@flint' ||
-            moduleName === '@flint/core' ||
-            moduleName === '@flint/api' ||
-            moduleName === '@flint/sdk' ||
-            moduleName === '@flint/react' ||
+            moduleName === 'noether' ||
+            moduleName === 'noether/sdk' ||
+            moduleName === 'noether/react' ||
+            moduleName === 'noether-sdk' ||
+            moduleName === '@noether' ||
+            moduleName === '@noether/core' ||
+            moduleName === '@noether/api' ||
+            moduleName === '@noether/sdk' ||
+            moduleName === '@noether/react' ||
             moduleName === '@/sdk'
           ) {
-            return flintSdk;
+            return noetherSdk;
           }
           throw new Error(
-            `[Flint] Cannot require "${moduleName}" from an extension. ` +
-            `Only 'react', 'react-dom', 'react/jsx-runtime', 'zod', 'clsx', 'tailwind-merge', 'zustand', 'zustand/vanilla', '@hugeicons/react', '@hugeicons/core-free-icons', and 'flint' (or '@flint/sdk', '@flint/react') are available.`
+            `[Noether] Cannot require "${moduleName}" from an extension. ` +
+            `Only 'react', 'react-dom', 'react/jsx-runtime', 'zod', 'clsx', 'tailwind-merge', 'zustand', 'zustand/vanilla', '@hugeicons/react', '@hugeicons/core-free-icons', and 'noether' (or '@noether/sdk', '@noether/react') are available.`
           );
         },
-        Flint: flintSdk,
+        Noether: noetherSdk,
         React,
         process: { env: { NODE_ENV: 'production' } },
         __dirname: '',
@@ -162,7 +162,7 @@ export class ExternalExtensionLoader {
         'exports',
         'module',
         'require',
-        'Flint',
+        'Noether',
         'React',
         'process',
         '__dirname',
@@ -174,7 +174,7 @@ export class ExternalExtensionLoader {
         moduleScope.exports,
         moduleScope.module,
         moduleScope.require,
-        moduleScope.Flint,
+        moduleScope.Noether,
         moduleScope.React,
         moduleScope.process,
         moduleScope.__dirname,
@@ -247,7 +247,7 @@ export class ExternalExtensionLoader {
 
   /**
    * Installs an external community extension:
-   * 1. On desktop, saves manifest.json, main.js, and optional styles.css into `.flint/plugins/<id>/`.
+   * 1. On desktop, saves manifest.json, main.js, and optional styles.css into `.noether/plugins/<id>/`.
    * 2. Evaluates the bundle code and registers it into ExtensionManager.
    * 3. Enables the extension.
    *
@@ -271,15 +271,15 @@ export class ExternalExtensionLoader {
       let bundleCode = jsCode;
       if (!bundleCode || !bundleCode.trim()) {
         const cleanClassName = (manifest.name.replace(/[^a-zA-Z0-9]/g, '') || 'Community') + 'Extension';
-        bundleCode = `const { Extension } = require('flint');
+        bundleCode = `const { Extension } = require('noether');
 
 module.exports = class ${cleanClassName} extends Extension {
   async onload() {
-    console.log('[Flint] Loaded community extension: ${manifest.name} (v${manifest.version})');
+    console.log('[Noether] Loaded community extension: ${manifest.name} (v${manifest.version})');
   }
 
   onunload() {
-    console.log('[Flint] Unloaded extension: ${manifest.name}');
+    console.log('[Noether] Unloaded extension: ${manifest.name}');
   }
 };
 `;
@@ -327,7 +327,7 @@ module.exports = class ${cleanClassName} extends Extension {
   private injectExtensionStyle(extensionId: string, cssCode: string): void {
     if (typeof document === 'undefined') return;
 
-    const styleId = 'flint-extension-style-' + extensionId;
+    const styleId = 'noether-extension-style-' + extensionId;
     let styleEl = this.injectedStyles.get(extensionId);
     if (!styleEl) {
       const existingEl = document.getElementById(styleId) as HTMLStyleElement | null;
@@ -349,7 +349,7 @@ module.exports = class ${cleanClassName} extends Extension {
       styleEl.remove();
       this.injectedStyles.delete(extensionId);
     } else if (typeof document !== 'undefined') {
-      const existingEl = document.getElementById('flint-extension-style-' + extensionId);
+      const existingEl = document.getElementById('noether-extension-style-' + extensionId);
       if (existingEl) {
         existingEl.remove();
       }

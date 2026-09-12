@@ -91,7 +91,7 @@ export const MathChip = Node.create<MathChipOptions>({
       setupMathLive();
 
       const dom = document.createElement('span');
-      dom.className = 'wce-chip wce-math flint-math-node';
+      dom.className = 'wce-chip wce-math noether-math-node';
       dom.setAttribute('data-type', 'math-chip');
       dom.setAttribute('data-display', node.attrs.display || 'inline');
       dom.tabIndex = 0;
@@ -204,7 +204,7 @@ export const MathChip = Node.create<MathChipOptions>({
             renderSpan.textContent = latex;
           }
         } else {
-          renderSpan.innerHTML = `<span class="md-syntax-dimmed flint-math-delim">${delim}</span><span class="md-syntax-dimmed flint-math-delim">${delim}</span>`;
+          renderSpan.innerHTML = `<span class="md-syntax-dimmed noether-math-delim">${delim}</span><span class="md-syntax-dimmed noether-math-delim">${delim}</span>`;
         }
 
         dom.appendChild(renderSpan);
@@ -227,13 +227,13 @@ export const MathChip = Node.create<MathChipOptions>({
 
         // Left dimmed dollar
         const leftDollar = document.createElement('span');
-        leftDollar.className = 'md-syntax-dimmed flint-math-delim';
+        leftDollar.className = 'md-syntax-dimmed noether-math-delim';
         leftDollar.textContent = delim;
         dom.appendChild(leftDollar);
 
         const mf = document.createElement('math-field') as any;
         activeMf = mf;
-        mf.className = 'flint-live-math-field';
+        mf.className = 'noether-live-math-field';
         mf.mathVirtualKeyboardPolicy = 'manual';
         mf.setAttribute('math-virtual-keyboard-policy', 'manual');
         mf.setAttribute('menu-items', 'none');
@@ -244,11 +244,11 @@ export const MathChip = Node.create<MathChipOptions>({
 
         // Right dimmed dollar
         const rightDollar = document.createElement('span');
-        rightDollar.className = 'md-syntax-dimmed flint-math-delim';
+        rightDollar.className = 'md-syntax-dimmed noether-math-delim';
         rightDollar.textContent = delim;
         dom.appendChild(rightDollar);
 
-        // Intercept right click on math-field to suppress MathLive's menu and show Flint's native context menu
+        // Intercept right click on math-field to suppress MathLive's menu and show Noether's native context menu
         mf.addEventListener('contextmenu', openMathContextMenu, true);
 
         const commit = () => {

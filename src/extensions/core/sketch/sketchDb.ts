@@ -1,7 +1,7 @@
 /**
  * @module sketchDb
  * @description
- * Relational SQLite WASM persistence and memory caching for Flint Sketch.
+ * Relational SQLite WASM persistence and memory caching for Noether Sketch.
  * Stores stroke paths, anchoring modes, and timestamps per document.
  */
 
@@ -40,7 +40,7 @@ export async function initSketchDb(): Promise<void> {
       CREATE INDEX IF NOT EXISTS idx_sketches_doc ON ext_sketch_document_sketches (document_id);
     `);
   } catch (err) {
-    console.error('[Flint Sketch] Failed to initialize SQLite table:', err);
+    console.error('[Noether Sketch] Failed to initialize SQLite table:', err);
   }
 }
 
@@ -92,7 +92,7 @@ export async function loadSketchFromDb(documentId: string): Promise<SketchDocume
       return data;
     }
   } catch (err) {
-    console.error(`[Flint Sketch] Error loading sketch for doc ${documentId}:`, err);
+    console.error(`[Noether Sketch] Error loading sketch for doc ${documentId}:`, err);
   }
 
   return null;
@@ -115,7 +115,7 @@ export async function saveSketchToDb(data: SketchDocumentData): Promise<void> {
       [data.documentId, data.anchoring, json, now]
     );
   } catch (err) {
-    console.error(`[Flint Sketch] Error saving sketch for doc ${data.documentId}:`, err);
+    console.error(`[Noether Sketch] Error saving sketch for doc ${data.documentId}:`, err);
   }
 }
 
@@ -129,7 +129,7 @@ export async function deleteSketchFromDb(documentId: string): Promise<void> {
   try {
     await dbAdapter.execute(`DELETE FROM ext_sketch_document_sketches WHERE document_id = ?`, [documentId]);
   } catch (err) {
-    console.error(`[Flint Sketch] Error deleting sketch for doc ${documentId}:`, err);
+    console.error(`[Noether Sketch] Error deleting sketch for doc ${documentId}:`, err);
   }
 }
 

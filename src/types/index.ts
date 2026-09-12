@@ -1,7 +1,7 @@
 /**
  * @module CoreTypes
  * @description
- * Core domain models, state schemas, and host runtime types for Flint.
+ * Core domain models, state schemas, and host runtime types for Noether.
  * Maintained strictly isolated from extension-specific models to preserve
  * a pristine, modular native core architecture.
  */
@@ -129,7 +129,7 @@ export type MainViewMode = string;
 export type SidebarTab = string;
 export type LeftNavView = string;
 
-export interface HearthDiskItem {
+export interface VaultDiskItem {
   relativePath: string;
   name: string;
   isFolder: boolean;
@@ -137,7 +137,7 @@ export interface HearthDiskItem {
   content?: string;
 }
 
-export interface RecentHearthItem {
+export interface RecentVaultItem {
   path: string;
   name: string;
   lastOpened: number;

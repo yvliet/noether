@@ -10,7 +10,7 @@ The **Journal** extension creates or opens date-stamped notes (e.g. \`2026-08-28
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension showcases action rail integration, template injection, and command palette shortcuts.
 
@@ -22,7 +22,7 @@ this.addActionRailIcon(
   "Today's Journal (Ctrl+Shift+D)",
   async (app) => {
     app.workspace.setMainViewMode('document');
-    await app.hearth.openJournal();
+    await app.vault.openJournal();
   },
   40
 );

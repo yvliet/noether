@@ -1,7 +1,7 @@
 /**
  * @module Extension
  * @description
- * Abstract base class for all Flint extensions. Provides lifecycle management,
+ * Abstract base class for all Noether extensions. Provides lifecycle management,
  * automatic resource disposal tracking, and convenience methods for registering
  * extension points (commands, views, sidebar tabs, action rail items, editor tools).
  *
@@ -9,7 +9,7 @@
  *
  * @example
  * ```ts
- * import { Extension } from 'flint';
+ * import { Extension } from 'noether';
  *
  * export default class MyExtension extends Extension {
  *   onload() {
@@ -27,7 +27,7 @@
 
 import React from 'react';
 import type { z } from 'zod';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type { EventKey, EventCallback } from '../events/events';
 import {
   ExtensionManifest,
@@ -74,10 +74,10 @@ import type { FileContextMenuActionDefinition } from '../registries/FileContextM
 
 export abstract class Extension {
   /**
-   * Reference to the central Flint host application instance.
-   * Gives access to `app.workspace`, `app.hearth`, `app.settings`, registries, and events.
+   * Reference to the central Noether host application instance.
+   * Gives access to `app.workspace`, `app.vault`, `app.settings`, registries, and events.
    */
-  public app: FlintApp;
+  public app: NoetherApp;
 
   /**
    * Static manifest metadata describing this extension.
@@ -90,7 +90,7 @@ export abstract class Extension {
    */
   private disposables: Disposable[] = [];
 
-  constructor(app: FlintApp, manifest: ExtensionManifest) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest) {
     this.app = app;
     this.manifest = manifest;
   }
@@ -281,9 +281,9 @@ export abstract class Extension {
     id: string,
     icon: React.ReactNode,
     title: string,
-    onClick: (app: FlintApp) => void | Promise<void>,
+    onClick: (app: NoetherApp) => void | Promise<void>,
     order?: number,
-    isActive?: boolean | ((app: FlintApp) => boolean)
+    isActive?: boolean | ((app: NoetherApp) => boolean)
   ): Disposable {
     const item: ActionRailItem = {
       id: `${this.manifest.id}:${id}`,
@@ -328,7 +328,7 @@ export abstract class Extension {
   }
 
   /**
-   * Registers a custom file type and extension mapping with the Flint host.
+   * Registers a custom file type and extension mapping with the Noether host.
    * Enables native file tree badges, disk synchronization, and automatic view routing.
    *
    * @param def - Custom file type configuration.
@@ -383,7 +383,7 @@ export abstract class Extension {
   }
 
   /**
-   * Registers a custom icon pack provider into Flint's central IconRegistry.
+   * Registers a custom icon pack provider into Noether's central IconRegistry.
    *
    * @param provider - Icon pack provider definition.
    * @returns A Disposable to unregister the provider.

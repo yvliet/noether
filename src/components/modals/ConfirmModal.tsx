@@ -58,37 +58,37 @@ export const ConfirmModal: React.FC = React.memo(() => {
       <div
         data-card="true"
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-subtle,#2e2e2e)] rounded-xl shadow-2xl overflow-hidden p-5 flex flex-col gap-4 text-xs"
+        className="w-full max-w-md bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-subtle,#2e2e2e)] rounded-xl shadow-2xl overflow-hidden p-5 flex flex-col gap-4 text-xs"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[var(--flint-text-primary)] tracking-tight">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] tracking-tight">
             {confirmDialog.title || 'Confirmation'}
           </h3>
           <button
             onClick={closeConfirmDialog}
-            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+            className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <Cancel01Icon size={14} />
           </button>
         </div>
 
         {/* Body Text */}
-        <div className="text-[var(--flint-text-secondary)] leading-relaxed flex flex-col gap-1">
+        <div className="text-[var(--noether-text-secondary)] leading-relaxed flex flex-col gap-1">
           <p className="text-xs">{confirmDialog.message}</p>
           {confirmDialog.subtext && (
-            <p className="text-[11px] text-[var(--flint-text-muted)]">{confirmDialog.subtext}</p>
+            <p className="text-[11px] text-[var(--noether-text-muted)]">{confirmDialog.subtext}</p>
           )}
         </div>
 
         {/* Footer with Optional Checkbox and Action Buttons */}
         <div className="flex items-center justify-between pt-2">
-          <label className="flex items-center gap-2 text-[11px] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-secondary)] cursor-pointer">
+          <label className="flex items-center gap-2 text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-secondary)] cursor-pointer">
             <input
               type="checkbox"
               checked={dontAskAgain}
               onChange={(e) => setDontAskAgain(e.target.checked)}
-              className="accent-[var(--flint-accent)] rounded"
+              className="accent-[var(--noether-accent)] rounded"
             />
             <span>Don't ask again</span>
           </label>
@@ -96,13 +96,13 @@ export const ConfirmModal: React.FC = React.memo(() => {
           <div className="flex items-center gap-2">
             <button
               onClick={closeConfirmDialog}
-              className="flint-btn"
+              className="noether-btn"
             >
               Cancel
             </button>
             <button
               onClick={handleConfirm}
-              className={confirmDialog.isDanger ? 'flint-btn flint-btn-danger' : 'flint-btn flint-btn-primary'}
+              className={confirmDialog.isDanger ? 'noether-btn noether-btn-danger' : 'noether-btn noether-btn-primary'}
             >
               {confirmDialog.confirmText || 'Confirm'}
             </button>

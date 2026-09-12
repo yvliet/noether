@@ -228,7 +228,7 @@ export const useGraphSettings = create<GraphSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_GRAPH_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_graph-view',
+      name: 'noether_extension_data_graph-view',
     }
   )
 );

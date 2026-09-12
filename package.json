@@ -1,10 +1,10 @@
 {
-  "name": "flint",
+  "name": "noether",
   "private": true,
   "version": "0.4.6",
   "type": "module",
   "bin": {
-    "flint-mcp-server": "./bin/flint-mcp-server.cjs"
+    "noether-mcp-server": "./bin/noether-mcp-server.cjs"
   },
   "scripts": {
     "dev": "vite",

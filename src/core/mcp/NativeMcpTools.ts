@@ -1,25 +1,25 @@
 /**
  * @module NativeMcpTools
  * @description
- * Native vault-level Model Context Protocol (MCP) tool provider for Flint.
+ * Native vault-level Model Context Protocol (MCP) tool provider for Noether.
  * Registers baseline core tools (document search, retrieval, creation, updates,
  * properties manipulation, tagging, and backlinks) that are permanently available
  * to AI agents and external MCP clients regardless of which extensions are loaded.
  *
- * Decision Rationale ("Why This, Not That"):
- * - In-Memory State vs Raw Disk I/O: Handlers query `app.hearth.documents` and reactive
+ * Technical Rationale:
+ * - In-Memory State vs Raw Disk I/O: Handlers query `app.vault.documents` and reactive
  *   store bridges rather than performing synchronous file reads from disk. This ensures
  *   sub-millisecond tool execution latency and prevents blocking the main UI thread.
  * - Central Native Provider vs Extension Sandbox: Core tools are registered directly
- *   onto `app.tools` without extension prefixing (e.g., `flint_read_note` instead of
- *   `core_flint_read_note`) to maintain a clean, stable MCP namespace for LLM function calling.
+ *   onto `app.tools` without extension prefixing (e.g., `noether_read_note` instead of
+ *   `core_noether_read_note`) to maintain a clean, stable MCP namespace for LLM function calling.
  *
  * @since 0.3.0
  */
 
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type { McpToolResult, McpToolDefinition, McpPromptDefinition } from '../extensions/types';
-import type { DocumentItem } from '@/types';
+import type { DocumentItem, RecentVaultItem } from '@/types';
 import { platform } from '@/lib/platform/platformAdapter';
 
 /**
@@ -46,13 +46,13 @@ function buildRelativePath(doc: DocumentItem, docsMap: Map<string, DocumentItem>
 /**
  * Registers all native vault-level MCP tools into the application's ToolRegistry.
  *
- * @param app - The central FlintApp host instance.
+ * @param app - The central NoetherApp host instance.
  */
-export function registerNativeTools(app: FlintApp): void {
+export function registerNativeTools(app: NoetherApp): void {
   const nativeTools: McpToolDefinition[] = [
     // ── 1. Full-Text Search Notes ──
     {
-      name: 'flint_search_notes',
+      name: 'noether_search_notes',
       description: 'Search across all note titles and contents in the vault using full-text matching.',
       category: 'search',
       parameters: {
@@ -69,7 +69,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['query'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const query = String(args.query || '').trim().toLowerCase();
           const limit = typeof args.limit === 'number' && args.limit > 0 ? args.limit : 20;
@@ -80,7 +80,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const docs = hostApp.hearth.documents;
+          const docs = hostApp.vault.documents;
           const docsMap = new Map(docs.map((d) => [d.id, d]));
           const matched: Array<{ id: string; title: string; relative_path: string }> = [];
 
@@ -114,7 +114,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 2. Read Note ──
     {
-      name: 'flint_read_note',
+      name: 'noether_read_note',
       description: 'Retrieve the content, title, and frontmatter properties of a specific note by ID.',
       category: 'documents',
       parameters: {
@@ -127,7 +127,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           if (!docId) {
@@ -137,7 +137,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const doc = (await hostApp.hearth.readDocument(docId)) || hostApp.hearth.getDocumentById(docId);
+          const doc = (await hostApp.vault.readDocument(docId)) || hostApp.vault.getDocumentById(docId);
           if (!doc) {
             return {
               isError: true,
@@ -145,7 +145,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const properties = hostApp.hearth.getDocumentProperties(docId);
+          const properties = hostApp.vault.getDocumentProperties(docId);
           const data = {
             id: doc.id,
             title: doc.title,
@@ -168,7 +168,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 3. Create Note ──
     {
-      name: 'flint_create_note',
+      name: 'noether_create_note',
       description: 'Create a new markdown note in the vault with optional initial content and parent folder.',
       category: 'documents',
       parameters: {
@@ -189,22 +189,22 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['title'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const title = String(args.title || 'Untitled').trim();
           const content = typeof args.content === 'string' ? args.content : undefined;
           const parentId = typeof args.parentId === 'string' ? args.parentId : undefined;
 
-          const newDoc = await hostApp.hearth.createNewNote(title, parentId);
+          const newDoc = await hostApp.vault.createNewNote(title, parentId);
           if (!newDoc) {
             return {
               isError: true,
-              content: [{ type: 'text', text: 'Failed to create document in Hearth storage.' }],
+              content: [{ type: 'text', text: 'Failed to create document in Vault storage.' }],
             };
           }
 
           if (content !== undefined) {
-            hostApp.hearth.saveDocument(newDoc.id, content, title);
+            hostApp.vault.saveDocument(newDoc.id, content, title);
           }
 
           return {
@@ -231,7 +231,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 4. Update Note ──
     {
-      name: 'flint_update_note',
+      name: 'noether_update_note',
       description: 'Update the content body of an existing note by ID.',
       category: 'documents',
       parameters: {
@@ -248,7 +248,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId', 'content'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           const content = typeof args.content === 'string' ? args.content : '';
@@ -260,7 +260,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const existingDoc = hostApp.hearth.getDocumentById(docId);
+          const existingDoc = hostApp.vault.getDocumentById(docId);
           if (!existingDoc) {
             return {
               isError: true,
@@ -268,7 +268,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          hostApp.hearth.saveDocument(docId, content);
+          hostApp.vault.saveDocument(docId, content);
 
           return {
             content: [
@@ -294,7 +294,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 5. Delete Note ──
     {
-      name: 'flint_delete_note',
+      name: 'noether_delete_note',
       description: 'Permanently delete a note from the vault.',
       category: 'documents',
       isDestructive: true,
@@ -308,7 +308,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           if (!docId) {
@@ -318,7 +318,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const existingDoc = hostApp.hearth.getDocumentById(docId);
+          const existingDoc = hostApp.vault.getDocumentById(docId);
           if (!existingDoc) {
             return {
               isError: true,
@@ -326,7 +326,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          hostApp.hearth.deleteDocument(docId);
+          hostApp.vault.deleteDocument(docId);
 
           return {
             content: [
@@ -352,7 +352,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 6. Rename Note ──
     {
-      name: 'flint_rename_note',
+      name: 'noether_rename_note',
       description: 'Rename an existing note or folder in the vault.',
       category: 'documents',
       parameters: {
@@ -369,7 +369,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId', 'newTitle'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           const newTitle = String(args.newTitle || '').trim();
@@ -381,7 +381,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const existingDoc = hostApp.hearth.getDocumentById(docId);
+          const existingDoc = hostApp.vault.getDocumentById(docId);
           if (!existingDoc) {
             return {
               isError: true,
@@ -389,7 +389,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          hostApp.hearth.renameDocument(docId, newTitle);
+          hostApp.vault.renameDocument(docId, newTitle);
 
           return {
             content: [
@@ -416,7 +416,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 7. List All Notes ──
     {
-      name: 'flint_list_all_notes',
+      name: 'noether_list_all_notes',
       description: 'List all documents and folders in the vault with pagination support.',
       category: 'documents',
       parameters: {
@@ -432,12 +432,12 @@ export function registerNativeTools(app: FlintApp): void {
           },
         },
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const limit = typeof args.limit === 'number' && args.limit > 0 ? args.limit : 100;
           const offset = typeof args.offset === 'number' && args.offset >= 0 ? args.offset : 0;
 
-          const allDocs = hostApp.hearth.documents;
+          const allDocs = hostApp.vault.documents;
           const docsMap = new Map(allDocs.map((d) => [d.id, d]));
           const slice = allDocs.slice(offset, offset + limit);
 
@@ -464,7 +464,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 8. Get Note Properties ──
     {
-      name: 'flint_get_note_properties',
+      name: 'noether_get_note_properties',
       description: 'Retrieve the parsed frontmatter properties (tags, aliases, custom metadata) of a document.',
       category: 'documents',
       parameters: {
@@ -477,7 +477,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           if (!docId) {
@@ -487,7 +487,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const existingDoc = hostApp.hearth.getDocumentById(docId);
+          const existingDoc = hostApp.vault.getDocumentById(docId);
           if (!existingDoc) {
             return {
               isError: true,
@@ -495,7 +495,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const properties = hostApp.hearth.getDocumentProperties(docId);
+          const properties = hostApp.vault.getDocumentProperties(docId);
 
           return {
             content: [{ type: 'text', text: JSON.stringify(properties) }],
@@ -512,7 +512,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 9. Set Note Properties ──
     {
-      name: 'flint_set_note_properties',
+      name: 'noether_set_note_properties',
       description: 'Update or merge frontmatter properties on a document. Setting keys to null removes them.',
       category: 'documents',
       parameters: {
@@ -529,7 +529,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId', 'properties'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           const properties =
@@ -544,7 +544,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const existingDoc = hostApp.hearth.getDocumentById(docId);
+          const existingDoc = hostApp.vault.getDocumentById(docId);
           if (!existingDoc) {
             return {
               isError: true,
@@ -552,7 +552,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          await hostApp.hearth.updateDocumentProperties(docId, properties);
+          await hostApp.vault.updateDocumentProperties(docId, properties);
 
           return {
             content: [
@@ -578,7 +578,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 10. Toggle Bookmark ──
     {
-      name: 'flint_toggle_bookmark',
+      name: 'noether_toggle_bookmark',
       description: 'Toggle the bookmark status of a document between bookmarked and unbookmarked.',
       category: 'documents',
       parameters: {
@@ -591,7 +591,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           if (!docId) {
@@ -601,7 +601,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const existingDoc = hostApp.hearth.getDocumentById(docId);
+          const existingDoc = hostApp.vault.getDocumentById(docId);
           if (!existingDoc) {
             return {
               isError: true,
@@ -609,7 +609,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const isBookmarked = await hostApp.hearth.toggleBookmark(docId);
+          const isBookmarked = await hostApp.vault.toggleBookmark(docId);
 
           return {
             content: [
@@ -635,7 +635,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 11. Get Backlinks ──
     {
-      name: 'flint_get_backlinks',
+      name: 'noether_get_backlinks',
       description: 'Find all documents in the vault that contain wikilinks pointing to the specified target note.',
       category: 'graph',
       parameters: {
@@ -648,7 +648,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const docId = String(args.documentId || '').trim();
           if (!docId) {
@@ -658,7 +658,7 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const targetDoc = hostApp.hearth.getDocumentById(docId);
+          const targetDoc = hostApp.vault.getDocumentById(docId);
           if (!targetDoc) {
             return {
               isError: true,
@@ -670,7 +670,7 @@ export function registerNativeTools(app: FlintApp): void {
           const backlinks: Array<{ sourceId: string; sourceTitle: string }> = [];
           const wikiRegex = /\[\[([^\]|#]+)(?:[|#][^\]]*)?\]\]/g;
 
-          for (const doc of hostApp.hearth.documents) {
+          for (const doc of hostApp.vault.documents) {
             if (doc.id === docId || !doc.content_json) continue;
 
             let hasMatch = false;
@@ -707,19 +707,19 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 12. Get Tags ──
     {
-      name: 'flint_get_tags',
+      name: 'noether_get_tags',
       description: 'Aggregate and count all frontmatter tags across all notes in the vault.',
       category: 'documents',
       parameters: {
         type: 'object',
         properties: {},
       },
-      handler: async (_args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const tagCounts = new Map<string, number>();
 
-          for (const doc of hostApp.hearth.documents) {
-            const props = hostApp.hearth.getDocumentProperties(doc.id);
+          for (const doc of hostApp.vault.documents) {
+            const props = hostApp.vault.getDocumentProperties(doc.id);
             if (!props) continue;
 
             const rawTags: unknown = (props as Record<string, unknown>).tags;
@@ -755,7 +755,7 @@ export function registerNativeTools(app: FlintApp): void {
 
     // ── 13. Get Documents by Tag ──
     {
-      name: 'flint_get_documents_by_tag',
+      name: 'noether_get_documents_by_tag',
       description: 'Filter and return all documents that contain a specific frontmatter tag.',
       category: 'documents',
       parameters: {
@@ -768,7 +768,7 @@ export function registerNativeTools(app: FlintApp): void {
         },
         required: ['tag'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const targetTag = String(args.tag || '')
             .trim()
@@ -784,8 +784,8 @@ export function registerNativeTools(app: FlintApp): void {
 
           const matchedDocs: Array<{ id: string; title: string }> = [];
 
-          for (const doc of hostApp.hearth.documents) {
-            const props = hostApp.hearth.getDocumentProperties(doc.id);
+          for (const doc of hostApp.vault.documents) {
+            const props = hostApp.vault.getDocumentProperties(doc.id);
             if (!props) continue;
 
             const rawTags: unknown = (props as Record<string, unknown>).tags;
@@ -816,30 +816,30 @@ export function registerNativeTools(app: FlintApp): void {
       },
     },
 
-    // ── 14. List All Known Hearths ──
+    // ── 14. List All Known Vaults ──
     {
-      name: 'flint_list_hearths',
-      description: 'List all known and recent Hearths (workspaces/vaults) in Flint, including paths, names, and which one is active. Enables zero-config multi-vault access for agents.',
-      category: 'hearths',
+      name: 'noether_list_vaults',
+      description: 'List all known and recent Vaults (workspaces/vaults) in Noether, including paths, names, and which one is active. Enables zero-config multi-vault access for agents.',
+      category: 'vaults',
       parameters: {
         type: 'object',
         properties: {},
       },
-      handler: async (_args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
-          const data = await platform.getCurrentHearth();
-          const currentPath = hostApp.hearth.hearthPath || data.path;
-          const currentName = hostApp.hearth.hearthName || data.name;
+          const data = await platform.getCurrentVault();
+          const currentPath = hostApp.vault.vaultPath || data.path;
+          const currentName = hostApp.vault.vaultName || data.name;
 
-          const recentList = (data.recentHearths || []).map((h) => ({
+          const recentList = (data.recentVaults || []).map((h: RecentVaultItem) => ({
             name: h.name,
             path: h.path,
             lastOpened: (h as any).lastOpened || (h as any).last_opened || null,
             isActive: h.path === currentPath,
           }));
 
-          // Ensure current active hearth is present
-          if (currentPath && !recentList.some((h) => h.path === currentPath)) {
+          // Ensure current active vault is present
+          if (currentPath && !recentList.some((h: { path: string }) => h.path === currentPath)) {
             recentList.unshift({
               name: currentName,
               path: currentPath,
@@ -853,13 +853,13 @@ export function registerNativeTools(app: FlintApp): void {
               {
                 type: 'text',
                 text: JSON.stringify({
-                  activeHearth: {
+                  activeVault: {
                     name: currentName,
                     path: currentPath,
-                    documentCount: hostApp.hearth.documents.length,
+                    documentCount: hostApp.vault.documents.length,
                   },
-                  allHearths: recentList,
-                  totalHearths: recentList.length,
+                  allVaults: recentList,
+                  totalVaults: recentList.length,
                 }),
               },
             ],
@@ -868,26 +868,26 @@ export function registerNativeTools(app: FlintApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error listing Hearths: ${message}` }],
+            content: [{ type: 'text', text: `Error listing Vaults: ${message}` }],
           };
         }
       },
     },
 
-    // ── 15. Get Active Hearth ──
+    // ── 15. Get Active Vault ──
     {
-      name: 'flint_get_active_hearth',
-      description: 'Get details about the currently active Hearth workspace: name, root path, document count, and status.',
-      category: 'hearths',
+      name: 'noether_get_active_vault',
+      description: 'Get details about the currently active Vault workspace: name, root path, document count, and status.',
+      category: 'vaults',
       parameters: {
         type: 'object',
         properties: {},
       },
-      handler: async (_args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
-          const name = hostApp.hearth.hearthName;
-          const path = hostApp.hearth.hearthPath;
-          const docCount = hostApp.hearth.documents.length;
+          const name = hostApp.vault.vaultName;
+          const path = hostApp.vault.vaultPath;
+          const docCount = hostApp.vault.documents.length;
           const wordCount = hostApp.workspace.wordCount;
 
           return {
@@ -908,39 +908,39 @@ export function registerNativeTools(app: FlintApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error getting active Hearth: ${message}` }],
+            content: [{ type: 'text', text: `Error getting active Vault: ${message}` }],
           };
         }
       },
     },
 
-    // ── 16. Switch Active Hearth ──
+    // ── 16. Switch Active Vault ──
     {
-      name: 'flint_switch_hearth',
-      description: 'Switch the active Hearth workspace to a different known Hearth by path or name. Seamlessly switches context without reconfiguring the agent.',
-      category: 'hearths',
+      name: 'noether_switch_vault',
+      description: 'Switch the active Vault workspace to a different known Vault by path or name. Seamlessly switches context without reconfiguring the agent.',
+      category: 'vaults',
       parameters: {
         type: 'object',
         properties: {
-          hearthPath: {
+          vaultPath: {
             type: 'string',
-            description: 'The absolute directory path to the target Hearth workspace',
+            description: 'The absolute directory path to the target Vault workspace',
           },
           name: {
             type: 'string',
-            description: 'Optional name of a recent Hearth (used to resolve path if hearthPath is omitted)',
+            description: 'Optional name of a recent Vault (used to resolve path if vaultPath is omitted)',
           },
         },
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
-          let targetPath = typeof args.hearthPath === 'string' ? args.hearthPath.trim() : '';
+          let targetPath = typeof args.vaultPath === 'string' ? args.vaultPath.trim() : '';
           const targetName = typeof args.name === 'string' ? args.name.trim().toLowerCase() : '';
 
           if (!targetPath && targetName) {
-            const data = await platform.getCurrentHearth();
-            const match = (data.recentHearths || []).find(
-              (h) => h.name.toLowerCase() === targetName || h.name.toLowerCase().includes(targetName)
+            const data = await platform.getCurrentVault();
+            const match = (data.recentVaults || []).find(
+              (h: RecentVaultItem) => h.name.toLowerCase() === targetName || h.name.toLowerCase().includes(targetName)
             );
             if (match) {
               targetPath = match.path;
@@ -953,17 +953,17 @@ export function registerNativeTools(app: FlintApp): void {
               content: [
                 {
                   type: 'text',
-                  text: 'Could not resolve target Hearth. Please provide a valid "hearthPath" or known "name". Use flint_list_hearths to view available Hearths.',
+                  text: 'Could not resolve target Vault. Please provide a valid "vaultPath" or known "name". Use noether_list_vaults to view available Vaults.',
                 },
               ],
             };
           }
 
-          const res = await platform.setCurrentHearth(targetPath);
+          const res = await platform.setCurrentVault(targetPath);
           if (!res.success) {
             return {
               isError: true,
-              content: [{ type: 'text', text: `Failed to switch to Hearth at "${targetPath}".` }],
+              content: [{ type: 'text', text: `Failed to switch to Vault at "${targetPath}".` }],
             };
           }
 
@@ -974,8 +974,8 @@ export function registerNativeTools(app: FlintApp): void {
               {
                 type: 'text',
                 text: JSON.stringify({
-                  message: `Successfully switched active Hearth to "${res.name}".`,
-                  activeHearth: {
+                  message: `Successfully switched active Vault to "${res.name}".`,
+                  activeVault: {
                     name: res.name,
                     path: res.path,
                   },
@@ -987,32 +987,32 @@ export function registerNativeTools(app: FlintApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error switching Hearth: ${message}` }],
+            content: [{ type: 'text', text: `Error switching Vault: ${message}` }],
           };
         }
       },
     },
 
-    // ── 17. Create New Hearth ──
+    // ── 17. Create New Vault ──
     {
-      name: 'flint_create_hearth',
-      description: 'Create a brand new Hearth workspace folder and optionally switch to it.',
-      category: 'hearths',
+      name: 'noether_create_vault',
+      description: 'Create a brand new Vault workspace folder and optionally switch to it.',
+      category: 'vaults',
       parameters: {
         type: 'object',
         properties: {
           name: {
             type: 'string',
-            description: 'Display name and directory name for the new Hearth',
+            description: 'Display name and directory name for the new Vault',
           },
           parentPath: {
             type: 'string',
-            description: 'Parent directory where the Hearth folder should be created. If omitted, default system location is used.',
+            description: 'Parent directory where the Vault folder should be created. If omitted, default system location is used.',
           },
         },
         required: ['name'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const name = String(args.name || '').trim();
           const parentPath = typeof args.parentPath === 'string' ? args.parentPath.trim() : undefined;
@@ -1024,11 +1024,11 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const res = await platform.createNewHearth(name, parentPath);
+          const res = await platform.createNewVault(name, parentPath);
           if (!res.success) {
             return {
               isError: true,
-              content: [{ type: 'text', text: `Failed to create Hearth: ${res.error || 'Unknown error'}` }],
+              content: [{ type: 'text', text: `Failed to create Vault: ${res.error || 'Unknown error'}` }],
             };
           }
 
@@ -1039,8 +1039,8 @@ export function registerNativeTools(app: FlintApp): void {
               {
                 type: 'text',
                 text: JSON.stringify({
-                  message: `Hearth "${res.name}" created successfully at "${res.path}".`,
-                  hearth: {
+                  message: `Vault "${res.name}" created successfully at "${res.path}".`,
+                  vault: {
                     name: res.name,
                     path: res.path,
                   },
@@ -1052,35 +1052,35 @@ export function registerNativeTools(app: FlintApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error creating Hearth: ${message}` }],
+            content: [{ type: 'text', text: `Error creating Vault: ${message}` }],
           };
         }
       },
     },
 
-    // ── 18. Search Across All Hearths ──
+    // ── 18. Search Across All Vaults ──
     {
-      name: 'flint_search_across_hearths',
-      description: 'Search for notes across ALL known/recent Hearths in Flint simultaneously, returning results grouped by Hearth workspace.',
+      name: 'noether_search_across_vaults',
+      description: 'Search for notes across ALL known/recent Vaults in Noether simultaneously, returning results grouped by Vault workspace.',
       category: 'search',
       parameters: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'Search query to match against note titles and file paths across all Hearths',
+            description: 'Search query to match against note titles and file paths across all Vaults',
           },
-          limitPerHearth: {
+          limitPerVault: {
             type: 'number',
-            description: 'Maximum results to return per Hearth (default: 10)',
+            description: 'Maximum results to return per Vault (default: 10)',
           },
         },
         required: ['query'],
       },
-      handler: async (args: Record<string, unknown>, hostApp: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
         try {
           const query = String(args.query || '').trim().toLowerCase();
-          const limitPerHearth = typeof args.limitPerHearth === 'number' && args.limitPerHearth > 0 ? args.limitPerHearth : 10;
+          const limitPerVault = typeof args.limitPerVault === 'number' && args.limitPerVault > 0 ? args.limitPerVault : 10;
 
           if (!query) {
             return {
@@ -1088,35 +1088,35 @@ export function registerNativeTools(app: FlintApp): void {
             };
           }
 
-          const hearthData = await platform.getCurrentHearth();
-          const currentPath = hostApp.hearth.hearthPath || hearthData.path;
-          const currentName = hostApp.hearth.hearthName || hearthData.name;
+          const vaultData = await platform.getCurrentVault();
+          const currentPath = hostApp.vault.vaultPath || vaultData.path;
+          const currentName = hostApp.vault.vaultName || vaultData.name;
 
-          const hearthsToSearch: Array<{ name: string; path: string; isActive: boolean }> = [];
+          const vaultsToSearch: Array<{ name: string; path: string; isActive: boolean }> = [];
           if (currentPath) {
-            hearthsToSearch.push({ name: currentName, path: currentPath, isActive: true });
+            vaultsToSearch.push({ name: currentName, path: currentPath, isActive: true });
           }
 
-          for (const rh of hearthData.recentHearths || []) {
-            if (rh.path && !hearthsToSearch.some((h) => h.path === rh.path)) {
-              hearthsToSearch.push({ name: rh.name, path: rh.path, isActive: false });
+          for (const rh of vaultData.recentVaults || []) {
+            if (rh.path && !vaultsToSearch.some((h) => h.path === rh.path)) {
+              vaultsToSearch.push({ name: rh.name, path: rh.path, isActive: false });
             }
           }
 
           const crossResults: Array<{
-            hearthName: string;
-            hearthPath: string;
+            vaultName: string;
+            vaultPath: string;
             isActive: boolean;
             matches: Array<{ title: string; relative_path: string; id?: string }>;
           }> = [];
 
-          for (const targetHearth of hearthsToSearch) {
+          for (const targetVault of vaultsToSearch) {
             const matches: Array<{ title: string; relative_path: string; id?: string }> = [];
 
-            if (targetHearth.isActive) {
-              // Fast in-memory scan for active hearth
-              const docsMap = new Map(hostApp.hearth.documents.map((d) => [d.id, d]));
-              for (const doc of hostApp.hearth.documents) {
+            if (targetVault.isActive) {
+              // Fast in-memory scan for active vault
+              const docsMap = new Map(hostApp.vault.documents.map((d) => [d.id, d]));
+              for (const doc of hostApp.vault.documents) {
                 if (doc.is_folder) continue;
                 const titleMatch = doc.title ? doc.title.toLowerCase().includes(query) : false;
                 const contentMatch = doc.content_json ? doc.content_json.toLowerCase().includes(query) : false;
@@ -1127,13 +1127,13 @@ export function registerNativeTools(app: FlintApp): void {
                     title: doc.title,
                     relative_path: buildRelativePath(doc, docsMap),
                   });
-                  if (matches.length >= limitPerHearth) break;
+                  if (matches.length >= limitPerVault) break;
                 }
               }
             } else {
-              // Disk scan for background hearths
+              // Disk scan for background vaults
               try {
-                const diskFiles = await platform.scanHearthFiles(targetHearth.path);
+                const diskFiles = await platform.scanVaultFiles(targetVault.path);
                 for (const item of diskFiles) {
                   if (item.isFolder) continue;
                   const nameMatch = item.name.toLowerCase().includes(query);
@@ -1144,19 +1144,19 @@ export function registerNativeTools(app: FlintApp): void {
                       title: item.name.replace(/\.md$/i, ''),
                       relative_path: item.relativePath,
                     });
-                    if (matches.length >= limitPerHearth) break;
+                    if (matches.length >= limitPerVault) break;
                   }
                 }
               } catch (e) {
-                console.warn(`[NativeMcpTools] Could not scan background hearth "${targetHearth.name}":`, e);
+                console.warn(`[NativeMcpTools] Could not scan background vault "${targetVault.name}":`, e);
               }
             }
 
             if (matches.length > 0) {
               crossResults.push({
-                hearthName: targetHearth.name,
-                hearthPath: targetHearth.path,
-                isActive: targetHearth.isActive,
+                vaultName: targetVault.name,
+                vaultPath: targetVault.path,
+                isActive: targetVault.isActive,
                 matches,
               });
             }
@@ -1169,7 +1169,7 @@ export function registerNativeTools(app: FlintApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error searching across Hearths: ${message}` }],
+            content: [{ type: 'text', text: `Error searching across Vaults: ${message}` }],
           };
         }
       },
@@ -1184,8 +1184,8 @@ export function registerNativeTools(app: FlintApp): void {
   // ── Native MCP Prompts ──
   const nativePrompts: McpPromptDefinition[] = [
     {
-      name: 'flint_system_instructions',
-      description: 'Comprehensive system instructions and domain manual for AI agents operating in Flint. Explains Hearths, Wikilinks, FSRS flashcard syntax, Cascades, and optimal tool-chaining recipes.',
+      name: 'noether_system_instructions',
+      description: 'Comprehensive system instructions and domain manual for AI agents operating in Noether. Explains Vaults, Wikilinks, FSRS flashcard syntax, Cascades, and optimal tool-chaining recipes.',
       arguments: [
         {
           name: 'mode',
@@ -1193,23 +1193,23 @@ export function registerNativeTools(app: FlintApp): void {
           required: false,
         },
       ],
-      getMessages: async (args: Record<string, string>, hostApp: FlintApp) => {
-        const hearthName = hostApp.hearth.hearthName || 'Default Hearth';
-        const hearthPath = hostApp.hearth.hearthPath || 'Local';
-        const docCount = hostApp.hearth.documents.length;
+      getMessages: async (args: Record<string, string>, hostApp: NoetherApp) => {
+        const vaultName = hostApp.vault.vaultName || 'Default Vault';
+        const vaultPath = hostApp.vault.vaultPath || 'Local';
+        const docCount = hostApp.vault.documents.length;
         const mode = args.mode === 'concise' ? 'concise' : 'comprehensive';
 
-        const instructions = `# Flint AI Agent System Manual & Operational Protocol
+        const instructions = `# Noether AI Agent System Manual & Operational Protocol
 
-You are connected to Flint via native Model Context Protocol (MCP) tools and prompts.
+You are connected to Noether via native Model Context Protocol (MCP) tools and prompts.
 
 ## Active Workspace Context
-- **Active Hearth**: "${hearthName}" (${hearthPath})
+- **Active Vault**: "${vaultName}" (${vaultPath})
 - **Total Indexed Documents**: ${docCount}
 - **Database Status**: ${hostApp.workspace.isDatabaseActive ? 'Online & Synchronized' : 'Offline'}
 
 ## 1. Domain Concepts & Primitives
-- **Hearth**: A self-contained knowledge workspace containing markdown notes, SQLite indices, and configurations.
+- **Vault**: A self-contained knowledge workspace containing markdown notes, SQLite indices, and configurations.
 - **Documents**: Markdown notes with optional YAML/JSON frontmatter properties (\`properties\`).
 - **Wikilinks**: Bidirectional links formatted as \`[[Note Title]]\` or \`[[Note Title|Custom Display Label]]\`.
 - **Flashcards (FSRS-4.5)**:
@@ -1220,13 +1220,13 @@ You are connected to Flint via native Model Context Protocol (MCP) tools and pro
 - **Cascade Books**: Sequential reader notes marked with frontmatter: \`Cascade: "Book Name"\` and \`Cascade Page: 1\` (or negative integers \`-1\` for Roman numeral preface \`i\`).
 
 ## 2. Tool-Chaining Best Practices
-1. **Search Before Create**: Always call \`flint_search_notes({ query })\` before creating a document to avoid duplicating existing notes.
+1. **Search Before Create**: Always call \`noether_search_notes({ query })\` before creating a document to avoid duplicating existing notes.
 2. **Link Related Knowledge**: When creating or updating notes, add wikilinks (\`[[Target Note]]\`) to existing related concepts.
-3. **Multi-Hearth Navigation**: Use \`flint_list_hearths\` and \`flint_search_across_hearths\` to query notes across workspaces without asking users for filesystem paths. Switch with \`flint_switch_hearth\`.
-4. **Preserve Frontmatter**: When modifying note metadata, use \`flint_set_note_properties\` to safely merge key-value pairs without wiping existing properties.`;
+3. **Multi-Vault Navigation**: Use \`noether_list_vaults\` and \`noether_search_across_vaults\` to query notes across workspaces without asking users for filesystem paths. Switch with \`noether_switch_vault\`.
+4. **Preserve Frontmatter**: When modifying note metadata, use \`noether_set_note_properties\` to safely merge key-value pairs without wiping existing properties.`;
 
         return {
-          description: `Flint System Instructions (${mode})`,
+          description: `Noether System Instructions (${mode})`,
           messages: [
             {
               role: 'user',
@@ -1241,8 +1241,8 @@ You are connected to Flint via native Model Context Protocol (MCP) tools and pro
     },
 
     {
-      name: 'flint_daily_review',
-      description: 'Generates a prompt containing today\'s daily journal note, pending checklist tasks, due flashcards, and hearth stats for an end-of-day or morning synthesis.',
+      name: 'noether_daily_review',
+      description: 'Generates a prompt containing today\'s daily journal note, pending checklist tasks, due flashcards, and vault stats for an end-of-day or morning synthesis.',
       arguments: [
         {
           name: 'date',
@@ -1250,9 +1250,9 @@ You are connected to Flint via native Model Context Protocol (MCP) tools and pro
           required: false,
         },
       ],
-      getMessages: async (args: Record<string, string>, hostApp: FlintApp) => {
+      getMessages: async (args: Record<string, string>, hostApp: NoetherApp) => {
         const todayStr = args.date || new Date().toISOString().split('T')[0];
-        const allDocs = hostApp.hearth.documents;
+        const allDocs = hostApp.vault.documents;
 
         // Find journal note
         const journalDoc = allDocs.find((d) => d.title.includes(todayStr) || d.title.toLowerCase() === 'today');
@@ -1264,7 +1264,7 @@ You are connected to Flint via native Model Context Protocol (MCP) tools and pro
 ${journalContent}
 
 ## Workspace Overview
-- Active Hearth: ${hostApp.hearth.hearthName}
+- Active Vault: ${hostApp.vault.vaultName}
 - Total Notes: ${allDocs.length}
 
 Please provide:
@@ -1288,16 +1288,16 @@ Please provide:
     },
 
     {
-      name: 'flint_synthesize_topic',
+      name: 'noether_synthesize_topic',
       description: 'Searches for all notes and incoming/outgoing links matching a topic and generates a comprehensive research synthesis prompt.',
       arguments: [
         {
           name: 'topic',
-          description: 'The topic, keyword, or concept to synthesize across the Hearth.',
+          description: 'The topic, keyword, or concept to synthesize across the Vault.',
           required: true,
         },
       ],
-      getMessages: async (args: Record<string, string>, hostApp: FlintApp) => {
+      getMessages: async (args: Record<string, string>, hostApp: NoetherApp) => {
         const topic = (args.topic || '').trim();
         if (!topic) {
           return {
@@ -1308,7 +1308,7 @@ Please provide:
         }
 
         const query = topic.toLowerCase();
-        const docs = hostApp.hearth.documents;
+        const docs = hostApp.vault.documents;
         const matchingNotes = docs.filter(
           (d) => !d.is_folder && (d.title.toLowerCase().includes(query) || (d.content_json && d.content_json.toLowerCase().includes(query)))
         ).slice(0, 10);
@@ -1317,7 +1317,7 @@ Please provide:
 
         const promptText = `I want a comprehensive knowledge synthesis on the topic: **"${topic}"**.
 
-Here are the most relevant notes found in my Hearth "${hostApp.hearth.hearthName}":
+Here are the most relevant notes found in my Vault "${hostApp.vault.vaultName}":
 
 ${notesSummary || 'No direct note matches found.'}
 

@@ -23,7 +23,7 @@ class DragTooltipManager {
     if (this.el || typeof document === 'undefined') return;
 
     const container = document.createElement('div');
-    container.id = 'flint-drag-preview-tooltip';
+    container.id = 'noether-drag-preview-tooltip';
     container.style.position = 'fixed';
     container.style.top = '0px';
     container.style.left = '0px';

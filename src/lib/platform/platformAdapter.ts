@@ -1,4 +1,4 @@
-import { RecentHearthItem, HearthDiskItem } from '@/types';
+import { RecentVaultItem, VaultDiskItem } from '@/types';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { markLinkVisited } from '@/lib/visitedLinks';
 import { invoke } from '@tauri-apps/api/core';
@@ -27,8 +27,8 @@ export interface IPlatformAdapter {
   getCurrentWindowLabel(): Promise<string | null>;
 
   // Multi-window / Modals
-  openHearthWindow(): Promise<{ success: boolean }>;
-  closeHearthWindow(): Promise<{ success: boolean }>;
+  openVaultWindow(): Promise<{ success: boolean }>;
+  closeVaultWindow(): Promise<{ success: boolean }>;
   openSettingsWindow(): Promise<{ success: boolean }>;
   closeSettingsWindow(): Promise<{ success: boolean }>;
 
@@ -38,18 +38,18 @@ export interface IPlatformAdapter {
   onGlobalShortcut(callback: (id: string) => void): () => void;
   focusMainWindow(): Promise<{ success: boolean }>;
 
-  // Hearth configuration & selection
-  getCurrentHearth(): Promise<{ path: string; name: string; recentHearths: RecentHearthItem[] }>;
-  selectHearthFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentHearths?: RecentHearthItem[] }>;
+  // Vault configuration & selection
+  getCurrentVault(): Promise<{ path: string; name: string; recentVaults: RecentVaultItem[] }>;
+  selectVaultFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentVaults?: RecentVaultItem[] }>;
   selectParentFolder(): Promise<{ canceled: boolean; path?: string }>;
-  createNewHearth(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentHearthItem[]; error?: string }>;
-  renameHearth(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentHearthItem[]; error?: string }>;
-  removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentHearthItem[]; error?: string }>;
-  setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentHearthItem[]; error?: string }>;
-  openHearthInExplorer(hearthPath?: string): Promise<{ success: boolean; error?: string }>;
+  createNewVault(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
+  renameVault(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }>;
+  removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[]; error?: string }>;
+  setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
+  openVaultInExplorer(vaultPath?: string): Promise<{ success: boolean; error?: string }>;
 
   // File I/O
-  scanHearthFiles(customHearthPath?: string, allowedExtensions?: string[]): Promise<HearthDiskItem[]>;
+  scanVaultFiles(customVaultPath?: string, allowedExtensions?: string[]): Promise<VaultDiskItem[]>;
   saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }>;
   deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
@@ -73,8 +73,8 @@ export interface IPlatformAdapter {
   isInternalWriteMatch(relativePath: string, hashOrMtime?: string | number): boolean;
 
   // Events
-  onHearthChanged(callback: (hearth: { path: string; name: string; recentHearths: RecentHearthItem[] }) => void): () => void;
-  onHearthFilesChanged(callback: () => void): () => void;
+  onVaultChanged(callback: (vault: { path: string; name: string; recentVaults: RecentVaultItem[] }) => void): () => void;
+  onVaultFilesChanged(callback: () => void): () => void;
 
   // Extensions / Plugins
   openExtensionsFolder(): Promise<{ success: boolean; path?: string; error?: string }>;
@@ -319,13 +319,13 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   // Multi-window / Modal management
-  public async openHearthWindow(): Promise<{ success: boolean }> {
-    useWorkspaceStore.getState().setIsHearthModalOpen(true);
+  public async openVaultWindow(): Promise<{ success: boolean }> {
+    useWorkspaceStore.getState().setIsVaultModalOpen(true);
     return { success: true };
   }
 
-  public async closeHearthWindow(): Promise<{ success: boolean }> {
-    useWorkspaceStore.getState().setIsHearthModalOpen(false);
+  public async closeVaultWindow(): Promise<{ success: boolean }> {
+    useWorkspaceStore.getState().setIsVaultModalOpen(false);
     return { success: true };
   }
 
@@ -386,26 +386,26 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: true };
   }
 
-  // Hearth Management
-  public async getCurrentHearth(): Promise<{ path: string; name: string; recentHearths: RecentHearthItem[] }> {
+  // Vault Management
+  public async getCurrentVault(): Promise<{ path: string; name: string; recentVaults: RecentVaultItem[] }> {
     if (this.isTauri()) {
       const res: any = await invoke('get_current_vault');
       return {
         path: res?.path || '',
-        name: res?.name || 'Flint Hearth',
-        recentHearths: res?.recentHearths || res?.recentVaults || [],
+        name: res?.name || 'Noether Vault',
+        recentVaults: res?.recentVaults || res?.recentVaults || [],
       };
     }
-    return { path: '', name: 'Flint Hearth', recentHearths: [] };
+    return { path: '', name: 'Noether Vault', recentVaults: [] };
   }
 
-  public async selectHearthFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentHearths?: RecentHearthItem[] }> {
+  public async selectVaultFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentVaults?: RecentVaultItem[] }> {
     if (this.isTauri()) {
       try {
         const selected = await openDialog({
           directory: true,
           multiple: false,
-          title: 'Select Hearth Folder',
+          title: 'Select Vault Folder',
         });
         if (selected && typeof selected === 'string') {
           const res: any = await invoke('set_current_vault', { vaultPath: selected });
@@ -413,68 +413,63 @@ class PlatformAdapterImpl implements IPlatformAdapter {
             canceled: false,
             path: res?.path || selected,
             name: res?.name,
-            recentHearths: res?.recentHearths || res?.recentVaults || [],
+            recentVaults: res?.recentVaults || res?.recentVaults || [],
           };
         }
         return { canceled: true };
       } catch (e) {
-        console.warn('[PlatformAdapter] selectHearthFolder error:', e);
+        console.warn('[PlatformAdapter] selectVaultFolder error:', e);
         return { canceled: true };
       }
     }
     return { canceled: true };
   }
 
-  public async createNewHearth(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentHearthItem[]; error?: string }> {
+  public async createNewVault(name: string, parentPath?: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
       const res: any = await invoke('create_new_vault', { name, parentPath: parentPath || null });
-      return { ...res, recentHearths: res?.recentVaults || [] };
+      return { ...res, recentVaults: res?.recentVaults || [] };
     }
-    return { success: false, path: '', name: '', recentHearths: [], error: 'Desktop mode only' };
+    return { success: false, path: '', name: '', recentVaults: [], error: 'Desktop mode only' };
   }
 
-  public async renameHearth(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentHearths: RecentHearthItem[]; error?: string }> {
+  public async renameVault(targetPath: string, newName: string): Promise<{ success: boolean; path?: string; name?: string; recentVaults: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
       try {
-        let res: any;
-        try {
-          res = await invoke('rename_hearth', { targetPath, newName });
-        } catch {
-          res = await invoke('rename_vault', { targetPath, newName });
-        }
+        const res: any = await invoke('rename_vault', { targetPath, newName });
         return {
           success: Boolean(res?.success),
           path: res?.path,
           name: res?.name,
-          recentHearths: res?.recentHearths || res?.recentVaults || [],
+          recentVaults: res?.recentVaults || res?.recentVaults || [],
           error: res?.error,
         };
       } catch (e: any) {
-        return { success: false, error: e?.message || 'Failed to rename Hearth', recentHearths: [] };
+        return { success: false, error: e?.message || 'Failed to rename Vault', recentVaults: [] };
       }
     }
-    return { success: false, path: targetPath, name: newName, recentHearths: [], error: 'Desktop mode only' };
+    return { success: false, path: targetPath, name: newName, recentVaults: [], error: 'Desktop mode only' };
   }
 
-  public async removeRecentHearth(hearthPath: string): Promise<{ success: boolean; recentHearths: RecentHearthItem[]; error?: string }> {
+  public async removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
-      const res: any = await invoke('remove_recent_vault', { vaultPath: hearthPath });
-      return { success: Boolean(res?.success), recentHearths: res?.recentVaults || [] };
+      const res: any = await invoke('remove_recent_vault', { vaultPath: vaultPath });
+      return { success: Boolean(res?.success), recentVaults: res?.recentVaults || [] };
     }
-    return { success: false, recentHearths: [], error: 'Desktop mode only' };
+    return { success: false, recentVaults: [], error: 'Desktop mode only' };
   }
 
-  public async setCurrentHearth(hearthPath: string): Promise<{ success: boolean; path: string; name: string; recentHearths: RecentHearthItem[]; error?: string }> {
+  public async setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }> {
     if (this.isTauri()) {
-      const res: any = await invoke('set_current_vault', { vaultPath: hearthPath });
-      return { ...res, recentHearths: res?.recentVaults || [] };
+      const res: any = await invoke('set_current_vault', { vaultPath: vaultPath });
+      return { ...res, recentVaults: res?.recentVaults || [] };
     }
-    return { success: false, path: '', name: '', recentHearths: [], error: 'Desktop mode only' };
+    return { success: false, path: '', name: '', recentVaults: [], error: 'Desktop mode only' };
   }
 
-  public async openHearthInExplorer(hearthPath?: string): Promise<{ success: boolean; error?: string }> {
+  public async openVaultInExplorer(vaultPath?: string): Promise<{ success: boolean; error?: string }> {
     if (this.isTauri()) {
-      return await invoke('open_vault_in_explorer', { vaultPath: hearthPath || null });
+      return await invoke('open_vault_in_explorer', { vaultPath: vaultPath || null });
     }
     return { success: false, error: 'Desktop mode only' };
   }
@@ -485,7 +480,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         const selected = await openDialog({
           directory: true,
           multiple: false,
-          title: 'Select Folder for New Hearth',
+          title: 'Select Folder for New Vault',
         });
         if (selected && typeof selected === 'string') {
           return { canceled: false, path: selected };
@@ -499,12 +494,12 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { canceled: true };
   }
 
-  // Hearth File I/O
-  public async scanHearthFiles(customHearthPath?: string, allowedExtensions?: string[]): Promise<HearthDiskItem[]> {
+  // Vault File I/O
+  public async scanVaultFiles(customVaultPath?: string, allowedExtensions?: string[]): Promise<VaultDiskItem[]> {
     if (this.isTauri()) {
       return (
         (await invoke('scan_vault_files', {
-          customVaultPath: customHearthPath || null,
+          customVaultPath: customVaultPath || null,
           allowedExtensions: allowedExtensions || null,
         })) || []
       );
@@ -587,7 +582,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   // Database operations
   public async dbInit(vaultPath?: string): Promise<{ success: boolean; path?: string }> {
     if (this.isTauri()) {
-      return await invoke('flint_db_init', { vaultPath: vaultPath || null });
+      return await invoke('noether_db_init', { vaultPath: vaultPath || null });
     }
     return { success: false };
   }
@@ -595,7 +590,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async dbQuery<T = any>(sql: string, params: any[] = []): Promise<T[]> {
     if (this.isTauri()) {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
-      return await invoke<T[]>('flint_db_query', { sql, params: cleanParams });
+      return await invoke<T[]>('noether_db_query', { sql, params: cleanParams });
     }
     return [];
   }
@@ -603,7 +598,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async dbExecute(sql: string, params: any[] = []): Promise<number> {
     if (this.isTauri()) {
       const cleanParams = params.map((p) => (p === undefined ? null : p));
-      return await invoke<number>('flint_db_execute', { sql, params: cleanParams });
+      return await invoke<number>('noether_db_execute', { sql, params: cleanParams });
     }
     return 0;
   }
@@ -614,7 +609,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         sql: q.sql,
         params: (q.params || []).map((p) => (p === undefined ? null : p)),
       }));
-      return await invoke<boolean>('flint_db_transaction', { queries: cleanQueries });
+      return await invoke<boolean>('noether_db_transaction', { queries: cleanQueries });
     }
     return false;
   }
@@ -629,15 +624,15 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   // Event Listeners
-  public onHearthChanged(callback: (hearth: { path: string; name: string; recentHearths: RecentHearthItem[] }) => void): () => void {
+  public onVaultChanged(callback: (vault: { path: string; name: string; recentVaults: RecentVaultItem[] }) => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
       let disposed = false;
       listen('vault-changed', (event: any) => {
         callback({
           path: event.payload?.path,
-          name: event.payload?.name || 'Flint Hearth',
-          recentHearths: event.payload?.recentHearths || event.payload?.recentVaults || [],
+          name: event.payload?.name || 'Noether Vault',
+          recentVaults: event.payload?.recentVaults || event.payload?.recentVaults || [],
         });
       }).then((fn) => {
         if (disposed) {
@@ -654,7 +649,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return () => {};
   }
 
-  public onHearthFilesChanged(callback: () => void): () => void {
+  public onVaultFilesChanged(callback: () => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
       let disposed = false;

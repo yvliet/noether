@@ -15,7 +15,7 @@ export interface SortDropdownProps<T extends string = string> {
 }
 
 /**
- * Standardized Sort Order Dropdown Menu for Flint.
+ * Standardized Sort Order Dropdown Menu for Noether.
  * Features:
  * - Clean portal-to-body dropdown that never clips inside scrollable panels.
  * - Accurate click-outside detection without premature mousedown dismissals.
@@ -138,8 +138,8 @@ export function SortDropdown<T extends string = string>({
           aria-label={computedTitle}
           className={`flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded select-none ${
             disabled
-              ? 'opacity-35 text-[var(--flint-text-muted)] cursor-not-allowed pointer-events-none'
-              : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+              ? 'opacity-35 text-[var(--noether-text-muted)] cursor-not-allowed pointer-events-none'
+              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
           }`}
         >
           <span className="truncate max-w-[130px]">
@@ -157,10 +157,10 @@ export function SortDropdown<T extends string = string>({
           aria-label={computedTitle}
           className={`p-1.5 rounded select-none ${
             disabled
-              ? 'opacity-35 text-[var(--flint-text-muted)] cursor-not-allowed pointer-events-none'
+              ? 'opacity-35 text-[var(--noether-text-muted)] cursor-not-allowed pointer-events-none'
               : isOpen
-              ? 'bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-primary)] cursor-pointer'
-              : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer'
+              ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] cursor-pointer'
+              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
           }`}
         >
           <Sorting01Icon size={14} />
@@ -178,16 +178,16 @@ export function SortDropdown<T extends string = string>({
               left: menuPos.left != null ? `${menuPos.left}px` : undefined,
               right: menuPos.right != null ? `${menuPos.right}px` : undefined,
               bottom: menuPos.bottom != null ? `${menuPos.bottom}px` : undefined,
-              background: 'var(--flint-bg-popover, var(--flint-bg-card))',
-              border: '1px solid var(--flint-border-base)',
-              boxShadow: 'var(--flint-shadow-2)',
+              background: 'var(--noether-bg-popover, var(--noether-bg-card))',
+              border: '1px solid var(--noether-border-base)',
+              boxShadow: 'var(--noether-shadow-2)',
             }}
-            className="w-[190px] rounded-lg p-1 text-xs text-[var(--flint-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
+            className="w-[190px] rounded-lg p-1 text-xs text-[var(--noether-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
           >
             {options.map((opt, i) => (
               <React.Fragment key={opt.id}>
                 {i > 0 && options[i - 1].group !== opt.group && (
-                  <div className="h-[1px] bg-[var(--flint-border-base)] my-1 mx-1" />
+                  <div className="h-[1px] bg-[var(--noether-border-base)] my-1 mx-1" />
                 )}
                 <button
                   type="button"
@@ -197,13 +197,13 @@ export function SortDropdown<T extends string = string>({
                   }}
                   className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none ${
                     value === opt.id
-                      ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)] font-medium'
-                      : 'hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
+                      ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] font-medium'
+                      : 'hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)]'
                   }`}
                 >
                   <span className="truncate">{opt.label}</span>
                   {value === opt.id && (
-                    <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1.5" />
+                    <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
                   )}
                 </button>
               </React.Fragment>

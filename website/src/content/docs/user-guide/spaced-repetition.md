@@ -1,6 +1,6 @@
 # Embedded FSRS Spaced Repetition
 
-Flint incorporates a state-of-the-art **Spaced Repetition Review Engine** directly into your everyday note-taking workflow. Powered by the modern **FSRS-4.5 algorithm (Free Spaced Repetition Scheduler)** via `ts-fsrs`, Flint turns plain Markdown notes into high-efficiency active recall flashcards without requiring external apps like Anki.
+Noether incorporates a state-of-the-art **Spaced Repetition Review Engine** directly into your everyday note-taking workflow. Powered by the modern **FSRS-4.5 algorithm (Free Spaced Repetition Scheduler)** via `ts-fsrs`, Noether turns plain Markdown notes into high-efficiency active recall flashcards without requiring external apps like Anki.
 
 ---
 
@@ -8,7 +8,7 @@ Flint incorporates a state-of-the-art **Spaced Repetition Review Engine** direct
 
 Most legacy flashcard systems rely on the SuperMemo-2 (SM-2) algorithm from 1987, which uses heuristic "ease factors" that lead to card scheduling collapse (the "ease hell" trap).
 
-Flint uses **FSRS-4.5**, a modern mathematical memory model based on empirical human memory retention studies:
+Noether uses **FSRS-4.5**, a modern mathematical memory model based on empirical human memory retention studies:
 
 - **Two-Component Memory Model**: Separates memory **Stability** ($S$, how long a memory trace endures in days) and **Difficulty** ($D$, the intrinsic complexity of the subject matter).
 - **Target Retention Calibration**: Lets you configure an exact retention goal (e.g. 90%), dynamically calculating review intervals to achieve that rate with the fewest reviews possible.
@@ -37,7 +37,7 @@ Ephemeral Port Range ;; 49152 to 65535
 ### 3. Cloze Deletion Cards (`{...}` or `==...==`)
 Hide specific keywords within a contextual sentence:
 ```markdown
-In Flint, disk text files are the single source of truth, while {flint.sqlite} acts as an embedded relational query accelerator.
+In Noether, disk text files are the single source of truth, while {noether.sqlite} acts as an embedded relational query accelerator.
 ```
 Or use standard Markdown highlights:
 ```markdown
@@ -50,7 +50,7 @@ The Tauri v2 architecture uses ==rusqlite== with WAL mode for native persistence
 
 Launch the study session by clicking the **Flashcards** icon on the left Action Rail or selecting *Review Due Cards* from the Command Palette (`Ctrl+K`).
 
-During a review session, Flint presents flashcards sequentially with prompt, answer reveal, and interval forecasts:
+During a review session, Noether presents flashcards sequentially with prompt, answer reveal, and interval forecasts:
 
 - **Prompt (Front)**: The question extracted from your note (e.g. *What is Write-Ahead Logging (WAL) in SQLite?*).
 - **Reveal**: Press `Space` or click **Show Answer** to reveal the answer.
@@ -66,6 +66,6 @@ Estimated review intervals for each grade are calculated in real time by the FSR
 
 ## 4. Background Reconciliation & Data Safety
 
-- **Deterministic Card Keys**: Flashcards compute deterministic content hashes and document IDs. If you reorganize or rename your note files, Flint reconciles card history seamlessly.
+- **Deterministic Card Keys**: Flashcards compute deterministic content hashes and document IDs. If you reorganize or rename your note files, Noether reconciles card history seamlessly.
 - **Relational Integrity**: Card review states (stability, difficulty, due dates, review logs) are stored in the local SQLite database.
 - **Cascade Cleanup**: If a note containing flashcards is deleted or moved to `.trash/`, its associated cards are cleaned up automatically.

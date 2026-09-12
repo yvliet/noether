@@ -179,7 +179,7 @@ export const SearchAndReplace = Extension.create({
             const decos = pluginState.results.map((res, i) => {
               const isActive = i === pluginState.currentIndex;
               return Decoration.inline(res.from, res.to, {
-                class: isActive ? 'flint-find-active' : 'flint-find-match',
+                class: isActive ? 'noether-find-active' : 'noether-find-match',
               });
             });
 

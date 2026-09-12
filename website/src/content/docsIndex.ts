@@ -1,7 +1,7 @@
 /**
  * @module docsIndex
  * @description
- * Complete hierarchical tree and lookup registry of Flint developer documentation.
+ * Complete hierarchical tree and lookup registry of Noether developer documentation.
  * Exports structured tree items for the sidebar file tree as well as raw markdown
  * content for instantaneous client-side rendering.
  */
@@ -14,7 +14,7 @@ import linksGraphRaw from './docs/user-guide/links-and-graph.md?raw';
 import spatialCanvasRaw from './docs/user-guide/spatial-canvas.md?raw';
 import spacedRepetitionRaw from './docs/user-guide/spaced-repetition.md?raw';
 import tasksJournalRaw from './docs/user-guide/tasks-and-journal.md?raw';
-import hearthsStorageRaw from './docs/user-guide/hearths-and-storage.md?raw';
+import vaultsStorageRaw from './docs/user-guide/vaults-and-storage.md?raw';
 import shortcutsCommandsRaw from './docs/user-guide/shortcuts-and-commands.md?raw';
 import aiMcpRaw from './docs/user-guide/ai-and-mcp.md?raw';
 
@@ -59,8 +59,8 @@ export const DOC_ITEMS: Record<string, DocItem> = {
   'getting-started/introduction': {
     id: 'intro',
     slug: 'getting-started/introduction',
-    title: 'Introduction to Flint',
-    description: 'What Flint is, local-first architecture, WASM SQLite, and the Hearth concept.',
+    title: 'Introduction to Noether',
+    description: 'What Noether is, local-first architecture, WASM SQLite, and the Vault concept.',
     category: 'Getting Started',
     icon: 'BookOpen01Icon',
     path: 'website/src/content/docs/getting-started/introduction.md',
@@ -126,15 +126,15 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     path: 'website/src/content/docs/user-guide/tasks-and-journal.md',
     content: tasksJournalRaw,
   },
-  'user-guide/hearths-and-storage': {
-    id: 'hearths-and-storage',
-    slug: 'user-guide/hearths-and-storage',
-    title: 'Hearths & Workspace Storage',
+  'user-guide/vaults-and-storage': {
+    id: 'vaults-and-storage',
+    slug: 'user-guide/vaults-and-storage',
+    title: 'Vaults & Workspace Storage',
     description: 'Vault management, SQLite FTS5 search, soft-delete safety, and sync strategies.',
     category: 'User Guide',
     icon: 'Folder01Icon',
-    path: 'website/src/content/docs/user-guide/hearths-and-storage.md',
-    content: hearthsStorageRaw,
+    path: 'website/src/content/docs/user-guide/vaults-and-storage.md',
+    content: vaultsStorageRaw,
   },
   'user-guide/shortcuts-and-commands': {
     id: 'shortcuts-and-commands',
@@ -180,7 +180,7 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     id: 'quick-start',
     slug: 'plugins/quick-start',
     title: 'Plugin Quick Start',
-    description: 'Step-by-step guide to building your first Flint extension in under 5 minutes.',
+    description: 'Step-by-step guide to building your first Noether extension in under 5 minutes.',
     category: 'Plugin Development',
     icon: 'Rocket01Icon',
     path: 'website/src/content/docs/plugins/quick-start.md',
@@ -230,7 +230,7 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     id: 'publishing',
     slug: 'plugins/publishing',
     title: 'Publishing to Marketplace',
-    description: 'Submitting extensions via the Web Portal or CLI to the Flint community marketplace.',
+    description: 'Submitting extensions via the Web Portal or CLI to the Noether community marketplace.',
     category: 'Plugin Development',
     icon: 'Upload01Icon',
     path: 'website/src/content/docs/plugins/publishing.md',
@@ -270,7 +270,7 @@ export const docsTree: DocFolder[] = [
       DOC_ITEMS['user-guide/spatial-canvas'],
       DOC_ITEMS['user-guide/spaced-repetition'],
       DOC_ITEMS['user-guide/tasks-and-journal'],
-      DOC_ITEMS['user-guide/hearths-and-storage'],
+      DOC_ITEMS['user-guide/vaults-and-storage'],
       DOC_ITEMS['user-guide/shortcuts-and-commands'],
       DOC_ITEMS['user-guide/ai-and-mcp'],
     ],

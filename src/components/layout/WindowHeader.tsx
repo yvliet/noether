@@ -25,7 +25,7 @@ import {
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useSettingsStore } from '@/store/settingsStore';
-import { useSidebarTabs, useFlintApp, useViews, useTabDecorators } from '@/core/app/AppContext';
+import { useSidebarTabs, useNoetherApp, useViews, useTabDecorators } from '@/core/app/AppContext';
 import { useSidebarDockStore, DockItem, DockZone } from '@/store/sidebarDockStore';
 import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
 
@@ -66,7 +66,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     const splitPane = useWorkspaceStore((s) => s.splitPane);
     const togglePinTab = useWorkspaceStore((s) => s.togglePinTab);
 
-    const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+    const vaultPath = useWorkspaceStore((s) => s.vaultPath);
     const showToast = useWorkspaceStore((s) => s.showToast);
     const documents = useDocumentStore((s) => s.documents);
     const { showContextMenu } = useAppContextMenu();
@@ -219,7 +219,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 title: 'Copy absolute path',
                 onClick: async () => {
                   const rel = getDocumentPath(doc, documents) + '.md';
-                  const abs = hearthPath ? `${hearthPath}/${rel}` : `/${rel}`;
+                  const abs = vaultPath ? `${vaultPath}/${rel}` : `/${rel}`;
                   await navigator.clipboard.writeText(abs);
                   showToast('Copied absolute path', 'success');
                 },
@@ -238,7 +238,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
 
         showContextMenu(e, items, { scope: 'tab', data: tab });
       },
-      [tabs, paneId, isOnly, closeTabInPane, togglePinTab, splitPane, closePane, documents, hearthPath, showToast, showContextMenu]
+      [tabs, paneId, isOnly, closeTabInPane, togglePinTab, splitPane, closePane, documents, vaultPath, showToast, showContextMenu]
     );
 
     const handleBarContextMenu = useCallback(
@@ -283,9 +283,9 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
       }
       if (!isLast) {
         return {
-          width: totalColumns === 2 ? 'var(--flint-split-pane-width, 50%)' : `calc(var(--flint-main-width, 100%) / ${totalColumns})`,
+          width: totalColumns === 2 ? 'var(--noether-split-pane-width, 50%)' : `calc(var(--noether-main-width, 100%) / ${totalColumns})`,
           flex: 'none',
-          maxWidth: totalColumns === 2 ? 'var(--flint-split-pane-width, 50%)' : `calc(var(--flint-main-width, 100%) / ${totalColumns})`,
+          maxWidth: totalColumns === 2 ? 'var(--noether-split-pane-width, 50%)' : `calc(var(--noether-main-width, 100%) / ${totalColumns})`,
         };
       }
       return { flex: 1 };
@@ -365,22 +365,22 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 style={{
                   WebkitAppRegion: 'no-drag',
                   color: isFocusedActive
-                    ? 'var(--flint-text-primary)'
+                    ? 'var(--noether-text-primary)'
                     : isInactiveActive
-                    ? 'var(--flint-text-secondary)'
-                    : 'var(--flint-text-muted)',
+                    ? 'var(--noether-text-secondary)'
+                    : 'var(--noether-text-muted)',
                   ...tabReorderStyle,
                 } as React.CSSProperties}
                 className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[36px] shrink border-0 ${
                   isTabActive
-                    ? 'rounded-t-[7px] bg-[var(--flint-bg-tab-active,var(--flint-bg-main))] font-normal z-20 shadow-xs overflow-visible'
+                    ? 'rounded-t-[7px] bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] font-normal z-20 shadow-xs overflow-visible'
                     : 'bg-transparent font-normal hover:z-30'
                 }`}
               >
                 {!isTabActive && (
                   <div
                     style={{
-                      background: 'var(--flint-bg-tab-hover, var(--flint-bg-card-hover))',
+                      background: 'var(--noether-bg-tab-hover, var(--noether-bg-card-hover))',
                       opacity: isDraggingThis ? 1 : undefined,
                     }}
                     className={`absolute inset-x-0 top-0 bottom-[3px] rounded-[6px] pointer-events-none z-0 ${
@@ -399,7 +399,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                       <path
                         d="M 0 8 A 8 8 0 0 0 8 0 V 9 H 0 Z"
                         style={{
-                          fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
+                          fill: 'var(--noether-tab-corner-fill, var(--noether-bg-tab-active, var(--noether-bg-main)))',
                         }}
                       />
                     </svg>
@@ -412,14 +412,14 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                       <path
                         d="M 0 0 A 8 8 0 0 0 8 8 V 9 H 0 Z"
                         style={{
-                          fill: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
+                          fill: 'var(--noether-tab-corner-fill, var(--noether-bg-tab-active, var(--noether-bg-main)))',
                         }}
                       />
                     </svg>
 
                     <div
                       style={{
-                        background: 'var(--flint-tab-corner-fill, var(--flint-bg-tab-active, var(--flint-bg-main)))',
+                        background: 'var(--noether-tab-corner-fill, var(--noether-bg-tab-active, var(--noether-bg-main)))',
                       }}
                       className="absolute -bottom-[1px] left-0 right-0 h-[2px] pointer-events-none z-30 opacity-100"
                     />
@@ -449,10 +449,10 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   <span
                     className={`truncate flex-1 min-w-0 text-[12px] ${
                       isFocusedActive
-                        ? 'text-[var(--flint-text-primary)]'
+                        ? 'text-[var(--noether-text-primary)]'
                         : isInactiveActive
-                        ? 'text-[var(--flint-text-secondary)] opacity-85'
-                        : 'text-[var(--flint-text-muted)]'
+                        ? 'text-[var(--noether-text-secondary)] opacity-85'
+                        : 'text-[var(--noether-text-muted)]'
                     }`}
                   >
                     {displayTitle}
@@ -468,7 +468,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                       e.stopPropagation();
                       closeTabInPane(paneId, tab.id);
                     }}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]"
                   >
                     <Cancel01Icon size={13} />
                   </button>
@@ -492,7 +492,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             openEmptyTabInPane(paneId);
           }}
           title="New tab (Ctrl+T)"
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
         >
           <PlusSignIcon size={14} />
         </button>
@@ -502,7 +502,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
 );
 
 export const WindowHeader: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   useViews(); // Subscribes to view registry changes
   const rightTabs = useSidebarTabs('right');
   const leftTabs = useSidebarTabs('left');
@@ -782,9 +782,9 @@ export const WindowHeader: React.FC = React.memo(() => {
 
       const iconColor = isActive
         ? isDimmed
-          ? 'text-[var(--flint-text-secondary)]'
-          : 'text-[var(--flint-text-primary)]'
-        : 'text-[var(--flint-text-muted)]';
+          ? 'text-[var(--noether-text-secondary)]'
+          : 'text-[var(--noether-text-primary)]'
+        : 'text-[var(--noether-text-muted)]';
 
       const viewType =
         tab.view_type ||
@@ -976,12 +976,12 @@ export const WindowHeader: React.FC = React.memo(() => {
 
   return (
     <header
-      data-flint-header="true"
+      data-noether-header="true"
       style={{
-        background: 'var(--flint-bg-topbar-gradient, var(--flint-bg-topbar, #111111))',
+        background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
         WebkitAppRegion: 'drag',
       } as React.CSSProperties}
-      className="flint-header h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
+      className="noether-header h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
     >
       {/* 1. Ribbon Column Header (w-11) */}
       <div
@@ -991,7 +991,7 @@ export const WindowHeader: React.FC = React.memo(() => {
         <button
           onClick={toggleLeftSidebar}
           title="Toggle left sidebar (Ctrl+\)"
-          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+          className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
         >
           {isLeftSidebarOpen ? <LayoutLeftIcon size={16} /> : <LayoutAlignLeftIcon size={16} />}
         </button>
@@ -1056,8 +1056,8 @@ export const WindowHeader: React.FC = React.memo(() => {
                 data-dock-item-id={item.id}
                 className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                   isActive
-                    ? 'text-[var(--flint-text-secondary)] bg-[var(--flint-bg-card-hover)]'
-                    : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
+                    ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
                 }`}
               >
                 {icon}
@@ -1115,7 +1115,7 @@ export const WindowHeader: React.FC = React.memo(() => {
           type="button"
           onClick={toggleRightSidebar}
           title="Toggle right sidebar (Ctrl+Shift+\)"
-          className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer shrink-0 ${
+          className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 ${
             !isRightSidebarOpen ? 'mr-[14px]' : ''
           }`}
         >
@@ -1176,8 +1176,8 @@ export const WindowHeader: React.FC = React.memo(() => {
                   data-dock-item-id={item.id}
                   className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
                     isActive
-                      ? 'text-[var(--flint-text-secondary)] bg-[var(--flint-bg-card-hover)]'
-                      : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
+                      ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                      : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
                   }`}
                 >
                   {icon}
@@ -1214,7 +1214,7 @@ export const WindowHeader: React.FC = React.memo(() => {
                 handleMinimize();
               }}
               title="Minimize"
-              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+              className="h-full w-11 flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <WindowMinimizeIcon />
             </button>
@@ -1227,7 +1227,7 @@ export const WindowHeader: React.FC = React.memo(() => {
                 handleMaximize();
               }}
               title={isMaximized ? 'Restore' : 'Maximize'}
-              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+              className="h-full w-11 flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               {isMaximized ? <WindowRestoreIcon /> : <WindowMaximizeIcon />}
             </button>
@@ -1240,7 +1240,7 @@ export const WindowHeader: React.FC = React.memo(() => {
                 handleClose();
               }}
               title="Close"
-              className="h-full w-11 flex items-center justify-center text-[var(--flint-text-muted)] hover:text-white hover:bg-[#e81123] cursor-pointer"
+              className="h-full w-11 flex items-center justify-center text-[var(--noether-text-muted)] hover:text-white hover:bg-[#e81123] cursor-pointer"
             >
               <WindowCloseIcon />
             </button>

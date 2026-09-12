@@ -1,6 +1,6 @@
 # Installation & Setup
 
-Flint is distributed as a lightweight, cross-platform native desktop application built with Rust and Tauri. You can install pre-compiled binaries or build directly from source.
+Noether is distributed as a lightweight, cross-platform native desktop application built with Rust and Tauri. You can install pre-compiled binaries or build directly from source.
 
 
 ## 1. Availability & Version 1.0.0 Roadmap
@@ -9,7 +9,7 @@ Flint is distributed as a lightweight, cross-platform native desktop application
 
 Official pre-compiled desktop binaries and one-click installers will be available once **version 1.0.0** reaches stable release status.
 
-Until pre-built binaries are published, you can compile and run Flint locally from source (see [Building From Source](#3-building-from-source)).
+Until pre-built binaries are published, you can compile and run Noether locally from source (see [Building From Source](#3-building-from-source)).
 
 ### Upcoming Platform Support for v1.0.0
 
@@ -37,7 +37,7 @@ When version 1.0.0 launches, standalone installers and packages will be released
 
 ---
 
-Developers wishing to contribute to Flint core or test unreleased features can compile the desktop application from source.
+Developers wishing to contribute to Noether core or test unreleased features can compile the desktop application from source.
 
 ### Prerequisites
 
@@ -61,8 +61,8 @@ Developers wishing to contribute to Flint core or test unreleased features can c
 
 #### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/yvliet/Flint.git
-cd flint
+git clone https://github.com/yvliet/Noether.git
+cd noether
 ```
 
 #### Step 2: Install Frontend Dependencies
@@ -75,7 +75,7 @@ To run the live development environment with hot module replacement (HMR) for bo
 ```bash
 npm run tauri dev
 ```
-Flint's Vite dev server will start at `http://localhost:1420`, and Tauri will spawn the native desktop window.
+Noether's Vite dev server will start at `http://localhost:1420`, and Tauri will spawn the native desktop window.
 
 #### Step 4: Run Frontend Development Server
 To work on the frontend UI in your browser without compiling the Rust desktop container:
@@ -115,7 +115,7 @@ cd src-tauri && cargo check
 ---
 
 Once your environment is set up:
-- Read [[Introduction to Flint]] to understand the Hearth model and data sovereignty.
+- Read [[Introduction to Noether]] to understand the Vault model and data sovereignty.
 - Check [[Dual-Storage Architecture]] to explore disk sync and SQLite caching.
 - Build your first custom extension with [[Extension Quick Start]].
 - Learn how to customize colors with [[Build Your First Theme]] and [[CSS Variables & Design Tokens]].

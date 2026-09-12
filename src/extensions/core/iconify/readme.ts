@@ -1,9 +1,9 @@
-export const iconifyReadme = `# More icons: Let Icons Live in All of Flint
+export const iconifyReadme = `# More icons: Let Icons Live in All of Noether
 
 **Version**: 1.1.0  
 **Author**: Yuliet Li
 
-**More icons** transforms icons into first-class visual citizens across your entire Flint workspace. From folders, files, notes, canvas boards, and tabs to inline rich-text documents and notes, More icons lets icons live everywhere in Flint with an extensible multi-pack architecture and persistent SQLite storage.
+**More icons** transforms icons into first-class visual citizens across your entire Noether workspace. From folders, files, notes, canvas boards, and tabs to inline rich-text documents and notes, More icons lets icons live everywhere in Noether with an extensible multi-pack architecture and persistent SQLite storage.
 
 ---
 
@@ -12,7 +12,7 @@ export const iconifyReadme = `# More icons: Let Icons Live in All of Flint
 ### 1. In-Document Icons & \`/icon\` Slash Command
 - Type \`/icon\` anywhere in a note to open the icon flyout picker directly beside your cursor.
 - Filter through curated icons or search the entire library in real time.
-- Renders as a native inline visual chip in Flint WYSIWYG mode.
+- Renders as a native inline visual chip in Noether WYSIWYG mode.
 - Lossless Markdown round-trip serialization: stored cleanly as \`:<pack>:<iconId>:\` in your \`.md\` files (e.g. \`:hugeicons:sparkles:\` or \`:emoji:fire:\`).
 - Click any icon chip in your document to open a quick popover to change its color or remove it.
 - Seamless keyboard interaction: Backspace removes the icon chip instantly just like any native character.
@@ -24,7 +24,7 @@ export const iconifyReadme = `# More icons: Let Icons Live in All of Flint
 - Custom icons display seamlessly across the file tree, tab bar, and navigation breadcrumbs.
 
 ### 3. Extensible Multi-Pack Architecture
-- Built upon Flint's host-level \`IconRegistry\` (\`app.icons\`).
+- Built upon Noether's host-level \`IconRegistry\` (\`app.icons\`).
 - Ready for future icon pack importers (Lucide, React Icons, FontAwesome, custom SVGs) without core codebase modifications.
 - Namespaced shortcodes prevent naming collisions across different icon ecosystems.
 
@@ -43,7 +43,7 @@ export const iconifyReadme = `# More icons: Let Icons Live in All of Flint
 
 ## Markdown Syntax Reference
 
-| Rendered In Flint | Stored in Markdown (\`.md\`) | Description |
+| Rendered In Noether | Stored in Markdown (\`.md\`) | Description |
 | :--- | :--- | :--- |
 | ✨ Sparkles | \`:hugeicons:sparkles:\` | HugeIcons vector icon |
 | 🔥 Fire | \`:emoji:🔥:\` | Unicode emoji icon |

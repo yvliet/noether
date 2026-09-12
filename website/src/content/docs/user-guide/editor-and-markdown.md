@@ -1,14 +1,14 @@
 # Live Preview Editor & Markdown
 
-Flint features an advanced, high-performance **Live Preview editor** engineered on top of TipTap 2.x and ProseMirror. It combines the tactile immediacy of WYSIWYG editing with the durability and portability of plain-text CommonMark.
+Noether features an advanced, high-performance **Live Preview editor** engineered on top of TipTap 2.x and ProseMirror. It combines the tactile immediacy of WYSIWYG editing with the durability and portability of plain-text CommonMark.
 
-Flint coordinates the editor through an immediate memory-to-disk pipeline: **TipTap / ProseMirror Layer** (active in-memory state with sub-8ms transaction mapping) → **Debounced Persistence Engine** (300ms save debounce with AST metadata extraction) → **Universal Plain CommonMark Storage** (authoritative `.md` on disk).
+Noether coordinates the editor through an immediate memory-to-disk pipeline: **TipTap / ProseMirror Layer** (active in-memory state with sub-8ms transaction mapping) → **Debounced Persistence Engine** (300ms save debounce with AST metadata extraction) → **Universal Plain CommonMark Storage** (authoritative `.md` on disk).
 
 ---
 
 ## 1. Live Preview vs. Source Mode
 
-Flint provides two synchronized editing experiences:
+Noether provides two synchronized editing experiences:
 
 1. **Live Preview (Default)**: Markdown formatting renders interactively as you type. Syntax tokens (such as `**bold**`, `# heading`, or `$...$`) seamlessly transform into styled visual elements while remaining editable in place when the cursor enters the text range.
 2. **Source Mode**: Raw, unrendered CommonMark text with monospaced typography, ideal for batch editing frontmatter, macro manipulation, or structural diff review.
@@ -19,9 +19,9 @@ You can switch between modes anytime using the document options menu (`...` in t
 
 ## 2. Typing Performance & Decoration Mapping
 
-Many web-based editors suffer from severe input lag when opening documents exceeding 20,000 words. Flint guarantees a **sub-8ms input latency** on documents of 100,000+ words through a series of systems-level invariants:
+Many web-based editors suffer from severe input lag when opening documents exceeding 20,000 words. Noether guarantees a **sub-8ms input latency** on documents of 100,000+ words through a series of systems-level invariants:
 
-- **$O(1)$ Transaction Mapping**: Rather than re-parsing the entire document AST on every keystroke, Flint maps active decorations through ProseMirror transaction steps (`DecorationSet.map`).
+- **$O(1)$ Transaction Mapping**: Rather than re-parsing the entire document AST on every keystroke, Noether maps active decorations through ProseMirror transaction steps (`DecorationSet.map`).
 - **Dirty-Range AST Scans**: Only modified textblocks and immediate parent containers are re-scanned for inline tokens, wikilinks, and tags.
 - **Formula Memoization**: KaTeX rendering trees are cached in an LRU memory buffer, preventing repetitive LaTeX parsing during cursor movement.
 - **Bounded Undo History**: ProseMirror history depth is bounded to 50 snapshots to maintain a lean, constant-size memory working set.
@@ -30,7 +30,7 @@ Many web-based editors suffer from severe input lag when opening documents excee
 
 ## 3. Formatting & Keyboard Shortcuts
 
-Flint supports standard CommonMark syntax and intuitive desktop shortcuts:
+Noether supports standard CommonMark syntax and intuitive desktop shortcuts:
 
 | Formatting Element | Markdown Syntax | Keyboard Shortcut |
 | :--- | :--- | :--- |
@@ -87,7 +87,7 @@ Type to filter commands (e.g. `/tab` for Table, `/cal` for Callout, `/mat` for M
 
 ## 5. Mathematical Formulas & KaTeX
 
-Flint provides deep mathematical typesetting with both inline and multi-line display equations powered by KaTeX and MathLive.
+Noether provides deep mathematical typesetting with both inline and multi-line display equations powered by KaTeX and MathLive.
 
 ### Inline Math
 Wrap formulas in single dollar signs:
@@ -104,7 +104,7 @@ $$
 ```
 
 ### Interactive Math Keyboard
-When you click on a math formula chip, Flint opens an interactive **MathLive On-Screen Keyboard** featuring:
+When you click on a math formula chip, Noether opens an interactive **MathLive On-Screen Keyboard** featuring:
 - Greek symbols ($\alpha, \beta, \gamma, \theta, \lambda, \sigma, \omega$)
 - Calculus operators ($\int, \frac{d}{dx}, \sum, \prod, \lim$)
 - Matrix builders ($2\times 2$, $3\times 3$)
@@ -116,7 +116,7 @@ Formulas render with instant mathematical typesetting while preserving the raw L
 
 ## 6. Interactive Visual Tables
 
-Flint features a fully visual table editing engine that eliminates the friction of hand-formatting raw ASCII markdown tables.
+Noether features a fully visual table editing engine that eliminates the friction of hand-formatting raw ASCII markdown tables.
 
 ### Creating Tables
 - Use the `/table` slash command to pick an initial grid dimension (e.g. $3\times 3$).
@@ -138,7 +138,7 @@ Flint features a fully visual table editing engine that eliminates the friction 
 ## 7. Callouts & Alerts
 ---
 
-Flint delivers native support for Obsidian-compatible callouts, allowing you to highlight, organize, and fold structured information directly within your notes. Callouts render with crisp left borders (`border-l-[3px]`), subtle 10% tinted background fills, uppercase badges, icons, and interactive collapsible fold toggles.
+Noether delivers native support for Obsidian-compatible callouts, allowing you to highlight, organize, and fold structured information directly within your notes. Callouts render with crisp left borders (`border-l-[3px]`), subtle 10% tinted background fills, uppercase badges, icons, and interactive collapsible fold toggles.
 
 ### Basic Syntax
 
@@ -152,11 +152,11 @@ A callout begins with a standard Markdown blockquote prefix (`> `), followed imm
 > Callouts support optional custom titles on the header line.
 ```
 
-When editing in Live Preview, Flint smoothly conceals the raw `> [!type]` markers and displays the themed badge and icon widget. Placing your cursor directly on the header reveals the dimmed Markdown syntax for inline editing.
+When editing in Live Preview, Noether smoothly conceals the raw `> [!type]` markers and displays the themed badge and icon widget. Placing your cursor directly on the header reveals the dimmed Markdown syntax for inline editing.
 
 ### Built-in Callout Types
 
-Flint supports all 13 canonical callout types and their recognized aliases:
+Noether supports all 13 canonical callout types and their recognized aliases:
 
 | Callout Type | Aliases | Accent Color | Intended Usage |
 | :--- | :--- | :--- | :--- |
@@ -170,7 +170,7 @@ Flint supports all 13 canonical callout types and their recognized aliases:
 | `warning` | `caution`, `attention` | Amber (`#f59e0b`) | Potential pitfalls, risks, and breaking changes to avoid |
 | `failure` | `fail`, `missing` | Rose (`#f43f5e`) | Unmet criteria, failed tests, or missing dependencies |
 | `danger` | `error` | Red (`#ef4444`) | Destructive operations, data loss risks, and errors |
-| `bug` | | Orange (`#f97316`) | Software defects, regressions, and unintended behavior |
+| `bug` | | Orange (`#d94338`) | Software defects, regressions, and unintended behavior |
 | `example` | | Purple (`#8b5cf6`) | Practical examples, sample code, and walkthroughs |
 | `quote` | `cite` | Slate (`#9ca3af`) | Highlighted citations, quotes, and excerpts |
 
@@ -227,7 +227,7 @@ You can customize individual callout types or create custom types using CSS snip
 
 ## 8. Media & Document Embeds
 
-Flint supports embedding local attachments and cross-document transclusions using the `![[...]]` syntax:
+Noether supports embedding local attachments and cross-document transclusions using the `![[...]]` syntax:
 
 - **Images**: `![[diagram.png]]` or `![Alt text](assets/diagram.png)`
 - **Audio**: `![[interview.mp3]]` renders an inline HTML5 audio player.
@@ -241,7 +241,7 @@ Flint supports embedding local attachments and cross-document transclusions usin
 
 Copying content from Wikipedia, research papers, or web articles often clutters notes with unwanted citation brackets (e.g. `[1]`, `[citation needed]`) and messy HTML inline tags.
 
-Flint includes an **Intelligent Paste Pipeline**:
+Noether includes an **Intelligent Paste Pipeline**:
 - Automatically strips numeric reference links (`[1]`, `[12]`, `[cite]`).
 - Converts rich HTML tables, headers, and bullet lists into clean CommonMark.
 - Preserves code fences with correct syntax language tags.

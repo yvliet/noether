@@ -266,14 +266,14 @@ function renderInlineFormatting(text: string): string {
       }
 
       if (wikiTarget) {
-        return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${wikiTarget}">${text}</span>`;
+        return `<span class="md-wikilink text-[var(--noether-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${wikiTarget}">${text}</span>`;
       }
-      return `<a href="${trimmed}" target="_blank" rel="noreferrer" class="text-[var(--flint-link-color)] hover:underline inline-flex items-center gap-0.5">${text}</a>`;
+      return `<a href="${trimmed}" target="_blank" rel="noreferrer" class="text-[var(--noether-link-color)] hover:underline inline-flex items-center gap-0.5">${text}</a>`;
     })
     // Wikilinks: [[target|alias]] or [[target]]
     .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const label = alias || target;
-      return `<span class="md-wikilink text-[var(--flint-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${target}">${label}</span>`;
+      return `<span class="md-wikilink text-[var(--noether-link-color)] hover:underline cursor-pointer select-text" data-wikilink-target="${target}">${label}</span>`;
     });
 }
 
@@ -346,7 +346,7 @@ function renderTipTapNodesToHtml(nodes: any[]): string {
       html += `<div class="my-2 rounded border border-[#2d2d2d] bg-[#141414] overflow-hidden"><div class="px-2.5 py-1 bg-[#1e1e1e] border-b border-[#2d2d2d] text-[10px] text-[#888] font-mono">${lang || 'code'}</div><pre class="p-2.5 text-xs font-mono text-[#dcdcdc] overflow-x-auto"><code>${code.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre></div>`;
     } else if (node.type === 'blockquote') {
       const inner = (node.content || []).map((c: any) => (c.content || []).map((t: any) => t.text || '').join('')).join(' ');
-      html += `<div class="my-2 pl-3 py-1 border-l-2 border-[var(--flint-accent)] bg-[var(--flint-accent)]/5 text-xs text-[#cccccc] rounded-r">${renderInlineFormatting(inner)}</div>`;
+      html += `<div class="my-2 pl-3 py-1 border-l-2 border-[var(--noether-accent)] bg-[var(--noether-accent)]/5 text-xs text-[#cccccc] rounded-r">${renderInlineFormatting(inner)}</div>`;
     } else if (node.type === 'bulletList') {
       html += '<ul class="my-1.5 space-y-1 text-xs text-[#cccccc] pl-4" style="list-style-type: \'•  \'">';
       for (const item of node.content || []) {
@@ -366,7 +366,7 @@ function renderTipTapNodesToHtml(nodes: any[]): string {
       for (const item of node.content || []) {
         const checked = Boolean(item.attrs?.checked);
         const itemText = (item.content || []).map((c: any) => (c.content || []).map((t: any) => t.text || '').join('')).join('');
-        html += `<li class="flex items-start gap-1.5"><span class="flex items-center justify-center h-4 shrink-0"><input type="checkbox" ${checked ? 'checked' : ''} disabled class="accent-[var(--flint-accent)] rounded m-0" /></span><span class="${checked ? 'line-through text-[#666]' : ''}">${renderInlineFormatting(itemText)}</span></li>`;
+        html += `<li class="flex items-start gap-1.5"><span class="flex items-center justify-center h-4 shrink-0"><input type="checkbox" ${checked ? 'checked' : ''} disabled class="accent-[var(--noether-accent)] rounded m-0" /></span><span class="${checked ? 'line-through text-[#666]' : ''}">${renderInlineFormatting(itemText)}</span></li>`;
       }
       html += '</ul>';
     } else if (node.type === 'table') {
@@ -457,12 +457,12 @@ export function renderEmbedWidget(
 ): HTMLElement {
   const embed = parseEmbedTarget(rawTarget, format, altText);
   const container = document.createElement('div');
-  container.className = 'flint-embed-wrapper select-text';
+  container.className = 'noether-embed-wrapper select-text';
 
   // 1. YouTube Video Embed
   if (embed.kind === 'youtube' && embed.youtubeId) {
     const card = document.createElement('div');
-    card.className = 'flint-embed-card flint-youtube-embed rounded-lg border border-[#2a2a2a] bg-[#141414] overflow-hidden my-2';
+    card.className = 'noether-embed-card noether-youtube-embed rounded-lg border border-[#2a2a2a] bg-[#141414] overflow-hidden my-2';
     
     const iframe = document.createElement('iframe');
     iframe.src = `https://www.youtube-nocookie.com/embed/${embed.youtubeId}`;
@@ -477,7 +477,7 @@ export function renderEmbedWidget(
   // 2. Image Embed
   if (embed.kind === 'image') {
     const imgWrapper = document.createElement('div');
-    imgWrapper.className = 'flint-embed-media flint-image-embed relative group my-0.5 inline-block max-w-full leading-none';
+    imgWrapper.className = 'noether-embed-media noether-image-embed relative group my-0.5 inline-block max-w-full leading-none';
 
     let resolvedSrc = embed.url;
     if (!embed.isExternalUrl) {
@@ -500,7 +500,7 @@ export function renderEmbedWidget(
     // Floating Hover Actions Pill: Zoom (+) and Code (</>)
     const actionsOverlay = document.createElement('div');
     actionsOverlay.className =
-      'flint-embed-actions absolute top-2 right-2 hidden group-hover:flex items-center gap-0.5 bg-[#1e1e1e]/95 border border-[#383838] rounded-md px-1 py-0.5 shadow-lg z-20 transition-none pointer-events-auto select-none';
+      'noether-embed-actions absolute top-2 right-2 hidden group-hover:flex items-center gap-0.5 bg-[#1e1e1e]/95 border border-[#383838] rounded-md px-1 py-0.5 shadow-lg z-20 transition-none pointer-events-auto select-none';
 
     const zoomBtn = document.createElement('button');
     zoomBtn.type = 'button';
@@ -528,7 +528,7 @@ export function renderEmbedWidget(
       e.preventDefault();
       e.stopPropagation();
       document.dispatchEvent(
-        new CustomEvent('flint:focus-embed-code', {
+        new CustomEvent('noether:focus-embed-code', {
           detail: { target: rawTarget, cleanTarget: embed.target },
         })
       );
@@ -541,7 +541,7 @@ export function renderEmbedWidget(
     const img = document.createElement('img');
     img.src = resolvedSrc;
     img.alt = embed.aliasOrDimensions || altText || embed.target;
-    img.className = 'flint-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-zoom-in select-none';
+    img.className = 'noether-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-zoom-in select-none';
     img.loading = 'lazy';
     img.draggable = false;
     img.ondragstart = (e) => e.preventDefault();
@@ -609,11 +609,11 @@ export function renderEmbedWidget(
   // 3. Audio Embed
   if (embed.kind === 'audio') {
     const audioCard = document.createElement('div');
-    audioCard.className = 'flint-embed-card flint-audio-embed rounded-lg border border-[#2a2a2a] bg-[#181818] p-3 my-2 max-w-lg';
+    audioCard.className = 'noether-embed-card noether-audio-embed rounded-lg border border-[#2a2a2a] bg-[#181818] p-3 my-2 max-w-lg';
     
     const header = document.createElement('div');
     header.className = 'flex items-center gap-2 mb-2 text-xs font-medium text-[#cccccc] truncate';
-    header.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--flint-accent)] shrink-0"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="truncate">${embed.target}</span>`;
+    header.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--noether-accent)] shrink-0"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg><span class="truncate">${embed.target}</span>`;
     audioCard.appendChild(header);
 
     const audio = document.createElement('audio');
@@ -629,7 +629,7 @@ export function renderEmbedWidget(
   // 4. Video Embed
   if (embed.kind === 'video') {
     const videoCard = document.createElement('div');
-    videoCard.className = 'flint-embed-card flint-video-embed rounded-lg border border-[#2a2a2a] bg-[#141414] overflow-hidden my-2 max-w-2xl';
+    videoCard.className = 'noether-embed-card noether-video-embed rounded-lg border border-[#2a2a2a] bg-[#141414] overflow-hidden my-2 max-w-2xl';
 
     const video = document.createElement('video');
     video.controls = true;
@@ -646,7 +646,7 @@ export function renderEmbedWidget(
   // 5. PDF Embed
   if (embed.kind === 'pdf') {
     const pdfCard = document.createElement('div');
-    pdfCard.className = 'flint-embed-card flint-pdf-embed rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-3 my-2 flex items-center justify-between gap-3 max-w-xl';
+    pdfCard.className = 'noether-embed-card noether-pdf-embed rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-3 my-2 flex items-center justify-between gap-3 max-w-xl';
 
     const info = document.createElement('div');
     info.className = 'flex items-center gap-2.5 truncate min-w-0';
@@ -655,7 +655,7 @@ export function renderEmbedWidget(
 
     const openBtn = document.createElement('button');
     openBtn.type = 'button';
-    openBtn.className = 'flint-embed-action px-2.5 py-1 text-xs rounded bg-[#252525] hover:bg-[#303030] text-[#cccccc] hover:text-white transition-none shrink-0 cursor-pointer flex items-center gap-1';
+    openBtn.className = 'noether-embed-action px-2.5 py-1 text-xs rounded bg-[#252525] hover:bg-[#303030] text-[#cccccc] hover:text-white transition-none shrink-0 cursor-pointer flex items-center gap-1';
     openBtn.innerHTML = `<span>Open</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
     openBtn.onclick = (e) => {
       e.stopPropagation();
@@ -682,7 +682,7 @@ export function renderEmbedWidget(
     docIndex.get(embed.noteTitle);
 
   const card = document.createElement('div');
-  card.className = 'flint-embed-card flint-note-embed rounded-lg border border-[#2e2e2e] bg-[#161616]/90 my-2.5 overflow-hidden shadow-xs';
+  card.className = 'noether-embed-card noether-note-embed rounded-lg border border-[#2e2e2e] bg-[#161616]/90 my-2.5 overflow-hidden shadow-xs';
 
   // Circular embed detection
   const currentOrSelfId = currentDocId || ds.activeDocument?.id;
@@ -693,11 +693,11 @@ export function renderEmbedWidget(
 
   // Header Bar
   const header = document.createElement('div');
-  header.className = 'flint-embed-header flex items-center justify-between px-3 py-1.5 bg-[#1f1f1f] border-b border-[#282828] text-xs select-none';
+  header.className = 'noether-embed-header flex items-center justify-between px-3 py-1.5 bg-[#1f1f1f] border-b border-[#282828] text-xs select-none';
 
   const titleLeft = document.createElement('div');
   titleLeft.className = 'flex items-center gap-1.5 truncate text-[#dedede] font-medium';
-  titleLeft.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--flint-accent)] shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span class="truncate">${matchedDoc ? matchedDoc.title : embed.noteTitle}</span>${embed.headingAnchor ? `<span class="text-[#888888] font-normal text-[11px] truncate"># ${embed.headingAnchor}</span>` : ''}`;
+  titleLeft.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--noether-accent)] shrink-0"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg><span class="truncate">${matchedDoc ? matchedDoc.title : embed.noteTitle}</span>${embed.headingAnchor ? `<span class="text-[#888888] font-normal text-[11px] truncate"># ${embed.headingAnchor}</span>` : ''}`;
   header.appendChild(titleLeft);
 
   const headerRight = document.createElement('div');
@@ -706,7 +706,7 @@ export function renderEmbedWidget(
   if (matchedDoc) {
     const openBtn = document.createElement('button');
     openBtn.type = 'button';
-    openBtn.className = 'flint-embed-action flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-[#999999] hover:text-white rounded hover:bg-[#2c2c2c] transition-none cursor-pointer';
+    openBtn.className = 'noether-embed-action flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-[#999999] hover:text-white rounded hover:bg-[#2c2c2c] transition-none cursor-pointer';
     openBtn.title = 'Open note in new tab';
     openBtn.innerHTML = `<span>Open</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`;
     openBtn.onclick = (e) => {
@@ -721,12 +721,12 @@ export function renderEmbedWidget(
 
   // Body Content
   const body = document.createElement('div');
-  body.className = 'flint-embed-body px-3.5 py-2.5 text-xs text-[#cccccc] leading-relaxed max-h-[500px] overflow-y-auto';
+  body.className = 'noether-embed-body px-3.5 py-2.5 text-xs text-[#cccccc] leading-relaxed max-h-[500px] overflow-y-auto';
 
   if (isCircular) {
     body.innerHTML = `<div class="text-xs text-amber-400/90 italic flex items-center gap-1.5"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span>Circular embed detected: ${matchedDoc?.title}</span></div>`;
   } else if (!matchedDoc) {
-    body.innerHTML = `<div class="flex items-center justify-between gap-3 text-xs text-[#777777]"><span>Note "<strong>${embed.noteTitle}</strong>" does not exist yet.</span><button type="button" class="flint-embed-action px-2 py-1 text-xs rounded bg-[var(--flint-accent)]/20 hover:bg-[var(--flint-accent)]/30 text-[var(--flint-accent)] font-medium cursor-pointer transition-none">Create Note</button></div>`;
+    body.innerHTML = `<div class="flex items-center justify-between gap-3 text-xs text-[#777777]"><span>Note "<strong>${embed.noteTitle}</strong>" does not exist yet.</span><button type="button" class="noether-embed-action px-2 py-1 text-xs rounded bg-[var(--noether-accent)]/20 hover:bg-[var(--noether-accent)]/30 text-[var(--noether-accent)] font-medium cursor-pointer transition-none">Create Note</button></div>`;
     const createBtn = body.querySelector('button');
     if (createBtn) {
       createBtn.onclick = (e) => {

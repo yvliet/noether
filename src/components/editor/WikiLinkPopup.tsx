@@ -62,11 +62,11 @@ export const WikiLinkPopup = React.memo(
 
       return (
         <div
-          data-flint-suggestion-popup="true"
+          data-noether-suggestion-popup="true"
           onMouseDown={(e) => e.preventDefault()}
-          className="pointer-events-auto bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg shadow-[var(--flint-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs select-none"
+          className="pointer-events-auto bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg shadow-[var(--noether-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs select-none"
         >
-          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--flint-text-muted)] uppercase tracking-wider">
+          <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--noether-text-muted)] uppercase tracking-wider">
             Link to Note
           </div>
           {displayItems.map((item, index) => {
@@ -84,18 +84,18 @@ export const WikiLinkPopup = React.memo(
                   setSelectedIndex(index);
                 }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer ${
-                  isSelected ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)]' : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)]'
+                  isSelected ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)]'
                 }`}
               >
                 {item.isNew ? (
-                  <FileAddIcon size={16} className="text-[var(--flint-accent)] shrink-0" />
+                  <FileAddIcon size={16} className="text-[var(--noether-accent)] shrink-0" />
                 ) : (
-                  <File01Icon size={16} className="text-[var(--flint-text-muted)] shrink-0" />
+                  <File01Icon size={16} className="text-[var(--noether-text-muted)] shrink-0" />
                 )}
                 <div className="flex-1 min-w-0 truncate">
-                  <span className="font-medium text-sm text-[var(--flint-text-primary)]">{item.title}</span>
+                  <span className="font-medium text-sm text-[var(--noether-text-primary)]">{item.title}</span>
                   {item.isNew && (
-                    <span className="ml-1.5 text-[10px] text-[var(--flint-text-secondary)] bg-[var(--flint-bg-card-hover)] px-1 py-0.5 rounded border border-[var(--flint-border-subtle)]">
+                    <span className="ml-1.5 text-[10px] text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)] px-1 py-0.5 rounded border border-[var(--noether-border-subtle)]">
                       Create new
                     </span>
                   )}

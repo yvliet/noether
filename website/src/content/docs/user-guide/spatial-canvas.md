@@ -1,6 +1,6 @@
 # Infinite 2D Spatial Canvas
 
-Linear text documents are ideal for long-form writing, but creative brainstorming, system design, and concept exploration often demand non-linear spatial organization. Flint provides an integrated **Infinite 2D Spatial Canvas** that combines free-form visual whiteboarding with your actual Markdown notes.
+Linear text documents are ideal for long-form writing, but creative brainstorming, system design, and concept exploration often demand non-linear spatial organization. Noether provides an integrated **Infinite 2D Spatial Canvas** that combines free-form visual whiteboarding with your actual Markdown notes.
 
 ---
 
@@ -9,8 +9,8 @@ Linear text documents are ideal for long-form writing, but creative brainstormin
 
 The Canvas gives you an unbounded 2D plane where ideas can exist as interactive cards, sticky notes, visual groups, and directional connection pathways.
 
-- **Unified Knowledge**: Canvas items are not isolated drawings; they reference your real notes in the Hearth.
-- **First-Class File Backing**: Every canvas is its own `.canvas` JSON file saved directly in your Hearth alongside your Markdown notes, with isolated node and edge data.
+- **Unified Knowledge**: Canvas items are not isolated drawings; they reference your real notes in the Vault.
+- **First-Class File Backing**: Every canvas is its own `.canvas` JSON file saved directly in your Vault alongside your Markdown notes, with isolated node and edge data.
 - **Sidebar Integration**: Canvases appear alongside notes in your file tree, cleanly displaying their document title with a right-aligned muted `CANVAS` badge.
 - **Hardware-Accelerated 60 FPS**: Utilizes viewport frustum culling and hardware-accelerated transforms to maintain smooth pan and zoom even with hundreds of active cards.
 

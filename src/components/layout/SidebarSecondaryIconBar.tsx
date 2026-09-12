@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { useSidebarDockStore, DockZone, DockItem } from '@/store/sidebarDockStore';
-import { useFlintApp, useSidebarTabs, useViews } from '@/core/app/AppContext';
+import { useNoetherApp, useSidebarTabs, useViews } from '@/core/app/AppContext';
 import {
   StickyNote02Icon,
   Cancel01Icon,
@@ -22,7 +22,7 @@ interface SidebarSecondaryIconBarProps {
 }
 
 export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = React.memo(({ zone }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   useViews();
   const items = useSidebarDockStore((s) => s.items);
   const activeItemId = useSidebarDockStore((s) => s.activeItemByZone[zone]);
@@ -284,11 +284,11 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
       data-dock-zone={zone}
       onContextMenu={handleBarContextMenu}
       style={{
-        background: 'var(--flint-bg-sidebar-gradient, var(--flint-bg-sidebar, #151515))',
-        borderTop: '1px solid var(--flint-border-base)',
-        borderBottom: '1px solid var(--flint-border-base)',
+        background: 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar, #151515))',
+        borderTop: '1px solid var(--noether-border-base)',
+        borderBottom: '1px solid var(--noether-border-base)',
       }}
-      className="flint-secondary-icon-bar h-[38px] px-2 flex items-center justify-between shrink-0 select-none z-10 relative"
+      className="noether-secondary-icon-bar h-[38px] px-2 flex items-center justify-between shrink-0 select-none z-10 relative"
     >
       <div
         ref={dockReorder.containerRef}
@@ -309,8 +309,8 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
               title={item.title}
               className={`w-7 h-7 rounded-md flex items-center justify-center transition-colors cursor-pointer shrink-0 ${
                 isActive
-                  ? 'text-[var(--flint-text-secondary)] bg-[var(--flint-bg-card-hover)]'
-                  : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]'
+                  ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
               }`}
             >
               {renderIcon(item)}

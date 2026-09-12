@@ -6,19 +6,19 @@ import {
   ArrowUpDownIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { useFlintApp, useActionRailItems } from '@/core/app/AppContext';
+import { useNoetherApp, useActionRailItems } from '@/core/app/AppContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { platform } from '@/lib/platform/platformAdapter';
 
 export const ActionRail: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const actionRailItems = useActionRailItems();
 
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
   const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
-  const setIsHearthModalOpen = useWorkspaceStore((s) => s.setIsHearthModalOpen);
+  const setIsVaultModalOpen = useWorkspaceStore((s) => s.setIsVaultModalOpen);
   const showToast = useWorkspaceStore((s) => s.showToast);
 
   const handleOpenSettings = useCallback(() => {
@@ -51,11 +51,11 @@ export const ActionRail: React.FC = React.memo(() => {
       aria-label="Action Rail"
       style={
         {
-          background: 'var(--flint-bg-ribbon, var(--flint-bg-sidebar))',
+          background: 'var(--noether-bg-ribbon, var(--noether-bg-sidebar))',
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties
       }
-      className="flint-action-rail flint-ribbon no-drag relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0 border-r border-[var(--flint-border-base)]"
+      className="noether-action-rail noether-ribbon no-drag relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0 border-r border-[var(--noether-border-base)]"
     >
       {/* Top Action Icons */}
       <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full">
@@ -67,7 +67,7 @@ export const ActionRail: React.FC = React.memo(() => {
           onClick={() => setIsCommandPaletteOpen(true)}
           title="Command palette (Ctrl+K)"
           data-tooltip="Command palette (Ctrl+K)"
-          className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+          className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
         >
           <TerminalIcon size={16} />
         </button>
@@ -92,29 +92,29 @@ export const ActionRail: React.FC = React.memo(() => {
                 handleItemTrigger(item);
               }}
               title={item.title}
-              className="no-drag relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)]"
+              className="no-drag relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]"
             >
               {item.icon}
               {item.badge != null && (
-                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--flint-accent)] animate-pulse" />
+                <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[var(--noether-accent)] animate-pulse" />
               )}
             </button>
           );
         })}
       </div>
 
-      {/* Bottom Group (Hearth, Help, Settings) - Only visible when Left Sidebar is collapsed */}
+      {/* Bottom Group (Vault, Help, Settings) - Only visible when Left Sidebar is collapsed */}
       {!isLeftSidebarOpen && (
-        <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full pt-1.5 border-t border-[var(--flint-border-base)]">
-          {/* Hearth Switcher */}
+        <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full pt-1.5 border-t border-[var(--noether-border-base)]">
+          {/* Vault Switcher */}
           <button
-            data-action-rail-id="core:hearth-switcher"
+            data-action-rail-id="core:vault-switcher"
             data-no-drag="true"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            onClick={() => setIsHearthModalOpen(true)}
-            title="Hearth switcher (Ctrl+Shift+O)"
-            data-tooltip="Hearth switcher (Ctrl+Shift+O)"
-            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+            onClick={() => setIsVaultModalOpen(true)}
+            title="Vault switcher (Ctrl+Shift+O)"
+            data-tooltip="Vault switcher (Ctrl+Shift+O)"
+            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <ArrowUpDownIcon size={15} />
           </button>
@@ -127,7 +127,7 @@ export const ActionRail: React.FC = React.memo(() => {
             onClick={() => setIsHelpModalOpen(true)}
             title="Help & shortcuts (F1)"
             data-tooltip="Help & shortcuts (F1)"
-            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <HelpCircleIcon size={16} />
           </button>
@@ -140,7 +140,7 @@ export const ActionRail: React.FC = React.memo(() => {
             onClick={handleOpenSettings}
             title="Settings (Ctrl+,)"
             data-tooltip="Settings (Ctrl+,)"
-            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] hover:bg-[var(--flint-bg-card-hover)] cursor-pointer"
+            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <Settings02Icon size={16} />
           </button>

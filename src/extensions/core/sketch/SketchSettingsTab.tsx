@@ -1,12 +1,12 @@
 import React from 'react';
 import { useSketchStore } from './sketchStore';
-import { useToast } from 'flint';
+import { useToast } from 'noether';
 import { Delete02Icon } from '@/components/common/Icons';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import { SketchToolType, SketchAnchoringMode } from './types';
 
 const COLOR_OPTIONS = [
-  { label: 'Flint Accent', value: '#3b82f6' },
+  { label: 'Noether Accent', value: '#3b82f6' },
   { label: 'Highlighter Yellow', value: '#eab308' },
   { label: 'Signal Red', value: '#ef4444' },
   { label: 'Emerald Green', value: '#22c55e' },
@@ -149,7 +149,7 @@ export const SketchSettingsTab: React.FC = () => {
                 clearAllStrokes();
                 showToast('Cleared drawings on active note', 'info');
               }}
-              className="flint-btn text-xs py-1 px-3 flex items-center gap-1.5 text-[#f87171] hover:text-[#ef4444] hover:bg-[#2a2020]"
+              className="noether-btn text-xs py-1 px-3 flex items-center gap-1.5 text-[#f87171] hover:text-[#ef4444] hover:bg-[#2a2020]"
             >
               <Delete02Icon size={13} />
               <span>Clear Drawings</span>

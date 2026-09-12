@@ -27,7 +27,7 @@ export const ButtonPreview: React.FC = () => {
               onClick={() => setSize(s)}
               className={`px-2 py-0.5 rounded cursor-pointer uppercase text-[11px] font-mono ${
                 size === s
-                  ? 'bg-[#ea580c] text-white font-semibold'
+                  ? 'bg-[#eb584d] text-white font-semibold'
                   : 'bg-[#252525] text-[#a0a0a0] hover:text-white hover:bg-[#303030]'
               }`}
             >
@@ -42,7 +42,7 @@ export const ButtonPreview: React.FC = () => {
               type="checkbox"
               checked={disabled}
               onChange={(e) => setDisabled(e.target.checked)}
-              className="accent-[#ea580c] cursor-pointer rounded"
+              className="accent-[#eb584d] cursor-pointer rounded"
             />
             <span>Disabled</span>
           </label>
@@ -59,8 +59,8 @@ export const ButtonPreview: React.FC = () => {
           onClick={() => setClickCount((c) => c + 1)}
           className={`rounded-md font-medium cursor-pointer ${sizeClasses[size]} ${
             disabled
-              ? 'bg-[#ea580c]/40 text-white/50 cursor-not-allowed'
-              : 'bg-[#ea580c] hover:bg-[#f97316] text-white active:scale-[0.98]'
+              ? 'bg-[#eb584d]/40 text-white/50 cursor-not-allowed'
+              : 'bg-[#eb584d] hover:bg-[#d94338] text-white active:scale-[0.98]'
           }`}
         >
           Primary Action
@@ -116,7 +116,7 @@ export const ButtonPreview: React.FC = () => {
           className={`font-medium cursor-pointer underline underline-offset-2 ${sizeClasses[size]} ${
             disabled
               ? 'text-[#555555] cursor-not-allowed no-underline'
-              : 'text-[#ea580c] hover:text-[#f97316]'
+              : 'text-[#eb584d] hover:text-[#d94338]'
           }`}
         >
           Link
@@ -144,7 +144,7 @@ export const TextInputPreview: React.FC = () => {
               type="checkbox"
               checked={hasError}
               onChange={(e) => setHasError(e.target.checked)}
-              className="accent-[#ea580c] cursor-pointer rounded"
+              className="accent-[#eb584d] cursor-pointer rounded"
             />
             <span>Error state</span>
           </label>
@@ -153,7 +153,7 @@ export const TextInputPreview: React.FC = () => {
               type="checkbox"
               checked={showBadge}
               onChange={(e) => setShowBadge(e.target.checked)}
-              className="accent-[#ea580c] cursor-pointer rounded"
+              className="accent-[#eb584d] cursor-pointer rounded"
             />
             <span>Shortcut badge</span>
           </label>
@@ -183,7 +183,7 @@ export const TextInputPreview: React.FC = () => {
             className={`w-full h-9 pl-9 pr-20 bg-[#1c1c1c] rounded-md text-[13.5px] text-[#dadada] placeholder-[#666666] outline-none border ${
               hasError
                 ? 'border-rose-500/80 focus:border-rose-500'
-                : 'border-[#363636] focus:border-[#ea580c]'
+                : 'border-[#363636] focus:border-[#eb584d]'
             }`}
           />
 
@@ -247,7 +247,7 @@ export const TogglePreview: React.FC = () => {
             onClick={() => setSyncEnabled((v) => !v)}
             className={`relative w-10 h-5.5 rounded-full cursor-pointer p-0.5 border ${
               syncEnabled
-                ? 'bg-[#ea580c] border-[#ea580c]'
+                ? 'bg-[#eb584d] border-[#eb584d]'
                 : 'bg-[#262626] border-[#383838]'
             }`}
           >
@@ -272,7 +272,7 @@ export const TogglePreview: React.FC = () => {
             onClick={() => setVimMode((v) => !v)}
             className={`relative w-10 h-5.5 rounded-full cursor-pointer p-0.5 border ${
               vimMode
-                ? 'bg-[#ea580c] border-[#ea580c]'
+                ? 'bg-[#eb584d] border-[#eb584d]'
                 : 'bg-[#262626] border-[#383838]'
             }`}
           >
@@ -297,7 +297,7 @@ export const TogglePreview: React.FC = () => {
             onClick={() => setMcpTools((v) => !v)}
             className={`relative w-10 h-5.5 rounded-full cursor-pointer p-0.5 border ${
               mcpTools
-                ? 'bg-[#ea580c] border-[#ea580c]'
+                ? 'bg-[#eb584d] border-[#eb584d]'
                 : 'bg-[#262626] border-[#383838]'
             }`}
           >
@@ -317,14 +317,14 @@ export const TogglePreview: React.FC = () => {
 // 4. Select Dropdown Sandbox Preview
 // ==========================================
 export const SelectPreview: React.FC = () => {
-  const [selectedTheme, setSelectedTheme] = useState('flint-dark');
+  const [selectedTheme, setSelectedTheme] = useState('noether-dark');
 
   return (
     <div className="my-4 rounded-xl border border-[#363636] bg-[#161616] overflow-hidden select-none">
       {/* Sandbox Header */}
       <div className="px-4 py-2.5 border-b border-[#2d2d2d] bg-[#1a1a1a]/80 text-xs text-[#888888] flex justify-between items-center">
         <span>Select Dropdown Primitive</span>
-        <span className="font-mono text-[#ea580c]">Selected: {selectedTheme}</span>
+        <span className="font-mono text-[#eb584d]">Selected: {selectedTheme}</span>
       </div>
 
       {/* Live Component Stage */}
@@ -337,9 +337,9 @@ export const SelectPreview: React.FC = () => {
             <select
               value={selectedTheme}
               onChange={(e) => setSelectedTheme(e.target.value)}
-              className="w-full h-9 pl-3 pr-8 rounded-md bg-[#1c1c1c] border border-[#363636] text-[13.5px] text-[#dadada] outline-none focus:border-[#ea580c] cursor-pointer appearance-none"
+              className="w-full h-9 pl-3 pr-8 rounded-md bg-[#1c1c1c] border border-[#363636] text-[13.5px] text-[#dadada] outline-none focus:border-[#eb584d] cursor-pointer appearance-none"
             >
-              <option value="flint-dark">Flint Dark (Default Charcoal)</option>
+              <option value="noether-dark">Noether Dark (Default Charcoal)</option>
               <option value="obsidian-nord">Nordic Frost</option>
               <option value="monokai-pro">Monokai Pro Synth</option>
               <option value="paper-light">Warm Paper Light</option>
@@ -375,7 +375,7 @@ export const SliderPreview: React.FC = () => {
         <div>
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="font-medium text-[#dadada]">Editor Font Size</span>
-            <span className="font-mono text-[#ea580c]">{fontSize}px</span>
+            <span className="font-mono text-[#eb584d]">{fontSize}px</span>
           </div>
           <input
             type="range"
@@ -384,14 +384,14 @@ export const SliderPreview: React.FC = () => {
             step="1"
             value={fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
-            className="w-full h-1.5 bg-[#252525] rounded-lg appearance-none cursor-pointer accent-[#ea580c]"
+            className="w-full h-1.5 bg-[#252525] rounded-lg appearance-none cursor-pointer accent-[#eb584d]"
           />
         </div>
 
         <div>
           <div className="flex items-center justify-between text-xs mb-1.5">
             <span className="font-medium text-[#dadada]">Line Height Multiplier</span>
-            <span className="font-mono text-[#ea580c]">{lineHeight.toFixed(2)}</span>
+            <span className="font-mono text-[#eb584d]">{lineHeight.toFixed(2)}</span>
           </div>
           <input
             type="range"
@@ -400,7 +400,7 @@ export const SliderPreview: React.FC = () => {
             step="0.05"
             value={lineHeight}
             onChange={(e) => setLineHeight(Number(e.target.value))}
-            className="w-full h-1.5 bg-[#252525] rounded-lg appearance-none cursor-pointer accent-[#ea580c]"
+            className="w-full h-1.5 bg-[#252525] rounded-lg appearance-none cursor-pointer accent-[#eb584d]"
           />
         </div>
 
@@ -409,7 +409,7 @@ export const SliderPreview: React.FC = () => {
           className="p-3 rounded-md bg-[#1c1c1c] border border-[#2c2c2c] text-[#b8b8b8]"
           style={{ fontSize: `${fontSize}px`, lineHeight }}
         >
-          Flint is engineered for deep focus and long-term data durability.
+          Noether is engineered for deep focus and long-term data durability.
         </div>
       </div>
     </div>
@@ -420,13 +420,13 @@ export const SliderPreview: React.FC = () => {
 // 6. SettingBuilder Full Card Sandbox
 // ==========================================
 export const SettingBuilderPreview: React.FC = () => {
-  const [apiKey, setApiKey] = useState('sk-ant-api03-flint...');
+  const [apiKey, setApiKey] = useState('sk-ant-api03-noether...');
   const [streamUpdates, setStreamUpdates] = useState(true);
   const [maxTokens, setMaxTokens] = useState(2048);
   const [status, setStatus] = useState<string | null>(null);
 
   const handleSave = () => {
-    setStatus('Settings saved successfully to .flint/settings.json');
+    setStatus('Settings saved successfully to .noether/settings.json');
     setTimeout(() => setStatus(null), 2500);
   };
 
@@ -461,7 +461,7 @@ export const SettingBuilderPreview: React.FC = () => {
                 type="password"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                className="h-8 px-2.5 rounded bg-[#131313] border border-[#333333] text-xs text-[#dadada] outline-none focus:border-[#ea580c] w-full sm:w-48 font-mono"
+                className="h-8 px-2.5 rounded bg-[#131313] border border-[#333333] text-xs text-[#dadada] outline-none focus:border-[#eb584d] w-full sm:w-48 font-mono"
               />
             </div>
 
@@ -478,7 +478,7 @@ export const SettingBuilderPreview: React.FC = () => {
                 onClick={() => setStreamUpdates((v) => !v)}
                 className={`relative w-9 h-5 rounded-full cursor-pointer p-0.5 border ${
                   streamUpdates
-                    ? 'bg-[#ea580c] border-[#ea580c]'
+                    ? 'bg-[#eb584d] border-[#eb584d]'
                     : 'bg-[#262626] border-[#383838]'
                 }`}
               >
@@ -504,9 +504,9 @@ export const SettingBuilderPreview: React.FC = () => {
                   step="256"
                   value={maxTokens}
                   onChange={(e) => setMaxTokens(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#252525] rounded-lg appearance-none cursor-pointer accent-[#ea580c]"
+                  className="w-full h-1.5 bg-[#252525] rounded-lg appearance-none cursor-pointer accent-[#eb584d]"
                 />
-                <span className="text-xs font-mono text-[#ea580c] w-12 text-right">{maxTokens}</span>
+                <span className="text-xs font-mono text-[#eb584d] w-12 text-right">{maxTokens}</span>
               </div>
             </div>
           </div>
@@ -516,12 +516,12 @@ export const SettingBuilderPreview: React.FC = () => {
             {status ? (
               <span className="text-xs text-emerald-400">{status}</span>
             ) : (
-              <span className="text-xs text-[#666666]">Local configuration stored in Hearth metadata</span>
+              <span className="text-xs text-[#666666]">Local configuration stored in Vault metadata</span>
             )}
             <button
               type="button"
               onClick={handleSave}
-              className="px-3 py-1.5 rounded bg-[#ea580c] hover:bg-[#f97316] text-white text-xs font-medium cursor-pointer"
+              className="px-3 py-1.5 rounded bg-[#eb584d] hover:bg-[#d94338] text-white text-xs font-medium cursor-pointer"
             >
               Apply Changes
             </button>

@@ -1,16 +1,16 @@
 # Extension Points Reference
 
-Flint provides a rich set of declarative extension points allowing plugins to seamlessly inject buttons, views, menus, and editor behaviors into the workspace.
+Noether provides a rich set of declarative extension points allowing plugins to seamlessly inject buttons, views, menus, and editor behaviors into the workspace.
 
 
 ## 1. Action Rail (Left Ribbon Toolbar)
 
 ---
 
-The Action Rail is the narrow vertical icon bar on the far-left side of the Flint window. Use it for high-frequency global actions or view toggles.
+The Action Rail is the narrow vertical icon bar on the far-left side of the Noether window. Use it for high-frequency global actions or view toggles.
 
 ```typescript
-import { Extension, FlintApp } from 'flint';
+import { Extension, NoetherApp } from 'noether';
 import React from 'react';
 
 export default class ActionRailExample extends Extension {
@@ -19,11 +19,11 @@ export default class ActionRailExample extends Extension {
       'daily-quote',                            // Identifier (scoped automatically)
       React.createElement('span', null, '💡'), // React element or SVG icon
       'Show Daily Quote',                       // Hover tooltip
-      (app: FlintApp) => {
+      (app: NoetherApp) => {
         app.workspace.showToast('Stay curious and keep writing.', 'info');
       },
       15,                                       // Order priority (lower numbers appear higher)
-      (app: FlintApp) => true                   // Optional isActive predicate
+      (app: NoetherApp) => true                   // Optional isActive predicate
     );
   }
 }
@@ -34,7 +34,7 @@ export default class ActionRailExample extends Extension {
 
 ---
 
-Commands appear in Flint's searchable Command Palette and can be bound to custom keyboard shortcuts.
+Commands appear in Noether's searchable Command Palette and can be bound to custom keyboard shortcuts.
 
 ```typescript
 this.addCommand({
@@ -43,11 +43,11 @@ this.addCommand({
   section: 'Editor Actions',
   hotkey: 'Ctrl+Alt+T',
   allowInInput: true, // Enables firing even when an input or editor has focus
-  action: (app: FlintApp) => {
+  action: (app: NoetherApp) => {
     const timestamp = new Date().toISOString();
     app.workspace.showToast(`Timestamp: ${timestamp}`, 'success');
   },
-  isVisible: (app: FlintApp) => true, // Optional conditional filter
+  isVisible: (app: NoetherApp) => true, // Optional conditional filter
 });
 ```
 
@@ -63,7 +63,7 @@ this.addStatusBarItem({
   id: 'sync-indicator',
   alignment: 'right', // 'left' or 'right'
   order: 5,
-  render: (app: FlintApp) => {
+  render: (app: NoetherApp) => {
     return React.createElement(
       'div',
       {
@@ -82,7 +82,7 @@ this.addStatusBarItem({
 
 ---
 
-Flint features contextual right-click menus scoped to specific UI targets:
+Noether features contextual right-click menus scoped to specific UI targets:
 - `'file-tree'`: Right-clicking files or folders in the sidebar.
 - `'file-tree-root'`: Right-clicking empty space in the file tree.
 - `'editor'`: Right-clicking inside the document editor.
@@ -135,7 +135,7 @@ this.registerContextMenuItem({
 
 ---
 
-Extensions can register full-screen view types that render inside workspace tabs (similar to Flint's native Graph View or Canvas).
+Extensions can register full-screen view types that render inside workspace tabs (similar to Noether's native Graph View or Canvas).
 
 ```typescript
 // 1. Register the custom view definition
@@ -175,7 +175,7 @@ this.addCommand({
 
 ---
 
-Register modal dialogs managed centrally by Flint's modal system:
+Register modal dialogs managed centrally by Noether's modal system:
 
 ```typescript
 this.registerModal({
@@ -184,7 +184,7 @@ this.registerModal({
     return React.createElement(
       'div',
       { className: 'p-6 bg-neutral-900 border border-neutral-700 rounded-lg max-w-md w-full' },
-      React.createElement('h2', { className: 'text-lg font-semibold text-white' }, 'Welcome to Flint!'),
+      React.createElement('h2', { className: 'text-lg font-semibold text-white' }, 'Welcome to Noether!'),
       React.createElement('p', { className: 'text-sm text-neutral-400 mt-2' },
         'Your local-first sanctuary for ideas and structured knowledge.'
       ),
@@ -202,7 +202,7 @@ this.registerModal({
 
 ---
 
-Provide a configuration interface in the Flint Settings modal:
+Provide a configuration interface in the Noether Settings modal:
 
 ```typescript
 this.registerSettingTab({
@@ -285,7 +285,7 @@ this.registerPortalSlot({
 
 ---
 
-Flint allows extensions to register custom file extensions (such as `.canvas`, `.excalidraw`, `.sheet`, or `.mindmap`). When registered, Flint automatically:
+Noether allows extensions to register custom file extensions (such as `.canvas`, `.excalidraw`, `.sheet`, or `.mindmap`). When registered, Noether automatically:
 - Scans and indexes the file extension during vault synchronization.
 - Displays the custom badge (e.g. `CANVAS`) next to the file title in the navigation tree.
 - Routes opening the file directly to your custom registered view.
@@ -307,8 +307,8 @@ this.registerFileType({
 
 ---
 
-- [[Flint UI Components]]: Use native buttons, inputs, toggles, cards, and setting builders.
-- [[CSS Variables & Design Tokens]]: Style custom controls using Flint's theme variables.
-- [[Flint SDK API Reference]]: Complete method signatures and hook definitions.
+- [[Noether UI Components]]: Use native buttons, inputs, toggles, cards, and setting builders.
+- [[CSS Variables & Design Tokens]]: Style custom controls using Noether's theme variables.
+- [[Noether SDK API Reference]]: Complete method signatures and hook definitions.
 - [[Events & Relational Storage]]: Coordinate UI actions with database events.
 - [[Model Context Protocol (MCP) Tools]]: Expose extension capabilities to AI agent copilots.

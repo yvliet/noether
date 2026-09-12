@@ -1,7 +1,7 @@
 /**
  * @module sketchEngine
  * @description
- * High-performance vector stroke engine and serialization utilities for Flint Sketch.
+ * High-performance vector stroke engine and serialization utilities for Noether Sketch.
  * Provides real-time quadratic Bezier curve smoothing, eraser intersection testing,
  * SVG export generation, and zero-leakage markdown HTML comment parsing/serialization.
  */
@@ -275,7 +275,7 @@ export function exportStrokesToSvg(strokes: SketchStroke[], defaultWidth = 800, 
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vbX} ${vbY} ${vbW} ${vbH}" width="${vbW}" height="${vbH}">\n${paths}\n</svg>`;
 }
 
-export const SKETCH_COMMENT_REGEX = /<!--\s*flint-sketch:\s*([\s\S]*?)\s*-->/g;
+export const SKETCH_COMMENT_REGEX = /<!--\s*noether-sketch:\s*([\s\S]*?)\s*-->/g;
 
 /**
  * Serializes sketch data into a compact HTML comment string appended to the markdown document.
@@ -300,11 +300,11 @@ export function serializeSketchToComment(data: SketchDocumentData): string {
     })),
   };
 
-  return `\n\n<!-- flint-sketch: ${JSON.stringify(payload)} -->\n`;
+  return `\n\n<!-- noether-sketch: ${JSON.stringify(payload)} -->\n`;
 }
 
 /**
- * Extracts and cleans flint-sketch HTML comments from markdown text.
+ * Extracts and cleans noether-sketch HTML comments from markdown text.
  * Returns the sanitized markdown with zero comment text and the parsed SketchDocumentData.
  */
 export function parseSketchFromComment(
@@ -323,7 +323,7 @@ export function parseSketchFromComment(
         matchedPayload = parsed;
       }
     } catch (e) {
-      console.warn('[Flint Sketch] Failed to parse sketch comment payload:', e);
+      console.warn('[Noether Sketch] Failed to parse sketch comment payload:', e);
     }
     return '';
   }).trimEnd();

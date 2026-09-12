@@ -1,12 +1,12 @@
 # Keyboard Shortcuts & Command Palette
 
-Flint is designed for keyboard-driven focus. You can navigate between files, execute commands, split editor panes, and format notes without lifting your hands from the keyboard.
+Noether is designed for keyboard-driven focus. You can navigate between files, execute commands, split editor panes, and format notes without lifting your hands from the keyboard.
 
 ---
 
 ## 1. The Command Palette (`Ctrl+K` / `Cmd+K`)
 
-The **Command Palette** is your central cockpit in Flint.
+The **Command Palette** is your central cockpit in Noether.
 
 - Press `Ctrl+K` (or `Cmd+K` on macOS) from anywhere in the app.
 - Start typing to search for open notes, recent documents, or application commands.
@@ -19,7 +19,7 @@ The **Command Palette** is your central cockpit in Flint.
   • Toggle Split Editor (Ctrl+Alt+S)
   • Open 2D Knowledge Graph View (Ctrl+G)
   • Open Spaced Repetition Review Deck
-  • Switch Active Hearth Workspace (Ctrl+Shift+O)
+  • Switch Active Vault Workspace (Ctrl+Shift+O)
 ```
 
 ---
@@ -31,7 +31,7 @@ The **Command Palette** is your central cockpit in Flint.
 | **Command Palette / Quick Open** | `Ctrl + K` or `Ctrl + O` | `Cmd + K` or `Cmd + O` |
 | **Toggle Left Sidebar (File Tree)** | `Ctrl + \` | `Cmd + \` |
 | **Toggle Right Sidebar (Backlinks/Outline)** | `Ctrl + Shift + \` | `Cmd + Shift + \` |
-| **Switch Active Hearth** | `Ctrl + Shift + O` | `Cmd + Shift + O` |
+| **Switch Active Vault** | `Ctrl + Shift + O` | `Cmd + Shift + O` |
 | **Vault-Wide Full-Text Search** | `Ctrl + Shift + F` | `Cmd + Shift + F` |
 | **Open Settings Window** | `Ctrl + ,` | `Cmd + ,` |
 | **Open Help & Shortcuts Guide** | `F1` | `F1` |
@@ -101,7 +101,7 @@ The **Command Palette** is your central cockpit in Flint.
 
 ---
 
-## 7. Flint Sketch (Drawing & Markup Overlay)
+## 7. Noether Sketch (Drawing & Markup Overlay)
 
 ---
 

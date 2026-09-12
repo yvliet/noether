@@ -1,10 +1,10 @@
 /**
  * @module TasksExtension
  * @description
- * Built-in core extension aggregating todo items and checklists across all hearth notes.
+ * Built-in core extension aggregating todo items and checklists across all vault notes.
  * Registers the tasks dashboard view, action rail launcher, navigation command, and settings tab.
  *
- * Uses native FlintApp APIs (app.workspace.setMainViewMode).
+ * Uses native NoetherApp APIs (app.workspace.setMainViewMode).
  *
  * @since 0.2.0
  */
@@ -12,7 +12,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { CheckmarkSquare02Icon } from '@/components/common/Icons';
 import { tasksReadme } from './readme';
 
@@ -35,7 +35,7 @@ export const TASKS_MANIFEST: ExtensionManifest = {
 };
 
 export class TasksExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = TASKS_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = TASKS_MANIFEST) {
     super(app, manifest);
   }
 
@@ -128,12 +128,12 @@ export class TasksExtension extends Extension {
         },
         required: [],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const status = (args.status as string) || 'all';
           const search = (args.search as string) || '';
           const completedFilter = status === 'pending' ? false : status === 'completed' ? true : undefined;
-          const tasks = await this.app.hearth.getGlobalTasks({
+          const tasks = await this.app.vault.getGlobalTasks({
             completed: completedFilter,
             query: search.trim() || undefined,
           });
@@ -165,7 +165,7 @@ export class TasksExtension extends Extension {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const documentId = args.documentId as string;
           if (!documentId) {
@@ -174,7 +174,7 @@ export class TasksExtension extends Extension {
               content: [{ type: 'text', text: 'documentId parameter is required' }],
             };
           }
-          const allTasks = await this.app.hearth.getGlobalTasks();
+          const allTasks = await this.app.vault.getGlobalTasks();
           const tasks = allTasks.filter((t: any) => t.document_id === documentId);
           return {
             content: [{ type: 'text', text: JSON.stringify({ documentId, tasks, total: tasks.length }) }],
@@ -212,7 +212,7 @@ export class TasksExtension extends Extension {
         },
         required: ['documentId', 'taskText', 'completed'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const documentId = args.documentId as string;
           const taskText = args.taskText as string;
@@ -223,7 +223,7 @@ export class TasksExtension extends Extension {
               content: [{ type: 'text', text: 'documentId and taskText parameters are required' }],
             };
           }
-          await this.app.hearth.toggleTask(documentId, taskText, completed);
+          await this.app.vault.toggleTask(documentId, taskText, completed);
           return {
             content: [{ type: 'text', text: JSON.stringify({ success: true, documentId, taskText, completed }) }],
           };

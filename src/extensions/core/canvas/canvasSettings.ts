@@ -38,7 +38,7 @@ export const useCanvasSettings = create<CanvasSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_CANVAS_SETTINGS }),
     }),
     {
-      name: 'flint_plugin_data_canvas',
+      name: 'noether_extension_data_canvas',
     }
   )
 );

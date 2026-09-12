@@ -7,7 +7,7 @@ Once you have built an extension, this guide covers versioning strategies, local
 
 ---
 
-Flint supports standard **Semantic Versioning** (`MAJOR.MINOR.PATCH` / `x.y.z`) as well as extended four-part versioning (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w` / `x.y.zw`) for granular sub-patch releases:
+Noether supports standard **Semantic Versioning** (`MAJOR.MINOR.PATCH` / `x.y.z`) as well as extended four-part versioning (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w` / `x.y.zw`) for granular sub-patch releases:
 
 - **MAJOR** (`1.0.0` → `2.0.0`): Incompatible changes, breaking API removals, or substantial SQLite schema revisions.
 - **MINOR** (`1.0.0` → `1.1.0`): Backwards-compatible new features, newly added commands, or additional MCP tools.
@@ -48,7 +48,7 @@ async onload() {
 
 ---
 
-Whenever an extension is disabled or updated, Flint calls its `onunload()` hook:
+Whenever an extension is disabled or updated, Noether calls its `onunload()` hook:
 
 - All commands, ribbon icons, status bar widgets, and event listeners registered through `this.add*` and `this.registerEvent` are disposed of automatically.
 - Manually terminate any active interval timers (`clearInterval`), WebSockets, or worker tasks in `onunload()`.
@@ -74,11 +74,11 @@ export default class SyncExtension extends Extension {
 
 ---
 
-Flint features an autonomous multi-tier update manager (`app.extensions.updater`) that keeps community extensions synchronized with remote repositories and registries:
+Noether features an autonomous multi-tier update manager (`app.extensions.updater`) that keeps community extensions synchronized with remote repositories and registries:
 
-- **Resilient 5-Tier Fallback Pipeline**: Flint queries distribution bundles in deterministic order: (1) Official registry endpoints, (2) Turso edge replicas, (3) GitHub Releases (`releases/latest/download/main.js`), (4) Raw GitHub CDNs, and (5) Local Hearth caches.
+- **Resilient 5-Tier Fallback Pipeline**: Noether queries distribution bundles in deterministic order: (1) Official registry endpoints, (2) Turso edge replicas, (3) GitHub Releases (`releases/latest/download/main.js`), (4) Raw GitHub CDNs, and (5) Local Vault caches.
 - **In-App Checking & Updates**: Users can trigger "Check for updates" or "Update all" from Settings → Community Extensions, or upgrade directly via the Community Marketplace.
-- **Zero Restart Required**: Flint automatically invokes the extension unload lifecycle, writes the updated bundle to `.flint/extensions/<id>/`, evaluates the new bundle in memory, and re-enables the extension seamlessly.
+- **Zero Restart Required**: Noether automatically invokes the extension unload lifecycle, writes the updated bundle to `.noether/extensions/<id>/`, evaluates the new bundle in memory, and re-enables the extension seamlessly.
 
-For more lifecycle details, read [[Flint SDK API Reference]] and [[Developer Policies & Guidelines]].
+For more lifecycle details, read [[Noether SDK API Reference]] and [[Developer Policies & Guidelines]].
 

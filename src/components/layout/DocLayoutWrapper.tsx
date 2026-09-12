@@ -37,8 +37,8 @@ export const DocLayoutWrapper: React.FC<DocLayoutWrapperProps> = React.memo(({
     <div
       data-doc-view="true"
       onClick={handleContainerClick}
-      className={`flint-doc-wrapper flex-1 overflow-hidden relative flex flex-col min-w-0 ${
-        showExternalLinkIcon ? 'flint-show-link-icon' : ''
+      className={`noether-doc-wrapper flex-1 overflow-hidden relative flex flex-col min-w-0 ${
+        showExternalLinkIcon ? 'noether-show-link-icon' : ''
       }`}
     >
       <div

@@ -42,11 +42,11 @@ export const SettingItem: React.FC<SettingItemProps> = ({
   return (
     <div className={`flex items-center justify-between p-4 ${className}`}>
       <div className="flex flex-col pr-4 min-w-0 flex-1">
-        <span className="text-[13px] font-normal text-[var(--flint-text-secondary,#dcddde)]">
+        <span className="text-[13px] font-normal text-[var(--noether-text-secondary,#dcddde)]">
           {name}
         </span>
         {description && (
-          <span className="text-[11px] text-[var(--flint-text-muted,#777777)] mt-0.5">
+          <span className="text-[11px] text-[var(--noether-text-muted,#777777)] mt-0.5">
             {description}
           </span>
         )}
@@ -61,7 +61,7 @@ export const SettingItem: React.FC<SettingItemProps> = ({
               onReset();
             }}
             title={resetTitle}
-            className="p-1 rounded-md text-[var(--flint-text-muted,#777777)] hover:text-[var(--flint-text-primary,#ffffff)] hover:bg-[var(--flint-bg-card-hover,#282828)] cursor-pointer shrink-0 flex items-center justify-center outline-none"
+            className="p-1 rounded-md text-[var(--noether-text-muted,#777777)] hover:text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-bg-card-hover,#282828)] cursor-pointer shrink-0 flex items-center justify-center outline-none"
           >
             <RotateCcwIcon size={13} />
           </button>

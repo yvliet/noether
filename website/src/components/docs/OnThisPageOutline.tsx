@@ -46,7 +46,7 @@ export const OnThisPageOutline: React.FC<OnThisPageOutlineProps> = React.memo(({
                   style={{ paddingLeft: `${indent}px` }}
                   className={`group relative text-left text-[13px] py-0.5 pr-1 whitespace-normal break-words cursor-pointer leading-[1.35] transition-none ${
                     isActive
-                      ? 'text-[#ea580c] font-normal'
+                      ? 'text-[#eb584d] font-normal'
                       : 'text-[#999999] hover:text-white font-normal'
                   }`}
                 >
@@ -84,7 +84,7 @@ export const OnThisPageOutline: React.FC<OnThisPageOutlineProps> = React.memo(({
                   onSelectDoc?.(b);
                 }}
                 title={b.title}
-                className="text-left text-[13px] text-[#ea580c] hover:text-[#f97316] underline underline-offset-2 font-normal cursor-pointer py-0.5 pr-1 whitespace-normal break-words leading-[1.35] transition-none"
+                className="text-left text-[13px] text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer py-0.5 pr-1 whitespace-normal break-words leading-[1.35] transition-none"
               >
                 {b.title}
               </a>

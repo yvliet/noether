@@ -1,8 +1,8 @@
 /**
  * @module UpdateChecker
  * @description
- * Native update discovery and release management service for the Flint desktop and web clients.
- * Queries official GitHub releases (https://api.github.com/repos/yvliet/flint/releases), evaluates
+ * Native update discovery and release management service for the Noether desktop and web clients.
+ * Queries official GitHub releases (https://api.github.com/repos/yvliet/noether/releases), evaluates
  * Semantic Versioning invariants, and handles automated or manual update distribution.
  *
  * Technical Rationale:
@@ -15,10 +15,10 @@
 import { APP_VERSION } from '@/version';
 import { platform } from '@/lib/platform/platformAdapter';
 
-export const GITHUB_REPO = 'yvliet/flint';
+export const GITHUB_REPO = 'yvliet/noether';
 export const GITHUB_RELEASES_API = `https://api.github.com/repos/${GITHUB_REPO}/releases`;
-export const STORAGE_LAST_CHECK_KEY = 'flint_last_update_check_time';
-export const STORAGE_CACHED_RELEASE_KEY = 'flint_cached_latest_release';
+export const STORAGE_LAST_CHECK_KEY = 'noether_last_update_check_time';
+export const STORAGE_CACHED_RELEASE_KEY = 'noether_cached_latest_release';
 
 export interface ReleaseAsset {
   name: string;

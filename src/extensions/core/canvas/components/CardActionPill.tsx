@@ -162,7 +162,7 @@ export const CardActionPill: React.FC<CardActionPillProps> = React.memo(
                     );
                   })}
 
-                  {/* 8th Swatch: Rainbow / Custom Color Picker (Toggles Flint's InlineColorPicker) */}
+                  {/* 8th Swatch: Rainbow / Custom Color Picker (Toggles Noether's InlineColorPicker) */}
                   <button
                     type="button"
                     onClick={(e) => {
@@ -182,7 +182,7 @@ export const CardActionPill: React.FC<CardActionPillProps> = React.memo(
                   />
                 </div>
 
-                {/* Flint's Custom Color Picker (2D spectrum, hue slider, eyedropper, RGB/HEX) */}
+                {/* Noether's Custom Color Picker (2D spectrum, hue slider, eyedropper, RGB/HEX) */}
                 {showAdvancedPicker && (
                   <div className="mt-2.5 pt-2 border-t border-[#2d2d2d] w-full flex justify-center">
                     <InlineColorPicker

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  useFlintApp,
+  useNoetherApp,
   useActiveDocument,
   useDocumentBacklinks,
   useDocumentOutgoingLinks,
@@ -8,7 +8,7 @@ import {
   type BacklinkItem,
   type OutgoingLinkItem,
   type UnlinkedMentionItem,
-} from 'flint';
+} from 'noether';
 import {
   LinkSquare02Icon,
   Link2Icon,
@@ -24,20 +24,20 @@ import { SortDropdown } from '@/components/common/SortDropdown';
 import { FileSortOrder, FILE_SORT_OPTIONS } from '@/lib/sort';
 
 export const BacklinksView: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const activeDocument = useActiveDocument();
   const backlinks = useDocumentBacklinks();
   const outgoingLinks = useDocumentOutgoingLinks();
   const unlinkedMentions = useDocumentUnlinkedMentions();
 
   const setActiveDocumentById = useCallback((id: string) => {
-    app.hearth.openDocument(id);
+    app.vault.openDocument(id);
   }, [app]);
   const createNewNote = useCallback((title?: string) => {
-    return app.hearth.createNewNote(title);
+    return app.vault.createNewNote(title);
   }, [app]);
   const convertUnlinkedMention = useCallback((sourceDocId: string, title: string) => {
-    return app.hearth.convertUnlinkedMention(sourceDocId, title);
+    return app.vault.convertUnlinkedMention(sourceDocId, title);
   }, [app]);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -237,7 +237,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                     className="p-2 rounded-lg bg-[#181818] hover:bg-[#222] cursor-pointer transition-none border border-[#242424] hover:border-[#333] group"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="flint-link font-medium text-xs hover:underline truncate">
+                      <div className="noether-link font-medium text-xs hover:underline truncate">
                         {link.source_document_title}
                       </div>
                       <span className="text-[9px] text-[#555]">
@@ -297,8 +297,8 @@ export const BacklinksView: React.FC = React.memo(() => {
                       }}
                       className="flex items-center gap-2 cursor-pointer truncate flex-1 min-w-0"
                     >
-                      <Link2Icon size={12} className={out.exists ? 'text-[var(--flint-link-color)]' : 'text-[#666]'} />
-                      <span className={`text-[12px] truncate ${out.exists ? 'flint-link hover:underline' : 'text-[#888] italic'}`}>
+                      <Link2Icon size={12} className={out.exists ? 'text-[var(--noether-link-color)]' : 'text-[#666]'} />
+                      <span className={`text-[12px] truncate ${out.exists ? 'noether-link hover:underline' : 'text-[#888] italic'}`}>
                         {out.link_text}
                       </span>
                     </div>
@@ -352,7 +352,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                       <div className="flex items-center justify-between">
                         <div
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
-                          className="flint-link font-medium text-xs cursor-pointer hover:underline truncate flex-1 min-w-0"
+                          className="noether-link font-medium text-xs cursor-pointer hover:underline truncate flex-1 min-w-0"
                         >
                           {unlinked.source_document_title}
                         </div>

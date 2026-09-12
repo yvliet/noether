@@ -1,4 +1,4 @@
-//! Flint Native SQLite Database Engine
+//! Noether Native SQLite Database Engine
 //!
 //! Architectural Rationale:
 //! 1. Zero WASM Footprint: Replaces browser-sandboxed `sql.js` with native, compiled C/Rust SQLite,
@@ -72,7 +72,7 @@ pub const SQL_SCHEMA_STATEMENTS: &[&str] = &[
         content_hash TEXT NOT NULL,
         indexed_at INTEGER NOT NULL
     );"#,
-    r#"CREATE TABLE IF NOT EXISTS flint_meta (
+    r#"CREATE TABLE IF NOT EXISTS noether_meta (
         key TEXT PRIMARY KEY,
         value TEXT
     );"#,
@@ -158,15 +158,15 @@ pub fn get_vault_db_path(vault_path: &str) -> PathBuf {
         } else {
             dirs::document_dir()
                 .unwrap_or_else(|| PathBuf::from("."))
-                .join("Flint Vault")
+                .join("Noether Vault")
         }
     } else {
         PathBuf::from(vault_path)
     };
 
-    let flint_dir = base.join(".flint");
-    let _ = std::fs::create_dir_all(&flint_dir);
-    flint_dir.join("flint.sqlite")
+    let noether_dir = base.join(".noether");
+    let _ = std::fs::create_dir_all(&noether_dir);
+    noether_dir.join("noether.sqlite")
 }
 
 /// Opens SQLite connection and applies high-performance WAL pragmas and schema
@@ -201,13 +201,13 @@ pub fn open_vault_db(vault_path: &str) -> Result<Connection, String> {
     // Execute schema definitions
     for statement in SQL_SCHEMA_STATEMENTS {
         if let Err(e) = conn.execute(statement, []) {
-            eprintln!("[Flint Native DB] Schema warning on {}: {}", statement, e);
+            eprintln!("[Noether Native DB] Schema warning on {}: {}", statement, e);
         }
     }
 
     // Initialize FTS5 table
     if let Err(e) = conn.execute(FTS5_BLOCKS_STATEMENT, []) {
-        eprintln!("[Flint Native DB] FTS5 initialization note: {}", e);
+        eprintln!("[Noether Native DB] FTS5 initialization note: {}", e);
     }
 
     Ok(conn)
@@ -216,7 +216,7 @@ pub fn open_vault_db(vault_path: &str) -> Result<Connection, String> {
 // ── Tauri Commands ─────────────────────────────────────────────────────────
 
 #[tauri::command]
-pub fn flint_db_init(
+pub fn noether_db_init(
     state: tauri::State<'_, DbState>,
     vault_path: Option<String>,
 ) -> Result<bool, String> {
@@ -245,7 +245,7 @@ pub fn flint_db_init(
 }
 
 #[tauri::command]
-pub fn flint_db_query(
+pub fn noether_db_query(
     state: tauri::State<'_, DbState>,
     sql: String,
     params: Option<Vec<Value>>,
@@ -382,7 +382,7 @@ pub fn split_sql_statements(sql: &str) -> Vec<&str> {
 }
 
 #[tauri::command]
-pub fn flint_db_execute(
+pub fn noether_db_execute(
     state: tauri::State<'_, DbState>,
     sql: String,
     params: Option<Vec<Value>>,
@@ -432,7 +432,7 @@ pub fn flint_db_execute(
 }
 
 #[tauri::command]
-pub fn flint_db_transaction(
+pub fn noether_db_transaction(
     state: tauri::State<'_, DbState>,
     queries: Vec<DbQueryItem>,
 ) -> Result<bool, String> {
@@ -471,7 +471,7 @@ pub fn flint_db_transaction(
 }
 
 #[tauri::command]
-pub fn flint_db_supports_fts5() -> bool {
+pub fn noether_db_supports_fts5() -> bool {
     true
 }
 
@@ -481,7 +481,7 @@ mod tests {
 
     #[test]
     fn test_open_vault_db() {
-        let temp_dir = std::env::temp_dir().join("flint_test_db");
+        let temp_dir = std::env::temp_dir().join("noether_test_db");
         let res = open_vault_db(temp_dir.to_str().unwrap());
         assert!(res.is_ok(), "open_vault_db failed: {:?}", res.err());
     }

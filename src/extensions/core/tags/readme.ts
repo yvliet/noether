@@ -10,7 +10,7 @@ The **Tags Explorer** extension scans all notes across the vault for hashtag tok
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension demonstrates how to register Left Sidebar tabs and interact with vault search filters.
 

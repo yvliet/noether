@@ -1,6 +1,6 @@
 export const marketplaceReadme = `# Community Extensions Marketplace
 
-Discover, browse, install, and update Flint community extensions and themes.
+Discover, browse, install, and update Noether community extensions and themes.
 
 ---
 
@@ -10,9 +10,9 @@ The **Community Extensions Marketplace** provides an in-app catalog to discover 
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
-This extension demonstrates how to build an in-app extension ecosystem using Flint's Extension Manager and custom view engine.
+This extension demonstrates how to build an in-app extension ecosystem using Noether's Extension Manager and custom view engine.
 
 ### 1. View & Ribbon Registration
 \`\`\`tsx
@@ -46,10 +46,10 @@ When a user clicks **Install**:
 
 ---
 
-## Developer Guide: Publishing to Flint Marketplace
+## Developer Guide: Publishing to Noether Marketplace
 
-To publish your extension to the Flint community marketplace:
+To publish your extension to the Noether community marketplace:
 1. Create a repository with \`manifest.json\` containing \`id\`, \`name\`, \`version\`, \`author\`, \`description\`, and \`readme\`.
 2. Bundle your entry point with Vite/esbuild into \`main.js\`.
-3. Submit a pull request to Flint's community extension registry.
+3. Submit a pull request to Noether's community extension registry.
 `;

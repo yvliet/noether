@@ -1,4 +1,4 @@
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { GraphExtension, GRAPH_MANIFEST } from './graph/GraphExtension';
 import { CanvasExtension, CANVAS_MANIFEST } from './canvas/CanvasExtension';
 import { TasksExtension, TASKS_MANIFEST } from './tasks/TasksExtension';
@@ -15,7 +15,7 @@ import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
 import { SyncExtension, SYNC_MANIFEST } from './sync/SyncExtension';
 
-export function registerAllCoreExtensions(app: FlintApp): void {
+export function registerAllCoreExtensions(app: NoetherApp): void {
   app.extensions.registerExtension(DEFAULT_COMMANDS_MANIFEST, DefaultCommandsExtension);
   app.extensions.registerExtension(SYNC_MANIFEST, SyncExtension);
   app.extensions.registerExtension(BOOKMARKS_MANIFEST, BookmarksExtension);

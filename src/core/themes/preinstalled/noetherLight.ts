@@ -1,15 +1,15 @@
 import { ThemeDefinition } from '../types';
 
-export const FLINT_LIGHT_THEME: ThemeDefinition = {
-  id: 'flint-light',
-  name: 'Flint Light',
+export const NOETHER_LIGHT_THEME: ThemeDefinition = {
+  id: 'noether-light',
+  name: 'Noether Light',
   description: 'Clean, crisp, modern neutral light theme with pure white canvas, zinc neutral surfaces, and high-contrast typography.',
-  author: 'Flint Core',
+  author: 'Noether Core',
   type: 'light',
   isPreinstalled: true,
   isBuiltIn: true,
   hasGradient: false,
-  previewColors: ['#f4f4f5', '#f8f9fa', '#ffffff', '#ea580c'],
+  previewColors: ['#f4f4f5', '#f8f9fa', '#ffffff', '#eb584d'],
   variables: {
     bgApp: '#f4f4f5',
     bgTopBar: '#f4f4f5',
@@ -36,11 +36,11 @@ export const FLINT_LIGHT_THEME: ThemeDefinition = {
     textSecondary: '#27272a',
     textMuted: '#52525b',
     textFaint: '#71717a',
-    accent: '#ea580c',
-    accentHover: '#c2410c',
-    accentActive: '#9a3412',
-    accentSubtle: 'rgba(234, 88, 12, 0.12)',
-    accentGradient: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
+    accent: '#eb584d',
+    accentHover: '#d94338',
+    accentActive: '#b83228',
+    accentSubtle: 'rgba(235, 88, 77, 0.12)',
+    accentGradient: 'linear-gradient(135deg, #eb584d 0%, #f07167 100%)',
     selectionBg: '#e4e4e7',
     selectionText: '#09090b',
     codeBg: '#f4f4f5',
@@ -54,3 +54,5 @@ export const FLINT_LIGHT_THEME: ThemeDefinition = {
     shadow3: '0 10px 24px -4px rgba(0, 0, 0, 0.08), 0 4px 8px -2px rgba(0, 0, 0, 0.04)',
   },
 };
+
+export const noetherLight = NOETHER_LIGHT_THEME;

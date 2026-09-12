@@ -1,6 +1,6 @@
 # Extension Manifest Specification (`manifest.json`)
 
-Every Flint extension must include a valid `manifest.json` file in its root directory. This manifest provides the host application with metadata needed to discover, load, sandbox, and categorize the extension.
+Every Noether extension must include a valid `manifest.json` file in its root directory. This manifest provides the host application with metadata needed to discover, load, sandbox, and categorize the extension.
 
 
 ## 1. Example Manifest
@@ -19,7 +19,7 @@ Every Flint extension must include a valid `manifest.json` file in its root dire
   "tags": ["productivity", "visualization", "tasks"],
   "icon": "ViewBoardIcon",
   "bannerImage": "assets/banner.png",
-  "readme": "# Kanban Boards for Flint\nOrganize tasks across columns..."
+  "readme": "# Kanban Boards for Noether\nOrganize tasks across columns..."
 }
 ```
 
@@ -34,14 +34,14 @@ Every Flint extension must include a valid `manifest.json` file in its root dire
 | `name` | `string` | **Yes** | Human-readable title displayed in the extensions manager and community marketplace. |
 | `version` | `string` | **Yes** | Version string formatted as standard SemVer `MAJOR.MINOR.PATCH` (`x.y.z`, e.g. `1.0.0`) or extended four-part `MAJOR.MINOR.PATCH.BUILD` (`x.y.z.w` / `x.y.zw`, e.g. `1.0.0.1`). |
 | `description` | `string` | **Yes** | Brief one- or two-sentence overview of the extension's capabilities (recommended: 40-160 characters). |
-| `minAppVersion` | `string` | No | Minimum version of the Flint host application required for compatibility (e.g., `0.2.0`). Defaults to `0.1.0`. |
+| `minAppVersion` | `string` | No | Minimum version of the Noether host application required for compatibility (e.g., `0.2.0`). Defaults to `0.1.0`. |
 | `author` | `string` | No | Name of the author, team, or maintainer. |
 | `authorUrl` | `string` | No | Web URL to the author's GitHub profile, portfolio, or documentation site. |
 | `tags` | `string[]` | No | Array of category keywords for search and marketplace filtering (e.g., `["productivity", "formatting", "ai"]`). |
 | `icon` | `string` | No | Icon identifier (matching standard icon names) or custom SVG string for display in cards. |
 | `readme` | `string` | No | Full Markdown documentation shown in the Marketplace details modal. |
 | `bannerImage` | `string` | No | Relative path (e.g., `assets/banner.png`) or URL to a header image displayed in the marketplace. |
-| `isCore` | `boolean` | No | Reserved for Flint internal bundled extensions. Community extensions must omit this or set it to `false`. |
+| `isCore` | `boolean` | No | Reserved for Noether internal bundled extensions. Community extensions must omit this or set it to `false`. |
 
 
 ## 3. Manifest JSON Schema
@@ -53,7 +53,7 @@ You can validate your `manifest.json` using the official JSON Schema:
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "FlintExtensionManifest",
+  "title": "NoetherExtensionManifest",
   "type": "object",
   "required": ["id", "name", "version", "description"],
   "properties": {
@@ -75,7 +75,7 @@ You can validate your `manifest.json` using the official JSON Schema:
     },
     "minAppVersion": {
       "type": "string",
-      "description": "Minimum Flint application version required."
+      "description": "Minimum Noether application version required."
     },
     "description": {
       "type": "string",
@@ -123,11 +123,11 @@ You can validate your `manifest.json` using the official JSON Schema:
 
 ---
 
-When Flint boots or loads a new extension, it runs validation on `manifest.json`. Common validation failures include:
+When Noether boots or loads a new extension, it runs validation on `manifest.json`. Common validation failures include:
 
 1. **Invalid ID Format**: IDs with uppercase letters, spaces, or special characters (`WordCounter` or `my_plugin`) will fail. Use kebab-case: `word-counter` or `my-plugin`.
 2. **Missing Required Fields**: Omitting `description`, `version`, or `name` prevents the extension from loading.
-3. **App Version Mismatch**: If `minAppVersion` is higher than the currently running Flint application version, the extension is disabled with an incompatibility notice.
+3. **App Version Mismatch**: If `minAppVersion` is higher than the currently running Noether application version, the extension is disabled with an incompatibility notice.
 
 
 ## 5. Related Reading & References

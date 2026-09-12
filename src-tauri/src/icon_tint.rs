@@ -1,11 +1,11 @@
-﻿use std::sync::{Mutex, OnceLock};
+use std::sync::{Mutex, OnceLock};
 use image::{GenericImageView, Rgba, RgbaImage};
 
 static MONO_BASE: OnceLock<RgbaImage> = OnceLock::new();
 static DEFAULT_ICON_RAW: OnceLock<(Vec<u8>, u32, u32)> = OnceLock::new();
 static CACHED_TINT: Mutex<Option<(String, Vec<u8>, u32, u32)>> = Mutex::new(None);
 
-const DEFAULT_ACCENT: &str = "#ea580c";
+const DEFAULT_ACCENT: &str = "#eb584d";
 
 fn parse_hex_color(hex: &str) -> Option<(u8, u8, u8)> {
     let clean = hex.trim().trim_start_matches('#');
@@ -41,8 +41,8 @@ fn overlay_blend_channel(base: u8, tint: u8) -> u8 {
 
 fn get_mono_base() -> &'static RgbaImage {
     MONO_BASE.get_or_init(|| {
-        let mono_bytes = include_bytes!("../icons/flint-mono.png");
-        let img = image::load_from_memory(mono_bytes).expect("Failed to load embedded flint-mono.png");
+        let mono_bytes = include_bytes!("../icons/noether-mono.png");
+        let img = image::load_from_memory(mono_bytes).expect("Failed to load embedded noether-mono.png");
         img.to_rgba8()
     })
 }
@@ -58,7 +58,7 @@ fn get_default_icon() -> &'static (Vec<u8>, u32, u32) {
 }
 
 /// Generates or retrieves cached RGBA bytes with Overlay blend for the specified accent color.
-/// If the accent color is default (#ea580c), returns the original full-color icon.
+/// If the accent color is default (#eb584d), returns the original full-color icon.
 pub fn generate_tinted_icon_rgba(accent_color: &str) -> (Vec<u8>, u32, u32) {
     let clean_hex = accent_color.trim().to_lowercase();
     

@@ -10,12 +10,12 @@ The **Note Properties** extension delivers Obsidian-compatible frontmatter metad
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension demonstrates how to register document header items, sidebar panels, setting tabs, and command palette actions.
 
 ### 1. Document Header Registration
-Flint's \`app.editor.registerDocumentHeader\` API allows extensions to inject custom UI at the top of note documents:
+Noether's \`app.editor.registerDocumentHeader\` API allows extensions to inject custom UI at the top of note documents:
 
 \`\`\`tsx
 this.app.editor.registerDocumentHeader({
@@ -59,7 +59,7 @@ this.app.settings.registerSettingTab({
 
 1. **Storage Format**: Stored as standard YAML frontmatter blocks at the beginning of Markdown files.
 2. **Reactivity**: Property changes trigger debounced saves (350ms) to SQLite and disk via \`useDocumentStore.updateProperties(docId, nextProps)\`.
-3. **Icons Customization**: Flint allows custom Lucide/Hugeicons mappings for property keys, stored under \`propertyIcons\` in settings.
+3. **Icons Customization**: Noether allows custom Lucide/Hugeicons mappings for property keys, stored under \`propertyIcons\` in settings.
 
 ---
 

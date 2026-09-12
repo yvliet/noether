@@ -3,7 +3,7 @@ import type { DocumentItem } from '@/types';
 import type { CanvasNode } from '../types';
 import { File01Icon, LinkSquare02Icon } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { DocumentView } from 'flint';
+import { DocumentView } from 'noether';
 
 export interface CardContentRendererProps {
   node: CanvasNode;
@@ -199,7 +199,7 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
       return (
         <div className="w-full h-full flex flex-col justify-between p-3.5 bg-transparent rounded-[4px] select-text">
           <div className="flex items-center gap-2">
-            <LinkSquare02Icon size={16} className="text-[var(--flint-accent,#ea580c)] shrink-0" />
+            <LinkSquare02Icon size={16} className="text-[var(--noether-accent,#eb584d)] shrink-0" />
             <span className="text-[14px] font-semibold text-white truncate">
               {node.text_content || targetUrl || 'Web Link'}
             </span>

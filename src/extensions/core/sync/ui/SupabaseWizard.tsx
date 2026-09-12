@@ -72,7 +72,7 @@ export const SupabaseWizard: React.FC<SupabaseWizardProps> = ({
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="flint-btn text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer"
+          className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer"
         >
           <span>{isExpanded ? 'Hide Steps' : 'Show Setup Steps'}</span>
           {isExpanded ? <ChevronUpIcon size={12} /> : <ChevronDownIcon size={12} />}
@@ -97,7 +97,7 @@ export const SupabaseWizard: React.FC<SupabaseWizardProps> = ({
                   href="https://supabase.com/dashboard"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-[var(--flint-accent,#ea580c)] hover:underline font-medium"
+                  className="inline-flex items-center gap-1 text-xs text-[var(--noether-accent,#eb584d)] hover:underline font-medium"
                 >
                   <span>Open Supabase Dashboard</span>
                   <ExternalLinkIcon size={11} />

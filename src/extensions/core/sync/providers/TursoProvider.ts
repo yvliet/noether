@@ -37,7 +37,7 @@ export class TursoProvider extends BaseProvider {
   }
 
   private getTableName(): string {
-    return (this.config.tableName || 'flint_sync_documents').trim();
+    return (this.config.tableName || 'noether_sync_documents').trim();
   }
 
   private async executePipeline(

@@ -34,7 +34,7 @@ export const useJournalSettings = create<JournalSettingsState>()(
       restoreDefaults: () => set({ ...DEFAULT_JOURNAL_SETTINGS }),
     }),
     {
-      name: 'flint_extension_data_journal',
+      name: 'noether_extension_data_journal',
     }
   )
 );

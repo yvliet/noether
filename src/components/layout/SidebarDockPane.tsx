@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from 'react';
 import { useSidebarDockStore, DockZone, DockItem } from '@/store/sidebarDockStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
-import { useFlintApp, useSidebarTabs, useViews, useExtensionList } from '@/core/app/AppContext';
+import { useNoetherApp, useSidebarTabs, useViews, useExtensionList } from '@/core/app/AppContext';
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 import { Cancel01Icon } from '@/components/common/Icons';
 
@@ -96,7 +96,7 @@ const DockEmptyView: React.FC<DockEmptyViewProps> = React.memo(({ zone, activeIt
 });
 
 export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zone }) => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   useViews(); // Reactive updates on view registrations
   useExtensionList(); // Reactive updates on extension state changes
   const items = useSidebarDockStore((s) => s.items);

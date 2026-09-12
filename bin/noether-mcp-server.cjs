@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
 /**
- * @file bin/flint-mcp-server.cjs
+ * @file bin/noether-mcp-server.cjs
  * @description
- * Standalone stdio Model Context Protocol (MCP) server for Flint.
- * Exposes Flint's native knowledge tools, extension tools, and prompts to external
+ * Standalone stdio Model Context Protocol (MCP) server for Noether.
+ * Exposes Noether's native knowledge tools, extension tools, and prompts to external
  * AI agents (Claude Desktop, Cursor, Antigravity, Gemini Code Assist, Agent CLI).
  *
  * Features:
- * - Zero-config multi-Hearth auto-discovery from system configuration
+ * - Zero-config multi-Vault auto-discovery from system configuration
  * - Bulletproof file/folder path resolution (never overwrites folders, handles nested paths)
  * - Smart upsert note writing (creates if new, updates in place preserving frontmatter if existing)
  * - JSON-RPC 2.0 stdio protocol compliance (MCP 2024-11-05 spec)
@@ -22,22 +22,22 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 
-// ── Configuration & Hearth Discovery ──
+// ── Configuration & Vault Discovery ──
 
 function getKnownConfigPaths() {
   const home = os.homedir();
   const appData = process.env.APPDATA || (process.platform === 'darwin' ? path.join(home, 'Library', 'Application Support') : path.join(home, '.config'));
   
   return [
-    path.join(appData, 'flint', 'flint-config.json'),
-    path.join(appData, 'Electron', 'flint-config.json'),
-    path.join(home, '.flint', 'flint-config.json'),
-    path.join(home, '.config', 'flint', 'flint-config.json'),
+    path.join(appData, 'noether', 'noether-config.json'),
+    path.join(appData, 'Electron', 'noether-config.json'),
+    path.join(home, '.noether', 'noether-config.json'),
+    path.join(home, '.config', 'noether', 'noether-config.json'),
   ];
 }
 
-function loadFlintConfig() {
-  const defaultVault = path.join(os.homedir(), 'Documents', 'Flint Hearth');
+function loadNoetherConfig() {
+  const defaultVault = path.join(os.homedir(), 'Documents', 'Noether Vault');
   for (const p of getKnownConfigPaths()) {
     try {
       if (fs.existsSync(p)) {
@@ -45,7 +45,7 @@ function loadFlintConfig() {
         if (raw && (raw.currentVaultPath || raw.recentVaults)) {
           return {
             currentVaultPath: raw.currentVaultPath || defaultVault,
-            recentVaults: raw.recentVaults || [{ path: defaultVault, name: 'Flint Hearth', lastOpened: Date.now() }],
+            recentVaults: raw.recentVaults || [{ path: defaultVault, name: 'Noether Vault', lastOpened: Date.now() }],
           };
         }
       }
@@ -54,17 +54,17 @@ function loadFlintConfig() {
 
   return {
     currentVaultPath: defaultVault,
-    recentVaults: [{ path: defaultVault, name: 'Flint Hearth', lastOpened: Date.now() }],
+    recentVaults: [{ path: defaultVault, name: 'Noether Vault', lastOpened: Date.now() }],
   };
 }
 
-let config = loadFlintConfig();
+let config = loadNoetherConfig();
 
-function getActiveHearthPath() {
+function getActiveVaultPath() {
   if (config.currentVaultPath && fs.existsSync(config.currentVaultPath)) {
     return config.currentVaultPath;
   }
-  const defaultVault = path.join(os.homedir(), 'Documents', 'Flint Hearth');
+  const defaultVault = path.join(os.homedir(), 'Documents', 'Noether Vault');
   if (!fs.existsSync(defaultVault)) {
     try {
       fs.mkdirSync(defaultVault, { recursive: true });
@@ -203,7 +203,7 @@ function resolveNoteFile(targetIdentifier, activePath) {
   const onlyNotes = allItems.filter((f) => !f.isFolder);
   const onlyFolders = allItems.filter((f) => f.isFolder);
 
-  // 1. Direct path check (e.g. '02 Projects/Flint.md' or 'Flint.md')
+  // 1. Direct path check (e.g. '02 Projects/Noether.md' or 'Noether.md')
   const directPath = path.isAbsolute(raw) ? raw : path.join(activePath, raw.endsWith('.md') ? raw : `${raw}.md`);
   if (fs.existsSync(directPath)) {
     const stat = fs.statSync(directPath);
@@ -258,13 +258,13 @@ function resolveNoteFile(targetIdentifier, activePath) {
 // ── MCP Tool Definitions & Handlers ──
 
 const TOOLS = [
-  // 1. flint_list_hearths
+  // 1. noether_list_vaults
   {
-    name: 'flint_list_hearths',
-    description: 'List all known and recent Hearths (workspaces/vaults) in Flint, including paths, names, and which one is active. Enables zero-config multi-vault access.',
+    name: 'noether_list_vaults',
+    description: 'List all known and recent Vaults (workspaces/vaults) in Noether, including paths, names, and which one is active. Enables zero-config multi-vault access.',
     parameters: { type: 'object', properties: {} },
     handler: async () => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const recent = (config.recentVaults || []).map((v) => ({
         name: v.name,
         path: v.path,
@@ -274,19 +274,19 @@ const TOOLS = [
         recent.unshift({ name: path.basename(activePath), path: activePath, isActive: true });
       }
       return {
-        activeHearth: { name: path.basename(activePath), path: activePath },
-        allHearths: recent,
+        activeVault: { name: path.basename(activePath), path: activePath },
+        allVaults: recent,
       };
     },
   },
 
-  // 2. flint_get_active_hearth
+  // 2. noether_get_active_vault
   {
-    name: 'flint_get_active_hearth',
-    description: 'Get details about the currently active Hearth workspace: name, root path, document count, and status.',
+    name: 'noether_get_active_vault',
+    description: 'Get details about the currently active Vault workspace: name, root path, document count, and status.',
     parameters: { type: 'object', properties: {} },
     handler: async () => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const files = scanMarkdownFiles(activePath);
       return {
         name: path.basename(activePath),
@@ -297,35 +297,35 @@ const TOOLS = [
     },
   },
 
-  // 3. flint_switch_hearth
+  // 3. noether_switch_vault
   {
-    name: 'flint_switch_hearth',
-    description: 'Switch the active Hearth workspace to a different known Hearth by path or name.',
+    name: 'noether_switch_vault',
+    description: 'Switch the active Vault workspace to a different known Vault by path or name.',
     parameters: {
       type: 'object',
       properties: {
-        hearthPath: { type: 'string', description: 'The absolute directory path to the target Hearth' },
-        name: { type: 'string', description: 'Optional name of a recent Hearth' },
+        vaultPath: { type: 'string', description: 'The absolute directory path to the target Vault' },
+        name: { type: 'string', description: 'Optional name of a recent Vault' },
       },
     },
     handler: async (args) => {
-      let targetPath = args.hearthPath;
+      let targetPath = args.vaultPath;
       if (!targetPath && args.name) {
         const match = (config.recentVaults || []).find((v) => v.name.toLowerCase() === args.name.toLowerCase());
         if (match) targetPath = match.path;
       }
       if (!targetPath || !fs.existsSync(targetPath)) {
-        throw new Error(`Target Hearth at "${targetPath}" does not exist.`);
+        throw new Error(`Target Vault at "${targetPath}" does not exist.`);
       }
       config.currentVaultPath = targetPath;
-      return { message: `Switched active Hearth to "${path.basename(targetPath)}"`, path: targetPath };
+      return { message: `Switched active Vault to "${path.basename(targetPath)}"`, path: targetPath };
     },
   },
 
-  // 4. flint_search_notes
+  // 4. noether_search_notes
   {
-    name: 'flint_search_notes',
-    description: 'Search across all note titles and contents in the active Hearth.',
+    name: 'noether_search_notes',
+    description: 'Search across all note titles and contents in the active Vault.',
     parameters: {
       type: 'object',
       properties: {
@@ -336,7 +336,7 @@ const TOOLS = [
     },
     handler: async ({ query, limit = 20 }) => {
       const q = String(query).toLowerCase();
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const files = scanMarkdownFiles(activePath);
       const matches = [];
 
@@ -363,31 +363,31 @@ const TOOLS = [
     },
   },
 
-  // 5. flint_search_across_hearths
+  // 5. noether_search_across_vaults
   {
-    name: 'flint_search_across_hearths',
-    description: 'Search for notes across ALL known/recent Hearths in Flint simultaneously.',
+    name: 'noether_search_across_vaults',
+    description: 'Search for notes across ALL known/recent Vaults in Noether simultaneously.',
     parameters: {
       type: 'object',
       properties: {
         query: { type: 'string', description: 'Search query' },
-        limitPerHearth: { type: 'number', description: 'Max results per Hearth (default: 10)' },
+        limitPerVault: { type: 'number', description: 'Max results per Vault (default: 10)' },
       },
       required: ['query'],
     },
-    handler: async ({ query, limitPerHearth = 10 }) => {
+    handler: async ({ query, limitPerVault = 10 }) => {
       const q = String(query).toLowerCase();
-      const activePath = getActiveHearthPath();
-      const hearths = [{ name: path.basename(activePath), path: activePath, isActive: true }];
+      const activePath = getActiveVaultPath();
+      const vaults = [{ name: path.basename(activePath), path: activePath, isActive: true }];
 
       for (const v of config.recentVaults || []) {
-        if (v.path && !hearths.some((h) => h.path === v.path) && fs.existsSync(v.path)) {
-          hearths.push({ name: v.name, path: v.path, isActive: false });
+        if (v.path && !vaults.some((h) => h.path === v.path) && fs.existsSync(v.path)) {
+          vaults.push({ name: v.name, path: v.path, isActive: false });
         }
       }
 
       const results = [];
-      for (const h of hearths) {
+      for (const h of vaults) {
         const files = scanMarkdownFiles(h.path);
         const matches = [];
         for (const file of files) {
@@ -396,34 +396,34 @@ const TOOLS = [
           if (!note) continue;
           if (file.title.toLowerCase().includes(q) || note.body.toLowerCase().includes(q)) {
             matches.push({ title: file.title, relativePath: file.relativePath });
-            if (matches.length >= limitPerHearth) break;
+            if (matches.length >= limitPerVault) break;
           }
         }
         if (matches.length > 0) {
-          results.push({ hearthName: h.name, hearthPath: h.path, isActive: h.isActive, matches });
+          results.push({ vaultName: h.name, vaultPath: h.path, isActive: h.isActive, matches });
         }
       }
       return results;
     },
   },
 
-  // 6. flint_read_note
+  // 6. noether_read_note
   {
-    name: 'flint_read_note',
+    name: 'noether_read_note',
     description: 'Read the full content, title, and frontmatter properties of a specific note by title or relative path.',
     parameters: {
       type: 'object',
       properties: {
-        documentId: { type: 'string', description: 'Title or relative path of the note (e.g. "Meeting Notes" or "02 Projects/Flint.md")' },
+        documentId: { type: 'string', description: 'Title or relative path of the note (e.g. "Meeting Notes" or "02 Projects/Noether.md")' },
       },
       required: ['documentId'],
     },
     handler: async ({ documentId }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const resolved = resolveNoteFile(documentId, activePath);
 
       if (resolved && resolved.isFolder) {
-        throw new Error(`Cannot read note: "${documentId}" is a folder (${resolved.relativePath}). Use flint_list_all_notes to see its files.`);
+        throw new Error(`Cannot read note: "${documentId}" is a folder (${resolved.relativePath}). Use noether_list_all_notes to see its files.`);
       }
 
       if (resolved && !resolved.isFolder) {
@@ -439,26 +439,26 @@ const TOOLS = [
         }
       }
 
-      throw new Error(`Note "${documentId}" not found in Hearth "${path.basename(activePath)}".`);
+      throw new Error(`Note "${documentId}" not found in Vault "${path.basename(activePath)}".`);
     },
   },
 
-  // 7. flint_create_note (Smart Upsert)
+  // 7. noether_create_note (Smart Upsert)
   {
-    name: 'flint_create_note',
-    description: 'Create a new markdown note or update an existing note in the active Hearth. Handles nested folder paths safely.',
+    name: 'noether_create_note',
+    description: 'Create a new markdown note or update an existing note in the active Vault. Handles nested folder paths safely.',
     parameters: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Title or path of the note (e.g. "My Note" or "02 Projects/Roadmap")' },
         content: { type: 'string', description: 'Markdown body content' },
         properties: { type: 'object', description: 'Optional YAML frontmatter key-value pairs' },
-        folder: { type: 'string', description: 'Optional target folder inside Hearth' },
+        folder: { type: 'string', description: 'Optional target folder inside Vault' },
       },
       required: ['title'],
     },
     handler: async ({ title, content = '', properties = {}, folder = '' }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       let rawTitle = String(title).trim().replace(/\.md$/i, '');
 
       // Check if title has a folder component in it
@@ -501,9 +501,9 @@ const TOOLS = [
     },
   },
 
-  // 8. flint_update_note (Safe Update)
+  // 8. noether_update_note (Safe Update)
   {
-    name: 'flint_update_note',
+    name: 'noether_update_note',
     description: 'Update the content body of an existing note. Resolves note title or relative path safely without touching folders.',
     parameters: {
       type: 'object',
@@ -515,11 +515,11 @@ const TOOLS = [
       required: ['documentId', 'content'],
     },
     handler: async ({ documentId, content, properties }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const resolved = resolveNoteFile(documentId, activePath);
 
       if (resolved && resolved.isFolder) {
-        throw new Error(`Cannot update note: "${documentId}" is a folder. To write a note inside it, use flint_create_note({ title: "NoteName", folder: "${resolved.relativePath}" }).`);
+        throw new Error(`Cannot update note: "${documentId}" is a folder. To write a note inside it, use noether_create_note({ title: "NoteName", folder: "${resolved.relativePath}" }).`);
       }
 
       if (!resolved) {
@@ -544,10 +544,10 @@ const TOOLS = [
     },
   },
 
-  // 9. flint_delete_note
+  // 9. noether_delete_note
   {
-    name: 'flint_delete_note',
-    description: 'Delete a note from the active Hearth.',
+    name: 'noether_delete_note',
+    description: 'Delete a note from the active Vault.',
     isDestructive: true,
     parameters: {
       type: 'object',
@@ -557,7 +557,7 @@ const TOOLS = [
       required: ['documentId'],
     },
     handler: async ({ documentId }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const resolved = resolveNoteFile(documentId, activePath);
 
       if (resolved && resolved.isFolder) {
@@ -572,10 +572,10 @@ const TOOLS = [
     },
   },
 
-  // 10. flint_list_all_notes
+  // 10. noether_list_all_notes
   {
-    name: 'flint_list_all_notes',
-    description: 'List all documents and folders in the active Hearth with is_folder and relative_path indicators.',
+    name: 'noether_list_all_notes',
+    description: 'List all documents and folders in the active Vault with is_folder and relative_path indicators.',
     parameters: {
       type: 'object',
       properties: {
@@ -583,7 +583,7 @@ const TOOLS = [
       },
     },
     handler: async ({ limit = 100 }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const files = scanMarkdownFiles(activePath);
       return files.slice(0, limit).map((f) => ({
         title: f.title,
@@ -596,7 +596,7 @@ const TOOLS = [
   // 11. tasks_get_all
   {
     name: 'tasks_get_all',
-    description: 'Extract all checklist and todo items across all notes in the active Hearth.',
+    description: 'Extract all checklist and todo items across all notes in the active Vault.',
     parameters: {
       type: 'object',
       properties: {
@@ -604,7 +604,7 @@ const TOOLS = [
       },
     },
     handler: async ({ status = 'all' }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const files = scanMarkdownFiles(activePath);
       const tasks = [];
 
@@ -638,7 +638,7 @@ const TOOLS = [
   // 12. fsrs_get_due_cards
   {
     name: 'fsrs-spaced-repetition_get_due_cards',
-    description: 'Scan and extract flashcards (Concept :: Descriptor, Term ;; Definition, {cloze}, ==cloze==) from notes in the active Hearth.',
+    description: 'Scan and extract flashcards (Concept :: Descriptor, Term ;; Definition, {cloze}, ==cloze==) from notes in the active Vault.',
     parameters: {
       type: 'object',
       properties: {
@@ -646,7 +646,7 @@ const TOOLS = [
       },
     },
     handler: async (args) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const files = scanMarkdownFiles(activePath);
       const cards = [];
       const filterTitle = args?.documentId ? String(args.documentId).toLowerCase() : null;
@@ -730,9 +730,9 @@ const TOOLS = [
     },
   },
 
-  // 13. flint_get_backlinks
+  // 13. noether_get_backlinks
   {
-    name: 'flint_get_backlinks',
+    name: 'noether_get_backlinks',
     description: 'Find all incoming [[wikilinks]] pointing to a target note title.',
     parameters: {
       type: 'object',
@@ -742,7 +742,7 @@ const TOOLS = [
       required: ['title'],
     },
     handler: async ({ title }) => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       const files = scanMarkdownFiles(activePath);
       const target = String(title).toLowerCase();
       const backlinks = [];
@@ -769,19 +769,19 @@ const TOOLS = [
 
 const PROMPTS = [
   {
-    name: 'flint_system_instructions',
-    description: 'System instructions explaining Flint domain concepts (Hearths, Wikilinks, FSRS, Cascades) and best practices.',
+    name: 'noether_system_instructions',
+    description: 'System instructions explaining Noether domain concepts (Vaults, Wikilinks, FSRS, Cascades) and best practices.',
     arguments: [],
     getMessages: async () => {
-      const activePath = getActiveHearthPath();
+      const activePath = getActiveVaultPath();
       return {
-        description: 'Flint Agent Instructions',
+        description: 'Noether Agent Instructions',
         messages: [
           {
             role: 'user',
             content: {
               type: 'text',
-              text: `# Flint AI Agent Operational Protocol\n\nActive Hearth: "${path.basename(activePath)}" (${activePath})\n\n- Wikilinks: [[Note Title]]\n- Flashcards: Concept :: Descriptor, Term ;; Definition, {cloze}\n- Tasks: - [ ] Pending, - [x] Completed\n- Cascades: Frontmatter Cascade: "Book Title", Cascade Page: 1`,
+              text: `# Noether AI Agent Operational Protocol\n\nActive Vault: "${path.basename(activePath)}" (${activePath})\n\n- Wikilinks: [[Note Title]]\n- Flashcards: Concept :: Descriptor, Term ;; Definition, {cloze}\n- Tasks: - [ ] Pending, - [x] Completed\n- Cascades: Frontmatter Cascade: "Book Title", Cascade Page: 1`,
             },
           },
         ],
@@ -837,7 +837,7 @@ rl.on('line', async (line) => {
             prompts: { listChanged: false },
           },
           serverInfo: {
-            name: 'flint-mcp-server',
+            name: 'noether-mcp-server',
             version: '0.3.0',
           },
         });

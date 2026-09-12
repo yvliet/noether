@@ -1,13 +1,13 @@
 # Setting Up & Claiming Extensions
 
-This guide describes how extension namespaces, IDs, and publisher identities are handled in Flint.
+This guide describes how extension namespaces, IDs, and publisher identities are handled in Noether.
 
 
 ## 1. Extension Identifiers (`id`)
 
 ---
 
-Every Flint extension is uniquely identified by the `id` property in its `manifest.json`.
+Every Noether extension is uniquely identified by the `id` property in its `manifest.json`.
 
 ```json
 {
@@ -21,7 +21,7 @@ Every Flint extension is uniquely identified by the `id` property in its `manife
 
 - **Characters**: Lowercase letters (`a-z`), numbers (`0-9`), and single hyphens (`-`).
 - **No Namespace Collisions**: The identifier should be descriptive and avoid generic collisions (e.g., prefer `reading-stats` or `org-reading-stats` over `stats`).
-- **Command & Tool Scoping**: Flint automatically prefixes all commands (`pomodoro-timer:start`) and MCP tools (`pomodoro-timer_start`) with this `id` to prevent conflicts between extensions.
+- **Command & Tool Scoping**: Noether automatically prefixes all commands (`pomodoro-timer:start`) and MCP tools (`pomodoro-timer_start`) with this `id` to prevent conflicts between extensions.
 
 
 ## 2. Claiming Ownership on GitHub

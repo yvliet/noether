@@ -1,7 +1,7 @@
 /**
  * @module sketchStore
  * @description
- * Reactive Zustand state manager for the Flint Sketch core extension.
+ * Reactive Zustand state manager for the Noether Sketch core extension.
  * Coordinates active tools, live pointer drawing sessions, stroke histories (undo/redo),
  * and automatic synchronization with SQLite WASM.
  */

@@ -1,6 +1,6 @@
 # Optimizing Extension Load Time
 
-Flint prioritizes an instant desktop feel with sub-50ms cold startup times. Heavy extensions that block the main thread during initialization degrade application performance. Follow these optimization techniques to keep your extensions light and responsive.
+Noether prioritizes an instant desktop feel with sub-50ms cold startup times. Heavy extensions that block the main thread during initialization degrade application performance. Follow these optimization techniques to keep your extensions light and responsive.
 
 
 ## 1. Lazy-Loading Heavy Dependencies
@@ -10,7 +10,7 @@ Flint prioritizes an instant desktop feel with sub-50ms cold startup times. Heav
 Never import heavy third-party libraries (such as PDF parsers, charting engines, or LaTeX renderers) at the top level of your entry file:
 
 ```typescript
-// ❌ Slower: Evaluates the heavy bundle immediately on Flint boot
+// ❌ Slower: Evaluates the heavy bundle immediately on Noether boot
 import * as Papa from 'papaparse';
 
 export default class CsvExporterExtension extends Extension {
@@ -49,7 +49,7 @@ export default class CsvExporterExtension extends Extension {
 
 ---
 
-If your extension needs to perform computationally intensive calculations (such as computing graph layouts, generating semantic embeddings, or indexing thousands of blocks), offload the work to Flint's Web Worker thread pool:
+If your extension needs to perform computationally intensive calculations (such as computing graph layouts, generating semantic embeddings, or indexing thousands of blocks), offload the work to Noether's Web Worker thread pool:
 
 ```typescript
 // Execute heavy work off the UI thread
@@ -60,7 +60,7 @@ const result = await this.app.workerPool.runTask({
 });
 ```
 
-This prevents frame drops and keeps editor input latency under 8ms. Learn more in [[Flint SDK API Reference]].
+This prevents frame drops and keeps editor input latency under 8ms. Learn more in [[Noether SDK API Reference]].
 
 
 ## 3. Debouncing Database Writes
@@ -70,7 +70,7 @@ This prevents frame drops and keeps editor input latency under 8ms. Learn more i
 When your extension listens to `document:changed` events to update custom metadata, avoid writing to SQLite on every single keystroke. Keep an in-memory state representation and debounce database persistence:
 
 ```typescript
-import { Extension } from 'flint';
+import { Extension } from 'noether';
 
 export default class WordCounterExtension extends Extension {
   private saveDebounceTimer: number | null = null;

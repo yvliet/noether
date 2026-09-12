@@ -3,7 +3,7 @@
  * @description
  * Context menu definitions and builder functions for the Infinite Canvas.
  * Covers background canvas actions, note cards, text cards, link cards,
- * and multi-card selections using Flint's custom context menu system.
+ * and multi-card selections using Noether's custom context menu system.
  */
 
 import React from 'react';
@@ -98,7 +98,7 @@ export function buildCanvasBackgroundContextMenu(
     },
     {
       id: 'canvas-add-note',
-      title: 'Add note from Hearth',
+      title: 'Add note from Vault',
       icon: <FileEmpty02Icon size={14} />,
       onClick: params.onAddNote,
       onMouseEnter: params.onHoverNote,
@@ -106,7 +106,7 @@ export function buildCanvasBackgroundContextMenu(
     },
     {
       id: 'canvas-add-media',
-      title: 'Add media from Hearth',
+      title: 'Add media from Vault',
       icon: <FileImageIcon size={14} />,
       onClick: params.onAddMedia,
       onMouseEnter: params.onHoverMedia,
@@ -506,7 +506,7 @@ export function buildUnconnectedEdgeContextMenu(
     },
     {
       id: 'canvas-edge-add-note',
-      title: 'Add note from Hearth',
+      title: 'Add note from Vault',
       icon: <FileEmpty02Icon size={14} />,
       onClick: params.onAddNote,
       onMouseEnter: params.onHoverNote,
@@ -514,7 +514,7 @@ export function buildUnconnectedEdgeContextMenu(
     },
     {
       id: 'canvas-edge-add-media',
-      title: 'Add media from Hearth',
+      title: 'Add media from Vault',
       icon: <FileImageIcon size={14} />,
       onClick: params.onAddMedia,
       onMouseEnter: params.onHoverMedia,

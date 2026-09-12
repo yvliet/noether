@@ -22,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('[Flint Error Boundary caught error]:', error, errorInfo);
+    console.error('[Noether Error Boundary caught error]:', error, errorInfo);
     this.setState({ errorInfo });
   }
 
@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
             )}
             <button
               onClick={() => window.location.reload()}
-              className="flint-btn"
+              className="noether-btn"
             >
               Reload Application
             </button>

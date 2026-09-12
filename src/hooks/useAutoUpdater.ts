@@ -46,13 +46,13 @@ export function useAutoUpdater() {
           if (options.manual) {
             setIsUpdateModalOpen(true, result.release);
           } else {
-            showToast(`Flint v${result.release.version} is available! Click to update.`, 'info');
+            showToast(`Noether v${result.release.version} is available! Click to update.`, 'info');
           }
         } else if (options.manual) {
           if (result.error) {
             showToast(`Could not check for updates: ${result.error}`, 'warning');
           } else {
-            showToast(`Flint is up to date (v${result.currentVersion} is the latest version)`, 'info');
+            showToast(`Noether is up to date (v${result.currentVersion} is the latest version)`, 'info');
           }
         }
 

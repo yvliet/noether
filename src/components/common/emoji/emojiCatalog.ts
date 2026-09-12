@@ -1,5 +1,5 @@
 /**
- * Comprehensive, high-performance emoji catalog for Flint.
+ * Comprehensive, high-performance emoji catalog for Noether.
  * Includes character, canonical name, hex code points, category, and search keywords.
  */
 

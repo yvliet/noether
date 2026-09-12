@@ -1,6 +1,6 @@
 # Developer Policies & Guidelines
 
-Flint is committed to providing a secure, private, and distraction-free knowledge environment. All extensions must adhere to these policies.
+Noether is committed to providing a secure, private, and distraction-free knowledge environment. All extensions must adhere to these policies.
 
 
 ## 1. Zero Telemetry & User Privacy
@@ -15,7 +15,7 @@ Flint is committed to providing a secure, private, and distraction-free knowledg
 
 ---
 
-- **Instant Desktop UI**: Flint is built to feel like a classic, responsive desktop utility. Avoid adding artificial animation delays or slow CSS fade transitions to buttons, toggles, or menus (see [[Flint UI Components]]).
+- **Instant Desktop UI**: Noether is built to feel like a classic, responsive desktop utility. Avoid adding artificial animation delays or slow CSS fade transitions to buttons, toggles, or menus (see [[Noether UI Components]]).
 - **Non-Blocking Main Thread**: Heavy operations (text embeddings, graph physics, large PDF parsing) must be offloaded to Web Workers via `app.workerPool` or debounced. The editor input latency must remain under 8ms.
 - **Fast Activation**: Extensions must activate in less than 50ms. Dynamic imports should be used for heavy submodules. Read [[Optimizing Extension Load Time]].
 
@@ -24,7 +24,7 @@ Flint is committed to providing a secure, private, and distraction-free knowledg
 
 ---
 
-- **Cross-Platform Safety**: Avoid invoking desktop-only platform APIs directly inside view components. Use the Flint SDK's cross-platform bridges so extensions remain functional across macOS, Windows, and Linux.
+- **Cross-Platform Safety**: Avoid invoking desktop-only platform APIs directly inside view components. Use the Noether SDK's cross-platform bridges so extensions remain functional across macOS, Windows, and Linux.
 - **Clean Uninstallation**: When uninstalled, extensions must drop any custom SQLite tables they created and leave no lingering artifacts.
 
 

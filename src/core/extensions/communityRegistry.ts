@@ -1,7 +1,7 @@
 /**
  * @module communityRegistry
  * @description
- * Static metadata catalog for well-known Flint community extensions.
+ * Static metadata catalog for well-known Noether community extensions.
  * Provides fallback metadata for offline discovery and repository resolution
  * without importing UI components or extension runtime code.
  *
@@ -21,23 +21,23 @@ export interface KnownExtensionMetadata {
 
 export const KNOWN_COMMUNITY_EXTENSIONS: KnownExtensionMetadata[] = [
   {
-    id: 'flint-cascade',
+    id: 'noether-cascade',
     name: 'Cascade',
     version: '1.0.1',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-cascade',
+    repoUrl: 'https://github.com/yvliet/noether-cascade',
     description:
       'Organize notes into sequential cascades (books) with status-bar linking, graph backlinks, and custom sidebar folders.',
     category: 'Productivity',
   },
   {
-    id: 'flint-copilot',
+    id: 'noether-copilot',
     name: 'Copilot',
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-copilot',
+    repoUrl: 'https://github.com/yvliet/noether-copilot',
     description:
       'Native AI assistant with local LLM integration, multimodal reasoning, automated summarization, and context-aware chat.',
     category: 'Productivity',
@@ -48,7 +48,7 @@ export const KNOWN_COMMUNITY_EXTENSIONS: KnownExtensionMetadata[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-quicknote',
+    repoUrl: 'https://github.com/yvliet/noether-quicknote',
     description:
       'Instant floating scratchpad for capturing thoughts, web snippets, and ideas without leaving your current note.',
     category: 'Productivity',
@@ -59,9 +59,9 @@ export const KNOWN_COMMUNITY_EXTENSIONS: KnownExtensionMetadata[] = [
     version: '1.0.0',
     author: 'Yuliet Li',
     authorUrl: 'https://github.com/yvliet',
-    repoUrl: 'https://github.com/yvliet/flint-fsrs',
+    repoUrl: 'https://github.com/yvliet/noether-fsrs',
     description:
-      'State-of-the-art Free Spaced Repetition Scheduler (FSRS) flashcard review system built right inside Flint.',
+      'State-of-the-art Free Spaced Repetition Scheduler (FSRS) flashcard review system built right inside Noether.',
     category: 'Productivity',
   },
 ];

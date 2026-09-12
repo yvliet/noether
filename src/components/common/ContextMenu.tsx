@@ -2,7 +2,7 @@ import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMe
 import { createPortal } from 'react-dom';
 import { useContextMenuStore, type ContextMenuItem, type ContextMenuItemType } from '@/store/contextMenuStore';
 import { ChevronRightIcon, CheckIcon } from '@/components/common/Icons';
-import { useFlintApp } from '@/core/app/AppContext';
+import { useNoetherApp } from '@/core/app/AppContext';
 import { ContextMenuItemDefinition, ContextMenuScope } from '@/core/extensions/types';
 
 export type { ContextMenuItem, ContextMenuItemType };
@@ -77,12 +77,12 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
   }, [isSubmenuOpen, calculateSubmenuPosition]);
 
   if (item.type === 'separator') {
-    return <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />;
+    return <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />;
   }
 
   if (item.type === 'header') {
     return (
-      <div className="px-2.5 py-1 text-[10px] font-semibold text-[var(--flint-text-muted,#777777)] uppercase tracking-wider select-none">
+      <div className="px-2.5 py-1 text-[10px] font-semibold text-[var(--noether-text-muted,#777777)] uppercase tracking-wider select-none">
         {item.title}
       </div>
     );
@@ -139,12 +139,12 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
         onMouseDown={(e) => e.preventDefault()}
         className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-3 cursor-pointer group outline-none select-none ${
           item.disabled
-            ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted,#777)]'
+            ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted,#777)]'
             : item.isDanger
             ? 'text-[#eb5757] hover:bg-rose-950/20 hover:text-[#ff6b6b]'
             : isFocused || isSubmenuOpen
-            ? 'bg-[var(--flint-bg-card-hover,#2c2c2c)] text-[var(--flint-text-primary)]'
-            : 'text-[var(--flint-text-primary,#dcddde)] hover:bg-[var(--flint-bg-card-hover,#2c2c2c)] hover:text-[var(--flint-text-primary)]'
+            ? 'bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-primary)]'
+            : 'text-[var(--noether-text-primary,#dcddde)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] hover:text-[var(--noether-text-primary)]'
         }`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">
@@ -152,7 +152,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
             className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center ${
               item.isDanger
                 ? 'text-[#eb5757] group-hover:text-[#ff6b6b]'
-                : 'text-[var(--flint-text-muted,#8b8e95)] group-hover:text-[var(--flint-text-primary)]'
+                : 'text-[var(--noether-text-muted,#8b8e95)] group-hover:text-[var(--noether-text-primary)]'
             }`}
           >
             {item.icon ? (
@@ -169,15 +169,15 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
 
         <div className="flex items-center gap-1.5 shrink-0">
           {item.shortcut && (
-            <span className="text-[11px] text-[var(--flint-text-muted,#777777)] group-hover:text-[var(--flint-text-secondary,#bbbbbb)]">
+            <span className="text-[11px] text-[var(--noether-text-muted,#777777)] group-hover:text-[var(--noether-text-secondary,#bbbbbb)]">
               {item.shortcut}
             </span>
           )}
           {item.checked && (
-            <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0" />
+            <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0" />
           )}
           {hasSubmenu && (
-            <ChevronRightIcon size={12} className="text-[var(--flint-text-muted,#777)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+            <ChevronRightIcon size={12} className="text-[var(--noether-text-muted,#777)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
           )}
         </div>
       </div>
@@ -185,19 +185,19 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
       {/* Nested Submenu Portal or Absolute Container */}
       {hasSubmenu && isSubmenuOpen && submenuPos && (
         <div
-          data-flint-popover="true"
+          data-noether-popover="true"
           style={{
             position: 'fixed',
             top: `${submenuPos.top}px`,
             left: `${submenuPos.left}px`,
             maxHeight: submenuPos.maxHeight ? `${submenuPos.maxHeight}px` : undefined,
             zIndex: 100000,
-            boxShadow: 'var(--flint-shadow-2)',
+            boxShadow: 'var(--noether-shadow-2)',
           }}
           className={
             item.customSubmenu
               ? 'w-max bg-transparent select-none'
-              : 'w-max min-w-[160px] max-w-[280px] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none'
+              : 'w-max min-w-[160px] max-w-[280px] bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none'
           }
           onClick={(e) => e.stopPropagation()}
         >
@@ -362,8 +362,8 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
       if (
         target &&
         target.closest &&
-        (target.closest('[data-flint-colorpicker="true"]') ||
-          target.closest('[data-flint-popover="true"]'))
+        (target.closest('[data-noether-colorpicker="true"]') ||
+          target.closest('[data-noether-popover="true"]'))
       ) {
         return;
       }
@@ -382,8 +382,8 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
         (menuRef.current && menuRef.current.contains(target)) ||
         (target &&
           target.closest &&
-          (target.closest('[data-flint-colorpicker="true"]') ||
-            target.closest('[data-flint-popover="true"]')))
+          (target.closest('[data-noether-colorpicker="true"]') ||
+            target.closest('[data-noether-popover="true"]')))
       ) {
         e.preventDefault();
         return;
@@ -398,8 +398,8 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
         (menuRef.current && menuRef.current.contains(target)) ||
         (target &&
           target.closest &&
-          (target.closest('[data-flint-colorpicker="true"]') ||
-            target.closest('[data-flint-popover="true"]')))
+          (target.closest('[data-noether-colorpicker="true"]') ||
+            target.closest('[data-noether-popover="true"]')))
       ) {
         return;
       }
@@ -456,9 +456,9 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
         top: `${initialPos.top}px`,
         left: `${initialPos.left}px`,
         zIndex: 99999,
-        boxShadow: 'var(--flint-shadow-2)',
+        boxShadow: 'var(--noether-shadow-2)',
       }}
-      className="w-max min-w-[180px] max-w-[320px] max-h-[85vh] bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none"
+      className="w-max min-w-[180px] max-w-[320px] max-h-[85vh] bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] overflow-y-auto overflow-x-hidden select-none"
     >
       <MenuList
         items={items}
@@ -479,7 +479,7 @@ export interface ShowContextMenuOptions {
 }
 
 export function useAppContextMenu() {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const openContextMenu = useContextMenuStore((s) => s.openContextMenu);
   const closeContextMenu = useContextMenuStore((s) => s.closeContextMenu);
 

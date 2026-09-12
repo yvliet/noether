@@ -5,7 +5,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getDocumentPath, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
 import { DocumentItem } from '@/types';
-import { useFlintApp, useDocMenuActions } from '@/core/app/AppContext';
+import { useNoetherApp, useDocMenuActions } from '@/core/app/AppContext';
 import { platform } from '@/lib/platform/platformAdapter';
 import {
   LinkSquare02Icon,
@@ -48,7 +48,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
 
   const toggleSplitView = useWorkspaceStore((s) => s.toggleSplitView);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
-  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+  const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
   const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -62,7 +62,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const zoomLevel = useSettingsStore((s) => s.zoomLevel);
   const setZoomLevel = useSettingsStore((s) => s.setZoomLevel);
 
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const docMenuActions = useDocMenuActions();
 
   // Modular Action Groups registered by plugins
@@ -268,7 +268,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleOpenInNewWindow = () => {
     setIsOpen(false);
     if (doc) {
-      platform.openHearthWindow();
+      platform.openVaultWindow();
     }
   };
 
@@ -347,7 +347,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     setIsOpen(false);
     const folders = documents.filter((d) => d.is_folder);
     if (folders.length === 0) {
-      showToast('No folders exist in this Hearth', 'info');
+      showToast('No folders exist in this Vault', 'info');
       return;
     }
     openInputDialog({
@@ -463,7 +463,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     } else if (type === 'relative') {
       textToCopy = relPath;
     } else {
-      textToCopy = hearthPath ? `${hearthPath}/${relPath}` : `/${relPath}`;
+      textToCopy = vaultPath ? `${vaultPath}/${relPath}` : `/${relPath}`;
     }
 
     try {
@@ -484,7 +484,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleOpenInDefaultApp = () => {
     setIsOpen(false);
     if (platform.isDesktop()) {
-      platform.openHearthInExplorer(hearthPath);
+      platform.openVaultInExplorer(vaultPath);
     }
     showToast('Opening file in default application', 'info');
   };
@@ -493,9 +493,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   const handleShowInExplorer = () => {
     setIsOpen(false);
     if (platform.isDesktop()) {
-      platform.openHearthInExplorer(hearthPath);
+      platform.openVaultInExplorer(vaultPath);
     } else {
-      showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
+      showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
     }
   };
 
@@ -506,7 +506,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     setIsLeftSidebarOpen(true);
     setActiveLeftView('files');
     window.dispatchEvent(
-      new CustomEvent('flint:reveal-tree-item', {
+      new CustomEvent('noether:reveal-tree-item', {
         detail: { id: doc.id },
       })
     );
@@ -539,8 +539,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title="More options"
-        className={`p-1 rounded hover:bg-[var(--flint-bg-sidebar-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer ${
-          isOpen ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]' : ''
+        className={`p-1 rounded hover:bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
+          isOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : ''
         }`}
       >
         <MoreVerticalIcon size={14} />
@@ -556,9 +556,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               left: `${menuPos.left}px`,
               maxHeight: `${menuPos.maxHeight}px`,
               zIndex: 99999,
-              boxShadow: 'var(--flint-shadow-2)',
+              boxShadow: 'var(--noether-shadow-2)',
             }}
-            className="w-[230px] overflow-y-auto overflow-x-hidden bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] select-none"
+            className="w-[230px] overflow-y-auto overflow-x-hidden bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] select-none"
           >
             {/* Group 1: Document Primary Plugin Actions & Reading View (Rendered when doc exists) */}
             {doc && (
@@ -577,13 +577,13 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                         action.onClick(app, doc);
                         setIsOpen(false);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5 truncate">
                         {action.icon}
                         <span className="truncate">{action.title}</span>
                       </div>
-                      {isChecked && <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1" />}
+                      {isChecked && <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1" />}
                     </button>
                   );
                 })}
@@ -595,15 +595,15 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   title={isLocked ? 'Note is locked (Read-only)\nUnlock in Properties to enable Editing view' : undefined}
                   className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 group ${
                     isLocked
-                      ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted)] hover:bg-transparent'
-                      : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer'
+                      ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 truncate">
-                    <BookOpen01Icon size={14} className={isLocked ? 'text-[var(--flint-text-muted)] shrink-0' : 'text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0'} />
+                    <BookOpen01Icon size={14} className={isLocked ? 'text-[var(--noether-text-muted)] shrink-0' : 'text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0'} />
                     <span className="truncate">{isLocked ? 'Reading view (Locked)' : 'Reading view'}</span>
                   </div>
-                  {(isReadingView || isLocked) && <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1" />}
+                  {(isReadingView || isLocked) && <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1" />}
                 </button>
 
                 <button
@@ -625,20 +625,20 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   title={isLocked ? 'Note is locked (Read-only)' : undefined}
                   className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 group ${
                     isLocked
-                      ? 'opacity-40 cursor-not-allowed text-[var(--flint-text-muted)] hover:bg-transparent'
-                      : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer'
+                      ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] cursor-pointer'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 truncate">
-                    <SourceCodeIcon size={14} className={isLocked ? 'text-[var(--flint-text-muted)] shrink-0' : 'text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0'} />
+                    <SourceCodeIcon size={14} className={isLocked ? 'text-[var(--noether-text-muted)] shrink-0' : 'text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0'} />
                     <span className="truncate">Source mode</span>
                   </div>
                   {defaultEditingMode === 'Source mode' && !isReadingView && !isLocked && (
-                    <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1" />
+                    <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1" />
                   )}
                 </button>
 
-                <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
               </>
             )}
 
@@ -647,9 +647,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               type="button"
               onMouseEnter={() => setActiveSubmenu(null)}
               onClick={handleSplitRight}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
             >
-              <SplitRightIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+              <SplitRightIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
               <span>Split right</span>
             </button>
 
@@ -657,9 +657,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               type="button"
               onMouseEnter={() => setActiveSubmenu(null)}
               onClick={handleSplitDown}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
             >
-              <SplitDownIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+              <SplitDownIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
               <span>Split down</span>
             </button>
 
@@ -667,9 +667,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               type="button"
               onMouseEnter={() => setActiveSubmenu(null)}
               onClick={handleOpenInNewWindow}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
             >
-              <OpenInWindowIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+              <OpenInWindowIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
               <span>Open in new window</span>
             </button>
 
@@ -678,52 +678,52 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
               <button
                 type="button"
                 onMouseEnter={() => setActiveSubmenu('zoomLevel')}
-                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
               >
                 <div className="flex items-center gap-2.5 truncate">
-                  <ZoomInIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <ZoomInIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span className="truncate">Zoom level</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[11px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">
+                  <span className="text-[11px] text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-secondary)]">
                     {zoomLevel || 100}%
                   </span>
-                  <ChevronRightIcon size={12} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <ChevronRightIcon size={12} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                 </div>
               </button>
 
               {activeSubmenu === 'zoomLevel' && (
                 <div
                   onMouseLeave={() => setActiveSubmenu(null)}
-                  style={{ boxShadow: 'var(--flint-shadow-2)' }}
-                  className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-48 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
+                  style={{ boxShadow: 'var(--noether-shadow-2)' }}
+                  className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-48 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
                 >
                   <button
                     type="button"
                     onClick={handleZoomIn}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
                   >
                     <span>Zoom in</span>
-                    <span className="text-[10px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">Ctrl +</span>
+                    <span className="text-[10px] text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-secondary)]">Ctrl +</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleZoomOut}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
                   >
                     <span>Zoom out</span>
-                    <span className="text-[10px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">Ctrl -</span>
+                    <span className="text-[10px] text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-secondary)]">Ctrl -</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleResetZoom}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2 cursor-pointer group"
                   >
                     <span>Reset zoom (100%)</span>
-                    <span className="text-[10px] text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-secondary)]">Ctrl 0</span>
+                    <span className="text-[10px] text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-secondary)]">Ctrl 0</span>
                   </button>
 
-                  <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                  <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
                   {ZOOM_PRESETS.map((level) => {
                     const isCurrent = (zoomLevel || 100) === level;
@@ -734,12 +734,12 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                         onClick={() => handleSetZoom(level)}
                         className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 cursor-pointer group ${
                           isCurrent
-                            ? 'bg-[var(--flint-bg-sidebar-active)] text-[var(--flint-text-primary)] font-medium'
-                            : 'text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)]'
+                            ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-medium'
+                            : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)]'
                         }`}
                       >
                         <span>{level}%</span>
-                        {isCurrent && <CheckIcon size={13} className="text-[var(--flint-text-primary)] shrink-0 ml-1" />}
+                        {isCurrent && <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1" />}
                       </button>
                     );
                   })}
@@ -757,7 +757,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   action.onClick(app, doc);
                   setIsOpen(false);
                 }}
-                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
               >
                 {action.icon}
                 <span>{action.title}</span>
@@ -767,15 +767,15 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
             {/* Group 3: File Actions & Tools (Document specific) */}
             {doc && (
               <>
-                <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
                 <button
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleRename}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <Edit02Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <Edit02Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Rename...</span>
                 </button>
 
@@ -783,9 +783,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleMoveFile}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <MoveFileIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <MoveFileIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Move file to...</span>
                 </button>
 
@@ -793,9 +793,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleMergeFile}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <GitForkIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <GitForkIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Merge entire file with...</span>
                 </button>
 
@@ -808,7 +808,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       action.onClick(app, doc);
                       setIsOpen(false);
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                   >
                     {action.icon}
                     <span>{action.title}</span>
@@ -819,13 +819,13 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleExportPDF}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <Download01Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <Download01Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Export to PDF...</span>
                 </button>
 
-                <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
                 {/* Group 4: Copy path */}
                 <div className="relative">
@@ -833,39 +833,39 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     type="button"
                     onMouseEnter={() => setActiveSubmenu('copyPath')}
                     onClick={() => handleCopyPath('relative')}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                   >
                     <div className="flex items-center gap-2.5 truncate">
-                      <Copy01Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                      <Copy01Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                       <span>Copy path</span>
                     </div>
-                    <ChevronRightIcon size={12} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                    <ChevronRightIcon size={12} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   </button>
 
                   {activeSubmenu === 'copyPath' && (
                     <div
                       onMouseLeave={() => setActiveSubmenu(null)}
-                      style={{ boxShadow: 'var(--flint-shadow-2)' }}
-                      className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-48 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
+                      style={{ boxShadow: 'var(--noether-shadow-2)' }}
+                      className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-48 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
                     >
                       <button
                         type="button"
                         onClick={() => handleCopyPath('relative')}
-                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] cursor-pointer"
                       >
                         Copy relative path
                       </button>
                       <button
                         type="button"
                         onClick={() => handleCopyPath('absolute')}
-                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] cursor-pointer"
                       >
                         Copy absolute path
                       </button>
                       <button
                         type="button"
                         onClick={() => handleCopyPath('markdown')}
-                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+                        className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] cursor-pointer"
                       >
                         Copy Markdown link
                       </button>
@@ -873,16 +873,16 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   )}
                 </div>
 
-                <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
                 {/* Group 5: History & Modular Linked Views */}
                 <button
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleOpenVersionHistory}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <Clock01Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <Clock01Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Open version history</span>
                 </button>
 
@@ -892,20 +892,20 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     <button
                       type="button"
                       onMouseEnter={() => setActiveSubmenu('linkedView')}
-                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5 truncate">
-                        <LinkSquare02Icon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                        <LinkSquare02Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                         <span>Open linked view</span>
                       </div>
-                      <ChevronRightIcon size={12} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                      <ChevronRightIcon size={12} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                     </button>
 
                     {activeSubmenu === 'linkedView' && (
                       <div
                         onMouseLeave={() => setActiveSubmenu(null)}
-                        style={{ boxShadow: 'var(--flint-shadow-2)' }}
-                        className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-44 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
+                        style={{ boxShadow: 'var(--noether-shadow-2)' }}
+                        className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-44 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
                       >
                         {linkedViewActions.map((action) => (
                           <button
@@ -916,7 +916,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                               setIsOpen(false);
                               setActiveSubmenu(null);
                             }}
-                            className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2 cursor-pointer"
+                            className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2 cursor-pointer"
                           >
                             {action.icon}
                             <span>{action.title}</span>
@@ -937,23 +937,23 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       action.onClick(app, doc);
                       setIsOpen(false);
                     }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                   >
                     {action.icon}
                     <span>{action.title}</span>
                   </button>
                 ))}
 
-                <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
                 {/* Group 6: System & Navigation */}
                 <button
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleOpenInDefaultApp}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <ExternalLinkIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <ExternalLinkIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Open in default app</span>
                 </button>
 
@@ -961,9 +961,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleShowInExplorer}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <FolderOpenIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <FolderOpenIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Show in system explorer</span>
                 </button>
 
@@ -971,13 +971,13 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleRevealInNavigation}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--flint-text-secondary)] hover:bg-[var(--flint-bg-card-hover)] hover:text-[var(--flint-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <FolderTreeIcon size={14} className="text-[var(--flint-text-muted)] group-hover:text-[var(--flint-text-primary)] shrink-0" />
+                  <FolderTreeIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Reveal file in navigation</span>
                 </button>
 
-                <div className="border-t border-[var(--flint-border-base)] my-1 mx-1" />
+                <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
                 {/* Group 7: Delete file */}
                 <button

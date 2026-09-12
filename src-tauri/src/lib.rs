@@ -34,7 +34,6 @@ pub fn run() {
             vault::get_current_vault,
             vault::set_current_vault,
             vault::create_new_vault,
-            vault::rename_hearth,
             vault::rename_vault,
             vault::remove_recent_vault,
             vault::open_vault_in_explorer,
@@ -69,21 +68,21 @@ pub fn run() {
             vault::unregister_global_shortcut,
             vault::download_remote_text,
             set_accent_icon,
-            db::flint_db_init,
-            db::flint_db_query,
-            db::flint_db_execute,
-            db::flint_db_transaction,
-            db::flint_db_supports_fts5,
+            db::noether_db_init,
+            db::noether_db_query,
+            db::noether_db_execute,
+            db::noether_db_transaction,
+            db::noether_db_supports_fts5,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();
             let vault_to_watch = initial_vault.clone();
 
             // Auto-initialize native SQLite database on cold startup
-            let _ = db::flint_db_init(app.state::<db::DbState>(), Some(initial_vault.clone()));
+            let _ = db::noether_db_init(app.state::<db::DbState>(), Some(initial_vault.clone()));
 
             // Initialize sharp high-resolution window icon
-            let initial_icon = icon_tint::create_accent_tauri_image("#ea580c");
+            let initial_icon = icon_tint::create_accent_tauri_image("#eb584d");
             for (_, window) in app.webview_windows() {
                 let _ = window.set_icon(initial_icon.clone());
             }
@@ -97,7 +96,7 @@ pub fn run() {
                 let mut watcher = match RecommendedWatcher::new(tx, Config::default()) {
                     Ok(w) => w,
                     Err(e) => {
-                        eprintln!("[Flint Watcher] Failed to initialize file watcher: {}", e);
+                        eprintln!("[Noether Watcher] Failed to initialize file watcher: {}", e);
                         return;
                     }
                 };
@@ -110,14 +109,14 @@ pub fn run() {
                 while let Ok(res) = rx.recv() {
                     match res {
                         Ok(Event { paths, .. }) => {
-                            // If Flint itself just saved/edited the file internally, ignore the event
+                            // If Noether itself just saved/edited the file internally, ignore the event
                             if vault::is_recent_internal_write() {
                                 continue;
                             }
 
                             let should_emit = paths.iter().any(|p| {
                                 let p_str = p.to_string_lossy().replace('\\', "/");
-                                !p_str.contains("/.flint") && !p_str.contains("/.git") && !p_str.contains("/.")
+                                !p_str.contains("/.noether") && !p_str.contains("/.git") && !p_str.contains("/.")
                             });
 
                             if should_emit {
@@ -128,7 +127,7 @@ pub fn run() {
                                 }
                             }
                         }
-                        Err(e) => eprintln!("[Flint Watcher] Watch error: {:?}", e),
+                        Err(e) => eprintln!("[Noether Watcher] Watch error: {:?}", e),
                     }
                 }
             });
@@ -136,5 +135,5 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running flint application");
+        .expect("error while running noether application");
 }

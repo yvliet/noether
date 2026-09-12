@@ -1,7 +1,7 @@
 /**
  * @module events
  * @description
- * Strongly-typed event map for Flint's central publish-subscribe EventBus.
+ * Strongly-typed event map for Noether's central publish-subscribe EventBus.
  * Defines all lifecycle, workspace, document, and editor events available
  * for plugins and core systems to broadcast and subscribe to.
  *

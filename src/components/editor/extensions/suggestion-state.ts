@@ -15,7 +15,7 @@ import { SlashCommandPluginKey } from './slash-command';
  */
 export function isSuggestionActive(state?: any): boolean {
   if (typeof document !== 'undefined') {
-    return Boolean(document.querySelector('[data-flint-suggestion-popup="true"]'));
+    return Boolean(document.querySelector('[data-noether-suggestion-popup="true"]'));
   }
 
   if (state) {

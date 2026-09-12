@@ -1,7 +1,7 @@
 /**
  * @module SlotRegistry
  * @description
- * Inversion of Control (IoC) registry for dynamic UI Portal slots in Flint.
+ * Inversion of Control (IoC) registry for dynamic UI Portal slots in Noether.
  * Enables community extensions and core plugins to mount React components
  * directly into designated host layout slots (such as viewport overlays,
  * floating toolbars, minimaps, and workspace root) without DOM monkey-patching.

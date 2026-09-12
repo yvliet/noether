@@ -1,6 +1,6 @@
 # Events & Relational Storage
 
-Flint provides two foundational primitives for data management in extensions:
+Noether provides two foundational primitives for data management in extensions:
 1. **The Typed EventBus**: For reactive real-time notifications when documents are saved, opened, or deleted.
 2. **Declarative Relational Storage**: For high-performance SQLite tables and lightweight JSON key-value persistence.
 
@@ -9,10 +9,10 @@ Flint provides two foundational primitives for data management in extensions:
 
 ---
 
-Flint uses a strongly-typed publish-subscribe event system. Subscribing via `this.onEvent()` registers a listener that automatically unregisters when your extension is unloaded.
+Noether uses a strongly-typed publish-subscribe event system. Subscribing via `this.onEvent()` registers a listener that automatically unregisters when your extension is unloaded.
 
 ```typescript
-import { Extension } from 'flint';
+import { Extension } from 'noether';
 
 export default class EventWatcherExtension extends Extension {
   async onload() {
@@ -32,9 +32,9 @@ export default class EventWatcherExtension extends Extension {
       console.log(`Active tab changed to: ${activeTabId}`);
     });
 
-    // 4. Hearth/Vault Loaded Event
+    // 4. Vault/Vault Loaded Event
     this.onEvent('vault:loaded', ({ path, name }) => {
-      console.log(`Loaded Hearth "${name}" at ${path}`);
+      console.log(`Loaded Vault "${name}" at ${path}`);
     });
   }
 
@@ -61,7 +61,7 @@ export default class EventWatcherExtension extends Extension {
 
 ---
 
-For simple plugin configuration (such as API keys, user preferences, or toggle states), use `this.loadData()` and `this.saveData()`. Data is serialized as JSON in `.flint/extensions/<plugin-id>/data.json`.
+For simple plugin configuration (such as API keys, user preferences, or toggle states), use `this.loadData()` and `this.saveData()`. Data is serialized as JSON in `.noether/extensions/<plugin-id>/data.json`.
 
 ```typescript
 interface MyPluginConfig {
@@ -102,10 +102,10 @@ export default class ConfigurableExtension extends Extension {
 
 When your extension manages structured, relational, or high-volume data (such as flashcard review logs, canvas node vectors, or task audit trails), JSON files become slow and inefficient.
 
-Flint allows extensions to **declare typed SQLite tables** directly within the Hearth's embedded database via `this.defineTable()`:
+Noether allows extensions to **declare typed SQLite tables** directly within the Vault's embedded database via `this.defineTable()`:
 
 ```typescript
-import { Extension, ExtensionTable } from 'flint';
+import { Extension, ExtensionTable } from 'noether';
 
 interface FlashcardRow {
   id: string;
@@ -180,14 +180,14 @@ export default class SpacedRepetitionExtension extends Extension {
 ### Features of `defineTable()`
 - **Foreign Key Cascade**: Columns referencing `documents(id)` with `onDelete: 'cascade'` are cleaned up automatically when the user deletes a note.
 - **Automated Versioned Migrations**: Declare a `migrations` map for seamless schema evolution across plugin versions.
-- **Teardown Safety**: When `teardownPolicy: 'drop-on-uninstall'` is specified, Flint removes the table upon extension uninstallation, leaving no database bloat behind.
+- **Teardown Safety**: When `teardownPolicy: 'drop-on-uninstall'` is specified, Noether removes the table upon extension uninstallation, leaving no database bloat behind.
 
 
 ## 4. Off-Thread Web Workers (`this.registerWorkerTask`)
 
 ---
 
-For computationally heavy tasks (such as semantic vector embeddings, image hashing, or large graph layout computations), Flint provides an off-thread Web Worker pool to preserve 60 FPS typing performance.
+For computationally heavy tasks (such as semantic vector embeddings, image hashing, or large graph layout computations), Noether provides an off-thread Web Worker pool to preserve 60 FPS typing performance.
 
 ```typescript
 // 1. Register the task in onload()
@@ -210,8 +210,8 @@ const embeddings = await this.runTask('calculate-embeddings', { texts: ['Hello w
 
 ---
 
-- [[Database Schema Reference]]: Inspect Flint's internal SQLite tables and indexes.
+- [[Database Schema Reference]]: Inspect Noether's internal SQLite tables and indexes.
 - [[Dual-Storage Architecture]]: Understand how in-memory SQLite syncs with disk Markdown.
-- [[Flint SDK API Reference]]: Complete EventBus signatures and database manager interfaces.
+- [[Noether SDK API Reference]]: Complete EventBus signatures and database manager interfaces.
 - [[Optimizing Extension Load Time]]: Best practices for debouncing database writes.
 - [[Model Context Protocol (MCP) Tools]]: Expose database-backed queries to AI agents.

@@ -1,12 +1,12 @@
 /**
  * @module SyncEngine
  * @description
- * Robust bidirectional synchronization engine for Flint.
- * Integrates cleanly through the Flint SDK and Hearth API without
+ * Robust bidirectional synchronization engine for Noether.
+ * Integrates cleanly through the Noether SDK and Vault API without
  * importing internal runtime modules or violating core sandbox isolation.
  */
 
-import type { FlintApp } from '@/core/app/FlintApp';
+import type { NoetherApp } from '@/core/app/NoetherApp';
 import type { DocumentItem } from '@/types';
 import {
   SyncConfig,
@@ -23,7 +23,7 @@ export interface SyncEngineState {
 }
 
 export class SyncEngine {
-  private app: FlintApp;
+  private app: NoetherApp;
   private config: SyncConfig;
   private telemetry: SyncTelemetry;
   private tombstones: Map<string, number> = new Map();
@@ -36,7 +36,7 @@ export class SyncEngine {
   private persistStateFn: (data: SyncEngineState) => Promise<void>;
 
   constructor(
-    app: FlintApp,
+    app: NoetherApp,
     config: SyncConfig,
     initialTelemetry: Partial<SyncTelemetry> | undefined,
     initialTombstones: [string, number][] | undefined,
@@ -107,7 +107,7 @@ export class SyncEngine {
   }
 
   /**
-   * Invoked when a document is saved locally in Flint.
+   * Invoked when a document is saved locally in Noether.
    */
   public onDocumentSaved(): void {
     if (this.config.autoSyncOnSave) {
@@ -180,8 +180,8 @@ export class SyncEngine {
     let conflictCount = 0;
 
     try {
-      // 1. Gather all local documents via Hearth API
-      const localDocs: DocumentItem[] = this.app.hearth.documents || [];
+      // 1. Gather all local documents via Vault API
+      const localDocs: DocumentItem[] = this.app.vault.documents || [];
       const localMap = new Map<string, DocumentItem>();
       for (const d of localDocs) {
         localMap.set(d.id, d);
@@ -194,7 +194,7 @@ export class SyncEngine {
           // Read full content if not present
           let content = d.content_json || '';
           if (!content) {
-            const fullDoc = await this.app.hearth.readDocument(d.id);
+            const fullDoc = await this.app.vault.readDocument(d.id);
             if (fullDoc?.content_json) {
               content = fullDoc.content_json;
             }
@@ -234,7 +234,7 @@ export class SyncEngine {
         const localId = this.remoteToLocal.get(delRemoteId) || delRemoteId;
         if (localMap.has(localId)) {
           try {
-            await this.app.hearth.deleteDocument(localId);
+            await this.app.vault.deleteDocument(localId);
             this.tombstones.set(delRemoteId, Date.now());
             localMap.delete(localId);
             appliedCount++;
@@ -270,7 +270,7 @@ export class SyncEngine {
 
         if (!existingLocal) {
           // Document does not exist locally -> create new document
-          const createdDoc = await this.app.hearth.createNewDocument(
+          const createdDoc = await this.app.vault.createNewDocument(
             rDoc.title,
             rDoc.parent_id,
             rDoc.doc_type || 'base'
@@ -279,12 +279,12 @@ export class SyncEngine {
           if (createdDoc) {
             this.remoteToLocal.set(rDoc.id, createdDoc.id);
             this.localToRemote.set(createdDoc.id, rDoc.id);
-            await this.app.hearth.saveDocument(createdDoc.id, rDoc.content_json, rDoc.title);
+            await this.app.vault.saveDocument(createdDoc.id, rDoc.content_json, rDoc.title);
 
             if (rDoc.properties) {
               try {
                 const parsedProps = typeof rDoc.properties === 'string' ? JSON.parse(rDoc.properties) : rDoc.properties;
-                await this.app.hearth.updateDocumentProperties(createdDoc.id, parsedProps);
+                await this.app.vault.updateDocumentProperties(createdDoc.id, parsedProps);
               } catch {}
             }
             appliedCount++;
@@ -300,24 +300,24 @@ export class SyncEngine {
 
             if (strategy === 'keep_both') {
               conflictCount++;
-              const conflictDoc = await this.app.hearth.createNewDocument(
+              const conflictDoc = await this.app.vault.createNewDocument(
                 `[Conflict Copy] ${rDoc.title}`,
                 rDoc.parent_id,
                 rDoc.doc_type || 'base'
               );
               if (conflictDoc) {
-                await this.app.hearth.saveDocument(conflictDoc.id, rDoc.content_json, conflictDoc.title);
+                await this.app.vault.saveDocument(conflictDoc.id, rDoc.content_json, conflictDoc.title);
                 appliedCount++;
               }
             } else if (strategy === 'local_wins') {
               continue;
             } else if (strategy === 'remote_wins' || strategy === 'last_write_wins') {
               if (strategy === 'remote_wins' || remoteUpdated > localUpdated) {
-                await this.app.hearth.saveDocument(existingLocal.id, rDoc.content_json, rDoc.title);
+                await this.app.vault.saveDocument(existingLocal.id, rDoc.content_json, rDoc.title);
                 if (rDoc.properties) {
                   try {
                     const parsedProps = typeof rDoc.properties === 'string' ? JSON.parse(rDoc.properties) : rDoc.properties;
-                    await this.app.hearth.updateDocumentProperties(existingLocal.id, parsedProps);
+                    await this.app.vault.updateDocumentProperties(existingLocal.id, parsedProps);
                   } catch {}
                 }
                 appliedCount++;
@@ -325,11 +325,11 @@ export class SyncEngine {
             }
           } else if (remoteUpdated > localUpdated) {
             // Remote is newer without conflict -> apply remote
-            await this.app.hearth.saveDocument(existingLocal.id, rDoc.content_json, rDoc.title);
+            await this.app.vault.saveDocument(existingLocal.id, rDoc.content_json, rDoc.title);
             if (rDoc.properties) {
               try {
                 const parsedProps = typeof rDoc.properties === 'string' ? JSON.parse(rDoc.properties) : rDoc.properties;
-                await this.app.hearth.updateDocumentProperties(existingLocal.id, parsedProps);
+                await this.app.vault.updateDocumentProperties(existingLocal.id, parsedProps);
               } catch {}
             }
             appliedCount++;

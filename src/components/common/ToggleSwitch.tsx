@@ -36,10 +36,10 @@ export const ToggleSwitch: React.FC<ToggleSwitchProps> = React.memo(({
           onChange(!checked);
         }
       }}
-      className={`flint-switch ${trackWidth} ${trackHeight} disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
+      className={`noether-switch ${trackWidth} ${trackHeight} disabled:opacity-40 disabled:cursor-not-allowed ${className}`}
     >
       <span
-        className={`flint-switch-knob ${knobSize} ${
+        className={`noether-switch-knob ${knobSize} ${
           checked ? knobTranslate : 'translate-x-0'
         }`}
       />

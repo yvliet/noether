@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { useFlintApp, useStatusBarItems } from '@/core/app/AppContext';
+import { useNoetherApp, useStatusBarItems } from '@/core/app/AppContext';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -14,7 +14,7 @@ import {
 
 const StatusBarItemRenderer: React.FC<{
   item: import('@/core/extensions/types').StatusBarItem;
-  app: import('@/core/app/FlintApp').FlintApp;
+  app: import('@/core/app/NoetherApp').NoetherApp;
 }> = React.memo(({ item, app }) => {
   return <>{item.render(app)}</>;
 });
@@ -238,7 +238,7 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
 });
 
 export const StatusBar: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const leftItems = useStatusBarItems('left');
   const rightItems = useStatusBarItems('right');
 
@@ -257,12 +257,12 @@ export const StatusBar: React.FC = React.memo(() => {
 
   return (
     <div
-      data-flint-statusbar="true"
+      data-noether-statusbar="true"
       style={{
-        background: 'var(--flint-bg-statusbar, var(--flint-bg-card))',
-        color: 'var(--flint-text-muted)',
+        background: 'var(--noether-bg-statusbar, var(--noether-bg-card))',
+        color: 'var(--noether-text-muted)',
       }}
-      className="flint-status-bar absolute bottom-0 right-0 z-20 flex items-center gap-2 px-2 py-0.5 border-t border-l border-[var(--flint-border-base)] rounded-tl-md text-[11px] select-none shadow-sm"
+      className="noether-status-bar absolute bottom-0 right-0 z-20 flex items-center gap-2 px-2 py-0.5 border-t border-l border-[var(--noether-border-base)] rounded-tl-md text-[11px] select-none shadow-sm"
     >
       {/* Left-aligned status items (if any) */}
       {leftItems.map((item) => (

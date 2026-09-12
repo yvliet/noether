@@ -31,14 +31,14 @@ export const SettingCard: React.FC<SettingCardProps> = ({
       {hasHeader && (
         <div className="flex items-center justify-between px-1">
           <div>
-            {title && <h3 className="text-sm font-semibold text-[var(--flint-text-primary,#ffffff)] mb-0.5">{title}</h3>}
-            {description && <p className="text-[11px] text-[var(--flint-text-muted,#777777)]">{description}</p>}
+            {title && <h3 className="text-sm font-semibold text-[var(--noether-text-primary,#ffffff)] mb-0.5">{title}</h3>}
+            {description && <p className="text-[11px] text-[var(--noether-text-muted,#777777)]">{description}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
       )}
 
-      <div className="bg-[var(--flint-bg-card,#202020)] border border-[var(--flint-border-base,#2a2a2a)] rounded-xl overflow-hidden divide-y divide-[var(--flint-border-subtle,#282828)]">
+      <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-subtle,#282828)]">
         {children}
       </div>
     </div>

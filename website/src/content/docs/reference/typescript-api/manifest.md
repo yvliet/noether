@@ -1,6 +1,6 @@
 # TypeScript API: Manifest Specification
 
-Every Flint extension and theme must include a `manifest.json` file in its root folder. This document details the TypeScript type definitions, JSON schema, and validation rules.
+Every Noether extension and theme must include a `manifest.json` file in its root folder. This document details the TypeScript type definitions, JSON schema, and validation rules.
 
 
 ## 1. TypeScript Interface

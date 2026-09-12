@@ -1,7 +1,7 @@
 /**
  * @file PropertyIconPicker.tsx
  * @description
- * Property icon picker leveraging the unified Flint IconPicker component.
+ * Property icon picker leveraging the unified Noether IconPicker component.
  * Rendered as an anchored popover next to property key rows.
  *
  * @author Yuliet Li

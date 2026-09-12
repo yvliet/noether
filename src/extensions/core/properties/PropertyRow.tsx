@@ -175,7 +175,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
 
   const keyTooltip = useMemo(() => {
     if (lowerKey === 'locked' || lowerKey === 'read_only') {
-      return 'Lock Status\nPrevents editing in Flint and sets file to OS Read-Only';
+      return 'Lock Status\nPrevents editing in Noether and sets file to OS Read-Only';
     }
     if (lowerKey === 'created') {
       return 'Created Date\nTimestamp when this note was first created';
@@ -213,9 +213,9 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
         {isBuiltIn ? (
           <span
             title={iconTooltip}
-            className="p-1 -ml-1 text-[var(--flint-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none"
+            className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none"
           >
-            {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)] shrink-0' })}
+            {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
           </span>
         ) : (
           <>
@@ -223,9 +223,9 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               type="button"
               onClick={() => setIsPickerOpen(!isPickerOpen)}
               title={iconTooltip}
-              className="p-1 -ml-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer shrink-0 mr-1"
+              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] transition-colors cursor-pointer shrink-0 mr-1"
             >
-              {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)] shrink-0' })}
+              {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
             </button>
 
             <PropertyIconPicker
@@ -265,7 +265,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder="Property_name"
-            className="bg-transparent border-none outline-none text-[11px] font-medium text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] w-full p-0 m-0 leading-tight"
+            className="bg-transparent border-none outline-none text-[11px] font-medium text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] w-full p-0 m-0 leading-tight"
           />
         ) : (
           <span
@@ -279,7 +279,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             title={keyTooltip}
-            className={`text-[11px] font-medium text-[var(--flint-text-muted)] ${isReadOnlyKey ? 'cursor-default' : 'hover:text-[var(--flint-text-primary)] cursor-pointer'} truncate flex-1 min-w-0 leading-tight`}
+            className={`text-[11px] font-medium text-[var(--noether-text-muted)] ${isReadOnlyKey ? 'cursor-default' : 'hover:text-[var(--noether-text-primary)] cursor-pointer'} truncate flex-1 min-w-0 leading-tight`}
           >
             {localKey || propertyKey}
           </span>
@@ -291,7 +291,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
         {isReadOnlyValue ? (
           <span
             title={valueTooltip}
-            className="text-xs text-[var(--flint-text-secondary)] select-text px-0.5 py-0.5 font-normal truncate"
+            className="text-xs text-[var(--noether-text-secondary)] select-text px-0.5 py-0.5 font-normal truncate"
           >
             {String(localVal !== undefined && localVal !== null ? localVal : '')}
           </span>
@@ -310,7 +310,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder={matchedCustomType.placeholder || 'Empty'}
-            className={`bg-transparent border-none outline-none text-[var(--flint-text-primary)] text-xs placeholder:text-[var(--flint-text-muted)] px-0.5 py-0.5 transition-colors ${
+            className={`bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 transition-colors ${
               variant === 'sidebar' ? 'text-right w-full' : 'flex-1'
             }`}
           />
@@ -323,7 +323,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               onSaveValue(propertyKey, nextVal);
             }}
             title={valueTooltip}
-            className="text-xs font-medium text-[var(--flint-text-primary)] hover:text-[var(--flint-accent)] hover:underline cursor-pointer select-none px-0.5 py-0.5 transition-colors"
+            className="text-xs font-medium text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline cursor-pointer select-none px-0.5 py-0.5 transition-colors"
           >
             {isYes ? 'Yes' : 'No'}
           </button>
@@ -345,7 +345,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder="0"
-            className={`bg-transparent border-none outline-none text-[var(--flint-text-primary)] text-xs placeholder:text-[var(--flint-text-muted)] px-0.5 py-0.5 transition-colors ${
+            className={`bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 transition-colors ${
               variant === 'sidebar' ? 'text-right w-full' : 'flex-1'
             }`}
           />
@@ -364,7 +364,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder="Empty"
-            className={`bg-transparent border-none outline-none text-[var(--flint-text-primary)] text-xs placeholder:text-[var(--flint-text-muted)] px-0.5 py-0.5 transition-colors ${
+            className={`bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 transition-colors ${
               variant === 'sidebar' ? 'text-right w-full' : 'flex-1'
             }`}
           />
@@ -376,7 +376,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             type="button"
             onClick={() => onDelete(propertyKey)}
             title={`Delete ${propertyKey}`}
-            className="opacity-0 group-hover:opacity-100 text-[var(--flint-text-muted)] hover:text-rose-500 cursor-pointer p-0.5 transition-opacity shrink-0"
+            className="opacity-0 group-hover:opacity-100 text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer p-0.5 transition-opacity shrink-0"
           >
             <Cancel01Icon size={11} />
           </button>

@@ -1,8 +1,8 @@
 {
-  "name": "@flint/registry-api",
+  "name": "@noether/registry-api",
   "version": "1.0.0",
   "private": true,
-  "description": "Serverless dynamic database and REST API for the Flint Community Plugin Registry",
+  "description": "Serverless dynamic database and REST API for the Noether Community Extension Registry",
   "type": "module",
   "main": "src/index.ts",
   "scripts": {

@@ -3,7 +3,7 @@
  * @description
  * Isolated database persistence module for the Canvas extension.
  * Automatically initializes dynamic SQLite tables and indexes upon demand,
- * ensuring Flint native core requires zero hardcoded knowledge of canvas schemas.
+ * ensuring Noether native core requires zero hardcoded knowledge of canvas schemas.
  */
 
 import { dbAdapter } from '@/lib/db/adapter';
@@ -111,7 +111,7 @@ export async function initCanvasTables(): Promise<void> {
 
     isInitialized = true;
   } catch (err) {
-    console.error('[Flint Canvas] Failed to initialize canvas tables:', err);
+    console.error('[Noether Canvas] Failed to initialize canvas tables:', err);
   }
 }
 

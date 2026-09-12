@@ -1,7 +1,7 @@
 /**
  * @module BaseProvider
  * @description
- * Abstract base class for cloud database sync providers in Flint.
+ * Abstract base class for cloud database sync providers in Noether.
  */
 
 import {

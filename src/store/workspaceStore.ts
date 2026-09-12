@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { LeftNavView, SidebarTab, TabItem, MainViewMode, RecentHearthItem, DocumentItem } from '@/types';
+import { LeftNavView, SidebarTab, TabItem, MainViewMode, RecentVaultItem, DocumentItem } from '@/types';
 import { useDocumentStore } from './documentStore';
 import { useSettingsStore } from './settingsStore';
 import { useSidebarDockStore, DockItem, DockZone } from './sidebarDockStore';
 import { dbAdapter } from '@/lib/db/adapter';
 import { platform } from '@/lib/platform/platformAdapter';
-import { bindFlintStores, emitBridgeAppEvent } from '@/core/app/storeBridge';
+import { bindNoetherStores, emitBridgeAppEvent } from '@/core/app/storeBridge';
 import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 import type { OpenTabOptions } from '@/core/extensions/types';
 
@@ -76,36 +76,36 @@ export interface NavigationHistoryItem {
 
 import { FileSortOrder } from '@/lib/sort';
 
-function getFolderOpenStateKey(hearthPath?: string): string {
-  const hPath = (hearthPath || useWorkspaceStore?.getState?.()?.hearthPath || '').trim();
-  return `flint_folder_open_state_v1:${hPath || 'default'}`;
+function getFolderOpenStateKey(vaultPath?: string): string {
+  const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
+  return `noether_folder_open_state_v1:${vPath || 'default'}`;
 }
 
-export function loadPersistedFolderOpenState(hearthPath?: string): Record<string, boolean> {
+export function loadPersistedFolderOpenState(vaultPath?: string): Record<string, boolean> {
   if (typeof window === 'undefined') return {};
   try {
-    const raw = localStorage.getItem(getFolderOpenStateKey(hearthPath));
+    const raw = localStorage.getItem(getFolderOpenStateKey(vaultPath));
     if (raw) return JSON.parse(raw);
   } catch {}
   return {};
 }
 
-export function savePersistedFolderOpenState(state: Record<string, boolean>, hearthPath?: string) {
+export function savePersistedFolderOpenState(state: Record<string, boolean>, vaultPath?: string) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(getFolderOpenStateKey(hearthPath), JSON.stringify(state));
+    localStorage.setItem(getFolderOpenStateKey(vaultPath), JSON.stringify(state));
   } catch {}
 }
 
-function getFileSortOrderKey(hearthPath?: string): string {
-  const hPath = (hearthPath || useWorkspaceStore?.getState?.()?.hearthPath || '').trim();
-  return `flint_file_sort_order_v1:${hPath || 'default'}`;
+function getFileSortOrderKey(vaultPath?: string): string {
+  const vPath = (vaultPath || useWorkspaceStore?.getState?.()?.vaultPath || '').trim();
+  return `noether_file_sort_order_v1:${vPath || 'default'}`;
 }
 
-export function loadPersistedFileSortOrder(hearthPath?: string): FileSortOrder {
+export function loadPersistedFileSortOrder(vaultPath?: string): FileSortOrder {
   if (typeof window === 'undefined') return 'alphabetical';
   try {
-    const raw = localStorage.getItem(getFileSortOrderKey(hearthPath));
+    const raw = localStorage.getItem(getFileSortOrderKey(vaultPath));
     if (raw && ['alphabetical', 'alphabetical-reverse', 'byModifiedTime', 'byModifiedTimeReverse', 'byCreatedTime', 'byCreatedTimeReverse'].includes(raw)) {
       return raw as FileSortOrder;
     }
@@ -113,21 +113,21 @@ export function loadPersistedFileSortOrder(hearthPath?: string): FileSortOrder {
   return 'alphabetical';
 }
 
-export function savePersistedFileSortOrder(sortOrder: FileSortOrder, hearthPath?: string) {
+export function savePersistedFileSortOrder(sortOrder: FileSortOrder, vaultPath?: string) {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(getFileSortOrderKey(hearthPath), sortOrder);
+    localStorage.setItem(getFileSortOrderKey(vaultPath), sortOrder);
   } catch {}
 }
 
 let saveTabsSessionTimer: any = null;
 
-function performSaveTabsSession(hearthPath?: string) {
+function performSaveTabsSession(vaultPath?: string) {
   if (typeof window === 'undefined') return;
   const { restoreTabs } = useSettingsStore.getState();
-  const hPath = (hearthPath || useWorkspaceStore.getState().hearthPath || '').trim();
-  if (!hPath || hPath === 'default') return;
-  const key = `flint_workspace_tabs_v1:${hPath}`;
+  const vPath = (vaultPath || useWorkspaceStore.getState().vaultPath || '').trim();
+  if (!vPath || vPath === 'default') return;
+  const key = `noether_workspace_tabs_v1:${vPath}`;
 
   if (!restoreTabs) {
     localStorage.removeItem(key);
@@ -189,22 +189,22 @@ function performSaveTabsSession(hearthPath?: string) {
   }
 }
 
-export function saveTabsSessionImmediate(hearthPath?: string) {
+export function saveTabsSessionImmediate(vaultPath?: string) {
   if (saveTabsSessionTimer) {
     clearTimeout(saveTabsSessionTimer);
     saveTabsSessionTimer = null;
   }
-  performSaveTabsSession(hearthPath);
+  performSaveTabsSession(vaultPath);
 }
 
-export function saveTabsSession(hearthPath?: string) {
+export function saveTabsSession(vaultPath?: string) {
   if (typeof window === 'undefined') return;
   if (saveTabsSessionTimer) {
     clearTimeout(saveTabsSessionTimer);
   }
   saveTabsSessionTimer = setTimeout(() => {
     saveTabsSessionTimer = null;
-    performSaveTabsSession(hearthPath);
+    performSaveTabsSession(vaultPath);
   }, 400);
 }
 
@@ -214,14 +214,14 @@ if (typeof window !== 'undefined') {
   });
 }
 
-export function loadSavedTabsSession(hearthPath?: string): PersistedTabsState | null {
+export function loadSavedTabsSession(vaultPath?: string): PersistedTabsState | null {
   if (typeof window === 'undefined') return null;
   const { restoreTabs } = useSettingsStore.getState();
   if (!restoreTabs) return null;
 
-  const hPath = (hearthPath || useWorkspaceStore.getState().hearthPath || '').trim();
-  if (!hPath || hPath === 'default') return null;
-  const key = `flint_workspace_tabs_v1:${hPath}`;
+  const vPath = (vaultPath || useWorkspaceStore.getState().vaultPath || '').trim();
+  if (!vPath || vPath === 'default') return null;
+  const key = `noether_workspace_tabs_v1:${vPath}`;
 
   try {
     const raw = localStorage.getItem(key);
@@ -396,8 +396,8 @@ interface WorkspaceState {
   setIsSettingsOpen: (open: boolean, initialTab?: string) => void;
   isHelpModalOpen: boolean;
   setIsHelpModalOpen: (open: boolean) => void;
-  isHearthModalOpen: boolean;
-  setIsHearthModalOpen: (open: boolean) => void;
+  isVaultModalOpen: boolean;
+  setIsVaultModalOpen: (open: boolean) => void;
   isUpdateModalOpen: boolean;
   availableUpdateRelease: any | null;
   setIsUpdateModalOpen: (open: boolean, release?: any | null) => void;
@@ -443,20 +443,20 @@ interface WorkspaceState {
   fileSortOrder: FileSortOrder;
   setFileSortOrder: (sortOrder: FileSortOrder) => void;
 
-  // Hearth Management
-  hearthName: string;
-  hearthPath: string;
-  recentHearths: RecentHearthItem[];
-  setHearthName: (name: string) => void;
-  setHearthPath: (path: string) => void;
-  initHearthInfo: () => Promise<void>;
-  selectHearthFolder: () => Promise<void>;
+  // Vault Management
+  vaultName: string;
+  vaultPath: string;
+  recentVaults: RecentVaultItem[];
+  setVaultName: (name: string) => void;
+  setVaultPath: (path: string) => void;
+  initVaultInfo: () => Promise<void>;
+  selectVaultFolder: () => Promise<void>;
   selectParentFolder: () => Promise<string | null>;
-  createNewHearth: (name: string, parentPath: string) => Promise<void>;
-  renameHearth: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; error?: string }>;
-  removeRecentHearth: (path: string) => Promise<void>;
-  switchHearth: (path: string) => Promise<void>;
-  openHearthInExplorer: () => Promise<void>;
+  createNewVault: (name: string, parentPath: string) => Promise<void>;
+  renameVault: (targetPath: string, newName: string) => Promise<{ success: boolean; path?: string; name?: string; error?: string }>;
+  removeRecentVault: (path: string) => Promise<void>;
+  switchVault: (path: string) => Promise<void>;
+  openVaultInExplorer: () => Promise<void>;
 
   // Status bar metrics
   wordCount: number;
@@ -566,7 +566,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         dock.setActiveItemInZone('left-top', view);
       }
     } catch {}
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
   getLastActiveLeftView: (excludeIds = [], preferredIndex?: number) => {
     const { leftSidebarHistory = [], activeLeftView } = get();
@@ -611,17 +611,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((state) => ({
       isLeftSidebarOpen: typeof open === 'function' ? open(state.isLeftSidebarOpen) : open,
     }));
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
   toggleLeftSidebar: () => {
     set((state) => ({ isLeftSidebarOpen: !state.isLeftSidebarOpen }));
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
   leftSidebarWidth: 260,
   setLeftSidebarWidth: (width) => {
     const clamped = Math.max(200, Math.min(width, 450));
     set({ leftSidebarWidth: clamped });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   activeRightTab: 'outline',
@@ -646,7 +646,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         dock.setActiveItemInZone('right-top', tab);
       }
     } catch {}
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
   getLastActiveRightTab: (excludeIds = [], preferredIndex?: number) => {
     const { rightSidebarHistory = [], activeRightTab } = get();
@@ -691,17 +691,17 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set((state) => ({
       isRightSidebarOpen: typeof open === 'function' ? open(state.isRightSidebarOpen) : open,
     }));
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
   toggleRightSidebar: () => {
     set((state) => ({ isRightSidebarOpen: !state.isRightSidebarOpen }));
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
   rightSidebarWidth: 260,
   setRightSidebarWidth: (width) => {
     const clamped = Math.max(200, Math.min(width, 400));
     set({ rightSidebarWidth: clamped });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   tabs: [],
@@ -919,7 +919,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       useDocumentStore.setState({ activeDocument: null });
     }
 
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   cleanUpDeadTabs: () => {
@@ -977,7 +977,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   restoreTabsSession: (docs: DocumentItem[]) => {
-    const activePath = get().hearthPath;
+    const activePath = get().vaultPath;
     if (!activePath) return false;
     const saved = loadSavedTabsSession(activePath);
     if (!saved || !saved.tabs || saved.tabs.length === 0) return false;
@@ -1452,7 +1452,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   closeTabInPane: (paneId, tabId) => {
@@ -1507,7 +1507,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         });
         useDocumentStore.setState({ activeDocument: null });
         emitBridgeAppEvent('tab:changed', { activeTabId: fallbackTab.id });
-        saveTabsSession(get().hearthPath);
+        saveTabsSession(get().vaultPath);
         return;
       }
 
@@ -1577,7 +1577,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: nextActiveTabId });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   togglePinTab: (tabId) => {
@@ -1600,7 +1600,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
     const nextTabs = tabs.map((t) => (t.id === tabId ? { ...t, is_pinned: !t.is_pinned } : t));
     set({ panes: newPanes, tabs: nextTabs });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   closePane: (paneId) => {
@@ -1666,7 +1666,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: mainModel?.activeTabId || '' });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   openTabInPane: (paneId, docId, title = 'Untitled', options?: OpenTabOptions) => {
@@ -1842,7 +1842,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!isBackground) {
       emitBridgeAppEvent('tab:changed', { activeTabId: nextTabId });
     }
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   openEmptyTabInPane: (paneId) => {
@@ -1887,7 +1887,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: newTab.id });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   openCustomTabInPane: (paneId, options) => {
@@ -1981,7 +1981,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: finalTabId });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   reorderTabsInPane: (paneId, sourceIndex, destinationIndex) => {
@@ -2013,7 +2013,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       ...(paneId === get().focusedPaneId && !isMain ? { splitTabs: newTabs } : {}),
     });
 
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   moveTabBetweenPanes: (sourcePaneId, sourceIndex, targetPaneId, targetIndex) => {
@@ -2135,7 +2135,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: tabToMove.id });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   setActiveTabInPane: (paneId, tabId) => {
@@ -2184,7 +2184,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }
 
     emitBridgeAppEvent('tab:changed', { activeTabId: tabId });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   openSplitTab: (documentId: string, title = 'Untitled', direction?: 'horizontal' | 'vertical') => {
@@ -2251,7 +2251,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       splitActiveTabId: null,
       splitActiveDocumentId: null,
     });
-    saveTabsSession(get().hearthPath);
+    saveTabsSession(get().vaultPath);
   },
 
   setSplitActiveDocumentId: (id) => set({ splitActiveDocumentId: id }),
@@ -2269,8 +2269,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     }),
   isHelpModalOpen: false,
   setIsHelpModalOpen: (open) => set({ isHelpModalOpen: open }),
-  isHearthModalOpen: false,
-  setIsHearthModalOpen: (open) => set({ isHearthModalOpen: open }),
+  isVaultModalOpen: false,
+  setIsVaultModalOpen: (open) => set({ isVaultModalOpen: open }),
   isUpdateModalOpen: false,
   availableUpdateRelease: null,
   setIsUpdateModalOpen: (open, release) =>
@@ -2283,7 +2283,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   skipDeleteConfirmation: false,
   setSkipDeleteConfirmation: (skip: boolean) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('flint_skip_delete_confirmation', skip ? 'true' : 'false');
+      localStorage.setItem('noether_skip_delete_confirmation', skip ? 'true' : 'false');
     }
     set({ skipDeleteConfirmation: skip });
     useSettingsStore.getState().setSkipDeleteConfirmation(skip);
@@ -2291,7 +2291,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   skipRenameConfirmation: false,
   setSkipRenameConfirmation: (skip: boolean) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('flint_skip_rename_confirmation', skip ? 'true' : 'false');
+      localStorage.setItem('noether_skip_rename_confirmation', skip ? 'true' : 'false');
     }
     set({ skipRenameConfirmation: skip });
     useSettingsStore.getState().setSkipRenameConfirmation(skip);
@@ -2346,13 +2346,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   folderOpenState: loadPersistedFolderOpenState(),
   setFolderOpen: (folderId, isOpen) => {
     const current = { ...get().folderOpenState, [folderId]: isOpen };
-    savePersistedFolderOpenState(current, get().hearthPath);
+    savePersistedFolderOpenState(current, get().vaultPath);
     set({ folderOpenState: current });
   },
   toggleFolderOpen: (folderId) => {
     const currentState = get().folderOpenState[folderId] !== undefined ? get().folderOpenState[folderId] : true;
     const current = { ...get().folderOpenState, [folderId]: !currentState };
-    savePersistedFolderOpenState(current, get().hearthPath);
+    savePersistedFolderOpenState(current, get().vaultPath);
     set({ folderOpenState: current });
   },
   collapseAllFolders: () => {
@@ -2361,7 +2361,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     docs.filter((d) => d.is_folder).forEach((f) => {
       nextState[f.id] = false;
     });
-    savePersistedFolderOpenState(nextState, get().hearthPath);
+    savePersistedFolderOpenState(nextState, get().vaultPath);
     set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
   },
   expandAllFolders: () => {
@@ -2370,7 +2370,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     docs.filter((d) => d.is_folder).forEach((f) => {
       nextState[f.id] = true;
     });
-    savePersistedFolderOpenState(nextState, get().hearthPath);
+    savePersistedFolderOpenState(nextState, get().vaultPath);
     set((s) => ({ folderOpenState: nextState, collapseAllCount: s.collapseAllCount + 1 }));
   },
   toggleCollapseExpandAll: () => {
@@ -2391,46 +2391,46 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   fileSortOrder: loadPersistedFileSortOrder(),
   setFileSortOrder: (sortOrder) => {
-    savePersistedFileSortOrder(sortOrder, get().hearthPath);
+    savePersistedFileSortOrder(sortOrder, get().vaultPath);
     set({ fileSortOrder: sortOrder });
   },
 
-  // Hearth state
-  hearthName: 'Flint Hearth',
-  hearthPath: '',
-  recentHearths: [],
-  setHearthName: (name) => set({ hearthName: name }),
-  setHearthPath: (path) => {
+  // Vault state
+  vaultName: 'Noether Vault',
+  vaultPath: '',
+  recentVaults: [],
+  setVaultName: (name) => set({ vaultName: name }),
+  setVaultPath: (path) => {
     const persisted = loadPersistedFolderOpenState(path);
     const persistedSort = loadPersistedFileSortOrder(path);
-    set({ hearthPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
+    set({ vaultPath: path, folderOpenState: persisted, fileSortOrder: persistedSort });
   },
 
-  initHearthInfo: async () => {
+  initVaultInfo: async () => {
     try {
-      const hearth = await platform.getCurrentHearth();
-      if (hearth && hearth.path) {
-        const recentList = hearth.recentHearths || [];
-        const persisted = loadPersistedFolderOpenState(hearth.path);
-        const persistedSort = loadPersistedFileSortOrder(hearth.path);
+      const vault = await platform.getCurrentVault();
+      if (vault && vault.path) {
+        const recentList = vault.recentVaults || [];
+        const persisted = loadPersistedFolderOpenState(vault.path);
+        const persistedSort = loadPersistedFileSortOrder(vault.path);
         set({
-          hearthPath: hearth.path,
-          hearthName: hearth.name || 'Flint Hearth',
-          recentHearths: recentList,
+          vaultPath: vault.path,
+          vaultName: vault.name || 'Noether Vault',
+          recentVaults: recentList,
           folderOpenState: persisted,
           fileSortOrder: persistedSort,
         });
-        dbAdapter.setActiveHearthPath(hearth.path);
+        dbAdapter.setActiveVaultPath(vault.path);
       }
     } catch (e) {
-      console.error('Error fetching hearth info:', e);
+      console.error('Error fetching vault info:', e);
     }
 
-    // Subscribe to external hearth change notifications
-    platform.onHearthChanged((hearth) => {
-      if (hearth?.path) {
-        const currentPath = get().hearthPath;
-        if (currentPath && hearth.path && currentPath.toLowerCase() === hearth.path.toLowerCase()) {
+    // Subscribe to external vault change notifications
+    platform.onVaultChanged((vault) => {
+      if (vault?.path) {
+        const currentPath = get().vaultPath;
+        if (currentPath && vault.path && currentPath.toLowerCase() === vault.path.toLowerCase()) {
           return;
         }
         if (typeof window !== 'undefined') {
@@ -2440,26 +2440,26 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
   },
 
-  selectHearthFolder: async () => {
+  selectVaultFolder: async () => {
     try {
-      const currentPath = get().hearthPath;
+      const currentPath = get().vaultPath;
       if (currentPath) {
         saveTabsSession(currentPath);
         await dbAdapter.persist();
       }
-      dbAdapter.setSwitchingHearth(true);
-      const res = await platform.selectHearthFolder();
+      dbAdapter.setSwitchingVault(true);
+      const res = await platform.selectVaultFolder();
       if (!res.canceled && res.path) {
         if (typeof window !== 'undefined') {
           window.location.reload();
           return;
         }
       } else {
-        dbAdapter.setSwitchingHearth(false);
+        dbAdapter.setSwitchingVault(false);
       }
     } catch (e) {
-      dbAdapter.setSwitchingHearth(false);
-      console.error('Error selecting hearth folder:', e);
+      dbAdapter.setSwitchingVault(false);
+      console.error('Error selecting vault folder:', e);
     }
   },
 
@@ -2475,118 +2475,118 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     return null;
   },
 
-  createNewHearth: async (name: string, parentPath: string) => {
+  createNewVault: async (name: string, parentPath: string) => {
     try {
-      const currentPath = get().hearthPath;
+      const currentPath = get().vaultPath;
       if (currentPath) {
         saveTabsSession(currentPath);
         await dbAdapter.persist();
       }
-      dbAdapter.setSwitchingHearth(true);
-      const res = await platform.createNewHearth(name, parentPath);
+      dbAdapter.setSwitchingVault(true);
+      const res = await platform.createNewVault(name, parentPath);
       if (res.success && res.path) {
         if (typeof window !== 'undefined') {
           window.location.reload();
           return;
         }
       } else {
-        dbAdapter.setSwitchingHearth(false);
+        dbAdapter.setSwitchingVault(false);
       }
     } catch (e) {
-      dbAdapter.setSwitchingHearth(false);
-      console.error('Error creating new hearth:', e);
+      dbAdapter.setSwitchingVault(false);
+      console.error('Error creating new vault:', e);
     }
   },
 
-  renameHearth: async (targetPath: string, newName: string) => {
+  renameVault: async (targetPath: string, newName: string) => {
     try {
       const cleanName = (newName || '').trim();
       if (!cleanName) return { success: false, error: 'Name cannot be empty' };
 
-      const activePath = targetPath || get().hearthPath;
-      const isCurrent = !activePath || activePath === get().hearthPath;
+      const activePath = targetPath || get().vaultPath;
+      const isCurrent = !activePath || activePath === get().vaultPath;
 
-      // If the active hearth is being renamed, flush pending SQLite writes first
+      // If the active vault is being renamed, flush pending SQLite writes first
       if (isCurrent) {
         try {
           await dbAdapter.persist();
         } catch (_) {}
       }
 
-      const res = await platform.renameHearth(activePath, cleanName);
+      const res = await platform.renameVault(activePath, cleanName);
       if (res && res.success) {
-        const list = res.recentHearths || [];
+        const list = res.recentVaults || [];
         const finalPath = res.path || activePath;
 
         set((state) => ({
-          recentHearths: list.length > 0 ? list : state.recentHearths.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
-          hearthName: isCurrent ? cleanName : state.hearthName,
-          hearthPath: isCurrent ? finalPath : state.hearthPath,
+          recentVaults: list.length > 0 ? list : state.recentVaults.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
+          vaultName: isCurrent ? cleanName : state.vaultName,
+          vaultPath: isCurrent ? finalPath : state.vaultPath,
         }));
 
         if (isCurrent) {
-          dbAdapter.setActiveHearthPath(finalPath);
+          dbAdapter.setActiveVaultPath(finalPath);
           try {
-            await platform.setWindowTitle(`Flint`);
+            await platform.setWindowTitle(`Noether`);
           } catch (_) {}
         }
 
-        get().showToast(`Renamed Hearth to "${cleanName}"`, 'success');
+        get().showToast(`Renamed Vault to "${cleanName}"`, 'success');
         return { success: true, path: finalPath, name: cleanName };
       } else {
-        const errorMsg = res?.error || 'Failed to rename Hearth';
+        const errorMsg = res?.error || 'Failed to rename Vault';
         get().showToast(errorMsg, 'warning');
         return { success: false, error: errorMsg };
       }
     } catch (e: any) {
-      console.error('Error renaming hearth:', e);
-      get().showToast(e.message || 'Failed to rename Hearth', 'warning');
+      console.error('Error renaming vault:', e);
+      get().showToast(e.message || 'Failed to rename Vault', 'warning');
       return { success: false, error: e.message };
     }
   },
 
-  removeRecentHearth: async (targetPath: string) => {
+  removeRecentVault: async (targetPath: string) => {
     try {
-      const res = await platform.removeRecentHearth(targetPath);
+      const res = await platform.removeRecentVault(targetPath);
       if (res.success) {
-        const list = res.recentHearths || [];
-        set({ recentHearths: list });
-        get().showToast('Removed Hearth from list', 'info');
+        const list = res.recentVaults || [];
+        set({ recentVaults: list });
+        get().showToast('Removed Vault from list', 'info');
       }
     } catch (e) {
-      console.error('Error removing recent hearth:', e);
+      console.error('Error removing recent vault:', e);
     }
   },
 
-  switchHearth: async (hearthPath: string) => {
+  switchVault: async (vaultPath: string) => {
     try {
-      const currentPath = get().hearthPath;
-      if (hearthPath && currentPath && hearthPath.toLowerCase() === currentPath.toLowerCase()) {
-        get().showToast('This Hearth is already open', 'info');
+      const currentPath = get().vaultPath;
+      if (vaultPath && currentPath && vaultPath.toLowerCase() === currentPath.toLowerCase()) {
+        get().showToast('This Vault is already open', 'info');
         return;
       }
       if (currentPath) {
         saveTabsSession(currentPath);
         await dbAdapter.persist();
       }
-      dbAdapter.setSwitchingHearth(true);
-      const res = await platform.setCurrentHearth(hearthPath);
+      dbAdapter.setSwitchingVault(true);
+      const res = await platform.setCurrentVault(vaultPath);
       if (res.success && res.path) {
         if (typeof window !== 'undefined') {
           window.location.reload();
           return;
         }
       } else {
-        dbAdapter.setSwitchingHearth(false);
+        dbAdapter.setSwitchingVault(false);
       }
     } catch (e) {
-      dbAdapter.setSwitchingHearth(false);
-      console.error('Error switching hearth:', e);
+      dbAdapter.setSwitchingVault(false);
+      console.error('Error switching vault:', e);
     }
   },
 
-  openHearthInExplorer: async () => {
-    await platform.openHearthInExplorer(get().hearthPath);
+  openVaultInExplorer: async () => {
+    await platform.openVaultInExplorer(get().vaultPath);
   },
 
   wordCount: 0,
@@ -2624,7 +2624,7 @@ if (typeof window !== 'undefined') {
       state.leftSidebarWidth !== prevState.leftSidebarWidth ||
       state.rightSidebarWidth !== prevState.rightSidebarWidth
     ) {
-      saveTabsSession(state.hearthPath);
+      saveTabsSession(state.vaultPath);
     }
   });
 
@@ -2637,6 +2637,6 @@ if (typeof window !== 'undefined') {
   });
 }
 
-bindFlintStores({ workspace: useWorkspaceStore });
+bindNoetherStores({ workspace: useWorkspaceStore });
 
 

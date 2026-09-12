@@ -28,7 +28,7 @@ const TS_BUILTIN_TYPES = new Set([
   'Promise', 'Partial', 'Omit', 'Pick', 'Required', 'Readonly', 'Extract',
   'Exclude', 'NonNullable', 'Parameters', 'ReturnType', 'InstanceType',
   'React', 'ReactNode', 'FC', 'Component', 'ComponentType', 'useState', 'useEffect', 'useMemo', 'useCallback', 'useRef',
-  'Extension', 'ExtensionManifest', 'FlintApp', 'Zustand',
+  'Extension', 'ExtensionManifest', 'NoetherApp', 'Zustand',
 ]);
 
 const SQL_KEYWORDS = new Set([

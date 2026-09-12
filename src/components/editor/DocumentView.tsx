@@ -104,7 +104,7 @@ function normalizeHeadings(doc: any): any {
 /**
  * Reusable, first-class DocumentView component.
  * Single source of truth for both live reading view and live editing view.
- * Ensures 100% parity with Flint's editor formatting rules without code duplication.
+ * Ensures 100% parity with Noether's editor formatting rules without code duplication.
  */
 export const DocumentView: React.FC<DocumentViewProps> = React.memo(
   ({
@@ -207,7 +207,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
       editorProps: {
         attributes: {
           class: `focus:outline-none select-text ${
-            compact ? 'flint-compact-doc-inner' : 'min-h-full flint-standard-doc-inner'
+            compact ? 'noether-compact-doc-inner' : 'min-h-full noether-standard-doc-inner'
           } ${editable ? 'cursor-text' : 'cursor-default'}`,
           spellcheck: 'false',
         },
@@ -383,32 +383,32 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
           }
         }}
         className={`document-view-root w-full h-full overflow-y-auto custom-scrollbar select-text overscroll-contain ${
-          compact ? 'flint-compact-doc p-3.5' : 'p-6'
-        } ${accentListPrefixes ? 'flint-accent-lists' : ''} ${
-          indentationGuides ? 'flint-indent-guides' : ''
-        } ${strictLineBreaks ? 'flint-strict-line-breaks' : ''} ${
-          showExternalLinkIcon ? 'flint-show-link-icon' : ''
+          compact ? 'noether-compact-doc p-3.5' : 'p-6'
+        } ${accentListPrefixes ? 'noether-accent-lists' : ''} ${
+          indentationGuides ? 'noether-indent-guides' : ''
+        } ${strictLineBreaks ? 'noether-strict-line-breaks' : ''} ${
+          showExternalLinkIcon ? 'noether-show-link-icon' : ''
         } ${!editable ? 'tiptap-reading-view cursor-default' : 'cursor-text'} ${className}`}
       >
         {compact && (
           <style>{`
-            .flint-compact-doc {
+            .noether-compact-doc {
               scrollbar-gutter: auto !important;
             }
-            .flint-compact-doc .ProseMirror {
+            .noether-compact-doc .ProseMirror {
               outline: none !important;
               font-size: 14px !important;
               line-height: 1.625 !important;
               color: #d0d0d0 !important;
               min-height: auto !important;
             }
-            .flint-compact-doc .ProseMirror > *:first-child {
+            .noether-compact-doc .ProseMirror > *:first-child {
               margin-top: 0 !important;
             }
-            .flint-compact-doc .ProseMirror > *:last-child {
+            .noether-compact-doc .ProseMirror > *:last-child {
               margin-bottom: 0 !important;
             }
-            .flint-compact-doc .ProseMirror p {
+            .noether-compact-doc .ProseMirror p {
               margin-top: 0.25rem !important;
               margin-bottom: 0.25rem !important;
               line-height: 1.625 !important;
@@ -416,7 +416,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               color: #d0d0d0 !important;
               word-break: break-word !important;
             }
-            .flint-compact-doc .ProseMirror h1 {
+            .noether-compact-doc .ProseMirror h1 {
               font-size: 1.2rem !important;
               font-weight: 700 !important;
               color: #ffffff !important;
@@ -425,7 +425,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               line-height: 1.375 !important;
               letter-spacing: -0.025em !important;
             }
-            .flint-compact-doc .ProseMirror h2 {
+            .noether-compact-doc .ProseMirror h2 {
               font-size: 1.05rem !important;
               font-weight: 600 !important;
               color: #f0f0f0 !important;
@@ -433,7 +433,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               margin-bottom: 0.25rem !important;
               line-height: 1.375 !important;
             }
-            .flint-compact-doc .ProseMirror h3 {
+            .noether-compact-doc .ProseMirror h3 {
               font-size: 0.9rem !important;
               font-weight: 600 !important;
               color: #e0e0e0 !important;
@@ -441,30 +441,30 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               margin-bottom: 0.25rem !important;
               line-height: 1.375 !important;
             }
-            .flint-compact-doc .ProseMirror ul {
+            .noether-compact-doc .ProseMirror ul {
               margin-top: 0.375rem !important;
               margin-bottom: 0.375rem !important;
               padding-left: 1rem !important;
             }
-            .flint-compact-doc .ProseMirror ol {
+            .noether-compact-doc .ProseMirror ol {
               margin-top: 0.375rem !important;
               margin-bottom: 0.375rem !important;
               padding-left: 1rem !important;
             }
-            .flint-compact-doc .ProseMirror li {
+            .noether-compact-doc .ProseMirror li {
               line-height: 1.625 !important;
               font-size: 14px !important;
               color: #d0d0d0 !important;
             }
-            .flint-compact-doc .ProseMirror blockquote {
+            .noether-compact-doc .ProseMirror blockquote {
               margin: 0.375rem 0 !important;
               padding-left: 0.625rem !important;
-              border-left: 2px solid var(--flint-accent, #ea580c) !important;
-              background-color: rgba(234, 88, 12, 0.05) !important;
+              border-left: 2px solid var(--noether-accent, #eb584d) !important;
+              background-color: rgba(235, 88, 77, 0.05) !important;
               font-size: 14px !important;
               color: #bbb !important;
             }
-            .flint-compact-doc .ProseMirror code {
+            .noether-compact-doc .ProseMirror code {
               font-family: var(--font-monospace) !important;
               font-size: 13px !important;
               background-color: #161616 !important;
@@ -473,7 +473,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
               padding: 0.1rem 0.25rem !important;
               color: #e6b450 !important;
             }
-            .flint-compact-doc .ProseMirror pre {
+            .noether-compact-doc .ProseMirror pre {
               margin: 0.5rem 0 !important;
               border-radius: 4px !important;
               border: 1px solid #2d2d2d !important;

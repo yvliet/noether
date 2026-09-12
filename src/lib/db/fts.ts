@@ -1,7 +1,7 @@
 /**
  * @module fts
  * @description
- * High-performance full-text search engine for Flint documents and atomic blocks.
+ * High-performance full-text search engine for Noether documents and atomic blocks.
  * Supports FTS5 BM25 statistical relevance ranking with automatic FTS4 and LIKE fallbacks.
  *
  * Rationale:
@@ -91,7 +91,7 @@ export async function searchFullText(queryText: string): Promise<FTSResult[]> {
 
     return fallbackResults;
   } catch (err) {
-    console.error('[Flint FTS] Search error:', err);
+    console.error('[Noether FTS] Search error:', err);
     return [];
   }
 }

@@ -126,7 +126,7 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
         [propertiesJson, now, id]
       );
     } catch (e) {
-      console.error('[Flint Docs] Failed to update properties:', e);
+      console.error('[Noether Docs] Failed to update properties:', e);
     }
   }
 
@@ -154,7 +154,7 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
         await platform.setFileAttributes(relPath || doc.title, { readonly: isLocked, mtime: now });
       }
     } catch (e) {
-      console.error('[Flint Docs] Failed to sync updated properties to disk:', e);
+      console.error('[Noether Docs] Failed to sync updated properties to disk:', e);
     }
   }
 }
@@ -169,8 +169,8 @@ export async function getDocumentById(id: string): Promise<DocumentItem | null> 
   } catch (e) {}
 
   // Cross-platform web fallback: resolve from in-memory document store
-  if (typeof window !== 'undefined' && (window as any).__flintStores?.documentStore) {
-    const memDoc = (window as any).__flintStores.documentStore.getState().documents.find((d: any) => d.id === id);
+  if (typeof window !== 'undefined' && (window as any).__noetherStores?.documentStore) {
+    const memDoc = (window as any).__noetherStores.documentStore.getState().documents.find((d: any) => d.id === id);
     if (memDoc) return memDoc;
   }
 
@@ -334,14 +334,14 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
               [manifestKey, Date.now(), mdContent.length, contentHash, Date.now()]
             );
           } catch (e) {
-            console.error('[Flint Links] Error saving updated link to disk:', e);
+            console.error('[Noether Links] Error saving updated link to disk:', e);
           }
         }
       }
     }
     return updatedCount;
   } catch (err) {
-    console.error('[Flint Links] Error updating internal links across documents:', err);
+    console.error('[Noether Links] Error updating internal links across documents:', err);
     return 0;
   }
 }
@@ -473,7 +473,7 @@ export async function getAllGlobalTasks(): Promise<GlobalTaskItem[]> {
       completed: Boolean(r.completed),
     }));
   } catch (err) {
-    console.error('[Flint Docs] Failed to get global tasks:', err);
+    console.error('[Noether Docs] Failed to get global tasks:', err);
     return [];
   }
 }
@@ -785,7 +785,7 @@ interface InlineMatchedToken {
 
 /**
  * Converts a raw Markdown body string into TipTap JSON string
- * In Flint Live Preview, each line is stored as a paragraph so that LivePreviewSyntax
+ * In Noether Live Preview, each line is stored as a paragraph so that LivePreviewSyntax
  * can perform high-performance, real-time token rendering.
  */
 function parseInlineMarkdownTokens(line: string): any[] {
@@ -1299,7 +1299,7 @@ export async function saveDocumentAndSynchronize(
         }
       }
     } catch (linkErr) {
-      console.error('[Flint Links] Error querying link targets:', linkErr);
+      console.error('[Noether Links] Error querying link targets:', linkErr);
     }
   }
 
@@ -1325,25 +1325,25 @@ export async function saveDocumentAndSynchronize(
   try {
     await dbAdapter.transaction(queries);
   } catch (syncErr) {
-    console.error('[Flint Docs] Error saving document in transaction, running direct document update fallback:', syncErr);
+    console.error('[Noether Docs] Error saving document in transaction, running direct document update fallback:', syncErr);
     try {
       const docUpdate = queries[0];
       if (docUpdate) {
         await dbAdapter.execute(docUpdate.sql, docUpdate.params);
       }
     } catch (fbErr) {
-      console.error('[Flint Docs] Critical fallback failed:', fbErr);
+      console.error('[Noether Docs] Critical fallback failed:', fbErr);
     }
   }
 
-  // 5. Auto-export to raw Markdown (.md) in Flint Vault on disk for 100% portability
+  // 5. Auto-export to raw Markdown (.md) in Noether Vault on disk for 100% portability
   try {
     const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string }>(`SELECT id, parent_id, title, properties FROM documents WHERE id = ?`, [documentId]))[0];
     const docTitle = title || docRecord?.title || 'Untitled';
     const docProps = docRecord?.properties || '{}';
     let mdContent = jsonToMarkdown(contentJson, docTitle, docProps);
     try {
-      const { appInstance } = await import('@/core/app/FlintApp');
+      const { appInstance } = await import('@/core/app/NoetherApp');
       if (appInstance?.editor) {
         mdContent = await appInstance.editor.applyExportTransforms({
           documentId,
@@ -1523,7 +1523,7 @@ export async function moveDocument(
     }
     return true;
   } catch (err) {
-    console.error('[Flint Docs] Failed to move document:', err);
+    console.error('[Noether Docs] Failed to move document:', err);
     return false;
   }
 }
@@ -1546,21 +1546,21 @@ export function computeFastHash(str: string): string {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
 }
 
-export const DEFAULT_WELCOME_MARKDOWN = `# Welcome to Flint
+export const DEFAULT_WELCOME_MARKDOWN = `# Welcome to Noether
 Welcome! You're looking at your first note.
 
-Flint is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.
+Noether is a fast, local-first workspace for your thoughts, notes, and projects. Everything is stored as plain Markdown files right on your computer, indexed with an embedded SQLite database so search and backlinks feel instantaneous.
 
 ## Quick Start
 Here are a few handy things to try right away:
 - **Create a note**: Click the **+** button in the sidebar or press \`Ctrl + N\` (\`Cmd + N\` on macOS).
 - **Find anything**: Press \`Ctrl + K\` (\`Cmd + K\`) to open Quick Search and jump to any note or command.
-- **Link your ideas**: Type \`[[\` to create a bi-directional link to any other note. If the note doesn't exist yet, Flint creates it for you on the fly.
+- **Link your ideas**: Type \`[[\` to create a bi-directional link to any other note. If the note doesn't exist yet, Noether creates it for you on the fly.
 - **Slash commands**: Type \`/\` on an empty line to quickly insert headings, lists, tables, callouts, or math blocks.
 - **Explore connections**: Open the **Graph View** in the ribbon to see your thoughts branch out as your notes grow.
 
 ## Your Notes, Your Machine
-There is no proprietary lock-in here. Your notes live in your Hearth folder as standard \`.md\` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.
+There is no proprietary lock-in here. Your notes live in your Vault folder as standard \`.md\` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.
 Feel free to edit this note, delete it, or keep it around as a quick reference. Happy writing!
 `;
 
@@ -1576,11 +1576,11 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
   try {
     const customExts = fileTypeRegistry.getAllExtensions();
     const allowedExtensions = Array.from(new Set(['md', ...customExts]));
-    let diskItems = await platform.scanHearthFiles(undefined, allowedExtensions);
+    let diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
     const existingDocs = await getAllDocuments();
 
     // Check if the initial welcome note has ever been seeded
-    const WELCOME_SEEDED_KEY = 'flint_welcome_seeded_v1';
+    const WELCOME_SEEDED_KEY = 'noether_welcome_seeded_v1';
     let hasSeededWelcome = false;
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
@@ -1594,13 +1594,13 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       // Only seed on the very first run when both disk and database are completely empty
       if ((!diskItems || diskItems.length === 0) && existingDocs.length === 0) {
         try {
-          await platform.saveMarkdownFile('Welcome to Flint', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Flint.md');
-          diskItems = await platform.scanHearthFiles(undefined, allowedExtensions);
+          await platform.saveMarkdownFile('Welcome to Noether', DEFAULT_WELCOME_MARKDOWN, 'Welcome to Noether.md');
+          diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
         } catch (seedErr) {
-          console.error('[Flint Docs] Failed to auto-seed Welcome note to disk:', seedErr);
+          console.error('[Noether Docs] Failed to auto-seed Welcome note to disk:', seedErr);
         }
       }
-      // Record seed flag so the welcome note is never re-created if deleted or when switching hearths
+      // Record seed flag so the welcome note is never re-created if deleted or when switching vaults
       try {
         if (typeof window !== 'undefined' && window.localStorage) {
           window.localStorage.setItem(WELCOME_SEEDED_KEY, 'true');
@@ -1705,8 +1705,8 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
             (d.doc_type || 'base') === (customType ? customType.docType : 'base')
         );
       }
-      if (!matchedDoc && !customType && (fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint')) {
-        matchedDoc = existingDocs.find((d) => d.id === 'welcome-to-flint');
+      if (!matchedDoc && !customType && (fileName.toLowerCase() === 'welcome to noether' || fileName.toLowerCase() === 'welcome-to-noether')) {
+        matchedDoc = existingDocs.find((d) => d.id === 'welcome-to-noether');
       }
 
       const fileContent = file.content || '';
@@ -1729,7 +1729,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       let cleanFileContent = fileContent;
       if (!customType || !customType.isRawContent) {
         try {
-          const { appInstance } = await import('@/core/app/FlintApp');
+          const { appInstance } = await import('@/core/app/NoetherApp');
           if (appInstance?.editor) {
             const transformed = appInstance.editor.applyImportTransforms({
               documentId: matchedDoc?.id,
@@ -1743,8 +1743,8 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
 
       if (!matchedDoc) {
         // Create new document
-        const newId = !customType && (fileName.toLowerCase() === 'welcome to flint' || fileName.toLowerCase() === 'welcome-to-flint')
-          ? 'welcome-to-flint'
+        const newId = !customType && (fileName.toLowerCase() === 'welcome to noether' || fileName.toLowerCase() === 'welcome-to-noether')
+          ? 'welcome-to-noether'
           : `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
         const now = fileMtime;
 
@@ -1801,7 +1801,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       }
     }
 
-    // 3. Detect and remove external deletions from SQLite (files removed outside Flint e.g. git checkout)
+    // 3. Detect and remove external deletions from SQLite (files removed outside Noether e.g. git checkout)
     const diskPathSet = new Set<string>();
     for (const f of diskFiles) {
       const relPath = f.relativePath.replace(/\\/g, '/').toLowerCase();
@@ -1881,7 +1881,7 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
     await dbAdapter.persist();
     return { syncedCount };
   } catch (err) {
-    console.error('[Flint Vault Sync] Error syncing disk files to SQLite:', err);
+    console.error('[Noether Vault Sync] Error syncing disk files to SQLite:', err);
     return { syncedCount: 0 };
   }
 }

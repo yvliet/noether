@@ -1,6 +1,6 @@
 # TypeScript API: Versioning & Compatibility
 
-Flint uses Semantic Versioning (`MAJOR.MINOR.PATCH` / `x.y.z`) and extended four-part versioning (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w` / `x.y.zw`) to guarantee API compatibility and prevent breaking changes from affecting installed community extensions and themes.
+Noether uses Semantic Versioning (`MAJOR.MINOR.PATCH` / `x.y.z`) and extended four-part versioning (`MAJOR.MINOR.PATCH.BUILD` / `x.y.z.w` / `x.y.zw`) to guarantee API compatibility and prevent breaking changes from affecting installed community extensions and themes.
 
 
 ## 1. The `minAppVersion` Field
@@ -16,8 +16,8 @@ Extensions specify their minimum required host application version in `manifest.
 ```
 
 ### Compatibility Check Logic
-- If the current Flint version is `< minAppVersion`, Flint displays an incompatibility badge in **Settings > Extensions** and does not execute `onload()`.
-- If `minAppVersion` is omitted, Flint defaults to `"0.1.0"`.
+- If the current Noether version is `< minAppVersion`, Noether displays an incompatibility badge in **Settings > Extensions** and does not execute `onload()`.
+- If `minAppVersion` is omitted, Noether defaults to `"0.1.0"`.
 
 
 ## 2. API Version Stability Table
@@ -39,7 +39,7 @@ Extensions specify their minimum required host application version in `manifest.
 ---
 
 When an API is marked for deprecation:
-1. Flint logs a runtime warning in the developer console.
+1. Noether logs a runtime warning in the developer console.
 2. The method remains functional until the next major version bump (`1.0.0`).
 3. Extensions can feature-detect capabilities:
 

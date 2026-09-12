@@ -223,7 +223,7 @@ function scanBlockDecorations(
     const level = node.attrs.level || 1;
     const classes = [
       isBlockFocused ? `is-active-heading is-active-h${level}` : '',
-      isTargetHeading ? 'flint-heading-target' : '',
+      isTargetHeading ? 'noether-heading-target' : '',
     ]
       .filter(Boolean)
       .join(' ');
@@ -251,13 +251,13 @@ function scanBlockDecorations(
     if (calloutMeta.isCallout) {
       const { typeInfo, headerMeta, isHeader, isFirst, isLast, isFolded, depth } = calloutMeta;
       const classes = [
-        'flint-callout',
-        isHeader ? 'flint-callout-header' : 'flint-callout-body',
-        isFirst ? 'flint-callout-first' : '',
-        isLast ? 'flint-callout-last' : '',
-        `flint-callout-type-${typeInfo.canonicalType}`,
-        isFolded && !isHeader ? 'flint-callout-collapsed' : '',
-        depth > 1 ? `flint-callout-nested flint-callout-depth-${depth}` : '',
+        'noether-callout',
+        isHeader ? 'noether-callout-header' : 'noether-callout-body',
+        isFirst ? 'noether-callout-first' : '',
+        isLast ? 'noether-callout-last' : '',
+        `noether-callout-type-${typeInfo.canonicalType}`,
+        isFolded && !isHeader ? 'noether-callout-collapsed' : '',
+        depth > 1 ? `noether-callout-nested noether-callout-depth-${depth}` : '',
       ]
         .filter(Boolean)
         .join(' ');
@@ -273,11 +273,11 @@ function scanBlockDecorations(
     } else if (calloutMeta.isStandardBlockquote) {
       const { isFirst, isLast, depth } = calloutMeta;
       const classes = [
-        'flint-blockquote',
-        'flint-blockquote-line',
-        isFirst ? 'flint-blockquote-first' : '',
-        isLast ? 'flint-blockquote-last' : '',
-        depth > 1 ? `flint-blockquote-depth-${depth}` : '',
+        'noether-blockquote',
+        'noether-blockquote-line',
+        isFirst ? 'noether-blockquote-first' : '',
+        isLast ? 'noether-blockquote-last' : '',
+        depth > 1 ? `noether-blockquote-depth-${depth}` : '',
       ]
         .filter(Boolean)
         .join(' ');
@@ -316,8 +316,8 @@ function scanBlockDecorations(
       if (hangIndent > 0) {
         decorations.push(
           Decoration.node(pos, pos + node.nodeSize, {
-            class: 'flint-list-hanging',
-            style: `--flint-hang-indent: ${hangIndent}px;`,
+            class: 'noether-list-hanging',
+            style: `--noether-hang-indent: ${hangIndent}px;`,
           })
         );
       }
@@ -336,7 +336,7 @@ function scanBlockDecorations(
     if (isPrefixFocused) {
       decorations.push(
         Decoration.inline(blockStart, blockStart + prefixLen, {
-          class: 'md-syntax-dimmed flint-callout-raw-prefix',
+          class: 'md-syntax-dimmed noether-callout-raw-prefix',
         })
       );
     } else {
@@ -347,11 +347,11 @@ function scanBlockDecorations(
       );
 
       const dom = document.createElement('span');
-      dom.className = `flint-callout-header-bar flint-callout-header-${typeInfo.canonicalType}`;
+      dom.className = `noether-callout-header-bar noether-callout-header-${typeInfo.canonicalType}`;
       dom.contentEditable = 'false';
 
       const iconSpan = document.createElement('span');
-      iconSpan.className = 'flint-callout-icon';
+      iconSpan.className = 'noether-callout-icon';
       iconSpan.innerHTML = renderHugeIconSvg(typeInfo.iconDef, {
         size: 14,
         color: 'currentColor',
@@ -361,7 +361,7 @@ function scanBlockDecorations(
 
       if (!headerMeta.title) {
         const badgeSpan = document.createElement('span');
-        badgeSpan.className = 'flint-callout-badge';
+        badgeSpan.className = 'noether-callout-badge';
         badgeSpan.textContent = typeInfo.title;
         dom.appendChild(badgeSpan);
       }
@@ -369,7 +369,7 @@ function scanBlockDecorations(
       if (headerMeta.foldable) {
         const foldBtn = document.createElement('button');
         foldBtn.type = 'button';
-        foldBtn.className = `flint-callout-fold-toggle ${isFolded ? 'is-folded' : 'is-unfolded'}`;
+        foldBtn.className = `noether-callout-fold-toggle ${isFolded ? 'is-folded' : 'is-unfolded'}`;
         foldBtn.innerHTML = isFolded ? CALLOUT_CHEVRON_RIGHT_SVG : CALLOUT_CHEVRON_DOWN_SVG;
         foldBtn.setAttribute('data-tooltip', isFolded ? 'Expand callout' : 'Collapse callout');
         foldBtn.removeAttribute('title');
@@ -394,7 +394,7 @@ function scanBlockDecorations(
     if (headerMeta.title) {
       decorations.push(
         Decoration.inline(blockStart + prefixLen, blockEnd - 1, {
-          class: 'flint-callout-title-text',
+          class: 'noether-callout-title-text',
         })
       );
     }
@@ -405,7 +405,7 @@ function scanBlockDecorations(
       const isQuoteFocused = isFocused && selFrom <= blockStart + quoteLen && selTo >= blockStart;
       decorations.push(
         Decoration.inline(blockStart, blockStart + quoteLen, {
-          class: isQuoteFocused ? 'md-syntax-dimmed flint-callout-quote-marker' : 'md-syntax-hidden',
+          class: isQuoteFocused ? 'md-syntax-dimmed noether-callout-quote-marker' : 'md-syntax-hidden',
         })
       );
     }
@@ -442,7 +442,7 @@ function scanBlockDecorations(
         leadingLen = leadingStr.length;
         decorations.push(
           Decoration.inline(blockStart + lineOffset, blockStart + lineOffset + leadingLen, {
-            class: 'flint-tab-indent',
+            class: 'noether-tab-indent',
           })
         );
 
@@ -463,11 +463,11 @@ function scanBlockDecorations(
                 ? !listGuideColumns[globalLineIdx + 1]?.has(i)
                 : i >= nextLineLeading;
               const guideType = lineGuideMap?.get(i);
-              let guideClass = 'flint-tab-guide';
-              if (guideType === 'bullet') guideClass += ' flint-tab-guide-bullet';
-              else if (guideType === 'number') guideClass += ' flint-tab-guide-number';
-              if (isActive) guideClass += ' flint-tab-guide-active';
-              if (isTerminal) guideClass += ' flint-tab-guide-end';
+              let guideClass = 'noether-tab-guide';
+              if (guideType === 'bullet') guideClass += ' noether-tab-guide-bullet';
+              else if (guideType === 'number') guideClass += ' noether-tab-guide-number';
+              if (isActive) guideClass += ' noether-tab-guide-active';
+              if (isTerminal) guideClass += ' noether-tab-guide-end';
 
               decorations.push(
                 Decoration.inline(
@@ -493,11 +493,11 @@ function scanBlockDecorations(
                 ? !listGuideColumns[globalLineIdx + 1]?.has(s)
                 : s >= nextLineLeading;
               const guideType = lineGuideMap?.get(s);
-              let guideClass = 'flint-tab-guide';
-              if (guideType === 'bullet') guideClass += ' flint-tab-guide-bullet';
-              else if (guideType === 'number') guideClass += ' flint-tab-guide-number';
-              if (isActive) guideClass += ' flint-tab-guide-active';
-              if (isTerminal) guideClass += ' flint-tab-guide-end';
+              let guideClass = 'noether-tab-guide';
+              if (guideType === 'bullet') guideClass += ' noether-tab-guide-bullet';
+              else if (guideType === 'number') guideClass += ' noether-tab-guide-number';
+              if (isActive) guideClass += ' noether-tab-guide-active';
+              if (isTerminal) guideClass += ' noether-tab-guide-end';
 
               decorations.push(
                 Decoration.inline(
@@ -520,7 +520,7 @@ function scanBlockDecorations(
           Decoration.inline(
             blockStart + lineOffset + trMatch.index,
             blockStart + lineOffset + trMatch.index + trMatch[0].length,
-            { class: 'flint-tab-indent' }
+            { class: 'noether-tab-indent' }
           )
         );
       }
@@ -540,7 +540,7 @@ function scanBlockDecorations(
           const showBulletGlyph = isBullet && !isMarkerFocused;
           decorations.push(
             Decoration.inline(markerStart, markerEnd, {
-              class: `flint-numbered-prefix flint-list-prefix${showBulletGlyph ? ' flint-bullet-marker' : ''}`,
+              class: `noether-numbered-prefix noether-list-prefix${showBulletGlyph ? ' noether-bullet-marker' : ''}`,
             })
           );
         }
@@ -1780,7 +1780,7 @@ export const LivePreviewSyntax = Extension.create({
             const target = event.target as HTMLElement;
 
             // 0. Direct Image click action: Open Image Lightbox
-            const imgEl = target.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+            const imgEl = target.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
             if (imgEl && imgEl.src) {
               if (mouseDownPos) {
                 const dist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
@@ -1796,7 +1796,7 @@ export const LivePreviewSyntax = Extension.create({
             // 1. Zoom button action: Open Image Lightbox
             const zoomBtn = target.closest('[data-embed-action="zoom"]') as HTMLElement | null;
             if (zoomBtn) {
-              const wrapper = zoomBtn.closest('.flint-embed-wrapper, .flint-embed-media, .flint-image-embed') as HTMLElement | null;
+              const wrapper = zoomBtn.closest('.noether-embed-wrapper, .noether-embed-media, .noether-image-embed') as HTMLElement | null;
               const img = wrapper?.querySelector('img') as HTMLImageElement | null;
               if (img && img.src) {
                 useWorkspaceStore.getState().openImageLightbox(img.src, img.alt || '');
@@ -1815,11 +1815,11 @@ export const LivePreviewSyntax = Extension.create({
               return true;
             }
 
-            const actionEl = target.closest('.flint-embed-action, audio, video, iframe, button, a, input, select') as HTMLElement | null;
+            const actionEl = target.closest('.noether-embed-action, audio, video, iframe, button, a, input, select') as HTMLElement | null;
             if (actionEl) {
               return true;
             }
-            const embedEl = target.closest('.flint-embed-wrapper, .flint-embed-card, .flint-embed-media') as HTMLElement | null;
+            const embedEl = target.closest('.noether-embed-wrapper, .noether-embed-card, .noether-embed-media') as HTMLElement | null;
             if (embedEl) {
               view.focus();
               const tr = view.state.tr.setSelection(
@@ -1851,7 +1851,7 @@ export const LivePreviewSyntax = Extension.create({
               const me = event as MouseEvent;
               if (me.button !== 0) return false;
               const target = me.target as HTMLElement | null;
-              const imgEl = target?.closest('img.flint-media-image, .flint-image-embed img') as HTMLImageElement | null;
+              const imgEl = target?.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
               if (imgEl && imgEl.src && mouseDownPos) {
                 const dist = Math.hypot(me.clientX - mouseDownPos.x, me.clientY - mouseDownPos.y);
                 mouseDownPos = null;
@@ -1906,7 +1906,7 @@ export const LivePreviewSyntax = Extension.create({
             }
           };
 
-          document.addEventListener('flint:focus-embed-code', handleFocusEmbedCode);
+          document.addEventListener('noether:focus-embed-code', handleFocusEmbedCode);
 
           return {
             update(view) {
@@ -1914,7 +1914,7 @@ export const LivePreviewSyntax = Extension.create({
               normalizeDOMSelection(view);
             },
             destroy() {
-              document.removeEventListener('flint:focus-embed-code', handleFocusEmbedCode);
+              document.removeEventListener('noether:focus-embed-code', handleFocusEmbedCode);
             },
           };
         },

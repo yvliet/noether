@@ -19,7 +19,7 @@ const TONE_TEXT_CLASSES: Record<NoticeBadgeTone, string> = {
   info: 'text-sky-400',
   error: 'text-rose-400',
   success: 'text-emerald-400',
-  muted: 'text-[var(--flint-text-muted,#888888)]',
+  muted: 'text-[var(--noether-text-muted,#888888)]',
 };
 
 const TONE_DOT_CLASSES: Record<NoticeBadgeTone, string> = {
@@ -27,7 +27,7 @@ const TONE_DOT_CLASSES: Record<NoticeBadgeTone, string> = {
   info: 'bg-sky-400',
   error: 'bg-rose-400',
   success: 'bg-emerald-400',
-  muted: 'bg-[var(--flint-text-muted,#888888)]',
+  muted: 'bg-[var(--noether-text-muted,#888888)]',
 };
 
 /**

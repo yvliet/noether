@@ -10,7 +10,7 @@ The **Outline** extension generates a real-time table of contents for the active
 
 ---
 
-## Architecture & Flint APIs
+## Architecture & Noether APIs
 
 This extension showcases real-time editor AST synchronization and sidebar tab registration.
 

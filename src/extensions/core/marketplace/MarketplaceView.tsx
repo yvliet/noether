@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { useFlintApp, useExtensionList } from '@/core/app/AppContext';
-import { useFlintStore } from 'flint';
+import { useNoetherApp, useExtensionList } from '@/core/app/AppContext';
+import { useNoetherStore } from 'noether';
 import { CustomSelect } from '@/components/common/CustomSelect';
 import {
   Search01Icon,
@@ -39,17 +39,17 @@ export {
 };
 
 export const MarketplaceView: React.FC = () => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const extensionList = useExtensionList();
 
-  const canGoBack = useFlintStore('workspace', (s) => s?.canGoBack ?? false);
-  const canGoForward = useFlintStore('workspace', (s) => s?.canGoForward ?? false);
+  const canGoBack = useNoetherStore('workspace', (s) => s?.canGoBack ?? false);
+  const canGoForward = useNoetherStore('workspace', (s) => s?.canGoForward ?? false);
   const navigateBack = useCallback(() => (app.workspace as any).navigateBack?.(), [app]);
   const navigateForward = useCallback(() => (app.workspace as any).navigateForward?.(), [app]);
   const showToast = useCallback((msg: string, type?: any) => app.workspace.showToast(msg, type), [app]);
 
-  const readableLineLength = useFlintStore('settings', (s) => s?.readableLineLength ?? false);
-  const fontSize = useFlintStore('settings', (s) => s?.fontSize ?? 16);
+  const readableLineLength = useNoetherStore('settings', (s) => s?.readableLineLength ?? false);
+  const fontSize = useNoetherStore('settings', (s) => s?.fontSize ?? 16);
 
   // Dynamic SWR marketplace hook with instant local fallback
   const { extensions, isUpdating, isError, refetch } = useMarketplaceQuery();
@@ -176,7 +176,7 @@ export const MarketplaceView: React.FC = () => {
   }, [extensions, searchQuery, selectedCategory, sortBy, sortOrder, extensionList]);
 
   return (
-    <div data-main="true" className="flex-1 h-full flex flex-col overflow-hidden bg-[var(--flint-bg-main)] text-[var(--flint-text-primary)] select-none">
+    <div data-main="true" className="flex-1 h-full flex flex-col overflow-hidden bg-[var(--noether-bg-main)] text-[var(--noether-text-primary)] select-none">
       {/* 100% Consistent Page Subheader */}
       <PageSubHeader
         title="Marketplace"
@@ -291,7 +291,7 @@ export const MarketplaceView: React.FC = () => {
                 onClick={() => refetch()}
                 title={isUpdating ? 'Updating catalogue from registry...' : 'Refresh marketplace catalogue'}
                 disabled={isUpdating}
-                className="flint-btn !p-1.5 flex items-center justify-center cursor-pointer"
+                className="noether-btn !p-1.5 flex items-center justify-center cursor-pointer"
               >
                 <RotateCcwIcon size={14} className={isUpdating ? 'animate-spin' : ''} />
               </button>
@@ -309,7 +309,7 @@ export const MarketplaceView: React.FC = () => {
                 type="button"
                 onClick={() => setSortOrder((prev) => (prev === 'asc' ? 'desc' : 'asc'))}
                 title={sortOrder === 'asc' ? 'Ascending\nClick for descending' : 'Descending\nClick for ascending'}
-                className="flint-btn !p-1.5 flex items-center justify-center cursor-pointer"
+                className="noether-btn !p-1.5 flex items-center justify-center cursor-pointer"
               >
                 {sortOrder === 'asc' ? <ArrowUp01Icon size={14} /> : <ArrowDown01Icon size={14} />}
               </button>
@@ -319,16 +319,16 @@ export const MarketplaceView: React.FC = () => {
           {/* 2-Column Extension Cards Grid matching page width */}
           {extensions.length === 0 ? (
             <div className="text-center py-20 flex flex-col items-center justify-center max-w-sm mx-auto">
-              <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--flint-accent,#ea580c)]">
+              <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--noether-accent,#eb584d)]">
                 <Store01Icon size={24} />
               </div>
               <h3 className="text-sm font-semibold text-white mb-1.5">No Community Extensions Yet</h3>
               <p className="text-xs text-[#888] leading-relaxed mb-4 text-center">
-                The Flint community extensions registry is open with a clean slate. Publish or sync extensions from the registry.
+                The Noether community extensions registry is open with a clean slate. Publish or sync extensions from the registry.
               </p>
               <button
                 onClick={() => refetch()}
-                className="flint-btn flint-btn-primary !py-1.5 !px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
+                className="noether-btn noether-btn-primary !py-1.5 !px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcwIcon size={13} className={isUpdating ? 'animate-spin' : ''} />
                 <span>Check Registry Updates</span>
@@ -344,7 +344,7 @@ export const MarketplaceView: React.FC = () => {
                   setSearchQuery('');
                   setSelectedCategory('All');
                 }}
-                className="flint-btn cursor-pointer"
+                className="noether-btn cursor-pointer"
               >
                 Clear filters
               </button>
@@ -385,7 +385,7 @@ export const MarketplaceView: React.FC = () => {
                             <button
                               type="button"
                               onClick={() => app.workspace.openExtensionDocTab(ext.id, ext.name)}
-                              className="text-xs font-medium text-white hover:text-[var(--flint-accent)] truncate text-left cursor-pointer"
+                              className="text-xs font-medium text-white hover:text-[var(--noether-accent)] truncate text-left cursor-pointer"
                             >
                               {ext.name}
                             </button>
@@ -426,7 +426,7 @@ export const MarketplaceView: React.FC = () => {
                             type="button"
                             onClick={() => app.workspace.openExtensionDocTab(ext.id, ext.name)}
                             title={`View ${ext.name} documentation`}
-                            className="flint-btn w-7 h-7 !p-0 flex items-center justify-center"
+                            className="noether-btn w-7 h-7 !p-0 flex items-center justify-center"
                           >
                             <BookOpen01Icon size={13} />
                           </button>
@@ -438,7 +438,7 @@ export const MarketplaceView: React.FC = () => {
                             onClick={() => handleInstallExtension(ext)}
                             disabled={isInstalling}
                             title={`Update from v${installedManifest?.version} to v${ext.version}`}
-                            className="flint-btn flint-btn-primary text-[11px] !py-1 !px-3 min-w-[78px] disabled:opacity-50 flex items-center gap-1.5"
+                            className="noether-btn noether-btn-primary text-[11px] !py-1 !px-3 min-w-[78px] disabled:opacity-50 flex items-center gap-1.5"
                           >
                             <Download01Icon size={11} className={isInstalling ? 'animate-bounce' : ''} />
                             <span>{isInstalling ? 'Updating...' : `Update v${ext.version}`}</span>
@@ -447,7 +447,7 @@ export const MarketplaceView: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleUninstallExtension(ext)}
-                            className="group/btn flint-btn text-[11px] !py-1 !px-3 min-w-[78px] hover:!text-[#f85153] hover:!border-[#f85153]/40"
+                            className="group/btn noether-btn text-[11px] !py-1 !px-3 min-w-[78px] hover:!text-[#f85153] hover:!border-[#f85153]/40"
                           >
                             <span className="flex items-center gap-1 group-hover/btn:hidden">
                               <CheckIcon size={11} />
@@ -463,7 +463,7 @@ export const MarketplaceView: React.FC = () => {
                             type="button"
                             onClick={() => handleInstallExtension(ext)}
                             disabled={isInstalling}
-                            className="flint-btn flint-btn-primary text-[11px] !py-1 !px-3 min-w-[78px] disabled:opacity-50"
+                            className="noether-btn noether-btn-primary text-[11px] !py-1 !px-3 min-w-[78px] disabled:opacity-50"
                           >
                             <Download01Icon size={11} className={isInstalling ? 'animate-bounce' : ''} />
                             <span>{isInstalling ? 'Installing...' : 'Install'}</span>

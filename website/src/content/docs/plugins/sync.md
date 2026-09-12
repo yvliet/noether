@@ -1,6 +1,6 @@
 # Sync (`sync`)
 
-Synchronize your Flint notes, knowledge graph, and canvases across desktop and mobile machines using your own free cloud database, with zero user tracking and zero recurring subscriptions.
+Synchronize your Noether notes, knowledge graph, and canvases across desktop and mobile machines using your own free cloud database, with zero user tracking and zero recurring subscriptions.
 
 ---
 
@@ -8,9 +8,9 @@ Synchronize your Flint notes, knowledge graph, and canvases across desktop and m
 
 ---
 
-Most proprietary note-taking tools charge monthly recurring subscriptions for cloud synchronization. Because Flint is built on a local-first architecture with plain Markdown files and local SQLite indexes, your notes belong to you.
+Most proprietary note-taking tools charge monthly recurring subscriptions for cloud synchronization. Because Noether is built on a local-first architecture with plain Markdown files and local SQLite indexes, your notes belong to you.
 
-The Sync extension connects your local Hearth to your own free cloud database:
+The Sync extension connects your local Vault to your own free cloud database:
 - **Supabase Free Tier (Recommended)**: 500 MB permanent PostgreSQL database with instant PostgREST HTTP APIs and zero credit card requirements.
 - **Turso libSQL**: Edge SQLite databases running over the Hrana v2 HTTP pipeline.
 - **Cloudflare D1**: Serverless SQL databases running on Cloudflare Workers edge nodes.
@@ -34,8 +34,8 @@ Supabase provides 500 MB of permanent free PostgreSQL storage, which is enough t
 2. Click **New query**, paste the following SQL block, and click **Run**:
 
 ```sql
--- 1. Create the Flint Sync Documents table
-CREATE TABLE IF NOT EXISTS flint_sync_documents (
+-- 1. Create the Noether Sync Documents table
+CREATE TABLE IF NOT EXISTS noether_sync_documents (
   id TEXT PRIMARY KEY,
   parent_id TEXT,
   title TEXT NOT NULL DEFAULT 'Untitled',
@@ -52,24 +52,24 @@ CREATE TABLE IF NOT EXISTS flint_sync_documents (
 );
 
 -- 2. Create performance indexes for rapid delta queries
-CREATE INDEX IF NOT EXISTS idx_flint_sync_updated ON flint_sync_documents(updated_at);
-CREATE INDEX IF NOT EXISTS idx_flint_sync_deleted ON flint_sync_documents(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_noether_sync_updated ON noether_sync_documents(updated_at);
+CREATE INDEX IF NOT EXISTS idx_noether_sync_deleted ON noether_sync_documents(deleted_at);
 
 -- 3. Enable Row Level Security (RLS) and permit CRUD access for your API key
-ALTER TABLE flint_sync_documents ENABLE ROW LEVEL SECURITY;
+ALTER TABLE noether_sync_documents ENABLE ROW LEVEL SECURITY;
 
-DROP POLICY IF EXISTS "Allow Flint Sync CRUD" ON flint_sync_documents;
-CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
+DROP POLICY IF EXISTS "Allow Noether Sync CRUD" ON noether_sync_documents;
+CREATE POLICY "Allow Noether Sync CRUD" ON noether_sync_documents
   FOR ALL
   USING (true)
   WITH CHECK (true);
 ```
 
-### Step 3: Connect Flint
+### Step 3: Connect Noether
 1. In your Supabase project, go to **Project Settings → API**.
 2. Copy your **Project URL** (for example: `https://abcdefghijkl.supabase.co`).
 3. Copy your **anon public API key** (`eyJhbGci...`).
-4. In Flint, open **Settings → Sync**.
+4. In Noether, open **Settings → Sync**.
 5. Paste the Project URL and Anon Key into the guided wizard.
 6. Click **Test Connection** to verify database connectivity, then click **Sync Now**.
 
@@ -81,7 +81,7 @@ CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
 
 | Provider | Transport Protocol | Ideal Use Case |
 | :--- | :--- | :--- |
-| **Supabase** | PostgREST HTTP REST (`/rest/v1/flint_sync_documents`) | Zero-cost permanent free tier with 500 MB storage |
+| **Supabase** | PostgREST HTTP REST (`/rest/v1/noether_sync_documents`) | Zero-cost permanent free tier with 500 MB storage |
 | **Turso libSQL** | Hrana v2 HTTP Pipeline (`/v2/pipeline`) | Sub-10ms global distributed edge SQLite replicas |
 | **Cloudflare D1** | Cloudflare v4 REST API (`/d1/database/.../query`) | Serverless edge SQL integrated with Cloudflare accounts |
 | **Custom REST** | Standard JSON REST (`/pull`, `/push`, `/health`) | Private VPS, self-hosted Docker container, or internal proxy |
@@ -89,14 +89,14 @@ CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
 ### Setting Up Turso
 1. Create a database using the Turso CLI:
    ```bash
-   turso db create flint-sync
+   turso db create noether-sync
    ```
 2. Open the SQL shell and run the schema:
    ```bash
-   turso db shell flint-sync
+   turso db shell noether-sync
    ```
    ```sql
-   CREATE TABLE IF NOT EXISTS flint_sync_documents (
+   CREATE TABLE IF NOT EXISTS noether_sync_documents (
      id TEXT PRIMARY KEY,
      parent_id TEXT,
      title TEXT NOT NULL DEFAULT 'Untitled',
@@ -111,14 +111,14 @@ CREATE POLICY "Allow Flint Sync CRUD" ON flint_sync_documents
      deleted_at INTEGER DEFAULT NULL,
      device_id TEXT
    );
-   CREATE INDEX IF NOT EXISTS idx_flint_sync_updated ON flint_sync_documents(updated_at);
-   CREATE INDEX IF NOT EXISTS idx_flint_sync_deleted ON flint_sync_documents(deleted_at);
+   CREATE INDEX IF NOT EXISTS idx_noether_sync_updated ON noether_sync_documents(updated_at);
+   CREATE INDEX IF NOT EXISTS idx_noether_sync_deleted ON noether_sync_documents(deleted_at);
    ```
 3. Generate a database token:
    ```bash
-   turso db tokens create flint-sync
+   turso db tokens create noether-sync
    ```
-4. Enter the database URL (`libsql://...`) and auth token in Flint Settings.
+4. Enter the database URL (`libsql://...`) and auth token in Noether Settings.
 
 ---
 
@@ -158,5 +158,5 @@ The extension exposes the following tools to in-app AI copilots and external des
 ---
 
 - [[Extension Points Reference]]: Learn how the status bar and commands are registered.
-- [[Events & Relational Storage]]: How Flint coordinates local SQLite storage with EventBus events.
+- [[Events & Relational Storage]]: How Noether coordinates local SQLite storage with EventBus events.
 - [[Model Context Protocol (MCP) Tools]]: How AI copilots interact with extension tools.

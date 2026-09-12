@@ -204,7 +204,7 @@ export const InteractiveGraphWidget: React.FC<InteractiveGraphWidgetProps> = Rea
     transform: { x: number; y: number };
   } | null>(null);
 
-  // Smooth cinematic camera transform lerping (identical to Flint Graph View)
+  // Smooth cinematic camera transform lerping (identical to Noether Graph View)
   const targetTransformRef = useRef<{ x: number; y: number; scale: number }>({ x: 0, y: 0, scale: 1 });
   const currentTransformRef = useRef<{ x: number; y: number; scale: number }>({ x: 0, y: 0, scale: 1 });
 
@@ -1416,11 +1416,11 @@ export const InteractiveGraphWidget: React.FC<InteractiveGraphWidgetProps> = Rea
     const handleThemeEvent = () => {
       startAnimation();
     };
-    window.addEventListener('flint-theme-change', handleThemeEvent);
+    window.addEventListener('noether-theme-change', handleThemeEvent);
 
     return () => {
       observer.disconnect();
-      window.removeEventListener('flint-theme-change', handleThemeEvent);
+      window.removeEventListener('noether-theme-change', handleThemeEvent);
     };
   }, [startAnimation]);
 

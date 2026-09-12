@@ -111,7 +111,7 @@ export const CanvasBottomDock: React.FC<CanvasBottomDockProps> = React.memo(
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 select-none pointer-events-auto">
         <div
           style={{ backgroundColor: '#1c1c1c' }}
-          className="flint-btn flint-btn-primary !bg-[#1c1c1c] !p-1.5 flex items-center gap-1.5 shadow-xl !cursor-default active:!translate-y-0 active:!filter-none active:!shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_2px_5px_0_rgba(0,0,0,0.32)]"
+          className="noether-btn noether-btn-primary !bg-[#1c1c1c] !p-1.5 flex items-center gap-1.5 shadow-xl !cursor-default active:!translate-y-0 active:!filter-none active:!shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_2px_5px_0_rgba(0,0,0,0.32)]"
           onClick={(e) => e.stopPropagation()}
           onPointerDown={(e) => e.stopPropagation()}
         >

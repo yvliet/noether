@@ -5,7 +5,7 @@
  * Registers a right sidebar tab, in-document footer widget, status bar metric,
  * and document menu actions.
  *
- * Uses native FlintApp APIs for sidebar activation, toasts, and settings.
+ * Uses native NoetherApp APIs for sidebar activation, toasts, and settings.
  *
  * @since 0.2.0
  */
@@ -13,7 +13,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { LinkSquare02Icon } from '@/components/common/Icons';
 import {
   getBacklinksForDocument,
@@ -43,7 +43,7 @@ export const BACKLINKS_MANIFEST: ExtensionManifest = {
   readme: backlinksReadme,
 };
 
-const BacklinkCountItem: React.FC<{ app: FlintApp }> = ({ app }) => {
+const BacklinkCountItem: React.FC<{ app: NoetherApp }> = ({ app }) => {
   const count = app.workspace.backlinkCount;
   return (
     <span className="text-[#777777] cursor-default select-none">
@@ -69,7 +69,7 @@ const DocumentBacklinksFooter: React.FC<{
 };
 
 export class BacklinksExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = BACKLINKS_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = BACKLINKS_MANIFEST) {
     super(app, manifest);
   }
 
@@ -190,7 +190,7 @@ export class BacklinksExtension extends Extension {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const documentId = args.documentId as string;
           if (!documentId) {
@@ -227,7 +227,7 @@ export class BacklinksExtension extends Extension {
         },
         required: ['documentId'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const documentId = args.documentId as string;
           if (!documentId) {
@@ -268,7 +268,7 @@ export class BacklinksExtension extends Extension {
         },
         required: ['documentId', 'title'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const documentId = args.documentId as string;
           const title = args.title as string;
@@ -311,7 +311,7 @@ export class BacklinksExtension extends Extension {
         },
         required: ['sourceDocumentId', 'title'],
       },
-      handler: async (args: Record<string, unknown>, _app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
         try {
           const sourceDocumentId = args.sourceDocumentId as string;
           const title = args.title as string;

@@ -224,7 +224,7 @@ export const TooltipProvider: React.FC = React.memo(() => {
     if (!preferredPlacement) {
       // 1. Ribbon bias: elements inside the vertical left ribbon always render on the right
       const isRibbon = Boolean(
-        target.closest('aside[data-ribbon], [data-ribbon], .flint-ribbon') ||
+        target.closest('aside[data-ribbon], [data-ribbon], .noether-ribbon') ||
         (tRect.left < 46 && tRect.top > 40)
       );
 
@@ -461,8 +461,8 @@ export const TooltipProvider: React.FC = React.memo(() => {
         top: `${pos.y}px`,
         opacity: pos.ready ? 1 : 0,
         visibility: pos.ready ? 'visible' : 'hidden',
-        backgroundColor: 'var(--flint-tooltip-bg, #0d0d0d)',
-        color: 'var(--flint-tooltip-text, var(--flint-text-primary, #ffffff))',
+        backgroundColor: 'var(--noether-tooltip-bg, #0d0d0d)',
+        color: 'var(--noether-tooltip-text, var(--noether-text-primary, #ffffff))',
       }}
       className="fixed z-[99999] pointer-events-none px-2.5 py-1.5 text-[11.5px] font-medium leading-relaxed rounded-[5px] shadow-2xl w-max max-w-[min(340px,calc(100vw-24px))] select-none border-0 outline-none"
     >
@@ -471,12 +471,12 @@ export const TooltipProvider: React.FC = React.memo(() => {
         <span
           style={{
             ...(pos.placement === 'bottom'
-              ? { left: `${pos.arrowOffset}px`, borderBottomColor: 'var(--flint-tooltip-bg, #0d0d0d)' }
+              ? { left: `${pos.arrowOffset}px`, borderBottomColor: 'var(--noether-tooltip-bg, #0d0d0d)' }
               : pos.placement === 'top'
-              ? { left: `${pos.arrowOffset}px`, borderTopColor: 'var(--flint-tooltip-bg, #0d0d0d)' }
+              ? { left: `${pos.arrowOffset}px`, borderTopColor: 'var(--noether-tooltip-bg, #0d0d0d)' }
               : pos.placement === 'right'
-              ? { top: `${pos.arrowOffset}px`, borderRightColor: 'var(--flint-tooltip-bg, #0d0d0d)' }
-              : { top: `${pos.arrowOffset}px`, borderLeftColor: 'var(--flint-tooltip-bg, #0d0d0d)' }),
+              ? { top: `${pos.arrowOffset}px`, borderRightColor: 'var(--noether-tooltip-bg, #0d0d0d)' }
+              : { top: `${pos.arrowOffset}px`, borderLeftColor: 'var(--noether-tooltip-bg, #0d0d0d)' }),
           }}
           className={`absolute pointer-events-none w-0 h-0 ${
             pos.placement === 'bottom'
@@ -491,7 +491,7 @@ export const TooltipProvider: React.FC = React.memo(() => {
       )}
 
       <div
-        style={{ color: 'var(--flint-tooltip-text, var(--flint-text-primary, #ffffff))' }}
+        style={{ color: 'var(--noether-tooltip-text, var(--noether-text-primary, #ffffff))' }}
         className="leading-snug font-medium break-words"
       >
         {tooltip.text}
@@ -501,12 +501,12 @@ export const TooltipProvider: React.FC = React.memo(() => {
           {tooltip.shortcuts.map((sc, idx) => (
             <div
               key={idx}
-              style={{ color: 'var(--flint-tooltip-muted, var(--flint-text-muted, #888888))' }}
+              style={{ color: 'var(--noether-tooltip-muted, var(--noether-text-muted, #888888))' }}
               className="flex items-start gap-1.5 leading-snug text-[11px] font-normal break-words"
             >
               {tooltip.shortcuts!.length > 1 && (
                 <span
-                  style={{ backgroundColor: 'var(--flint-border-strong, #666666)' }}
+                  style={{ backgroundColor: 'var(--noether-border-strong, #666666)' }}
                   className="w-1 h-1 rounded-full shrink-0 mt-1"
                 />
               )}

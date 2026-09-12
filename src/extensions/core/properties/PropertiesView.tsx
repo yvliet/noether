@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  useFlintApp,
+  useNoetherApp,
   useActiveDocument,
   useDocumentProperties,
-  useFlintStore,
-} from 'flint';
+  useNoetherStore,
+} from 'noether';
 import { usePropertiesSettings } from './propertiesSettings';
 import { DocumentProperties } from '@/types';
 import {
@@ -19,14 +19,14 @@ import { PropertyRow } from './PropertyRow';
 import { usePropertyFilters } from '@/core/app/AppContext';
 
 export const PropertiesView: React.FC = () => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const activeDocument = useActiveDocument();
   const documentProperties = useDocumentProperties();
   const updateProperties = useCallback((docId: string, props: Record<string, any>) => {
-    return app.hearth.setDocumentProperties(docId, props);
+    return app.vault.setDocumentProperties(docId, props);
   }, [app]);
-  const wordCount = useFlintStore('workspace', (s) => s?.wordCount ?? 0);
-  const charCount = useFlintStore('workspace', (s) => s?.charCount ?? 0);
+  const wordCount = useNoetherStore('workspace', (s) => s?.wordCount ?? 0);
+  const charCount = useNoetherStore('workspace', (s) => s?.charCount ?? 0);
   const {
     propertyIcons,
     setPropertyIcon,
@@ -99,7 +99,7 @@ export const PropertiesView: React.FC = () => {
     });
   }, [activeDocument?.updated_at]);
 
-  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || (activeDocument ? app.hearth.isDocumentLocked(activeDocument.id) : false);
+  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || (activeDocument ? app.vault.isDocumentLocked(activeDocument.id) : false);
 
   const customKeys = useMemo(() => {
     const systemKeys = new Set(['tags', 'aliases', 'created', 'modified', 'locked', 'read_only', 'lock', 'readonly', 'updated']);
@@ -220,13 +220,13 @@ export const PropertiesView: React.FC = () => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Action Header */}
-      <div className="h-9 px-2 flex items-center justify-between text-[var(--flint-text-muted)] shrink-0 border-b border-[var(--flint-border-subtle)]">
+      <div className="h-9 px-2 flex items-center justify-between text-[var(--noether-text-muted)] shrink-0 border-b border-[var(--noether-border-subtle)]">
         {!isLocked && (
           <div className="flex items-center gap-1">
             <button
               onClick={handleAddDirectProperty}
               title={`Add Property\nCreate a new metadata field for this note`}
-              className="p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-medium"
+              className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-medium"
             >
               <PlusSignIcon size={13} />
               <span>Add property</span>
@@ -238,8 +238,8 @@ export const PropertiesView: React.FC = () => {
           <button
             onClick={() => setSortAlpha(!sortAlpha)}
             title={`Sort Properties\nSwitch to ${sortAlpha ? 'default order' : 'alphabetical order'}`}
-            className={`p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer ${
-              sortAlpha ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]' : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)]'
+            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer ${
+              sortAlpha ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             <ArrowDownAZIcon size={14} />
@@ -251,8 +251,8 @@ export const PropertiesView: React.FC = () => {
               if (isSearchOpen) setSearchQuery('');
             }}
             title={isSearchOpen ? `Close Search\nHide property filter` : `Search Properties\nFilter properties by name`}
-            className={`p-1.5 rounded hover:bg-[var(--flint-bg-card-hover)] transition-colors cursor-pointer ${
-              isSearchOpen ? 'text-[var(--flint-text-primary)] bg-[var(--flint-bg-card-hover)]' : 'text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)]'
+            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer ${
+              isSearchOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             <Search01Icon size={14} />
@@ -262,16 +262,16 @@ export const PropertiesView: React.FC = () => {
 
       {/* Optional Search Input */}
       {isSearchOpen && (
-        <div className="px-2.5 py-1.5 border-b border-[var(--flint-border-subtle)]">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] text-xs text-[var(--flint-text-primary)] shadow-xs">
-            <Search01Icon size={13} className="text-[var(--flint-text-muted)]" />
+        <div className="px-2.5 py-1.5 border-b border-[var(--noether-border-subtle)]">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-primary)] shadow-xs">
+            <Search01Icon size={13} className="text-[var(--noether-text-muted)]" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter properties..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)]"
             />
           </div>
         </div>
@@ -283,7 +283,7 @@ export const PropertiesView: React.FC = () => {
         <div className="flex flex-col gap-1.5">
           {/* Created Date */}
           {createdDateStr && (!searchQuery || 'created'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs">
+            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
               <PropertyRow
                 propertyKey="Created"
                 value={createdDateStr}
@@ -302,7 +302,7 @@ export const PropertiesView: React.FC = () => {
 
           {/* Modified Date */}
           {modifiedDateStr && (!searchQuery || 'modified'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs">
+            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
               <PropertyRow
                 propertyKey="Modified"
                 value={modifiedDateStr}
@@ -321,7 +321,7 @@ export const PropertiesView: React.FC = () => {
 
           {/* Locked / Read Only Toggle */}
           {(!searchQuery || 'locked'.includes(searchQuery.toLowerCase()) || 'read only'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs">
+            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
               <PropertyRow
                 propertyKey="Locked"
                 value={isLocked ? 'Yes' : 'No'}
@@ -342,24 +342,24 @@ export const PropertiesView: React.FC = () => {
 
           {/* Tags Section */}
           {(!searchQuery || 'tags'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[var(--flint-text-secondary)]">
+            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[var(--noether-text-secondary)]">
                 <div className="relative flex items-center">
                   <span
                     title={getPropertyIconName('Tags', propertyIcons)}
-                    className="p-1 -ml-1 text-[var(--flint-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
+                    className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
                   >
-                    {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)]' })}
+                    {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)]' })}
                   </span>
 
                   <span
                     title={`Note Tags\nCategorize and filter notes with tags`}
-                    className="font-medium text-[11px] cursor-default text-[var(--flint-text-muted)]"
+                    className="font-medium text-[11px] cursor-default text-[var(--noether-text-muted)]"
                   >
                     Tags
                   </span>
                 </div>
-                <span className="text-[10px] text-[var(--flint-text-muted)] font-mono">
+                <span className="text-[10px] text-[var(--noether-text-muted)] font-mono">
                   {(Array.isArray(currentProps[tagKey]) ? currentProps[tagKey] : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []))).length}
                 </span>
               </div>
@@ -369,7 +369,7 @@ export const PropertiesView: React.FC = () => {
                   <span
                     key={t}
                     title={`Tag: #${t}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--flint-bg-input)] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-accent)] hover:text-[var(--flint-accent-hover,var(--flint-accent))] text-[11px] font-mono border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] shadow-xs group transition-all"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-accent)] hover:text-[var(--noether-accent-hover,var(--noether-accent))] text-[11px] font-mono border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs group transition-all"
                   >
                     #{t}
                     {!isLocked && (
@@ -377,7 +377,7 @@ export const PropertiesView: React.FC = () => {
                         type="button"
                         onClick={() => handleRemoveTag(t)}
                         title={`Remove #${t}\nDelete this tag`}
-                        className="text-[var(--flint-text-muted)] hover:text-rose-500 opacity-60 group-hover:opacity-100 cursor-pointer"
+                        className="text-[var(--noether-text-muted)] hover:text-rose-500 opacity-60 group-hover:opacity-100 cursor-pointer"
                       >
                         <Cancel01Icon size={10} />
                       </button>
@@ -385,7 +385,7 @@ export const PropertiesView: React.FC = () => {
                   </span>
                 ))}
                 {!isLocked && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--flint-bg-input)] text-[var(--flint-accent)] text-[11px] font-mono border border-[var(--flint-border-base)] shadow-xs">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] text-[var(--noether-accent)] text-[11px] font-mono border border-[var(--noether-border-base)] shadow-xs">
                     <span className="inline-flex items-center">
                       <span>#</span>
                       <input
@@ -412,7 +412,7 @@ export const PropertiesView: React.FC = () => {
                           }
                         }}
                         placeholder=""
-                        className="bg-transparent border-none outline-none text-[var(--flint-accent)] text-[11px] font-mono p-0 m-0 min-w-0"
+                        className="bg-transparent border-none outline-none text-[var(--noether-accent)] text-[11px] font-mono p-0 m-0 min-w-0"
                       />
                     </span>
                     <button
@@ -422,7 +422,7 @@ export const PropertiesView: React.FC = () => {
                         setNewTagInput('');
                       }}
                       title={`Cancel\nDiscard tag input`}
-                      className="text-[var(--flint-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                      className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
                     >
                       <Cancel01Icon size={10} />
                     </button>
@@ -434,24 +434,24 @@ export const PropertiesView: React.FC = () => {
 
           {/* Aliases Section */}
           {(!searchQuery || 'aliases'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[var(--flint-text-secondary)]">
+            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs flex flex-col gap-1.5">
+              <div className="flex items-center justify-between text-[var(--noether-text-secondary)]">
                 <div className="relative flex items-center">
                   <span
                     title={getPropertyIconName('Aliases', propertyIcons)}
-                    className="p-1 -ml-1 text-[var(--flint-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
+                    className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
                   >
-                    {renderPropertyIcon('Aliases', propertyIcons, { size: 12, className: 'text-[var(--flint-text-muted)]' })}
+                    {renderPropertyIcon('Aliases', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)]' })}
                   </span>
 
                   <span
                     title={`Note Aliases\nAlternate names and titles for linking`}
-                    className="font-medium text-[11px] cursor-default text-[var(--flint-text-muted)]"
+                    className="font-medium text-[11px] cursor-default text-[var(--noether-text-muted)]"
                   >
                     Aliases
                   </span>
                 </div>
-                <span className="text-[10px] text-[var(--flint-text-muted)] font-mono">
+                <span className="text-[10px] text-[var(--noether-text-muted)] font-mono">
                   {(Array.isArray(currentProps[aliasKey]) ? currentProps[aliasKey] : (Array.isArray(currentProps.aliases) ? currentProps.aliases : (Array.isArray(currentProps.Aliases) ? currentProps.Aliases : []))).length}
                 </span>
               </div>
@@ -461,7 +461,7 @@ export const PropertiesView: React.FC = () => {
                   <span
                     key={a}
                     title={`Alias: ${a}${isLocked ? '' : "\nClick 'x' to remove alias"}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--flint-bg-input)] hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-primary)] hover:text-[var(--flint-text-primary)] text-[11px] border border-[var(--flint-border-base)] hover:border-[var(--flint-border-strong)] shadow-xs group transition-all font-medium"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] hover:text-[var(--noether-text-primary)] text-[11px] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs group transition-all font-medium"
                   >
                     {a}
                     {!isLocked && (
@@ -469,7 +469,7 @@ export const PropertiesView: React.FC = () => {
                         type="button"
                         onClick={() => handleRemoveAlias(a)}
                         title={`Remove "${a}"\nDelete this alias`}
-                        className="text-[var(--flint-text-muted)] hover:text-rose-500 opacity-60 group-hover:opacity-100 cursor-pointer"
+                        className="text-[var(--noether-text-muted)] hover:text-rose-500 opacity-60 group-hover:opacity-100 cursor-pointer"
                       >
                         <Cancel01Icon size={10} />
                       </button>
@@ -477,7 +477,7 @@ export const PropertiesView: React.FC = () => {
                   </span>
                 ))}
                 {!isLocked && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] bg-[var(--flint-bg-input)] text-[var(--flint-text-primary)] text-[11px] border border-[var(--flint-border-base)] shadow-xs">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] text-[var(--noether-text-primary)] text-[11px] border border-[var(--noether-border-base)] shadow-xs">
                     <span className="inline-grid grid-cols-1 items-center">
                       <span className="col-start-1 row-start-1 invisible whitespace-pre text-[11px] pointer-events-none min-w-[3ch]">
                         {newAliasInput || 'Add alias'}
@@ -505,7 +505,7 @@ export const PropertiesView: React.FC = () => {
                           }
                         }}
                         placeholder="Add alias"
-                        className="col-start-1 row-start-1 bg-transparent border-none outline-none text-[var(--flint-text-primary)] placeholder:text-[var(--flint-text-muted)] text-[11px] p-0 m-0 w-full"
+                        className="col-start-1 row-start-1 bg-transparent border-none outline-none text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] text-[11px] p-0 m-0 w-full"
                       />
                     </span>
                   </span>
@@ -516,7 +516,7 @@ export const PropertiesView: React.FC = () => {
 
           {/* Custom Properties Rows */}
           {customKeys.map((key) => (
-            <div key={key} className="p-2 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs">
+            <div key={key} className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
               <PropertyRow
                 propertyKey={key}
                 value={currentProps[key]}
@@ -538,35 +538,35 @@ export const PropertiesView: React.FC = () => {
         </div>
 
         {/* Note Statistics Card */}
-        <div className="mt-2 p-3 rounded-lg bg-[var(--flint-bg-card)] border border-[var(--flint-border-subtle)] shadow-xs flex flex-col gap-2">
-          <div className="flex items-center gap-1.5 text-[var(--flint-text-secondary)] font-medium text-[11px] border-b border-[var(--flint-border-subtle)] pb-1.5">
-            <Clock01Icon size={13} className="text-[var(--flint-text-muted)]" />
+        <div className="mt-2 p-3 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs flex flex-col gap-2">
+          <div className="flex items-center gap-1.5 text-[var(--noether-text-secondary)] font-medium text-[11px] border-b border-[var(--noether-border-subtle)] pb-1.5">
+            <Clock01Icon size={13} className="text-[var(--noether-text-muted)]" />
             <span>Document Details</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-[11px]">
             <div>
-              <span className="text-[var(--flint-text-muted)]">Words:</span>{' '}
-              <span className="text-[var(--flint-text-primary)] font-medium">{wordCount}</span>
+              <span className="text-[var(--noether-text-muted)]">Words:</span>{' '}
+              <span className="text-[var(--noether-text-primary)] font-medium">{wordCount}</span>
             </div>
             <div>
-              <span className="text-[var(--flint-text-muted)]">Characters:</span>{' '}
-              <span className="text-[var(--flint-text-primary)] font-medium">{charCount}</span>
+              <span className="text-[var(--noether-text-muted)]">Characters:</span>{' '}
+              <span className="text-[var(--noether-text-primary)] font-medium">{charCount}</span>
             </div>
             <div>
-              <span className="text-[var(--flint-text-muted)]">Reading time:</span>{' '}
-              <span className="text-[var(--flint-text-primary)] font-medium">{readingTimeMins} min</span>
+              <span className="text-[var(--noether-text-muted)]">Reading time:</span>{' '}
+              <span className="text-[var(--noether-text-primary)] font-medium">{readingTimeMins} min</span>
             </div>
             <div>
-              <span className="text-[var(--flint-text-muted)]">Doc Type:</span>{' '}
-              <span className="text-[var(--flint-text-primary)] font-medium uppercase">{activeDocument.doc_type || 'Note'}</span>
+              <span className="text-[var(--noether-text-muted)]">Doc Type:</span>{' '}
+              <span className="text-[var(--noether-text-primary)] font-medium uppercase">{activeDocument.doc_type || 'Note'}</span>
             </div>
           </div>
 
-          <div className="border-t border-[var(--flint-border-subtle)] pt-2 flex flex-col gap-1 text-[10px] text-[var(--flint-text-muted)]">
+          <div className="border-t border-[var(--noether-border-subtle)] pt-2 flex flex-col gap-1 text-[10px] text-[var(--noether-text-muted)]">
             <div className="flex items-center justify-between">
               <span>Created:</span>
-              <span className="text-[var(--flint-text-secondary)]">
+              <span className="text-[var(--noether-text-secondary)]">
                 {new Date(activeDocument.created_at).toLocaleString(undefined, {
                   month: 'short',
                   day: 'numeric',
@@ -577,7 +577,7 @@ export const PropertiesView: React.FC = () => {
             </div>
             <div className="flex items-center justify-between">
               <span>Modified:</span>
-              <span className="text-[var(--flint-text-secondary)]">
+              <span className="text-[var(--noether-text-secondary)]">
                 {new Date(activeDocument.updated_at).toLocaleString(undefined, {
                   month: 'short',
                   day: 'numeric',

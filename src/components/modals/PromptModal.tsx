@@ -45,17 +45,17 @@ export const PromptModal: React.FC = React.memo(() => {
         data-card="true"
         onSubmit={handleSubmit}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-[var(--flint-bg-popover,var(--flint-bg-card))] border border-[var(--flint-border-subtle,#2e2e2e)] rounded-xl shadow-2xl overflow-hidden p-5 flex flex-col gap-4 text-xs"
+        className="w-full max-w-md bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-subtle,#2e2e2e)] rounded-xl shadow-2xl overflow-hidden p-5 flex flex-col gap-4 text-xs"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-[var(--flint-text-primary)] tracking-tight">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] tracking-tight">
             {inputDialog.title || 'Input'}
           </h3>
           <button
             type="button"
             onClick={closeInputDialog}
-            className="p-1 rounded hover:bg-[var(--flint-bg-card-hover)] text-[var(--flint-text-muted)] hover:text-[var(--flint-text-primary)] cursor-pointer"
+            className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <Cancel01Icon size={14} />
           </button>
@@ -70,7 +70,7 @@ export const PromptModal: React.FC = React.memo(() => {
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={inputDialog.placeholder || 'Enter value...'}
-            className="w-full bg-[var(--flint-bg-input)] border border-[var(--flint-border-base)] focus:border-[var(--flint-border-strong)] rounded-[5px] px-3 py-2 text-xs text-[var(--flint-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
+            className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus:border-[var(--noether-border-strong)] rounded-[5px] px-3 py-2 text-xs text-[var(--noether-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.1)]"
           />
         </div>
 
@@ -79,14 +79,14 @@ export const PromptModal: React.FC = React.memo(() => {
           <button
             type="button"
             onClick={closeInputDialog}
-            className="flint-btn"
+            className="noether-btn"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!isValid}
-            className="flint-btn flint-btn-primary"
+            className="noether-btn noether-btn-primary"
           >
             {inputDialog.confirmText || 'Save'}
           </button>

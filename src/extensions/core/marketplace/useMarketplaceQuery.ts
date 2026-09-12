@@ -2,7 +2,7 @@
  * @module useMarketplaceQuery
  * @description
  * Stale-While-Revalidate (SWR) hook for querying community extensions from
- * the Flint extension registry (https://api.flintnotes.com/api/v1/plugins).
+ * the Noether extension registry (https://api.noethernotes.dev/api/v1/plugins).
  *
  * Performance and Offline Strategy:
  * - Synchronously initializes from cached storage or built-in catalogue for 0ms initial render latency.
@@ -29,10 +29,10 @@ import {
 } from '@/components/common/Icons';
 import { fetchTursoPlugins } from './tursoClient';
 
-export const PRIMARY_REGISTRY_URL = 'https://api.flintnotes.com/api/v1/plugins';
+export const PRIMARY_REGISTRY_URL = 'https://api.noethernotes.dev/api/v1/plugins';
 export const LOCALHOST_DEV_URL = 'http://localhost:3001/api/v1/plugins';
-export const STORAGE_CACHE_KEY = 'flint_marketplace_catalogue_cache';
-export const STORAGE_CACHE_TIME_KEY = 'flint_marketplace_catalogue_cache_time';
+export const STORAGE_CACHE_KEY = 'noether_marketplace_catalogue_cache';
+export const STORAGE_CACHE_TIME_KEY = 'noether_marketplace_catalogue_cache_time';
 
 export interface RawRegistryPlugin {
   id: string;
@@ -75,7 +75,7 @@ export interface MarketplaceQueryResult {
 export function getRegistryUrl(): string {
   if (typeof window !== 'undefined') {
     try {
-      const customUrl = localStorage.getItem('flint_marketplace_registry_url');
+      const customUrl = localStorage.getItem('noether_marketplace_registry_url');
       if (customUrl && customUrl.trim()) {
         return customUrl.trim();
       }
@@ -85,8 +85,8 @@ export function getRegistryUrl(): string {
   }
 
   const metaEnv = (import.meta as { env?: Record<string, string | undefined> })?.env;
-  if (metaEnv?.VITE_FLINT_REGISTRY_URL) {
-    return metaEnv.VITE_FLINT_REGISTRY_URL;
+  if (metaEnv?.VITE_NOETHER_REGISTRY_URL) {
+    return metaEnv.VITE_NOETHER_REGISTRY_URL;
   }
 
   return PRIMARY_REGISTRY_URL;
@@ -97,8 +97,8 @@ export function getRegistryUrl(): string {
  */
 export function getDevRegistryUrl(): string {
   const metaEnv = (import.meta as { env?: Record<string, string | undefined> })?.env;
-  if (metaEnv?.VITE_FLINT_DEV_REGISTRY_URL) {
-    return metaEnv.VITE_FLINT_DEV_REGISTRY_URL;
+  if (metaEnv?.VITE_NOETHER_DEV_REGISTRY_URL) {
+    return metaEnv.VITE_NOETHER_DEV_REGISTRY_URL;
   }
   return LOCALHOST_DEV_URL;
 }
@@ -151,8 +151,8 @@ function normalizePluginItem(
 ): MarketplaceExtensionItem {
   const localItem =
     catalogueMap.get(raw.id) ||
-    catalogueMap.get(raw.id.replace(/^flint-/, '')) ||
-    catalogueMap.get(`flint-${raw.id}`);
+    catalogueMap.get(raw.id.replace(/^noether-/, '')) ||
+    catalogueMap.get(`noether-${raw.id}`);
 
   const rawDownloads = raw.downloads;
   let formattedDownloads = '0';
@@ -227,7 +227,7 @@ function normalizePluginItem(
 
 const CORE_EXTENSION_IDS = new Set([
   'sync',
-  'flint-sync',
+  'noether-sync',
   'graph',
   'canvas',
   'tasks',
@@ -252,9 +252,9 @@ function mergeCatalogue(remoteItems: RawRegistryPlugin[]): MarketplaceExtensionI
   const catalogueMap = new Map<string, MarketplaceExtensionItem>();
   for (const item of COMMUNITY_MARKETPLACE_CATALOGUE) {
     catalogueMap.set(item.id, item);
-    catalogueMap.set(item.id.replace(/^flint-/, ''), item);
-    if (!item.id.startsWith('flint-')) {
-      catalogueMap.set(`flint-${item.id}`, item);
+    catalogueMap.set(item.id.replace(/^noether-/, ''), item);
+    if (!item.id.startsWith('noether-')) {
+      catalogueMap.set(`noether-${item.id}`, item);
     }
   }
 
@@ -386,7 +386,7 @@ async function fetchRegistryEndpoint(url: string, timeoutMs = 6000): Promise<Raw
 }
 
 /**
- * Hook providing stale-while-revalidate fetching for Flint community extensions.
+ * Hook providing stale-while-revalidate fetching for Noether community extensions.
  */
 export function useMarketplaceQuery(): MarketplaceQueryResult {
   const initialDataRef = useRef<{

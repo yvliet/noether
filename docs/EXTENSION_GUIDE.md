@@ -1,16 +1,16 @@
-# Flint Extension Developer Guide
+# Noether Extension Developer Guide
 
-Flint is built to be easily extended. In fact, most of Flint's built-in features (like Canvas, Tasks, and Flashcards) are built as extensions using the exact same APIs available to third-party developers.
+Noether is built to be easily extended. In fact, most of Noether's built-in features (like Canvas, Tasks, and Flashcards) are built as extensions using the exact same APIs available to third-party developers.
 
 ---
 
 ## 1. Quick Start: Creating Your First Extension
 
-Extensions reside in your Hearth's `.flint/extensions/<extension-id>/` directory:
+Extensions reside in your Vault's `.noether/extensions/<extension-id>/` directory:
 
 ```
-<My-Hearth>/
-  .flint/
+<My-Vault>/
+  .noether/
     extensions/
       word-counter/
         manifest.json
@@ -33,7 +33,7 @@ Extensions reside in your Hearth's `.flint/extensions/<extension-id>/` directory
 
 ### `main.js`
 ```javascript
-const { Extension } = require('flint');
+const { Extension } = require('noether');
 
 module.exports = class ReadingTimeExtension extends Extension {
   async onload() {
@@ -154,7 +154,7 @@ this.registerSettingTab({
 ```
 
 ### G. Custom Context Menu Items (Right-Click)
-Extensions can register items directly into Flint's lightweight custom context menus for various scopes:
+Extensions can register items directly into Noether's lightweight custom context menus for various scopes:
 - `'file-tree'`: Right-clicking files or folders in the sidebar.
 - `'file-tree-root'`: Right-clicking empty background space in the file tree.
 - `'editor'`: Right-clicking inside the document editor or selection.
@@ -261,7 +261,7 @@ const rows = await this.myTable.select({ where: { documentId: 'note-1' } });
 Expose tools to AI assistants with typed Zod parameter validation:
 
 ```javascript
-const { z } = require('flint');
+const { z } = require('noether');
 
 this.registerTool({
   name: 'calculate_metric',
@@ -293,16 +293,16 @@ const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] }
 ```
 
 ### M. Shared Host Dependencies & Subpaths
-Flint shares common libraries with extensions so your bundles stay small and you don't have to package duplicate copies of React or Zustand:
+Noether shares common libraries with extensions so your bundles stay small and you don't have to package duplicate copies of React or Zustand:
 
-- **SDK Aliases**: `require('flint')`, `require('flint/sdk')`, `require('@flint')`, `require('@flint/core')`, `require('flint-sdk')`
+- **SDK Aliases**: `require('noether')`, `require('noether/sdk')`, `require('@noether')`, `require('@noether/core')`, `require('noether-sdk')`
 - **UI & React**: `require('react')`, `require('react/jsx-runtime')`, `require('react-dom')`, `require('react-dom/client')`
 - **Schema Validation**: `require('zod')` (supports both named and default exports)
 - **Styling Utilities**: `require('clsx')`, `require('tailwind-merge')`
 - **State Management**: `require('zustand')`, `require('zustand/vanilla')`
 - **Icon System**: `require('@hugeicons/react')`, `require('@hugeicons/core-free-icons')`
 
-Extensions live in your Hearth's `.flint/extensions/<id>/` directory and are loaded automatically when Flint opens.
+Extensions live in your Vault's `.noether/extensions/<id>/` directory and are loaded automatically when Noether opens.
 
 ---
 
@@ -310,15 +310,15 @@ Extensions live in your Hearth's `.flint/extensions/<id>/` directory and are loa
 
 ---
 
-In Flint, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension SDK. You can review their implementation in `src/extensions/core/`.
+In Noether, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension SDK. You can review their implementation in `src/extensions/core/`.
 
 To build your own standalone community extension, generate your project from the official template repository:
 ```bash
 # Using GitHub CLI
-gh repo create my-extension --template yvliet/flint-extension-starter --public --clone
+gh repo create my-extension --template yvliet/noether-extension-starter --public --clone
 
 # Or via Git
-git clone https://github.com/yvliet/flint-extension-starter.git my-extension
+git clone https://github.com/yvliet/noether-extension-starter.git my-extension
 ```
 
 

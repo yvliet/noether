@@ -56,7 +56,7 @@ import { useSettingsStore } from './settingsStore';
 import { useFileHistoryStore } from './fileHistoryStore';
 import { jsonToMarkdown } from '@/lib/db/documents';
 import { dbAdapter } from '@/lib/db/adapter';
-import { bindFlintStores } from '@/core/app/storeBridge';
+import { bindNoetherStores } from '@/core/app/storeBridge';
 
 interface DocumentState {
   documents: DocumentItem[];
@@ -152,6 +152,9 @@ export function resetTabsRestoreFlag(): void {
 /** Request sequence token to discard stale async backlinks/metadata resolution when switching documents rapidly */
 let currentActivationEpoch = 0;
 
+/** Referentially stable empty properties singleton to avoid re-render loops in selectors */
+const EMPTY_PROPERTIES: DocumentProperties = Object.freeze({});
+
 export const useDocumentStore = create<DocumentState>((set, get) => ({
   documents: [],
   trashItems: [],
@@ -161,7 +164,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   outgoingLinks: [],
   unlinkedMentions: [],
   vaultTags: [],
-  documentProperties: {},
+  documentProperties: EMPTY_PROPERTIES,
   globalTasks: [],
   isLoading: true,
   searchQuery: '',
@@ -213,7 +216,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
             }
           } else {
             if (initialDocs.length > 0) {
-              const welcomeDoc = initialDocs.find((d) => d.id === 'welcome-to-flint') || initialDocs.find((d) => !d.is_folder) || initialDocs[0];
+              const welcomeDoc = initialDocs.find((d) => d.id === 'welcome-to-noether') || initialDocs.find((d) => !d.is_folder) || initialDocs[0];
               if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
                 await get().setActiveDocumentById(welcomeDoc.id);
               }
@@ -225,7 +228,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           }
 
           if (!get().activeDocument && useWorkspaceStore.getState().mainViewMode === 'document' && initialDocs.length > 0) {
-            const defaultDoc = initialDocs.find((d) => d.id === 'welcome-to-flint') || initialDocs.find((d) => !d.is_folder);
+            const defaultDoc = initialDocs.find((d) => d.id === 'welcome-to-noether') || initialDocs.find((d) => !d.is_folder);
             if (defaultDoc) {
               await get().setActiveDocumentById(defaultDoc.id);
             }
@@ -283,7 +286,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
             }
           } else {
             if (docs.length > 0) {
-              const welcomeDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder) || docs[0];
+              const welcomeDoc = docs.find((d) => d.id === 'welcome-to-noether') || docs.find((d) => !d.is_folder) || docs[0];
               if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
                 await get().setActiveDocumentById(welcomeDoc.id);
               }
@@ -296,7 +299,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         }
 
         if (!get().activeDocument && useWorkspaceStore.getState().mainViewMode === 'document' && docs.length > 0) {
-          const defaultDoc = docs.find((d) => d.id === 'welcome-to-flint') || docs.find((d) => !d.is_folder);
+          const defaultDoc = docs.find((d) => d.id === 'welcome-to-noether') || docs.find((d) => !d.is_folder);
           if (defaultDoc) {
             await get().setActiveDocumentById(defaultDoc.id);
           }
@@ -387,9 +390,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
             )
           : [doc, ...state.documents];
 
+        let initialParsedProps: DocumentProperties = EMPTY_PROPERTIES;
+        if (doc.properties) {
+          try {
+            initialParsedProps = typeof doc.properties === 'string' ? JSON.parse(doc.properties) : doc.properties;
+          } catch (e) {}
+        }
+
         return {
           documents: nextDocs,
           activeDocument: doc,
+          documentProperties: initialParsedProps,
           selectedDocIds: state.selectedDocIds.length <= 1 ? [doc.id] : state.selectedDocIds,
           lastSelectedDocId: state.selectedDocIds.length <= 1 ? doc.id : state.lastSelectedDocId,
         };
@@ -412,7 +423,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         return;
       }
 
-      let parsedProps: DocumentProperties = {};
+      let parsedProps: DocumentProperties = EMPTY_PROPERTIES;
       if (doc.properties) {
         try {
           parsedProps = typeof doc.properties === 'string' ? JSON.parse(doc.properties) : doc.properties;
@@ -584,6 +595,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         editingDocId: doc.id,
         searchQuery: '',
         activeDocument: doc,
+        documentProperties: EMPTY_PROPERTIES,
         selectedDocIds: [doc.id],
         lastSelectedDocId: doc.id,
       }));
@@ -732,8 +744,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         if (platform.isDesktop()) {
           const allDocs = get().documents;
           const folderPath = getDocumentPath(doc, allDocs);
-          await platform.saveMarkdownFile('.flint_folder', '', `${folderPath}/.flint_folder`);
-          await platform.deleteMarkdownFile(`${folderPath}/.flint_folder`);
+          await platform.saveMarkdownFile('.noether_folder', '', `${folderPath}/.noether_folder`);
+          await platform.deleteMarkdownFile(`${folderPath}/.noether_folder`);
         }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new folder:', err);
@@ -1483,5 +1495,5 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   },
 }));
 
-bindFlintStores({ document: useDocumentStore });
+bindNoetherStores({ document: useDocumentStore });
 

@@ -117,13 +117,13 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
             onClick={() => setActiveTab('123')}
             className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
               activeTab === '123'
-                ? 'text-[#ea580c]'
+                ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
             }`}
           >
             123
             {activeTab === '123' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ea580c] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
             )}
           </button>
           <button
@@ -131,13 +131,13 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
             onClick={() => setActiveTab('symbols')}
             className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
               activeTab === 'symbols'
-                ? 'text-[#ea580c]'
+                ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
             }`}
           >
             ∞≠∈
             {activeTab === 'symbols' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ea580c] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
             )}
           </button>
           <button
@@ -145,13 +145,13 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
             onClick={() => setActiveTab('abc')}
             className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
               activeTab === 'abc'
-                ? 'text-[#ea580c]'
+                ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
             }`}
           >
             abc
             {activeTab === 'abc' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ea580c] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
             )}
           </button>
           <button
@@ -159,13 +159,13 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
             onClick={() => setActiveTab('greek')}
             className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
               activeTab === 'greek'
-                ? 'text-[#ea580c]'
+                ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
             }`}
           >
             αβγ
             {activeTab === 'greek' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#ea580c] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
             )}
           </button>
         </div>
@@ -214,76 +214,76 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <div className="flex items-center justify-center gap-8">
             {/* Left Cluster: Variables & Brackets */}
             <div className="grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => insert('x^{‹a›}')} className="flint-key">
+              <button type="button" onClick={() => insert('x^{‹a›}')} className="noether-key">
                 <i>x</i><sup><i>y</i></sup>
               </button>
-              <button type="button" onClick={() => insert('n^{‹a›}')} className="flint-key">
+              <button type="button" onClick={() => insert('n^{‹a›}')} className="noether-key">
                 <i>n</i><sup><i>a</i></sup>
               </button>
-              <button type="button" onClick={() => insert('<')} className="flint-key">&lt;</button>
-              <button type="button" onClick={() => insert('>')} className="flint-key">&gt;</button>
-              <button type="button" onClick={() => insert('\\left( ‹a› \\right)')} className="flint-key">(</button>
-              <button type="button" onClick={() => insert('\\left( ‹a› \\right)')} className="flint-key">)</button>
-              <button type="button" onClick={() => setActiveTab('abc')} className="flint-key text-xs font-semibold">
+              <button type="button" onClick={() => insert('<')} className="noether-key">&lt;</button>
+              <button type="button" onClick={() => insert('>')} className="noether-key">&gt;</button>
+              <button type="button" onClick={() => insert('\\left( ‹a› \\right)')} className="noether-key">(</button>
+              <button type="button" onClick={() => insert('\\left( ‹a› \\right)')} className="noether-key">)</button>
+              <button type="button" onClick={() => setActiveTab('abc')} className="noether-key text-xs font-semibold">
                 ⇧ abc
               </button>
-              <button type="button" onClick={() => insert('\\frac{‹a›}{‹b›}')} className="flint-key">
+              <button type="button" onClick={() => insert('\\frac{‹a›}{‹b›}')} className="noether-key">
                 <sup>□</sup>/<sub>□</sub>
               </button>
             </div>
 
             {/* Center Cluster: Numbers & Operations */}
             <div className="grid grid-cols-4 gap-2">
-              <button type="button" onClick={() => insert('7')} className="flint-key font-medium">7</button>
-              <button type="button" onClick={() => insert('8')} className="flint-key font-medium">8</button>
-              <button type="button" onClick={() => insert('9')} className="flint-key font-medium">9</button>
-              <button type="button" onClick={() => insert('\\div')} className="flint-key text-lg">÷</button>
+              <button type="button" onClick={() => insert('7')} className="noether-key font-medium">7</button>
+              <button type="button" onClick={() => insert('8')} className="noether-key font-medium">8</button>
+              <button type="button" onClick={() => insert('9')} className="noether-key font-medium">9</button>
+              <button type="button" onClick={() => insert('\\div')} className="noether-key text-lg">÷</button>
 
-              <button type="button" onClick={() => insert('4')} className="flint-key font-medium">4</button>
-              <button type="button" onClick={() => insert('5')} className="flint-key font-medium">5</button>
-              <button type="button" onClick={() => insert('6')} className="flint-key font-medium">6</button>
-              <button type="button" onClick={() => insert('\\times')} className="flint-key text-lg">×</button>
+              <button type="button" onClick={() => insert('4')} className="noether-key font-medium">4</button>
+              <button type="button" onClick={() => insert('5')} className="noether-key font-medium">5</button>
+              <button type="button" onClick={() => insert('6')} className="noether-key font-medium">6</button>
+              <button type="button" onClick={() => insert('\\times')} className="noether-key text-lg">×</button>
 
-              <button type="button" onClick={() => insert('1')} className="flint-key font-medium">1</button>
-              <button type="button" onClick={() => insert('2')} className="flint-key font-medium">2</button>
-              <button type="button" onClick={() => insert('3')} className="flint-key font-medium">3</button>
-              <button type="button" onClick={() => insert('-')} className="flint-key text-lg">−</button>
+              <button type="button" onClick={() => insert('1')} className="noether-key font-medium">1</button>
+              <button type="button" onClick={() => insert('2')} className="noether-key font-medium">2</button>
+              <button type="button" onClick={() => insert('3')} className="noether-key font-medium">3</button>
+              <button type="button" onClick={() => insert('-')} className="noether-key text-lg">−</button>
 
-              <button type="button" onClick={() => insert('0')} className="flint-key font-medium">0</button>
-              <button type="button" onClick={() => insert('.')} className="flint-key font-medium">.</button>
-              <button type="button" onClick={() => insert('=')} className="flint-key font-medium">=</button>
-              <button type="button" onClick={() => insert('+')} className="flint-key text-lg">+</button>
+              <button type="button" onClick={() => insert('0')} className="noether-key font-medium">0</button>
+              <button type="button" onClick={() => insert('.')} className="noether-key font-medium">.</button>
+              <button type="button" onClick={() => insert('=')} className="noether-key font-medium">=</button>
+              <button type="button" onClick={() => insert('+')} className="noether-key text-lg">+</button>
             </div>
 
             {/* Right Cluster: Constants, Powers, Roots & Navigation */}
             <div className="grid grid-cols-3 gap-2">
-              <button type="button" onClick={() => insert('e')} className="flint-key">
+              <button type="button" onClick={() => insert('e')} className="noether-key">
                 <i>e</i><sup><span className="text-[9px] text-[#888]">ln</span></sup>
               </button>
-              <button type="button" onClick={() => insert('i')} className="flint-key"><i>i</i></button>
-              <button type="button" onClick={() => insert('\\pi')} className="flint-key">
+              <button type="button" onClick={() => insert('i')} className="noether-key"><i>i</i></button>
+              <button type="button" onClick={() => insert('\\pi')} className="noether-key">
                 π<sup><span className="text-[9px] text-[#888]">sin</span></sup>
               </button>
 
-              <button type="button" onClick={() => insert('^{2}')} className="flint-key">■<sup>2</sup></button>
-              <button type="button" onClick={() => insert('^{‹a›}')} className="flint-key">■<sup>□</sup></button>
-              <button type="button" onClick={() => insert('\\sqrt{‹a›}')} className="flint-key">√□</button>
+              <button type="button" onClick={() => insert('^{2}')} className="noether-key">■<sup>2</sup></button>
+              <button type="button" onClick={() => insert('^{‹a›}')} className="noether-key">■<sup>□</sup></button>
+              <button type="button" onClick={() => insert('\\sqrt{‹a›}')} className="noether-key">√□</button>
 
-              <button type="button" onClick={() => insert('\\int_{0}^{\\infty} ‹a› \\, dx')} className="flint-key text-xs">
+              <button type="button" onClick={() => insert('\\int_{0}^{\\infty} ‹a› \\, dx')} className="noether-key text-xs">
                 ∫<sub>0</sub><sup>∞</sup>□dx
               </button>
-              <button type="button" onClick={() => insert('\\forall')} className="flint-key">∀</button>
-              <button type="button" onClick={handleBackspace} className="flint-key bg-[#2a2a2a] hover:bg-[#383838]">
+              <button type="button" onClick={() => insert('\\forall')} className="noether-key">∀</button>
+              <button type="button" onClick={handleBackspace} className="noether-key bg-[#2a2a2a] hover:bg-[#383838]">
                 ⌫
               </button>
 
-              <button type="button" onClick={handleMoveLeft} className="flint-key">
+              <button type="button" onClick={handleMoveLeft} className="noether-key">
                 <ArrowLeft01Icon size={14} className="mx-auto" />
               </button>
-              <button type="button" onClick={handleMoveRight} className="flint-key">
+              <button type="button" onClick={handleMoveRight} className="noether-key">
                 <ArrowRight01Icon size={14} className="mx-auto" />
               </button>
-              <button type="button" onClick={() => insert('\\\\')} className="flint-key bg-[#2a2a2a] hover:bg-[#383838]">
+              <button type="button" onClick={() => insert('\\\\')} className="noether-key bg-[#2a2a2a] hover:bg-[#383838]">
                 ⏎
               </button>
             </div>
@@ -293,47 +293,47 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
         {/* ── TAB 2: Symbols (∞≠∈) ── */}
         {activeTab === 'symbols' && (
           <div className="grid grid-cols-8 gap-2">
-            <button type="button" onClick={() => insert('\\infty')} className="flint-key">∞</button>
-            <button type="button" onClick={() => insert('\\neq')} className="flint-key">≠</button>
-            <button type="button" onClick={() => insert('\\in')} className="flint-key">∈</button>
-            <button type="button" onClick={() => insert('\\notin')} className="flint-key">∉</button>
-            <button type="button" onClick={() => insert('\\subset')} className="flint-key">⊂</button>
-            <button type="button" onClick={() => insert('\\subseteq')} className="flint-key">⊆</button>
-            <button type="button" onClick={() => insert('\\cup')} className="flint-key">∪</button>
-            <button type="button" onClick={() => insert('\\cap')} className="flint-key">∩</button>
+            <button type="button" onClick={() => insert('\\infty')} className="noether-key">∞</button>
+            <button type="button" onClick={() => insert('\\neq')} className="noether-key">≠</button>
+            <button type="button" onClick={() => insert('\\in')} className="noether-key">∈</button>
+            <button type="button" onClick={() => insert('\\notin')} className="noether-key">∉</button>
+            <button type="button" onClick={() => insert('\\subset')} className="noether-key">⊂</button>
+            <button type="button" onClick={() => insert('\\subseteq')} className="noether-key">⊆</button>
+            <button type="button" onClick={() => insert('\\cup')} className="noether-key">∪</button>
+            <button type="button" onClick={() => insert('\\cap')} className="noether-key">∩</button>
 
-            <button type="button" onClick={() => insert('\\leq')} className="flint-key">≤</button>
-            <button type="button" onClick={() => insert('\\geq')} className="flint-key">≥</button>
-            <button type="button" onClick={() => insert('\\approx')} className="flint-key">≈</button>
-            <button type="button" onClick={() => insert('\\equiv')} className="flint-key">≡</button>
-            <button type="button" onClick={() => insert('\\pm')} className="flint-key">±</button>
-            <button type="button" onClick={() => insert('\\mp')} className="flint-key">∓</button>
-            <button type="button" onClick={() => insert('\\cdot')} className="flint-key">·</button>
-            <button type="button" onClick={() => insert('\\partial')} className="flint-key">∂</button>
+            <button type="button" onClick={() => insert('\\leq')} className="noether-key">≤</button>
+            <button type="button" onClick={() => insert('\\geq')} className="noether-key">≥</button>
+            <button type="button" onClick={() => insert('\\approx')} className="noether-key">≈</button>
+            <button type="button" onClick={() => insert('\\equiv')} className="noether-key">≡</button>
+            <button type="button" onClick={() => insert('\\pm')} className="noether-key">±</button>
+            <button type="button" onClick={() => insert('\\mp')} className="noether-key">∓</button>
+            <button type="button" onClick={() => insert('\\cdot')} className="noether-key">·</button>
+            <button type="button" onClick={() => insert('\\partial')} className="noether-key">∂</button>
 
-            <button type="button" onClick={() => insert('\\sum_{i=1}^{n} ‹a›')} className="flint-key font-serif">∑</button>
-            <button type="button" onClick={() => insert('\\prod_{i=1}^{n} ‹a›')} className="flint-key font-serif">∏</button>
-            <button type="button" onClick={() => insert('\\int_{‹a›}^{‹b›}\\,dx')} className="flint-key font-serif">∫</button>
-            <button type="button" onClick={() => insert('\\lim_{‹a› \\to ‹b›} ‹c›')} className="flint-key text-xs font-serif">lim</button>
-            <button type="button" onClick={() => insert('\\rightarrow ‹a›')} className="flint-key">→</button>
-            <button type="button" onClick={() => insert('\\leftarrow ‹a›')} className="flint-key">←</button>
-            <button type="button" onClick={() => insert('\\implies ‹a›')} className="flint-key">⟹</button>
-            <button type="button" onClick={() => insert('\\iff ‹a›')} className="flint-key">⟺</button>
+            <button type="button" onClick={() => insert('\\sum_{i=1}^{n} ‹a›')} className="noether-key font-serif">∑</button>
+            <button type="button" onClick={() => insert('\\prod_{i=1}^{n} ‹a›')} className="noether-key font-serif">∏</button>
+            <button type="button" onClick={() => insert('\\int_{‹a›}^{‹b›}\\,dx')} className="noether-key font-serif">∫</button>
+            <button type="button" onClick={() => insert('\\lim_{‹a› \\to ‹b›} ‹c›')} className="noether-key text-xs font-serif">lim</button>
+            <button type="button" onClick={() => insert('\\rightarrow ‹a›')} className="noether-key">→</button>
+            <button type="button" onClick={() => insert('\\leftarrow ‹a›')} className="noether-key">←</button>
+            <button type="button" onClick={() => insert('\\implies ‹a›')} className="noether-key">⟹</button>
+            <button type="button" onClick={() => insert('\\iff ‹a›')} className="noether-key">⟺</button>
 
-            <button type="button" onClick={() => insert('\\left[ ‹a› \\right]')} className="flint-key">[ ]</button>
-            <button type="button" onClick={() => insert('\\left\\{ ‹a› \\right\\}')} className="flint-key">&#123; &#125;</button>
-            <button type="button" onClick={() => insert('\\left| ‹a› \\right|')} className="flint-key">| |</button>
-            <button type="button" onClick={() => insert('\\begin{pmatrix} ‹a› & ‹b› \\\\ ‹c› & ‹d› \\end{pmatrix}')} className="flint-key text-xs">
+            <button type="button" onClick={() => insert('\\left[ ‹a› \\right]')} className="noether-key">[ ]</button>
+            <button type="button" onClick={() => insert('\\left\\{ ‹a› \\right\\}')} className="noether-key">&#123; &#125;</button>
+            <button type="button" onClick={() => insert('\\left| ‹a› \\right|')} className="noether-key">| |</button>
+            <button type="button" onClick={() => insert('\\begin{pmatrix} ‹a› & ‹b› \\\\ ‹c› & ‹d› \\end{pmatrix}')} className="noether-key text-xs">
               ( matrix )
             </button>
-            <button type="button" onClick={() => insert('\\begin{cases} ‹a› \\\\ ‹b› \\end{cases}')} className="flint-key text-xs">
+            <button type="button" onClick={() => insert('\\begin{cases} ‹a› \\\\ ‹b› \\end{cases}')} className="noether-key text-xs">
               &#123; cases
             </button>
-            <button type="button" onClick={() => insert('\\text{‹a›}')} className="flint-key text-xs">
+            <button type="button" onClick={() => insert('\\text{‹a›}')} className="noether-key text-xs">
               text
             </button>
-            <button type="button" onClick={handleBackspace} className="flint-key bg-[#2a2a2a]">⌫</button>
-            <button type="button" onClick={() => insert('\\\\')} className="flint-key bg-[#2a2a2a]">⏎</button>
+            <button type="button" onClick={handleBackspace} className="noether-key bg-[#2a2a2a]">⌫</button>
+            <button type="button" onClick={() => insert('\\\\')} className="noether-key bg-[#2a2a2a]">⏎</button>
           </div>
         )}
 
@@ -341,15 +341,15 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
         {activeTab === 'abc' && (
           <div className="grid grid-cols-10 gap-2">
             {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'].map((ch) => (
-              <button key={ch} type="button" onClick={() => insert(ch)} className="flint-key">{ch}</button>
+              <button key={ch} type="button" onClick={() => insert(ch)} className="noether-key">{ch}</button>
             ))}
             {['k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't'].map((ch) => (
-              <button key={ch} type="button" onClick={() => insert(ch)} className="flint-key">{ch}</button>
+              <button key={ch} type="button" onClick={() => insert(ch)} className="noether-key">{ch}</button>
             ))}
             {['u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C'].map((ch) => (
-              <button key={ch} type="button" onClick={() => insert(ch)} className="flint-key">{ch}</button>
+              <button key={ch} type="button" onClick={() => insert(ch)} className="noether-key">{ch}</button>
             ))}
-            <button type="button" onClick={handleBackspace} className="flint-key bg-[#2a2a2a]">⌫</button>
+            <button type="button" onClick={handleBackspace} className="noether-key bg-[#2a2a2a]">⌫</button>
           </div>
         )}
 
@@ -392,13 +392,13 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
                 key={item.label}
                 type="button"
                 onClick={() => insert(item.latex)}
-                className="flint-key font-serif"
+                className="noether-key font-serif"
               >
                 {item.label}
               </button>
             ))}
-            <button type="button" onClick={handleBackspace} className="flint-key bg-[#2a2a2a]">⌫</button>
-            <button type="button" onClick={() => insert('\\\\')} className="flint-key bg-[#2a2a2a]">⏎</button>
+            <button type="button" onClick={handleBackspace} className="noether-key bg-[#2a2a2a]">⌫</button>
+            <button type="button" onClick={() => insert('\\\\')} className="noether-key bg-[#2a2a2a]">⏎</button>
           </div>
         )}
       </div>

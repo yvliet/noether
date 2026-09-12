@@ -4,7 +4,7 @@
  * Built-in core extension rendering a 2D force-directed interactive knowledge graph.
  * Registers the graph view, action rail shortcut, navigation command, and settings tab.
  *
- * Uses native FlintApp APIs (app.workspace.setMainViewMode).
+ * Uses native NoetherApp APIs (app.workspace.setMainViewMode).
  *
  * @since 0.2.0
  */
@@ -12,7 +12,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { NeuralNetworkIcon } from '@/components/common/Icons';
 import { dbAdapter } from '@/lib/db/adapter';
 import { GraphSettingsTab } from './GraphSettingsTab';
@@ -34,7 +34,7 @@ export const GRAPH_MANIFEST: ExtensionManifest = {
 };
 
 export class GraphExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = GRAPH_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = GRAPH_MANIFEST) {
     super(app, manifest);
   }
 
@@ -121,9 +121,9 @@ export class GraphExtension extends Extension {
         properties: {},
         required: [],
       },
-      handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder);
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder);
           let rawLinks: Array<{ source_document_id: string; target_document_id: string }> = [];
           try {
             rawLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
@@ -182,9 +182,9 @@ export class GraphExtension extends Extension {
         properties: {},
         required: [],
       },
-      handler: async (_args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (_args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder);
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder);
           let rawLinks: Array<{ source_document_id: string; target_document_id: string }> = [];
           try {
             rawLinks = await dbAdapter.query<{ source_document_id: string; target_document_id: string }>(
@@ -245,9 +245,9 @@ export class GraphExtension extends Extension {
         },
         required: [],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder);
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder);
           const docMap = new Map(docs.map((d) => [d.id, d]));
 
           // Resolve target document
@@ -258,7 +258,7 @@ export class GraphExtension extends Extension {
             target = docs.find((d) => d.title.toLowerCase() === title || d.title.toLowerCase().includes(title));
           }
           if (!target) {
-            target = app.hearth.activeDocument || undefined;
+            target = app.vault.activeDocument || undefined;
           }
 
           if (!target) {
@@ -373,9 +373,9 @@ export class GraphExtension extends Extension {
         },
         required: [],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder);
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder);
           const docMap = new Map(docs.map((d) => [d.id, d]));
 
           // Resolve target note
@@ -386,7 +386,7 @@ export class GraphExtension extends Extension {
             target = docs.find((d) => d.title.toLowerCase() === title || d.title.toLowerCase().includes(title));
           }
           if (!target) {
-            target = app.hearth.activeDocument || undefined;
+            target = app.vault.activeDocument || undefined;
           }
 
           if (!target) {
@@ -551,7 +551,7 @@ export class GraphExtension extends Extension {
         },
         required: ['source', 'target'],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
           const sourceQuery = String(args.source || '').trim();
           const targetQuery = String(args.target || '').trim();
@@ -562,7 +562,7 @@ export class GraphExtension extends Extension {
             };
           }
 
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder);
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder);
           const docMap = new Map(docs.map((d) => [d.id, d]));
 
           const resolveOne = (q: string) => {
@@ -717,9 +717,9 @@ export class GraphExtension extends Extension {
         },
         required: [],
       },
-      handler: async (args: Record<string, unknown>, app: FlintApp): Promise<McpToolResult> => {
+      handler: async (args: Record<string, unknown>, app: NoetherApp): Promise<McpToolResult> => {
         try {
-          const docs = (app.hearth.documents || []).filter((d) => !d.is_folder);
+          const docs = (app.vault.documents || []).filter((d) => !d.is_folder);
           const docMap = new Map(docs.map((d) => [d.id, d]));
           const limit = typeof args.limit === 'number' && args.limit > 0 ? Math.min(args.limit, 50) : 10;
 

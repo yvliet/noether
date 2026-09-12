@@ -10,7 +10,7 @@
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
-import { FlintApp } from '@/core/app/FlintApp';
+import { NoetherApp } from '@/core/app/NoetherApp';
 import { GridTableIcon } from '@/components/common/Icons';
 import { tablesReadme } from './readme';
 import { useTablesSettings } from './tablesSettings';
@@ -31,7 +31,7 @@ export const TABLES_MANIFEST: ExtensionManifest = {
 };
 
 export class TablesExtension extends Extension {
-  constructor(app: FlintApp, manifest: ExtensionManifest = TABLES_MANIFEST) {
+  constructor(app: NoetherApp, manifest: ExtensionManifest = TABLES_MANIFEST) {
     super(app, manifest);
   }
 
@@ -58,7 +58,7 @@ export class TablesExtension extends Extension {
         const handled = app.editor.dispatchAction('insertTable', { rows: defaultRows, cols: defaultCols, withHeaderRow: true });
         if (!handled) {
           app.events.emit('editor:action', { action: 'insert-table', payload: { rows: defaultRows, cols: defaultCols } });
-          window.dispatchEvent(new CustomEvent('flint:insert-table-command', { detail: { rows: defaultRows, cols: defaultCols } }));
+          window.dispatchEvent(new CustomEvent('noether:insert-table-command', { detail: { rows: defaultRows, cols: defaultCols } }));
         }
       },
     });
@@ -114,7 +114,7 @@ export class TablesExtension extends Extension {
 
             if (typeof window !== 'undefined') {
               window.dispatchEvent(
-                new CustomEvent('flint:insert-table-command', {
+                new CustomEvent('noether:insert-table-command', {
                   detail: { rows, cols },
                 })
               );

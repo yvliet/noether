@@ -1,7 +1,7 @@
 /**
  * @module ExtensionTypes
  * @description
- * TypeScript interfaces and type definitions for Flint's extension architecture.
+ * TypeScript interfaces and type definitions for Noether's extension architecture.
  * Defines manifests, extension points, registry contracts, and UI slot configurations.
  *
  * @since 0.2.0
@@ -14,7 +14,7 @@ import type { DecorationSet } from '@tiptap/pm/view';
 import type { InputRule } from '@tiptap/core';
 import type { NodeViewRenderer } from '@tiptap/react';
 import type { z } from 'zod';
-import type { FlintApp } from '../app/FlintApp';
+import type { NoetherApp } from '../app/NoetherApp';
 import type { DocumentItem, TabItem } from '@/types';
 
 /**
@@ -38,7 +38,7 @@ export interface ExtensionManifest {
   name: string;
   /** SemVer version string (e.g., '1.0.0'). */
   version: string;
-  /** Minimum Flint host application version required. */
+  /** Minimum Noether host application version required. */
   minAppVersion?: string;
   /** Short summary of what the extension does. */
   description: string;
@@ -95,9 +95,9 @@ export interface CommandItem {
   /** Whether the hotkey should fire even when an input/textarea element has focus. */
   allowInInput?: boolean;
   /** Handler function executed when the command is triggered. */
-  action: (app: FlintApp) => void | Promise<void>;
+  action: (app: NoetherApp) => void | Promise<void>;
   /** Optional predicate determining if the command should appear in the palette. */
-  isVisible?: (app: FlintApp) => boolean;
+  isVisible?: (app: NoetherApp) => boolean;
 }
 
 /**
@@ -116,9 +116,9 @@ export interface ActionRailItem {
   /** Optional notification badge count or indicator dot. */
   badge?: string | number | null;
   /** Whether this button is currently in an active/highlighted state. */
-  isActive?: boolean | ((app: FlintApp) => boolean);
+  isActive?: boolean | ((app: NoetherApp) => boolean);
   /** Handler function executed when the action rail item is clicked. */
-  onClick: (app: FlintApp) => void | Promise<void>;
+  onClick: (app: NoetherApp) => void | Promise<void>;
 }
 
 /**
@@ -133,7 +133,7 @@ export interface StatusBarItem {
   /** Display ordering priority. */
   order?: number;
   /** Render function returning the widget's React node. */
-  render: (app: FlintApp) => React.ReactNode;
+  render: (app: NoetherApp) => React.ReactNode;
 }
 
 /**
@@ -175,7 +175,7 @@ export interface ViewDefinition {
   /** Optional behavioral policies for workspace interactions. */
   behavior?: ViewBehaviorPolicy;
   /** Render function for the view content. */
-  render: (props: { tabId?: string; documentId?: string; app: FlintApp }) => React.ReactNode;
+  render: (props: { tabId?: string; documentId?: string; app: NoetherApp }) => React.ReactNode;
 }
 
 /**
@@ -194,7 +194,7 @@ export interface SidebarTabDefinition {
   /** Display ordering priority. */
   order?: number;
   /** Render function returning the sidebar tab contents. */
-  render: (app: FlintApp) => React.ReactNode;
+  render: (app: NoetherApp) => React.ReactNode;
 }
 
 /**
@@ -232,14 +232,14 @@ export interface DocumentHeaderDefinition {
   /** Display ordering priority. */
   order?: number;
   /** Optional predicate or boolean indicating whether this header starts folded by default. */
-  defaultFolded?: boolean | ((app: FlintApp, docId?: string) => boolean);
+  defaultFolded?: boolean | ((app: NoetherApp, docId?: string) => boolean);
   /** Render function returning the header component. */
   render: (props: {
     documentId: string;
     document?: DocumentItem;
     mode: 'Visible' | 'Source';
     isFolded?: boolean;
-    app: FlintApp;
+    app: NoetherApp;
   }) => React.ReactNode;
 }
 
@@ -257,7 +257,7 @@ export interface DocumentFooterDefinition {
     documentId: string;
     documentTitle?: string;
     document?: DocumentItem;
-    app: FlintApp;
+    app: NoetherApp;
   }) => React.ReactNode;
 }
 
@@ -281,11 +281,11 @@ export interface DocMenuActionDefinition {
   /** If true, the action is disabled when no document is active. */
   requiresDoc?: boolean;
   /** Whether the menu item shows a checked checkmark icon. */
-  isChecked?: boolean | ((app: FlintApp, doc: DocumentItem | null) => boolean);
+  isChecked?: boolean | ((app: NoetherApp, doc: DocumentItem | null) => boolean);
   /** Optional visibility filter predicate. */
-  isVisible?: (app: FlintApp, doc: DocumentItem | null) => boolean;
+  isVisible?: (app: NoetherApp, doc: DocumentItem | null) => boolean;
   /** Handler function invoked when clicked. */
-  onClick: (app: FlintApp, doc: DocumentItem | null) => void | Promise<void>;
+  onClick: (app: NoetherApp, doc: DocumentItem | null) => void | Promise<void>;
 }
 
 /**
@@ -302,7 +302,7 @@ export interface FileTreeActionDefinition {
   /** Display ordering priority. */
   order?: number;
   /** Handler function invoked when clicked. */
-  onClick: (app: FlintApp) => void | Promise<void>;
+  onClick: (app: NoetherApp) => void | Promise<void>;
 }
 
 /**
@@ -355,19 +355,19 @@ export interface ContextMenuItemDefinition {
   /** Nested submenu items. */
   submenu?: ContextMenuItemDefinition[];
   /** Whether the item is currently disabled. */
-  disabled?: boolean | ((app: FlintApp, data?: unknown) => boolean);
+  disabled?: boolean | ((app: NoetherApp, data?: unknown) => boolean);
   /** Whether the item renders a checkmark. */
-  checked?: boolean | ((app: FlintApp, data?: unknown) => boolean);
+  checked?: boolean | ((app: NoetherApp, data?: unknown) => boolean);
   /** Whether the item uses destructive/danger styling. */
   isDanger?: boolean;
   /** Visibility filter predicate. */
-  isVisible?: (app: FlintApp, data?: unknown) => boolean;
+  isVisible?: (app: NoetherApp, data?: unknown) => boolean;
   /** Handler function invoked when clicked. */
-  onClick?: (app: FlintApp, data?: unknown) => void | Promise<void>;
+  onClick?: (app: NoetherApp, data?: unknown) => void | Promise<void>;
   /** Custom interactive submenu component rendered next to the menu item. */
   customSubmenu?:
     | React.ReactNode
-    | ((context: { app: FlintApp; data?: unknown; onClose: () => void }) => React.ReactNode);
+    | ((context: { app: NoetherApp; data?: unknown; onClose: () => void }) => React.ReactNode);
 }
 
 /**
@@ -378,7 +378,7 @@ export interface ModalDefinition {
   /** Unique modal identifier. */
   id: string;
   /** Render function returning the modal dialog component. */
-  render: (app: FlintApp) => React.ReactNode;
+  render: (app: NoetherApp) => React.ReactNode;
 }
 
 /**
@@ -451,7 +451,7 @@ export interface FileTreeSectionDefinition {
   render: (props: {
     documents: DocumentItem[];
     sortOrder: string;
-    app: FlintApp;
+    app: NoetherApp;
   }) => React.ReactNode;
 }
 
@@ -465,7 +465,7 @@ export interface FileTreeDecoratorContext {
   /** Currently active tab, if any. */
   activeTab?: TabItem | null;
   /** Host application instance. */
-  app: FlintApp;
+  app: NoetherApp;
   /** Whether the folder node is currently open/expanded. */
   isOpen?: boolean;
 }
@@ -531,7 +531,7 @@ export interface BreadcrumbItem {
   /** Optional icon displayed before the segment text. */
   icon?: React.ReactNode;
   /** Custom click handler executed when the breadcrumb segment is clicked. */
-  onClick?: (app: FlintApp, event: React.MouseEvent) => void;
+  onClick?: (app: NoetherApp, event: React.MouseEvent) => void;
   /** Custom CSS class names applied to the segment. */
   className?: string;
 }
@@ -552,7 +552,7 @@ export interface BreadcrumbProviderDefinition {
     tab?: TabItem;
     doc: DocumentItem;
     defaultBreadcrumbs: { id: string; title: string; isFolder: boolean }[];
-    app: FlintApp;
+    app: NoetherApp;
   }) => BreadcrumbItem[] | undefined;
   /** Optional title override displayed in the header / subheader. */
   getTitleOverride?: (context: {
@@ -572,7 +572,7 @@ export interface BreadcrumbDecoratorContext {
   item: BreadcrumbItem;
   index: number;
   total: number;
-  app: FlintApp;
+  app: NoetherApp;
 }
 
 /**
@@ -601,7 +601,7 @@ export interface BreadcrumbDecoratorDefinition {
 export interface DocumentTitleDecoratorContext {
   doc: DocumentItem;
   tab?: TabItem;
-  app: FlintApp;
+  app: NoetherApp;
   isReadingMode: boolean;
 }
 
@@ -713,7 +713,7 @@ export interface McpToolDefinition {
   /** JSON Schema defining the tool's input parameters */
   parameters: McpJsonSchema;
   /** Async execution handler */
-  handler: (args: Record<string, unknown>, app: FlintApp) => Promise<McpToolResult>;
+  handler: (args: Record<string, unknown>, app: NoetherApp) => Promise<McpToolResult>;
   /** Owning extension identifier (set automatically by Extension.registerTool) */
   extensionId?: string;
   /** Tool category for grouping in UI (e.g. 'documents', 'search', 'graph') */
@@ -760,14 +760,14 @@ export interface McpPromptResult {
  * @since 0.3.0
  */
 export interface McpPromptDefinition {
-  /** Unique prompt name (e.g. 'flint_agent_guide', 'flint_daily_review') */
+  /** Unique prompt name (e.g. 'noether_agent_guide', 'noether_daily_review') */
   name: string;
   /** Human-readable description explaining what this prompt accomplishes */
   description?: string;
   /** Arguments accepted by the prompt template */
   arguments?: McpPromptArgument[];
   /** Handler producing prompt messages populated with live application context */
-  getMessages: (args: Record<string, string>, app: FlintApp) => Promise<McpPromptResult> | McpPromptResult;
+  getMessages: (args: Record<string, string>, app: NoetherApp) => Promise<McpPromptResult> | McpPromptResult;
   /** Owning extension identifier */
   extensionId?: string;
 }
@@ -806,8 +806,8 @@ export interface DocumentTransformHook {
  * @since 0.4.0
  */
 export interface PortalSlotContext {
-  /** Reference to host FlintApp instance */
-  app: FlintApp;
+  /** Reference to host NoetherApp instance */
+  app: NoetherApp;
   /** Active note identifier, if mounted within an editor */
   documentId?: string;
   /** Current document record */
@@ -846,7 +846,7 @@ export interface PortalSlotDefinition {
  * @since 0.4.0
  */
 export interface EditorPluginContext {
-  app: FlintApp;
+  app: NoetherApp;
   documentId: string;
   editor: any;
 }
@@ -877,7 +877,7 @@ export interface EditorPluginDefinition {
 // ── Declarative Schema & Migration Builder Contracts ──
 
 /**
- * Supported column data types in Flint's relational SQLite database.
+ * Supported column data types in Noether's relational SQLite database.
  * @since 0.4.0
  */
 export type ColumnDataType = 'text' | 'integer' | 'real' | 'blob' | 'boolean' | 'json';
@@ -974,7 +974,7 @@ export interface McpZodToolDefinition<TSchema extends z.ZodTypeAny = z.ZodTypeAn
   category?: string;
   isDestructive?: boolean;
   schema: TSchema;
-  handler: (params: z.infer<TSchema>, app: FlintApp) => Promise<McpToolResult>;
+  handler: (params: z.infer<TSchema>, app: NoetherApp) => Promise<McpToolResult>;
 }
 
 // ── Background Web Worker Pipeline Contracts ──

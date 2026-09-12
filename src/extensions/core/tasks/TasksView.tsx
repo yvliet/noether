@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  useFlintApp,
+  useNoetherApp,
   useGlobalTasks,
-  useHearthDocuments,
-  useFlintStore,
-} from 'flint';
+  useVaultDocuments,
+  useNoetherStore,
+} from 'noether';
 import { useTasksSettings } from './tasksSettings';
 import {
   CheckmarkSquare02Icon,
@@ -16,9 +16,9 @@ import {
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 
 export const TasksView: React.FC = React.memo(() => {
-  const app = useFlintApp();
+  const app = useNoetherApp();
   const globalTasks = useGlobalTasks();
-  const documents = useHearthDocuments();
+  const documents = useVaultDocuments();
 
   const openTab = useCallback((docId: string, title?: string, opts?: any) => {
     app.workspace.openTab(docId, title, opts);
@@ -27,21 +27,21 @@ export const TasksView: React.FC = React.memo(() => {
     app.workspace.showToast(msg, type);
   }, [app]);
   const refreshGlobalTasks = useCallback(() => {
-    return app.hearth.refreshGlobalTasks();
+    return app.vault.refreshGlobalTasks();
   }, [app]);
   const toggleGlobalTask = useCallback((docId: string, taskText: string, completed: boolean) => {
-    return app.hearth.toggleTask(docId, taskText, completed);
+    return app.vault.toggleTask(docId, taskText, completed);
   }, [app]);
   const setActiveDocumentById = useCallback((id: string, _opts?: any) => {
-    return app.hearth.openDocument(id);
+    return app.vault.openDocument(id);
   }, [app]);
 
   const { showCompletedTasks, sortBy, strikethroughCompleted } = useTasksSettings();
 
-  const inlineTitle = useFlintStore('settings', (s) => s?.inlineTitle ?? true);
-  const readableLineLength = useFlintStore('settings', (s) => s?.readableLineLength ?? false);
-  const quickFontSize = useFlintStore('settings', (s) => s?.quickFontSize ?? true);
-  const fontSize = useFlintStore('settings', (s) => s?.fontSize ?? 16);
+  const inlineTitle = useNoetherStore('settings', (s) => s?.inlineTitle ?? true);
+  const readableLineLength = useNoetherStore('settings', (s) => s?.readableLineLength ?? false);
+  const quickFontSize = useNoetherStore('settings', (s) => s?.quickFontSize ?? true);
+  const fontSize = useNoetherStore('settings', (s) => s?.fontSize ?? 16);
   const setFontSize = useCallback((size: number) => {
     (app.settings as any).setFontSize?.(size);
   }, [app]);
@@ -101,7 +101,7 @@ export const TasksView: React.FC = React.memo(() => {
   const pendingCount = useMemo(() => totalCount - completedCount, [totalCount, completedCount]);
 
   return (
-    <div data-main="true" className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--flint-bg-main)] select-none">
+    <div data-main="true" className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--noether-bg-main)] select-none">
       {/* 1. Modular Sub-Header */}
       <PageSubHeader
         title="Tasks"

@@ -12,7 +12,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 /**
- * Flint native desktop button component.
+ * Noether native desktop button component.
  * Zero artificial transitions/animations for instant native desktop feel.
  */
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
@@ -30,17 +30,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(({
   let variantClasses = '';
   switch (variant) {
     case 'primary':
-      variantClasses = 'flint-btn flint-btn-primary';
+      variantClasses = 'noether-btn noether-btn-primary';
       break;
     case 'danger':
-      variantClasses = 'flint-btn flint-btn-danger';
+      variantClasses = 'noether-btn noether-btn-danger';
       break;
     case 'ghost':
-      variantClasses = 'inline-flex items-center justify-center gap-1.5 rounded-[5px] text-[var(--flint-text-muted,#888)] hover:text-[var(--flint-text-primary,#fff)] hover:bg-[var(--flint-bg-card-hover,#282828)] cursor-pointer select-none outline-none disabled:opacity-40 disabled:cursor-not-allowed';
+      variantClasses = 'inline-flex items-center justify-center gap-1.5 rounded-[5px] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary,#fff)] hover:bg-[var(--noether-bg-card-hover,#282828)] cursor-pointer select-none outline-none disabled:opacity-40 disabled:cursor-not-allowed';
       break;
     case 'default':
     default:
-      variantClasses = 'flint-btn';
+      variantClasses = 'noether-btn';
       break;
   }
 
