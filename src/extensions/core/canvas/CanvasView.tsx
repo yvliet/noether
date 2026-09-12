@@ -48,6 +48,17 @@ import { CanvasItemSearchModal } from './components/CanvasItemSearchModal';
 import { calculateObjectSnap, AlignmentGuide } from './utils/canvasSnapping';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { useAppContextMenu } from '@/components/common/ContextMenu';
+import {
+  buildCanvasBackgroundContextMenu,
+  buildNoteCardContextMenu,
+  buildTextCardContextMenu,
+  buildLinkCardContextMenu,
+  buildMultiSelectContextMenu,
+  buildUnconnectedEdgeContextMenu,
+} from './utils/canvasContextMenu';
+import { platform } from '@/lib/platform/platformAdapter';
+import { getDocumentPath } from '@/lib/db/documents';
 
 let measureTitleCtx: CanvasRenderingContext2D | null = null;
 let resolvedFontFamily: string | null = null;
@@ -82,12 +93,23 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const setMainViewMode = useCallback((m: string) => app.workspace.setMainViewMode(m), [app]);
   const showToast = useToast();
   const canvasSnapGrid = useCanvasSettings((s: any) => s.canvasSnapGrid);
+  const setCanvasSnapGrid = useCanvasSettings((s: any) => s.setCanvasSnapGrid);
   const canvasSnapObjects = useCanvasSettings((s: any) => s.canvasSnapObjects);
+  const setCanvasSnapObjects = useCanvasSettings((s: any) => s.setCanvasSnapObjects);
   const canvasReadOnly = useCanvasSettings((s: any) => s.canvasReadOnly);
+  const setCanvasReadOnly = useCanvasSettings((s: any) => s.setCanvasReadOnly);
   const gridSize = useCanvasSettings((s: any) => s.gridSize);
   const documents = useHearthDocuments();
   const activeDocument = useActiveDocument();
   const isLightboxOpen = useWorkspaceStore((s) => Boolean(s.imageLightbox?.isOpen));
+  const openInputDialog = useWorkspaceStore((s) => s.openInputDialog);
+  const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
+  const openTab = useWorkspaceStore((s) => s.openTab);
+  const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
+  const promptFolderSelection = useWorkspaceStore((s) => s.promptFolderSelection);
+  const hearthPath = useWorkspaceStore((s) => s.hearthPath);
+  const { showContextMenu, closeContextMenu } = useAppContextMenu();
+  const [swappingNodeId, setSwappingNodeId] = useState<string | null>(null);
   const setActiveDocumentById = useCallback((id: string) => app.hearth.openDocument(id), [app]);
 
   const effectiveBoardId =
@@ -138,6 +160,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     screenY: number;
     canvasX: number;
     canvasY: number;
+    width?: number;
+    height?: number;
   } | null>(null);
   const [searchModalState, setSearchModalState] = useState<{
     isOpen: boolean;
@@ -157,13 +181,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     currentCanvasX: number;
     currentCanvasY: number;
     snappedTarget: SideSnapTarget | null;
-    mode: 'drag' | 'click';
+    mode: 'drag' | 'click' | 'menu';
     editingEdgeId?: string;
+    editingEndpoint?: 'source' | 'target';
+    fixedNodeId?: string;
+    fixedSide?: CanvasNodeSide;
   }
 
   const [draftEdge, setDraftEdge] = useState<DraftEdgeState | null>(null);
   const draftEdgeRef = useRef<DraftEdgeState | null>(null);
   const selectedEdgeIdRef = useRef<string | null>(null);
+  const lastArrowCancelTimeRef = useRef<number>(0);
   const nodesRef = useRef(nodes);
   const edgesRef = useRef(edges);
   const canvasSnapGridRef = useRef(canvasSnapGrid);
@@ -171,18 +199,28 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const canvasReadOnlyRef = useRef(canvasReadOnly);
   const gridSizeRef = useRef(gridSize);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pendingEdgeConnectionRef = useRef<{
+    fromNodeId: string;
+    fromSide: CanvasNodeSide;
+    editingEdgeId?: string;
+    editingEndpoint?: 'source' | 'target';
+    incomingSide: CanvasNodeSide;
+  } | null>(null);
+  const isDroppingIntoModalRef = useRef(false);
+  const isCompletingUnconnectedDropRef = useRef(false);
+  const ghostLeaveTimeoutRef = useRef<any>(null);
 
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
   useEffect(() => { edgesRef.current = edges; }, [edges]);
   useEffect(() => { draftEdgeRef.current = draftEdge; }, [draftEdge]);
   useEffect(() => {
-    if (draftEdge) {
+    if (draftEdge && draftEdge.mode !== 'menu') {
       document.body.style.cursor = 'grab';
       return () => {
         document.body.style.cursor = '';
       };
     }
-  }, [Boolean(draftEdge)]);
+  }, [Boolean(draftEdge), draftEdge?.mode]);
   useEffect(() => { selectedEdgeIdRef.current = selectedEdgeId; }, [selectedEdgeId]);
   useEffect(() => { canvasSnapGridRef.current = canvasSnapGrid; }, [canvasSnapGrid]);
   useEffect(() => { canvasSnapObjectsRef.current = canvasSnapObjects; }, [canvasSnapObjects]);
@@ -627,6 +665,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const dragCandidateNodeIdRef = useRef<string | null>(null);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
 
+  // Synchronize grabbing cursor on document.body during node dragging or canvas panning
+  useEffect(() => {
+    if (isDraggingNodeState || isPanningState || (dragGhost && !searchModalState.isOpen)) {
+      document.body.style.cursor = 'grabbing';
+      return () => {
+        document.body.style.cursor = '';
+      };
+    }
+  }, [isDraggingNodeState, isPanningState, Boolean(dragGhost && !searchModalState.isOpen)]);
+
   // Cancel any canvas drag immediately if lightbox opens
   useEffect(() => {
     if (isLightboxOpen) {
@@ -905,6 +953,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     selectedNodeIdsRef.current = [];
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
+    selectedEdgeIdRef.current = null;
     showToast(idsToDelete.length > 1 ? `Removed ${idsToDelete.length} cards` : 'Removed card', 'info');
   }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync, recordSnapshot]);
 
@@ -1068,30 +1117,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (canvasReadOnlyRef.current) return;
       if (fromNodeId === toNodeId) return;
 
-      const existingEdge = edgesRef.current.find(
-        (e) => e.from_node_id === fromNodeId && e.to_node_id === toNodeId
+      const exactDuplicate = edgesRef.current.some(
+        (e) =>
+          e.from_node_id === fromNodeId &&
+          (e.from_side || 'right') === fromSide &&
+          e.to_node_id === toNodeId &&
+          (e.to_side || 'left') === toSide
       );
 
-      if (existingEdge) {
-        if (
-          (existingEdge.from_side || 'right') === fromSide &&
-          (existingEdge.to_side || 'left') === toSide
-        ) {
-          return;
-        }
-
-        recordSnapshot();
-        const updatedEdge: CanvasEdge = {
-          ...existingEdge,
-          from_side: fromSide,
-          to_side: toSide,
-        };
-
-        await saveCanvasEdge(updatedEdge);
-        setEdges((prev) => prev.map((e) => (e.id === existingEdge.id ? updatedEdge : e)));
-        edgesRef.current = edgesRef.current.map((e) => (e.id === existingEdge.id ? updatedEdge : e));
-        triggerDiskSync(effectiveBoardId);
-        showToast('Updated connection side', 'info');
+      if (exactDuplicate) {
         return;
       }
 
@@ -1106,9 +1140,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         to_side: toSide,
       };
 
-      await saveCanvasEdge(newEdge);
       setEdges((prev) => [...prev, newEdge]);
       edgesRef.current = [...edgesRef.current, newEdge];
+      await saveCanvasEdge(newEdge);
       triggerDiskSync(effectiveBoardId);
       showToast('Connected cards', 'info');
     },
@@ -1124,6 +1158,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       edgesRef.current = edgesRef.current.filter((e) => e.id !== edgeId);
       if (selectedEdgeIdRef.current === edgeId) {
         setSelectedEdgeId(null);
+        selectedEdgeIdRef.current = null;
       }
       if (editingEdgeLabelIdRef.current === edgeId) {
         editingEdgeLabelIdRef.current = null;
@@ -1203,53 +1238,120 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
   }, [handleUpdateEdge]);
 
+  const cancelArrowTargetingOrFocus = useCallback(() => {
+    let didCancel = false;
+    if (draftEdgeRef.current) {
+      if (ghostLeaveTimeoutRef.current) {
+        clearTimeout(ghostLeaveTimeoutRef.current);
+        ghostLeaveTimeoutRef.current = null;
+      }
+      setDraftEdge(null);
+      draftEdgeRef.current = null;
+      setDragGhost(null);
+      pendingEdgeConnectionRef.current = null;
+      didCancel = true;
+    }
+    if (selectedEdgeIdRef.current) {
+      if (editingEdgeLabelIdRef.current) {
+        commitActiveEdgeLabel();
+      }
+      setSelectedEdgeId(null);
+      selectedEdgeIdRef.current = null;
+      didCancel = true;
+    }
+    if (didCancel) {
+      lastArrowCancelTimeRef.current = Date.now();
+      closeContextMenu();
+    }
+    return didCancel;
+  }, [closeContextMenu, commitActiveEdgeLabel]);
+
   const retargetEdge = useCallback(
     async (
       edgeId: string,
-      newToNodeId: string,
-      newToSide: CanvasNodeSide
+      endpoint: 'source' | 'target',
+      newNodeId: string,
+      newSide: CanvasNodeSide
     ) => {
       if (canvasReadOnlyRef.current) return;
       const currentEdge = edgesRef.current.find((e) => e.id === edgeId);
       if (!currentEdge) return;
 
-      if (currentEdge.from_node_id === newToNodeId) return;
+      const fromNode = nodeMap.get(currentEdge.from_node_id);
+      const toNode = nodeMap.get(currentEdge.to_node_id);
+      const defaultSides =
+        fromNode && toNode
+          ? determineDefaultConnectingSides(fromNode, toNode)
+          : { fromSide: 'right' as CanvasNodeSide, toSide: 'left' as CanvasNodeSide };
+      const currentFromSide = currentEdge.from_side || defaultSides.fromSide;
+      const currentToSide = currentEdge.to_side || defaultSides.toSide;
 
-      if (currentEdge.to_node_id === newToNodeId && (currentEdge.to_side || 'left') === newToSide) {
-        return;
-      }
+      if (endpoint === 'target') {
+        if (currentEdge.from_node_id === newNodeId) return;
+        if (currentEdge.to_node_id === newNodeId && currentToSide === newSide) return;
 
-      // Check for duplicate connection
-      const duplicate = edgesRef.current.some(
-        (e) =>
-          e.id !== edgeId &&
-          e.from_node_id === currentEdge.from_node_id &&
-          e.to_node_id === newToNodeId &&
-          (e.from_side || 'right') === (currentEdge.from_side || 'right') &&
-          (e.to_side || 'left') === newToSide
-      );
+        const duplicate = edgesRef.current.some(
+          (e) =>
+            e.id !== edgeId &&
+            e.from_node_id === currentEdge.from_node_id &&
+            e.to_node_id === newNodeId &&
+            (e.from_side || 'right') === currentFromSide &&
+            (e.to_side || 'left') === newSide
+        );
 
-      recordSnapshot();
+        recordSnapshot();
 
-      if (duplicate) {
-        await deleteCanvasEdge(edgeId);
-        setEdges((prev) => prev.filter((e) => e.id !== edgeId));
-        edgesRef.current = edgesRef.current.filter((e) => e.id !== edgeId);
+        if (duplicate) {
+          setEdges((prev) => prev.filter((e) => e.id !== edgeId));
+          edgesRef.current = edgesRef.current.filter((e) => e.id !== edgeId);
+          await deleteCanvasEdge(edgeId);
+        } else {
+          const updatedEdge: CanvasEdge = {
+            ...currentEdge,
+            from_side: currentFromSide,
+            to_node_id: newNodeId,
+            to_side: newSide,
+          };
+          setEdges((prev) => prev.map((e) => (e.id === edgeId ? updatedEdge : e)));
+          edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
+          await saveCanvasEdge(updatedEdge);
+        }
       } else {
-        const updatedEdge: CanvasEdge = {
-          ...currentEdge,
-          to_node_id: newToNodeId,
-          to_side: newToSide,
-        };
-        await saveCanvasEdge(updatedEdge);
-        setEdges((prev) => prev.map((e) => (e.id === edgeId ? updatedEdge : e)));
-        edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
+        if (currentEdge.to_node_id === newNodeId) return;
+        if (currentEdge.from_node_id === newNodeId && currentFromSide === newSide) return;
+
+        const duplicate = edgesRef.current.some(
+          (e) =>
+            e.id !== edgeId &&
+            e.from_node_id === newNodeId &&
+            e.to_node_id === currentEdge.to_node_id &&
+            (e.from_side || 'right') === newSide &&
+            (e.to_side || 'left') === currentToSide
+        );
+
+        recordSnapshot();
+
+        if (duplicate) {
+          setEdges((prev) => prev.filter((e) => e.id !== edgeId));
+          edgesRef.current = edgesRef.current.filter((e) => e.id !== edgeId);
+          await deleteCanvasEdge(edgeId);
+        } else {
+          const updatedEdge: CanvasEdge = {
+            ...currentEdge,
+            from_node_id: newNodeId,
+            from_side: newSide,
+            to_side: currentToSide,
+          };
+          setEdges((prev) => prev.map((e) => (e.id === edgeId ? updatedEdge : e)));
+          edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
+          await saveCanvasEdge(updatedEdge);
+        }
       }
 
       triggerDiskSync(effectiveBoardId);
       showToast('Retargeted connection', 'info');
     },
-    [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+    [effectiveBoardId, nodeMap, recordSnapshot, showToast, triggerDiskSync]
   );
 
   const clearTextSelection = useCallback(() => {
@@ -1276,13 +1378,335 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     clearTextSelection();
     commitActiveEdgeLabel();
     setSelectedEdgeId(edgeId);
+    selectedEdgeIdRef.current = edgeId;
     setSelectedNodeId(null);
     setSelectedNodeIds([]);
     selectedNodeIdsRef.current = [];
   }, [clearTextSelection, commitActiveEdgeLabel]);
 
+  const getCardDimensions = useCallback((type: CanvasDockActionType) => {
+    const step = gridSizeRef.current || 20;
+    switch (type) {
+      case 'card':
+        return { width: 260, height: 4 * step };
+      case 'note':
+        return { width: 320, height: 280 };
+      case 'media':
+        return { width: 340, height: 260 };
+    }
+  }, []);
+
+  const openUnconnectedEdgeMenu = useCallback(
+    (
+      clientPos: { clientX: number; clientY: number },
+      dropCanvasPos: { canvasX: number; canvasY: number },
+      activeDraft: DraftEdgeState
+    ) => {
+      const isRetargetingSource = activeDraft.editingEndpoint === 'source';
+      const anchorNodeId = isRetargetingSource
+        ? (activeDraft.fixedNodeId || activeDraft.fromNodeId)
+        : activeDraft.fromNodeId;
+      const anchorNode = nodesRef.current.find((n) => n.id === anchorNodeId) || nodeMap.get(anchorNodeId);
+      if (!anchorNode) {
+        setDraftEdge(null);
+        draftEdgeRef.current = null;
+        return;
+      }
+
+      const anchorSide = isRetargetingSource
+        ? (activeDraft.fixedSide || 'left')
+        : activeDraft.fromSide;
+      const fixedAnchorPoint = getSideAnchorPoint(anchorNode, anchorSide);
+
+      const step = gridSizeRef.current || 20;
+      const anchorX = canvasSnapGridRef.current
+        ? Math.round(dropCanvasPos.canvasX / step) * step
+        : dropCanvasPos.canvasX;
+      const anchorY = canvasSnapGridRef.current
+        ? Math.round(dropCanvasPos.canvasY / step) * step
+        : dropCanvasPos.canvasY;
+
+      // Freeze draft in 'menu' mode so it stays active at the release coordinates
+      const frozenDraft: DraftEdgeState = {
+        ...activeDraft,
+        mode: 'menu',
+        currentCanvasX: anchorX,
+        currentCanvasY: anchorY,
+        snappedTarget: null,
+      };
+      setDraftEdge(frozenDraft);
+      draftEdgeRef.current = frozenDraft;
+
+      const computeGhostForType = (type: CanvasDockActionType) => {
+        const dims = getCardDimensions(type);
+
+        let cardSide: CanvasNodeSide;
+        if (isRetargetingSource) {
+          const dx = fixedAnchorPoint.x - anchorX;
+          const dy = fixedAnchorPoint.y - anchorY;
+          if (Math.abs(dx) >= Math.abs(dy)) {
+            cardSide = dx >= 0 ? 'right' : 'left';
+          } else {
+            cardSide = dy >= 0 ? 'bottom' : 'top';
+          }
+        } else {
+          const dx = anchorX - fixedAnchorPoint.x;
+          const dy = anchorY - fixedAnchorPoint.y;
+          if (Math.abs(dx) >= Math.abs(dy)) {
+            cardSide = dx >= 0 ? 'left' : 'right';
+          } else {
+            cardSide = dy >= 0 ? 'top' : 'bottom';
+          }
+        }
+
+        let finalX = anchorX;
+        let finalY = anchorY;
+        if (cardSide === 'left') {
+          finalX = anchorX;
+          finalY = anchorY - dims.height / 2;
+        } else if (cardSide === 'right') {
+          finalX = anchorX - dims.width;
+          finalY = anchorY - dims.height / 2;
+        } else if (cardSide === 'top') {
+          finalX = anchorX - dims.width / 2;
+          finalY = anchorY;
+        } else if (cardSide === 'bottom') {
+          finalX = anchorX - dims.width / 2;
+          finalY = anchorY - dims.height;
+        }
+
+        const exactAnchor = { x: anchorX, y: anchorY };
+
+        return { dims, cardSide, finalX, finalY, exactAnchor };
+      };
+
+      const handleItemHover = (type: CanvasDockActionType) => {
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+          ghostLeaveTimeoutRef.current = null;
+        }
+        const { dims, cardSide, finalX, finalY, exactAnchor } = computeGhostForType(type);
+        setDragGhost({
+          type,
+          screenX: 0,
+          screenY: 0,
+          canvasX: finalX,
+          canvasY: finalY,
+          width: dims.width,
+          height: dims.height,
+        });
+        const ghostDraft: DraftEdgeState = {
+          ...frozenDraft,
+          currentCanvasX: exactAnchor.x,
+          currentCanvasY: exactAnchor.y,
+          snappedTarget: {
+            nodeId: '__ghost__',
+            side: cardSide,
+            point: exactAnchor,
+            distance: 0,
+          },
+        };
+        setDraftEdge(ghostDraft);
+        draftEdgeRef.current = ghostDraft;
+      };
+
+      const handleItemLeave = () => {
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+        }
+        ghostLeaveTimeoutRef.current = setTimeout(() => {
+          setDragGhost(null);
+          setDraftEdge(frozenDraft);
+          draftEdgeRef.current = frozenDraft;
+        }, 40);
+      };
+
+      const handleAddCard = async () => {
+        isCompletingUnconnectedDropRef.current = true;
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+          ghostLeaveTimeoutRef.current = null;
+        }
+        const { dims, cardSide, finalX, finalY } = computeGhostForType('card');
+        recordSnapshot();
+        const newNode: CanvasNode = {
+          id: `node-${Date.now()}`,
+          board_id: effectiveBoardId,
+          type: 'text',
+          x: finalX,
+          y: finalY,
+          width: dims.width,
+          height: dims.height,
+          text_content: '',
+          color: '',
+        };
+
+        // 1. Immediately update nodes in memory and refs
+        nodesRef.current = [...nodesRef.current, newNode];
+        setNodes(nodesRef.current);
+        setSelectedNodeId(newNode.id);
+        setSelectedEdgeId(null);
+        selectedEdgeIdRef.current = null;
+        setAutoEditingNodeId(newNode.id);
+
+        // 2. Immediately retarget or create edge in memory and refs
+        let edgeToPersist: CanvasEdge | null = null;
+        if (activeDraft.editingEdgeId) {
+          const edgeId = activeDraft.editingEdgeId;
+          const currentEdge = edgesRef.current.find((e) => e.id === edgeId);
+          if (currentEdge) {
+            const endpoint = activeDraft.editingEndpoint || 'target';
+            const updatedEdge: CanvasEdge =
+              endpoint === 'source'
+                ? { ...currentEdge, from_node_id: newNode.id, from_side: cardSide }
+                : { ...currentEdge, to_node_id: newNode.id, to_side: cardSide };
+            edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
+            setEdges(edgesRef.current);
+            edgeToPersist = updatedEdge;
+          }
+        } else {
+          const newEdge: CanvasEdge = {
+            id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+            board_id: effectiveBoardId,
+            from_node_id: activeDraft.fromNodeId,
+            from_side: activeDraft.fromSide,
+            to_node_id: newNode.id,
+            to_side: cardSide,
+          };
+          edgesRef.current = [...edgesRef.current, newEdge];
+          setEdges(edgesRef.current);
+          edgeToPersist = newEdge;
+        }
+
+        // 3. Clear draft and ghost in this exact same frame
+        setDraftEdge(null);
+        draftEdgeRef.current = null;
+        setDragGhost(null);
+        pendingEdgeConnectionRef.current = null;
+        isCompletingUnconnectedDropRef.current = false;
+
+        // 4. Background persistence
+        await saveCanvasNode(newNode);
+        if (edgeToPersist) {
+          await saveCanvasEdge(edgeToPersist);
+        }
+        triggerDiskSync(effectiveBoardId);
+        showToast('Added card', 'info');
+      };
+
+      const handleAddNote = () => {
+        isCompletingUnconnectedDropRef.current = true;
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+          ghostLeaveTimeoutRef.current = null;
+        }
+        const { dims, cardSide, finalX, finalY } = computeGhostForType('note');
+        pendingEdgeConnectionRef.current = {
+          fromNodeId: activeDraft.fromNodeId,
+          fromSide: activeDraft.fromSide,
+          editingEdgeId: activeDraft.editingEdgeId,
+          editingEndpoint: activeDraft.editingEndpoint,
+          incomingSide: cardSide,
+        };
+        isDroppingIntoModalRef.current = true;
+        setDragGhost({
+          type: 'note',
+          screenX: 0,
+          screenY: 0,
+          canvasX: finalX,
+          canvasY: finalY,
+          width: dims.width,
+          height: dims.height,
+        });
+        setSearchModalState({
+          isOpen: true,
+          mode: 'note',
+          targetCanvasX: finalX,
+          targetCanvasY: finalY,
+        });
+      };
+
+      const handleAddMedia = () => {
+        isCompletingUnconnectedDropRef.current = true;
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+          ghostLeaveTimeoutRef.current = null;
+        }
+        const { dims, cardSide, finalX, finalY } = computeGhostForType('media');
+        pendingEdgeConnectionRef.current = {
+          fromNodeId: activeDraft.fromNodeId,
+          fromSide: activeDraft.fromSide,
+          editingEdgeId: activeDraft.editingEdgeId,
+          editingEndpoint: activeDraft.editingEndpoint,
+          incomingSide: cardSide,
+        };
+        isDroppingIntoModalRef.current = true;
+        setDragGhost({
+          type: 'media',
+          screenX: 0,
+          screenY: 0,
+          canvasX: finalX,
+          canvasY: finalY,
+          width: dims.width,
+          height: dims.height,
+        });
+        setSearchModalState({
+          isOpen: true,
+          mode: 'media',
+          targetCanvasX: finalX,
+          targetCanvasY: finalY,
+        });
+      };
+
+      const menuItems = buildUnconnectedEdgeContextMenu({
+        onAddCard: handleAddCard,
+        onHoverCard: () => handleItemHover('card'),
+        onAddNote: handleAddNote,
+        onHoverNote: () => handleItemHover('note'),
+        onAddMedia: handleAddMedia,
+        onHoverMedia: () => handleItemHover('media'),
+        onLeaveItem: handleItemLeave,
+      });
+
+      showContextMenu(
+        { x: clientPos.clientX, y: clientPos.clientY },
+        menuItems,
+        {
+          onClose: () => {
+            if (ghostLeaveTimeoutRef.current) {
+              clearTimeout(ghostLeaveTimeoutRef.current);
+              ghostLeaveTimeoutRef.current = null;
+            }
+            if (!isDroppingIntoModalRef.current && !isCompletingUnconnectedDropRef.current) {
+              setDraftEdge(null);
+              draftEdgeRef.current = null;
+              setDragGhost(null);
+              pendingEdgeConnectionRef.current = null;
+            }
+            isDroppingIntoModalRef.current = false;
+          },
+        }
+      );
+    },
+    [
+      createEdge,
+      effectiveBoardId,
+      getCardDimensions,
+      nodeMap,
+      recordSnapshot,
+      retargetEdge,
+      showContextMenu,
+      showToast,
+      triggerDiskSync,
+    ]
+  );
+
   const handleEdgePointerDown = useCallback(
-    (edge: CanvasEdge, e: React.PointerEvent, isArrowhead: boolean = false) => {
+    (
+      edge: CanvasEdge,
+      e: React.PointerEvent,
+      targetEndpoint: 'source' | 'target' | 'auto' = 'auto'
+    ) => {
       if (canvasReadOnlyRef.current || e.button !== 0) return;
       if ((e.target as HTMLElement).closest('.canvas-edge-action-pill, .canvas-edge-delete')) return;
 
@@ -1293,20 +1717,47 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (draftEdgeRef.current && draftEdgeRef.current.mode === 'click') return;
 
       const fromNode = nodeMap.get(edge.from_node_id);
-      if (!fromNode) return;
+      const toNode = nodeMap.get(edge.to_node_id);
+      if (!fromNode || !toNode) return;
 
-      const defaultSides = determineDefaultConnectingSides(
-        fromNode,
-        nodeMap.get(edge.to_node_id) || fromNode
-      );
+      const defaultSides = determineDefaultConnectingSides(fromNode, toNode);
       const fromSide = edge.from_side || defaultSides.fromSide;
-      const startClient = { x: e.clientX, y: e.clientY };
-      let movedBeyondThreshold = false;
+      const toSide = edge.to_side || defaultSides.toSide;
+
+      const p1 = getSideAnchorPoint(fromNode, fromSide);
+      const p2 = getSideAnchorPoint(toNode, toSide);
+
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const clickCanvasX = (e.clientX - rect.left - panRef.current.x) / zoomRef.current;
+      const clickCanvasY = (e.clientY - rect.top - panRef.current.y) / zoomRef.current;
+
+      let resolvedEndpoint: 'source' | 'target' = 'target';
+      if (targetEndpoint === 'source') {
+        resolvedEndpoint = 'source';
+      } else if (targetEndpoint === 'target') {
+        resolvedEndpoint = 'target';
+      } else {
+        const distToP1 = Math.hypot(clickCanvasX - p1.x, clickCanvasY - p1.y);
+        const distToP2 = Math.hypot(clickCanvasX - p2.x, clickCanvasY - p2.y);
+        resolvedEndpoint = distToP1 < distToP2 ? 'source' : 'target';
+      }
 
       handleSelectEdge(edge.id, e);
 
+      const startClient = { x: e.clientX, y: e.clientY };
+      let movedBeyondThreshold = false;
+
       const handlePointerMove = (moveEv: PointerEvent) => {
-        if (!isArrowhead) return;
+        if ((moveEv.buttons & 2) !== 0) {
+          stopEdgeAutoScroll();
+          window.removeEventListener('pointermove', handlePointerMove);
+          window.removeEventListener('pointerup', handlePointerUp);
+          cancelArrowTargetingOrFocus();
+          return;
+        }
+
         const dx = moveEv.clientX - startClient.x;
         const dy = moveEv.clientY - startClient.y;
         if (!movedBeyondThreshold && Math.sqrt(dx * dx + dy * dy) > 4) {
@@ -1315,47 +1766,57 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
         if (!movedBeyondThreshold) return;
 
-        const container = containerRef.current;
-        if (!container) return;
-        const rect = container.getBoundingClientRect();
-        const curCanvasX = (moveEv.clientX - rect.left - panRef.current.x) / zoomRef.current;
-        const curCanvasY = (moveEv.clientY - rect.top - panRef.current.y) / zoomRef.current;
+        const currentContainer = containerRef.current;
+        if (!currentContainer) return;
+        const cRect = currentContainer.getBoundingClientRect();
+        const curCanvasX = (moveEv.clientX - cRect.left - panRef.current.x) / zoomRef.current;
+        const curCanvasY = (moveEv.clientY - cRect.top - panRef.current.y) / zoomRef.current;
 
+        const excludeNodeId = resolvedEndpoint === 'target' ? edge.from_node_id : edge.to_node_id;
         const snap = findTargetSideSnap(
           nodesRef.current,
           { x: curCanvasX, y: curCanvasY },
-          edge.from_node_id,
+          excludeNodeId,
           Math.max(44 / zoomRef.current, 36)
         );
 
         const currentDraft: DraftEdgeState = {
-          fromNodeId: edge.from_node_id,
-          fromSide,
+          fromNodeId: resolvedEndpoint === 'target' ? edge.from_node_id : (snap ? snap.nodeId : ''),
+          fromSide: resolvedEndpoint === 'target' ? fromSide : (snap ? snap.side : 'right'),
           currentCanvasX: snap ? snap.point.x : curCanvasX,
           currentCanvasY: snap ? snap.point.y : curCanvasY,
           snappedTarget: snap,
           mode: 'drag',
           editingEdgeId: edge.id,
+          editingEndpoint: resolvedEndpoint,
+          fixedNodeId: resolvedEndpoint === 'target' ? edge.from_node_id : edge.to_node_id,
+          fixedSide: resolvedEndpoint === 'target' ? fromSide : toSide,
         };
 
         setDraftEdge(currentDraft);
         draftEdgeRef.current = currentDraft;
       };
 
-      const handlePointerUp = () => {
+      const handlePointerUp = (upEv: PointerEvent) => {
         stopEdgeAutoScroll();
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
 
+        if (Date.now() - lastArrowCancelTimeRef.current < 400) {
+          cancelArrowTargetingOrFocus();
+          return;
+        }
+
         if (movedBeyondThreshold) {
           const currentDraft = draftEdgeRef.current;
+          const excludeNodeId = resolvedEndpoint === 'target' ? edge.from_node_id : edge.to_node_id;
           const target =
             currentDraft?.snappedTarget ||
             (currentDraft
               ? findTargetSideSnap(
                   nodesRef.current,
                   { x: currentDraft.currentCanvasX, y: currentDraft.currentCanvasY },
-                  edge.from_node_id,
+                  excludeNodeId,
                   Math.max(44 / zoomRef.current, 36)
                 )
               : null);
@@ -1363,34 +1824,48 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           if (target) {
             retargetEdge(
               edge.id,
+              resolvedEndpoint,
               target.nodeId,
               target.side
             );
+            setDraftEdge(null);
+            draftEdgeRef.current = null;
+          } else if (currentDraft) {
+            openUnconnectedEdgeMenu(
+              { clientX: upEv.clientX, clientY: upEv.clientY },
+              { canvasX: currentDraft.currentCanvasX, canvasY: currentDraft.currentCanvasY },
+              currentDraft
+            );
+          } else {
+            setDraftEdge(null);
+            draftEdgeRef.current = null;
           }
-          setDraftEdge(null);
-          draftEdgeRef.current = null;
-        } else if (isArrowhead) {
-          const container = containerRef.current;
-          if (!container) return;
-          const rect = container.getBoundingClientRect();
-          const curCanvasX = (startClient.x - rect.left - panRef.current.x) / zoomRef.current;
-          const curCanvasY = (startClient.y - rect.top - panRef.current.y) / zoomRef.current;
+        } else if (targetEndpoint !== 'auto') {
+          const currentContainer = containerRef.current;
+          if (!currentContainer) return;
+          const cRect = currentContainer.getBoundingClientRect();
+          const curCanvasX = (startClient.x - cRect.left - panRef.current.x) / zoomRef.current;
+          const curCanvasY = (startClient.y - cRect.top - panRef.current.y) / zoomRef.current;
 
+          const excludeNodeId = resolvedEndpoint === 'target' ? edge.from_node_id : edge.to_node_id;
           const snap = findTargetSideSnap(
             nodesRef.current,
             { x: curCanvasX, y: curCanvasY },
-            edge.from_node_id,
+            excludeNodeId,
             Math.max(44 / zoomRef.current, 36)
           );
 
           const clickDraft: DraftEdgeState = {
-            fromNodeId: edge.from_node_id,
-            fromSide,
+            fromNodeId: resolvedEndpoint === 'target' ? edge.from_node_id : (snap ? snap.nodeId : ''),
+            fromSide: resolvedEndpoint === 'target' ? fromSide : (snap ? snap.side : 'right'),
             currentCanvasX: snap ? snap.point.x : curCanvasX,
             currentCanvasY: snap ? snap.point.y : curCanvasY,
             snappedTarget: snap,
             mode: 'click',
             editingEdgeId: edge.id,
+            editingEndpoint: resolvedEndpoint,
+            fixedNodeId: resolvedEndpoint === 'target' ? edge.from_node_id : edge.to_node_id,
+            fixedSide: resolvedEndpoint === 'target' ? fromSide : toSide,
           };
           setDraftEdge(clickDraft);
           draftEdgeRef.current = clickDraft;
@@ -1400,7 +1875,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       window.addEventListener('pointermove', handlePointerMove);
       window.addEventListener('pointerup', handlePointerUp);
     },
-    [handleSelectEdge, nodeMap, retargetEdge]
+    [cancelArrowTargetingOrFocus, clearTextSelection, handleSelectEdge, nodeMap, retargetEdge, openUnconnectedEdgeMenu]
   );
 
   const handleSideDotPointerDown = useCallback(
@@ -1411,10 +1886,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       // If already drafting in click mode and clicking another card's side dot: connect!
       if (draftEdgeRef.current && draftEdgeRef.current.mode === 'click') {
-        if (nodeId !== draftEdgeRef.current.fromNodeId) {
+        const isRetargetingSource = draftEdgeRef.current.editingEndpoint === 'source';
+        const fixedId = isRetargetingSource
+          ? (draftEdgeRef.current.fixedNodeId || draftEdgeRef.current.fromNodeId)
+          : draftEdgeRef.current.fromNodeId;
+
+        if (nodeId !== fixedId) {
           if (draftEdgeRef.current.editingEdgeId) {
             retargetEdge(
               draftEdgeRef.current.editingEdgeId,
+              draftEdgeRef.current.editingEndpoint || 'target',
               nodeId,
               side
             );
@@ -1446,6 +1927,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       draftEdgeRef.current = initialDraft;
 
       const handlePointerMove = (moveEv: PointerEvent) => {
+        if ((moveEv.buttons & 2) !== 0) {
+          stopEdgeAutoScroll();
+          window.removeEventListener('pointermove', handlePointerMove);
+          window.removeEventListener('pointerup', handlePointerUp);
+          cancelArrowTargetingOrFocus();
+          return;
+        }
+
         const dx = moveEv.clientX - startClient.x;
         const dy = moveEv.clientY - startClient.y;
         if (!movedBeyondThreshold && Math.sqrt(dx * dx + dy * dy) > 4) {
@@ -1480,10 +1969,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         });
       };
 
-      const handlePointerUp = () => {
+      const handlePointerUp = (upEv: PointerEvent) => {
         stopEdgeAutoScroll();
         window.removeEventListener('pointermove', handlePointerMove);
         window.removeEventListener('pointerup', handlePointerUp);
+
+        if (Date.now() - lastArrowCancelTimeRef.current < 400) {
+          cancelArrowTargetingOrFocus();
+          return;
+        }
 
         if (movedBeyondThreshold) {
           // DRAG mode: release to connect if snapped
@@ -1506,9 +2000,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               target.nodeId,
               target.side
             );
+            setDraftEdge(null);
+            draftEdgeRef.current = null;
+          } else if (currentDraft) {
+            openUnconnectedEdgeMenu(
+              { clientX: upEv.clientX, clientY: upEv.clientY },
+              { canvasX: currentDraft.currentCanvasX, canvasY: currentDraft.currentCanvasY },
+              currentDraft
+            );
+          } else {
+            setDraftEdge(null);
+            draftEdgeRef.current = null;
           }
-          setDraftEdge(null);
-          draftEdgeRef.current = null;
         } else {
           // CLICK mode: keep drafting active so arrow follows pointer until next click or escape
           setDraftEdge((prev) => (prev ? { ...prev, mode: 'click' } : null));
@@ -1518,21 +2021,26 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       window.addEventListener('pointermove', handlePointerMove);
       window.addEventListener('pointerup', handlePointerUp);
     },
-    [createEdge, retargetEdge]
+    [cancelArrowTargetingOrFocus, createEdge, retargetEdge, openUnconnectedEdgeMenu]
   );
 
   const performDraftEdgeUpdate = useCallback((clientX: number, clientY: number) => {
-    if (!draftEdgeRef.current) return;
+    if (!draftEdgeRef.current || draftEdgeRef.current.mode === 'menu') return;
     const container = containerRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
     const curCanvasX = (clientX - rect.left - panRef.current.x) / zoomRef.current;
     const curCanvasY = (clientY - rect.top - panRef.current.y) / zoomRef.current;
 
+    const isRetargetingSource = draftEdgeRef.current.editingEndpoint === 'source';
+    const excludeId = isRetargetingSource
+      ? (draftEdgeRef.current.fixedNodeId || '')
+      : draftEdgeRef.current.fromNodeId;
+
     const snap = findTargetSideSnap(
       nodesRef.current,
       { x: curCanvasX, y: curCanvasY },
-      draftEdgeRef.current.fromNodeId,
+      excludeId,
       Math.max(44 / zoomRef.current, 36)
     );
 
@@ -1671,17 +2179,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           setActiveGuides([]);
           return;
         }
-        if (draftEdgeRef.current) {
+        if (draftEdgeRef.current || selectedEdgeIdRef.current) {
           e.preventDefault();
           e.stopPropagation();
-          setDraftEdge(null);
-          draftEdgeRef.current = null;
-          return;
-        }
-        if (selectedEdgeIdRef.current) {
-          e.preventDefault();
-          e.stopPropagation();
-          setSelectedEdgeId(null);
+          cancelArrowTargetingOrFocus();
           return;
         }
         if (selectedNodeIdsRef.current.length > 0 || selectedNodeId) {
@@ -1738,6 +2239,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       window.removeEventListener('keydown', handleCanvasKeyDown, { capture: true });
     };
   }, [
+    cancelArrowTargetingOrFocus,
     handleDeleteSelectedNodes,
     handleDuplicateSelectedNodes,
     handleNudgeSelectedNodes,
@@ -1860,6 +2362,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   // Background Pan & Drag Handlers with continuous window/pointer capture tracking
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (
+      e.button === 2 &&
+      (draftEdgeRef.current || selectedEdgeIdRef.current || Date.now() - lastArrowCancelTimeRef.current < 400)
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelArrowTargetingOrFocus();
+      return;
+    }
+
     const target = e.target as Element | null;
     if (target?.closest?.('.canvas-card, button, input, textarea, .canvas-side-dot, .canvas-edge, .canvas-edge-delete, .canvas-edge-label, [data-edge-id]')) return;
 
@@ -1869,6 +2381,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         if (draftEdgeRef.current.editingEdgeId) {
           retargetEdge(
             draftEdgeRef.current.editingEdgeId,
+            draftEdgeRef.current.editingEndpoint || 'target',
             draftEdgeRef.current.snappedTarget.nodeId,
             draftEdgeRef.current.snappedTarget.side
           );
@@ -1939,17 +2452,29 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         selectedNodeIdsRef.current = [];
         setSelectedNodeId(null);
         setSelectedEdgeId(null);
+        selectedEdgeIdRef.current = null;
       }
     }
-  }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
+  }, [cancelArrowTargetingOrFocus, clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
 
   const handleNodePointerDown = useCallback((id: string, e: React.PointerEvent) => {
+    if (
+      e.button === 2 &&
+      (draftEdgeRef.current || selectedEdgeIdRef.current || Date.now() - lastArrowCancelTimeRef.current < 400)
+    ) {
+      e.preventDefault();
+      e.stopPropagation();
+      cancelArrowTargetingOrFocus();
+      return;
+    }
+
     // If drafting in click mode, connect if snapped, or cancel if clicked without snap
     if (draftEdgeRef.current && draftEdgeRef.current.mode === 'click') {
       if (draftEdgeRef.current.snappedTarget) {
         if (draftEdgeRef.current.editingEdgeId) {
           retargetEdge(
             draftEdgeRef.current.editingEdgeId,
+            draftEdgeRef.current.editingEndpoint || 'target',
             draftEdgeRef.current.snappedTarget.nodeId,
             draftEdgeRef.current.snappedTarget.side
           );
@@ -2018,6 +2543,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setSelectedNodeId(node.id);
     }
     setSelectedEdgeId(null);
+    selectedEdgeIdRef.current = null;
 
     // Read-only mode allows selecting the card, but blocks dragging
     if (canvasReadOnlyRef.current) return;
@@ -2045,7 +2571,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       }
     }
     multiDragInitialPositionsRef.current = posMap;
-  }, [clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
+  }, [cancelArrowTargetingOrFocus, clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
 
   const resizingNodeIdRef = useRef<string | null>(null);
   const resizeHandleRef = useRef<ResizeHandleType | null>(null);
@@ -2640,6 +3166,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             selectedNodeIdsRef.current = [];
             setSelectedNodeId(null);
             setSelectedEdgeId(null);
+            selectedEdgeIdRef.current = null;
           }
         }
         marqueeStartRef.current = null;
@@ -2665,17 +3192,57 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setIsDraggingNodeState(false);
     };
 
+    const handleGlobalPointerDown = (e: PointerEvent) => {
+      if (e.button === 2 && (draftEdgeRef.current || selectedEdgeIdRef.current)) {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelArrowTargetingOrFocus();
+      }
+    };
+
+    const handleGlobalMouseDown = (e: MouseEvent) => {
+      if (
+        e.button === 2 &&
+        (draftEdgeRef.current ||
+          selectedEdgeIdRef.current ||
+          Date.now() - lastArrowCancelTimeRef.current < 400)
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelArrowTargetingOrFocus();
+      }
+    };
+
+    const handleGlobalContextMenu = (e: MouseEvent) => {
+      if (
+        draftEdgeRef.current ||
+        selectedEdgeIdRef.current ||
+        Date.now() - lastArrowCancelTimeRef.current < 400
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        cancelArrowTargetingOrFocus();
+      }
+    };
+
+    window.addEventListener('pointerdown', handleGlobalPointerDown, { capture: true });
+    window.addEventListener('mousedown', handleGlobalMouseDown, { capture: true });
+    window.addEventListener('contextmenu', handleGlobalContextMenu, { capture: true });
     window.addEventListener('pointermove', handleGlobalPointerMove);
     window.addEventListener('pointerup', handleGlobalPointerUp);
     window.addEventListener('pointercancel', handleGlobalPointerUp);
 
     return () => {
       stopEdgeAutoScroll();
+      window.removeEventListener('pointerdown', handleGlobalPointerDown, { capture: true });
+      window.removeEventListener('mousedown', handleGlobalMouseDown, { capture: true });
+      window.removeEventListener('contextmenu', handleGlobalContextMenu, { capture: true });
       window.removeEventListener('pointermove', handleGlobalPointerMove);
       window.removeEventListener('pointerup', handleGlobalPointerUp);
       window.removeEventListener('pointercancel', handleGlobalPointerUp);
     };
   }, [
+    cancelArrowTargetingOrFocus,
     recordSnapshot,
     performDraftEdgeUpdate,
     performMarqueeDrag,
@@ -3092,17 +3659,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     };
   }, [documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
 
-  const getCardDimensions = useCallback((type: CanvasDockActionType) => {
-    const step = gridSizeRef.current || 20;
-    switch (type) {
-      case 'card':
-        return { width: 260, height: 4 * step };
-      case 'note':
-        return { width: 320, height: 280 };
-      case 'media':
-        return { width: 340, height: 260 };
-    }
-  }, []);
 
   const getCanvasCoordsForScreenPoint = useCallback(
     (screenX: number, screenY: number, width: number, height: number) => {
@@ -3161,27 +3717,28 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         text_content: '',
         color: '',
       };
-      await saveCanvasNode(newNode);
-      triggerDiskSync(effectiveBoardId);
-      setNodes((prev) => [...prev, newNode]);
+      nodesRef.current = [...nodesRef.current, newNode];
+      setNodes(nodesRef.current);
       setSelectedNodeId(newNode.id);
       setAutoEditingNodeId(newNode.id);
+      await saveCanvasNode(newNode);
+      triggerDiskSync(effectiveBoardId);
       showToast('Added card', 'info');
     },
     [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
   );
 
   const handleAddDocumentCard = useCallback(
-    async (docId: string, x: number, y: number) => {
+    async (docId: string, x: number, y: number): Promise<CanvasNode | null> => {
       if (canvasReadOnlyRef.current) {
         showToast('Canvas is in read-only mode', 'warning');
-        return;
+        return null;
       }
       const allDocs = useDocumentStore.getState().documents;
       const targetDoc =
         allDocs.find((d: DocumentItem) => d.id === docId) ||
         documents.find((d: DocumentItem) => d.id === docId);
-      if (!targetDoc) return;
+      if (!targetDoc) return null;
 
       const isImg = isImageDocument(targetDoc);
       const nodeWidth = isImg ? 340 : 320;
@@ -3199,13 +3756,669 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         document_id: docId,
         color: '',
       };
+      nodesRef.current = [...nodesRef.current, newNode];
+      setNodes(nodesRef.current);
+      setSelectedNodeId(newNode.id);
       await saveCanvasNode(newNode);
       triggerDiskSync(effectiveBoardId);
-      setNodes((prev) => [...prev, newNode]);
-      setSelectedNodeId(newNode.id);
       showToast(`Added ${targetDoc.title || 'document'} to canvas`, 'success');
+      return newNode;
     },
     [documents, effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+  );
+
+  const handleSwapNodeDocument = useCallback(
+    async (nodeId: string, newDocId: string) => {
+      const targetNode = nodesRef.current.find((n) => n.id === nodeId);
+      if (!targetNode) return;
+      const allDocs = useDocumentStore.getState().documents;
+      const newDoc =
+        allDocs.find((d) => d.id === newDocId) || documents.find((d) => d.id === newDocId);
+
+      recordSnapshot();
+      const updatedNode: CanvasNode = {
+        ...targetNode,
+        document_id: newDocId,
+        type: 'note',
+      };
+      await saveCanvasNode(updatedNode);
+      triggerDiskSync(effectiveBoardId);
+      setNodes((prev) => prev.map((n) => (n.id === nodeId ? updatedNode : n)));
+      nodesRef.current = nodesRef.current.map((n) => (n.id === nodeId ? updatedNode : n));
+      showToast(`Swapped note to "${newDoc?.title || 'selected document'}"`, 'success');
+    },
+    [documents, effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+  );
+
+  const handleConvertCardToFile = useCallback(
+    (nodeId: string) => {
+      const targetNode = nodesRef.current.find((n) => n.id === nodeId);
+      if (!targetNode) return;
+
+      let defaultTitle = 'Untitled';
+      if (targetNode.text_content) {
+        const firstLine = targetNode.text_content
+          .replace(/<[^>]*>/g, '')
+          .split('\n')[0]
+          ?.trim();
+        if (firstLine) {
+          defaultTitle = firstLine.slice(0, 40);
+        }
+      }
+
+      openInputDialog({
+        title: 'Convert card to file',
+        placeholder: 'Note title',
+        defaultValue: defaultTitle,
+        confirmText: 'Convert',
+        onConfirm: async (title) => {
+          const trimmed = title.trim() || 'Untitled';
+          const newDoc = await useDocumentStore.getState().createNewNote(trimmed, null, 'base', false);
+          if (!newDoc) {
+            showToast('Failed to create note', 'error');
+            return;
+          }
+
+          if (targetNode.text_content) {
+            try {
+              await app.hearth.saveDocument(newDoc.id, targetNode.text_content);
+            } catch (e) {
+              console.error('Failed to save document content during card conversion:', e);
+            }
+          }
+
+          recordSnapshot();
+          const updatedNode: CanvasNode = {
+            ...targetNode,
+            type: 'note',
+            document_id: newDoc.id,
+            text_content: undefined,
+          };
+
+          await saveCanvasNode(updatedNode);
+          triggerDiskSync(effectiveBoardId);
+          setNodes((prev) => prev.map((n) => (n.id === nodeId ? updatedNode : n)));
+          nodesRef.current = nodesRef.current.map((n) => (n.id === nodeId ? updatedNode : n));
+          showToast(`Converted card to note "${newDoc.title}"`, 'success');
+        },
+      });
+    },
+    [app.hearth, effectiveBoardId, openInputDialog, recordSnapshot, showToast, triggerDiskSync]
+  );
+
+  const handleAddWebPageCard = useCallback(
+    (canvasX: number, canvasY: number) => {
+      if (canvasReadOnlyRef.current) {
+        showToast('Canvas is in read-only mode', 'warning');
+        return;
+      }
+
+      openInputDialog({
+        title: 'Add web page',
+        placeholder: 'https://example.com',
+        confirmText: 'Add',
+        onConfirm: async (rawUrl) => {
+          let url = rawUrl.trim();
+          if (!url) return;
+          if (!/^https?:\/\//i.test(url)) {
+            url = `https://${url}`;
+          }
+          const cardWidth = 320;
+          const cardHeight = 200;
+          const step = gridSizeRef.current || 20;
+          let finalX = canvasX - cardWidth / 2;
+          let finalY = canvasY - cardHeight / 2;
+          if (canvasSnapGridRef.current) {
+            finalX = Math.round(finalX / step) * step;
+            finalY = Math.round(finalY / step) * step;
+          }
+
+          recordSnapshot();
+          const newNode: CanvasNode = {
+            id: `node-${Date.now()}`,
+            board_id: effectiveBoardId,
+            type: 'link',
+            x: Math.round(finalX),
+            y: Math.round(finalY),
+            width: cardWidth,
+            height: cardHeight,
+            url,
+            text_content: url,
+            color: '',
+          };
+          await saveCanvasNode(newNode);
+          triggerDiskSync(effectiveBoardId);
+          setNodes((prev) => [...prev, newNode]);
+          nodesRef.current = [...nodesRef.current, newNode];
+          selectSingleNode(newNode.id);
+          showToast('Added web page to canvas', 'success');
+        },
+      });
+    },
+    [effectiveBoardId, openInputDialog, recordSnapshot, selectSingleNode, showToast, triggerDiskSync]
+  );
+
+  const handlePasteAtCoordinates = useCallback(
+    async (canvasX: number, canvasY: number) => {
+      if (canvasReadOnlyRef.current) {
+        showToast('Canvas is in read-only mode', 'warning');
+        return;
+      }
+
+      let clipboardText = '';
+      try {
+        clipboardText = await navigator.clipboard.readText();
+      } catch {
+        // Clipboard read was blocked or empty
+      }
+
+      if (!clipboardText.trim()) {
+        showToast('Clipboard is empty', 'info');
+        return;
+      }
+
+      const trimmed = clipboardText.trim();
+      const isUrl = /^https?:\/\//i.test(trimmed);
+
+      recordSnapshot();
+      const step = gridSizeRef.current || 20;
+
+      if (isUrl) {
+        const cardWidth = 320;
+        const cardHeight = 200;
+        let finalX = canvasX - cardWidth / 2;
+        let finalY = canvasY - cardHeight / 2;
+        if (canvasSnapGridRef.current) {
+          finalX = Math.round(finalX / step) * step;
+          finalY = Math.round(finalY / step) * step;
+        }
+        const newNode: CanvasNode = {
+          id: `node-${Date.now()}`,
+          board_id: effectiveBoardId,
+          type: 'link',
+          x: Math.round(finalX),
+          y: Math.round(finalY),
+          width: cardWidth,
+          height: cardHeight,
+          url: trimmed,
+          text_content: trimmed,
+          color: '',
+        };
+        await saveCanvasNode(newNode);
+        triggerDiskSync(effectiveBoardId);
+        setNodes((prev) => [...prev, newNode]);
+        nodesRef.current = [...nodesRef.current, newNode];
+        selectSingleNode(newNode.id);
+        showToast('Pasted web page link', 'success');
+      } else {
+        const cardWidth = 260;
+        const cardHeight = 4 * step;
+        let finalX = canvasX - cardWidth / 2;
+        let finalY = canvasY - cardHeight / 2;
+        if (canvasSnapGridRef.current) {
+          finalX = Math.round(finalX / step) * step;
+          finalY = Math.round(finalY / step) * step;
+        }
+        const newNode: CanvasNode = {
+          id: `node-${Date.now()}`,
+          board_id: effectiveBoardId,
+          type: 'text',
+          x: Math.round(finalX),
+          y: Math.round(finalY),
+          width: cardWidth,
+          height: cardHeight,
+          text_content: trimmed,
+          color: '',
+        };
+        await saveCanvasNode(newNode);
+        triggerDiskSync(effectiveBoardId);
+        setNodes((prev) => [...prev, newNode]);
+        nodesRef.current = [...nodesRef.current, newNode];
+        selectSingleNode(newNode.id);
+        showToast('Pasted note card', 'success');
+      }
+    },
+    [effectiveBoardId, recordSnapshot, selectSingleNode, showToast, triggerDiskSync]
+  );
+
+  const handleCanvasContextMenu = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (
+        draftEdgeRef.current ||
+        selectedEdgeIdRef.current ||
+        Date.now() - lastArrowCancelTimeRef.current < 400
+      ) {
+        cancelArrowTargetingOrFocus();
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest?.(
+          '.canvas-card, button, input, textarea, a, .canvas-side-dot, .canvas-edge, .canvas-edge-delete, .canvas-edge-label, [data-edge-id]'
+        )
+      ) {
+        return;
+      }
+
+      const el = containerRef.current;
+      if (!el) return;
+
+      const rect = el.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const ct = currentTransformRef.current;
+      const canvasX = (mouseX - ct.x) / ct.scale;
+      const canvasY = (mouseY - ct.y) / ct.scale;
+
+      const step = gridSizeRef.current || 20;
+
+      const handleHoverItem = (type: CanvasDockActionType) => {
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+          ghostLeaveTimeoutRef.current = null;
+        }
+        const dims = getCardDimensions(type);
+        let x = canvasX - dims.width / 2;
+        let y = canvasY - dims.height / 2;
+        if (canvasSnapGridRef.current) {
+          x = Math.round(x / step) * step;
+          y = Math.round(y / step) * step;
+        }
+        setDragGhost({
+          type,
+          screenX: 0,
+          screenY: 0,
+          canvasX: Math.round(x),
+          canvasY: Math.round(y),
+          width: dims.width,
+          height: dims.height,
+        });
+      };
+
+      const handleLeaveItem = () => {
+        if (ghostLeaveTimeoutRef.current) {
+          clearTimeout(ghostLeaveTimeoutRef.current);
+        }
+        ghostLeaveTimeoutRef.current = setTimeout(() => {
+          setDragGhost(null);
+        }, 40);
+      };
+
+      const items = buildCanvasBackgroundContextMenu({
+        onAddCard: () => {
+          if (ghostLeaveTimeoutRef.current) {
+            clearTimeout(ghostLeaveTimeoutRef.current);
+            ghostLeaveTimeoutRef.current = null;
+          }
+          setDragGhost(null);
+          const dims = getCardDimensions('card');
+          let x = canvasX - dims.width / 2;
+          let y = canvasY - dims.height / 2;
+          if (canvasSnapGridRef.current) {
+            x = Math.round(x / step) * step;
+            y = Math.round(y / step) * step;
+          }
+          handleAddStickyCard(Math.round(x), Math.round(y));
+        },
+        onHoverCard: () => handleHoverItem('card'),
+        onAddNote: () => {
+          if (ghostLeaveTimeoutRef.current) {
+            clearTimeout(ghostLeaveTimeoutRef.current);
+            ghostLeaveTimeoutRef.current = null;
+          }
+          const dims = getCardDimensions('note');
+          let x = canvasX - dims.width / 2;
+          let y = canvasY - dims.height / 2;
+          if (canvasSnapGridRef.current) {
+            x = Math.round(x / step) * step;
+            y = Math.round(y / step) * step;
+          }
+          isDroppingIntoModalRef.current = true;
+          setDragGhost({
+            type: 'note',
+            screenX: 0,
+            screenY: 0,
+            canvasX: Math.round(x),
+            canvasY: Math.round(y),
+            width: dims.width,
+            height: dims.height,
+          });
+          setSearchModalState({
+            isOpen: true,
+            mode: 'note',
+            targetCanvasX: Math.round(x),
+            targetCanvasY: Math.round(y),
+          });
+        },
+        onHoverNote: () => handleHoverItem('note'),
+        onAddMedia: () => {
+          if (ghostLeaveTimeoutRef.current) {
+            clearTimeout(ghostLeaveTimeoutRef.current);
+            ghostLeaveTimeoutRef.current = null;
+          }
+          const dims = getCardDimensions('media');
+          let x = canvasX - dims.width / 2;
+          let y = canvasY - dims.height / 2;
+          if (canvasSnapGridRef.current) {
+            x = Math.round(x / step) * step;
+            y = Math.round(y / step) * step;
+          }
+          isDroppingIntoModalRef.current = true;
+          setDragGhost({
+            type: 'media',
+            screenX: 0,
+            screenY: 0,
+            canvasX: Math.round(x),
+            canvasY: Math.round(y),
+            width: dims.width,
+            height: dims.height,
+          });
+          setSearchModalState({
+            isOpen: true,
+            mode: 'media',
+            targetCanvasX: Math.round(x),
+            targetCanvasY: Math.round(y),
+          });
+        },
+        onHoverMedia: () => handleHoverItem('media'),
+        onLeaveItem: handleLeaveItem,
+        onAddWebPage: () => {
+          handleAddWebPageCard(canvasX, canvasY);
+        },
+        onUndo: handleUndo,
+        canUndo: undoStackRef.current.length > 0,
+        onRedo: handleRedo,
+        canRedo: redoStackRef.current.length > 0,
+        onPaste: () => {
+          handlePasteAtCoordinates(canvasX, canvasY);
+        },
+        canPaste: true,
+        snapToGrid: canvasSnapGrid,
+        onToggleSnapToGrid: () => setCanvasSnapGrid(!canvasSnapGrid),
+        snapToObjects: canvasSnapObjects,
+        onToggleSnapToObjects: () => setCanvasSnapObjects(!canvasSnapObjects),
+        readOnly: canvasReadOnly,
+        onToggleReadOnly: () => setCanvasReadOnly(!canvasReadOnly),
+      });
+
+      showContextMenu(e, items, {
+        scope: 'canvas-board',
+        onClose: () => {
+          if (ghostLeaveTimeoutRef.current) {
+            clearTimeout(ghostLeaveTimeoutRef.current);
+            ghostLeaveTimeoutRef.current = null;
+          }
+          if (!isDroppingIntoModalRef.current) {
+            setDragGhost(null);
+          }
+        },
+      });
+    },
+    [
+      canvasReadOnly,
+      canvasSnapGrid,
+      canvasSnapObjects,
+      getCardDimensions,
+      handleAddStickyCard,
+      handleAddWebPageCard,
+      handlePasteAtCoordinates,
+      handleRedo,
+      handleUndo,
+      setCanvasReadOnly,
+      setCanvasSnapGrid,
+      setCanvasSnapObjects,
+      showContextMenu,
+      cancelArrowTargetingOrFocus,
+    ]
+  );
+
+  const handleCardContextMenu = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (
+        draftEdgeRef.current ||
+        selectedEdgeIdRef.current ||
+        Date.now() - lastArrowCancelTimeRef.current < 400
+      ) {
+        cancelArrowTargetingOrFocus();
+        return;
+      }
+
+      const currentSelectedIds = selectedNodeIdsRef.current;
+      const isMulti = currentSelectedIds.includes(nodeId) && currentSelectedIds.length > 1;
+
+      if (!currentSelectedIds.includes(nodeId)) {
+        selectSingleNode(nodeId);
+      }
+
+      if (isMulti) {
+        const items = buildMultiSelectContextMenu({
+          selectedCount: currentSelectedIds.length,
+          onFitToCenter: handleFitToCenter,
+          onDuplicate: handleDuplicateSelectedNodes,
+          onColorChange: (color) => {
+            for (const id of currentSelectedIds) {
+              handleColorChange(id, color);
+            }
+          },
+          onDelete: handleDeleteSelectedNodes,
+        });
+        showContextMenu(e, items, { scope: 'canvas-multi-select' });
+        return;
+      }
+
+      const node = nodeMap.get(nodeId) || nodesRef.current.find((n) => n.id === nodeId);
+      if (!node) return;
+
+      const allDocs = useDocumentStore.getState().documents;
+      const doc = node.document_id
+        ? allDocs.find((d) => d.id === node.document_id) ||
+          documents.find((d) => d.id === node.document_id) ||
+          null
+        : null;
+
+      if (node.type === 'note' || doc) {
+        const menuContext = {
+          item: doc || ({ id: node.document_id || '', title: 'Document' } as DocumentItem),
+          selectedDocIds: [doc?.id || node.document_id || nodeId],
+          isMulti: false,
+          app,
+        };
+        const customActions =
+          doc && app.fileContextMenus ? app.fileContextMenus.getActions(menuContext) : [];
+        const customFileActions = customActions.map((action) => ({
+          id: action.id,
+          title: typeof action.title === 'function' ? action.title(menuContext) : action.title,
+          icon: typeof action.icon === 'function' ? action.icon(menuContext) : action.icon,
+          isDanger: action.isDanger,
+          onClick: () => action.onClick(menuContext),
+        }));
+
+        const items = buildNoteCardContextMenu({
+          node,
+          doc,
+          onFitToCenter: () => handleFitNodeToCenter(node.id),
+          onSwapFile: () => {
+            setSwappingNodeId(node.id);
+            setSearchModalState({
+              isOpen: true,
+              mode: 'note',
+              targetCanvasX: node.x,
+              targetCanvasY: node.y,
+            });
+          },
+          onEdit: !canvasReadOnlyRef.current ? () => setAutoEditingNodeId(node.id) : undefined,
+          onOpenInNewTab: () => {
+            if (doc) {
+              openTab(doc.id, doc.title, { newTab: true });
+            }
+          },
+          onOpenToRight: () => {
+            if (doc) {
+              openSplitTab(doc.id, doc.title);
+            }
+          },
+          onOpenInNewWindow: () => {
+            platform.openHearthWindow();
+          },
+          onRename: () => {
+            if (!doc) return;
+            openInputDialog({
+              title: `Rename "${doc.title}"`,
+              defaultValue: doc.title,
+              confirmText: 'Rename',
+              onConfirm: async (newTitle) => {
+                const trimmed = newTitle.trim();
+                if (!trimmed || trimmed === doc.title) return;
+                await useDocumentStore.getState().renameDocument(doc.id, trimmed);
+                showToast(`Renamed to "${trimmed}"`, 'success');
+              },
+            });
+          },
+          onMoveFile: () => {
+            if (!doc) return;
+            promptFolderSelection({
+              title: `Move "${doc.title}" to folder:`,
+              allowRoot: true,
+              onSelect: async (_folderPath, folderItem) => {
+                const targetParentId = folderItem ? folderItem.id : null;
+                await useDocumentStore.getState().moveDocuments([doc.id], targetParentId);
+                showToast(`Moved "${doc.title}" to ${folderItem ? folderItem.title : 'root'}`, 'success');
+              },
+            });
+          },
+          isBookmarked: Boolean(doc?.is_bookmarked),
+          onToggleBookmark: async () => {
+            if (!doc) return;
+            const isNow = await app.hearth.toggleBookmark(doc.id);
+            showToast(isNow ? `Bookmarked "${doc.title}"` : `Removed bookmark for "${doc.title}"`, 'info');
+          },
+          onCopyRelativePath: () => {
+            if (!doc) return;
+            const relPath = getDocumentPath(doc, allDocs);
+            navigator.clipboard.writeText(relPath);
+            showToast('Relative path copied', 'info');
+          },
+          onCopyAbsolutePath: () => {
+            if (!doc) return;
+            const relPath = getDocumentPath(doc, allDocs);
+            const full = hearthPath ? `${hearthPath}/${relPath}`.replace(/\/+/g, '/') : relPath;
+            navigator.clipboard.writeText(full);
+            showToast('Absolute path copied', 'info');
+          },
+          onShowInExplorer: () => {
+            if (platform.isDesktop()) {
+              platform.openHearthInExplorer(hearthPath);
+            } else {
+              showToast('Hearth folder: ' + (hearthPath || 'local memory'), 'info');
+            }
+          },
+          currentColor: node.color,
+          onColorChange: (color) => handleColorChange(node.id, color),
+          onDeleteCard: () => handleDeleteNode(node.id),
+          onDeleteFile: () => {
+            if (!doc) return;
+            openConfirmDialog({
+              title: `Delete "${doc.title}"?`,
+              message: `Are you sure you want to delete "${doc.title}"? It will be permanently removed from your Hearth.`,
+              confirmText: 'Delete file',
+              isDanger: true,
+              onConfirm: async () => {
+                await useDocumentStore.getState().removeDocuments([doc.id]);
+                handleDeleteNode(node.id);
+                showToast(`Deleted "${doc.title}"`, 'success');
+              },
+            });
+          },
+          customFileActions,
+        });
+
+        showContextMenu(e, items, { scope: 'canvas-node-note', data: { node, document: doc } });
+        return;
+      }
+
+      if (node.type === 'link' || node.url) {
+        const items = buildLinkCardContextMenu({
+          node,
+          onFitToCenter: () => handleFitNodeToCenter(node.id),
+          onOpenLink: () => {
+            if (node.url) window.open(node.url, '_blank');
+          },
+          onCopyUrl: () => {
+            if (node.url) {
+              navigator.clipboard.writeText(node.url);
+              showToast('Copied URL', 'info');
+            }
+          },
+          onEditUrl: () => {
+            openInputDialog({
+              title: 'Edit web page URL',
+              defaultValue: node.url || '',
+              confirmText: 'Save',
+              onConfirm: async (newUrl) => {
+                let url = newUrl.trim();
+                if (!url) return;
+                if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+                const updatedNode: CanvasNode = { ...node, url, text_content: url };
+                await saveCanvasNode(updatedNode);
+                triggerDiskSync(effectiveBoardId);
+                setNodes((prev) => prev.map((n) => (n.id === node.id ? updatedNode : n)));
+                showToast('Updated web link', 'success');
+              },
+            });
+          },
+          currentColor: node.color,
+          onColorChange: (color) => handleColorChange(node.id, color),
+          onDelete: () => handleDeleteNode(node.id),
+        });
+
+        showContextMenu(e, items, { scope: 'canvas-node-link', data: { node } });
+        return;
+      }
+
+      // Default: text card
+      const items = buildTextCardContextMenu({
+        node,
+        onFitToCenter: () => handleFitNodeToCenter(node.id),
+        onEdit: () => setAutoEditingNodeId(node.id),
+        onConvertToFile: () => handleConvertCardToFile(node.id),
+        currentColor: node.color,
+        onColorChange: (color) => handleColorChange(node.id, color),
+        onDelete: () => handleDeleteNode(node.id),
+      });
+
+      showContextMenu(e, items, { scope: 'canvas-node-text', data: { node } });
+    },
+    [
+      app,
+      documents,
+      effectiveBoardId,
+      handleColorChange,
+      handleConvertCardToFile,
+      handleDeleteNode,
+      handleDeleteSelectedNodes,
+      handleDuplicateSelectedNodes,
+      handleFitNodeToCenter,
+      handleFitToCenter,
+      hearthPath,
+      nodeMap,
+      openConfirmDialog,
+      openInputDialog,
+      openSplitTab,
+      openTab,
+      promptFolderSelection,
+      selectSingleNode,
+      showContextMenu,
+      showToast,
+      triggerDiskSync,
+      cancelArrowTargetingOrFocus,
+    ]
   );
 
   const handleDockActionClick = useCallback(
@@ -3671,12 +4884,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         onPointerDown={handlePointerDown}
         onPointerMove={handleCanvasPointerMove}
         onDoubleClick={handleCanvasDoubleClick}
+        onContextMenu={handleCanvasContextMenu}
         style={{ touchAction: 'none' }}
         className={`flint-canvas-view flint-pinchable absolute inset-0 w-full h-full bg-[var(--flint-bg-main)] overflow-hidden select-none touch-none outline-none ${
-          draftEdge
+          isDraggingNodeState || isPanningState || (dragGhost && !searchModalState.isOpen)
+            ? '!cursor-grabbing [&_*]:!cursor-grabbing'
+            : draftEdge
             ? '!cursor-grab [&_*]:!cursor-grab'
-            : isPanningState || isDraggingNodeState
-            ? 'cursor-grabbing'
             : isPanModifierState
             ? 'cursor-grab'
             : 'cursor-default'
@@ -3764,11 +4978,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   key={edge.id}
                   data-edge-id={edge.id}
                   className="canvas-edge group/edge pointer-events-auto select-none transition-none cursor-pointer"
-                  onPointerDown={(e) => handleEdgePointerDown(edge, e, false)}
+                  onPointerDown={(e) => handleEdgePointerDown(edge, e, 'auto')}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
                     setSelectedEdgeId(edge.id);
+                    selectedEdgeIdRef.current = edge.id;
                     setSelectedNodeId(null);
                     startEditingEdgeLabel(edge.id, edge.label || '');
                   }}
@@ -3811,7 +5026,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                     <path
                       d={arrowPath}
                       fill={displayColor}
-                      className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-crosshair"
+                      className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-pointer"
                     />
                   ) : null}
                   {/* Source Arrowhead (bidirectional) */}
@@ -3819,39 +5034,67 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                     <path
                       d={sourceArrowPath}
                       fill={displayColor}
-                      className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-crosshair"
+                      className="group-hover/edge:fill-[#e0e0e0] transition-none pointer-events-auto cursor-pointer"
                     />
                   ) : null}
-                  {/* Invisible generous hit target around the target arrowhead for easy grabbing and retargeting */}
-                  <circle
-                    cx={p2.x}
-                    cy={p2.y}
-                    r={18}
-                    fill="transparent"
-                    className="cursor-crosshair pointer-events-auto"
-                    onPointerDown={(e) => handleEdgePointerDown(edge, e, true)}
-                    onDoubleClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      setSelectedEdgeId(edge.id);
-                      setSelectedNodeId(null);
-                      startEditingEdgeLabel(edge.id, edge.label || '');
-                    }}
-                  />
                 </g>
               );
             })}
 
             {/* Active Drafting Connection Arrow */}
             {draftEdge && (() => {
-              const fromNode = nodeMap.get(draftEdge.fromNodeId);
-              if (!fromNode) return null;
+              const isRetargetingSource = draftEdge.editingEndpoint === 'source';
+              const anchorNodeId = isRetargetingSource
+                ? (draftEdge.fixedNodeId || draftEdge.fromNodeId)
+                : draftEdge.fromNodeId;
+              const anchorNode = nodeMap.get(anchorNodeId);
+              if (!anchorNode) return null;
 
-              const p1 = getSideAnchorPoint(fromNode, draftEdge.fromSide);
-              const p2 = { x: draftEdge.currentCanvasX, y: draftEdge.currentCanvasY };
-              const toSide = draftEdge.snappedTarget ? draftEdge.snappedTarget.side : undefined;
+              const anchorSide = isRetargetingSource
+                ? (draftEdge.fixedSide || 'left')
+                : draftEdge.fromSide;
+              const fixedPoint = getSideAnchorPoint(anchorNode, anchorSide);
+              const floatingPoint = { x: draftEdge.currentCanvasX, y: draftEdge.currentCanvasY };
+              let floatingSide: CanvasNodeSide;
+              if (draftEdge.snappedTarget) {
+                floatingSide = draftEdge.snappedTarget.side;
+              } else if (isRetargetingSource) {
+                const dx = fixedPoint.x - floatingPoint.x;
+                const dy = fixedPoint.y - floatingPoint.y;
+                if (Math.abs(dx) >= Math.abs(dy)) {
+                  floatingSide = dx >= 0 ? 'right' : 'left';
+                } else {
+                  floatingSide = dy >= 0 ? 'bottom' : 'top';
+                }
+              } else {
+                const dx = floatingPoint.x - fixedPoint.x;
+                const dy = floatingPoint.y - fixedPoint.y;
+                if (Math.abs(dx) >= Math.abs(dy)) {
+                  floatingSide = dx >= 0 ? 'left' : 'right';
+                } else {
+                  floatingSide = dy >= 0 ? 'top' : 'bottom';
+                }
+              }
 
-              const { path, arrowPath } = computeBezierPath(p1, draftEdge.fromSide, p2, toSide);
+              const p1 = isRetargetingSource ? floatingPoint : fixedPoint;
+              const fromSide: CanvasNodeSide = isRetargetingSource ? floatingSide : anchorSide;
+              const p2 = isRetargetingSource ? fixedPoint : floatingPoint;
+              const toSide: CanvasNodeSide = isRetargetingSource ? anchorSide : floatingSide;
+
+              const originalEdge = draftEdge.editingEdgeId
+                ? edgesRef.current.find((e) => e.id === draftEdge.editingEdgeId)
+                : null;
+              const direction = originalEdge?.direction || 'unidirectional';
+
+              const { path, arrowPath, sourceArrowPath } = computeBezierPath(
+                p1,
+                fromSide,
+                p2,
+                toSide,
+                12,
+                13,
+                direction
+              );
 
               return (
                 <g className="pointer-events-none select-none transition-none">
@@ -3864,11 +5107,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                     className="transition-none"
                   />
                   {/* Smoothly-aligned solid arrowhead */}
-                  <path
-                    d={arrowPath}
-                    fill="#ffffff"
-                    className="transition-none"
-                  />
+                  {arrowPath && (
+                    <path
+                      d={arrowPath}
+                      fill="#ffffff"
+                      className="transition-none"
+                    />
+                  )}
+                  {sourceArrowPath && (
+                    <path
+                      d={sourceArrowPath}
+                      fill="#ffffff"
+                      className="transition-none"
+                    />
+                  )}
                 </g>
               );
             })()}
@@ -4024,40 +5276,59 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               onSideDotPointerDown={handleSideDotPointerDown}
               activeSnapSide={draftEdge?.snappedTarget?.nodeId === node.id ? draftEdge.snappedTarget.side : null}
               isDraftingArrow={Boolean(draftEdge)}
+              onContextMenu={handleCardContextMenu}
             />
           );
         })}
 
-        {/* Arrowhead Retarget Grab Handles Layer */}
+        {/* Arrowhead / Endpoint Retarget Grab Handles Layer */}
         <svg
           className="absolute inset-0 w-full h-full pointer-events-none overflow-visible transition-none"
-          style={{ zIndex: 35 }}
+          style={{ zIndex: 40 }}
         >
-          {/* Interactive Arrowhead Retarget Grab Handles */}
+          {/* Interactive Retarget Grab Handles (mounted strictly when an edge is selected so unselected edges never shadow card drag dots) */}
           {!canvasReadOnly && !draftEdge && edges.map((edge) => {
+            const isSelected = selectedEdgeId === edge.id;
+            if (!isSelected) return null;
+
             const fromNode = nodeMap.get(edge.from_node_id);
             const toNode = nodeMap.get(edge.to_node_id);
             if (!fromNode || !toNode) return null;
 
             const defaultSides = determineDefaultConnectingSides(fromNode, toNode);
+            const fromSide = edge.from_side || defaultSides.fromSide;
             const toSide = edge.to_side || defaultSides.toSide;
+            const p1 = getSideAnchorPoint(fromNode, fromSide);
             const p2 = getSideAnchorPoint(toNode, toSide);
-            const hitRadius = 20 / Math.min(1.5, Math.max(0.6, zoom));
+            const hitRadius = 26 / Math.min(1.5, Math.max(0.6, zoom));
 
             return (
-              <g key={`arrowhead-overlay-${edge.id}`} className="transition-none">
-                {/* Generous hit circle for dragging/retargeting the connection endpoint */}
+              <g key={`edge-handles-${edge.id}`} className="transition-none">
+                {/* Source endpoint grab handle at p1 */}
+                <circle
+                  cx={p1.x}
+                  cy={p1.y}
+                  r={hitRadius}
+                  fill="transparent"
+                  style={{ pointerEvents: 'all' }}
+                  className="cursor-grab active:cursor-grabbing pointer-events-auto"
+                  onPointerDown={(e) => handleEdgePointerDown(edge, e, 'source')}
+                />
+
+                {/* Target endpoint grab handle at p2 */}
                 <circle
                   cx={p2.x}
                   cy={p2.y}
                   r={hitRadius}
                   fill="transparent"
-                  className="cursor-crosshair pointer-events-auto"
-                  onPointerDown={(e) => handleEdgePointerDown(edge, e, true)}
+                  style={{ pointerEvents: 'all' }}
+                  className="cursor-grab active:cursor-grabbing pointer-events-auto"
+                  onPointerDown={(e) => handleEdgePointerDown(edge, e, 'target')}
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     e.preventDefault();
                     setSelectedEdgeId(edge.id);
+                    selectedEdgeIdRef.current = edge.id;
                     setSelectedNodeId(null);
                     startEditingEdgeLabel(edge.id, edge.label || '');
                   }}
@@ -4126,16 +5397,37 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           {/* Snapped Drag Ghost Preview in Spatial Canvas Coordinate Plane */}
           {dragGhost && (() => {
             const dims = getCardDimensions(dragGhost.type);
+            const w = dragGhost.width || dims.width;
+            const h = dragGhost.height || dims.height;
             return (
               <div
-                className="absolute pointer-events-none z-30 rounded-md border-2 border-dashed border-[#888888] bg-[#1e1e1e]/85 backdrop-blur-[2px] select-none transition-none"
+                className="absolute pointer-events-none z-30 rounded-md border-2 border-dashed border-[#888888] bg-[#1e1e1e]/85 backdrop-blur-[2px] select-none transition-none flex items-center justify-center gap-2"
                 style={{
                   left: `${dragGhost.canvasX}px`,
                   top: `${dragGhost.canvasY}px`,
-                  width: `${dims.width}px`,
-                  height: `${dims.height}px`,
+                  width: `${w}px`,
+                  height: `${h}px`,
                 }}
-              />
+              >
+                {dragGhost.type === 'card' && (
+                  <div className="flex items-center gap-1.5 text-white/50 select-none">
+                    <StickyNote03Icon size={16} />
+                    <span className="text-xs font-medium">Card</span>
+                  </div>
+                )}
+                {dragGhost.type === 'note' && (
+                  <div className="flex items-center gap-1.5 text-white/50 select-none">
+                    <FileEmpty02Icon size={16} />
+                    <span className="text-xs font-medium">Note</span>
+                  </div>
+                )}
+                {dragGhost.type === 'media' && (
+                  <div className="flex items-center gap-1.5 text-white/50 select-none">
+                    <FileImageIcon size={16} />
+                    <span className="text-xs font-medium">Media</span>
+                  </div>
+                )}
+              </div>
             );
           })()}
         </div>
@@ -4155,16 +5447,128 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         mode={searchModalState.mode}
         currentBoardId={effectiveBoardId}
         onClose={() => {
+          if (ghostLeaveTimeoutRef.current) {
+            clearTimeout(ghostLeaveTimeoutRef.current);
+            ghostLeaveTimeoutRef.current = null;
+          }
           setDragGhost(null);
+          setDraftEdge(null);
+          draftEdgeRef.current = null;
+          pendingEdgeConnectionRef.current = null;
+          isCompletingUnconnectedDropRef.current = false;
+          isDroppingIntoModalRef.current = false;
+          setSwappingNodeId(null);
           setSearchModalState((prev) => ({ ...prev, isOpen: false }));
         }}
-        onSelectDocument={(docId) => {
+        onSelectDocument={async (docId) => {
+          if (ghostLeaveTimeoutRef.current) {
+            clearTimeout(ghostLeaveTimeoutRef.current);
+            ghostLeaveTimeoutRef.current = null;
+          }
+
+          // Capture pending edge retarget/connect info immediately before any async wait
+          const pending = pendingEdgeConnectionRef.current;
+          pendingEdgeConnectionRef.current = null;
+          isCompletingUnconnectedDropRef.current = false;
+          isDroppingIntoModalRef.current = false;
+
+          if (swappingNodeId) {
+            setDragGhost(null);
+            handleSwapNodeDocument(swappingNodeId, docId);
+            setSwappingNodeId(null);
+            setSearchModalState((prev) => ({ ...prev, isOpen: false }));
+            return;
+          }
+
+          if (canvasReadOnlyRef.current) {
+            showToast('Canvas is in read-only mode', 'warning');
+            setDraftEdge(null);
+            draftEdgeRef.current = null;
+            setDragGhost(null);
+            setSearchModalState((prev) => ({ ...prev, isOpen: false }));
+            return;
+          }
+
+          const allDocs = useDocumentStore.getState().documents;
+          const targetDoc =
+            allDocs.find((d: DocumentItem) => d.id === docId) ||
+            documents.find((d: DocumentItem) => d.id === docId);
+          if (!targetDoc) {
+            setDraftEdge(null);
+            draftEdgeRef.current = null;
+            setDragGhost(null);
+            setSearchModalState((prev) => ({ ...prev, isOpen: false }));
+            return;
+          }
+
+          const isImg = isImageDocument(targetDoc);
+          const nodeWidth = isImg ? 340 : 320;
+          const nodeHeight = isImg ? 260 : 280;
+
+          recordSnapshot();
+          const newNode: CanvasNode = {
+            id: `node-${Date.now()}`,
+            board_id: effectiveBoardId,
+            type: 'note',
+            x: searchModalState.targetCanvasX,
+            y: searchModalState.targetCanvasY,
+            width: nodeWidth,
+            height: nodeHeight,
+            document_id: docId,
+            color: '',
+          };
+
+          // 1. Immediately update nodes in memory and state synchronously
+          nodesRef.current = [...nodesRef.current, newNode];
+          setNodes(nodesRef.current);
+          setSelectedNodeId(newNode.id);
+          setSelectedEdgeId(null);
+          selectedEdgeIdRef.current = null;
+
+          // 2. Immediately retarget or create edge in memory and state synchronously
+          let edgeToPersist: CanvasEdge | null = null;
+          if (pending) {
+            if (pending.editingEdgeId) {
+              const edgeId = pending.editingEdgeId;
+              const currentEdge = edgesRef.current.find((e) => e.id === edgeId);
+              if (currentEdge) {
+                const endpoint = pending.editingEndpoint || 'target';
+                const updatedEdge: CanvasEdge =
+                  endpoint === 'source'
+                    ? { ...currentEdge, from_node_id: newNode.id, from_side: pending.incomingSide }
+                    : { ...currentEdge, to_node_id: newNode.id, to_side: pending.incomingSide };
+                edgesRef.current = edgesRef.current.map((e) => (e.id === edgeId ? updatedEdge : e));
+                setEdges(edgesRef.current);
+                edgeToPersist = updatedEdge;
+              }
+            } else if (pending.fromNodeId) {
+              const newEdge: CanvasEdge = {
+                id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
+                board_id: effectiveBoardId,
+                from_node_id: pending.fromNodeId,
+                from_side: pending.fromSide,
+                to_node_id: newNode.id,
+                to_side: pending.incomingSide,
+              };
+              edgesRef.current = [...edgesRef.current, newEdge];
+              setEdges(edgesRef.current);
+              edgeToPersist = newEdge;
+            }
+          }
+
+          // 3. Clear draft edge, ghost, and close modal in this EXACT same React render batch
+          setDraftEdge(null);
+          draftEdgeRef.current = null;
           setDragGhost(null);
-          handleAddDocumentCard(
-            docId,
-            searchModalState.targetCanvasX,
-            searchModalState.targetCanvasY
-          );
+          setSearchModalState((prev) => ({ ...prev, isOpen: false }));
+
+          // 4. Background persistence without blocking UI
+          await saveCanvasNode(newNode);
+          if (edgeToPersist) {
+            await saveCanvasEdge(edgeToPersist);
+          }
+          triggerDiskSync(effectiveBoardId);
+          showToast(`Added ${targetDoc.title || 'document'} to canvas`, 'success');
         }}
       />
     </div>

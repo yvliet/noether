@@ -24,17 +24,17 @@ const DOCK_BUTTONS: DockButtonDef[] = [
   {
     type: 'card',
     title: 'Card (Click to add or drag to place)',
-    icon: <StickyNote03Icon size={20} />,
+    icon: <StickyNote03Icon size={26} />,
   },
   {
     type: 'note',
     title: 'Note (Click to search or drag to place)',
-    icon: <FileEmpty02Icon size={20} />,
+    icon: <FileEmpty02Icon size={26} />,
   },
   {
     type: 'media',
     title: 'Media (Click to search or drag to place)',
-    icon: <FileImageIcon size={20} />,
+    icon: <FileImageIcon size={26} />,
   },
 ];
 
@@ -108,22 +108,25 @@ export const CanvasBottomDock: React.FC<CanvasBottomDockProps> = React.memo(
     );
 
     return (
-      <div
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 p-1.5 bg-[#181818]/90 backdrop-blur-sm border border-[#2a2a2a] rounded-lg shadow-xl select-none"
-        onClick={(e) => e.stopPropagation()}
-        onPointerDown={(e) => e.stopPropagation()}
-      >
-        {DOCK_BUTTONS.map((btn) => (
-          <button
-            key={btn.type}
-            type="button"
-            title={btn.title}
-            onPointerDown={(e) => handlePointerDown(btn.type, e)}
-            className="p-2 rounded-md text-[#888888] hover:text-[#e0e0e0] hover:bg-[#252525] active:bg-[#2e2e2e] cursor-grab active:cursor-grabbing select-none transition-none flex items-center justify-center focus:outline-none"
-          >
-            {btn.icon}
-          </button>
-        ))}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 select-none pointer-events-auto">
+        <div
+          style={{ backgroundColor: '#1c1c1c' }}
+          className="flint-btn flint-btn-primary !bg-[#1c1c1c] !p-1.5 flex items-center gap-1.5 shadow-xl !cursor-default active:!translate-y-0 active:!filter-none active:!shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08),0_2px_5px_0_rgba(0,0,0,0.32)]"
+          onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
+        >
+          {DOCK_BUTTONS.map((btn) => (
+            <button
+              key={btn.type}
+              type="button"
+              title={btn.title}
+              onPointerDown={(e) => handlePointerDown(btn.type, e)}
+              className="p-1.5 text-[#9e9e9e] hover:text-white cursor-grab active:cursor-grabbing select-none transition-none flex items-center justify-center focus:outline-none"
+            >
+              {btn.icon}
+            </button>
+          ))}
+        </div>
       </div>
     );
   }

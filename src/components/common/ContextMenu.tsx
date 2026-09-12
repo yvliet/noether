@@ -122,7 +122,13 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
   return (
     <div
       ref={rowRef}
-      onMouseEnter={() => onHoverChange(hasSubmenu)}
+      onMouseEnter={() => {
+        item.onMouseEnter?.();
+        onHoverChange(hasSubmenu);
+      }}
+      onMouseLeave={() => {
+        item.onMouseLeave?.();
+      }}
       onMouseDown={(e) => e.preventDefault()}
       className="relative w-full"
     >
@@ -469,6 +475,7 @@ export interface ShowContextMenuOptions {
   scope?: ContextMenuScope;
   data?: any;
   pluginPosition?: 'before-danger' | 'after-base' | 'top';
+  onClose?: () => void;
 }
 
 export function useAppContextMenu() {
@@ -488,7 +495,7 @@ export function useAppContextMenu() {
       if ('stopPropagation' in eventOrCoords && typeof eventOrCoords.stopPropagation === 'function') {
         eventOrCoords.stopPropagation();
       }
-      const { scope, data, pluginPosition = 'before-danger' } = options || {};
+      const { scope, data, pluginPosition = 'before-danger', onClose } = options || {};
       let pluginItems: ContextMenuItem[] = [];
 
       if (scope && app?.contextMenu) {
@@ -585,7 +592,7 @@ export function useAppContextMenu() {
         combined = baseItems;
       }
 
-      openContextMenu(eventOrCoords, combined, { scope, data });
+      openContextMenu(eventOrCoords, combined, { scope, data, onClose });
     },
     [app, openContextMenu]
   );

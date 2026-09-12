@@ -1762,7 +1762,7 @@ a.flint-btn::after {
   background-color: var(--flint-accent, #ea580c);
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 5px;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
@@ -1808,7 +1808,7 @@ a.flint-btn::after {
   background-color: #e11d48;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-radius: 5px;
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.22), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
@@ -1881,18 +1881,18 @@ a.flint-btn::after {
   outline: none !important;
 }
 
-/* Unchecked track: matching .flint-btn dark 3D depth */
+/* Unchecked track: matching .flint-btn dark depth */
 .flint-switch[aria-checked="false"] {
   background-color: var(--flint-bg-card-hover, #2a2a2a);
   border: 1px solid rgba(0, 0, 0, 0.25);
   box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 4px 0 rgba(0, 0, 0, 0.28);
 }
 
-/* Checked track: matching .flint-btn-primary accent 3D depth */
+/* Checked track: matching .flint-btn-primary accent depth */
 .flint-switch[aria-checked="true"] {
   background-color: var(--flint-accent, #ea580c);
   border: 1px solid rgba(0, 0, 0, 0.2);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 2px 5px 0 rgba(0, 0, 0, 0.32);
 }
 
 /* 3D Tactile Knob */

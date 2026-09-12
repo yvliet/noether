@@ -40,6 +40,7 @@ export interface CanvasCardProps {
   autoFocus?: boolean;
   onAutoFocusConsumed?: () => void;
   isMultiSelected?: boolean;
+  onContextMenu?: (id: string, e: React.MouseEvent) => void;
 }
 
 export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
@@ -70,6 +71,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     autoFocus = false,
     onAutoFocusConsumed,
     isMultiSelected = false,
+    onContextMenu,
   }) => {
     const isPanActive = isPanModifier || isSpacePressed;
     const [isHovered, setIsHovered] = useState(false);
@@ -226,6 +228,11 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
         ref={cardRef}
         onPointerDown={handlePointerDown}
         onDoubleClick={handleDoubleClick}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onContextMenu?.(node.id, e);
+        }}
         onPointerEnter={() => setIsHovered(true)}
         onPointerMove={handleCardPointerMove}
         onPointerLeave={() => {
@@ -248,7 +255,7 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
           isSelected ? 'z-20' : 'z-10'
         } ${
           isPanning || isDragging
-            ? 'cursor-grabbing'
+            ? '!cursor-grabbing [&_*]:!cursor-grabbing'
             : isPanActive
             ? 'cursor-grab'
             : isDraggable
@@ -269,6 +276,11 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
               if (isPanActive || isPanning) return;
               e.stopPropagation();
               onOpenDoc?.(node.document_id);
+            }}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onContextMenu?.(node.id, e);
             }}
             title={doc?.title || 'Open note'}
             className={`absolute bottom-full left-0 mb-2 ${

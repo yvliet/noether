@@ -107,12 +107,11 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
         );
         if (newDoc && newDoc.id) {
           onSelectDocument(newDoc.id);
-          onClose();
         }
       } catch (err) {
         console.error('Failed to create new document from canvas search:', err);
       }
-    }, [query, onSelectDocument, onClose]);
+    }, [query, onSelectDocument]);
 
     const handleKeyDown = useCallback(
       (e: React.KeyboardEvent) => {
@@ -150,7 +149,6 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
 
           if (filteredDocuments.length > 0 && filteredDocuments[selectedIndex]) {
             onSelectDocument(filteredDocuments[selectedIndex].id);
-            onClose();
           } else if (mode === 'note' && query.trim()) {
             handleCreateNewNote();
           }
@@ -216,7 +214,6 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
                     key={doc.id}
                     onClick={() => {
                       onSelectDocument(doc.id);
-                      onClose();
                     }}
                     onMouseEnter={() => setSelectedIndex(idx)}
                     className={`px-3 py-2 rounded-lg text-sm cursor-pointer select-none text-left truncate ${

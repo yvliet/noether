@@ -406,6 +406,7 @@ export const QuoteUpIcon = createIcon(HugeQuoteUpIcon);
 export const Bug01Icon = createIcon(HugeBug01Icon);
 export const Grid02Icon = createIcon(HugeGrid02Icon);
 export const LockIcon = createIcon(HugeLockIcon);
+export const Lock01Icon = LockIcon;
 
 // Export Huge Icon definitions for standalone SVG rendering (ProseMirror widgets, canvas, tooltips)
 export {

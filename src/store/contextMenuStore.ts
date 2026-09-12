@@ -15,6 +15,8 @@ export interface ContextMenuItem {
   disabled?: boolean;
   checked?: boolean;
   onClick?: () => void | Promise<void> | any;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
   submenu?: ContextMenuItem[];
   customSubmenu?: React.ReactNode | ((props: { onClose: () => void }) => React.ReactNode);
   rightSlot?: React.ReactNode;
@@ -24,6 +26,7 @@ export interface ContextMenuItem {
 export interface ContextMenuOptions {
   scope?: string;
   data?: any;
+  onClose?: () => void;
 }
 
 interface ContextMenuState {
@@ -40,13 +43,23 @@ interface ContextMenuState {
   closeContextMenu: () => void;
 }
 
-export const useContextMenuStore = create<ContextMenuState>((set) => ({
+export const useContextMenuStore = create<ContextMenuState>((set, get) => ({
   isOpen: false,
   position: { x: 0, y: 0 },
   items: [],
   options: undefined,
 
   openContextMenu: (eventOrCoords, items, options) => {
+    // If a menu is already open with an onClose handler, notify it before opening the new one
+    const prevOptions = get().options;
+    if (get().isOpen && prevOptions?.onClose) {
+      try {
+        prevOptions.onClose();
+      } catch (err) {
+        console.error('Error in context menu onClose handler:', err);
+      }
+    }
+
     let x = 0;
     let y = 0;
 
@@ -71,6 +84,15 @@ export const useContextMenuStore = create<ContextMenuState>((set) => ({
   },
 
   closeContextMenu: () => {
+    const currentOptions = get().options;
+    if (currentOptions?.onClose) {
+      try {
+        currentOptions.onClose();
+      } catch (err) {
+        console.error('Error in context menu onClose handler:', err);
+      }
+    }
+
     set({
       isOpen: false,
       items: [],
