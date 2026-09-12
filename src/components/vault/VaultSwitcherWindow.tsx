@@ -348,7 +348,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
         {/* PERMANENT STATIONARY BRANDING (Size and position never change) */}
         <div className="flex flex-col items-center mb-7 shrink-0 select-none">
           <NoetherLogoIcon size={100} className="mb-3" />
-          <h1 className="text-2xl font-bold tracking-tight text-[var(--noether-text-primary)] font-sans">Noether</h1>
+          <h1 className="text-2xl font-medium tracking-tight text-[var(--noether-text-primary)] font-brand">Noether</h1>
           <span className="text-xs text-[var(--noether-text-muted)] mt-1">Version {APP_VERSION}</span>
         </div>
 

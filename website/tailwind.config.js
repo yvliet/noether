@@ -30,6 +30,7 @@ export default {
         },
       },
       fontFamily: {
+        brand: ['Outfit', 'var(--font-interface, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)'],
         sans: ['var(--font-interface, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif)'],
         mono: ['var(--font-monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace)'],
       },

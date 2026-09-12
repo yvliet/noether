@@ -448,8 +448,8 @@ export const App: React.FC = () => {
               alt="Noether"
               className="h-[18px] w-auto object-contain shrink-0"
             />
-            <span className="text-[17px] font-bold tracking-tight text-white leading-none">
-              Noether Docs
+            <span className="text-[17px] tracking-tight text-white leading-none font-brand">
+              <span className="font-medium">Noether</span> <span className="font-extralight">Docs</span>
             </span>
           </a>
         </div>

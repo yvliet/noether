@@ -247,8 +247,8 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
             alt="Noether"
             className="h-[21px] w-auto object-contain shrink-0 translate-y-[1.5px]"
           />
-          <span className="text-[21px] font-bold tracking-tight text-white leading-tight">
-            Noether Docs
+          <span className="text-[21px] tracking-tight text-white leading-tight font-brand">
+            <span className="font-medium">Noether</span> <span className="font-extralight">Docs</span>
           </span>
         </a>
 
