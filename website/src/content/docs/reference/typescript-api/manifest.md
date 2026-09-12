@@ -33,8 +33,11 @@ export interface ExtensionManifest {
   /** Classification tags for marketplace search */
   tags?: string[];
 
-  /** Icon name from standard catalog or SVG string */
-  icon?: string;
+  /** Icon name, structured styling configuration, or React node */
+  icon?: string | ExtensionIconConfig;
+
+  /** Optional standalone icon styling configuration */
+  iconConfig?: ExtensionIconConfig;
 
   /** Relative path or URL to preview banner */
   bannerImage?: string;
@@ -47,6 +50,21 @@ export interface ExtensionManifest {
 
   /** Reserved for internal host extensions */
   isCore?: boolean;
+}
+
+export type ExtensionIconBackgroundType = 'solid' | 'gradient';
+
+export interface ExtensionIconConfig {
+  /** Icon glyph name (e.g., 'book-open-02', 'sparkles', 'brain-02') */
+  name?: string;
+  /** Background fill style: 'solid' or 'gradient' */
+  type?: ExtensionIconBackgroundType;
+  /** Background color for solid fills or gradient fallbacks */
+  backgroundColor?: string;
+  /** Array of colors for linear gradients */
+  gradientColors?: string[];
+  /** Angle in degrees or direction string (defaults to '180deg') */
+  gradientDirection?: number | string;
 }
 ```
 

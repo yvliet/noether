@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ExtensionIconConfig } from '@/core/extensions/types';
 
 export interface MarketplaceExtensionItem {
   id: string;
@@ -11,7 +12,8 @@ export interface MarketplaceExtensionItem {
   downloads: string;
   stars: number;
   category: 'Productivity' | 'Visualization' | 'Integration' | 'Formatting';
-  icon: React.ReactNode;
+  icon?: string | ExtensionIconConfig | React.ReactNode;
+  iconConfig?: ExtensionIconConfig;
   featured?: boolean;
   readme?: string;
   bannerImage?: string;

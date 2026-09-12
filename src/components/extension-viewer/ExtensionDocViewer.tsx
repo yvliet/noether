@@ -19,6 +19,7 @@ import {
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { DocLayoutWrapper } from '@/components/layout/DocLayoutWrapper';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
+import { ExtensionAppIcon } from '@/components/common/ExtensionAppIcon';
 import { platform } from '@/lib/platform/platformAdapter';
 import { highlightCode } from './syntaxHighlighter';
 import { parseCalloutHeader, getCalloutTypeInfo } from '@/lib/editor/callouts';
@@ -847,6 +848,16 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
 
         {/* Document Header (Title + In-Document Properties) */}
         <div className="relative group/title">
+          {/* App Icon */}
+          <div className="mb-3.5">
+            <ExtensionAppIcon
+              icon={meta.icon}
+              iconConfig={meta.iconConfig}
+              name={meta.name}
+              size={48}
+            />
+          </div>
+
           {/* Document Title Header */}
           <div className="mb-3 relative">
             <h1

@@ -27,6 +27,7 @@ import {
   COMMUNITY_MARKETPLACE_CATALOGUE,
   MarketplaceExtensionItem,
 } from './marketplaceCatalogue';
+import { ExtensionAppIcon } from '@/components/common/ExtensionAppIcon';
 import { useMarketplaceQuery, getRegistryUrl } from './useMarketplaceQuery';
 import { fetchTursoPluginBundle } from './tursoClient';
 import { installMarketplaceExtension } from './extensionInstaller';
@@ -379,9 +380,12 @@ export const MarketplaceView: React.FC = () => {
 
                     {/* Top Row: Icon + Title + Version + Category */}
                     <div className="flex items-start gap-2.5">
-                      <div className="w-9 h-9 rounded-lg bg-[#222222] border border-[#2c2c2c] flex items-center justify-center shrink-0">
-                        {ext.icon}
-                      </div>
+                      <ExtensionAppIcon
+                        icon={ext.icon}
+                        iconConfig={ext.iconConfig}
+                        name={ext.name}
+                        size={38}
+                      />
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-1.5">

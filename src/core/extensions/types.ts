@@ -27,6 +27,41 @@ export interface Disposable {
 }
 
 /**
+ * Visual background fill style for an extension's icon.
+ * @since 0.4.0
+ */
+export type ExtensionIconBackgroundType = 'solid' | 'gradient';
+
+/**
+ * Visual icon styling configuration declared in an extension's manifest.
+ * Controls background fill (solid or gradient) and color styling while
+ * locking the inner glyph color strictly to white with a subtle top light sheen.
+ * @since 0.4.0
+ */
+export interface ExtensionIconConfig {
+  /**
+   * Icon glyph name (e.g. 'book-open-02', 'sparkles', 'brain-02', 'sticky-note-02', 'pencil-edit-02', 'download-01').
+   */
+  name?: string;
+  /**
+   * Background style: 'solid' or 'gradient'. Defaults to 'gradient' if gradientColors are provided.
+   */
+  type?: ExtensionIconBackgroundType;
+  /**
+   * Background color for solid backgrounds or gradient fallback (e.g. '#2563eb').
+   */
+  backgroundColor?: string;
+  /**
+   * Array of color hex codes or CSS colors for linear gradients (e.g. ['#2563eb', '#1d4ed8']).
+   */
+  gradientColors?: string[];
+  /**
+   * Gradient angle in degrees or direction string. Defaults to 180 (top-to-bottom).
+   */
+  gradientDirection?: number | string;
+}
+
+/**
  * Manifest metadata describing an extension's identity, author, version, and capabilities.
  * Every extension must declare a static manifest conforming to this interface.
  * @since 0.2.0
@@ -50,8 +85,10 @@ export interface ExtensionManifest {
   isCore?: boolean;
   /** Whether a core extension should default to disabled on fresh installations. */
   defaultDisabled?: boolean;
-  /** Icon identifier or custom React node for the extension card. */
-  icon?: string | React.ReactNode;
+  /** Icon identifier, structured icon configuration, or custom React node for the extension. */
+  icon?: string | ExtensionIconConfig | React.ReactNode;
+  /** Optional standalone icon styling configuration when icon is specified as a string identifier. */
+  iconConfig?: ExtensionIconConfig;
   /** Full Markdown readme documentation content. */
   readme?: string;
   /** URL or asset path to a banner illustration image. */

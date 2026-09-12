@@ -11,6 +11,8 @@
  * - Queries the Turso edge database registry as a secondary fallback if GitHub is unreachable.
  */
 
+import type { ExtensionIconConfig } from '@/core/extensions/types';
+
 export interface ExtensionResolvedMeta {
   id: string;
   name: string;
@@ -22,6 +24,8 @@ export interface ExtensionResolvedMeta {
   tags: string[];
   bannerImage?: string;
   readme?: string;
+  icon?: string | ExtensionIconConfig | React.ReactNode;
+  iconConfig?: ExtensionIconConfig;
   isInstalled: boolean;
   isCore: boolean;
 }
@@ -247,6 +251,8 @@ export function resolveExtensionMetadata(
       tags: Array.isArray(installedManifest.tags) ? installedManifest.tags : ['extension'],
       bannerImage: installedManifest.bannerImage,
       readme: installedManifest.readme,
+      icon: installedManifest.icon,
+      iconConfig: installedManifest.iconConfig,
       isInstalled: true,
       isCore: Boolean(installedManifest.isCore),
     };
@@ -281,6 +287,8 @@ export function resolveExtensionMetadata(
               tags: match.category ? [match.category.toLowerCase()] : ['extension'],
               bannerImage: match.bannerImage,
               readme: match.readme,
+              icon: match.icon,
+              iconConfig: match.iconConfig,
               isInstalled: false,
               isCore: false,
             };

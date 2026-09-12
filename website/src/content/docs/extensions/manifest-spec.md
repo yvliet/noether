@@ -98,8 +98,28 @@ You can validate your `manifest.json` using the official JSON Schema:
       "description": "Search categories and classification tags."
     },
     "icon": {
-      "type": "string",
-      "description": "Icon identifier or SVG markup."
+      "oneOf": [
+        {
+          "type": "string",
+          "description": "Icon glyph name from the standard catalog (e.g. 'book-open-02', 'sparkles', 'brain-02')."
+        },
+        {
+          "type": "object",
+          "description": "Structured icon styling configuration with solid or gradient background.",
+          "properties": {
+            "name": { "type": "string", "description": "Icon glyph name." },
+            "type": { "type": "string", "enum": ["solid", "gradient"], "description": "Background fill style." },
+            "backgroundColor": { "type": "string", "description": "Background color for solid fill or fallback." },
+            "gradientColors": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Array of color hex codes or CSS colors for linear gradients."
+            },
+            "gradientDirection": { "type": ["string", "number"], "description": "Gradient angle or direction (defaults to '180deg')." }
+          },
+          "required": ["name"]
+        }
+      ]
     },
     "bannerImage": {
       "type": "string",

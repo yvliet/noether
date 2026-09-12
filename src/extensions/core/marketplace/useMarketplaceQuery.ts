@@ -28,6 +28,7 @@ import {
   PencilEdit02Icon,
 } from '@/components/common/Icons';
 import { fetchTursoPlugins } from './tursoClient';
+import type { ExtensionIconConfig } from '@/core/extensions/types';
 
 export const PRIMARY_REGISTRY_URL = 'https://api.noethernotes.dev/api/v1/extensions';
 export const LOCALHOST_DEV_URL = 'http://localhost:3001/api/v1/extensions';
@@ -47,6 +48,7 @@ export interface RawRegistryPlugin {
   stars?: number;
   category?: string;
   icon?: string;
+  iconConfig?: ExtensionIconConfig | string;
   featured?: boolean;
   readme?: string;
   bannerImage?: string;
@@ -148,6 +150,29 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
  * Normalizes raw remote items into strongly typed MarketplaceExtensionItem models.
  */
 function normalizePluginItem(raw: RawRegistryPlugin): MarketplaceExtensionItem {
+  let parsedIconConfig: ExtensionIconConfig | undefined = undefined;
+
+  if (raw.iconConfig) {
+    if (typeof raw.iconConfig === 'object') {
+      parsedIconConfig = raw.iconConfig;
+    } else if (typeof raw.iconConfig === 'string') {
+      try {
+        parsedIconConfig = JSON.parse(raw.iconConfig);
+      } catch {}
+    }
+  }
+
+  let rawIconValue = raw.icon;
+  if (raw.icon && typeof raw.icon === 'string' && raw.icon.trim().startsWith('{') && raw.icon.trim().endsWith('}')) {
+    try {
+      const parsed = JSON.parse(raw.icon.trim());
+      if (parsed && typeof parsed === 'object') {
+        parsedIconConfig = { ...parsed, ...parsedIconConfig };
+        rawIconValue = parsed.name || raw.icon;
+      }
+    } catch {}
+  }
+
   const rawDownloads = raw.downloads;
   let formattedDownloads = '0';
   if (typeof rawDownloads === 'number') {
@@ -204,7 +229,8 @@ function normalizePluginItem(raw: RawRegistryPlugin): MarketplaceExtensionItem {
     downloads: formattedDownloads,
     stars: typeof raw.stars === 'number' ? raw.stars : 5,
     category,
-    icon: createFallbackIcon(raw.name || raw.id, raw.icon),
+    icon: rawIconValue,
+    iconConfig: parsedIconConfig,
     featured: raw.featured ?? false,
     readme: raw.readme,
     bannerImage: raw.bannerImage,
@@ -335,6 +361,8 @@ function persistCache(extensions: MarketplaceExtensionItem[]): void {
       manifestUrl: item.manifestUrl,
       stylesCssUrl: item.stylesCssUrl,
       downloadUrl: item.downloadUrl,
+      icon: typeof item.icon === 'string' ? item.icon : undefined,
+      iconConfig: item.iconConfig,
       // Readmes are excluded to preserve localStorage quota and prevent quota exceeded errors
     }));
 
