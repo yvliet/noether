@@ -89,6 +89,7 @@ import {
   Layers01Icon as HugeLayers01Icon,
   StickyNote02Icon as HugeStickyNote02Icon,
   StickyNote03Icon as HugeStickyNote03Icon,
+  FileEmpty01Icon as HugeFileEmpty01Icon,
   FileEmpty02Icon as HugeFileEmpty02Icon,
   FileImageIcon as HugeFileImageIcon,
   ColorPickerIcon as HugeColorPickerIcon,
@@ -106,6 +107,7 @@ import {
   SearchMinusIcon as HugeSearchMinusIcon,
   ZoomInIcon as HugeZoomInIcon,
   ZoomOutIcon as HugeZoomOutIcon,
+  ZoomIcon as HugeZoomIcon,
   CenterFocusIcon as HugeCenterFocusIcon,
   BubblesIcon as HugeBubblesIcon,
   Motion01Icon as HugeMotion01Icon,
@@ -324,6 +326,7 @@ export const CheckIcon = createIcon(HugeCheckIcon);
 export const Maximize2Icon = createIcon(HugeMaximize01Icon);
 export const Maximize01Icon = Maximize2Icon;
 export const Minimize2Icon = createIcon(HugeMinimize01Icon);
+export const Minimize01Icon = Minimize2Icon;
 export const PlayIcon = createIcon(HugePlayIcon);
 export const PauseIcon = createIcon(HugePauseIcon);
 export const RotateCcwIcon = createIcon(HugeRotateCcwIcon);
@@ -338,6 +341,7 @@ export const ShieldIcon = createIcon(HugeShield01Icon);
 export const LayersIcon = createIcon(HugeLayers01Icon);
 export const StickyNote02Icon = createIcon(HugeStickyNote02Icon);
 export const StickyNote03Icon = createIcon(HugeStickyNote03Icon);
+export const FileEmpty01Icon = createIcon(HugeFileEmpty01Icon);
 export const FileEmpty02Icon = createIcon(HugeFileEmpty02Icon);
 export const FileImageIcon = createIcon(HugeFileImageIcon);
 export const UserIcon = createIcon(HugeUserIcon);
@@ -361,8 +365,9 @@ export const SearchReplaceIcon = createIcon(HugeSearchReplaceIcon);
 export const ReplaceIcon = createIcon(HugeReplaceIcon);
 export const Store01Icon = createIcon(HugeStore01Icon);
 export const ShoppingBag01Icon = createIcon(HugeShoppingBag01Icon);
-export const ZoomInIcon = createIcon(HugeSearchAddIcon);
-export const ZoomOutIcon = createIcon(HugeSearchMinusIcon);
+export const ZoomInIcon = createIcon(HugeZoomInIcon);
+export const ZoomOutIcon = createIcon(HugeZoomOutIcon);
+export const ZoomIcon = createIcon(HugeZoomIcon);
 export const SearchAddIcon = createIcon(HugeSearchAddIcon);
 export const SearchMinusIcon = createIcon(HugeSearchMinusIcon);
 export const CenterFocusIcon = createIcon(HugeCenterFocusIcon);
