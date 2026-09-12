@@ -62,7 +62,11 @@ export class CanvasExtension extends Extension {
       title: 'Canvas',
       icon: <Layout01Icon size={14} />,
       render: (props?: { tabId?: string; documentId?: string }) => (
-        <CanvasView boardId={props?.documentId} tabId={props?.tabId} />
+        <CanvasView
+          key={props?.tabId || props?.documentId || 'canvas'}
+          boardId={props?.documentId}
+          tabId={props?.tabId}
+        />
       ),
     });
 

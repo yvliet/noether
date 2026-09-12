@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { useCanvasSettings } from './canvasSettings';
 import { CanvasNode, CanvasEdge, CanvasNodeSide, CanvasEdgeStyle } from './types';
 import {
@@ -140,6 +140,104 @@ function parseCanvasJson(json: string, boardId: string): { nodes: CanvasNode[]; 
   }
 }
 
+interface CanvasSavedTransform {
+  x: number;
+  y: number;
+  scale: number;
+}
+
+const canvasTabTransformCache = new Map<string, CanvasSavedTransform>();
+
+export function pruneClosedCanvasTabs() {
+  try {
+    const panes = useWorkspaceStore.getState().panes;
+    if (!panes) return;
+    const activeTabIds = new Set<string>();
+    const activeDocIds = new Set<string>();
+    for (const pane of Object.values(panes)) {
+      if (Array.isArray(pane?.tabs)) {
+        for (const t of pane.tabs) {
+          if (t.id) activeTabIds.add(t.id);
+          if (t.document_id) activeDocIds.add(t.document_id);
+        }
+      }
+    }
+    for (const key of canvasTabTransformCache.keys()) {
+      if (key.startsWith('canvas-board-')) {
+        const boardId = key.replace('canvas-board-', '');
+        if (!activeDocIds.has(boardId) && boardId !== 'default') {
+          canvasTabTransformCache.delete(key);
+        }
+      } else if (!activeTabIds.has(key)) {
+        canvasTabTransformCache.delete(key);
+      }
+    }
+  } catch {
+    // Ignore store access errors during early bootstrap
+  }
+}
+
+if (typeof window !== 'undefined') {
+  useWorkspaceStore.subscribe((state, prevState) => {
+    if (state.panes !== prevState.panes) {
+      pruneClosedCanvasTabs();
+    }
+  });
+}
+
+export function computeFitTransform(
+  nodesList: CanvasNode[],
+  width: number,
+  height: number
+): { x: number; y: number; scale: number } {
+  const safeWidth = width > 0 ? width : (typeof window !== 'undefined' ? window.innerWidth : 800);
+  const safeHeight = height > 0 ? height : (typeof window !== 'undefined' ? window.innerHeight : 600);
+
+  if (nodesList.length === 0) {
+    return { x: 100, y: 100, scale: 1 };
+  }
+
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (const node of nodesList) {
+    const w = node.width || 260;
+    const h = node.height || 180;
+    if (node.x < minX) minX = node.x;
+    if (node.x + w > maxX) maxX = node.x + w;
+    if (node.y < minY) minY = node.y;
+    if (node.y + h > maxY) maxY = node.y + h;
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) {
+    return { x: 100, y: 100, scale: 1 };
+  }
+
+  const padding = 80;
+  const contentWidth = Math.max(100, maxX - minX);
+  const contentHeight = Math.max(100, maxY - minY);
+  const contentCenterX = (minX + maxX) / 2;
+  const contentCenterY = (minY + maxY) / 2;
+
+  const availWidth = Math.max(200, safeWidth - padding * 2);
+  const availHeight = Math.max(200, safeHeight - padding * 2);
+
+  const scaleX = availWidth / contentWidth;
+  const scaleY = availHeight / contentHeight;
+  const fitScale = Math.min(1.25, Math.max(0.2, Math.min(scaleX, scaleY)));
+
+  const targetX = safeWidth / 2 - contentCenterX * fitScale;
+  const targetY = safeHeight / 2 - contentCenterY * fitScale;
+
+  return {
+    x: Number.isFinite(targetX) ? Math.round(targetX) : 100,
+    y: Number.isFinite(targetY) ? Math.round(targetY) : 100,
+    scale: fitScale,
+  };
+}
+
 export interface CanvasViewProps {
   boardId?: string;
   tabId?: string;
@@ -197,6 +295,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       : activeDocument?.doc_type === 'canvas'
       ? activeDocument.id
       : 'default';
+
+  // Resolve session key for camera transform persistence per tab (or per board if tabId is omitted)
+  const sessionKey = tabId || (effectiveBoardId ? `canvas-board-${effectiveBoardId}` : 'canvas-default');
+  const cachedTransform = canvasTabTransformCache.get(sessionKey);
+  const isRestoringSession = Boolean(cachedTransform);
 
   const activeDoc =
     documents.find((d: DocumentItem) => d.id === effectiveBoardId) ||
@@ -531,8 +634,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   }, [flushCanvasSaves]);
 
   // Pan & Zoom (smooth kinematic easing via target/current dual-ref system)
-  const [pan, setPan] = useState({ x: 100, y: 100 });
-  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState(() => (cachedTransform ? { x: cachedTransform.x, y: cachedTransform.y } : { x: 100, y: 100 }));
+  const [zoom, setZoom] = useState(() => (cachedTransform ? cachedTransform.scale : 1));
   const [isPanningState, setIsPanningState] = useState(false);
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
@@ -632,8 +735,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   // Dual-ref camera transform for smooth lerp easing (same pattern as GraphView).
   // Wheel/gesture events write to targetTransform; the RAF loop interpolates currentTransform
   // toward it and feeds React state each frame, giving velvety smooth zoom and pan.
-  const targetTransformRef = useRef({ x: 100, y: 100, scale: 1 });
-  const currentTransformRef = useRef({ x: 100, y: 100, scale: 1 });
+  const targetTransformRef = useRef(
+    cachedTransform ? { x: cachedTransform.x, y: cachedTransform.y, scale: cachedTransform.scale } : { x: 100, y: 100, scale: 1 }
+  );
+  const currentTransformRef = useRef(
+    cachedTransform ? { x: cachedTransform.x, y: cachedTransform.y, scale: cachedTransform.scale } : { x: 100, y: 100, scale: 1 }
+  );
+  const hasInitialFittedRef = useRef(isRestoringSession);
   const cameraRafRef = useRef<number | null>(null);
 
   // Direct GPU DOM transform refs for 144Hz+ zero-lag rendering
@@ -668,7 +776,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         dotGridRectRef.current.style.opacity = String(opacity);
       }
     }
-  }, []);
+    if (sessionKey) {
+      canvasTabTransformCache.set(sessionKey, { x, y, scale });
+    }
+  }, [sessionKey]);
 
   const runCameraEasing = useCallback(() => {
     if (cameraRafRef.current !== null) return; // Already running
@@ -749,7 +860,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
   }, []);
 
-  // Clean up RAF on unmount
+  // Clean up RAF on unmount and persist camera transform to session cache
   useEffect(() => {
     return () => {
       if (cameraRafRef.current !== null) {
@@ -768,8 +879,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         cancelAnimationFrame(autoScrollRafRef.current);
         autoScrollRafRef.current = null;
       }
+      if (sessionKey) {
+        canvasTabTransformCache.set(sessionKey, {
+          x: targetTransformRef.current.x,
+          y: targetTransformRef.current.y,
+          scale: targetTransformRef.current.scale,
+        });
+      }
     };
-  }, []);
+  }, [sessionKey]);
 
   // Dragging node
   const [isDraggingNodeState, setIsDraggingNodeState] = useState(false);
@@ -948,6 +1066,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           if (!isMounted) return;
           setNodes([]);
           setEdges([]);
+          if (!hasInitialFittedRef.current) {
+            hasInitialFittedRef.current = true;
+            if (sessionKey) {
+              canvasTabTransformCache.set(sessionKey, { x: 100, y: 100, scale: 1 });
+            }
+          }
         }
       }
     }
@@ -4482,6 +4606,37 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     return () => ro.disconnect();
   }, []);
 
+  // Immediate pre-paint restoration for open tabs returning to view
+  useLayoutEffect(() => {
+    if (cachedTransform) {
+      syncDomTransform(cachedTransform.x, cachedTransform.y, cachedTransform.scale);
+    }
+  }, [cachedTransform, syncDomTransform]);
+
+  // Pre-paint automatic fit to center on initial canvas opening
+  useLayoutEffect(() => {
+    if (hasInitialFittedRef.current) return;
+    if (nodes.length === 0) return;
+
+    const el = containerRef.current;
+    const rect = el?.getBoundingClientRect();
+    const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+    const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+
+    const fit = computeFitTransform(nodes, width, height);
+    targetTransformRef.current = { ...fit };
+    currentTransformRef.current = { ...fit };
+    panRef.current = { x: fit.x, y: fit.y };
+    zoomRef.current = fit.scale;
+    setPan({ x: fit.x, y: fit.y });
+    setZoom(fit.scale);
+    syncDomTransform(fit.x, fit.y, fit.scale);
+    if (sessionKey) {
+      canvasTabTransformCache.set(sessionKey, fit);
+    }
+    hasInitialFittedRef.current = true;
+  }, [nodes, containerSize.width, containerSize.height, sessionKey, syncDomTransform]);
+
   // Spatial Viewport Culling Engine (bounds memory & DOM count to O(viewport) cards)
   const visibleNodes = useMemo(() => {
     if (containerSize.width === 0 || containerSize.height === 0) {
@@ -4588,55 +4743,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const width = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
     const height = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
 
-    if (nodes.length === 0) {
-      targetTransformRef.current = { x: 100, y: 100, scale: 1 };
-      runCameraEasing();
-      return;
+    const fit = computeFitTransform(nodes, width, height);
+    targetTransformRef.current = { ...fit };
+    if (sessionKey) {
+      canvasTabTransformCache.set(sessionKey, fit);
     }
-
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-
-    for (const node of nodes) {
-      const w = node.width || 260;
-      const h = node.height || 180;
-      if (node.x < minX) minX = node.x;
-      if (node.x + w > maxX) maxX = node.x + w;
-      if (node.y < minY) minY = node.y;
-      if (node.y + h > maxY) maxY = node.y + h;
-    }
-
-    if (!Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) {
-      targetTransformRef.current = { x: 100, y: 100, scale: 1 };
-      runCameraEasing();
-      return;
-    }
-
-    const padding = 80;
-    const contentWidth = Math.max(100, maxX - minX);
-    const contentHeight = Math.max(100, maxY - minY);
-    const contentCenterX = (minX + maxX) / 2;
-    const contentCenterY = (minY + maxY) / 2;
-
-    const availWidth = Math.max(200, width - padding * 2);
-    const availHeight = Math.max(200, height - padding * 2);
-
-    const scaleX = availWidth / contentWidth;
-    const scaleY = availHeight / contentHeight;
-    const fitScale = Math.min(1.25, Math.max(0.2, Math.min(scaleX, scaleY)));
-
-    const targetX = width / 2 - contentCenterX * fitScale;
-    const targetY = height / 2 - contentCenterY * fitScale;
-
-    targetTransformRef.current = {
-      x: Number.isFinite(targetX) ? targetX : 100,
-      y: Number.isFinite(targetY) ? targetY : 100,
-      scale: fitScale,
-    };
     runCameraEasing();
-  }, [nodes, containerSize.width, containerSize.height, runCameraEasing]);
+  }, [nodes, containerSize.width, containerSize.height, sessionKey, runCameraEasing]);
 
   handleResetZoomRef.current = handleResetZoom;
   handleFitToCenterRef.current = handleFitToCenter;
