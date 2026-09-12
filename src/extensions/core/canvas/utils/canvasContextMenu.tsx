@@ -13,7 +13,7 @@ import type { CanvasNode } from '../types';
 import { CARD_COLOR_PRESETS } from '../components/cardColors';
 import {
   StickyNote03Icon,
-  FileEmpty02Icon,
+  FileEmpty01Icon,
   FileImageIcon,
   LinkSquare02Icon,
   RotateCcwIcon,
@@ -99,7 +99,7 @@ export function buildCanvasBackgroundContextMenu(
     {
       id: 'canvas-add-note',
       title: 'Add note from Vault',
-      icon: <FileEmpty02Icon size={14} />,
+      icon: <FileEmpty01Icon size={14} />,
       onClick: params.onAddNote,
       onMouseEnter: params.onHoverNote,
       onMouseLeave: params.onLeaveItem,
@@ -507,7 +507,7 @@ export function buildUnconnectedEdgeContextMenu(
     {
       id: 'canvas-edge-add-note',
       title: 'Add note from Vault',
-      icon: <FileEmpty02Icon size={14} />,
+      icon: <FileEmpty01Icon size={14} />,
       onClick: params.onAddNote,
       onMouseEnter: params.onHoverNote,
       onMouseLeave: params.onLeaveItem,

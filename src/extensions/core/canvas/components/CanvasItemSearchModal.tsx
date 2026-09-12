@@ -237,12 +237,20 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
 
           {/* Keyboard Navigation Footer */}
           <div className="px-4 py-2.5 border-t border-[#2a2a2a] flex items-center justify-center gap-4 text-[11px] text-[#777777] select-none">
-            <span>↑↓ to navigate</span>
-            <span>↵ to open</span>
             <span>
-              <strong className="font-semibold text-[#888888]">shift ↵</strong> to create
+              <strong className="font-semibold text-[#aaaaaa]">↑↓</strong> to navigate
             </span>
-            <span>esc to dismiss</span>
+            <span>
+              <strong className="font-semibold text-[#aaaaaa]">↵</strong> to open
+            </span>
+            {mode === 'note' && (
+              <span>
+                <strong className="font-semibold text-[#aaaaaa]">shift ↵</strong> to create
+              </span>
+            )}
+            <span>
+              <strong className="font-semibold text-[#aaaaaa]">esc</strong> to dismiss
+            </span>
           </div>
         </div>
       </div>

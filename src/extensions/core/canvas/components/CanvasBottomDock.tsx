@@ -1,7 +1,7 @@
 import React, { useRef, useCallback } from 'react';
 import {
   StickyNote03Icon,
-  FileEmpty02Icon,
+  FileEmpty01Icon,
   FileImageIcon,
 } from '@/components/common/Icons';
 
@@ -29,7 +29,7 @@ const DOCK_BUTTONS: DockButtonDef[] = [
   {
     type: 'note',
     title: 'Note (Click to search or drag to place)',
-    icon: <FileEmpty02Icon size={26} />,
+    icon: <FileEmpty01Icon size={26} />,
   },
   {
     type: 'media',

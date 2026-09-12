@@ -30,7 +30,7 @@ import {
   SparklesIcon,
   Layout01Icon,
   StickyNote03Icon,
-  FileEmpty02Icon,
+  FileEmpty01Icon,
   FileImageIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
@@ -5417,7 +5417,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 )}
                 {dragGhost.type === 'note' && (
                   <div className="flex items-center gap-1.5 text-white/50 select-none">
-                    <FileEmpty02Icon size={16} />
+                    <FileEmpty01Icon size={16} />
                     <span className="text-xs font-medium">Note</span>
                   </div>
                 )}
