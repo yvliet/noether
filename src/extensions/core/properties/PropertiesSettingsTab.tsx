@@ -30,7 +30,7 @@ export const PropertiesSettingsTab: React.FC = () => {
     hideEmptyProperties !== DEFAULT_PROPERTIES_SETTINGS.hideEmptyProperties;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-2.5">
       {/* Top Header */}
       <div className="flex items-center justify-between px-4">
         <div>

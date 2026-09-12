@@ -29,7 +29,7 @@ export const SettingCard: React.FC<SettingCardProps> = ({
   return (
     <div className={`flex flex-col gap-2.5 ${className}`}>
       {hasHeader && (
-        <div className="flex items-center justify-between px-1">
+        <div className="flex items-center justify-between px-4">
           <div>
             {title && <h3 className="text-sm font-semibold text-[var(--noether-text-primary,#ffffff)] mb-0.5">{title}</h3>}
             {description && <p className="text-[11px] text-[var(--noether-text-muted,#777777)]">{description}</p>}

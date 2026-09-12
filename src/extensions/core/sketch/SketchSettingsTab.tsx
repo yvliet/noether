@@ -44,30 +44,31 @@ export const SketchSettingsTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between px-1">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Sketch</h3>
-          <p className="text-[11px] text-[#777]">
-            Lightweight freehand vector drawing and markup overlay for notes and documents.
-          </p>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">Sketch</h3>
+            <p className="text-[11px] text-[#777]">
+              Lightweight freehand vector drawing and markup overlay for notes and documents.
+            </p>
+          </div>
+          {isModified && (
+            <button
+              type="button"
+              onClick={() => {
+                restoreDefaults();
+                showToast('Restored Sketch defaults', 'info');
+              }}
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+              title="Restore default sketch settings"
+            >
+              <RotateCcwIcon size={12} />
+              <span>Restore defaults</span>
+            </button>
+          )}
         </div>
-        {isModified && (
-          <button
-            type="button"
-            onClick={() => {
-              restoreDefaults();
-              showToast('Restored Sketch defaults', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Restore default sketch settings"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
 
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {/* Default Tool Selection */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
@@ -177,6 +178,7 @@ export const SketchSettingsTab: React.FC = () => {
             </button>
           </div>
         )}
+      </div>
       </div>
 
       {/* Keyboard Shortcuts Reference Card */}

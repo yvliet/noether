@@ -132,27 +132,28 @@ export const GraphSettingsTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-6">
       {/* Top Header */}
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Graph view</h3>
-          <p className="text-[11px] text-[#777]">Customize time-lapse animations, physics forces, and visual rendering.</p>
+      <div className="flex flex-col gap-2.5">
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">Graph view</h3>
+            <p className="text-[11px] text-[#777]">Customize time-lapse animations, physics forces, and visual rendering.</p>
+          </div>
+          {isModified && (
+            <button
+              onClick={() => {
+                restoreDefaults();
+                showToast('Restored Graph view defaults', 'info');
+              }}
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            >
+              <RotateCcwIcon size={12} />
+              <span>Restore defaults</span>
+            </button>
+          )}
         </div>
-        {isModified && (
-          <button
-            onClick={() => {
-              restoreDefaults();
-              showToast('Restored Graph view defaults', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
 
-      {/* SECTION 1: ANIMATION & CAMERA (Directly below Graph view header) */}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* SECTION 1: ANIMATION & CAMERA (Directly below Graph view header) */}
+        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {/* Focus Camera (For both Time-lapse and Float) */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
@@ -245,10 +246,11 @@ export const GraphSettingsTab: React.FC = () => {
           </div>
         </div>
       </div>
+      </div>
 
       {/* SECTION 2: FORCES & PHYSICS */}
-      <div>
-        <div className="px-4 mb-2.5">
+      <div className="flex flex-col gap-2.5">
+        <div className="px-4">
           <h3 className="text-sm font-semibold text-white">Forces and physics</h3>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
@@ -379,8 +381,8 @@ export const GraphSettingsTab: React.FC = () => {
       </div>
 
       {/* SECTION 3: DISPLAY & FILTERS */}
-      <div>
-        <div className="px-4 mb-2.5">
+      <div className="flex flex-col gap-2.5">
+        <div className="px-4">
           <h3 className="text-sm font-semibold text-white">Display and filters</h3>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
@@ -536,8 +538,8 @@ export const GraphSettingsTab: React.FC = () => {
       </div>
 
       {/* SECTION 4: COLORING */}
-      <div>
-        <div className="px-4 mb-2.5">
+      <div className="flex flex-col gap-2.5">
+        <div className="px-4">
           <h3 className="text-sm font-semibold text-white">Coloring</h3>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">

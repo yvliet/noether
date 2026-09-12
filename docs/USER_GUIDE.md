@@ -14,7 +14,7 @@ Welcome to Noether! This guide walks you through organizing your notes, building
 8. [Journal & Daily Notes](#8-journal--daily-notes)
 9. [Universal Command Palette & Search](#9-universal-command-palette--search)
 10. [Model Context Protocol (MCP) AI Integration](#10-model-context-protocol-mcp-ai-integration)
-11. [Themes & Customization](#11-themes--customization)
+11. [Settings & Deep Search](#11-settings--deep-search)
 12. [More Icons & Visual Customization](#12-more-icons--visual-customization)
 13. [Client Updates & Release Management](#13-client-updates--release-management)
 14. [Keyboard Shortcuts Cheat Sheet](#14-keyboard-shortcuts-cheat-sheet)
@@ -224,12 +224,23 @@ Add to your client configuration file:
 }
 ```
 
-## 11. Themes & Customization
+## 11. Settings & Deep Search
 ---
 
-Open **Settings** (`Ctrl+,`) → **Appearance**:
-- **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Noether Dark/Light, Forest Emerald, and Minimal.
-- **Tactile buttons**: Clean physical button styling with crisp borders and snappy, instant feedback.
+Open **Settings** (`Ctrl+,` or `Cmd+,`) from anywhere in the app or via the Command Palette:
+
+### Universal Deep Settings Search
+- **Vault-Wide Querying**: Type any setting name, description keyword, or hotkey into the search input (`Search settings...`). Noether searches across every settings tab simultaneously (for example, typing `Editing` matches editor mode options, line wrap settings, and status bar toggles across sections).
+- **All-Occurrences Grouping**: While typing or focused on the search input, the right pane switches to the all-occurrences view. Matching settings are grouped under their parent Tab Name (H3) and Location/Section (subtitle), with matched keywords highlighted in your active accent color.
+- **In-Place Interactive Controls**: Matching setting rows retain full interactivity directly inside search results. You can toggle switches, adjust sliders, and change dropdown selections without leaving the search view.
+- **Seamless Tab Inspection**: Clicking any filtered tab in the sidebar navigates to that tab while preserving your search term and highlights. Clicking or focusing back into the search bar clears the selection and restores the all-occurrences view.
+- **Quick Clearing**: Press `Escape` or click the clear icon in the search bar to reset your query and restore the active tab view.
+
+### Themes & Customization
+- **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Noether Dark/Light, Forest Emerald, and Minimal under **Settings → Appearance**.
+- **Custom Accent Colors**: Customize the global accent color for highlights, active tabs, and interactive controls with the native color picker.
+- **Typography**: Independently configure Interface, Text, and Monospace fonts with live selection previews and quick zoom adjustment (`Ctrl+Scroll`).
+- **Tactile Buttons**: Clean physical button styling with crisp borders and snappy, instant feedback.
 - **Link Styling**: Choose between theme accent, classic browser blue/purple, or neutral link palettes.
 
 ## 12. More Icons & Visual Customization

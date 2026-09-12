@@ -27,7 +27,7 @@ export const TasksSettingsTab: React.FC = () => {
     strikethroughCompleted !== DEFAULT_TASKS_SETTINGS.strikethroughCompleted;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
         <div>
           <h3 className="text-sm font-semibold text-white mb-0.5">Tasks</h3>

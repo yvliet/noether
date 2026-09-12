@@ -24,10 +24,10 @@ export const DefaultCommandsSettingsTab: React.FC = () => {
   ];
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
         <div>
-          <h3 className="text-sm font-semibold text-white mb-1">Workspace Commands Settings</h3>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Workspace Commands Settings</h3>
           <p className="text-[11px] text-[#777]">Built-in workspace operations and default keyboard bindings.</p>
         </div>
         <button

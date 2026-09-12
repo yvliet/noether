@@ -120,28 +120,29 @@ export const MoreIconsSettingsTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Header section */}
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">More icons</h3>
-          <p className="text-[11px] text-[#777]">
-            Let icons live in all of Noether. Customize folders, files, tabs, and documents with persistent SQLite storage.
-          </p>
+      <div className="flex flex-col gap-2.5">
+        {/* Header section */}
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">More icons</h3>
+            <p className="text-[11px] text-[#777]">
+              Let icons live in all of Noether. Customize folders, files, tabs, and documents with persistent SQLite storage.
+            </p>
+          </div>
+          {isModified && (
+            <button
+              type="button"
+              onClick={handleRestoreDefaults}
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+            >
+              <RotateCcwIcon size={12} />
+              <span>Restore defaults</span>
+            </button>
+          )}
         </div>
-        {isModified && (
-          <button
-            type="button"
-            onClick={handleRestoreDefaults}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
 
-      {/* Core Feature Toggles Card */}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* Core Feature Toggles Card */}
+        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {/* Enable folder icons */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
@@ -210,6 +211,7 @@ export const MoreIconsSettingsTab: React.FC = () => {
             <ToggleSwitch checked={enableDocumentIcons} onChange={setEnableDocumentIcons} />
           </div>
         </div>
+      </div>
       </div>
 
       {/* General Configuration Card */}
