@@ -245,6 +245,7 @@ export async function serializeCanvasBoard(boardId: string): Promise<string> {
     height: n.height,
     file: n.document_id,
     text: n.text_content,
+    label: n.type === 'group' ? n.text_content : undefined,
     color: n.color,
   }));
 
@@ -279,7 +280,7 @@ export async function importCanvasBoard(boardId: string, json: string): Promise<
       width: typeof n.width === 'number' ? n.width : 240,
       height: typeof n.height === 'number' ? n.height : 160,
       document_id: n.file || n.document_id,
-      text_content: n.text || n.text_content,
+      text_content: n.label || n.text || n.text_content,
       color: n.color,
       url: n.url,
     }));

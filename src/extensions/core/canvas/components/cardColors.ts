@@ -82,7 +82,7 @@ export const CARD_COLOR_PRESETS: CardColorPreset[] = [
   },
 ];
 
-function hexToRgb(hex: string): [number, number, number] | null {
+export function hexToRgb(hex: string): [number, number, number] | null {
   const clean = hex.replace('#', '').trim();
   if (clean.length === 3) {
     const r = parseInt(clean[0] + clean[0], 16);
@@ -146,4 +146,64 @@ export function resolveCardColorTheme(rawColor?: string): CardColorPreset & { is
   }
 
   return CARD_COLOR_PRESETS[0];
+}
+
+/**
+ * Resolves a translucent background fill for Canvas Groups so the canvas grid dots
+ * and spatial plane remain visible through the group interior, never an opaque block.
+ */
+export function resolveGroupBackground(
+  rawColor?: string,
+  state: 'idle' | 'hover' | 'selected' = 'idle'
+): string {
+  if (!rawColor) {
+    return state === 'selected'
+      ? 'rgba(255, 255, 255, 0.03)'
+      : state === 'hover'
+      ? 'rgba(255, 255, 255, 0.025)'
+      : 'rgba(255, 255, 255, 0.015)';
+  }
+
+  const clean = rawColor.toLowerCase().trim();
+  if (
+    clean === '' ||
+    clean === 'default' ||
+    clean === '#1e1e1e' ||
+    clean === '#2a2a2a' ||
+    clean === '#181818' ||
+    clean === '#1a1a1a' ||
+    clean === '#242424' ||
+    clean === '#161616' ||
+    clean === '#737373' ||
+    clean === 'none'
+  ) {
+    return state === 'selected'
+      ? 'rgba(255, 255, 255, 0.03)'
+      : state === 'hover'
+      ? 'rgba(255, 255, 255, 0.025)'
+      : 'rgba(255, 255, 255, 0.015)';
+  }
+
+  const alpha = state === 'selected' ? 0.085 : state === 'hover' ? 0.075 : 0.06;
+
+  const foundPreset = CARD_COLOR_PRESETS.find(
+    (p) => p.id === clean || p.swatch.toLowerCase() === clean
+  );
+  if (foundPreset && foundPreset.id !== 'default') {
+    const rgb = hexToRgb(foundPreset.swatch);
+    if (rgb) {
+      return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+    }
+  }
+
+  const rgb = hexToRgb(clean);
+  if (rgb) {
+    return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+  }
+
+  return state === 'selected'
+    ? 'rgba(255, 255, 255, 0.03)'
+    : state === 'hover'
+    ? 'rgba(255, 255, 255, 0.025)'
+    : 'rgba(255, 255, 255, 0.015)';
 }

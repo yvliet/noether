@@ -52,10 +52,16 @@ export function calculateObjectSnap(
   height: number,
   allNodes: CanvasNode[],
   threshold: number = 7,
-  viewport?: CanvasViewport
+  viewport?: CanvasViewport,
+  ignoredNodeIds?: Set<string> | string[]
 ): SnapResult {
+  const ignoredSet = ignoredNodeIds
+    ? (ignoredNodeIds instanceof Set ? ignoredNodeIds : new Set(ignoredNodeIds))
+    : null;
+
   const otherNodes = allNodes.filter((n) => {
     if (n.id === draggedId) return false;
+    if (ignoredSet && ignoredSet.has(n.id)) return false;
     if (viewport) {
       const nW = n.width || 260;
       const nH = n.height || 180;

@@ -1,33 +1,53 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { CenterFocusIcon, Delete02Icon, PaletteIcon } from '@/components/common/Icons';
+import {
+  AlignStartVerticalIcon,
+  CenterFocusIcon,
+  Delete02Icon,
+  GroupIcon,
+  PaletteIcon,
+} from '@/components/common/Icons';
 import { InlineColorPicker } from '@/components/common/ColorPicker';
 import { CARD_COLOR_PRESETS, resolveCardColorTheme } from './cardColors';
 import { computePillScale } from './CardActionPill';
+import { CanvasAlignMenu } from './CanvasAlignMenu';
+import type { CanvasAlignmentType } from '../utils/canvasAlignment';
 
 export interface MultiSelectActionPillProps {
   onDelete: () => void;
   onColorChange?: (color: string) => void;
   onFitToCenter?: () => void;
+  onCreateGroup?: () => void;
+  onAlign?: (type: CanvasAlignmentType) => void;
   currentColor?: string;
   zoom?: number;
   count?: number;
 }
 
 export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React.memo(
-  ({ onDelete, onColorChange, onFitToCenter, currentColor, zoom = 1, count = 1 }) => {
+  ({
+    onDelete,
+    onColorChange,
+    onFitToCenter,
+    onCreateGroup,
+    onAlign,
+    currentColor,
+    zoom = 1,
+    count = 1,
+  }) => {
     const [isColorMenuOpen, setIsColorMenuOpen] = useState(false);
+    const [isAlignMenuOpen, setIsAlignMenuOpen] = useState(false);
     const [showAdvancedPicker, setShowAdvancedPicker] = useState(false);
-    const menuRef = useRef<HTMLDivElement>(null);
+    const colorMenuRef = useRef<HTMLDivElement>(null);
 
     const activeTheme = resolveCardColorTheme(currentColor);
     const pillScale = computePillScale(zoom);
 
-    // Close on outside click or Escape key
+    // Close menus on outside click or Escape key
     useEffect(() => {
       if (!isColorMenuOpen) return;
 
       const handleOutsideClick = (e: MouseEvent) => {
-        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        if (colorMenuRef.current && !colorMenuRef.current.contains(e.target as Node)) {
           setIsColorMenuOpen(false);
           setShowAdvancedPicker(false);
         }
@@ -58,27 +78,76 @@ export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React
         }}
         className="absolute bottom-full mb-2 flex items-center gap-1 bg-[#1e1e1e] border border-[#383838] rounded-[6px] p-[3px] shadow-2xl select-none z-40 transition-none"
       >
-        {/* 1. Delete Selected Items */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title={`Delete ${count} selected item${count > 1 ? 's' : ''} (Backspace/Delete)`}
-          className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-        >
-          <Delete02Icon size={14} />
-        </button>
+        {/* 1. Align Menu */}
+        {onAlign && (
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAlignMenuOpen((prev) => !prev);
+                setIsColorMenuOpen(false);
+              }}
+              title="Align & distribute selected items"
+              className={`w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0 ${
+                isAlignMenuOpen ? 'text-white bg-[#282828]' : ''
+              }`}
+            >
+              <AlignStartVerticalIcon size={14} />
+            </button>
 
-        {/* 2. Color Palette Menu */}
+            <CanvasAlignMenu
+              isOpen={isAlignMenuOpen}
+              onClose={() => setIsAlignMenuOpen(false)}
+              onSelect={onAlign}
+              align="left"
+            />
+          </div>
+        )}
+
+        {/* 2. Create Group */}
+        {onCreateGroup && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAlignMenuOpen(false);
+              setIsColorMenuOpen(false);
+              onCreateGroup();
+            }}
+            title={`Create group from ${count} selected items (Ctrl+G)`}
+            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+          >
+            <GroupIcon size={14} />
+          </button>
+        )}
+
+        {/* 3. Fit Selection to Center */}
+        {onFitToCenter && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAlignMenuOpen(false);
+              setIsColorMenuOpen(false);
+              onFitToCenter();
+            }}
+            title="Fit selection to center"
+            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+          >
+            <CenterFocusIcon size={14} />
+          </button>
+        )}
+
+        {/* 4. Color Palette Menu */}
         {onColorChange && (
           <div className="relative flex items-center">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsColorMenuOpen(!isColorMenuOpen);
+                setIsColorMenuOpen((prev) => !prev);
+                setIsAlignMenuOpen(false);
               }}
               title="Change color of selected cards"
               className={`w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0 ${
@@ -90,8 +159,8 @@ export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React
 
             {isColorMenuOpen && (
               <div
-                ref={menuRef}
-                className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 flex flex-col items-center bg-[#1b1b1b] border border-[#333333] rounded-[10px] p-2.5 shadow-2xl z-50 select-none"
+                ref={colorMenuRef}
+                className="absolute top-full right-0 mt-1.5 flex flex-col items-center bg-[#1b1b1b] border border-[#333333] rounded-[10px] p-2.5 shadow-2xl z-50 select-none"
               >
                 {/* 8-Circle Swatch Bar */}
                 <div className="flex items-center gap-2.5">
@@ -152,20 +221,20 @@ export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React
           </div>
         )}
 
-        {/* 3. Fit Selection to Center */}
-        {onFitToCenter && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onFitToCenter();
-            }}
-            title="Fit selection to center"
-            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-          >
-            <CenterFocusIcon size={14} />
-          </button>
-        )}
+        {/* 5. Delete Selected Items */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsAlignMenuOpen(false);
+            setIsColorMenuOpen(false);
+            onDelete();
+          }}
+          title={`Delete ${count} selected item${count > 1 ? 's' : ''} (Backspace/Delete)`}
+          className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+        >
+          <Delete02Icon size={14} />
+        </button>
       </div>
     );
   }

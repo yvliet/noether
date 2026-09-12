@@ -39,8 +39,10 @@ import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { useNoetherApp, useVaultDocuments, useActiveDocument, useToast } from 'noether';
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
+import { CanvasGroup } from './components/CanvasGroup';
 import { CardActionPill, computePillScale } from './components/CardActionPill';
 import { MultiSelectActionPill } from './components/MultiSelectActionPill';
+import { alignNodes, CanvasAlignmentType } from './utils/canvasAlignment';
 import { EdgeActionPill } from './components/EdgeActionPill';
 import { EdgeLabel } from './components/EdgeLabel';
 import { CanvasSettingsRail } from './components/CanvasSettingsRail';
@@ -67,6 +69,7 @@ import {
   buildTextCardContextMenu,
   buildLinkCardContextMenu,
   buildMultiSelectContextMenu,
+  buildGroupContextMenu,
   buildUnconnectedEdgeContextMenu,
 } from './utils/canvasContextMenu';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -1079,29 +1082,190 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [triggerDiskSync, recordSnapshot]
   );
 
+  const getGroupContainedNodeIds = useCallback((group: CanvasNode, allNodes: CanvasNode[]): string[] => {
+    const result = new Set<string>();
+    const visited = new Set<string>([group.id]);
+    const queue: CanvasNode[] = [group];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const currentW = current.width || 400;
+      const currentH = current.height || 300;
+      const currentArea = currentW * currentH;
+
+      const directEnclosed = allNodes.filter((cand) => {
+        if (visited.has(cand.id)) return false;
+        const candW = cand.width || (cand.type === 'group' ? 400 : 260);
+        const candH = cand.height || (cand.type === 'group' ? 300 : 180);
+
+        // Nodes must be fully inside the group boundary (with 0.5px subpixel tolerance)
+        const isFullyInside =
+          cand.x >= current.x - 0.5 &&
+          cand.y >= current.y - 0.5 &&
+          cand.x + candW <= current.x + currentW + 0.5 &&
+          cand.y + candH <= current.y + currentH + 0.5;
+
+        if (!isFullyInside) return false;
+
+        // If cand is another group, it can only be a child if its area is strictly smaller
+        if (cand.type === 'group') {
+          const candArea = candW * candH;
+          return candArea < currentArea;
+        }
+
+        return true;
+      });
+
+      for (const cand of directEnclosed) {
+        if (!result.has(cand.id)) {
+          result.add(cand.id);
+          if (cand.type === 'group') {
+            visited.add(cand.id);
+            queue.push(cand);
+          }
+        }
+      }
+    }
+
+    return Array.from(result);
+  }, []);
+
+  const groupDepthMap = useMemo(() => {
+    const map = new Map<string, number>();
+    const groupNodes = nodes.filter((n) => n.type === 'group');
+    for (const g of groupNodes) {
+      const gW = g.width || 400;
+      const gH = g.height || 300;
+      const gArea = gW * gH;
+      let depth = 0;
+      for (const other of groupNodes) {
+        if (other.id === g.id) continue;
+        const otherW = other.width || 400;
+        const otherH = other.height || 300;
+        const otherArea = otherW * otherH;
+        if (otherArea > gArea) {
+          const isFullyInside =
+            g.x >= other.x - 0.5 &&
+            g.y >= other.y - 0.5 &&
+            g.x + gW <= other.x + otherW + 0.5 &&
+            g.y + gH <= other.y + otherH + 0.5;
+          if (isFullyInside) {
+            depth++;
+          }
+        }
+      }
+      map.set(g.id, depth);
+    }
+    return map;
+  }, [nodes]);
+
   const handleDeleteNode = useCallback(async (id: string, e?: React.MouseEvent) => {
     if (canvasReadOnlyRef.current) {
       showToast('Canvas is in read-only mode', 'warning');
       return;
     }
     if (e) e.stopPropagation();
+
+    const targetNode = nodesRef.current.find((n) => n.id === id);
+    let idsToDelete = [id];
+    let isGroup = false;
+
+    if (targetNode && targetNode.type === 'group') {
+      isGroup = true;
+      const contained = getGroupContainedNodeIds(targetNode, nodesRef.current);
+      idsToDelete = [id, ...contained];
+    }
+
+    const idSet = new Set(idsToDelete);
+
     recordSnapshot();
-    await deleteCanvasNode(id);
+    for (const deleteId of idsToDelete) {
+      await deleteCanvasNode(deleteId);
+    }
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => {
-      const next = prev.filter((n) => n.id !== id);
+      const next = prev.filter((n) => !idSet.has(n.id));
       nodesRef.current = next;
       return next;
     });
     setEdges((prev) => {
-      const next = prev.filter((edge) => edge.from_node_id !== id && edge.to_node_id !== id);
+      const next = prev.filter((edge) => !idSet.has(edge.from_node_id) && !idSet.has(edge.to_node_id));
       edgesRef.current = next;
       return next;
     });
-    setSelectedNodeIds((prev) => prev.filter((i) => i !== id));
-    setSelectedNodeId((prev) => (prev === id ? null : prev));
-    showToast('Removed card', 'info');
-  }, [effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
+    setSelectedNodeIds((prev) => prev.filter((i) => !idSet.has(i)));
+    setSelectedNodeId((prev) => (prev && idSet.has(prev) ? null : prev));
+
+    if (isGroup) {
+      const containedCount = idsToDelete.length - 1;
+      if (containedCount > 0) {
+        showToast(`Deleted group and ${containedCount} ${containedCount === 1 ? 'item' : 'items'}`, 'info');
+      } else {
+        showToast('Deleted group', 'info');
+      }
+    } else {
+      showToast('Removed card', 'info');
+    }
+  }, [effectiveBoardId, getGroupContainedNodeIds, showToast, triggerDiskSync, recordSnapshot]);
+
+  const handleUngroup = useCallback(async (groupId: string) => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
+    recordSnapshot();
+    await deleteCanvasNode(groupId);
+    triggerDiskSync(effectiveBoardId);
+
+    setNodes((prev) => {
+      const next = prev.filter((n) => n.id !== groupId);
+      nodesRef.current = next;
+      return next;
+    });
+    setEdges((prev) => {
+      const next = prev.filter((edge) => edge.from_node_id !== groupId && edge.to_node_id !== groupId);
+      edgesRef.current = next;
+      return next;
+    });
+    setSelectedNodeIds((prev) => prev.filter((i) => i !== groupId));
+    setSelectedNodeId((prev) => (prev === groupId ? null : prev));
+    showToast('Ungrouped items', 'info');
+  }, [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]);
+
+  const handleUngroupSelected = useCallback(async () => {
+    if (canvasReadOnlyRef.current) return;
+    const targetGroupIds = (
+      selectedNodeIdsRef.current.length > 0
+        ? selectedNodeIdsRef.current
+        : selectedNodeId ? [selectedNodeId] : []
+    ).filter((id) => {
+      const n = nodesRef.current.find((node) => node.id === id);
+      return n && n.type === 'group';
+    });
+
+    if (targetGroupIds.length === 0) return;
+
+    recordSnapshot();
+    const groupSet = new Set(targetGroupIds);
+    for (const gid of targetGroupIds) {
+      await deleteCanvasNode(gid);
+    }
+    triggerDiskSync(effectiveBoardId);
+
+    setNodes((prev) => {
+      const next = prev.filter((n) => !groupSet.has(n.id));
+      nodesRef.current = next;
+      return next;
+    });
+    setEdges((prev) => {
+      const next = prev.filter((edge) => !groupSet.has(edge.from_node_id) && !groupSet.has(edge.to_node_id));
+      edgesRef.current = next;
+      return next;
+    });
+    setSelectedNodeIds((prev) => prev.filter((i) => !groupSet.has(i)));
+    setSelectedNodeId((prev) => (prev && groupSet.has(prev) ? null : prev));
+    showToast('Ungrouped items', 'info');
+  }, [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]);
 
   const handleDeleteSelectedNodes = useCallback(async () => {
     if (canvasReadOnlyRef.current) {
@@ -1117,7 +1281,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     recordSnapshot();
     const idSet = new Set(idsToDelete);
 
+    // If any selected item is a group, delete the group AND all contained cards
     for (const id of idsToDelete) {
+      const node = nodesRef.current.find((n) => n.id === id);
+      if (node && node.type === 'group') {
+        const contained = getGroupContainedNodeIds(node, nodesRef.current);
+        for (const cid of contained) {
+          idSet.add(cid);
+        }
+      }
+    }
+
+    for (const id of idSet) {
       await deleteCanvasNode(id);
     }
     triggerDiskSync(effectiveBoardId);
@@ -1137,8 +1312,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
     selectedEdgeIdRef.current = null;
-    showToast(idsToDelete.length > 1 ? `Removed ${idsToDelete.length} cards` : 'Removed card', 'info');
-  }, [effectiveBoardId, selectedNodeId, showToast, triggerDiskSync, recordSnapshot]);
+    showToast(idSet.size > 1 ? `Removed ${idSet.size} items` : 'Removed card', 'info');
+  }, [effectiveBoardId, getGroupContainedNodeIds, selectedNodeId, showToast, triggerDiskSync, recordSnapshot]);
 
   const handleBatchColorChange = useCallback(
     (color: string) => {
@@ -1162,6 +1337,243 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       });
     },
     [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]
+  );
+
+  const handleCreateGroupFromSelection = useCallback(async () => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
+    const targetIds =
+      selectedNodeIdsRef.current.length > 0
+        ? selectedNodeIdsRef.current
+        : selectedNodeId
+          ? [selectedNodeId]
+          : [];
+
+    if (targetIds.length === 0) return;
+
+    const targetSet = new Set(targetIds);
+    const selectedNodes = nodesRef.current.filter((n) => targetSet.has(n.id));
+    if (selectedNodes.length === 0) return;
+
+    recordSnapshot();
+    const step = gridSizeRef.current || 20;
+    const padding = canvasSnapGridRef.current ? Math.max(step, Math.round(32 / step) * step) : 32;
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    for (const n of selectedNodes) {
+      if (n.x < minX) minX = n.x;
+      if (n.y < minY) minY = n.y;
+      if (n.x + n.width > maxX) maxX = n.x + n.width;
+      if (n.y + n.height > maxY) maxY = n.y + n.height;
+    }
+
+    let groupX = minX - padding;
+    let groupY = minY - padding;
+    let groupW = (maxX - minX) + padding * 2;
+    let groupH = (maxY - minY) + padding * 2;
+
+    if (canvasSnapGridRef.current) {
+      groupX = Math.round(groupX / step) * step;
+      groupY = Math.round(groupY / step) * step;
+      groupW = Math.round(groupW / step) * step;
+      groupH = Math.round(groupH / step) * step;
+    }
+
+    const newGroup: CanvasNode = {
+      id: `node-${Date.now()}-group`,
+      board_id: effectiveBoardId,
+      type: 'group',
+      x: groupX,
+      y: groupY,
+      width: Math.max(200, groupW),
+      height: Math.max(160, groupH),
+      text_content: 'Untitled group',
+      color: '',
+    };
+
+    await saveCanvasNode(newGroup);
+    triggerDiskSync(effectiveBoardId);
+
+    setNodes((prev) => {
+      const next = [...prev, newGroup];
+      nodesRef.current = next;
+      return next;
+    });
+
+    setSelectedNodeId(newGroup.id);
+    setSelectedNodeIds([newGroup.id]);
+    selectedNodeIdsRef.current = [newGroup.id];
+    showToast('Created group', 'success');
+  }, [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]);
+
+  const handleGroupLabelChange = useCallback(
+    async (groupId: string, newLabel: string) => {
+      if (canvasReadOnlyRef.current) return;
+      recordSnapshot();
+      const updated = nodesRef.current.map((n) =>
+        n.id === groupId ? { ...n, text_content: newLabel } : n
+      );
+      setNodes(updated);
+      nodesRef.current = updated;
+      const targetNode = updated.find((n) => n.id === groupId);
+      if (targetNode) {
+        await saveCanvasNode(targetNode);
+        triggerDiskSync(effectiveBoardId);
+      }
+    },
+    [effectiveBoardId, recordSnapshot, triggerDiskSync]
+  );
+
+  const handleAlignSelectedNodes = useCallback(
+    async (type: CanvasAlignmentType) => {
+      if (canvasReadOnlyRef.current) return;
+      const targetIds = new Set(
+        selectedNodeIdsRef.current.length > 0
+          ? selectedNodeIdsRef.current
+          : selectedNodeId
+            ? [selectedNodeId]
+            : []
+      );
+      const selectedNodes = nodesRef.current.filter((n) => targetIds.has(n.id) && n.type !== 'group');
+      if (selectedNodes.length < 2) return;
+
+      recordSnapshot();
+      const aligned = alignNodes(
+        selectedNodes,
+        type,
+        Boolean(canvasSnapGridRef.current),
+        gridSizeRef.current || 20
+      );
+      const alignedMap = new Map(aligned.map((n) => [n.id, n]));
+
+      const next = nodesRef.current.map((n) => alignedMap.get(n.id) || n);
+      setNodes(next);
+      nodesRef.current = next;
+
+      for (const item of aligned) {
+        await saveCanvasNode(item);
+      }
+      triggerDiskSync(effectiveBoardId);
+      showToast('Aligned selected cards', 'success');
+    },
+    [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]
+  );
+
+  const handleAlignGroupItems = useCallback(
+    async (groupId: string, type: CanvasAlignmentType) => {
+      if (canvasReadOnlyRef.current) return;
+      const groupNode = nodesRef.current.find((n) => n.id === groupId);
+      if (!groupNode) return;
+
+      const containedIds = new Set(getGroupContainedNodeIds(groupNode, nodesRef.current));
+      if (containedIds.size < 2) {
+        showToast('At least 2 items inside group needed to align', 'info');
+        return;
+      }
+
+      // Identify child groups directly enclosed in groupNode
+      const childGroups = nodesRef.current.filter(
+        (n) => n.id !== groupId && n.type === 'group' && containedIds.has(n.id)
+      );
+
+      // Direct children of groupNode: nodes in containedIds not inside any other childGroup
+      const directNodes = nodesRef.current.filter((n) => {
+        if (n.id === groupId || !containedIds.has(n.id)) return false;
+        const nW = n.width || (n.type === 'group' ? 400 : 260);
+        const nH = n.height || (n.type === 'group' ? 300 : 180);
+        const nArea = nW * nH;
+        for (const cg of childGroups) {
+          if (n.id === cg.id) continue;
+          const cgW = cg.width || 400;
+          const cgH = cg.height || 300;
+          const cgArea = cgW * cgH;
+          if (n.type !== 'group' || nArea < cgArea) {
+            const isInsideCg =
+              n.x >= cg.x - 0.5 &&
+              n.y >= cg.y - 0.5 &&
+              n.x + nW <= cg.x + cgW + 0.5 &&
+              n.y + nH <= cg.y + cgH + 0.5;
+            if (isInsideCg) return false;
+          }
+        }
+        return true;
+      });
+
+      if (directNodes.length < 2) {
+        showToast('At least 2 items inside group needed to align', 'info');
+        return;
+      }
+
+      recordSnapshot();
+      const aligned = alignNodes(
+        directNodes,
+        type,
+        Boolean(canvasSnapGridRef.current),
+        gridSizeRef.current || 20
+      );
+
+      const allUpdatedNodesMap = new Map<string, CanvasNode>();
+      for (const alignedItem of aligned) {
+        allUpdatedNodesMap.set(alignedItem.id, alignedItem);
+        if (alignedItem.type === 'group') {
+          const originalGroup = nodesRef.current.find((n) => n.id === alignedItem.id);
+          if (originalGroup) {
+            const dx = alignedItem.x - originalGroup.x;
+            const dy = alignedItem.y - originalGroup.y;
+            if (dx !== 0 || dy !== 0) {
+              const descendants = getGroupContainedNodeIds(originalGroup, nodesRef.current);
+              for (const descId of descendants) {
+                const descNode = allUpdatedNodesMap.get(descId) || nodesRef.current.find((n) => n.id === descId);
+                if (descNode && descNode.id !== alignedItem.id) {
+                  allUpdatedNodesMap.set(descId, {
+                    ...descNode,
+                    x: Math.round(descNode.x + dx),
+                    y: Math.round(descNode.y + dy),
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (const n of allUpdatedNodesMap.values()) {
+        if (n.x - 24 < minX) minX = n.x - 24;
+        if (n.y - 24 < minY) minY = n.y - 24;
+        if (n.x + n.width + 24 > maxX) maxX = n.x + n.width + 24;
+        if (n.y + n.height + 24 > maxY) maxY = n.y + n.height + 24;
+      }
+
+      const updatedGroup = {
+        ...groupNode,
+        x: Math.round(minX),
+        y: Math.round(minY),
+        width: Math.round(maxX - minX),
+        height: Math.round(maxY - minY),
+      };
+      allUpdatedNodesMap.set(groupId, updatedGroup);
+
+      const next = nodesRef.current.map((n) => allUpdatedNodesMap.get(n.id) || n);
+      setNodes(next);
+      nodesRef.current = next;
+
+      for (const item of allUpdatedNodesMap.values()) {
+        await saveCanvasNode(item);
+      }
+      triggerDiskSync(effectiveBoardId);
+      showToast('Aligned group items', 'success');
+    },
+    [effectiveBoardId, getGroupContainedNodeIds, recordSnapshot, showToast, triggerDiskSync]
   );
 
   const canvasClipboardRef = useRef<{ nodes: CanvasNode[]; edges?: CanvasEdge[] } | null>(null);
@@ -2701,6 +3113,22 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
 
+      // Ctrl+G / Cmd+G: Create group from selected items
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G') && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleCreateGroupFromSelection();
+        return;
+      }
+
+      // Ctrl+Shift+G / Cmd+Shift+G: Ungroup selected group(s)
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'g' || e.key === 'G') && e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleUngroupSelected();
+        return;
+      }
+
       // Ctrl+C / Cmd+C: Copy selected card(s)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
         const targetIds =
@@ -3258,15 +3686,27 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       ? selectedNodeIdsRef.current
       : [node.id];
 
-    const posMap = new Map<string, { x: number; y: number }>();
+    // If dragging a group, include all enclosed member nodes (and nested smaller groups) so they drag together in lockstep
+    const allDraggedIds = new Set(currentSelected);
     for (const sid of currentSelected) {
+      const sn = nodesRef.current.find((n) => n.id === sid);
+      if (sn && sn.type === 'group') {
+        const enclosedIds = getGroupContainedNodeIds(sn, nodesRef.current);
+        for (const encId of enclosedIds) {
+          allDraggedIds.add(encId);
+        }
+      }
+    }
+
+    const posMap = new Map<string, { x: number; y: number }>();
+    for (const sid of allDraggedIds) {
       const sn = nodesRef.current.find((n) => n.id === sid);
       if (sn) {
         posMap.set(sid, { x: sn.x, y: sn.y });
       }
     }
     multiDragInitialPositionsRef.current = posMap;
-  }, [cancelArrowTargetingOrFocus, clearTextSelection, commitActiveEdgeLabel, createEdge, retargetEdge]);
+  }, [cancelArrowTargetingOrFocus, clearTextSelection, commitActiveEdgeLabel, createEdge, getGroupContainedNodeIds, retargetEdge]);
 
   const resizingNodeIdRef = useRef<string | null>(null);
   const resizeHandleRef = useRef<ResizeHandleType | null>(null);
@@ -3611,6 +4051,25 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         bottom: (-curPan.y + cHeight) / curZoom,
       };
 
+      // Collect all node IDs actively moving with this drag (co-dragged items, group members, and nested groups)
+      // to ensure snap guidelines and object snapping never trigger against objects within the moving group
+      const ignoredNodeIds = new Set<string>();
+      if (multiDragInitialPositionsRef.current.size > 0) {
+        for (const id of multiDragInitialPositionsRef.current.keys()) {
+          ignoredNodeIds.add(id);
+        }
+      }
+      ignoredNodeIds.add(activeDragId);
+      for (const id of Array.from(ignoredNodeIds)) {
+        const item = currentNodes.find((cand) => cand.id === id);
+        if (item && item.type === 'group') {
+          const contained = getGroupContainedNodeIds(item, currentNodes);
+          for (const cId of contained) {
+            ignoredNodeIds.add(cId);
+          }
+        }
+      }
+
       const snapResult = calculateObjectSnap(
         activeDragId,
         rawX,
@@ -3621,7 +4080,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         node.height || 180,
         currentNodes,
         threshold,
-        viewport
+        viewport,
+        ignoredNodeIds
       );
 
       finalX = snapResult.x;
@@ -4244,12 +4704,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     for (const n of selectedNodes) {
       const w = n.width || 260;
       const h = n.height || 180;
+      const isGroup = n.type === 'group';
       const doc = n.document_id ? docMap.get(n.document_id) : null;
-      const showOutsideTitle = Boolean(doc || n.document_id) && n.type !== 'text';
+      const showOutsideTitle = (Boolean(doc || n.document_id) && n.type !== 'text') || isGroup;
       const nodeTop = showOutsideTitle ? n.y - 28 : n.y;
       let nodeRight = n.x + w;
       if (showOutsideTitle) {
-        const titleText = doc?.title || 'Untitled';
+        const titleText = isGroup ? (n.text_content || 'Untitled group') : (doc?.title || 'Untitled');
         const titleW = getTitleTextWidth(titleText);
         if (n.x + titleW > nodeRight) {
           nodeRight = n.x + titleW;
@@ -4875,6 +5336,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           selectedCount: currentSelectedIds.length,
           onFitToCenter: handleFitToCenter,
           onDuplicate: () => handleDuplicateSelectedNodes(),
+          onCreateGroup: handleCreateGroupFromSelection,
           onCopy: () => handleCopyCards(),
           onColorChange: (color) => {
             for (const id of currentSelectedIds) {
@@ -5060,6 +5522,29 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
 
+      if (node.type === 'group') {
+        const items = buildGroupContextMenu({
+          node,
+          onFitToCenter: () => handleFitNodeToCenter(node.id),
+          onRename: () => {
+            selectSingleNode(node.id);
+          },
+          onSelectAllInGroup: () => {
+            const allInnerIds = [node.id, ...getGroupContainedNodeIds(node, nodesRef.current)];
+            setSelectedNodeIds(allInnerIds);
+            selectedNodeIdsRef.current = allInnerIds;
+            setSelectedNodeId(node.id);
+          },
+          currentColor: node.color,
+          onColorChange: (color) => handleColorChange(node.id, color),
+          onUngroup: () => handleUngroup(node.id),
+          onDelete: () => handleDeleteNode(node.id),
+        });
+
+        showContextMenu(e, items, { scope: 'canvas-node-group', data: { node } });
+        return;
+      }
+
       // Default: text card
       const items = buildTextCardContextMenu({
         node,
@@ -5083,6 +5568,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       handleConvertCardToFile,
       handleCopyCards,
       handleDeleteNode,
+      handleUngroup,
+      getGroupContainedNodeIds,
       handleDeleteSelectedNodes,
       handleDuplicateSelectedNodes,
       handleFitNodeToCenter,
@@ -5503,42 +5990,42 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         showDocOptions={true}
         customRightActions={
           <>
-            {/* Zoom In Button */}
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              title={`Zoom in (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
-            >
-              <PlusSignIcon size={14} />
-            </button>
-
-            {/* Reset Zoom Button */}
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              title={`Reset zoom (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
-            >
-              <RotateCcwIcon size={14} />
-            </button>
-
-            {/* Fit to Center Button */}
+            {/* 1. Fit to Center Button */}
             <button
               type="button"
               onClick={handleFitToCenter}
-              title="Fit to center"
-              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+              title="Zoom to fit all (Shift+1)"
+              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <CenterFocusIcon size={14} />
             </button>
 
-            {/* Zoom Out Button */}
+            {/* 2. Reset Zoom (Restore) Button */}
+            <button
+              type="button"
+              onClick={handleResetZoom}
+              title={`Reset zoom (${Math.round(zoom * 100)}%)`}
+              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            >
+              <RotateCcwIcon size={14} />
+            </button>
+
+            {/* 3. Zoom In Button */}
+            <button
+              type="button"
+              onClick={handleZoomIn}
+              title={`Zoom in (${Math.round(zoom * 100)}%)`}
+              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            >
+              <PlusSignIcon size={14} />
+            </button>
+
+            {/* 4. Zoom Out Button */}
             <button
               type="button"
               onClick={handleZoomOut}
               title={`Zoom out (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <MinusSignIcon size={14} />
             </button>
@@ -5940,45 +6427,89 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             </svg>
           )}
 
-        {visibleNodes.map((node) => {
-          const doc = node.document_id ? docMap.get(node.document_id) || null : null;
-          const isSelected = selectedNodeIds.includes(node.id) || selectedNodeId === node.id;
-          const isMultiSelected = selectedNodeIds.length > 1;
-          const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
+        {visibleNodes
+          .slice()
+          .sort((a, b) => {
+            if (a.type === 'group' && b.type !== 'group') return -1;
+            if (a.type !== 'group' && b.type === 'group') return 1;
+            if (a.type === 'group' && b.type === 'group') {
+              // Larger groups rendered first (in the background), smaller nested groups on top
+              const areaA = (a.width || 400) * (a.height || 300);
+              const areaB = (b.width || 400) * (b.height || 300);
+              return areaB - areaA;
+            }
+            return 0;
+          })
+          .map((node) => {
+            const isSelected = selectedNodeIds.includes(node.id) || selectedNodeId === node.id;
+            const isMultiSelected = selectedNodeIds.length > 1;
 
-          return (
-            <CanvasCard
-              key={node.id}
-              node={node}
-              doc={doc}
-              contentJson={contentJson}
-              isSelected={isSelected}
-              isMultiSelected={isMultiSelected}
-              isSpacePressed={isPanModifierState}
-              isPanModifier={isPanModifierState}
-              isPanning={isPanningState}
-              isDragging={isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id)}
-              isReadOnly={canvasReadOnly}
-              zoom={zoom}
-              autoFocus={autoEditingNodeId === node.id}
-              onAutoFocusConsumed={() => setAutoEditingNodeId((current) => (current === node.id ? null : current))}
-              onSelect={handleNodePointerDown}
-              onOpenDoc={handleOpenDoc}
-              onFitToCenter={handleFitNodeToCenter}
-              onDelete={handleDeleteNode}
-              onColorChange={handleColorChange}
-              onTextChange={handleTextChange}
-              onDocContentChange={handleDocContentChange}
-              onResizeStart={handleResizeStart}
-              onImageDimensions={handleImageDimensions}
-              onTaskToggle={handleTaskToggle}
-              onSideDotPointerDown={handleSideDotPointerDown}
-              activeSnapSide={draftEdge?.snappedTarget?.nodeId === node.id ? draftEdge.snappedTarget.side : null}
-              isDraftingArrow={Boolean(draftEdge)}
-              onContextMenu={handleCardContextMenu}
-            />
-          );
-        })}
+            if (node.type === 'group') {
+              return (
+                <CanvasGroup
+                  key={node.id}
+                  node={node}
+                  isSelected={isSelected}
+                  isMultiSelected={isMultiSelected}
+                  depth={groupDepthMap.get(node.id) || 0}
+                  onSelect={handleNodePointerDown}
+                  onDelete={handleDeleteNode}
+                  onUngroup={handleUngroup}
+                  onColorChange={handleColorChange}
+                  onLabelChange={handleGroupLabelChange}
+                  onFitToCenter={handleFitNodeToCenter}
+                  onAlign={handleAlignGroupItems}
+                  onResizeStart={handleResizeStart}
+                  onSideDotPointerDown={handleSideDotPointerDown}
+                  activeSnapSide={draftEdge?.snappedTarget?.nodeId === node.id ? draftEdge.snappedTarget.side : null}
+                  isDraftingArrow={Boolean(draftEdge)}
+                  isSpacePressed={isPanModifierState}
+                  isPanModifier={isPanModifierState}
+                  isPanning={isPanningState}
+                  isDragging={isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id)}
+                  isReadOnly={canvasReadOnly}
+                  zoom={zoom}
+                  onContextMenu={handleCardContextMenu}
+                />
+              );
+            }
+
+            const doc = node.document_id ? docMap.get(node.document_id) || null : null;
+            const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
+
+            return (
+              <CanvasCard
+                key={node.id}
+                node={node}
+                doc={doc}
+                contentJson={contentJson}
+                isSelected={isSelected}
+                isMultiSelected={isMultiSelected}
+                isSpacePressed={isPanModifierState}
+                isPanModifier={isPanModifierState}
+                isPanning={isPanningState}
+                isDragging={isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id)}
+                isReadOnly={canvasReadOnly}
+                zoom={zoom}
+                autoFocus={autoEditingNodeId === node.id}
+                onAutoFocusConsumed={() => setAutoEditingNodeId((current) => (current === node.id ? null : current))}
+                onSelect={handleNodePointerDown}
+                onOpenDoc={handleOpenDoc}
+                onFitToCenter={handleFitNodeToCenter}
+                onDelete={handleDeleteNode}
+                onColorChange={handleColorChange}
+                onTextChange={handleTextChange}
+                onDocContentChange={handleDocContentChange}
+                onResizeStart={handleResizeStart}
+                onImageDimensions={handleImageDimensions}
+                onTaskToggle={handleTaskToggle}
+                onSideDotPointerDown={handleSideDotPointerDown}
+                activeSnapSide={draftEdge?.snappedTarget?.nodeId === node.id ? draftEdge.snappedTarget.side : null}
+                isDraftingArrow={Boolean(draftEdge)}
+                onContextMenu={handleCardContextMenu}
+              />
+            );
+          })}
 
         {/* Arrowhead / Endpoint Retarget Grab Handles Layer */}
         <svg
@@ -6095,7 +6626,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               width: `${multiSelectBounds.width}px`,
               height: `${multiSelectBounds.height}px`,
             }}
-            className="absolute border border-[#b8b8b8]/45 bg-[#909090]/[0.07] rounded-[2px] pointer-events-none z-25 transition-none select-none"
+            className="absolute border border-[#b8b8b8]/45 bg-[#909090]/[0.07] rounded-[2px] pointer-events-none z-40 transition-none select-none"
           >
             <svg className="absolute -inset-[4px] w-[calc(100%+8px)] h-[calc(100%+8px)] overflow-visible pointer-events-none">
               <rect
@@ -6121,6 +6652,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                   onDelete={handleDeleteSelectedNodes}
                   onColorChange={handleBatchColorChange}
                   onFitToCenter={handleFitMultiSelectionToCenter}
+                  onCreateGroup={handleCreateGroupFromSelection}
+                  onAlign={handleAlignSelectedNodes}
                   zoom={zoom}
                   count={multiSelectBounds.count}
                 />

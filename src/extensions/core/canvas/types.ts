@@ -5,7 +5,7 @@
  * Kept strictly within the Canvas plugin directory to prevent type leakage into Noether native core.
  */
 
-export type CanvasNodeType = 'note' | 'text' | 'link' | 'image' | 'audio' | 'video' | 'pdf' | string;
+export type CanvasNodeType = 'note' | 'text' | 'link' | 'image' | 'audio' | 'video' | 'pdf' | 'group' | string;
 
 export interface CanvasNode {
   id: string;

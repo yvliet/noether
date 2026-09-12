@@ -161,6 +161,22 @@ import {
   TerminalIcon as HugeTerminalIcon,
   Grid02Icon as HugeGrid02Icon,
   LockIcon as HugeLockIcon,
+  GroupIcon as HugeGroupIcon,
+  AlignStartVerticalIcon as HugeAlignStartVerticalIcon,
+  AlignLeftIcon as HugeAlignLeftIcon,
+  AlignHorizontalCenterIcon as HugeAlignHorizontalCenterIcon,
+  AlignRightIcon as HugeAlignRightIcon,
+  AlignTopIcon as HugeAlignTopIcon,
+  AlignVerticalCenterIcon as HugeAlignVerticalCenterIcon,
+  AlignBottomIcon as HugeAlignBottomIcon,
+  AlignHorizontalJustifyStartIcon as HugeAlignHorizontalJustifyStartIcon,
+  AlignVerticalJustifyStartIcon as HugeAlignVerticalJustifyStartIcon,
+  Grid2X2Icon as HugeGrid2X2Icon,
+  DistributeHorizontalCenterIcon as HugeDistributeHorizontalCenterIcon,
+  DistributeVerticalCenterIcon as HugeDistributeVerticalCenterIcon,
+  AlignHorizontalJustifyCenterIcon as HugeAlignHorizontalJustifyCenterIcon,
+  AlignVerticalJustifyCenterIcon as HugeAlignVerticalJustifyCenterIcon,
+  UngroupIcon as HugeUngroupIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -412,6 +428,22 @@ export const Bug01Icon = createIcon(HugeBug01Icon);
 export const Grid02Icon = createIcon(HugeGrid02Icon);
 export const LockIcon = createIcon(HugeLockIcon);
 export const Lock01Icon = LockIcon;
+export const GroupIcon = createIcon(HugeGroupIcon);
+export const AlignStartVerticalIcon = createIcon(HugeAlignStartVerticalIcon);
+export const AlignLeftIcon = createIcon(HugeAlignLeftIcon);
+export const AlignHorizontalCenterIcon = createIcon(HugeAlignHorizontalCenterIcon);
+export const AlignRightIcon = createIcon(HugeAlignRightIcon);
+export const AlignTopIcon = createIcon(HugeAlignTopIcon);
+export const AlignVerticalCenterIcon = createIcon(HugeAlignVerticalCenterIcon);
+export const AlignBottomIcon = createIcon(HugeAlignBottomIcon);
+export const AlignHorizontalJustifyStartIcon = createIcon(HugeAlignHorizontalJustifyStartIcon);
+export const AlignVerticalJustifyStartIcon = createIcon(HugeAlignVerticalJustifyStartIcon);
+export const Grid2X2Icon = createIcon(HugeGrid2X2Icon);
+export const DistributeHorizontalCenterIcon = createIcon(HugeDistributeHorizontalCenterIcon);
+export const DistributeVerticalCenterIcon = createIcon(HugeDistributeVerticalCenterIcon);
+export const AlignHorizontalJustifyCenterIcon = createIcon(HugeAlignHorizontalJustifyCenterIcon);
+export const AlignVerticalJustifyCenterIcon = createIcon(HugeAlignVerticalJustifyCenterIcon);
+export const UngroupIcon = createIcon(HugeUngroupIcon);
 
 // Export Huge Icon definitions for standalone SVG rendering (ProseMirror widgets, canvas, tooltips)
 export {

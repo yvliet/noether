@@ -39,9 +39,20 @@ Quick, lightweight notes for fleeting ideas, task checklists, or annotations:
 
 ### 3. Visual Group Containers
 Organize clusters of related nodes into bounded regions:
-- Select multiple cards and press `Ctrl+G` (or choose **Group** from the toolbar).
-- Give the group a labeled title header (e.g. *"Phase 1: Architecture"*).
-- Moving or resizing the group automatically transports all contained nodes together.
+- Select multiple cards or existing groups and press `Ctrl+G`, click **Create group** on the multi-selection ActionPill, or choose *Create group* from the context menu.
+- Displays an editable title floating above the top-left corner styled consistently with note cards without enclosing boxes, allowing quick inline renaming by double-clicking or clicking *Edit label*.
+- Group containers feature subtle `rounded-md` borders matching note cards and a translucent colored background tint, keeping the spatial canvas grid dots clearly visible through the interior.
+- Nodes must be fully inside the group container to be considered part of it; moving the group automatically transports all fully enclosed nodes together in lockstep, while partially overlapping or external cards remain unmoved.
+- Supports 8-direction perimeter resizing and 4-side connection anchor points (top, right, bottom, left) so you can attach relationship arrows directly to and from groups.
+- Dedicated Group ActionPill provides instant controls: *Edit label*, *Align*, *Fit to center*, *Change colour*, *Ungroup*, and *Delete*.
+- **Multi-Selection Coordination**: When multiple items are selected (including groups and cards), the group's individual ActionPill is automatically suppressed in favor of the shared Multi-Selection ActionPill, allowing batch alignment, grouping, or deletion.
+- **Nested Group Hierarchies**: Smaller groups can reside within larger groups and are treated as part of the parent group:
+  - Moving a parent group moves all enclosed cards and nested child groups in lockstep.
+  - Aligning items in a parent group aligns direct children (both cards and nested groups) while keeping internal offsets within child groups intact.
+  - Right-clicking any group container provides *Select all in group* to instantly select the group and all its nested contents.
+- **Ungroup vs Delete**:
+  - **Ungroup** (`Ctrl+Shift+G` or Ungroup button): Dissolves the visual boundary while leaving all cards, nested groups, and edges inside intact on the canvas.
+  - **Delete** (`Delete` / `Backspace` or Delete button): Deletes the group container together with all cards, nested groups, and edges enclosed within it.
 
 ### 4. Media & Web Cards
 - Drop local images, audio clips, or PDF documents onto the canvas for visual reference boards.
@@ -83,6 +94,9 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 | **Select All Nodes** | `Ctrl + A` |
 | **Copy / Paste Cards** | `Ctrl + C` / `Ctrl + V` (pastes centered at cursor) |
 | **Duplicate Node** | `Alt + Drag` or `Ctrl + D` |
+| **Group Selected Cards** | `Ctrl + G` or Create group on ActionPill |
+| **Ungroup Selected** | `Ctrl + Shift + G` or Ungroup on ActionPill |
+| **Align / Distribute Selection** | Align menu on ActionPill (13 operations) |
 | **Nudge Selected Cards** | Arrow keys (`Shift + Arrow` for larger step) |
 | **Cancel / Deselect** | `Escape` |
 | **Bend Edge Curve / Step** | Hold `Shift` + Drag on any edge, or drag the selected edge midpoint handle |

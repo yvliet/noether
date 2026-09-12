@@ -34,6 +34,8 @@ import {
   PaletteIcon,
   Delete02Icon,
   FileAddIcon,
+  GroupIcon,
+  UngroupIcon,
 } from '@/components/common/Icons';
 
 export const SnapToObjectsIcon: React.FC<{ size?: number; className?: string }> = ({
@@ -501,6 +503,7 @@ export interface MultiSelectMenuParams {
   selectedCount: number;
   onFitToCenter: () => void;
   onDuplicate: () => void;
+  onCreateGroup?: () => void;
   onCopy?: () => void;
   onColorChange: (color: string) => void;
   onDelete: () => void;
@@ -514,6 +517,17 @@ export function buildMultiSelectContextMenu(params: MultiSelectMenuParams): Cont
       icon: <CenterFocusIcon size={14} />,
       onClick: params.onFitToCenter,
     },
+    ...(params.onCreateGroup
+      ? [
+          {
+            id: 'multi-group',
+            title: `Create group (${params.selectedCount} items)`,
+            icon: <GroupIcon size={14} />,
+            shortcut: 'Ctrl+G',
+            onClick: params.onCreateGroup,
+          },
+        ]
+      : []),
     {
       id: 'multi-duplicate',
       title: `Duplicate ${params.selectedCount} cards`,
@@ -543,6 +557,66 @@ export function buildMultiSelectContextMenu(params: MultiSelectMenuParams): Cont
       id: 'multi-delete',
       title: `Delete ${params.selectedCount} cards`,
       icon: <Delete02Icon size={14} />,
+      isDanger: true,
+      onClick: params.onDelete,
+    },
+  ];
+}
+
+export interface GroupMenuParams {
+  node: CanvasNode;
+  onFitToCenter: () => void;
+  onRename: () => void;
+  onSelectAllInGroup?: () => void;
+  currentColor?: string;
+  onColorChange: (color: string) => void;
+  onUngroup: () => void;
+  onDelete: () => void;
+}
+
+export function buildGroupContextMenu(params: GroupMenuParams): ContextMenuItem[] {
+  return [
+    {
+      id: 'group-fit-center',
+      title: 'Fit group to center',
+      icon: <CenterFocusIcon size={14} />,
+      onClick: params.onFitToCenter,
+    },
+    {
+      id: 'group-rename',
+      title: 'Rename group',
+      icon: <Edit02Icon size={14} />,
+      onClick: params.onRename,
+    },
+    ...(params.onSelectAllInGroup
+      ? [
+          {
+            id: 'group-select-all',
+            title: 'Select all in group',
+            icon: <GroupIcon size={14} />,
+            onClick: params.onSelectAllInGroup,
+          },
+        ]
+      : []),
+    {
+      id: 'group-color',
+      title: 'Color',
+      icon: <PaletteIcon size={14} />,
+      submenu: buildColorSubmenu(params.currentColor, params.onColorChange),
+    },
+    { type: 'separator' },
+    {
+      id: 'group-ungroup',
+      title: 'Ungroup',
+      icon: <UngroupIcon size={14} />,
+      shortcut: 'Ctrl+Shift+G',
+      onClick: params.onUngroup,
+    },
+    {
+      id: 'group-delete',
+      title: 'Delete group and contents',
+      icon: <Delete02Icon size={14} />,
+      shortcut: 'Del',
       isDanger: true,
       onClick: params.onDelete,
     },

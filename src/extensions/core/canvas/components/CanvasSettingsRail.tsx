@@ -112,10 +112,10 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
 
   return (
     <>
-      {/* Vertical Tool Rail: directly below More Options with 4px (gap-1) spacing */}
+      {/* Vertical Tool Rail: directly below More Options with 2px (gap-0.5) spacing and matching drop shadow */}
       <div
         data-canvas-settings-rail="true"
-        className="absolute right-4 top-[36px] z-20 flex flex-col gap-1 items-center pointer-events-auto select-none"
+        className="absolute right-4 top-[29px] z-20 flex flex-col gap-0.5 items-center pointer-events-auto select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
       >
         {/* Settings / Gear Button */}
         <button
@@ -123,10 +123,10 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
           type="button"
           onClick={handleToggleMenu}
           title="Canvas settings"
-          className={`p-1 rounded cursor-pointer ${
+          className={`p-1 rounded cursor-pointer text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] ${
             isMenuOpen
-              ? 'text-white bg-[#282828]'
-              : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
+              ? '!text-[var(--noether-text-primary)] !bg-[var(--noether-bg-card-hover)]'
+              : ''
           }`}
         >
           <Settings02Icon size={14} />
@@ -138,11 +138,7 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
           onClick={onUndo}
           disabled={!canUndo}
           title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
-          className={`p-1 rounded ${
-            canUndo
-              ? 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
-              : 'text-[#555] opacity-40 cursor-not-allowed'
-          }`}
+          className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
         >
           <UndoIcon size={14} />
         </button>
@@ -153,11 +149,7 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
           onClick={onRedo}
           disabled={!canRedo}
           title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
-          className={`p-1 rounded ${
-            canRedo
-              ? 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
-              : 'text-[#555] opacity-40 cursor-not-allowed'
-          }`}
+          className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
         >
           <RedoIcon size={14} />
         </button>
@@ -173,46 +165,47 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
               top: `${menuPos.top}px`,
               right: `${menuPos.right}px`,
               zIndex: 99999,
+              boxShadow: 'var(--noether-shadow-2)',
             }}
-            className="w-48 bg-[#1e1e1e] border border-[#333333] rounded-[8px] shadow-[0_8px_24px_rgba(0,0,0,0.65),0_2px_6px_rgba(0,0,0,0.3)] p-1 text-xs flex flex-col gap-0.5 select-none"
+            className="w-48 bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] select-none"
           >
             {/* Snap to grid */}
             <button
               type="button"
               onClick={() => setCanvasSnapGrid(!canvasSnapGrid)}
-              className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[#c5c6c8] hover:text-white hover:bg-[#282828] cursor-pointer"
+              className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <Grid02Icon size={14} className="text-[#888] shrink-0" />
+                <Grid02Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span>Snap to grid</span>
               </div>
-              {canvasSnapGrid && <CheckIcon size={14} className="text-[#dcddde] shrink-0" />}
+              {canvasSnapGrid && <CheckIcon size={14} className="text-[var(--noether-text-primary)] shrink-0" />}
             </button>
 
             {/* Snap to objects */}
             <button
               type="button"
               onClick={() => setCanvasSnapObjects(!canvasSnapObjects)}
-              className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[#c5c6c8] hover:text-white hover:bg-[#282828] cursor-pointer"
+              className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <SnapToObjectsIcon size={14} className="text-[#888] shrink-0" />
+                <SnapToObjectsIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span>Snap to objects</span>
               </div>
-              {canvasSnapObjects && <CheckIcon size={14} className="text-[#dcddde] shrink-0" />}
+              {canvasSnapObjects && <CheckIcon size={14} className="text-[var(--noether-text-primary)] shrink-0" />}
             </button>
 
             {/* Read-only */}
             <button
               type="button"
               onClick={() => setCanvasReadOnly(!canvasReadOnly)}
-              className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[#c5c6c8] hover:text-white hover:bg-[#282828] cursor-pointer"
+              className="flex items-center justify-between w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
             >
               <div className="flex items-center gap-2">
-                <LockIcon size={14} className="text-[#888] shrink-0" />
+                <LockIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span>Read-only</span>
               </div>
-              {canvasReadOnly && <CheckIcon size={14} className="text-[#dcddde] shrink-0" />}
+              {canvasReadOnly && <CheckIcon size={14} className="text-[var(--noether-text-primary)] shrink-0" />}
             </button>
           </div>,
           document.body
