@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
-  Search01Icon,
-  File01Icon,
-  FileAddIcon,
-  Calendar01Icon,
-  Brain02Icon,
-  Cancel01Icon,
-  GitForkIcon,
+  FileEmpty01Icon,
   Layout01Icon,
-  CheckmarkSquare02Icon,
-  HelpCircleIcon,
-  Database01Icon,
   CommandIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -18,6 +9,9 @@ import { useDocumentStore } from '@/store/documentStore';
 import { searchFullText, FTSResult } from '@/lib/db/fts';
 import { getDocumentPath } from '@/lib/db/documents';
 import { useNoetherApp, useCommands } from '@/core/app/AppContext';
+import type { NoetherApp } from '@/core/app/NoetherApp';
+import type { DocumentItem } from '@/types';
+import type { CommandItem } from '@/core/extensions/types';
 
 export const CommandPalette: React.FC = React.memo(() => {
   const app = useNoetherApp();
@@ -35,14 +29,18 @@ export const CommandPalette: React.FC = React.memo(() => {
   const [results, setResults] = useState<FTSResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
-  // Focus input when opened
+  // Focus input and reset on open
   useEffect(() => {
     if (isCommandPaletteOpen) {
       setQuery('');
       setResults([]);
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      const timer = setTimeout(() => {
+        inputRef.current?.focus();
+      }, 30);
+      return () => clearTimeout(timer);
     }
   }, [isCommandPaletteOpen]);
 
@@ -56,201 +54,585 @@ export const CommandPalette: React.FC = React.memo(() => {
     const timer = setTimeout(async () => {
       const searchRes = await searchFullText(query);
       setResults(searchRes);
-      setSelectedIndex(0);
     }, 150);
 
     return () => clearTimeout(timer);
   }, [query]);
 
+  // Recent notes for initial state (when query is empty)
+  const recentNotes = useMemo(() => {
+    return documents
+      .filter((doc: DocumentItem) => !doc.is_folder)
+      .sort((a, b) => (b.updated_at || b.created_at || 0) - (a.updated_at || a.created_at || 0))
+      .slice(0, 5)
+      .map((doc) => ({
+        document_id: doc.id,
+        document_title: doc.title || 'Untitled',
+        is_canvas: doc.doc_type === 'canvas',
+      }));
+  }, [documents]);
+
+  // Instant document matches by title or path
+  const matchedDocs = useMemo(() => {
+    if (!query.trim()) return [];
+    const q = query.toLowerCase().trim();
+    return documents
+      .filter((doc: DocumentItem) => {
+        if (doc.is_folder) return false;
+        const titleMatch = (doc.title || '').toLowerCase().includes(q);
+        if (titleMatch) return true;
+        const path = getDocumentPath(doc, documents).toLowerCase();
+        return path.includes(q);
+      })
+      .slice(0, 15);
+  }, [query, documents]);
+
+  // Combined notes from title matches & FTS block matches
+  const displayedNotes = useMemo(() => {
+    if (!query.trim()) return [];
+
+    const seenDocIds = new Set<string>();
+    const combined: Array<{
+      document_id: string;
+      document_title: string;
+      content_text?: string;
+      is_canvas?: boolean;
+    }> = [];
+
+    // Title / path matches first (instant)
+    for (const doc of matchedDocs) {
+      if (!seenDocIds.has(doc.id)) {
+        seenDocIds.add(doc.id);
+        combined.push({
+          document_id: doc.id,
+          document_title: doc.title || 'Untitled',
+          is_canvas: doc.doc_type === 'canvas',
+        });
+      }
+    }
+
+    // FTS content matches
+    for (const res of results) {
+      if (!seenDocIds.has(res.document_id)) {
+        seenDocIds.add(res.document_id);
+        const doc = documents.find((d) => d.id === res.document_id);
+        combined.push({
+          document_id: res.document_id,
+          document_title: doc?.title || res.document_title || 'Untitled',
+          content_text: res.content_text,
+          is_canvas: doc?.doc_type === 'canvas',
+        });
+      } else {
+        const existing = combined.find((c) => c.document_id === res.document_id);
+        if (existing && !existing.content_text && res.content_text) {
+          existing.content_text = res.content_text;
+        }
+      }
+    }
+
+    return combined;
+  }, [query, matchedDocs, results, documents]);
+
+const KNOWN_EXTENSION_NAMES: Record<string, string> = {
+  canvas: 'Canvas',
+  graph: 'Graph view',
+  'graph-view': 'Graph view',
+  tables: 'Tables',
+  tasks: 'Tasks',
+  journal: 'Journal',
+  bookmarks: 'Bookmarks',
+  backlinks: 'Backlinks',
+  marketplace: 'Marketplace',
+  sketch: 'Sketch',
+  sync: 'Sync',
+  'more-icons': 'More icons',
+  outline: 'Outline',
+  tags: 'Tags',
+  properties: 'Properties',
+};
+
+function getExtensionName(cmd: CommandItem): string | null {
+  if (!cmd.extensionId || cmd.extensionId === 'defaults' || cmd.extensionId === 'default-commands') {
+    return null;
+  }
+  if (KNOWN_EXTENSION_NAMES[cmd.extensionId]) {
+    return KNOWN_EXTENSION_NAMES[cmd.extensionId];
+  }
+  if (cmd.extensionName) {
+    return cmd.extensionName.replace(/\s+Extension$/i, '').trim();
+  }
+  return null;
+}
+
+function cleanCommandTitle(title: string, extName: string | null): string {
+  let cleaned = title.trim();
+  if (extName) {
+    const escaped = extName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    cleaned = cleaned.replace(new RegExp(`^${escaped}\\s*[:\\-]\\s*`, 'i'), '');
+    cleaned = cleaned.replace(new RegExp(`\\s*\\(${escaped}\\)\\s*$`, 'i'), '');
+  }
+  cleaned = cleaned.replace(/^extensions?:\s*/i, '');
+  for (const known of Object.values(KNOWN_EXTENSION_NAMES)) {
+    const escaped = known.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    cleaned = cleaned.replace(new RegExp(`^${escaped}\\s*[:\\-]\\s*`, 'i'), '');
+    cleaned = cleaned.replace(new RegExp(`\\s*\\(${escaped}\\)\\s*$`, 'i'), '');
+  }
+  return cleaned.trim();
+}
+
+function getCommandTitle(cmd: CommandItem, app: NoetherApp): string {
+  if (typeof cmd.title === 'function') {
+    try {
+      return cmd.title(app);
+    } catch {
+      return cmd.id;
+    }
+  }
+  return cmd.title;
+}
+
+function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
+  if (typeof cmd.icon === 'function') {
+    try {
+      return cmd.icon(app);
+    } catch {
+      return null;
+    }
+  }
+  return cmd.icon;
+}
+
   // Filter commands by query if query is typed
   const filteredCommands = useMemo(() => {
     if (!query.trim()) return registeredCommands;
-    const q = query.toLowerCase();
-    return registeredCommands.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        (c.section && c.section.toLowerCase().includes(q))
-    );
-  }, [query, registeredCommands]);
+    const q = query.toLowerCase().trim();
+    return registeredCommands.filter((c) => {
+      const extName = getExtensionName(c);
+      const dynamicTitle = getCommandTitle(c, app);
+      const cleanTitle = cleanCommandTitle(dynamicTitle, extName);
+      const extSuffix = extName ? ` (${extName})` : '';
+      const fullTitle = `${cleanTitle}${extSuffix}`.toLowerCase();
+      const section = (c.section || '').toLowerCase();
+      
+      if (fullTitle.includes(q) || section.includes(q)) return true;
 
-  const totalItems = query.trim() ? results.length + filteredCommands.length : registeredCommands.length;
+      // Check search aliases (e.g. ['toggle', 'sidebar', ...])
+      if (c.aliases && c.aliases.some((alias) => alias.toLowerCase().includes(q))) {
+        return true;
+      }
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % Math.max(1, totalItems));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((prev) => (prev + totalItems - 1) % Math.max(1, totalItems));
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (query.trim()) {
-        if (selectedIndex < results.length) {
-          const item = results[selectedIndex];
-          const doc = documents.find((d) => d.id === item.document_id);
-          const docTitle = doc?.title || item.document_title || 'Untitled';
-          setIsCommandPaletteOpen(false);
-          openTab(item.document_id, docTitle);
-          setActiveDocumentById(item.document_id);
-          setMainViewMode('document');
-        } else {
-          const cmdIndex = selectedIndex - results.length;
-          const cmd = filteredCommands[cmdIndex];
-          if (cmd) {
-            setIsCommandPaletteOpen(false);
-            cmd.action(app);
+      // Fallback: If user queries "toggle", match commands with "toggle" in id or aliases
+      if (q === 'toggle' && (c.id.toLowerCase().includes('toggle') || c.id.toLowerCase().includes('sidebar'))) {
+        return true;
+      }
+
+      return false;
+    });
+  }, [query, registeredCommands, app]);
+
+  const totalItems = query.trim()
+    ? displayedNotes.length + filteredCommands.length
+    : recentNotes.length + registeredCommands.length;
+
+  // Check whether an item at a given index is selectable / enabled
+  const isIndexEnabled = useCallback(
+    (index: number): boolean => {
+      if (!query.trim()) {
+        if (index < recentNotes.length) return true;
+        const cmd = registeredCommands[index - recentNotes.length];
+        return cmd ? (cmd.isEnabled ? cmd.isEnabled(app) : true) : false;
+      } else {
+        if (index < displayedNotes.length) return true;
+        const cmd = filteredCommands[index - displayedNotes.length];
+        return cmd ? (cmd.isEnabled ? cmd.isEnabled(app) : true) : false;
+      }
+    },
+    [query, recentNotes.length, registeredCommands, displayedNotes.length, filteredCommands, app]
+  );
+
+  // Keep selectedIndex in bounds and on an enabled item
+  useEffect(() => {
+    setSelectedIndex((prev) => {
+      if (totalItems === 0) return 0;
+      let target = Math.min(prev, totalItems - 1);
+      if (isIndexEnabled(target)) return target;
+
+      // Scan forward
+      for (let i = target; i < totalItems; i++) {
+        if (isIndexEnabled(i)) return i;
+      }
+      // Scan backward
+      for (let i = target - 1; i >= 0; i--) {
+        if (isIndexEnabled(i)) return i;
+      }
+      return 0;
+    });
+  }, [totalItems, isIndexEnabled]);
+
+  // Scroll active item into view
+  useEffect(() => {
+    if (listRef.current) {
+      const activeItem = listRef.current.querySelector('[data-selected="true"]') as HTMLElement | null;
+      if (activeItem) {
+        activeItem.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedIndex]);
+
+  const handleSelectNote = useCallback(
+    (documentId: string, title?: string) => {
+      const doc = documents.find((d) => d.id === documentId);
+      const docTitle = doc?.title || title || 'Untitled';
+      setIsCommandPaletteOpen(false);
+      openTab(documentId, docTitle);
+      setActiveDocumentById(documentId);
+      setMainViewMode('document');
+    },
+    [documents, openTab, setActiveDocumentById, setMainViewMode, setIsCommandPaletteOpen]
+  );
+
+  const handleExecuteCommand = useCallback(
+    (cmd: CommandItem) => {
+      if (cmd.isEnabled && !cmd.isEnabled(app)) return;
+      setIsCommandPaletteOpen(false);
+      cmd.action(app);
+    },
+    [app, setIsCommandPaletteOpen]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsCommandPaletteOpen(false);
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (totalItems > 0) {
+          let next = (selectedIndex + 1) % totalItems;
+          let count = 0;
+          while (!isIndexEnabled(next) && count < totalItems) {
+            next = (next + 1) % totalItems;
+            count++;
+          }
+          if (count < totalItems) {
+            setSelectedIndex(next);
           }
         }
-      } else if (!query.trim() && registeredCommands[selectedIndex]) {
-        setIsCommandPaletteOpen(false);
-        registeredCommands[selectedIndex].action(app);
+        return;
       }
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setIsCommandPaletteOpen(false);
-    }
-  }, [query, results, filteredCommands, registeredCommands, selectedIndex, documents, openTab, setIsCommandPaletteOpen, setMainViewMode, setActiveDocumentById, app, totalItems]);
+
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (totalItems > 0) {
+          let prev = (selectedIndex - 1 + totalItems) % totalItems;
+          let count = 0;
+          while (!isIndexEnabled(prev) && count < totalItems) {
+            prev = (prev - 1 + totalItems) % totalItems;
+            count++;
+          }
+          if (count < totalItems) {
+            setSelectedIndex(prev);
+          }
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (totalItems === 0 || !isIndexEnabled(selectedIndex)) return;
+
+        if (query.trim()) {
+          if (selectedIndex < displayedNotes.length) {
+            const note = displayedNotes[selectedIndex];
+            handleSelectNote(note.document_id, note.document_title);
+          } else {
+            const cmdIndex = selectedIndex - displayedNotes.length;
+            const cmd = filteredCommands[cmdIndex];
+            if (cmd) {
+              handleExecuteCommand(cmd);
+            }
+          }
+        } else {
+          if (selectedIndex < recentNotes.length) {
+            const note = recentNotes[selectedIndex];
+            handleSelectNote(note.document_id, note.document_title);
+          } else {
+            const cmdIndex = selectedIndex - recentNotes.length;
+            const cmd = registeredCommands[cmdIndex];
+            if (cmd) {
+              handleExecuteCommand(cmd);
+            }
+          }
+        }
+      }
+    },
+    [
+      query,
+      totalItems,
+      selectedIndex,
+      displayedNotes,
+      filteredCommands,
+      recentNotes,
+      registeredCommands,
+      isIndexEnabled,
+      handleSelectNote,
+      handleExecuteCommand,
+      setIsCommandPaletteOpen,
+    ]
+  );
 
   if (!isCommandPaletteOpen) return null;
 
   return (
     <div
       onClick={() => setIsCommandPaletteOpen(false)}
-      className="fixed inset-0 z-50 bg-black/75 flex items-start justify-center pt-24"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/40"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-[#1c1c1c] border border-[#2e2e2e] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[500px]"
+        className="w-full max-w-xl bg-[#1e1e1e] border border-[#333333] rounded-xl shadow-2xl overflow-hidden flex flex-col"
       >
-        {/* Input Bar */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#282828] bg-[#1a1a1a]">
-          <Search01Icon size={18} className="text-[#8b8e95] shrink-0" />
+        {/* Top Search Input - Pure and clean without icons */}
+        <div className="relative flex items-center px-4 py-3 border-b border-[#2b2b2b]">
           <input
             ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
             onKeyDown={handleKeyDown}
-            placeholder="Quick Open notes or search commands..."
-            className="w-full bg-transparent text-sm text-[#e5e7eb] placeholder-[#60636c] outline-none"
+            placeholder="Type a command or search..."
+            className="w-full bg-transparent text-sm text-[#e0e0e0] placeholder-[#666666] outline-none font-normal"
           />
-          <button
-            onClick={() => setIsCommandPaletteOpen(false)}
-            className="p-1 rounded hover:bg-[#282828] text-[#8b8e95] hover:text-white"
-          >
-            <Cancel01Icon size={14} />
-          </button>
         </div>
 
         {/* Results / Commands List */}
-        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+        <div
+          ref={listRef}
+          className="max-h-[340px] overflow-y-auto p-2 custom-scrollbar flex flex-col gap-0.5"
+        >
           {query.trim() ? (
-            results.length > 0 || filteredCommands.length > 0 ? (
-              <div className="flex flex-col gap-1">
-                {results.length > 0 && (
-                  <>
-                    <div className="px-3 py-1 text-[10px] uppercase font-semibold text-[#6b7280]">
-                      Notes & Blocks
-                    </div>
-                    {results.map((res, index) => {
+            displayedNotes.length > 0 || filteredCommands.length > 0 ? (
+              <>
+                {displayedNotes.length > 0 && (
+                  <div className="flex flex-col gap-0.5">
+                    {displayedNotes.map((item, index) => {
                       const isSelected = index === selectedIndex;
-                      const doc = documents.find((d) => d.id === res.document_id);
-                      const displayTitle = doc ? getDocumentPath(doc, documents) : res.document_title;
+                      const doc = documents.find((d) => d.id === item.document_id);
+                      const displayTitle = doc ? getDocumentPath(doc, documents) : item.document_title;
+
                       return (
                         <div
-                          key={res.block_id || index}
-                          onClick={() => {
-                            const docTitle = doc?.title || res.document_title || 'Untitled';
-                            setIsCommandPaletteOpen(false);
-                            openTab(res.document_id, docTitle);
-                            setActiveDocumentById(res.document_id);
-                            setMainViewMode('document');
-                          }}
+                          key={item.document_id}
+                          data-selected={isSelected ? 'true' : undefined}
+                          onClick={() => handleSelectNote(item.document_id, item.document_title)}
                           onMouseEnter={() => setSelectedIndex(index)}
-                          className={`flex items-start gap-3 px-3 py-2 rounded-lg cursor-pointer ${
-                            isSelected ? 'bg-[#2a2a2a] text-white' : 'text-[#dcddde] hover:bg-[#222]'
+                          className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm ${
+                            isSelected
+                              ? 'bg-[#2b2b2b] text-[#ffffff]'
+                              : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0]'
                           }`}
                         >
-                          <File01Icon size={16} className="text-[#dcddde] shrink-0 mt-0.5" />
+                          <span
+                            className={`shrink-0 mt-0.5 ${
+                              isSelected ? 'text-[#ffffff]' : 'text-[#777777]'
+                            }`}
+                          >
+                            {item.is_canvas ? (
+                              <Layout01Icon size={16} />
+                            ) : (
+                              <FileEmpty01Icon size={16} />
+                            )}
+                          </span>
                           <div className="flex-1 min-w-0">
-                            <div className="font-medium text-xs text-[#e5e7eb] mb-0.5 truncate">
+                            <div className="truncate font-normal leading-tight">
                               {displayTitle}
                             </div>
-                            <div className="text-[11px] text-[#8b8e95] line-clamp-2 leading-relaxed">
-                              {res.content_text}
-                            </div>
+                            {item.content_text && (
+                              <div
+                                className={`text-xs line-clamp-1 leading-relaxed mt-0.5 ${
+                                  isSelected ? 'text-[#cccccc]' : 'text-[#666666]'
+                                }`}
+                              >
+                                {item.content_text}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
                     })}
-                  </>
+                  </div>
+                )}
+
+                {displayedNotes.length > 0 && filteredCommands.length > 0 && (
+                  <div className="my-1 border-t border-[#282828]" />
                 )}
 
                 {filteredCommands.length > 0 && (
-                  <>
-                    <div className="px-3 py-1 text-[10px] uppercase font-semibold text-[#6b7280] mt-1">
-                      Commands
-                    </div>
+                  <div className="flex flex-col gap-0.5">
                     {filteredCommands.map((cmd, index) => {
-                      const overallIndex = results.length + index;
+                      const overallIndex = displayedNotes.length + index;
                       const isSelected = overallIndex === selectedIndex;
+                      const isEnabled = cmd.isEnabled ? cmd.isEnabled(app) : true;
+                      const extName = getExtensionName(cmd);
+
                       return (
                         <div
                           key={cmd.id}
+                          data-selected={isSelected ? 'true' : undefined}
                           onClick={() => {
-                            setIsCommandPaletteOpen(false);
-                            cmd.action(app);
+                            if (isEnabled) handleExecuteCommand(cmd);
                           }}
-                          onMouseEnter={() => setSelectedIndex(overallIndex)}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer ${
-                            isSelected ? 'bg-[#2a2a2a] text-white' : 'text-[#dcddde] hover:bg-[#222]'
+                          onMouseEnter={() => {
+                            if (isEnabled) setSelectedIndex(overallIndex);
+                          }}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg select-none text-sm ${
+                            !isEnabled
+                              ? 'opacity-40 cursor-not-allowed text-[#666666]'
+                              : isSelected
+                              ? 'bg-[#2b2b2b] text-[#ffffff] cursor-pointer'
+                              : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0] cursor-pointer'
                           }`}
                         >
-                          <div className="flex items-center gap-3">
-                            {cmd.icon || <CommandIcon size={16} className="text-[#8b8e95]" />}
-                            <span className="text-xs font-medium">{cmd.title}</span>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span
+                              className={`shrink-0 ${
+                                !isEnabled
+                                  ? 'text-[#555555]'
+                                  : isSelected
+                                  ? 'text-[#ffffff]'
+                                  : 'text-[#777777]'
+                              }`}
+                            >
+                              {getCommandIcon(cmd, app) || <CommandIcon size={16} />}
+                            </span>
+                            <div className="truncate font-normal">
+                              <span>{cleanCommandTitle(getCommandTitle(cmd, app), extName)}</span>
+                            </div>
                           </div>
                           {cmd.hotkey && (
-                            <span className="text-xs text-[#8b8e95] shrink-0">
+                            <span
+                              className={`text-xs shrink-0 ml-3 ${
+                                isSelected && isEnabled ? 'text-[#aaaaaa]' : 'text-[#666666]'
+                              }`}
+                            >
                               {cmd.hotkey}
                             </span>
                           )}
                         </div>
                       );
                     })}
-                  </>
+                  </div>
                 )}
-              </div>
+              </>
             ) : (
-              <div className="text-center py-10 text-xs text-[#60636c]">
+              <div className="py-8 text-center text-xs text-[#666666]">
                 No matching notes or commands found
               </div>
             )
           ) : (
-            <div className="flex flex-col gap-1">
-              <div className="px-3 py-1 text-[10px] uppercase font-semibold text-[#6b7280]">
-                Commands
-              </div>
+            <div className="flex flex-col gap-0.5">
+              {/* Recent Files */}
+              {recentNotes.length > 0 && (
+                <div className="flex flex-col gap-0.5">
+                  {recentNotes.map((item, index) => {
+                    const isSelected = index === selectedIndex;
+                    const doc = documents.find((d) => d.id === item.document_id);
+                    const displayTitle = doc ? getDocumentPath(doc, documents) : item.document_title;
+
+                    return (
+                      <div
+                        key={item.document_id}
+                        data-selected={isSelected ? 'true' : undefined}
+                        onClick={() => handleSelectNote(item.document_id, item.document_title)}
+                        onMouseEnter={() => setSelectedIndex(index)}
+                        className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm ${
+                          isSelected
+                            ? 'bg-[#2b2b2b] text-[#ffffff]'
+                            : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0]'
+                        }`}
+                      >
+                        <span
+                          className={`shrink-0 mt-0.5 ${
+                            isSelected ? 'text-[#ffffff]' : 'text-[#777777]'
+                          }`}
+                        >
+                          {item.is_canvas ? (
+                            <Layout01Icon size={16} />
+                          ) : (
+                            <FileEmpty01Icon size={16} />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="truncate font-normal leading-tight">
+                            {displayTitle}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {recentNotes.length > 0 && registeredCommands.length > 0 && (
+                <div className="my-1 border-t border-[#282828]" />
+              )}
+
+              {/* Commands */}
               {registeredCommands.map((cmd, index) => {
-                const isSelected = index === selectedIndex;
+                const overallIndex = recentNotes.length + index;
+                const isSelected = overallIndex === selectedIndex;
+                const isEnabled = cmd.isEnabled ? cmd.isEnabled(app) : true;
+                const extName = getExtensionName(cmd);
+
                 return (
                   <div
                     key={cmd.id}
+                    data-selected={isSelected ? 'true' : undefined}
                     onClick={() => {
-                      setIsCommandPaletteOpen(false);
-                      cmd.action(app);
+                      if (isEnabled) handleExecuteCommand(cmd);
                     }}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer ${
-                      isSelected ? 'bg-[#2a2a2a] text-white' : 'text-[#dcddde] hover:bg-[#222]'
+                    onMouseEnter={() => {
+                      if (isEnabled) setSelectedIndex(overallIndex);
+                    }}
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg select-none text-sm ${
+                      !isEnabled
+                        ? 'opacity-40 cursor-not-allowed text-[#666666]'
+                        : isSelected
+                        ? 'bg-[#2b2b2b] text-[#ffffff] cursor-pointer'
+                        : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0] cursor-pointer'
                     }`}
                   >
-                    <div className="flex items-center gap-3">
-                      {cmd.icon || <CommandIcon size={16} className="text-[#8b8e95]" />}
-                      <span className="text-xs font-medium">{cmd.title}</span>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span
+                        className={`shrink-0 ${
+                          !isEnabled
+                            ? 'text-[#555555]'
+                            : isSelected
+                            ? 'text-[#ffffff]'
+                            : 'text-[#777777]'
+                        }`}
+                      >
+                        {getCommandIcon(cmd, app) || <CommandIcon size={16} />}
+                      </span>
+                      <div className="truncate font-normal">
+                        <span>{cleanCommandTitle(getCommandTitle(cmd, app), extName)}</span>
+                      </div>
                     </div>
                     {cmd.hotkey && (
-                      <span className="text-xs text-[#8b8e95] shrink-0">
+                      <span
+                        className={`text-xs shrink-0 ml-3 ${
+                          isSelected && isEnabled ? 'text-[#aaaaaa]' : 'text-[#666666]'
+                        }`}
+                      >
                         {cmd.hotkey}
                       </span>
                     )}
@@ -261,17 +643,19 @@ export const CommandPalette: React.FC = React.memo(() => {
           )}
         </div>
 
-        {/* Footer Hotkey Guide */}
-        <div className="h-8 px-4 bg-[#161616] border-t border-[#262626] flex items-center justify-between text-[10px] text-[#60636c]">
-          <div className="flex items-center gap-3">
-            <span><kbd className="bg-[#242424] px-1 py-0.5 rounded text-[#9ca3af]">↑</kbd> <kbd className="bg-[#242424] px-1 py-0.5 rounded text-[#9ca3af]">↓</kbd> to navigate</span>
-            <span><kbd className="bg-[#242424] px-1 py-0.5 rounded text-[#9ca3af]">Enter</kbd> to select</span>
-            <span><kbd className="bg-[#242424] px-1 py-0.5 rounded text-[#9ca3af]">Esc</kbd> to close</span>
-          </div>
-          <span>Noether FTS Search</span>
+        {/* Keyboard Navigation Footer */}
+        <div className="px-4 py-2.5 border-t border-[#2a2a2a] flex items-center justify-center gap-4 text-[11px] text-[#777777] select-none">
+          <span>
+            <strong className="font-semibold text-[#aaaaaa]">↑↓</strong> to navigate
+          </span>
+          <span>
+            <strong className="font-semibold text-[#aaaaaa]">↵</strong> to select
+          </span>
+          <span>
+            <strong className="font-semibold text-[#aaaaaa]">esc</strong> to dismiss
+          </span>
         </div>
       </div>
     </div>
   );
 });
-
