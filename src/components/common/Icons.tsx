@@ -247,6 +247,20 @@ export const NoetherLogoIcon = React.memo<IconProps>(({ size = 20, className = '
   );
 });
 
+export const NoetherSimpleLogoIcon = React.memo<IconProps>(({ size = 20, className = '', ...props }) => {
+  return (
+    <img
+      src="/noether-icon-simple.png"
+      width={size}
+      height={size}
+      className={className}
+      alt="Noether"
+      draggable={false}
+      {...(props as any)}
+    />
+  );
+});
+
 const createIcon = (iconDef: any) => {
   return React.memo<IconProps>(({ size = 16, className = '', color = 'currentColor', strokeWidth = 1.5, ...props }) => (
     <HugeiconsIcon

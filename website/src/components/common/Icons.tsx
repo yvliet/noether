@@ -137,3 +137,17 @@ export const NoetherLogoIcon: React.FC<{ size?: number; className?: string }> = 
     </div>
   );
 };
+
+export const NoetherSimpleLogoIcon: React.FC<{ size?: number; className?: string }> = ({ size = 28, className = '' }) => {
+  return (
+    <div className={`flex items-center gap-2 ${className}`}>
+      <img
+        src="./noether-icon-simple.png"
+        width={size}
+        height={size}
+        alt="Noether"
+        className="shrink-0"
+      />
+    </div>
+  );
+};
