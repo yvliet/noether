@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, useContext } from 'react';
 import {
   Search01Icon,
   Settings02Icon,
@@ -35,6 +35,7 @@ import {
   WindowMaximizeIcon,
   WindowRestoreIcon,
   WindowCloseIcon,
+  CancelCircleIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -85,6 +86,279 @@ const FieldResetButton: React.FC<{
     </button>
   );
 };
+
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function highlightMatch(text: string | null | undefined, query: string): React.ReactNode {
+  if (!text) return null;
+  if (!query || !query.trim()) return text;
+  const terms = query.trim().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return text;
+  const pattern = terms.map(escapeRegExp).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  const parts = text.split(regex);
+  if (parts.length === 1) return text;
+  return (
+    <>
+      {parts.map((part, index) =>
+        regex.test(part) ? (
+          <span key={index} className="text-[var(--noether-accent)] font-medium">
+            {part}
+          </span>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
+
+interface SettingsSearchContextValue {
+  searchQuery: string;
+  showAllOccurrences?: boolean;
+}
+
+const SettingsSearchContext = React.createContext<SettingsSearchContextValue>({ searchQuery: '', showAllOccurrences: false });
+
+interface SettingRowProps {
+  title: string;
+  description?: string | React.ReactNode;
+  descriptionText?: string;
+  keywords?: string[];
+  resetButton?: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+}
+
+const SettingRow: React.FC<SettingRowProps> = ({
+  title,
+  description,
+  descriptionText,
+  keywords,
+  resetButton,
+  children,
+  className = '',
+  onClick,
+}) => {
+  const { searchQuery } = useContext(SettingsSearchContext);
+
+  return (
+    <div
+      onClick={onClick}
+      className={`flex items-center justify-between p-4 ${onClick ? 'cursor-pointer hover:bg-[#242424]/40' : ''} ${className}`}
+    >
+      <div className="flex flex-col pr-4 min-w-0 flex-1">
+        <span className="text-[13px] font-normal text-[#dcddde]">
+          {highlightMatch(title, searchQuery)}
+        </span>
+        {description && (
+          <span className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+            {typeof description === 'string'
+              ? highlightMatch(description, searchQuery)
+              : description}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {resetButton}
+        {children}
+      </div>
+    </div>
+  );
+};
+
+interface SettingSectionProps {
+  tabName: string;
+  sectionName: string;
+  defaultHeading?: string;
+  defaultDescription?: string;
+  isModified?: boolean;
+  onReset?: () => void;
+  resetTitle?: string;
+  children: React.ReactNode;
+}
+
+const SettingSection: React.FC<SettingSectionProps> = ({
+  tabName,
+  sectionName,
+  defaultHeading,
+  defaultDescription,
+  isModified,
+  onReset,
+  resetTitle,
+  children,
+}) => {
+  const { searchQuery, showAllOccurrences } = useContext(SettingsSearchContext);
+
+  if (showAllOccurrences && searchQuery.trim()) {
+    const q = searchQuery.toLowerCase().trim();
+    const sectionMatches =
+      tabName.toLowerCase().includes(q) || sectionName.toLowerCase().includes(q);
+
+    let matchCount = 0;
+    const filteredChildren = React.Children.map(children, (child) => {
+      if (!React.isValidElement(child)) return child;
+      const props = child.props as SettingRowProps;
+      if (props && props.title) {
+        const descStr = props.descriptionText || (typeof props.description === 'string' ? props.description : '');
+        const matches =
+          sectionMatches ||
+          props.title.toLowerCase().includes(q) ||
+          descStr.toLowerCase().includes(q) ||
+          (props.keywords && props.keywords.some((k) => k.toLowerCase().includes(q)));
+        if (matches) {
+          matchCount++;
+          return child;
+        }
+        return null;
+      }
+      matchCount++;
+      return child;
+    });
+
+    if (matchCount === 0) return null;
+
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between px-4 mb-1">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">
+              {highlightMatch(tabName, searchQuery)}
+            </h3>
+            <p className="text-[11px] text-[var(--noether-text-muted)]">
+              {highlightMatch(sectionName, searchQuery)}
+            </p>
+          </div>
+        </div>
+        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+          {filteredChildren}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {defaultHeading ? (
+        <div className="px-4 mb-1">
+          <h3 className="text-sm font-semibold text-white">{defaultHeading}</h3>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">{tabName}</h3>
+            {defaultDescription && (
+              <p className="text-[11px] text-[#777]">{defaultDescription}</p>
+            )}
+          </div>
+          {isModified && onReset && (
+            <button
+              onClick={onReset}
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+              title={resetTitle || 'Restore defaults'}
+            >
+              <RotateCcwIcon size={12} />
+              <span>Restore defaults</span>
+            </button>
+          )}
+        </div>
+      )}
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+interface SettingIndexEntry {
+  tabId: string;
+  tabName: string;
+  sectionName: string;
+  title: string;
+  description: string;
+  keywords?: string[];
+}
+
+const SETTINGS_SEARCH_INDEX: SettingIndexEntry[] = [
+  // General
+  { tabId: 'general', tabName: 'General', sectionName: 'General', title: 'Version & Updates', description: 'Installer version and changelog', keywords: ['version', 'update', 'changelog'] },
+  { tabId: 'general', tabName: 'General', sectionName: 'General', title: 'Automatic updates', description: 'Turn this off to prevent the app from checking for updates', keywords: ['auto', 'updates', 'upgrade'] },
+  { tabId: 'general', tabName: 'General', sectionName: 'General', title: 'Display language', description: 'Set interface language for Noether', keywords: ['language', 'locale', 'translation'] },
+
+  // Appearance
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Base theme', title: 'Base color theme', description: 'Dark, light, or sync with your operating system', keywords: ['theme', 'dark', 'light', 'system', 'mode'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Themes', title: 'Themes', description: 'Installed built-in and community themes', keywords: ['theme', 'palette', 'style'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Themes', title: 'Import theme', description: 'Import custom theme JSON', keywords: ['import', 'theme', 'json'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Typography', title: 'Interface font', description: 'Set base font for all of Noether', keywords: ['font', 'interface', 'system font', 'typography'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Typography', title: 'Text font', description: 'Set font for editing and reading views', keywords: ['font', 'text', 'reading', 'typography'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Typography', title: 'Monospace font', description: 'Set font for code blocks and monospace text', keywords: ['font', 'code', 'monospace', 'mono'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Typography', title: 'Font size', description: 'Set base font size in pixels', keywords: ['font', 'size', 'pixels', 'zoom'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Typography', title: 'Quick font size adjustment', description: 'Adjust font size with Ctrl+Scroll or Cmd+Scroll', keywords: ['scroll', 'zoom', 'wheel', 'font'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Colors', title: 'Accent color', description: 'Set custom accent color for highlights, active tabs, and interactive controls', keywords: ['accent', 'color', 'highlight', 'picker'] },
+  { tabId: 'appearance', tabName: 'Appearance', sectionName: 'Advanced', title: 'Custom app icon', description: 'Set a custom icon for the app', keywords: ['app icon', 'icon', 'logo'] },
+
+  // Interface
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Window Frame', title: 'Window frame style', description: 'Native OS window borders or frameless Noether obsidian style', keywords: ['frame', 'window', 'titlebar', 'borders', 'native'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Window Frame', title: 'Open settings in separate window', description: 'Launch settings in independent OS window', keywords: ['window', 'settings', 'modal', 'separate'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Navigation', title: 'Show tab title bar', description: 'Display tab strip above active note editor', keywords: ['tab', 'strip', 'titlebar', 'tabs'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Navigation', title: 'Restore tabs on startup', description: 'Automatically restore open tabs from previous session', keywords: ['restore', 'session', 'startup', 'tabs'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Navigation', title: 'Show action rail', description: 'Show thin utility action rail along editor edge', keywords: ['action rail', 'rail', 'sidebar', 'panel'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Navigation', title: 'Show left ribbon', description: 'Display left ribbon bar with quick actions', keywords: ['ribbon', 'left', 'bar', 'sidebar'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Navigation', title: 'Native context menus', description: 'Use OS native context menus instead of styled menus', keywords: ['context menu', 'native', 'right click'] },
+  { tabId: 'interface', tabName: 'Interface', sectionName: 'Zoom & Display', title: 'Display zoom level', description: 'Scale application interface', keywords: ['zoom', 'scale', 'ui', 'display'] },
+
+  // Editor
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Editor', title: 'Default view for new tabs', description: 'The default view that a new Markdown tab gets opened in. Editing view or Reading view', keywords: ['view', 'reading', 'editing', 'new tab', 'markdown'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Editor', title: 'Default editing mode', description: 'The default editing mode a new tab will start with. Live Preview or Source mode', keywords: ['live preview', 'source mode', 'editing', 'mode'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Editor', title: 'Show editing mode in status bar', description: 'Show the editing mode toggle in the status bar', keywords: ['status bar', 'mode', 'editing'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Editor', title: 'Show word count in status bar', description: 'Show the word count of the current note in the status bar', keywords: ['word count', 'status bar', 'words'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Editor', title: 'Show character count in status bar', description: 'Show the character count of the current note in the status bar', keywords: ['character count', 'status bar', 'characters'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Editor', title: 'Show reading time in status bar', description: 'Show estimated reading time of the current note in the status bar', keywords: ['reading time', 'status bar', 'minutes'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Inline title', description: 'Display the filename as an editable title inline with the file contents', keywords: ['inline title', 'title', 'filename', 'header'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Readable line length', description: 'Limit maximum line length. Less content fits onscreen, but long blocks of text are more readable', keywords: ['line length', 'readable', 'width', 'margins'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Strict line breaks', description: 'Markdown specs ignore single line breaks in reading view. Turn this off to make single line breaks visible', keywords: ['line breaks', 'markdown', 'enter', 'newline'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Properties in document', description: 'Choose how properties are displayed at the top of notes. Visible, Hidden, or Source raw YAML', keywords: ['properties', 'frontmatter', 'yaml', 'metadata'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Fold heading', description: 'Lets you fold all content under a heading', keywords: ['fold', 'heading', 'collapse', 'outline'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Fold indent', description: 'Lets you fold part of an indentation, such as lists', keywords: ['fold', 'indent', 'list', 'collapse'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Line numbers', description: 'Show line numbers in the gutter', keywords: ['line numbers', 'gutter', 'numbers'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Indentation guides', description: 'Show vertical relationship lines between list items', keywords: ['indentation', 'guides', 'lines', 'vertical'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Accent number & list markers', description: 'Recolor list numbers and bullets with your theme\'s dimmed accent color', keywords: ['accent', 'list', 'bullet', 'markers', 'numbers'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Auto-pair brackets and quotes', description: 'Automatically pair [[wikilinks]], ((blocks)), and markdown syntax', keywords: ['auto-pair', 'brackets', 'quotes', 'wikilinks'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Auto-pair math formulas', description: 'Automatically wrap selections in math or open the math editor when typing $', keywords: ['math', 'formulas', 'latex', 'dollar', 'auto-pair'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Show external link icon', description: 'Display an external link icon next to links in rendered markdown notes', keywords: ['external link', 'icon', 'url', 'http'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Color all links with accent color', description: 'Display markdown links, wikilinks, and document links using your active accent color', keywords: ['links', 'accent', 'color', 'wikilink'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Classic blue links', description: 'Display links in standard browser blue with purple visited links instead of neutral text color', keywords: ['blue links', 'classic', 'browser', 'color'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Underline links', description: 'Display underlines under links. When turned off, underlines only appear on hover', keywords: ['underline', 'links', 'hover'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Match underline color to link', description: 'Color the underline to match the link text color instead of the subtle border color', keywords: ['match', 'underline', 'color'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Spellcheck', description: 'Highlight spelling mistakes and typos with red wavy underlines in the editor', keywords: ['spellcheck', 'spelling', 'typo', 'grammar'] },
+  { tabId: 'editor', tabName: 'Editor', sectionName: 'Display', title: 'Tab indent size', description: 'Number of spaces when pressing Tab key', keywords: ['tab', 'indent', 'spaces', 'size'] },
+
+  // Files and links
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Vault', title: 'Vault name', description: 'Rename active vault folder display name', keywords: ['vault', 'name', 'rename'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Vault', title: 'Vault path', description: 'Filesystem location of active vault', keywords: ['vault', 'path', 'folder', 'location'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Deletions', title: 'Deleted files', description: 'Manage and restore files from trash', keywords: ['trash', 'deleted', 'restore', 'recover'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Deletions', title: 'Confirm file deletion', description: 'Show confirmation dialog before moving items to trash', keywords: ['confirm', 'delete', 'trash', 'dialog'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Deletions', title: 'Confirm file rename', description: 'Show confirmation dialog before renaming files', keywords: ['confirm', 'rename', 'dialog'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Deletions', title: 'Close tabs on delete', description: 'Close active tab when the corresponding file is moved to trash', keywords: ['close tab', 'delete', 'trash'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Deletions', title: 'Empty trash', description: 'Permanently delete all items currently in trash', keywords: ['empty trash', 'purge', 'permanent'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Locations', title: 'New note location', description: 'Where newly created notes are placed: Vault root folder or same folder as current file', keywords: ['new note', 'location', 'root', 'same folder'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Locations', title: 'Default location for new attachments', description: 'Folder where pasted images and media attachments are placed', keywords: ['attachment', 'images', 'media', 'folder', 'pasted'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Links', title: 'New link format', description: 'Shortest path, relative path, or absolute path for internal links', keywords: ['link format', 'shortest', 'relative', 'absolute', 'wikilink'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Links', title: 'Automatically update internal links', description: 'Automatically update wikilinks when notes are renamed or moved', keywords: ['auto update', 'links', 'rename', 'move', 'backlinks'] },
+  { tabId: 'files', tabName: 'Files and links', sectionName: 'Links', title: 'Show broken embed indicators', description: 'Display inline alert tags when an embedded note or asset cannot be found', keywords: ['broken embed', 'missing', 'asset', 'warning'] },
+
+  // Hotkeys
+  { tabId: 'hotkeys', tabName: 'Hotkeys', sectionName: 'Hotkeys', title: 'Keyboard shortcuts', description: 'View and customize keyboard shortcuts across all commands', keywords: ['hotkeys', 'shortcuts', 'keybindings', 'commands'] },
+
+  // Built-in extensions
+  { tabId: 'core-extensions', tabName: 'Built-in extensions', sectionName: 'Built-in extensions', title: 'Core extensions', description: 'Built-in features designed as modular extensions. Toggle them anytime', keywords: ['extensions', 'built-in', 'core', 'plugins', 'modules'] },
+
+  // Community extensions
+  { tabId: 'community-extensions', tabName: 'Community extensions', sectionName: 'Community extensions', title: 'Community extensions', description: 'Browse and install community extensions from the Noether ecosystem', keywords: ['community', 'marketplace', 'plugins', 'install', 'discover'] },
+];
 
 function formatRelativeTime(timestamp: number): string {
   const elapsedMs = Date.now() - timestamp;
@@ -452,41 +726,36 @@ const GeneralTab: React.FC = React.memo(() => {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">General</h3>
-          <p className="text-[11px] text-[#777]">Application updates and display language.</p>
-        </div>
-        {isGeneralModified && (
-          <button
-            onClick={() => {
-              restoreTabDefaults('general');
-              showToast('Restored General settings to default', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Restore default general settings"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <SettingSection
+        tabName="General"
+        sectionName="General"
+        defaultDescription="Application updates and display language."
+        isModified={isGeneralModified}
+        onReset={() => {
+          restoreTabDefaults('general');
+          showToast('Restored General settings to default', 'info');
+        }}
+        resetTitle="Restore default general settings"
+      >
         {/* Row: Version & Updates */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <div className="text-sm font-medium text-white">Version {APP_VERSION}</div>
-            <div className="text-xs text-[#888] mt-0.5">Installer version: {APP_VERSION}</div>
-            <a
-              href="https://github.com/yvliet/Noether/releases"
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs text-[#38bdf8] hover:underline mt-0.5 inline-block w-fit"
-            >
-              Read the changelog.
-            </a>
-          </div>
+        <SettingRow
+          title={`Version ${APP_VERSION}`}
+          description={
+            <div className="flex flex-col">
+              <span className="text-xs text-[#888]">Installer version: {APP_VERSION}</span>
+              <a
+                href="https://github.com/yvliet/Noether/releases"
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-[#38bdf8] hover:underline mt-0.5 inline-block w-fit"
+              >
+                Read the changelog.
+              </a>
+            </div>
+          }
+          descriptionText={`Installer version: ${APP_VERSION}. Check for updates or read the changelog.`}
+          keywords={['version', 'update', 'installer', 'changelog', 'release']}
+        >
           <div className="flex items-center gap-2">
             {hasUpdate && latestRelease && (
               <button
@@ -507,70 +776,64 @@ const GeneralTab: React.FC = React.memo(() => {
               {isChecking ? 'Checking...' : 'Check for updates'}
             </button>
           </div>
-        </div>
+        </SettingRow>
 
         {/* Row: Automatic updates */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Automatic updates</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Turn this off to prevent the app from checking for updates.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Automatic updates"
+          description="Turn this off to prevent the app from checking for updates."
+          keywords={['automatic updates', 'auto updates', 'upgrade']}
+          resetButton={
             <FieldResetButton
               isModified={autoUpdates !== DEFAULT_SETTINGS.autoUpdates}
               onReset={() => setAutoUpdates(DEFAULT_SETTINGS.autoUpdates)}
               title="Restore default (Enabled)"
             />
-            <ToggleSwitch checked={autoUpdates} onChange={setAutoUpdates} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={autoUpdates} onChange={setAutoUpdates} />
+        </SettingRow>
 
         {/* Row: Language */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Language</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Change the display language.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Display language"
+          description="Change the display language."
+          keywords={['language', 'display language', 'locale', 'translation']}
+          resetButton={
             <FieldResetButton
               isModified={language !== DEFAULT_SETTINGS.language}
               onReset={() => setLanguage(DEFAULT_SETTINGS.language)}
               title="Restore default language (English)"
             />
-            <CustomSelect
-              value={language}
-              onChange={setLanguage}
-              options={[
-                { value: 'English', label: 'English' },
-                { value: 'German', label: 'Deutsch' },
-                { value: 'Spanish', label: 'Español' },
-                { value: 'French', label: 'Français' },
-                { value: 'Japanese', label: '日本語' },
-              ]}
-            />
-          </div>
-        </div>
+          }
+        >
+          <CustomSelect
+            value={language}
+            onChange={setLanguage}
+            options={[
+              { value: 'English', label: 'English' },
+              { value: 'German', label: 'Deutsch' },
+              { value: 'Spanish', label: 'Español' },
+              { value: 'French', label: 'Français' },
+              { value: 'Japanese', label: '日本語' },
+            ]}
+          />
+        </SettingRow>
 
         {/* Row: Help */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Help</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Learn how to use Noether and get help from the community.
-            </span>
-          </div>
+        <SettingRow
+          title="Help"
+          description="Learn how to use Noether and get help from the community."
+          keywords={['help', 'community', 'documentation', 'guide']}
+        >
           <button
             onClick={() => useWorkspaceStore.getState().setIsHelpModalOpen(true)}
             className="noether-btn"
           >
             Open
           </button>
-        </div>
-      </div>
+        </SettingRow>
+      </SettingSection>
     </div>
   );
 });
@@ -583,6 +846,7 @@ interface AppearanceTabProps {
 }
 
 const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPicker }) => {
+  const { searchQuery, showAllOccurrences } = useContext(SettingsSearchContext);
   const accentColor = useSettingsStore((s) => s.accentColor);
   const setAccentColor = useSettingsStore((s) => s.setAccentColor);
   const activeTheme = useSettingsStore((s) => s.activeTheme);
@@ -654,6 +918,21 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
     fontSize !== DEFAULT_SETTINGS.fontSize ||
     quickFontSize !== DEFAULT_SETTINGS.quickFontSize;
 
+  const isThemeSearchMatch = useMemo(() => {
+    if (!showAllOccurrences || !searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    return (
+      'theme'.includes(q) ||
+      'themes'.includes(q) ||
+      'appearance'.includes(q) ||
+      allThemes.some(
+        (t) =>
+          t.name.toLowerCase().includes(q) ||
+          (t.description && t.description.toLowerCase().includes(q))
+      )
+    );
+  }, [showAllOccurrences, searchQuery, allThemes]);
+
   const handleOpenExtensionsFolder = useCallback(() => {
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
@@ -664,132 +943,139 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Appearance</h3>
-          <p className="text-[11px] text-[#777]">Color schemes, themes, fonts, and zoom scaling.</p>
-        </div>
-        {isAppearanceModified && (
-          <button
-            onClick={() => {
-              restoreTabDefaults('appearance');
-              showToast('Restored Appearance settings to default', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Restore default appearance settings"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
       {/* Section 1: Accent Color */}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden">
-        {/* Accent color */}
-        <div className="flex items-start justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Accent color</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Choose the primary accent highlight color.
-            </span>
-            {/* Quick Accent Swatches */}
-            <div className="flex items-center gap-1.5 mt-2.5">
-              {[
-                { name: 'Noether Coral', color: '#eb584d' },
-                { name: 'Electric Blue', color: '#3b82f6' },
-                { name: 'Emerald Green', color: '#10b981' },
-                { name: 'Amethyst', color: '#8b5cf6' },
-                { name: 'Rose', color: '#ec4899' },
-                { name: 'Cyan Sea', color: '#06b6d4' },
-                { name: 'Amber', color: '#f59e0b' },
-                { name: 'Nord Frost', color: '#88c0d0' },
-              ].map((swatch) => (
-                <button
-                  key={swatch.color}
-                  onClick={() => setAccentColor(swatch.color)}
-                  title={swatch.name}
-                  className={`w-5 h-5 rounded-full border cursor-pointer ${
-                    accentColor.toLowerCase() === swatch.color.toLowerCase()
-                      ? 'scale-125 border-white ring-2 ring-white/20'
-                      : 'border-black/30 hover:scale-110'
-                  }`}
-                  style={{ backgroundColor: swatch.color }}
-                />
-              ))}
+      <SettingSection
+        tabName="Appearance"
+        sectionName="Colors"
+        defaultDescription="Color schemes, themes, fonts, and zoom scaling."
+        isModified={isAppearanceModified}
+        onReset={() => {
+          restoreTabDefaults('appearance');
+          showToast('Restored Appearance settings to default', 'info');
+        }}
+        resetTitle="Restore default appearance settings"
+      >
+        <SettingRow
+          title="Accent color"
+          description={
+            <div className="flex flex-col">
+              <span>{highlightMatch('Choose the primary accent highlight color.', searchQuery)}</span>
+              <div className="flex items-center gap-1.5 mt-2.5">
+                {[
+                  { name: 'Noether Coral', color: '#eb584d' },
+                  { name: 'Electric Blue', color: '#3b82f6' },
+                  { name: 'Emerald Green', color: '#10b981' },
+                  { name: 'Amethyst', color: '#8b5cf6' },
+                  { name: 'Rose', color: '#ec4899' },
+                  { name: 'Cyan Sea', color: '#06b6d4' },
+                  { name: 'Amber', color: '#f59e0b' },
+                  { name: 'Nord Frost', color: '#88c0d0' },
+                ].map((swatch) => (
+                  <button
+                    key={swatch.color}
+                    onClick={() => setAccentColor(swatch.color)}
+                    title={swatch.name}
+                    className={`w-5 h-5 rounded-full border cursor-pointer ${
+                      accentColor.toLowerCase() === swatch.color.toLowerCase()
+                        ? 'scale-125 border-white ring-2 ring-white/20'
+                        : 'border-black/30 hover:scale-110'
+                    }`}
+                    style={{ backgroundColor: swatch.color }}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2.5 pt-0.5">
+          }
+          descriptionText="Choose the primary accent highlight color."
+          keywords={['accent', 'color', 'highlight', 'picker']}
+          resetButton={
             <FieldResetButton
               isModified={accentColor !== DEFAULT_SETTINGS.accentColor}
               onReset={() => setAccentColor(DEFAULT_SETTINGS.accentColor)}
               title="Restore default accent color (#eb584d)"
             />
+          }
+        >
+          <div className="flex items-center gap-2.5 pt-0.5">
             <ColorPicker value={accentColor} onChange={setAccentColor} />
           </div>
-        </div>
-      </div>
+        </SettingRow>
+      </SettingSection>
 
       {/* Section 2: Visual Themes Showcase */}
+      {isThemeSearchMatch && (
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-between px-1">
-          <div>
-            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-              <span>Themes</span>
-              <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#2a2a2a] text-[#888] rounded-full">
-                {allThemes.length}
-              </span>
-            </h4>
-            <p className="text-[11px] text-[#777]">
-              Choose from high-contrast palettes, rich gradients, or craft custom themes.
-            </p>
+        {showAllOccurrences && searchQuery.trim() ? (
+          <div className="flex items-center justify-between px-4 mb-1">
+            <div>
+              <h3 className="text-sm font-semibold text-white mb-0.5">
+                {highlightMatch('Appearance', searchQuery)}
+              </h3>
+              <p className="text-[11px] text-[var(--noether-text-muted)]">
+                {highlightMatch('Themes', searchQuery)}
+              </p>
+            </div>
           </div>
+        ) : (
+          <div className="flex items-center justify-between px-4">
+            <div>
+              <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                <span>Themes</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-semibold bg-[#2a2a2a] text-[#888] rounded-full">
+                  {allThemes.length}
+                </span>
+              </h4>
+              <p className="text-[11px] text-[#777]">
+                Choose from high-contrast palettes, rich gradients, or craft custom themes.
+              </p>
+            </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                const currentDef = themeRegistry.getTheme(activeTheme);
-                const jsonStr = themeRegistry.exportTheme(currentDef);
-                navigator.clipboard.writeText(jsonStr);
-                showToast(`Exported "${currentDef.name}" JSON to clipboard`, 'success');
-              }}
-              title="Export current theme as JSON"
-              className="noether-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
-            >
-              <Copy01Icon size={13} />
-              <span>Export</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  const currentDef = themeRegistry.getTheme(activeTheme);
+                  const jsonStr = themeRegistry.exportTheme(currentDef);
+                  navigator.clipboard.writeText(jsonStr);
+                  showToast(`Exported "${currentDef.name}" JSON to clipboard`, 'success');
+                }}
+                title="Export current theme as JSON"
+                className="noether-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
+              >
+                <Copy01Icon size={13} />
+                <span>Export</span>
+              </button>
 
-            <button
-              onClick={() => setIsImportingTheme(true)}
-              title="Import theme JSON"
-              className="noether-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
-            >
-              <Download01Icon size={13} />
-              <span>Import</span>
-            </button>
+              <button
+                onClick={() => setIsImportingTheme(true)}
+                title="Import theme JSON"
+                className="noether-btn text-xs !py-1 !px-2.5 flex items-center gap-1.5"
+              >
+                <Download01Icon size={13} />
+                <span>Import</span>
+              </button>
 
-            <button
-              onClick={() => {
-                setNewThemeName('');
-                setNewThemeType('dark');
-                setNewThemeHasGradient(false);
-                setNewThemeTopbar('#0d0d0d');
-                setNewThemeTopbarGradient('linear-gradient(135deg, #090616 0%, #170d38 50%, #22104a 100%)');
-                setNewThemeSidebar('#151515');
-                setNewThemeMain('#1c1c1c');
-                setNewThemeCard('#222222');
-                setNewThemeAccent('#eb584d');
-                setNewThemeCss('');
-                setIsCreatingTheme(true);
-              }}
-              className="noether-btn noether-btn-primary flex items-center gap-1.5"
-            >
-              <PlusSignIcon size={13} />
-              <span>New Theme</span>
-            </button>
+              <button
+                onClick={() => {
+                  setNewThemeName('');
+                  setNewThemeType('dark');
+                  setNewThemeHasGradient(false);
+                  setNewThemeTopbar('#0d0d0d');
+                  setNewThemeTopbarGradient('linear-gradient(135deg, #090616 0%, #170d38 50%, #22104a 100%)');
+                  setNewThemeSidebar('#151515');
+                  setNewThemeMain('#1c1c1c');
+                  setNewThemeCard('#222222');
+                  setNewThemeAccent('#eb584d');
+                  setNewThemeCss('');
+                  setIsCreatingTheme(true);
+                }}
+                className="noether-btn noether-btn-primary flex items-center gap-1.5"
+              >
+                <PlusSignIcon size={13} />
+                <span>New Theme</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Filter Tabs & Search Bar */}
         <div className="flex items-center justify-between gap-3 bg-[#1e1e1e] p-1.5 rounded-lg border border-[#282828]">
@@ -973,26 +1259,27 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
           })}
         </div>
       </div>
+      )}
 
       {/* Section 3: CSS Snippets */}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-        <div
+      <SettingSection
+        tabName="Appearance"
+        sectionName="CSS snippets"
+        defaultHeading="CSS snippets"
+      >
+        <SettingRow
+          title="CSS snippets"
+          description="Manage your custom CSS snippet files for granular appearance modifications."
+          keywords={['css', 'snippets', 'custom', 'styles']}
           onClick={handleOpenExtensionsFolder}
-          className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
         >
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">CSS snippets</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Manage your custom CSS snippet files for granular appearance modifications.
-            </span>
-          </div>
           <div className="flex items-center gap-1 text-xs text-[#888]">
             <FolderOpenIcon size={14} className="mr-1" />
             <span>Open Snippets Folder</span>
             <ChevronRightIcon size={14} />
           </div>
-        </div>
-      </div>
+        </SettingRow>
+      </SettingSection>
 
       {/* Modal: Create Custom Theme */}
       {isCreatingTheme && (
@@ -1250,145 +1537,128 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
         </div>
       )}
 
-      {/* Section: Font */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Font</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          {/* Interface font */}
-          <div
-            onClick={() => onOpenFontPicker('interface')}
-            className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
+      {/* Section 4: Font */}
+      <SettingSection
+        tabName="Appearance"
+        sectionName="Font"
+        defaultHeading="Font"
+      >
+        <SettingRow
+          title="Interface font"
+          description="Set base font for all of Noether."
+          keywords={['font', 'interface', 'system font', 'typography']}
+          onClick={() => onOpenFontPicker('interface')}
+          resetButton={
+            <FieldResetButton
+              isModified={interfaceFont !== DEFAULT_SETTINGS.interfaceFont}
+              onReset={() => setInterfaceFont(DEFAULT_SETTINGS.interfaceFont)}
+              title="Restore default interface font (System font)"
+            />
+          }
+        >
+          <div className="flex items-center gap-2 text-xs text-[#888]">
+            {interfaceFont && <span className="text-white font-medium">{interfaceFont}</span>}
+            <ChevronRightIcon size={14} />
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          title="Text font"
+          description="Set font for editing and reading views."
+          keywords={['font', 'text', 'reading', 'typography']}
+          onClick={() => onOpenFontPicker('text')}
+          resetButton={
+            <FieldResetButton
+              isModified={textFont !== DEFAULT_SETTINGS.textFont}
+              onReset={() => setTextFont(DEFAULT_SETTINGS.textFont)}
+              title="Restore default text font"
+            />
+          }
+        >
+          <div className="flex items-center gap-2 text-xs text-[#888]">
+            {textFont && <span className="text-white font-medium">{textFont}</span>}
+            <ChevronRightIcon size={14} />
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          title="Monospace font"
+          description="Set font for places like code blocks and frontmatter."
+          keywords={['font', 'code', 'monospace', 'mono']}
+          onClick={() => onOpenFontPicker('monospace')}
+          resetButton={
+            <FieldResetButton
+              isModified={monospaceFont !== DEFAULT_SETTINGS.monospaceFont}
+              onReset={() => setMonospaceFont(DEFAULT_SETTINGS.monospaceFont)}
+              title="Restore default monospace font"
+            />
+          }
+        >
+          <div className="flex items-center gap-2 text-xs text-[#888]">
+            {monospaceFont && <span className="text-white font-medium">{monospaceFont}</span>}
+            <ChevronRightIcon size={14} />
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          title="Font size"
+          description="Font size in pixels that affects editing and reading views."
+          keywords={['font', 'size', 'pixels', 'zoom']}
+          resetButton={
+            <FieldResetButton
+              isModified={fontSize !== DEFAULT_SETTINGS.fontSize}
+              onReset={() => setFontSize(DEFAULT_SETTINGS.fontSize)}
+              title="Restore default font size (16px)"
+            />
+          }
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#dcddde] w-4 text-right font-normal">{fontSize}</span>
+            <Slider
+              min={12}
+              max={24}
+              value={fontSize}
+              onChange={setFontSize}
+              className="w-28"
+            />
+          </div>
+        </SettingRow>
+
+        <SettingRow
+          title="Quick font size adjustment"
+          description="Adjust the font size using Ctrl + Scroll, or using the trackpad pinch-zoom gesture."
+          keywords={['scroll', 'zoom', 'wheel', 'font', 'trackpad', 'pinch']}
+          resetButton={
+            <FieldResetButton
+              isModified={quickFontSize !== DEFAULT_SETTINGS.quickFontSize}
+              onReset={() => setQuickFontSize(DEFAULT_SETTINGS.quickFontSize)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={quickFontSize} onChange={setQuickFontSize} />
+        </SettingRow>
+      </SettingSection>
+
+      {/* Section 5: Advanced */}
+      <SettingSection
+        tabName="Appearance"
+        sectionName="Advanced"
+        defaultHeading="Advanced"
+      >
+        <SettingRow
+          title="Custom app icon"
+          description="Set a custom icon for the app."
+          keywords={['app icon', 'icon', 'logo', 'custom']}
+        >
+          <button
+            onClick={() => showToast('Custom app icon feature active', 'info')}
+            className="noether-btn"
           >
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Interface font</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Set base font for all of Noether.
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#888]">
-              <FieldResetButton
-                isModified={interfaceFont !== DEFAULT_SETTINGS.interfaceFont}
-                onReset={() => setInterfaceFont(DEFAULT_SETTINGS.interfaceFont)}
-                title="Restore default interface font (System font)"
-              />
-              {interfaceFont && <span className="text-white font-medium">{interfaceFont}</span>}
-              <ChevronRightIcon size={14} />
-            </div>
-          </div>
-
-          {/* Text font */}
-          <div
-            onClick={() => onOpenFontPicker('text')}
-            className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
-          >
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Text font</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Set font for editing and reading views.
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#888]">
-              <FieldResetButton
-                isModified={textFont !== DEFAULT_SETTINGS.textFont}
-                onReset={() => setTextFont(DEFAULT_SETTINGS.textFont)}
-                title="Restore default text font"
-              />
-              {textFont && <span className="text-white font-medium">{textFont}</span>}
-              <ChevronRightIcon size={14} />
-            </div>
-          </div>
-
-          {/* Monospace font */}
-          <div
-            onClick={() => onOpenFontPicker('monospace')}
-            className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
-          >
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Monospace font</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Set font for places like code blocks and frontmatter.
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#888]">
-              <FieldResetButton
-                isModified={monospaceFont !== DEFAULT_SETTINGS.monospaceFont}
-                onReset={() => setMonospaceFont(DEFAULT_SETTINGS.monospaceFont)}
-                title="Restore default monospace font"
-              />
-              {monospaceFont && <span className="text-white font-medium">{monospaceFont}</span>}
-              <ChevronRightIcon size={14} />
-            </div>
-          </div>
-
-          {/* Font size slider */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Font size</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Font size in pixels that affects editing and reading views.
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <FieldResetButton
-                isModified={fontSize !== DEFAULT_SETTINGS.fontSize}
-                onReset={() => setFontSize(DEFAULT_SETTINGS.fontSize)}
-                title="Restore default font size (16px)"
-              />
-              <span className="text-xs text-[#dcddde] w-4 text-right font-normal">{fontSize}</span>
-              <Slider
-                min={12}
-                max={24}
-                value={fontSize}
-                onChange={setFontSize}
-                className="w-28"
-              />
-            </div>
-          </div>
-
-          {/* Quick font size adjustment */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Quick font size adjustment</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Adjust the font size using Ctrl + Scroll, or using the trackpad pinch-zoom gesture.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={quickFontSize !== DEFAULT_SETTINGS.quickFontSize}
-                onReset={() => setQuickFontSize(DEFAULT_SETTINGS.quickFontSize)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={quickFontSize} onChange={setQuickFontSize} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Section: Advanced */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Advanced</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Custom app icon</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Set a custom icon for the app.
-              </span>
-            </div>
-            <button
-              onClick={() => showToast('Custom app icon feature active', 'info')}
-              className="noether-btn"
-            >
-              Choose
-            </button>
-          </div>
-        </div>
-      </div>
+            Choose
+          </button>
+        </SettingRow>
+      </SettingSection>
     </div>
   );
 });
@@ -1425,190 +1695,163 @@ const InterfaceTab: React.FC = React.memo(() => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Interface</h3>
-          <p className="text-[11px] text-[#777]">Window frame, ribbon, tab bar, and UI zooming.</p>
-        </div>
-        {isInterfaceModified && (
-          <button
-            onClick={() => {
-              restoreTabDefaults('interface');
-              showToast('Restored Interface settings to default', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Restore default interface settings"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <SettingSection
+        tabName="Interface"
+        sectionName="Interface"
+        defaultDescription="Window frame, ribbon, tab bar, and UI zooming."
+        isModified={isInterfaceModified}
+        onReset={() => {
+          restoreTabDefaults('interface');
+          showToast('Restored Interface settings to default', 'info');
+        }}
+        resetTitle="Restore default interface settings"
+      >
         {/* Show tab title bar */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show tab title bar</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Display the header at the top of every tab.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Show tab title bar"
+          description="Display the header at the top of every tab."
+          keywords={['tab', 'strip', 'titlebar', 'tabs', 'header']}
+          resetButton={
             <FieldResetButton
               isModified={showTabTitleBar !== DEFAULT_SETTINGS.showTabTitleBar}
               onReset={() => setShowTabTitleBar(DEFAULT_SETTINGS.showTabTitleBar)}
               title="Restore default (Enabled)"
             />
-            <ToggleSwitch checked={showTabTitleBar} onChange={setShowTabTitleBar} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={showTabTitleBar} onChange={setShowTabTitleBar} />
+        </SettingRow>
 
         {/* Restore open tabs on startup */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Restore open tabs</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Automatically restore your open tabs and split panes when restarting or reloading the app.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Restore open tabs"
+          description="Automatically restore your open tabs and split panes when restarting or reloading the app."
+          keywords={['restore', 'session', 'startup', 'tabs', 'split panes']}
+          resetButton={
             <FieldResetButton
               isModified={restoreTabs !== DEFAULT_SETTINGS.restoreTabs}
               onReset={() => setRestoreTabs(DEFAULT_SETTINGS.restoreTabs)}
               title="Restore default (Enabled)"
             />
-            <ToggleSwitch checked={restoreTabs} onChange={setRestoreTabs} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={restoreTabs} onChange={setRestoreTabs} />
+        </SettingRow>
 
         {/* Show Action Rail */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show Action Rail</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Display vertical action toolbar on the side of the window.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Show Action Rail"
+          description="Display vertical action toolbar on the side of the window."
+          keywords={['action rail', 'rail', 'sidebar', 'panel', 'toolbar']}
+          resetButton={
             <FieldResetButton
               isModified={showRibbon !== DEFAULT_SETTINGS.showRibbon}
               onReset={() => setShowRibbon(DEFAULT_SETTINGS.showRibbon)}
               title="Restore default (Enabled)"
             />
-            <ToggleSwitch checked={showRibbon} onChange={setShowRibbon} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={showRibbon} onChange={setShowRibbon} />
+        </SettingRow>
 
         {/* Action rail configuration */}
-        <div
+        <SettingRow
+          title="Action rail configuration"
+          description="Configure what commands appear in the action rail."
+          keywords={['action rail', 'commands', 'configure']}
           onClick={() => showToast('Action Rail configuration', 'info')}
-          className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
         >
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Action rail configuration</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Configure what commands appear in the action rail.
-            </span>
-          </div>
           <ChevronRightIcon size={14} className="text-[#777]" />
-        </div>
-      </div>
+        </SettingRow>
+      </SettingSection>
 
       {/* Section: Advanced */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Advanced</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          {/* Zoom level */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Zoom level</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Controls the overall zoom level of the app.
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <FieldResetButton
-                isModified={zoomLevel !== DEFAULT_SETTINGS.zoomLevel}
-                onReset={() => setZoomLevel(DEFAULT_SETTINGS.zoomLevel, true)}
-                title="Restore default zoom level (100%)"
-              />
-              <span className="text-xs text-[#dcddde] w-10 text-right font-normal">{zoomLevel}%</span>
-              <Slider
-                min={75}
-                max={150}
-                step={5}
-                value={zoomLevel}
-                onChange={(val) => setZoomLevel(val, true)}
-                className="w-28"
-              />
-            </div>
+      <SettingSection
+        tabName="Interface"
+        sectionName="Advanced"
+        defaultHeading="Advanced"
+      >
+        {/* Zoom level */}
+        <SettingRow
+          title="Zoom level"
+          description="Controls the overall zoom level of the app."
+          keywords={['zoom', 'scale', 'ui', 'display', 'size']}
+          resetButton={
+            <FieldResetButton
+              isModified={zoomLevel !== DEFAULT_SETTINGS.zoomLevel}
+              onReset={() => setZoomLevel(DEFAULT_SETTINGS.zoomLevel, true)}
+              title="Restore default zoom level (100%)"
+            />
+          }
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[#dcddde] w-10 text-right font-normal">{zoomLevel}%</span>
+            <Slider
+              min={75}
+              max={150}
+              step={5}
+              value={zoomLevel}
+              onChange={(val) => setZoomLevel(val, true)}
+              className="w-28"
+            />
           </div>
+        </SettingRow>
 
-          {/* Native menus */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Native menus</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Menus throughout the app will match the operating system. They will not be affected by your theme.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={nativeMenus !== DEFAULT_SETTINGS.nativeMenus}
-                onReset={() => setNativeMenus(DEFAULT_SETTINGS.nativeMenus)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch checked={nativeMenus} onChange={setNativeMenus} />
-            </div>
-          </div>
+        {/* Native menus */}
+        <SettingRow
+          title="Native menus"
+          description="Menus throughout the app will match the operating system. They will not be affected by your theme."
+          keywords={['native menus', 'context menu', 'os', 'menus']}
+          resetButton={
+            <FieldResetButton
+              isModified={nativeMenus !== DEFAULT_SETTINGS.nativeMenus}
+              onReset={() => setNativeMenus(DEFAULT_SETTINGS.nativeMenus)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={nativeMenus} onChange={setNativeMenus} />
+        </SettingRow>
 
-          {/* Window frame style */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Window frame style</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Determines the styling of the title bar of Noether windows. Requires a full restart to take effect.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={windowFrameStyle !== DEFAULT_SETTINGS.windowFrameStyle}
-                onReset={() => setWindowFrameStyle(DEFAULT_SETTINGS.windowFrameStyle)}
-                title="Restore default (Hidden)"
-              />
-              <CustomSelect
-                value={windowFrameStyle}
-                onChange={setWindowFrameStyle}
-                options={[
-                  { value: 'Hidden (default)', label: 'Hidden (default)' },
-                  { value: 'Native', label: 'Native' },
-                ]}
-              />
-            </div>
-          </div>
+        {/* Window frame style */}
+        <SettingRow
+          title="Window frame style"
+          description="Determines the styling of the title bar of Noether windows. Requires a full restart to take effect."
+          keywords={['frame', 'window', 'titlebar', 'borders', 'native']}
+          resetButton={
+            <FieldResetButton
+              isModified={windowFrameStyle !== DEFAULT_SETTINGS.windowFrameStyle}
+              onReset={() => setWindowFrameStyle(DEFAULT_SETTINGS.windowFrameStyle)}
+              title="Restore default (Hidden)"
+            />
+          }
+        >
+          <CustomSelect
+            value={windowFrameStyle}
+            onChange={setWindowFrameStyle}
+            options={[
+              { value: 'Hidden (default)', label: 'Hidden (default)' },
+              { value: 'Native', label: 'Native' },
+            ]}
+          />
+        </SettingRow>
 
-          {/* Open settings in new window */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Open settings in new window</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Open settings in its own window instead of embedded in the app.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={openSettingsInNewWindow !== DEFAULT_SETTINGS.openSettingsInNewWindow}
-                onReset={() => setOpenSettingsInNewWindow(DEFAULT_SETTINGS.openSettingsInNewWindow)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={openSettingsInNewWindow} onChange={setOpenSettingsInNewWindow} />
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Open settings in new window */}
+        <SettingRow
+          title="Open settings in new window"
+          description="Open settings in its own window instead of embedded in the app."
+          keywords={['window', 'settings', 'modal', 'separate', 'standalone']}
+          resetButton={
+            <FieldResetButton
+              isModified={openSettingsInNewWindow !== DEFAULT_SETTINGS.openSettingsInNewWindow}
+              onReset={() => setOpenSettingsInNewWindow(DEFAULT_SETTINGS.openSettingsInNewWindow)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={openSettingsInNewWindow} onChange={setOpenSettingsInNewWindow} />
+        </SettingRow>
+      </SettingSection>
     </div>
   );
 });
@@ -1617,6 +1860,7 @@ const InterfaceTab: React.FC = React.memo(() => {
 // TAB: EDITOR
 // ==========================================
 const EditorTab: React.FC = React.memo(() => {
+  const { searchQuery } = useContext(SettingsSearchContext);
   const defaultTabMode = useSettingsStore((s) => s.defaultTabMode);
   const setDefaultTabMode = useSettingsStore((s) => s.setDefaultTabMode);
   const defaultEditingMode = useSettingsStore((s) => s.defaultEditingMode);
@@ -1696,521 +1940,472 @@ const EditorTab: React.FC = React.memo(() => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Editor</h3>
-          <p className="text-[11px] text-[#777]">View modes, typing behavior, line length, and auto-pairing.</p>
-        </div>
-        {isEditorModified && (
-          <button
-            onClick={() => {
-              restoreTabDefaults('editor');
-              showToast('Restored Editor settings to default', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Restore default editor settings"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <SettingSection
+        tabName="Editor"
+        sectionName="Editor"
+        defaultDescription="View modes, typing behavior, line length, and auto-pairing."
+        isModified={isEditorModified}
+        onReset={() => {
+          restoreTabDefaults('editor');
+          showToast('Restored Editor settings to default', 'info');
+        }}
+        resetTitle="Restore default editor settings"
+      >
         {/* Default view for new tabs */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Default view for new tabs</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              The default view that a new Markdown tab gets opened in.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Default view for new tabs"
+          description="The default view that a new Markdown tab gets opened in."
+          keywords={['view', 'reading', 'editing', 'new tab', 'markdown']}
+          resetButton={
             <FieldResetButton
               isModified={defaultTabMode !== DEFAULT_SETTINGS.defaultTabMode}
               onReset={() => setDefaultTabMode(DEFAULT_SETTINGS.defaultTabMode)}
               title="Restore default (Editing view)"
             />
-            <CustomSelect
-              value={defaultTabMode}
-              onChange={(val) => setDefaultTabMode(val as DefaultTabMode)}
-              options={[
-                { value: 'Editing view', label: 'Editing view' },
-                { value: 'Reading view', label: 'Reading view' },
-              ]}
-            />
-          </div>
-        </div>
+          }
+        >
+          <CustomSelect
+            value={defaultTabMode}
+            onChange={(val) => setDefaultTabMode(val as DefaultTabMode)}
+            options={[
+              { value: 'Editing view', label: 'Editing view' },
+              { value: 'Reading view', label: 'Reading view' },
+            ]}
+          />
+        </SettingRow>
 
         {/* Default editing mode */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Default editing mode</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              The default editing mode a new tab will start with.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Default editing mode"
+          description="The default editing mode a new tab will start with."
+          keywords={['live preview', 'source mode', 'editing', 'mode']}
+          resetButton={
             <FieldResetButton
               isModified={defaultEditingMode !== DEFAULT_SETTINGS.defaultEditingMode}
               onReset={() => setDefaultEditingMode(DEFAULT_SETTINGS.defaultEditingMode)}
               title="Restore default (Live Preview)"
             />
-            <CustomSelect
-              value={defaultEditingMode}
-              onChange={(val) => setDefaultEditingMode(val as DefaultEditingMode)}
-              options={[
-                { value: 'Live Preview', label: 'Live Preview' },
-                { value: 'Source mode', label: 'Source mode' },
-              ]}
-            />
-          </div>
-        </div>
+          }
+        >
+          <CustomSelect
+            value={defaultEditingMode}
+            onChange={(val) => setDefaultEditingMode(val as DefaultEditingMode)}
+            options={[
+              { value: 'Live Preview', label: 'Live Preview' },
+              { value: 'Source mode', label: 'Source mode' },
+            ]}
+          />
+        </SettingRow>
 
         {/* Show editing mode in status bar */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show editing mode in status bar</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Show the editing mode toggle in the status bar.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Show editing mode in status bar"
+          description="Show the editing mode toggle in the status bar."
+          keywords={['status bar', 'mode', 'editing']}
+          resetButton={
             <FieldResetButton
               isModified={showModeInStatusBar !== DEFAULT_SETTINGS.showModeInStatusBar}
               onReset={() => setShowModeInStatusBar(DEFAULT_SETTINGS.showModeInStatusBar)}
               title="Restore default (Enabled)"
             />
-            <ToggleSwitch checked={showModeInStatusBar} onChange={setShowModeInStatusBar} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={showModeInStatusBar} onChange={setShowModeInStatusBar} />
+        </SettingRow>
 
         {/* Show word count in status bar */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show word count in status bar</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Show the word count of the current note in the status bar.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Show word count in status bar"
+          description="Show the word count of the current note in the status bar."
+          keywords={['word count', 'status bar', 'words']}
+          resetButton={
             <FieldResetButton
               isModified={showWordCountInStatusBar !== DEFAULT_SETTINGS.showWordCountInStatusBar}
               onReset={() => setShowWordCountInStatusBar(DEFAULT_SETTINGS.showWordCountInStatusBar)}
               title="Restore default (Enabled)"
             />
-            <ToggleSwitch checked={showWordCountInStatusBar} onChange={setShowWordCountInStatusBar} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={showWordCountInStatusBar} onChange={setShowWordCountInStatusBar} />
+        </SettingRow>
 
         {/* Show character count in status bar */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show character count in status bar</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Show the character count of the current note in the status bar.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Show character count in status bar"
+          description="Show the character count of the current note in the status bar."
+          keywords={['character count', 'status bar', 'characters']}
+          resetButton={
             <FieldResetButton
               isModified={showCharCountInStatusBar !== DEFAULT_SETTINGS.showCharCountInStatusBar}
               onReset={() => setShowCharCountInStatusBar(DEFAULT_SETTINGS.showCharCountInStatusBar)}
               title="Restore default (Disabled)"
             />
-            <ToggleSwitch checked={showCharCountInStatusBar} onChange={setShowCharCountInStatusBar} />
-          </div>
-        </div>
+          }
+        >
+          <ToggleSwitch checked={showCharCountInStatusBar} onChange={setShowCharCountInStatusBar} />
+        </SettingRow>
 
         {/* Show reading time in status bar */}
-        <div className="flex items-center justify-between p-4">
-          <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show reading time in status bar</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
-              Show estimated reading time of the current note in the status bar.
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
+        <SettingRow
+          title="Show reading time in status bar"
+          description="Show estimated reading time of the current note in the status bar."
+          keywords={['reading time', 'status bar', 'minutes']}
+          resetButton={
             <FieldResetButton
               isModified={showReadingTimeInStatusBar !== DEFAULT_SETTINGS.showReadingTimeInStatusBar}
               onReset={() => setShowReadingTimeInStatusBar(DEFAULT_SETTINGS.showReadingTimeInStatusBar)}
               title="Restore default (Disabled)"
             />
-            <ToggleSwitch checked={showReadingTimeInStatusBar} onChange={setShowReadingTimeInStatusBar} />
-          </div>
-        </div>
-      </div>
+          }
+        >
+          <ToggleSwitch checked={showReadingTimeInStatusBar} onChange={setShowReadingTimeInStatusBar} />
+        </SettingRow>
+      </SettingSection>
 
       {/* Section: Display */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Display</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          {/* Inline title */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Inline title</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Display the filename as an editable title inline with the file contents.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={inlineTitle !== DEFAULT_SETTINGS.inlineTitle}
-                onReset={() => setInlineTitle(DEFAULT_SETTINGS.inlineTitle)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={inlineTitle} onChange={setInlineTitle} />
-            </div>
-          </div>
+      <SettingSection
+        tabName="Editor"
+        sectionName="Display"
+        defaultHeading="Display"
+      >
+        {/* Inline title */}
+        <SettingRow
+          title="Inline title"
+          description="Display the filename as an editable title inline with the file contents."
+          keywords={['inline title', 'title', 'filename', 'header']}
+          resetButton={
+            <FieldResetButton
+              isModified={inlineTitle !== DEFAULT_SETTINGS.inlineTitle}
+              onReset={() => setInlineTitle(DEFAULT_SETTINGS.inlineTitle)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={inlineTitle} onChange={setInlineTitle} />
+        </SettingRow>
 
-          {/* Readable line length */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Readable line length</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Limit maximum line length. Less content fits onscreen, but long blocks of text are more readable.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={readableLineLength !== DEFAULT_SETTINGS.readableLineLength}
-                onReset={() => setReadableLineLength(DEFAULT_SETTINGS.readableLineLength)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={readableLineLength} onChange={setReadableLineLength} />
-            </div>
-          </div>
+        {/* Readable line length */}
+        <SettingRow
+          title="Readable line length"
+          description="Limit maximum line length. Less content fits onscreen, but long blocks of text are more readable."
+          keywords={['line length', 'readable', 'width', 'margins']}
+          resetButton={
+            <FieldResetButton
+              isModified={readableLineLength !== DEFAULT_SETTINGS.readableLineLength}
+              onReset={() => setReadableLineLength(DEFAULT_SETTINGS.readableLineLength)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={readableLineLength} onChange={setReadableLineLength} />
+        </SettingRow>
 
-          {/* Strict line breaks */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Strict line breaks</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Markdown specs ignore single line breaks in reading view. Turn this off to make single line breaks visible.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={strictLineBreaks !== DEFAULT_SETTINGS.strictLineBreaks}
-                onReset={() => setStrictLineBreaks(DEFAULT_SETTINGS.strictLineBreaks)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch checked={strictLineBreaks} onChange={setStrictLineBreaks} />
-            </div>
-          </div>
+        {/* Strict line breaks */}
+        <SettingRow
+          title="Strict line breaks"
+          description="Markdown specs ignore single line breaks in reading view. Turn this off to make single line breaks visible."
+          keywords={['line breaks', 'markdown', 'enter', 'newline']}
+          resetButton={
+            <FieldResetButton
+              isModified={strictLineBreaks !== DEFAULT_SETTINGS.strictLineBreaks}
+              onReset={() => setStrictLineBreaks(DEFAULT_SETTINGS.strictLineBreaks)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={strictLineBreaks} onChange={setStrictLineBreaks} />
+        </SettingRow>
 
-          {/* Properties in document */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Properties in document</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Choose how properties are displayed at the top of notes. Select “source” to show properties as raw YAML.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={propertiesInDoc !== DEFAULT_SETTINGS.propertiesInDoc}
-                onReset={() => setPropertiesInDoc(DEFAULT_SETTINGS.propertiesInDoc)}
-                title="Restore default (Visible)"
-              />
-              <CustomSelect
-                value={propertiesInDoc}
-                onChange={(val) => setPropertiesInDoc(val as any)}
-                options={[
-                  { value: 'Visible', label: 'Visible' },
-                  { value: 'Hidden', label: 'Hidden' },
-                  { value: 'Source', label: 'Source' },
-                ]}
-              />
-            </div>
-          </div>
+        {/* Properties in document */}
+        <SettingRow
+          title="Properties in document"
+          description="Choose how properties are displayed at the top of notes. Select “source” to show properties as raw YAML."
+          keywords={['properties', 'frontmatter', 'yaml', 'metadata']}
+          resetButton={
+            <FieldResetButton
+              isModified={propertiesInDoc !== DEFAULT_SETTINGS.propertiesInDoc}
+              onReset={() => setPropertiesInDoc(DEFAULT_SETTINGS.propertiesInDoc)}
+              title="Restore default (Visible)"
+            />
+          }
+        >
+          <CustomSelect
+            value={propertiesInDoc}
+            onChange={(val) => setPropertiesInDoc(val as any)}
+            options={[
+              { value: 'Visible', label: 'Visible' },
+              { value: 'Hidden', label: 'Hidden' },
+              { value: 'Source', label: 'Source' },
+            ]}
+          />
+        </SettingRow>
 
-          {/* Fold heading */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Fold heading</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Lets you fold all content under a heading.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={foldHeading !== DEFAULT_SETTINGS.foldHeading}
-                onReset={() => setFoldHeading(DEFAULT_SETTINGS.foldHeading)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={foldHeading} onChange={setFoldHeading} />
-            </div>
-          </div>
+        {/* Fold heading */}
+        <SettingRow
+          title="Fold heading"
+          description="Lets you fold all content under a heading."
+          keywords={['fold', 'heading', 'collapse', 'outline']}
+          resetButton={
+            <FieldResetButton
+              isModified={foldHeading !== DEFAULT_SETTINGS.foldHeading}
+              onReset={() => setFoldHeading(DEFAULT_SETTINGS.foldHeading)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={foldHeading} onChange={setFoldHeading} />
+        </SettingRow>
 
-          {/* Fold indent */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Fold indent</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Lets you fold part of an indentation, such as lists.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={foldIndent !== DEFAULT_SETTINGS.foldIndent}
-                onReset={() => setFoldIndent(DEFAULT_SETTINGS.foldIndent)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={foldIndent} onChange={setFoldIndent} />
-            </div>
-          </div>
+        {/* Fold indent */}
+        <SettingRow
+          title="Fold indent"
+          description="Lets you fold part of an indentation, such as lists."
+          keywords={['fold', 'indent', 'list', 'collapse']}
+          resetButton={
+            <FieldResetButton
+              isModified={foldIndent !== DEFAULT_SETTINGS.foldIndent}
+              onReset={() => setFoldIndent(DEFAULT_SETTINGS.foldIndent)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={foldIndent} onChange={setFoldIndent} />
+        </SettingRow>
 
-          {/* Line numbers */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Line numbers</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Show line numbers in the gutter.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={lineNumbers !== DEFAULT_SETTINGS.lineNumbers}
-                onReset={() => setLineNumbers(DEFAULT_SETTINGS.lineNumbers)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch checked={lineNumbers} onChange={setLineNumbers} />
-            </div>
-          </div>
+        {/* Line numbers */}
+        <SettingRow
+          title="Line numbers"
+          description="Show line numbers in the gutter."
+          keywords={['line numbers', 'gutter', 'numbers']}
+          resetButton={
+            <FieldResetButton
+              isModified={lineNumbers !== DEFAULT_SETTINGS.lineNumbers}
+              onReset={() => setLineNumbers(DEFAULT_SETTINGS.lineNumbers)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={lineNumbers} onChange={setLineNumbers} />
+        </SettingRow>
 
-          {/* Indentation guides */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Indentation guides</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Show vertical relationship lines between list items.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={indentationGuides !== DEFAULT_SETTINGS.indentationGuides}
-                onReset={() => setIndentationGuides(DEFAULT_SETTINGS.indentationGuides)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={indentationGuides} onChange={setIndentationGuides} />
-            </div>
-          </div>
+        {/* Indentation guides */}
+        <SettingRow
+          title="Indentation guides"
+          description="Show vertical relationship lines between list items."
+          keywords={['indentation', 'guides', 'lines', 'vertical']}
+          resetButton={
+            <FieldResetButton
+              isModified={indentationGuides !== DEFAULT_SETTINGS.indentationGuides}
+              onReset={() => setIndentationGuides(DEFAULT_SETTINGS.indentationGuides)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={indentationGuides} onChange={setIndentationGuides} />
+        </SettingRow>
 
-          {/* Accent list markers */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Accent number & list markers</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Recolor list numbers and bullets with your theme's dimmed accent color.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={accentListPrefixes !== DEFAULT_SETTINGS.accentListPrefixes}
-                onReset={() => setAccentListPrefixes(DEFAULT_SETTINGS.accentListPrefixes)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch checked={accentListPrefixes} onChange={setAccentListPrefixes} />
-            </div>
-          </div>
+        {/* Accent number & list markers */}
+        <SettingRow
+          title="Accent number & list markers"
+          description="Recolor list numbers and bullets with your theme's dimmed accent color."
+          keywords={['accent', 'list', 'bullet', 'markers', 'numbers']}
+          resetButton={
+            <FieldResetButton
+              isModified={accentListPrefixes !== DEFAULT_SETTINGS.accentListPrefixes}
+              onReset={() => setAccentListPrefixes(DEFAULT_SETTINGS.accentListPrefixes)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={accentListPrefixes} onChange={setAccentListPrefixes} />
+        </SettingRow>
 
-          {/* Auto pairing */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Auto-pair brackets and quotes</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Automatically pair [[wikilinks]], ((blocks)), and markdown syntax.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={autoPairing !== DEFAULT_SETTINGS.autoPairing}
-                onReset={() => setAutoPairing(DEFAULT_SETTINGS.autoPairing)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={autoPairing} onChange={setAutoPairing} />
-            </div>
-          </div>
+        {/* Auto pairing */}
+        <SettingRow
+          title="Auto-pair brackets and quotes"
+          description="Automatically pair [[wikilinks]], ((blocks)), and markdown syntax."
+          keywords={['auto-pair', 'brackets', 'quotes', 'wikilinks']}
+          resetButton={
+            <FieldResetButton
+              isModified={autoPairing !== DEFAULT_SETTINGS.autoPairing}
+              onReset={() => setAutoPairing(DEFAULT_SETTINGS.autoPairing)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={autoPairing} onChange={setAutoPairing} />
+        </SettingRow>
 
-          {/* Auto-pair math formulas */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Auto-pair math formulas</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Automatically wrap selections in math or open the math editor when typing $. When disabled, typing $ inserts a literal dollar sign, but typing double dollars ($$) will still open a math formula.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={autoPairMath !== DEFAULT_SETTINGS.autoPairMath}
-                onReset={() => setAutoPairMath(DEFAULT_SETTINGS.autoPairMath)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch checked={autoPairMath} onChange={setAutoPairMath} />
-            </div>
-          </div>
+        {/* Auto-pair math formulas */}
+        <SettingRow
+          title="Auto-pair math formulas"
+          description="Automatically wrap selections in math or open the math editor when typing $. When disabled, typing $ inserts a literal dollar sign, but typing double dollars ($$) will still open a math formula."
+          keywords={['math', 'formulas', 'latex', 'dollar', 'auto-pair']}
+          resetButton={
+            <FieldResetButton
+              isModified={autoPairMath !== DEFAULT_SETTINGS.autoPairMath}
+              onReset={() => setAutoPairMath(DEFAULT_SETTINGS.autoPairMath)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={autoPairMath} onChange={setAutoPairMath} />
+        </SettingRow>
 
-          {/* Show external link icon */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Show external link icon</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Display an external link icon next to links in rendered markdown notes.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={showExternalLinkIcon !== DEFAULT_SETTINGS.showExternalLinkIcon}
-                onReset={() => setShowExternalLinkIcon(DEFAULT_SETTINGS.showExternalLinkIcon)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch checked={showExternalLinkIcon} onChange={setShowExternalLinkIcon} />
-            </div>
-          </div>
+        {/* Show external link icon */}
+        <SettingRow
+          title="Show external link icon"
+          description="Display an external link icon next to links in rendered markdown notes."
+          keywords={['external link', 'icon', 'url', 'http']}
+          resetButton={
+            <FieldResetButton
+              isModified={showExternalLinkIcon !== DEFAULT_SETTINGS.showExternalLinkIcon}
+              onReset={() => setShowExternalLinkIcon(DEFAULT_SETTINGS.showExternalLinkIcon)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={showExternalLinkIcon} onChange={setShowExternalLinkIcon} />
+        </SettingRow>
 
-          {/* Color all links with accent color */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Color all links with accent color</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Display markdown links, wikilinks, and document links using your active accent color.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={colorLinksWithAccent !== DEFAULT_SETTINGS.colorLinksWithAccent}
-                onReset={() => setColorLinksWithAccent(DEFAULT_SETTINGS.colorLinksWithAccent)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={colorLinksWithAccent} onChange={setColorLinksWithAccent} />
-            </div>
-          </div>
+        {/* Color all links with accent color */}
+        <SettingRow
+          title="Color all links with accent color"
+          description="Display markdown links, wikilinks, and document links using your active accent color."
+          keywords={['links', 'accent', 'color', 'wikilink']}
+          resetButton={
+            <FieldResetButton
+              isModified={colorLinksWithAccent !== DEFAULT_SETTINGS.colorLinksWithAccent}
+              onReset={() => setColorLinksWithAccent(DEFAULT_SETTINGS.colorLinksWithAccent)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={colorLinksWithAccent} onChange={setColorLinksWithAccent} />
+        </SettingRow>
 
-          {/* Classic blue links */}
-          <div
-            className={`flex items-center justify-between p-4 ${
-              colorLinksWithAccent ? 'opacity-40' : ''
-            }`}
-          >
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Classic blue links</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Display links in standard browser blue with purple visited links instead of neutral text color.
-                {colorLinksWithAccent && ' (Disabled while accent color is active)'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={!colorLinksWithAccent && blueLinks !== DEFAULT_SETTINGS.blueLinks}
-                onReset={() => setBlueLinks(DEFAULT_SETTINGS.blueLinks)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch
-                checked={blueLinks}
-                onChange={setBlueLinks}
-                disabled={colorLinksWithAccent}
-                title={colorLinksWithAccent ? 'Disabled while accent-colored links are enabled' : undefined}
-              />
-            </div>
-          </div>
+        {/* Classic blue links */}
+        <SettingRow
+          title="Classic blue links"
+          className={colorLinksWithAccent ? 'opacity-40' : ''}
+          description={
+            <>
+              {highlightMatch(
+                'Display links in standard browser blue with purple visited links instead of neutral text color.',
+                searchQuery
+              )}
+              {colorLinksWithAccent && ' (Disabled while accent color is active)'}
+            </>
+          }
+          descriptionText="Display links in standard browser blue with purple visited links instead of neutral text color."
+          keywords={['blue links', 'classic', 'browser', 'color']}
+          resetButton={
+            <FieldResetButton
+              isModified={!colorLinksWithAccent && blueLinks !== DEFAULT_SETTINGS.blueLinks}
+              onReset={() => setBlueLinks(DEFAULT_SETTINGS.blueLinks)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={blueLinks}
+            onChange={setBlueLinks}
+            disabled={colorLinksWithAccent}
+            title={colorLinksWithAccent ? 'Disabled while accent-colored links are enabled' : undefined}
+          />
+        </SettingRow>
 
-          {/* Underline links */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Underline links</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Display underlines under links. When turned off, underlines only appear on hover.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={underlineLinks !== DEFAULT_SETTINGS.underlineLinks}
-                onReset={() => setUnderlineLinks(DEFAULT_SETTINGS.underlineLinks)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={underlineLinks} onChange={setUnderlineLinks} />
-            </div>
-          </div>
+        {/* Underline links */}
+        <SettingRow
+          title="Underline links"
+          description="Display underlines under links. When turned off, underlines only appear on hover."
+          keywords={['underline', 'links', 'hover']}
+          resetButton={
+            <FieldResetButton
+              isModified={underlineLinks !== DEFAULT_SETTINGS.underlineLinks}
+              onReset={() => setUnderlineLinks(DEFAULT_SETTINGS.underlineLinks)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={underlineLinks} onChange={setUnderlineLinks} />
+        </SettingRow>
 
-          {/* Match underline color to link */}
-          <div
-            className={`flex items-center justify-between p-4 ${
-              !underlineLinks ? 'opacity-40' : ''
-            }`}
-          >
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Match underline color to link</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Color the underline to match the link text color instead of the subtle border color.
-                {!underlineLinks && ' (Disabled while link underlines are turned off)'}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={underlineLinks && matchLinkUnderlineColor !== DEFAULT_SETTINGS.matchLinkUnderlineColor}
-                onReset={() => setMatchLinkUnderlineColor(DEFAULT_SETTINGS.matchLinkUnderlineColor)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch
-                checked={matchLinkUnderlineColor}
-                onChange={setMatchLinkUnderlineColor}
-                disabled={!underlineLinks}
-                title={!underlineLinks ? 'Disabled while link underlines are turned off' : undefined}
-              />
-            </div>
-          </div>
+        {/* Match underline color to link */}
+        <SettingRow
+          title="Match underline color to link"
+          className={!underlineLinks ? 'opacity-40' : ''}
+          description={
+            <>
+              {highlightMatch(
+                'Color the underline to match the link text color instead of the subtle border color.',
+                searchQuery
+              )}
+              {!underlineLinks && ' (Disabled while link underlines are turned off)'}
+            </>
+          }
+          descriptionText="Color the underline to match the link text color instead of the subtle border color."
+          keywords={['match', 'underline', 'color']}
+          resetButton={
+            <FieldResetButton
+              isModified={underlineLinks && matchLinkUnderlineColor !== DEFAULT_SETTINGS.matchLinkUnderlineColor}
+              onReset={() => setMatchLinkUnderlineColor(DEFAULT_SETTINGS.matchLinkUnderlineColor)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={matchLinkUnderlineColor}
+            onChange={setMatchLinkUnderlineColor}
+            disabled={!underlineLinks}
+            title={!underlineLinks ? 'Disabled while link underlines are turned off' : undefined}
+          />
+        </SettingRow>
 
-          {/* Spellcheck */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Spellcheck</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Highlight spelling mistakes and typos with red wavy underlines in the editor.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={spellcheck !== DEFAULT_SETTINGS.spellcheck}
-                onReset={() => setSpellcheck(DEFAULT_SETTINGS.spellcheck)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={spellcheck} onChange={setSpellcheck} />
-            </div>
-          </div>
+        {/* Spellcheck */}
+        <SettingRow
+          title="Spellcheck"
+          description="Highlight spelling mistakes and typos with red wavy underlines in the editor."
+          keywords={['spellcheck', 'spelling', 'typo', 'grammar']}
+          resetButton={
+            <FieldResetButton
+              isModified={spellcheck !== DEFAULT_SETTINGS.spellcheck}
+              onReset={() => setSpellcheck(DEFAULT_SETTINGS.spellcheck)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={spellcheck} onChange={setSpellcheck} />
+        </SettingRow>
 
-          {/* Tab size */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Tab indent size</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Number of spaces when pressing Tab key.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={tabSize !== DEFAULT_SETTINGS.tabSize}
-                onReset={() => setTabSize(DEFAULT_SETTINGS.tabSize)}
-                title="Restore default (5 spaces)"
-              />
-              <CustomSelect
-                value={tabSize}
-                onChange={(val) => setTabSize(val as any)}
-                options={[
-                  { value: '2', label: '2 spaces' },
-                  { value: '3', label: '3 spaces' },
-                  { value: '4', label: '4 spaces' },
-                  { value: '5', label: '5 spaces' },
-                  { value: '6', label: '6 spaces' },
-                  { value: '7', label: '7 spaces' },
-                  { value: '8', label: '8 spaces' },
-                ]}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Tab indent size */}
+        <SettingRow
+          title="Tab indent size"
+          description="Number of spaces when pressing Tab key."
+          keywords={['tab', 'indent', 'spaces', 'size']}
+          resetButton={
+            <FieldResetButton
+              isModified={tabSize !== DEFAULT_SETTINGS.tabSize}
+              onReset={() => setTabSize(DEFAULT_SETTINGS.tabSize)}
+              title="Restore default (5 spaces)"
+            />
+          }
+        >
+          <CustomSelect
+            value={tabSize}
+            onChange={(val) => setTabSize(val as any)}
+            options={[
+              { value: '2', label: '2 spaces' },
+              { value: '3', label: '3 spaces' },
+              { value: '4', label: '4 spaces' },
+              { value: '5', label: '5 spaces' },
+              { value: '6', label: '6 spaces' },
+              { value: '7', label: '7 spaces' },
+              { value: '8', label: '8 spaces' },
+            ]}
+          />
+        </SettingRow>
+      </SettingSection>
     </div>
   );
 });
@@ -2299,315 +2494,274 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Files and links</h3>
-          <p className="text-[11px] text-[#777]">Vault management, link formats, and internal link syncing.</p>
-        </div>
-        {isFilesModified && (
-          <button
-            onClick={() => {
-              restoreTabDefaults('files');
-              showToast('Restored Files & links settings to default', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Restore default files & links settings"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Restore defaults</span>
-          </button>
-        )}
-      </div>
-
       {/* Section: Vault config */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Vault</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Vault name</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Change the display name of this Vault.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                value={tempVaultName}
-                onChange={(e) => setTempVaultName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveVaultName();
-                }}
-                className="bg-[#2a2a2a] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none w-44 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
-              />
-              {tempVaultName !== vaultName && (
-                <button
-                  onClick={handleSaveVaultName}
-                  className="noether-btn noether-btn-primary"
-                >
-                  Save
-                </button>
-              )}
-            </div>
+      <SettingSection
+        tabName="Files and links"
+        sectionName="Vault"
+        defaultDescription="Vault management, link formats, and internal link syncing."
+        isModified={isFilesModified}
+        onReset={() => {
+          restoreTabDefaults('files');
+          showToast('Restored Files & links settings to default', 'info');
+        }}
+        resetTitle="Restore default files & links settings"
+      >
+        <SettingRow
+          title="Vault name"
+          description="Change the display name of this Vault."
+          keywords={['vault', 'name', 'rename']}
+        >
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={tempVaultName}
+              onChange={(e) => setTempVaultName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSaveVaultName();
+              }}
+              className="bg-[#2a2a2a] border border-[#383838] focus:border-[#555] text-white text-xs rounded-[5px] px-3 py-1.5 outline-none w-44 shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)]"
+            />
+            {tempVaultName !== vaultName && (
+              <button
+                onClick={handleSaveVaultName}
+                className="noether-btn noether-btn-primary"
+              >
+                Save
+              </button>
+            )}
           </div>
+        </SettingRow>
 
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Close tabs when files are deleted</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Automatically close open tabs when their file is deleted. When turned off, dead tabs remain open as error views.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={closeTabsOnDelete !== DEFAULT_SETTINGS.closeTabsOnDelete}
-                onReset={() => {
-                  setCloseTabsOnDelete(DEFAULT_SETTINGS.closeTabsOnDelete);
-                  useWorkspaceStore.getState().cleanUpDeadTabs();
-                }}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch
-                checked={closeTabsOnDelete}
-                onChange={(val) => {
-                  setCloseTabsOnDelete(val);
-                  if (val) {
-                    useWorkspaceStore.getState().cleanUpDeadTabs();
-                  }
-                }}
-              />
-            </div>
-          </div>
+        <SettingRow
+          title="Close tabs when files are deleted"
+          description="Automatically close open tabs when their file is deleted. When turned off, dead tabs remain open as error views."
+          keywords={['close tab', 'delete', 'trash', 'dead tabs']}
+          resetButton={
+            <FieldResetButton
+              isModified={closeTabsOnDelete !== DEFAULT_SETTINGS.closeTabsOnDelete}
+              onReset={() => {
+                setCloseTabsOnDelete(DEFAULT_SETTINGS.closeTabsOnDelete);
+                useWorkspaceStore.getState().cleanUpDeadTabs();
+              }}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={closeTabsOnDelete}
+            onChange={(val) => {
+              setCloseTabsOnDelete(val);
+              if (val) {
+                useWorkspaceStore.getState().cleanUpDeadTabs();
+              }
+            }}
+          />
+        </SettingRow>
 
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Skip delete confirmation</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Delete notes and folders immediately without prompting.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={skipDeleteConfirmation !== DEFAULT_SETTINGS.skipDeleteConfirmation}
-                onReset={() => setSkipDeleteConfirmation(DEFAULT_SETTINGS.skipDeleteConfirmation)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch
-                checked={skipDeleteConfirmation}
-                onChange={setSkipDeleteConfirmation}
-              />
-            </div>
-          </div>
+        <SettingRow
+          title="Skip delete confirmation"
+          description="Delete notes and folders immediately without prompting."
+          keywords={['confirm', 'delete', 'trash', 'dialog', 'prompt']}
+          resetButton={
+            <FieldResetButton
+              isModified={skipDeleteConfirmation !== DEFAULT_SETTINGS.skipDeleteConfirmation}
+              onReset={() => setSkipDeleteConfirmation(DEFAULT_SETTINGS.skipDeleteConfirmation)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={skipDeleteConfirmation}
+            onChange={setSkipDeleteConfirmation}
+          />
+        </SettingRow>
 
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Skip rename on duplicate confirmation</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Automatically rename duplicate items (e.g. Note (1)) when moving without prompting.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={skipRenameConfirmation !== DEFAULT_SETTINGS.skipRenameConfirmation}
-                onReset={() => setSkipRenameConfirmation(DEFAULT_SETTINGS.skipRenameConfirmation)}
-                title="Restore default (Disabled)"
-              />
-              <ToggleSwitch
-                checked={skipRenameConfirmation}
-                onChange={setSkipRenameConfirmation}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+        <SettingRow
+          title="Skip rename on duplicate confirmation"
+          description="Automatically rename duplicate items (e.g. Note (1)) when moving without prompting."
+          keywords={['confirm', 'rename', 'dialog', 'duplicate', 'prompt']}
+          resetButton={
+            <FieldResetButton
+              isModified={skipRenameConfirmation !== DEFAULT_SETTINGS.skipRenameConfirmation}
+              onReset={() => setSkipRenameConfirmation(DEFAULT_SETTINGS.skipRenameConfirmation)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={skipRenameConfirmation}
+            onChange={setSkipRenameConfirmation}
+          />
+        </SettingRow>
+      </SettingSection>
 
       {/* Section: Default location */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Default location for new notes</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          {/* New note location */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">New note location</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Where newly created notes are placed.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation}
-                onReset={() => setNewNoteLocation(DEFAULT_SETTINGS.newNoteLocation)}
-                title="Restore default (Vault root)"
-              />
-              <CustomSelect
-                value={newNoteLocation}
-                onChange={(val) => setNewNoteLocation(val as NewNoteLocation)}
-                options={[
-                  { value: 'root', label: 'Vault root folder' },
-                  { value: 'same', label: 'Same folder as current file' },
-                ]}
-              />
-            </div>
-          </div>
+      <SettingSection
+        tabName="Files and links"
+        sectionName="Default location for new notes"
+        defaultHeading="Default location for new notes"
+      >
+        {/* New note location */}
+        <SettingRow
+          title="New note location"
+          description="Where newly created notes are placed."
+          keywords={['new note', 'location', 'root', 'same folder']}
+          resetButton={
+            <FieldResetButton
+              isModified={newNoteLocation !== DEFAULT_SETTINGS.newNoteLocation}
+              onReset={() => setNewNoteLocation(DEFAULT_SETTINGS.newNoteLocation)}
+              title="Restore default (Vault root)"
+            />
+          }
+        >
+          <CustomSelect
+            value={newNoteLocation}
+            onChange={(val) => setNewNoteLocation(val as NewNoteLocation)}
+            options={[
+              { value: 'root', label: 'Vault root folder' },
+              { value: 'same', label: 'Same folder as current file' },
+            ]}
+          />
+        </SettingRow>
 
-          {/* New attachment location */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Default location for new attachments</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Folder where pasted images and media attachments are placed (leave blank for Vault root).
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={attachmentFolder !== DEFAULT_SETTINGS.attachmentFolder}
-                onReset={() => setAttachmentFolder(DEFAULT_SETTINGS.attachmentFolder)}
-                title="Restore default (Vault root)"
-              />
-              <button
-                type="button"
-                onClick={handlePickAttachmentFolder}
-                className="noether-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
-                title="Click to select folder in File Explorer"
-              >
-                <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
-                <span className="max-w-[130px] truncate text-[#dcddde]">
-                  {attachmentFolder ? attachmentFolder : 'Vault root ( / )'}
-                </span>
-                <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[#282828] px-1.5 py-0.5 rounded border border-[#383838]">
-                  Set
-                </span>
-              </button>
-            </div>
-          </div>
+        {/* New attachment location */}
+        <SettingRow
+          title="Default location for new attachments"
+          description="Folder where pasted images and media attachments are placed (leave blank for Vault root)."
+          keywords={['attachment', 'images', 'media', 'folder', 'pasted']}
+          resetButton={
+            <FieldResetButton
+              isModified={attachmentFolder !== DEFAULT_SETTINGS.attachmentFolder}
+              onReset={() => setAttachmentFolder(DEFAULT_SETTINGS.attachmentFolder)}
+              title="Restore default (Vault root)"
+            />
+          }
+        >
+          <button
+            type="button"
+            onClick={handlePickAttachmentFolder}
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-2 group"
+            title="Click to select folder in File Explorer"
+          >
+            <Folder01Icon size={13} className="text-[#888] group-hover:text-white" />
+            <span className="max-w-[130px] truncate text-[#dcddde]">
+              {attachmentFolder ? attachmentFolder : 'Vault root ( / )'}
+            </span>
+            <span className="text-[10px] text-[#888] group-hover:text-[#ccc] bg-[#282828] px-1.5 py-0.5 rounded border border-[#383838]">
+              Set
+            </span>
+          </button>
+        </SettingRow>
 
-          {/* Missing attachment indicators */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Missing attachment indicators</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Display a yellow dot on files and containing folders in the navigation bar when an embedded image or file is missing.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={showBrokenEmbedIndicators !== DEFAULT_SETTINGS.showBrokenEmbedIndicators}
-                onReset={() => setShowBrokenEmbedIndicators(DEFAULT_SETTINGS.showBrokenEmbedIndicators)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch
-                checked={showBrokenEmbedIndicators}
-                onChange={setShowBrokenEmbedIndicators}
-              />
-            </div>
-          </div>
+        {/* Missing attachment indicators */}
+        <SettingRow
+          title="Missing attachment indicators"
+          description="Display a yellow dot on files and containing folders in the navigation bar when an embedded image or file is missing."
+          keywords={['broken embed', 'missing', 'asset', 'warning', 'indicator']}
+          resetButton={
+            <FieldResetButton
+              isModified={showBrokenEmbedIndicators !== DEFAULT_SETTINGS.showBrokenEmbedIndicators}
+              onReset={() => setShowBrokenEmbedIndicators(DEFAULT_SETTINGS.showBrokenEmbedIndicators)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={showBrokenEmbedIndicators}
+            onChange={setShowBrokenEmbedIndicators}
+          />
+        </SettingRow>
 
-          {/* New link format */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">New link format</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                How wikilinks like [[Target]] are formatted.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={linkFormat !== DEFAULT_SETTINGS.linkFormat}
-                onReset={() => setLinkFormat(DEFAULT_SETTINGS.linkFormat)}
-                title="Restore default (Shortest path)"
-              />
-              <CustomSelect
-                value={linkFormat}
-                onChange={(val) => setLinkFormat(val as LinkFormat)}
-                options={[
-                  { value: 'shortest', label: 'Shortest path when possible' },
-                  { value: 'relative', label: 'Relative path from file' },
-                  { value: 'absolute', label: 'Absolute path in Vault' },
-                ]}
-              />
-            </div>
-          </div>
+        {/* New link format */}
+        <SettingRow
+          title="New link format"
+          description="How wikilinks like [[Target]] are formatted."
+          keywords={['link format', 'shortest', 'relative', 'absolute', 'wikilink']}
+          resetButton={
+            <FieldResetButton
+              isModified={linkFormat !== DEFAULT_SETTINGS.linkFormat}
+              onReset={() => setLinkFormat(DEFAULT_SETTINGS.linkFormat)}
+              title="Restore default (Shortest path)"
+            />
+          }
+        >
+          <CustomSelect
+            value={linkFormat}
+            onChange={(val) => setLinkFormat(val as LinkFormat)}
+            options={[
+              { value: 'shortest', label: 'Shortest path when possible' },
+              { value: 'relative', label: 'Relative path from file' },
+              { value: 'absolute', label: 'Absolute path in Vault' },
+            ]}
+          />
+        </SettingRow>
 
-          {/* Auto update links */}
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Automatically update internal links</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Update internal links when a note is renamed or moved.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <FieldResetButton
-                isModified={autoUpdateLinks !== DEFAULT_SETTINGS.autoUpdateLinks}
-                onReset={() => setAutoUpdateLinks(DEFAULT_SETTINGS.autoUpdateLinks)}
-                title="Restore default (Enabled)"
-              />
-              <ToggleSwitch checked={autoUpdateLinks} onChange={setAutoUpdateLinks} />
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* Auto update links */}
+        <SettingRow
+          title="Automatically update internal links"
+          description="Update internal links when a note is renamed or moved."
+          keywords={['auto update', 'links', 'rename', 'move', 'backlinks']}
+          resetButton={
+            <FieldResetButton
+              isModified={autoUpdateLinks !== DEFAULT_SETTINGS.autoUpdateLinks}
+              onReset={() => setAutoUpdateLinks(DEFAULT_SETTINGS.autoUpdateLinks)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={autoUpdateLinks} onChange={setAutoUpdateLinks} />
+        </SettingRow>
+      </SettingSection>
 
       {/* Section: Trash */}
-      <div>
-        <div className="px-4 mb-2.5">
-          <h3 className="text-sm font-semibold text-white">Trash</h3>
-        </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
-          <div
-            onClick={async () => {
-              await loadTrash();
-              onOpenTrash();
-            }}
-            className="flex items-center justify-between p-4 cursor-pointer hover:bg-[#242424]/40"
-          >
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Open trash</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                View and restore deleted files and folders. Items are automatically cleared after 48 hours.
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#888]">
-              <span className="text-white font-medium">
-                {trashItems.length} {trashItems.length === 1 ? 'item' : 'items'}
-              </span>
-              <ChevronRightIcon size={14} />
-            </div>
+      <SettingSection
+        tabName="Files and links"
+        sectionName="Trash"
+        defaultHeading="Trash"
+      >
+        <SettingRow
+          title="Open trash"
+          description="View and restore deleted files and folders. Items are automatically cleared after 48 hours."
+          keywords={['trash', 'deleted', 'restore', 'recover']}
+          onClick={async () => {
+            await loadTrash();
+            onOpenTrash();
+          }}
+        >
+          <div className="flex items-center gap-2 text-xs text-[#888]">
+            <span className="text-white font-medium">
+              {trashItems.length} {trashItems.length === 1 ? 'item' : 'items'}
+            </span>
+            <ChevronRightIcon size={14} />
           </div>
+        </SettingRow>
 
-          <div className="flex items-center justify-between p-4">
-            <div className="flex flex-col pr-4">
-              <span className="text-[13px] font-normal text-[#dcddde]">Empty trash</span>
-              <span className="text-[11px] text-[#777] mt-0.5">
-                Permanently delete all items currently in trash.
-              </span>
-            </div>
-            <button
-              disabled={trashItems.length === 0}
-              onClick={() => {
-                openConfirmDialog({
-                  title: 'Empty Trash',
-                  message: 'Are you sure you want to permanently delete all items in the trash?',
-                  subtext: 'All deleted files and folders will be permanently destroyed.',
-                  confirmText: 'Empty Trash',
-                  isDanger: true,
-                  onConfirm: async () => {
-                    await emptyAllTrash();
-                  },
-                });
-              }}
-              className="noether-btn noether-btn-danger flex items-center gap-1.5"
-            >
-              <Delete02Icon size={12} />
-              <span>Empty Trash</span>
-            </button>
-          </div>
-        </div>
-      </div>
+        <SettingRow
+          title="Empty trash"
+          description="Permanently delete all items currently in trash."
+          keywords={['empty trash', 'purge', 'permanent', 'destroy']}
+        >
+          <button
+            disabled={trashItems.length === 0}
+            onClick={() => {
+              openConfirmDialog({
+                title: 'Empty Trash',
+                message: 'Are you sure you want to permanently delete all items in the trash?',
+                subtext: 'All deleted files and folders will be permanently destroyed.',
+                confirmText: 'Empty Trash',
+                isDanger: true,
+                onConfirm: async () => {
+                  await emptyAllTrash();
+                },
+              });
+            }}
+            className="noether-btn noether-btn-danger flex items-center gap-1.5"
+          >
+            <Delete02Icon size={12} />
+            <span>Empty Trash</span>
+          </button>
+        </SettingRow>
+      </SettingSection>
     </div>
   );
 });
@@ -2623,6 +2777,7 @@ const HotkeysTab: React.FC = React.memo(() => {
   const resetCustomHotkey = useSettingsStore((s) => s.resetCustomHotkey);
   const resetAllHotkeys = useSettingsStore((s) => s.resetAllHotkeys);
   const showToast = useWorkspaceStore((s) => s.showToast);
+  const { searchQuery, showAllOccurrences } = useContext(SettingsSearchContext);
 
   const [recordingCommandId, setRecordingCommandId] = useState<string | null>(null);
 
@@ -2666,27 +2821,72 @@ const HotkeysTab: React.FC = React.memo(() => {
     return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [recordingCommandId, setCustomHotkey, resetCustomHotkey, showToast]);
 
+  const filteredCommands = useMemo(() => {
+    if (!searchQuery.trim()) return allCommands;
+    const q = searchQuery.toLowerCase().trim();
+    return allCommands.filter((cmd) => {
+      const cmdTitle = typeof cmd.title === 'function' ? cmd.title(app) : cmd.title;
+      return (
+        cmdTitle.toLowerCase().includes(q) ||
+        (cmd.section && cmd.section.toLowerCase().includes(q)) ||
+        (cmd.hotkey && cmd.hotkey.toLowerCase().includes(q)) ||
+        'hotkeys'.includes(q) ||
+        'shortcuts'.includes(q)
+      );
+    });
+  }, [allCommands, searchQuery, app]);
+
+  if (showAllOccurrences && searchQuery.trim() && filteredCommands.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-1">Hotkeys</h3>
-          <p className="text-[11px] text-[#777]">View and customize keyboard shortcuts across all commands.</p>
+      {showAllOccurrences && searchQuery.trim() ? (
+        <div className="flex items-center justify-between px-4 mb-1">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-0.5">
+              {highlightMatch('Hotkeys', searchQuery)}
+            </h3>
+            <p className="text-[11px] text-[var(--noether-text-muted)]">
+              {highlightMatch('Hotkeys', searchQuery)}
+            </p>
+          </div>
+          {Object.keys(customHotkeys).length > 0 && (
+            <button
+              onClick={() => {
+                resetAllHotkeys();
+                showToast('Reset all customized shortcuts to defaults', 'info');
+              }}
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+              title="Reset all customized shortcuts to defaults"
+            >
+              <RotateCcwIcon size={12} />
+              <span>Reset all</span>
+            </button>
+          )}
         </div>
-        {Object.keys(customHotkeys).length > 0 && (
-          <button
-            onClick={() => {
-              resetAllHotkeys();
-              showToast('Reset all customized shortcuts to defaults', 'info');
-            }}
-            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
-            title="Reset all customized shortcuts to defaults"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Reset all</span>
-          </button>
-        )}
-      </div>
+      ) : (
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-1">Hotkeys</h3>
+            <p className="text-[11px] text-[#777]">View and customize keyboard shortcuts across all commands.</p>
+          </div>
+          {Object.keys(customHotkeys).length > 0 && (
+            <button
+              onClick={() => {
+                resetAllHotkeys();
+                showToast('Reset all customized shortcuts to defaults', 'info');
+              }}
+              className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
+              title="Reset all customized shortcuts to defaults"
+            >
+              <RotateCcwIcon size={12} />
+              <span>Reset all</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {recordingCommandId && (
         <div
@@ -2704,7 +2904,7 @@ const HotkeysTab: React.FC = React.memo(() => {
       )}
 
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
-        {allCommands.map((cmd) => {
+        {filteredCommands.map((cmd) => {
           const cmdTitle = typeof cmd.title === 'function' ? cmd.title(app) : cmd.title;
           const activeHotkey = customHotkeys[cmd.id] !== undefined ? customHotkeys[cmd.id] : cmd.hotkey;
           const isCustomized = customHotkeys[cmd.id] !== undefined;
@@ -2716,9 +2916,13 @@ const HotkeysTab: React.FC = React.memo(() => {
               className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
             >
               <div className="flex flex-col">
-                <span className="text-[13px] font-normal text-white">{cmdTitle}</span>
+                <span className="text-[13px] font-normal text-white">
+                  {highlightMatch(cmdTitle, searchQuery)}
+                </span>
                 {cmd.section && (
-                  <span className="text-[10px] text-[#666] uppercase mt-0.5">{cmd.section}</span>
+                  <span className="text-[10px] text-[#666] uppercase mt-0.5">
+                    {highlightMatch(cmd.section, searchQuery)}
+                  </span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -2799,6 +3003,7 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
   const app = useNoetherApp();
   const extensionList = useExtensionList();
   const allSettingTabs = useSettingTabs();
+  const { searchQuery, showAllOccurrences } = useContext(SettingsSearchContext);
 
   const coreExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
@@ -2807,6 +3012,20 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
       return manifest?.isCore === true;
     });
   }, [allSettingTabs, app]);
+
+  const filteredCore = useMemo(() => {
+    if (!searchQuery.trim()) return extensionList.core;
+    const q = searchQuery.toLowerCase().trim();
+    return extensionList.core.filter((ext) => {
+      return (
+        ext.name.toLowerCase().includes(q) ||
+        (ext.description && ext.description.toLowerCase().includes(q)) ||
+        ext.id.toLowerCase().includes(q) ||
+        'built-in extensions'.includes(q) ||
+        'core extensions'.includes(q)
+      );
+    });
+  }, [extensionList.core, searchQuery]);
 
   const handleToggleExtension = useCallback(async (extensionId: string) => {
     const isEnabled = app.extensions.isExtensionEnabled(extensionId);
@@ -2817,17 +3036,32 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
     }
   }, [app]);
 
+  if (showAllOccurrences && searchQuery.trim() && filteredCore.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="px-4">
-        <h3 className="text-sm font-semibold text-white mb-1">Built-in extensions</h3>
-        <p className="text-[11px] text-[#777]">
-          Built-in features designed as modular extensions. Toggle them anytime.
-        </p>
-      </div>
+      {showAllOccurrences && searchQuery.trim() ? (
+        <div className="px-4 mb-1">
+          <h3 className="text-sm font-semibold text-white mb-0.5">
+            {highlightMatch('Built-in extensions', searchQuery)}
+          </h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)]">
+            {highlightMatch('Built-in extensions', searchQuery)}
+          </p>
+        </div>
+      ) : (
+        <div className="px-4">
+          <h3 className="text-sm font-semibold text-white mb-1">Built-in extensions</h3>
+          <p className="text-[11px] text-[#777]">
+            Built-in features designed as modular extensions. Toggle them anytime.
+          </p>
+        </div>
+      )}
 
       <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
-        {extensionList.core.map((ext) => {
+        {filteredCore.map((ext) => {
           const isEnabled = app.extensions.isExtensionEnabled(ext.id);
           const settingsTab = coreExtensionTabs.find((tab) => isTabMatch(tab, ext.id));
           return (
@@ -2837,10 +3071,16 @@ const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({ onNavi
             >
               <div className="flex-1 pr-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[13px] font-normal text-white">{ext.name}</span>
+                  <span className="text-[13px] font-normal text-white">
+                    {highlightMatch(ext.name, searchQuery)}
+                  </span>
                   <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
                 </div>
-                <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">{ext.description}</p>
+                {ext.description && (
+                  <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+                    {highlightMatch(ext.description, searchQuery)}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -2901,6 +3141,7 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
   const allSettingTabs = useSettingTabs();
   const showToast = useWorkspaceStore((s) => s.showToast);
   const openConfirmDialog = useWorkspaceStore((s) => s.openConfirmDialog);
+  const { searchQuery, showAllOccurrences } = useContext(SettingsSearchContext);
 
   const communityExtensionTabs = useMemo(() => {
     return allSettingTabs.filter((tab) => {
@@ -2909,6 +3150,20 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
       return !manifest || manifest.isCore !== true;
     });
   }, [allSettingTabs, app]);
+
+  const filteredCommunity = useMemo(() => {
+    if (!searchQuery.trim()) return extensionList.community;
+    const q = searchQuery.toLowerCase().trim();
+    return extensionList.community.filter((ext) => {
+      return (
+        ext.name.toLowerCase().includes(q) ||
+        (ext.description && ext.description.toLowerCase().includes(q)) ||
+        ext.id.toLowerCase().includes(q) ||
+        (ext.author && ext.author.toLowerCase().includes(q)) ||
+        'community extensions'.includes(q)
+      );
+    });
+  }, [extensionList.community, searchQuery]);
 
   const handleToggleExtension = useCallback(async (extensionId: string) => {
     const isEnabled = app.extensions.isExtensionEnabled(extensionId);
@@ -2988,56 +3243,71 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
     [app]
   );
 
+  if (showAllOccurrences && searchQuery.trim() && filteredCommunity.length === 0) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-1">Community extensions</h3>
-          <p className="text-[11px] text-[#777]">
-            Installed community extensions in your Vault.
+      {showAllOccurrences && searchQuery.trim() ? (
+        <div className="px-4 mb-1">
+          <h3 className="text-sm font-semibold text-white mb-0.5">
+            {highlightMatch('Community extensions', searchQuery)}
+          </h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)]">
+            {highlightMatch('Community extensions', searchQuery)}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          {availableUpdates.length > 0 && (
+      ) : (
+        <div className="flex items-center justify-between px-4">
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-1">Community extensions</h3>
+            <p className="text-[11px] text-[#777]">
+              Installed community extensions in your Vault.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {availableUpdates.length > 0 && (
+              <button
+                onClick={handleUpdateAll}
+                className="noether-btn noether-btn-primary flex items-center gap-1.5"
+              >
+                <Download01Icon size={12} />
+                <span>Update all ({availableUpdates.length})</span>
+              </button>
+            )}
             <button
-              onClick={handleUpdateAll}
-              className="noether-btn noether-btn-primary flex items-center gap-1.5"
+              onClick={handleCheckUpdates}
+              disabled={isCheckingUpdates || app.extensions.updater.checking}
+              className="noether-btn flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Download01Icon size={12} />
-              <span>Update all ({availableUpdates.length})</span>
+              <RotateCcwIcon
+                size={12}
+                className={isCheckingUpdates || app.extensions.updater.checking ? 'animate-spin' : ''}
+              />
+              <span>{isCheckingUpdates || app.extensions.updater.checking ? 'Checking...' : 'Check for updates'}</span>
             </button>
-          )}
-          <button
-            onClick={handleCheckUpdates}
-            disabled={isCheckingUpdates || app.extensions.updater.checking}
-            className="noether-btn flex items-center gap-1.5 disabled:opacity-50"
-          >
-            <RotateCcwIcon
-              size={12}
-              className={isCheckingUpdates || app.extensions.updater.checking ? 'animate-spin' : ''}
-            />
-            <span>{isCheckingUpdates || app.extensions.updater.checking ? 'Checking...' : 'Check for updates'}</span>
-          </button>
-          <button
-            onClick={handleReloadExtensions}
-            className="noether-btn flex items-center gap-1.5"
-          >
-            <RotateCcwIcon size={12} />
-            <span>Reload</span>
-          </button>
-          <button
-            onClick={handleOpenExtensionsFolder}
-            className="noether-btn flex items-center gap-1.5"
-          >
-            <FolderOpenIcon size={12} />
-            <span>Open extensions folder</span>
-          </button>
+            <button
+              onClick={handleReloadExtensions}
+              className="noether-btn flex items-center gap-1.5"
+            >
+              <RotateCcwIcon size={12} />
+              <span>Reload</span>
+            </button>
+            <button
+              onClick={handleOpenExtensionsFolder}
+              className="noether-btn flex items-center gap-1.5"
+            >
+              <FolderOpenIcon size={12} />
+              <span>Open extensions folder</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
-      {extensionList.community.length > 0 ? (
+      {filteredCommunity.length > 0 ? (
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
-          {extensionList.community.map((ext) => {
+          {filteredCommunity.map((ext) => {
             const isEnabled = app.extensions.isExtensionEnabled(ext.id);
             const communityTab = communityExtensionTabs.find((t) => isTabMatch(t, ext.id));
             const updateInfo = app.extensions.updater.getUpdate(ext.id);
@@ -3049,13 +3319,21 @@ const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = React.memo
               >
                 <div className="flex-1 pr-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[13px] font-normal text-white">{ext.name}</span>
+                    <span className="text-[13px] font-normal text-white">
+                      {highlightMatch(ext.name, searchQuery)}
+                    </span>
                     <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
                     {ext.author && (
-                      <span className="text-[10px] text-[#777]">by {ext.author}</span>
+                      <span className="text-[10px] text-[#777]">
+                        by {highlightMatch(ext.author, searchQuery)}
+                      </span>
                     )}
                   </div>
-                  <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">{ext.description}</p>
+                  {ext.description && (
+                    <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+                      {highlightMatch(ext.description, searchQuery)}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -3166,6 +3444,7 @@ export interface SettingsWindowContentProps {
 export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React.memo(({ onClose, isModal = false, initialTab }) => {
   const app = useNoetherApp();
   const allSettingTabs = useSettingTabs();
+  const allCommands = useCommands();
 
   const vaultName = useWorkspaceStore((s) => s.vaultName);
   const setVaultName = useWorkspaceStore((s) => s.setVaultName);
@@ -3174,6 +3453,8 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
   const [activeTab, setActiveTab] = useState<string>(initialTab || 'general');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showAllOccurrences, setShowAllOccurrences] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Sub-view navigation (e.g. for Font Pickers & Trash)
   const [fontPickerMode, setFontPickerMode] = useState<'interface' | 'text' | 'monospace' | null>(null);
@@ -3317,25 +3598,83 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     return result;
   }, [allSettingTabs, app, extensionList.community]);
 
+  const matchingTabIds = useMemo(() => {
+    if (!searchQuery.trim()) return new Set<string>();
+    const q = searchQuery.toLowerCase().trim();
+    const matched = new Set<string>();
+    for (const item of SETTINGS_SEARCH_INDEX) {
+      if (
+        item.tabName.toLowerCase().includes(q) ||
+        item.sectionName.toLowerCase().includes(q) ||
+        item.title.toLowerCase().includes(q) ||
+        item.description.toLowerCase().includes(q) ||
+        (item.keywords && item.keywords.some((k) => k.toLowerCase().includes(q)))
+      ) {
+        matched.add(item.tabId);
+      }
+    }
+    const commandMatch = allCommands.some((cmd) => {
+      const title = typeof cmd.title === 'function' ? cmd.title(app) : cmd.title;
+      return (
+        title.toLowerCase().includes(q) ||
+        (cmd.section && cmd.section.toLowerCase().includes(q)) ||
+        (cmd.hotkey && cmd.hotkey.toLowerCase().includes(q)) ||
+        'hotkeys'.includes(q) ||
+        'shortcuts'.includes(q)
+      );
+    });
+    if (commandMatch) {
+      matched.add('hotkeys');
+    }
+    return matched;
+  }, [searchQuery, allCommands, app]);
+
+  const hasAnyMatches = useMemo(() => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase().trim();
+    if (matchingTabIds.size > 0) return true;
+    const coreMatch = extensionList.core.some(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.description?.toLowerCase().includes(q) ||
+        e.id.toLowerCase().includes(q) ||
+        'built-in extensions'.includes(q) ||
+        'core extensions'.includes(q)
+    );
+    if (coreMatch) return true;
+    const commMatch = extensionList.community.some(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.description?.toLowerCase().includes(q) ||
+        e.id.toLowerCase().includes(q) ||
+        (e.author && e.author.toLowerCase().includes(q)) ||
+        'community extensions'.includes(q)
+    );
+    if (commMatch) return true;
+    return false;
+  }, [searchQuery, matchingTabIds, extensionList]);
+
   const filteredOptions = useMemo(() => {
     if (!searchQuery.trim()) return optionsItems;
     const q = searchQuery.toLowerCase().trim();
     return optionsItems.filter((i) =>
-      i.label.toLowerCase().includes(q) || i.keywords.some((k) => k.includes(q))
+      matchingTabIds.has(i.id) ||
+      i.label.toLowerCase().includes(q) ||
+      i.keywords.some((k) => k.includes(q))
     );
-  }, [searchQuery, optionsItems]);
+  }, [searchQuery, optionsItems, matchingTabIds]);
 
   const filteredCoreExtensions = useMemo(() => {
     return coreExtensionTabs.filter((item) => {
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
         const extId = item.extensionId || item.id.split(':')[0];
         const manifest = app.extensions.getExtensionManifest(extId);
         const nameMatch = item.name.toLowerCase().includes(q);
         const manifestMatch =
           manifest?.name.toLowerCase().includes(q) ||
           manifest?.description?.toLowerCase().includes(q);
-        return nameMatch || manifestMatch;
+        return nameMatch || manifestMatch || extId.toLowerCase().includes(q);
       }
       return true;
     });
@@ -3343,15 +3682,15 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
   const filteredCommunityExtensions = useMemo(() => {
     return communityExtensionTabs.filter((item) => {
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase().trim();
         const extId = item.extensionId || item.id.split(':')[0];
         const manifest = app.extensions.getExtensionManifest(extId);
         const nameMatch = item.name.toLowerCase().includes(q);
         const manifestMatch =
           manifest?.name.toLowerCase().includes(q) ||
           manifest?.description?.toLowerCase().includes(q);
-        return nameMatch || manifestMatch;
+        return nameMatch || manifestMatch || extId.toLowerCase().includes(q);
       }
       return true;
     });
@@ -3360,8 +3699,40 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   const handleNavigateTab = useCallback((tabId: string) => {
     setFontPickerMode(null);
     setIsTrashViewOpen(false);
+    setShowAllOccurrences(false);
     setActiveTab(tabId);
   }, []);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    setFontPickerMode(null);
+    setIsTrashViewOpen(false);
+    setShowAllOccurrences(Boolean(val.trim()));
+  }, []);
+
+  const handleSearchFocusOrClick = useCallback(() => {
+    if (searchQuery.trim()) {
+      setFontPickerMode(null);
+      setIsTrashViewOpen(false);
+      setShowAllOccurrences(true);
+    }
+  }, [searchQuery]);
+
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('');
+    setShowAllOccurrences(false);
+    searchInputRef.current?.focus();
+  }, []);
+
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Escape') {
+      if (searchQuery) {
+        e.stopPropagation();
+        handleClearSearch();
+      }
+    }
+  }, [searchQuery, handleClearSearch]);
 
   return (
     <div
@@ -3459,12 +3830,26 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           <div className="relative mb-3 shrink-0">
             <Search01Icon size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted)] pointer-events-none" />
             <input
+              ref={searchInputRef}
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
+              onFocus={handleSearchFocusOrClick}
+              onClick={handleSearchFocusOrClick}
+              onKeyDown={handleSearchKeyDown}
               placeholder="Search settings..."
-              className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] outline-none"
+              className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] rounded-md pl-8 pr-7 py-1.5 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] outline-none"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                title="Clear search (Esc)"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer p-0.5"
+              >
+                <CancelCircleIcon size={13} />
+              </button>
+            )}
           </div>
 
           {/* Nav Categories List */}
@@ -3474,13 +3859,14 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               <div className="flex flex-col gap-0.5">
                 <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Options</div>
                 {filteredOptions.map((item) => {
-                  const isActive = (activeTab === item.id || (isTrashViewOpen && item.id === 'files')) && !fontPickerMode;
+                  const isActive = !showAllOccurrences && (activeTab === item.id || (isTrashViewOpen && item.id === 'files')) && !fontPickerMode;
                   return (
                     <button
                       key={item.id}
                       onClick={() => {
                         setFontPickerMode(null);
                         setIsTrashViewOpen(false);
+                        setShowAllOccurrences(false);
                         setActiveTab(item.id);
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
@@ -3502,13 +3888,14 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               <div className="flex flex-col gap-0.5">
                 <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Built-in extensions</div>
                 {filteredCoreExtensions.map((item) => {
-                  const isActive = isTabMatch(item, activeTab) && !fontPickerMode && !isTrashViewOpen;
+                  const isActive = !showAllOccurrences && isTabMatch(item, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
                     <button
                       key={item.id}
                       onClick={() => {
                         setFontPickerMode(null);
                         setIsTrashViewOpen(false);
+                        setShowAllOccurrences(false);
                         setActiveTab(item.id);
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
@@ -3530,13 +3917,14 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
               <div className="flex flex-col gap-0.5">
                 <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Community extensions</div>
                 {filteredCommunityExtensions.map((tab) => {
-                  const isActive = isTabMatch(tab, activeTab) && !fontPickerMode && !isTrashViewOpen;
+                  const isActive = !showAllOccurrences && isTabMatch(tab, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => {
                         setFontPickerMode(null);
                         setIsTrashViewOpen(false);
+                        setShowAllOccurrences(false);
                         setActiveTab(tab.id);
                       }}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
@@ -3573,168 +3961,212 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         {/* RIGHT COLUMN: Tab Content */}
         <main className="flex-1 bg-[var(--noether-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6">
           <div className="max-w-2xl mx-auto">
-            {/* TAB: GENERAL */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'general' && (
-              <GeneralTab />
-            )}
-
-            {/* TAB: APPEARANCE */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'appearance' && (
-              <AppearanceTab onOpenFontPicker={setFontPickerMode} />
-            )}
-
-            {/* TAB: INTERFACE */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'interface' && (
-              <InterfaceTab />
-            )}
-
-            {/* TAB: EDITOR */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'editor' && (
-              <EditorTab />
-            )}
-
-            {/* TAB: FILES AND LINKS */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'files' && (
-              <FilesTab onOpenTrash={() => setIsTrashViewOpen(true)} />
-            )}
-
-            {/* TAB: HOTKEYS */}
-            {!fontPickerMode && !isTrashViewOpen && activeTab === 'hotkeys' && (
-              <HotkeysTab />
-            )}
-
-            {/* TAB: CORE EXTENSIONS */}
-            {!fontPickerMode && !isTrashViewOpen && (activeTab === 'core-extensions' || activeTab === 'core-plugins') && (
-              <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
-            )}
-
-            {/* TAB: COMMUNITY EXTENSIONS */}
-            {!fontPickerMode && !isTrashViewOpen && (activeTab === 'community-extensions' || activeTab === 'community-plugins') && (
-              <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
-            )}
-
-            {/* DYNAMIC EXTENSION SETTING TAB RENDER (CORE & COMMUNITY) */}
-            {(() => {
-              if (fontPickerMode || isTrashViewOpen) return null;
-              const BUILTIN_TABS = new Set([
-                'general', 'appearance', 'interface', 'editor', 'files', 'hotkeys',
-                'core-extensions', 'core-plugins', 'community-extensions', 'community-plugins',
-              ]);
-              if (BUILTIN_TABS.has(activeTab)) return null;
-
-              const currentTab =
-                allSettingTabs.find((t) => isTabMatch(t, activeTab)) ||
-                coreExtensionTabs.find((t) => isTabMatch(t, activeTab)) ||
-                communityExtensionTabs.find((t) => isTabMatch(t, activeTab));
-              const candidateId = activeTab.includes(':') ? activeTab.split(':')[0] : activeTab;
-              const manifest = currentTab
-                ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.id.split(':')[0])
-                : (app.extensions.getExtensionManifest(candidateId) || app.extensions.getExtensionManifest(activeTab));
-
-              if (!currentTab && !manifest) return null;
-
-              const extId = currentTab?.extensionId || manifest?.id || candidateId;
-              const isEnabled = extId ? app.extensions.isExtensionEnabled(extId) : false;
-              const tabName = manifest?.name || currentTab?.name || extId;
-
-              return (
-                <div className="flex flex-col gap-4">
-                  {/* Top Extension Header with Enabled Toggle matching CoreExtensions row design */}
-                  <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
-                    <div className="flex-1 pr-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-[13px] font-normal text-white">
-                          {tabName}
-                        </span>
-                        {manifest?.version && (
-                          <span className="text-[11px] text-[#777] font-normal">
-                            v{manifest.version}
-                          </span>
-                        )}
-                      </div>
-                      {manifest?.description && (
-                        <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
-                          {manifest.description}
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {currentTab?.onRestoreDefaults && isEnabled && (
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            await currentTab.onRestoreDefaults?.();
-                            showToast(`Restored ${tabName} defaults`, 'info');
-                          }}
-                          title={`Restore default ${tabName} settings`}
-                          className="px-2.5 py-1 rounded-[5px] flex items-center gap-1.5 text-xs text-[#888] hover:text-white hover:bg-[#2a2a2a] cursor-pointer"
-                        >
-                          <RotateCcwIcon size={12} />
-                          <span>Restore defaults</span>
-                        </button>
-                      )}
-                      {manifest?.readme && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            localStorage.setItem('noether_open_extension_doc', JSON.stringify({ extensionId: extId, title: tabName, timestamp: Date.now() }));
-                            useWorkspaceStore.getState().openExtensionDocTab(extId, tabName);
-                            handleClose();
-                          }}
-                          title={`View ${tabName} documentation`}
-                          className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
-                        >
-                          <BookOpen01Icon size={14} />
-                        </button>
-                      )}
-                      <ToggleSwitch
-                        checked={isEnabled}
-                        onChange={async (val) => {
-                          if (val) {
-                            await app.extensions.enableExtension(extId);
-                            showToast(`Enabled ${tabName}`, 'success');
-                          } else {
-                            await app.extensions.disableExtension(extId);
-                            showToast(`Disabled ${tabName}`, 'info');
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Extension Setting Content */}
-                  {!isEnabled ? (
-                    <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
-                      <span className="text-xs text-[#888]">
-                        {tabName} is currently disabled.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          await app.extensions.enableExtension(extId);
-                          showToast(`Enabled ${tabName}`, 'success');
-                        }}
-                        className="noether-btn noether-btn-primary"
-                      >
-                        Enable {tabName}
-                      </button>
-                    </div>
-                  ) : currentTab?.render ? (
-                    <div className="flex flex-col gap-4">
-                      {currentTab.render()}
-                    </div>
+            <SettingsSearchContext.Provider value={{ searchQuery, showAllOccurrences }}>
+              {showAllOccurrences && searchQuery.trim() ? (
+                <div className="flex flex-col gap-6">
+                  {hasAnyMatches ? (
+                    <>
+                      <GeneralTab />
+                      <AppearanceTab onOpenFontPicker={setFontPickerMode} />
+                      <InterfaceTab />
+                      <EditorTab />
+                      <FilesTab onOpenTrash={() => setIsTrashViewOpen(true)} />
+                      <HotkeysTab />
+                      <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                      <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                    </>
                   ) : (
-                    <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-2">
-                      <h4 className="text-sm font-semibold text-white">{tabName}</h4>
-                      <p className="text-xs text-[#888] leading-relaxed">
-                        {manifest?.description || `${tabName} is enabled and active.`}
+                    <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 text-center mt-4 flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 rounded-xl bg-[var(--noether-bg-card-hover)] flex items-center justify-center text-[var(--noether-text-muted)] mb-3">
+                        <Search01Icon size={20} />
+                      </div>
+                      <h4 className="text-sm font-semibold text-white mb-1">No settings found</h4>
+                      <p className="text-xs text-[var(--noether-text-muted)] max-w-sm leading-relaxed">
+                        No settings matching &ldquo;<span className="text-[var(--noether-accent)]">{searchQuery}</span>&rdquo; were found.
                       </p>
                     </div>
                   )}
                 </div>
-              );
-            })()}
+              ) : (
+                <>
+                  {/* SUB-VIEW: FONT PICKER */}
+                  {fontPickerMode && (
+                    <FontPickerView
+                      mode={fontPickerMode}
+                      onClose={() => setFontPickerMode(null)}
+                    />
+                  )}
+
+                  {/* SUB-VIEW: TRASH VIEWER */}
+                  {isTrashViewOpen && (
+                    <TrashView onClose={() => setIsTrashViewOpen(false)} />
+                  )}
+
+                  {/* TAB: GENERAL */}
+                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'general' && (
+                    <GeneralTab />
+                  )}
+
+                  {/* TAB: APPEARANCE */}
+                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'appearance' && (
+                    <AppearanceTab onOpenFontPicker={setFontPickerMode} />
+                  )}
+
+                  {/* TAB: INTERFACE */}
+                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'interface' && (
+                    <InterfaceTab />
+                  )}
+
+                  {/* TAB: EDITOR */}
+                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'editor' && (
+                    <EditorTab />
+                  )}
+
+                  {/* TAB: FILES AND LINKS */}
+                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'files' && (
+                    <FilesTab onOpenTrash={() => setIsTrashViewOpen(true)} />
+                  )}
+
+                  {/* TAB: HOTKEYS */}
+                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'hotkeys' && (
+                    <HotkeysTab />
+                  )}
+
+                  {/* TAB: CORE EXTENSIONS */}
+                  {!fontPickerMode && !isTrashViewOpen && (activeTab === 'core-extensions' || activeTab === 'core-plugins') && (
+                    <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                  )}
+
+                  {/* TAB: COMMUNITY EXTENSIONS */}
+                  {!fontPickerMode && !isTrashViewOpen && (activeTab === 'community-extensions' || activeTab === 'community-plugins') && (
+                    <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                  )}
+
+                  {/* DYNAMIC EXTENSION SETTING TAB RENDER (CORE & COMMUNITY) */}
+                  {(() => {
+                    if (fontPickerMode || isTrashViewOpen) return null;
+                    const BUILTIN_TABS = new Set([
+                      'general', 'appearance', 'interface', 'editor', 'files', 'hotkeys',
+                      'core-extensions', 'core-plugins', 'community-extensions', 'community-plugins',
+                    ]);
+                    if (BUILTIN_TABS.has(activeTab)) return null;
+
+                    const currentTab =
+                      allSettingTabs.find((t) => isTabMatch(t, activeTab)) ||
+                      coreExtensionTabs.find((t) => isTabMatch(t, activeTab)) ||
+                      communityExtensionTabs.find((t) => isTabMatch(t, activeTab));
+                    const candidateId = activeTab.includes(':') ? activeTab.split(':')[0] : activeTab;
+                    const manifest = currentTab
+                      ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.id.split(':')[0])
+                      : (app.extensions.getExtensionManifest(candidateId) || app.extensions.getExtensionManifest(activeTab));
+
+                    if (!currentTab && !manifest) return null;
+
+                    const extId = currentTab?.extensionId || manifest?.id || candidateId;
+                    const isEnabled = extId ? app.extensions.isExtensionEnabled(extId) : false;
+                    const tabName = manifest?.name || currentTab?.name || extId;
+
+                    return (
+                      <div className="flex flex-col gap-4">
+                        {/* Top Extension Header with Enabled Toggle matching CoreExtensions row design */}
+                        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
+                          <div className="flex-1 pr-4">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-[13px] font-normal text-white">
+                                {tabName}
+                              </span>
+                              {manifest?.version && (
+                                <span className="text-[11px] text-[#777] font-normal">
+                                  v{manifest.version}
+                                </span>
+                              )}
+                            </div>
+                            {manifest?.description && (
+                              <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+                                {manifest.description}
+                              </p>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            {currentTab?.onRestoreDefaults && isEnabled && (
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  await currentTab.onRestoreDefaults?.();
+                                  showToast(`Restored ${tabName} defaults`, 'info');
+                                }}
+                                title={`Restore default ${tabName} settings`}
+                                className="px-2.5 py-1 rounded-[5px] flex items-center gap-1.5 text-xs text-[#888] hover:text-white hover:bg-[#2a2a2a] cursor-pointer"
+                              >
+                                <RotateCcwIcon size={12} />
+                                <span>Restore defaults</span>
+                              </button>
+                            )}
+                            {manifest?.readme && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  localStorage.setItem('noether_open_extension_doc', JSON.stringify({ extensionId: extId, title: tabName, timestamp: Date.now() }));
+                                  useWorkspaceStore.getState().openExtensionDocTab(extId, tabName);
+                                  handleClose();
+                                }}
+                                title={`View ${tabName} documentation`}
+                                className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
+                              >
+                                <BookOpen01Icon size={14} />
+                              </button>
+                            )}
+                            <ToggleSwitch
+                              checked={isEnabled}
+                              onChange={async (val) => {
+                                if (val) {
+                                  await app.extensions.enableExtension(extId);
+                                  showToast(`Enabled ${tabName}`, 'success');
+                                } else {
+                                  await app.extensions.disableExtension(extId);
+                                  showToast(`Disabled ${tabName}`, 'info');
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Extension Setting Content */}
+                        {!isEnabled ? (
+                          <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
+                            <span className="text-xs text-[#888]">
+                              {tabName} is currently disabled.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await app.extensions.enableExtension(extId);
+                                showToast(`Enabled ${tabName}`, 'success');
+                              }}
+                              className="noether-btn noether-btn-primary"
+                            >
+                              Enable {tabName}
+                            </button>
+                          </div>
+                        ) : currentTab?.render ? (
+                          <div className="flex flex-col gap-4">
+                            {currentTab.render()}
+                          </div>
+                        ) : (
+                          <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-2">
+                            <h4 className="text-sm font-semibold text-white">{tabName}</h4>
+                            <p className="text-xs text-[#888] leading-relaxed">
+                              {manifest?.description || `${tabName} is enabled and active.`}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </>
+              )}
+            </SettingsSearchContext.Provider>
           </div>
         </main>
       </div>
