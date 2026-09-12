@@ -128,7 +128,7 @@ export const NoetherLogoIcon: React.FC<{ size?: number; className?: string }> = 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <img
-        src="./noether-icon.png"
+        src="./noether-icon-simple.png"
         width={size}
         height={size}
         alt="Noether"

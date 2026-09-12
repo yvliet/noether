@@ -243,7 +243,7 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
           className="flex items-start gap-1.5 text-white hover:text-white cursor-pointer"
         >
           <img
-            src="./noether-icon.png"
+            src="./noether-icon-simple.png"
             alt="Noether"
             className="h-[21px] w-auto object-contain shrink-0 translate-y-[1.5px]"
           />
