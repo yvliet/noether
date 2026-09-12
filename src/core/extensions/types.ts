@@ -278,8 +278,8 @@ export interface DocumentFooterDefinition {
 export interface DocMenuActionDefinition {
   /** Unique action identifier. */
   id: string;
-  /** Label text shown in the dropdown menu. */
-  title: string;
+  /** Label text shown in the dropdown menu, or dynamic title resolver function. */
+  title: string | ((app: NoetherApp, doc: DocumentItem | null) => string);
   /** Optional icon displayed alongside the label. */
   icon?: React.ReactNode;
   /** Display ordering priority within its group. */

@@ -13,6 +13,7 @@ import {
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { DocumentItem } from '@/types';
 import { isDocumentLocked } from '@/lib/db/documents';
+import { DocMenuActionDefinition } from '@/core/extensions/types';
 
 export interface PageSubHeaderProps {
   title: string;
@@ -35,6 +36,7 @@ export interface PageSubHeaderProps {
   showDocOptions?: boolean;
   customLeftActions?: React.ReactNode;
   customRightActions?: React.ReactNode;
+  customDocMenuActions?: DocMenuActionDefinition[];
   floating?: boolean;
   hideBar?: boolean;
   isSidebar?: boolean;
@@ -61,6 +63,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   showDocOptions = true,
   customLeftActions,
   customRightActions,
+  customDocMenuActions,
   floating = false,
   hideBar = false,
   isSidebar: propIsSidebar,
@@ -203,7 +206,9 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             <Search01Icon size={14} />
           </button>
         )}
-        {showDocOptions && document && <DocOptionsMenu document={document} />}
+        {showDocOptions && (document || customDocMenuActions) && (
+          <DocOptionsMenu document={document} customActions={customDocMenuActions} />
+        )}
       </div>
     );
   }
@@ -362,7 +367,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
         )}
 
         {/* Document Options Menu */}
-        {showDocOptions && <DocOptionsMenu document={document} />}
+        {showDocOptions && <DocOptionsMenu document={document} customActions={customDocMenuActions} />}
       </div>
     </div>
   );

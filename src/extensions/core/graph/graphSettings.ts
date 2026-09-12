@@ -147,6 +147,7 @@ export interface GraphSettingsState {
   colorMode: GraphColorMode;
   paletteId: string;
   customTypeColors: Record<GraphNodeType, string | null>;
+  dockDefaultMode: 'global' | 'local';
 
   // Actions
   setTimelapseSpeed: (val: number) => void;
@@ -167,6 +168,7 @@ export interface GraphSettingsState {
   setPaletteId: (val: string) => void;
   setCustomTypeColor: (type: GraphNodeType, color: string | null) => void;
   resetCustomTypeColors: () => void;
+  setDockDefaultMode: (val: 'global' | 'local') => void;
   restoreDefaults: () => void;
 }
 
@@ -190,6 +192,7 @@ export const DEFAULT_GRAPH_SETTINGS = {
   colorMode: 'random' as GraphColorMode,
   paletteId: 'amber',
   customTypeColors: { ...DEFAULT_CUSTOM_TYPE_COLORS },
+  dockDefaultMode: 'global' as 'global' | 'local',
 };
 
 export const useGraphSettings = create<GraphSettingsState>()(
@@ -224,6 +227,8 @@ export const useGraphSettings = create<GraphSettingsState>()(
         })),
       resetCustomTypeColors: () =>
         set({ customTypeColors: { ...DEFAULT_CUSTOM_TYPE_COLORS } }),
+
+      setDockDefaultMode: (dockDefaultMode) => set({ dockDefaultMode }),
 
       restoreDefaults: () => set({ ...DEFAULT_GRAPH_SETTINGS }),
     }),

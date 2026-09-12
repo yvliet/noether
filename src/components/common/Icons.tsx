@@ -84,6 +84,9 @@ import {
   MonitorIcon as HugeMonitorIcon,
   Key01Icon as HugeKey01Icon,
   GlobeIcon as HugeGlobeIcon,
+  GlobeOffIcon as HugeGlobeOffIcon,
+  InternetIcon as HugeInternetIcon,
+  NoInternetIcon as HugeNoInternetIcon,
   PuzzleIcon as HugePuzzleIcon,
   Shield01Icon as HugeShield01Icon,
   Layers01Icon as HugeLayers01Icon,
@@ -365,6 +368,9 @@ export const PaletteIcon = createIcon(HugePaletteIcon);
 export const MonitorIcon = createIcon(HugeMonitorIcon);
 export const KeyIcon = createIcon(HugeKey01Icon);
 export const GlobeIcon = createIcon(HugeGlobeIcon);
+export const GlobeOffIcon = createIcon(HugeGlobeOffIcon);
+export const InternetIcon = createIcon(HugeInternetIcon);
+export const NoInternetIcon = createIcon(HugeGlobeOffIcon);
 export const PuzzleIcon = createIcon(HugePuzzleIcon);
 export const PuzzlePieceIcon = PuzzleIcon;
 export const ShieldIcon = createIcon(HugeShield01Icon);

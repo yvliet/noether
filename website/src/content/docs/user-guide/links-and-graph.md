@@ -82,12 +82,24 @@ Noether automatically scans notes for text occurrences that match existing docum
 
 ---
 
-The **Knowledge Graph View** provides a macroscopic visual model of your entire second brain.
+The **Knowledge Graph View** provides an interactive visual model of your interconnected knowledge base.
 
 ### Opening the Graph
 - Click the **Graph** icon on the left Action Rail.
 - Or press `Ctrl+G` (or Command Palette: `Ctrl+K` → *Open Graph View*).
-- Open a localized **Local Graph** tab for the active note from the document options menu.
+- **Auto Fit to Center**: Opening graph view automatically centers and fits all nodes into the viewport. If the graph view is already open in your tabs, switching back to it seamlessly restores your canvas zoom and pan position exactly where you left it.
+
+### Docking & Sidebar Operation
+Dock any graph tab into the sidebar panel using the dock icon in the page subheader:
+- **Automatic Fit to Center**: Docking a graph automatically recalibrates zoom and pan, centering all visible nodes within the sidebar pane so you never lose your visual context.
+- **Global vs. Local Mode Toggle**: While docked, the search bar is replaced with a dedicated mode switch icon:
+  - **Global Mode** (network globe icon): Renders the complete macroscopic graph of all notes and relational links across your vault.
+  - **Local Mode** (slashed globe icon): Scopes the graph strictly to the currently active note and its direct incoming and outgoing connections. When no note is active, it presents an empty state prompting you to open a note.
+  - **Mode Change Auto-Centering**: Toggling between Global and Local modes automatically recalibrates and centers the camera on the newly visible subset of nodes.
+- **Persistent Preferences**: Changing the mode directly from the docked subheader immediately saves your preference. You can also configure the default behavior in *Settings → Graph view → Default docked graph mode*.
+
+### Contextual Split View Switching
+Full-page graph views remain in Global mode by default. When you work with a note open in an adjacent split pane, the graph's **More Options** (`...`) menu dynamically displays a contextual action to toggle between **Switch to local graph** and **Switch to global graph**. Toggling modes or changing the adjacent note automatically recalculates and centers the layout on the focused note and its direct neighborhood in real time.
 
 ### Physics Simulation & Ergonomics
 - **Repulsion Force**: Adjust the repulsive charge between nodes to cluster related topics while maintaining visual breathing room.

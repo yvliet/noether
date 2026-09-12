@@ -70,6 +70,8 @@ export const GraphSettingsTab: React.FC = () => {
     customTypeColors,
     setCustomTypeColor,
     resetCustomTypeColors,
+    dockDefaultMode,
+    setDockDefaultMode,
     restoreDefaults,
   } = useGraphSettings();
 
@@ -382,6 +384,36 @@ export const GraphSettingsTab: React.FC = () => {
           <h3 className="text-sm font-semibold text-white">Display and filters</h3>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+          {/* Default Docked Graph Mode */}
+          <div className="flex items-center justify-between p-4">
+            <div className="flex flex-col pr-4">
+              <span className="text-[13px] font-normal text-[#dcddde]">Default docked graph mode</span>
+              <span className="text-[11px] text-[#777] mt-0.5">
+                Initial scope when docking a graph tab into the sidebar.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {dockDefaultMode !== DEFAULT_GRAPH_SETTINGS.dockDefaultMode && (
+                <button
+                  type="button"
+                  onClick={() => setDockDefaultMode(DEFAULT_GRAPH_SETTINGS.dockDefaultMode)}
+                  title="Restore default (Global)"
+                  className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0"
+                >
+                  <RotateCcwIcon size={13} />
+                </button>
+              )}
+              <CustomSelect<'global' | 'local'>
+                value={dockDefaultMode}
+                onChange={setDockDefaultMode}
+                options={[
+                  { value: 'global', label: 'Global (all vault notes)' },
+                  { value: 'local', label: 'Local (connecting notes only)' },
+                ]}
+              />
+            </div>
+          </div>
+
           {/* Node Size */}
           <div className="flex items-center justify-between p-4">
             <div className="flex flex-col pr-4">

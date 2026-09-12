@@ -31,13 +31,16 @@ import {
   ZoomOutIcon,
 } from '@/components/common/Icons';
 
+import { DocMenuActionDefinition } from '@/core/extensions/types';
+
 const ZOOM_PRESETS = [50, 75, 90, 100, 110, 125, 150, 175, 200];
 
 interface DocOptionsMenuProps {
   document?: DocumentItem | null;
+  customActions?: DocMenuActionDefinition[];
 }
 
-export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ document: customDoc }) => {
+export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ document: customDoc, customActions }) => {
   const activeDocument = useDocumentStore((s) => s.activeDocument);
   const documents = useDocumentStore((s) => s.documents);
   const renameDocument = useDocumentStore((s) => s.renameDocument);
@@ -532,6 +535,23 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
 
   const flipSubmenuRight = menuPos.left < 200;
 
+  const renderActionIcon = useCallback((icon: React.ReactNode, isDanger = false) => {
+    if (React.isValidElement(icon)) {
+      const existingClassName = (icon.props as any)?.className || '';
+      const hasColor = /text-/.test(existingClassName);
+      return React.cloneElement(icon as React.ReactElement<any>, {
+        className: `${existingClassName} ${
+          hasColor
+            ? ''
+            : isDanger
+            ? 'text-rose-500 group-hover:text-rose-600'
+            : 'text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)]'
+        } shrink-0`.trim(),
+      });
+    }
+    return icon;
+  }, []);
+
   return (
     <div className="relative">
       <button
@@ -568,6 +588,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     typeof action.isChecked === 'function'
                       ? action.isChecked(app, doc)
                       : Boolean(action.isChecked);
+                  const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
                   return (
                     <button
                       key={action.id}
@@ -580,8 +601,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                       className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
                     >
                       <div className="flex items-center gap-2.5 truncate">
-                        {action.icon}
-                        <span className="truncate">{action.title}</span>
+                        {renderActionIcon(action.icon)}
+                        <span className="truncate">{titleStr}</span>
                       </div>
                       {isChecked && <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1" />}
                     </button>
@@ -750,21 +771,44 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
             </div>
 
             {/* Universal Plugin Actions */}
-            {universalPluginActions.map((action) => (
-              <button
-                key={action.id}
-                type="button"
-                onMouseEnter={() => setActiveSubmenu(null)}
-                onClick={() => {
-                  action.onClick(app, doc);
-                  setIsOpen(false);
-                }}
-                className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
-              >
-                {action.icon}
-                <span>{action.title}</span>
-              </button>
-            ))}
+            {universalPluginActions.map((action) => {
+              const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  onMouseEnter={() => setActiveSubmenu(null)}
+                  onClick={() => {
+                    action.onClick(app, doc);
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                >
+                  {renderActionIcon(action.icon)}
+                  <span>{titleStr}</span>
+                </button>
+              );
+            })}
+
+            {/* Custom View Context Actions */}
+            {customActions?.map((action) => {
+              const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
+              return (
+                <button
+                  key={action.id}
+                  type="button"
+                  onMouseEnter={() => setActiveSubmenu(null)}
+                  onClick={() => {
+                    action.onClick(app, doc);
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                >
+                  {renderActionIcon(action.icon)}
+                  <span>{titleStr}</span>
+                </button>
+              );
+            })}
 
             {/* Group 3: File Actions & Tools (Document specific) */}
             {doc && (
@@ -801,21 +845,24 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   <span>Merge entire file with...</span>
                 </button>
 
-                {toolActions.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onMouseEnter={() => setActiveSubmenu(null)}
-                    onClick={() => {
-                      action.onClick(app, doc);
-                      setIsOpen(false);
-                    }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
-                  >
-                    {action.icon}
-                    <span>{action.title}</span>
-                  </button>
-                ))}
+                {toolActions.map((action) => {
+                  const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onMouseEnter={() => setActiveSubmenu(null)}
+                      onClick={() => {
+                        action.onClick(app, doc);
+                        setIsOpen(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                    >
+                      {renderActionIcon(action.icon)}
+                      <span>{titleStr}</span>
+                    </button>
+                  );
+                })}
 
                 <button
                   type="button"
@@ -909,42 +956,48 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                         style={{ boxShadow: 'var(--noether-shadow-2)' }}
                         className={`absolute ${flipSubmenuRight ? 'left-full ml-1' : 'right-full mr-1'} top-0 w-44 max-h-[calc(100vh-32px)] overflow-y-auto overflow-x-hidden bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] z-50 select-none`}
                       >
-                        {linkedViewActions.map((action) => (
-                          <button
-                            key={action.id}
-                            type="button"
-                            onClick={() => {
-                              action.onClick(app, doc);
-                              setIsOpen(false);
-                              setActiveSubmenu(null);
-                            }}
-                            className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2 cursor-pointer"
-                          >
-                            {action.icon}
-                            <span>{action.title}</span>
-                          </button>
-                        ))}
+                        {linkedViewActions.map((action) => {
+                          const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
+                          return (
+                            <button
+                              key={action.id}
+                              type="button"
+                              onClick={() => {
+                                action.onClick(app, doc);
+                                setIsOpen(false);
+                                setActiveSubmenu(null);
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2 cursor-pointer"
+                            >
+                              {renderActionIcon(action.icon)}
+                              <span>{titleStr}</span>
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Additional plugin view actions */}
-                {otherViewActions.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onMouseEnter={() => setActiveSubmenu(null)}
-                    onClick={() => {
-                      action.onClick(app, doc);
-                      setIsOpen(false);
-                    }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
-                  >
-                    {action.icon}
-                    <span>{action.title}</span>
-                  </button>
-                ))}
+                {otherViewActions.map((action) => {
+                  const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onMouseEnter={() => setActiveSubmenu(null)}
+                      onClick={() => {
+                        action.onClick(app, doc);
+                        setIsOpen(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+                    >
+                      {renderActionIcon(action.icon)}
+                      <span>{titleStr}</span>
+                    </button>
+                  );
+                })}
 
                 <div className="border-t border-[var(--noether-border-base)] my-1 mx-1" />
 
@@ -992,21 +1045,24 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   <span>Delete file</span>
                 </button>
 
-                {dangerActions.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onMouseEnter={() => setActiveSubmenu(null)}
-                    onClick={() => {
-                      action.onClick(app, doc);
-                      setIsOpen(false);
-                    }}
-                    className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 flex items-center gap-2.5 cursor-pointer group"
-                  >
-                    {action.icon}
-                    <span>{action.title}</span>
-                  </button>
-                ))}
+                {dangerActions.map((action) => {
+                  const titleStr = typeof action.title === 'function' ? action.title(app, doc) : action.title;
+                  return (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onMouseEnter={() => setActiveSubmenu(null)}
+                      onClick={() => {
+                        action.onClick(app, doc);
+                        setIsOpen(false);
+                      }}
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 flex items-center gap-2.5 cursor-pointer group"
+                    >
+                      {renderActionIcon(action.icon, true)}
+                      <span>{titleStr}</span>
+                    </button>
+                  );
+                })}
               </>
             )}
           </div>,

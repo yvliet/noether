@@ -17,10 +17,15 @@ import {
   BubblesIcon,
   Cancel01Icon,
   NeuralNetworkIcon,
+  InternetIcon,
+  NoInternetIcon,
 } from '@/components/common/Icons';
 import { Tooltip } from '@/components/common/Tooltip';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import type { DocumentItem } from '@/types';
+import type { DocMenuActionDefinition } from '@/core/extensions/types';
+import { useDocumentStore } from '@/store/documentStore';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 import { platform } from '@/lib/platform/platformAdapter';
 import { useNoetherApp, storeRefs } from 'noether';
 
@@ -118,32 +123,38 @@ function saveNodePositions(positions: Record<string, { x: number; y: number }>, 
   } catch {}
 }
 
-function getSavedTransform(vaultPath?: string): { x: number; y: number; scale: number } | null {
-  try {
-    const key = getTransformStorageKey(vaultPath);
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (
-      parsed &&
-      typeof parsed.x === 'number' &&
-      typeof parsed.y === 'number' &&
-      typeof parsed.scale === 'number' &&
-      Number.isFinite(parsed.x) &&
-      Number.isFinite(parsed.y) &&
-      Number.isFinite(parsed.scale) &&
-      parsed.scale > 0.05
-    ) {
-      return parsed;
-    }
-  } catch {}
-  return null;
-}
+const activeTabTransforms = new Map<string, { x: number; y: number; scale: number }>();
 
-function saveTransform(transform: { x: number; y: number; scale: number }, vaultPath?: string) {
+function cleanupClosedTabTransforms() {
   try {
-    const key = getTransformStorageKey(vaultPath);
-    localStorage.setItem(key, JSON.stringify(transform));
+    const ws = (storeRefs.workspace?.getState?.()) as any;
+    if (!ws) return;
+    const currentTabIds = new Set<string>();
+    if (ws.panes) {
+      for (const pane of Object.values(ws.panes) as any[]) {
+        if (pane?.tabs) {
+          for (const t of pane.tabs) {
+            currentTabIds.add(t.id);
+          }
+        }
+      }
+    }
+    if (Array.isArray(ws.tabs)) {
+      for (const t of ws.tabs) {
+        currentTabIds.add(t.id);
+      }
+    }
+    const dockItems = (storeRefs.sidebarDock?.getState?.() as any)?.items;
+    if (Array.isArray(dockItems)) {
+      for (const it of dockItems) {
+        currentTabIds.add(it.id);
+      }
+    }
+    for (const id of activeTabTransforms.keys()) {
+      if (!currentTabIds.has(id)) {
+        activeTabTransforms.delete(id);
+      }
+    }
   } catch {}
 }
 
@@ -393,6 +404,68 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
   const isSidebar = propIsSidebar ?? isSidebarDetected;
 
+  const dockDefaultMode = useGraphSettings((s) => s.dockDefaultMode);
+  const activeDoc = useDocumentStore((s) => s.activeDocument);
+  const isSplitView = useWorkspaceStore((s) => s.layoutTree.type === 'split');
+  const panes = useWorkspaceStore((s) => s.panes);
+  const splitTabs = useWorkspaceStore((s) => s.splitTabs);
+
+  // Check if a note is open in a split view alongside this graph view
+  const splitNote = useMemo(() => {
+    if (!isSplitView) return null;
+    for (const pane of Object.values(panes || {})) {
+      const activeTab = pane.tabs?.find((t) => t.id === pane.activeTabId);
+      if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
+        const isDoc =
+          (!activeTab.view_type || activeTab.view_type === 'document') &&
+          (!activeTab.view_mode || activeTab.view_mode === 'document');
+        if (isDoc) {
+          return { id: activeTab.document_id, title: activeTab.title };
+        }
+      }
+    }
+    for (const t of splitTabs || []) {
+      if (t.document_id && !t.document_id.startsWith('__')) {
+        const isDoc =
+          (!t.view_type || t.view_type === 'document') &&
+          (!t.view_mode || t.view_mode === 'document');
+        if (isDoc) {
+          return { id: t.document_id, title: t.title };
+        }
+      }
+    }
+    return null;
+  }, [isSplitView, panes, splitTabs]);
+
+  // Dock mode state initialized from dockDefaultMode setting
+  const [dockGraphMode, setDockGraphMode] = useState<'global' | 'local'>(dockDefaultMode);
+  // Page mode state (always global by default; switchable when note is in splitview)
+  const [pageGraphMode, setPageGraphMode] = useState<'global' | 'local'>('global');
+
+  // Keep dockGraphMode in sync with setting updates
+  useEffect(() => {
+    setDockGraphMode(dockDefaultMode);
+  }, [dockDefaultMode]);
+
+  // Reset page mode to global if split view closes
+  useEffect(() => {
+    if (!splitNote && pageGraphMode !== 'global') {
+      setPageGraphMode('global');
+    }
+  }, [splitNote, pageGraphMode]);
+
+  // Determine effective mode and active target document
+  const effectiveMode = isSidebar ? dockGraphMode : (splitNote ? pageGraphMode : 'global');
+  const targetDocId = isSidebar
+    ? (activeDoc && !activeDoc.is_folder ? activeDoc.id : null)
+    : (splitNote ? splitNote.id : null);
+
+  const effectiveModeRef = useRef(effectiveMode);
+  effectiveModeRef.current = effectiveMode;
+  const targetDocIdRef = useRef(targetDocId);
+  targetDocIdRef.current = targetDocId;
+
+
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [filterText, setFilterText] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -437,6 +510,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
   // Pre-timelapse snapshot of node positions to guarantee 100% exact layout convergence
   const preTimelapseLayoutRef = useRef<Map<string, { x: number; y: number }>>(new Map());
+
+  // Snapshot of global positions to preserve vault layout when temporarily viewing Local mode
+  const globalPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
   useEffect(() => {
     return () => {
@@ -544,15 +620,22 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     return () => ro.disconnect();
   }, []);
 
-  // Compute bounding box and center all nodes to be 100% visible on screen
   const centerGraph = useCallback((nodesList: GraphNode[]) => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
-    if (!canvas || !container || nodesList.length === 0) return;
+    if (!canvas || !container) return;
 
     const rect = canvas.getBoundingClientRect();
     const width = (rect.width > 0 ? rect.width : container.clientWidth) || 800;
     const height = (rect.height > 0 ? rect.height : (container.clientHeight ? container.clientHeight - 32 : 600)) || 600;
+
+    // Compensate for 32px PageSubHeader at top so center aligns with visible canvas
+    const centerY = height / 2 + 16;
+
+    if (nodesList.length === 0) {
+      targetTransformRef.current = { x: width / 2, y: centerY, scale: 1 };
+      return;
+    }
 
     let minX = Infinity;
     let maxX = -Infinity;
@@ -570,25 +653,26 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     }
 
     if (validCount === 0 || !Number.isFinite(minX) || !Number.isFinite(maxX) || !Number.isFinite(minY) || !Number.isFinite(maxY)) {
-      targetTransformRef.current = { x: width / 2, y: height / 2, scale: 1 };
+      targetTransformRef.current = { x: width / 2, y: centerY, scale: 1 };
       return;
     }
 
-    const graphWidth = Math.max(180, maxX - minX + 160);
-    const graphHeight = Math.max(180, maxY - minY + 160);
+    const isSingleNode = validCount === 1 || (maxX - minX < 5 && maxY - minY < 5);
+    const graphWidth = isSingleNode ? 120 : Math.max(160, maxX - minX + 140);
+    const graphHeight = isSingleNode ? 120 : Math.max(160, maxY - minY + 140);
     const graphCenterX = (minX + maxX) / 2;
     const graphCenterY = (minY + maxY) / 2;
 
     const scaleX = (width * 0.85) / graphWidth;
     const scaleY = (height * 0.85) / graphHeight;
-    const fitScale = Math.min(1.4, Math.max(0.25, Math.min(scaleX, scaleY)));
+    const fitScale = isSingleNode ? 1.0 : Math.min(1.4, Math.max(0.25, Math.min(scaleX, scaleY)));
 
     const tx = width / 2 - graphCenterX * fitScale;
-    const ty = height / 2 - graphCenterY * fitScale;
+    const ty = centerY - graphCenterY * fitScale;
 
     targetTransformRef.current = {
       x: Number.isFinite(tx) ? tx : width / 2,
-      y: Number.isFinite(ty) ? ty : height / 2,
+      y: Number.isFinite(ty) ? ty : centerY,
       scale: fitScale,
     };
   }, []);
@@ -683,6 +767,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   // Save current node layout to storage (debounced by default to prevent UI thread blocking)
   const persistPositionsTimerRef = useRef<any>(null);
   const persistPositions = useCallback((immediate = false) => {
+    if (effectiveModeRef.current === 'local') return;
     if (nodesRef.current.length === 0) return;
     const doSave = () => {
       const map: Record<string, { x: number; y: number }> = {};
@@ -710,21 +795,196 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const persistTransform = useCallback(() => {
     if (persistTransformTimerRef.current) clearTimeout(persistTransformTimerRef.current);
     persistTransformTimerRef.current = setTimeout(() => {
-      saveTransform(targetTransformRef.current, vaultPath);
-    }, 250);
+      if (resolvedTabId) {
+        activeTabTransforms.set(resolvedTabId, { ...targetTransformRef.current });
+      }
+    }, 150);
+  }, [resolvedTabId]);
+
+  const getVisibleNodes = useCallback(() => {
+    const currentNodes = nodesRef.current;
+    if (effectiveModeRef.current === 'local') {
+      const targetId = targetDocIdRef.current;
+      if (!targetId) return [];
+      const connectedIds = new Set<string>([targetId]);
+      for (const l of linksRef.current) {
+        if (l.source === targetId) connectedIds.add(l.target);
+        if (l.target === targetId) connectedIds.add(l.source);
+      }
+      return currentNodes.filter((n) => connectedIds.has(n.id));
+    }
+    const showOrphansSetting = useGraphSettings.getState().showOrphans;
+    const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
+    const baseSlice = currentNodes.slice(0, visibleCount);
+    return showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
+  }, []);
+
+  // Arrange nodes for Local Graph mode: active document at (0, 0), neighbors radially around it
+  const layoutLocalGraph = useCallback((targetId: string | null) => {
+    if (!targetId || nodesRef.current.length === 0) return;
+
+    // Snapshot global positions before entering local mode if not already stored
+    if (globalPositionsRef.current.size === 0) {
+      const posMap = new Map<string, { x: number; y: number }>();
+      for (const n of nodesRef.current) {
+        if (Number.isFinite(n.x) && Number.isFinite(n.y)) {
+          posMap.set(n.id, { x: n.x, y: n.y });
+        }
+      }
+      globalPositionsRef.current = posMap;
+    }
+
+    const connectedIds = new Set<string>();
+    for (const l of linksRef.current) {
+      if (l.source === targetId) connectedIds.add(l.target);
+      if (l.target === targetId) connectedIds.add(l.source);
+    }
+
+    const targetNode = nodesRef.current.find((n) => n.id === targetId);
+    if (targetNode) {
+      targetNode.x = 0;
+      targetNode.y = 0;
+      targetNode.vx = 0;
+      targetNode.vy = 0;
+    }
+
+    const neighborNodes = nodesRef.current.filter((n) => connectedIds.has(n.id) && n.id !== targetId);
+    const count = neighborNodes.length;
+    if (count > 0) {
+      const radius = Math.min(180, Math.max(95, 65 + count * 14));
+      neighborNodes.forEach((node, i) => {
+        const angle = (i / count) * 2 * Math.PI - Math.PI / 2;
+        node.x = Math.round(Math.cos(angle) * radius);
+        node.y = Math.round(Math.sin(angle) * radius);
+        node.vx = 0;
+        node.vy = 0;
+      });
+    }
+  }, []);
+
+  // Restore nodes to their saved global positions when leaving Local mode
+  const restoreGlobalGraph = useCallback(() => {
+    if (nodesRef.current.length === 0) return;
+    const saved = getSavedPositions(vaultPath);
+    for (const n of nodesRef.current) {
+      const pos = globalPositionsRef.current.get(n.id) || saved[n.id];
+      if (pos && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+        n.x = pos.x;
+        n.y = pos.y;
+        n.vx = 0;
+        n.vy = 0;
+      }
+    }
+    globalPositionsRef.current.clear();
   }, [vaultPath]);
 
   const handleResetView = useCallback(() => {
     resizeCanvas();
-    centerGraph(nodesRef.current);
+    const visible = getVisibleNodes();
+    centerGraph(visible);
     persistTransform();
-    alphaRef.current = 0.65;
+    if (resolvedTabId) {
+      activeTabTransforms.set(resolvedTabId, { ...targetTransformRef.current });
+    }
+    alphaRef.current = effectiveModeRef.current === 'local' ? 0.05 : 0.15;
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
     }
     startAnimationRef.current();
-  }, [resizeCanvas, centerGraph, persistTransform]);
+  }, [resizeCanvas, getVisibleNodes, centerGraph, persistTransform, resolvedTabId]);
+
+  const handleToggleDockMode = useCallback(() => {
+    const next = dockGraphMode === 'global' ? 'local' : 'global';
+    setDockGraphMode(next);
+    effectiveModeRef.current = next;
+    useGraphSettings.getState().setDockDefaultMode(next);
+    if (next === 'local') {
+      layoutLocalGraph(targetDocIdRef.current);
+    } else {
+      restoreGlobalGraph();
+    }
+    handleResetView();
+  }, [dockGraphMode, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
+
+  const moreOptionsActions = useMemo<DocMenuActionDefinition[] | undefined>(() => {
+    if (isSidebar || !splitNote) return undefined;
+    return [
+      {
+        id: 'toggle-graph-scope',
+        title: pageGraphMode === 'global' ? 'Switch to local' : 'Switch to global',
+        icon:
+          pageGraphMode === 'global' ? (
+            <NoInternetIcon
+              size={14}
+              className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0"
+            />
+          ) : (
+            <InternetIcon
+              size={14}
+              className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0"
+            />
+          ),
+        order: 10,
+        group: 'universal',
+        requiresDoc: false,
+        onClick: () => {
+          const next = pageGraphMode === 'global' ? 'local' : 'global';
+          setPageGraphMode(next);
+          effectiveModeRef.current = next;
+          if (next === 'local') {
+            layoutLocalGraph(targetDocIdRef.current);
+          } else {
+            restoreGlobalGraph();
+          }
+          handleResetView();
+        },
+      },
+    ];
+  }, [isSidebar, splitNote, pageGraphMode, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
+
+  // Auto fit to center when docking or when sidebar mode is detected
+  const prevIsSidebarRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (isSidebar && prevIsSidebarRef.current !== true) {
+      if (effectiveModeRef.current === 'local') {
+        layoutLocalGraph(targetDocIdRef.current);
+      }
+      const timer = setTimeout(() => {
+        handleResetView();
+      }, 50);
+      prevIsSidebarRef.current = true;
+      return () => clearTimeout(timer);
+    }
+    prevIsSidebarRef.current = isSidebar;
+  }, [isSidebar, layoutLocalGraph, handleResetView]);
+
+  // Auto fit to center when switching between Global and Local modes
+  const prevEffectiveModeRef = useRef(effectiveMode);
+  useEffect(() => {
+    if (prevEffectiveModeRef.current !== effectiveMode) {
+      prevEffectiveModeRef.current = effectiveMode;
+      effectiveModeRef.current = effectiveMode;
+      if (effectiveMode === 'local') {
+        layoutLocalGraph(targetDocIdRef.current);
+      } else {
+        restoreGlobalGraph();
+      }
+      handleResetView();
+    }
+  }, [effectiveMode, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
+
+  // In Local mode: update layout and fit to center when active note changes
+  const prevTargetDocIdRef = useRef<string | null>(targetDocId);
+  useEffect(() => {
+    if (effectiveMode === 'local' && prevTargetDocIdRef.current !== targetDocId) {
+      prevTargetDocIdRef.current = targetDocId;
+      targetDocIdRef.current = targetDocId;
+      layoutLocalGraph(targetDocId);
+      handleResetView();
+    }
+    prevTargetDocIdRef.current = targetDocId;
+  }, [effectiveMode, targetDocId, layoutLocalGraph, handleResetView]);
 
   // Toggle Float Mode: ambient zero-gravity hovering motion where nodes move around themselves
   const toggleFloatMode = useCallback(() => {
@@ -1337,17 +1597,25 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
         resizeCanvas();
 
-        // Restore saved camera transform or center if first launch
-        const savedTransform = getSavedTransform(vaultPath);
-        if (savedTransform) {
-          targetTransformRef.current = savedTransform;
-          currentTransformRef.current = { ...savedTransform };
+        // Restore saved camera transform if already opened in tabs, or fit to center if newly opened
+        cleanupClosedTabTransforms();
+        if (effectiveModeRef.current === 'local') {
+          layoutLocalGraph(targetDocIdRef.current);
+        }
+        const existingTransform = !isSidebar && resolvedTabId ? activeTabTransforms.get(resolvedTabId) : null;
+        if (existingTransform) {
+          targetTransformRef.current = { ...existingTransform };
+          currentTransformRef.current = { ...existingTransform };
         } else {
-          centerGraph(graphNodes);
+          const visible = getVisibleNodes();
+          centerGraph(visible);
           currentTransformRef.current = { ...targetTransformRef.current };
+          if (resolvedTabId && !isSidebar) {
+            activeTabTransforms.set(resolvedTabId, { ...targetTransformRef.current });
+          }
         }
 
-        alphaRef.current = 0.65;
+        alphaRef.current = effectiveModeRef.current === 'local' ? 0.05 : 0.65;
 
         if (animFrameRef.current) {
           cancelAnimationFrame(animFrameRef.current);
@@ -1369,25 +1637,34 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       }
     }) || (() => {});
 
+    const unsubWs = (storeRefs.workspace as any)?.subscribe?.(() => {
+      cleanupClosedTabTransforms();
+    });
+
     const unsubscribe = dbAdapter.onStatusChange((isReady) => {
       if (isReady) loadData();
     });
 
     const handleBeforeUnload = () => {
       persistPositions(true);
-      saveTransform(targetTransformRef.current, vaultPath);
+      if (resolvedTabId && !isSidebar) {
+        activeTabTransforms.set(resolvedTabId, { ...targetTransformRef.current });
+      }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       disposed = true;
       unsubStore();
+      unsubWs?.();
       unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
       persistPositions(true);
-      saveTransform(targetTransformRef.current, vaultPath);
+      if (resolvedTabId && !isSidebar) {
+        activeTabTransforms.set(resolvedTabId, { ...targetTransformRef.current });
+      }
     };
-  }, [vaultPath, centerGraph, persistPositions, resizeCanvas, showTags, showOrphans]);
+  }, [vaultPath, centerGraph, persistPositions, resizeCanvas, showTags, showOrphans, resolvedTabId, isSidebar, layoutLocalGraph, getVisibleNodes]);
 
   // Fluid High-Performance Physics Step with Inertia, Spring Dynamics & Obstacle Avoidance
   const stepPhysics = useCallback(() => {
@@ -1403,10 +1680,24 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     const currentAlpha = alphaRef.current;
 
     const graphSettings = useGraphSettings.getState();
-    const showOrphansSetting = graphSettings.showOrphans;
-    const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-    const baseSlice = currentNodes.slice(0, visibleCount);
-    const visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
+    const isLocalMode = effectiveModeRef.current === 'local';
+    const targetId = targetDocIdRef.current;
+    let visibleNodes: GraphNode[] = [];
+
+    if (isLocalMode) {
+      if (!targetId) return;
+      const connectedIds = new Set<string>([targetId]);
+      for (const l of currentLinks) {
+        if (l.source === targetId) connectedIds.add(l.target);
+        if (l.target === targetId) connectedIds.add(l.source);
+      }
+      visibleNodes = currentNodes.filter((n) => connectedIds.has(n.id));
+    } else {
+      const showOrphansSetting = graphSettings.showOrphans;
+      const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
+      const baseSlice = currentNodes.slice(0, visibleCount);
+      visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
+    }
     if (visibleNodes.length === 0) return;
 
     const progress = visibleNodes.length / Math.max(1, currentNodes.length);
@@ -1750,8 +2041,15 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       }
 
       // Dynamic position step
-      node.x += node.vx;
-      node.y += node.vy;
+      if (isLocalMode && targetId && node.id === targetId && node !== dragNodeRef.current) {
+        node.x = 0;
+        node.y = 0;
+        node.vx = 0;
+        node.vy = 0;
+      } else {
+        node.x += node.vx;
+        node.y += node.vy;
+      }
     }
 
     if (isTimelapseActiveRef.current && !isTimelapsePausedRef.current && graphFocusCameraRef.current) {
@@ -1849,10 +2147,43 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       const currentNodes = nodesRef.current;
       const currentLinks = linksRef.current;
 
-      const showOrphansSetting = useGraphSettings.getState().showOrphans;
-      const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-      const baseSlice = currentNodes.slice(0, visibleCount);
-      const visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
+      const isLocalMode = effectiveModeRef.current === 'local';
+      const targetId = targetDocIdRef.current;
+      let visibleNodes: GraphNode[] = [];
+
+      if (isLocalMode) {
+        if (targetId) {
+          const connectedIds = new Set<string>([targetId]);
+          for (const l of currentLinks) {
+            if (l.source === targetId) connectedIds.add(l.target);
+            if (l.target === targetId) connectedIds.add(l.source);
+          }
+          visibleNodes = currentNodes.filter((n) => connectedIds.has(n.id));
+        }
+      } else {
+        const showOrphansSetting = useGraphSettings.getState().showOrphans;
+        const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
+        const baseSlice = currentNodes.slice(0, visibleCount);
+        visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (visibleNodes.length === 0 && isLocalMode) {
+        ctx.save();
+        ctx.scale(dpr, dpr);
+        ctx.font = '12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        ctx.fillStyle = '#666';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(
+          targetId ? 'No connecting notes' : 'No note open',
+          canvas.width / (2 * dpr),
+          canvas.height / (2 * dpr) + 16
+        );
+        ctx.restore();
+        return;
+      }
 
       const visibleNodeIds = visibleNodeIdsRef.current;
       visibleNodeIds.clear();
@@ -1864,7 +2195,6 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         nodeMap.set(n.id, n);
       }
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
 
       // Retina crisp scaling with strict numeric safety
@@ -2671,14 +3001,15 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const matchCount = useMemo(() => {
     if (!filterText.trim()) return 0;
     const lower = filterText.toLowerCase();
-    return nodesRef.current.filter((n) => (n.title || '').toLowerCase().includes(lower)).length;
-  }, [filterText]);
+    const visible = getVisibleNodes();
+    return visible.filter((n) => (n.title || '').toLowerCase().includes(lower)).length;
+  }, [filterText, getVisibleNodes]);
 
   // Center canvas on matched node when cycling with Enter
   const handleFocusNextMatch = useCallback(() => {
     if (!filterText.trim() || nodesRef.current.length === 0) return;
     const lower = filterText.toLowerCase();
-    const matches = nodesRef.current.filter((n) =>
+    const matches = getVisibleNodes().filter((n) =>
       (n.title || '').toLowerCase().includes(lower)
     );
     if (matches.length === 0) return;
@@ -3075,6 +3406,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
     const clickedNode = nodesRef.current.find((n) => {
       if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) return false;
+      if (!visibleNodeIdsRef.current.has(n.id)) return false;
       const dx = n.x - mouseX;
       const dy = n.y - mouseY;
       return Math.sqrt(dx * dx + dy * dy) <= (n.radius || 6) + 6;
@@ -3168,6 +3500,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       const prevHoveredId = hoveredNodeRef.current?.id || null;
       const hovered = nodesRef.current.find((n) => {
         if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) return false;
+        if (!visibleNodeIdsRef.current.has(n.id)) return false;
         const dx = n.x - mouseX;
         const dy = n.y - mouseY;
         return Math.sqrt(dx * dx + dy * dy) <= (n.radius || 6) + 6;
@@ -3340,7 +3673,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Resume time-lapse'
                   : 'Pause time-lapse'
               }
-              className={`p-1 rounded transition-colors ${
+              className={`p-1 rounded ${
                 isFloatActive
                   ? 'text-[#444] opacity-40 cursor-not-allowed'
                   : isTimelapseActive
@@ -3365,7 +3698,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Restore graph (Finish time-lapse)'
                   : 'Restore graph'
               }
-              className={`p-1 rounded transition-colors ${
+              className={`p-1 rounded ${
                 isTimelapseActive
                   ? 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
                   : 'text-[#444] opacity-40 cursor-not-allowed'
@@ -3384,7 +3717,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Fit to center (Disabled when focus camera is active)'
                   : 'Fit to center'
               }
-              className={`p-1 rounded transition-colors ${
+              className={`p-1 rounded ${
                 ((isTimelapseActive && !isTimelapsePaused) || isFloatActive) && graphFocusCamera
                   ? 'text-[#444] opacity-40 cursor-not-allowed'
                   : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
@@ -3405,7 +3738,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Stop float'
                   : 'Float'
               }
-              className={`p-1 rounded transition-colors ${
+              className={`p-1 rounded ${
                 isTimelapseActive
                   ? 'text-[#444] opacity-40 cursor-not-allowed'
                   : isFloatActive
@@ -3415,10 +3748,32 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
             >
               <BubblesIcon size={14} />
             </button>
+
+            {/* Global / Local Mode Toggle Button (Docked mode) */}
+            {isSidebar && (
+              <button
+                type="button"
+                onClick={handleToggleDockMode}
+                data-tooltip={effectiveMode === 'global' ? 'Global graph' : 'Local graph'}
+                data-shortcuts={JSON.stringify([
+                  effectiveMode === 'global' ? 'Switch to local' : 'Switch to global',
+                ])}
+                className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+              >
+                {effectiveMode === 'global' ? (
+                  <InternetIcon size={14} />
+                ) : (
+                  <NoInternetIcon size={14} />
+                )}
+              </button>
+            )}
           </>
         }
-        isFindOpen={isSearchOpen}
+        showSearch={!isSidebar}
+        customDocMenuActions={moreOptionsActions}
+        isFindOpen={!isSidebar && isSearchOpen}
         onToggleFind={() => {
+          if (isSidebar) return;
           setIsSearchOpen((prev) => {
             const next = !prev;
             if (!next) {
@@ -3433,7 +3788,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       {/* Main Canvas Area */}
       <div style={{ touchAction: 'none' }} className="absolute inset-0 w-full h-full touch-none">
         {/* Top-Right: Search Nodes Overlay Bar */}
-        {isSearchOpen && (
+        {!isSidebar && isSearchOpen && (
           <div className="absolute top-10 right-4 z-30 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1e1e1e]/95 border border-[#2e2e2e] backdrop-blur-md text-xs text-[#dcddde] shadow-2xl">
             <Search01Icon size={14} className="text-[#888] shrink-0" />
             <input
