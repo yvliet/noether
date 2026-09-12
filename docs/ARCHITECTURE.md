@@ -2,10 +2,7 @@
 
 A pragmatic look at how Noether works under the hood: how we keep plain Markdown files fast and durable, our SQLite indexing strategy, and how our extension system stays out of the way of core performance.
 
----
-
 ## 1. Stack Overview
-
 ---
 
 Noether pairs the durability of plain-text Markdown files with the speed of an embedded database. To keep the codebase clean and modular, responsibilities are split across four layers:
@@ -17,10 +14,7 @@ Noether pairs the durability of plain-text Markdown files with the speed of an e
 | **Rust & Platform Bridge** | Tauri v2, `rusqlite` (WAL/FTS5), Memory Trimmer | Native backend, SQLite transactions, and idle memory trimming |
 | **Storage on Disk** | Plain Markdown (`.md`), `.noether/`, `.trash/` | Your notes on disk, local SQLite index, and recovery trash folder |
 
----
-
 ## 2. Storage & Sync: Files on Disk + SQLite Index
-
 ---
 
 Noether keeps your notes as clean Markdown files on disk while maintaining a fast relational database for instant searches, backlinks, and graph queries. Every save updates both in parallel:
@@ -45,10 +39,7 @@ Noether keeps your notes as clean Markdown files on disk while maintaining a fas
 - On startup, Noether compares file timestamps, sizes, and content hashes against the `file_manifest` table.
 - Unchanged files skip re-parsing completely, so opening even large vaults takes just a few milliseconds.
 
----
-
 ## 3. Keeping Core Code Clean & Modular
-
 ---
 
 To keep the codebase maintainable and prevent extensions from tangling with core editor logic, Noether enforces clear boundaries:
@@ -56,16 +47,15 @@ To keep the codebase maintainable and prevent extensions from tangling with core
 1. **No extension imports in core**: Core folders (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import anything from `src/extensions/*`. Core knows nothing about specific extensions.
 2. **Built-ins use the public SDK**: Built-in features (Graph, Canvas, Tasks, Flashcards) use the exact same Noether SDK (`src/sdk`) that community extensions use.
 3. **Extension Registries**: Extensions plug into the application through dedicated registries:
-   - `SlotRegistry`: Mounts React UI into designated layout slots (toolbars, minimap, modals).
+   - `CommandRegistry`: Manages universal command palette actions, hotkeys, search aliases, dynamic stateful titles, dynamic icons, and contextual execution guards (`isEnabled`).
+   - `SlotRegistry`: Mounts React UI into designated layout slots (toolbars, subheaders, view overlays, modals).
    - `EditorRegistry`: Adds ProseMirror decorations, keyboard shortcuts, and input rules.
    - `ToolRegistry`: Exposes AI tools to MCP with typed Zod schemas.
    - `DatabaseManager`: Creates custom SQLite tables with automatic column migrations and cascade cleanup on note deletion.
    - `WorkerPool`: Runs heavy background calculations in Web Workers without stalling UI typing.
-
----
+4. **WorkspaceAPI Abstraction**: The `app.workspace` API slot mediates host actions (such as `revealInFileTree`, `isSidebarOpen`, `isSplitViewOpen`, `openConfirmDialog`, and tab management) through stable, decoupled store bridges.
 
 ## 4. Editor Performance on Large Notes (100k+ Words)
-
 ---
 
 Typing in a note should always feel instantaneous. To keep input latency under 8ms even on massive documents, we avoid common editor bottlenecks:
@@ -75,10 +65,7 @@ Typing in a note should always feel instantaneous. To keep input latency under 8
 - **Cache KaTeX formulas**: Rendered math equations are memoized in memory so the editor doesn't recompile unchanged formulas on every keystroke.
 - **Cap undo history**: History depth is capped at 50 snapshots so undo stacks never leak memory.
 
----
-
 ## 5. Desktop Runtime & Memory Usage
-
 ---
 
 Noether runs as a lightweight native desktop app via Tauri v2, using the OS webview rather than bundling a full copy of Chromium:
@@ -86,10 +73,7 @@ Noether runs as a lightweight native desktop app via Tauri v2, using the OS webv
 - **Hardware acceleration**: GPU acceleration is enabled for smooth canvas panning and graph physics.
 - **Idle memory cleanup**: When Noether sits idle for two minutes, Rust triggers an OS-level working set trim on the webview process tree, releasing standby RAM back to your system.
 
----
-
 ## 6. Built-in MCP Server for AI Assistants
-
 ---
 
 Noether includes a lightweight stdio server script (`bin/noether-mcp-server.cjs`) that lets AI assistants interact directly with your notes:
@@ -98,10 +82,7 @@ Noether includes a lightweight stdio server script (`bin/noether-mcp-server.cjs`
 - **Standard MCP protocol**: Speaks standard JSON-RPC over stdio, compatible with Claude Desktop, Cursor, and Antigravity.
 - **Fast local execution**: Tool calls run locally against your SQLite index and markdown files with sub-millisecond response times.
 
----
-
 ## 7. Build & Verification Commands
-
 ---
 
 ```bash

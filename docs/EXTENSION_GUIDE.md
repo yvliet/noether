@@ -1,18 +1,17 @@
 # Noether Extension Developer Guide
 
-Noether is built to be easily extended. In fact, most of Noether's built-in features (like Canvas, Tasks, and Flashcards) are built as extensions using the exact same APIs available to third-party developers.
-
----
+Noether is designed from the ground up to be fully modular and extensible. All built-in capabilities (such as Canvas, Tasks, Spaced Repetition, and Graph view) are implemented as native extensions using the identical SDK interfaces available to community developers.
 
 ## 1. Quick Start: Creating Your First Extension
+---
 
-Extensions reside in your Vault's `.noether/extensions/<extension-id>/` directory:
+Extensions reside inside your Vault's `.noether/extensions/<extension-id>/` directory:
 
 ```
 <My-Vault>/
   .noether/
     extensions/
-      word-counter/
+      reading-time/
         manifest.json
         main.js
         styles.css (optional)
@@ -21,7 +20,7 @@ Extensions reside in your Vault's `.noether/extensions/<extension-id>/` director
 ### `manifest.json`
 ```json
 {
-  "id": "word-counter",
+  "id": "reading-time",
   "name": "Live Reading Time Counter",
   "version": "1.0.0",
   "minAppVersion": "0.1.0",
@@ -54,7 +53,10 @@ module.exports = class ReadingTimeExtension extends Extension {
     this.addCommand({
       id: 'show-reading-time',
       title: 'Show estimated reading time',
+      section: 'Reading',
       hotkey: 'Ctrl+Shift+U',
+      aliases: ['reading time', 'estimate', 'word count'],
+      isEnabled: (app) => Boolean(app.vault.activeDocument),
       action: (app) => {
         app.workspace.showToast('Estimated reading time: ~2 mins', 'success');
       }
@@ -86,31 +88,38 @@ module.exports = class ReadingTimeExtension extends Extension {
 };
 ```
 
----
-
-## 2. Extension Points
-
+## 2. Extension Points Reference
 ---
 
 ### A. Ribbon Icons
+Add quick-access launcher buttons to the primary vertical navigation ribbon:
 ```javascript
 this.addRibbonIcon(id, iconElementOrSvg, tooltipTitle, (app) => { ... }, orderIndex);
 ```
 
 ### B. Command Palette (`Ctrl+K`)
+Register commands searchable via the universal Command Palette. Noether supports dynamic stateful titles, dynamic icons, search aliases, and contextual enablement:
+
 ```javascript
 this.addCommand({
-  id: 'my-custom-command',
-  title: 'Insert Date Stamp',
-  section: 'Editing',
-  hotkey: 'Ctrl+Alt+D',
+  id: 'toggle-feature',
+  // Dynamic title reflecting stateful verbs instead of ambiguous "Toggle"
+  title: (app) => (app.workspace.isSidebarOpen('left') ? 'Collapse left sidebar' : 'Expand left sidebar'),
+  section: 'View',
+  icon: (app) => (app.workspace.isSidebarOpen('left') ? <CollapseIcon /> : <ExpandIcon />),
+  hotkey: 'Ctrl+\\',
+  // Aliases ensure commands remain discoverable when searching for "toggle"
+  aliases: ['toggle left sidebar', 'toggle sidebar', 'left sidebar', 'sidebar'],
+  // Grayed out and skipped during keyboard navigation when not applicable
+  isEnabled: (app) => Boolean(app.vault.activeDocument),
   action: (app) => {
-    // perform command
+    app.workspace.toggleLeftSidebar();
   }
 });
 ```
 
 ### C. Status Bar Items
+Render lightweight widgets in the application footer:
 ```javascript
 this.addStatusBarItem({
   id: 'my-status-item',
@@ -123,6 +132,7 @@ this.addStatusBarItem({
 ```
 
 ### D. Custom Tab Views & Panes
+Register custom view panes that can be opened into tabs:
 ```javascript
 this.registerView({
   type: 'my-custom-view',
@@ -134,6 +144,7 @@ this.registerView({
 ```
 
 ### E. Persistent Extension Settings
+Persist configuration in `.noether/extensions/<extension-id>/data.json`:
 ```javascript
 // Load saved JSON settings
 const config = await this.loadData() || { mySetting: true };
@@ -143,6 +154,7 @@ await this.saveData({ mySetting: false });
 ```
 
 ### F. Settings Preferences Tab
+Register a custom settings panel in Noether's global Settings window (`Ctrl+,`):
 ```javascript
 this.registerSettingTab({
   id: 'my-extension-settings',
@@ -156,8 +168,8 @@ this.registerSettingTab({
 });
 ```
 
-### G. Custom Context Menu Items (Right-Click)
-Extensions can register items directly into Noether's lightweight custom context menus for various scopes:
+### G. Custom Context Menu Items
+Register items into Noether's custom context menus:
 - `'file-tree'`: Right-clicking files or folders in the sidebar.
 - `'file-tree-root'`: Right-clicking empty background space in the file tree.
 - `'editor'`: Right-clicking inside the document editor or selection.
@@ -176,37 +188,10 @@ this.registerContextMenuItem({
     app.workspace.showToast(`Exporting ${file.title} as slide presentation...`, 'info');
   }
 });
-
-// Context menu item with nested submenu in editor:
-this.registerContextMenuItem({
-  id: 'my-editor-tools',
-  title: 'Text Transformation',
-  scope: 'editor',
-  submenu: [
-    {
-      id: 'uppercase',
-      title: 'UPPERCASE Selection',
-      onClick: (app, { editor, selectedText }) => {
-        if (editor && selectedText) {
-          editor.chain().focus().insertContent(selectedText.toUpperCase()).run();
-        }
-      }
-    },
-    {
-      id: 'lowercase',
-      title: 'lowercase selection',
-      onClick: (app, { editor, selectedText }) => {
-        if (editor && selectedText) {
-          editor.chain().focus().insertContent(selectedText.toLowerCase()).run();
-        }
-      }
-    }
-  ]
-});
 ```
 
 ### H. UI Layout Slots (React Portals)
-Mount React components into built-in layout slots (`workspace:root`, `editor:minimap`, `editor:viewport-overlay`, `editor:floating-toolbar`):
+Mount React components into built-in layout slots (`workspace:root`, `editor:subheader-actions`, `editor:viewport-overlay`, `editor:content-overlay`, `editor:floating-toolbar`):
 
 ```javascript
 this.registerPortalSlot({
@@ -220,7 +205,7 @@ this.registerPortalSlot({
 });
 ```
 
-### I. Editor Plugins (ProseMirror & TipTap)
+### I. Editor Extensions (ProseMirror & TipTap)
 Add custom syntax decorations, markdown shortcuts, input rules, or paste handlers without slowing down keystrokes:
 
 ```javascript
@@ -296,7 +281,7 @@ const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] }
 ```
 
 ### M. Shared Host Dependencies & Subpaths
-Noether shares common libraries with extensions so your bundles stay small and you don't have to package duplicate copies of React or Zustand:
+Noether shares common libraries with extensions so your bundles stay small and avoid duplicate runtime overhead:
 
 - **SDK Aliases**: `require('noether')`, `require('noether/sdk')`, `require('@noether')`, `require('@noether/core')`, `require('noether-sdk')`
 - **UI & React**: `require('react')`, `require('react/jsx-runtime')`, `require('react-dom')`, `require('react-dom/client')`
@@ -305,12 +290,7 @@ Noether shares common libraries with extensions so your bundles stay small and y
 - **State Management**: `require('zustand')`, `require('zustand/vanilla')`
 - **Icon System**: `require('@hugeicons/react')`, `require('@hugeicons/core-free-icons')`
 
-Extensions live in your Vault's `.noether/extensions/<id>/` directory and are loaded automatically when Noether opens.
-
----
-
-## 3. Core & Community Extensions
-
+## 3. Core & Standalone Community Extensions
 ---
 
 In Noether, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension SDK. You can review their implementation in `src/extensions/core/`.
@@ -324,4 +304,4 @@ gh repo create my-extension --template yvliet/noether-extension-starter --public
 git clone https://github.com/yvliet/noether-extension-starter.git my-extension
 ```
 
-
+Community extensions live in their own dedicated GitHub repositories and are compiled to a standalone `main.js` placed in `<vault>/.noether/extensions/<id>/`.
