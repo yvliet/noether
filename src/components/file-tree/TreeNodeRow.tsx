@@ -130,11 +130,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
           )}
 
           {/* Optional Prefix (e.g. Folder/File Icon, Decorator Badges) */}
-          {prefix && (
-            <div className="flex items-center justify-center shrink-0">
-              {prefix}
-            </div>
-          )}
+          {prefix}
 
           {/* Title or Rename Input */}
           {isEditing && renameInput ? (
@@ -152,8 +148,8 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
           {suffix}
 
           {/* Optional Type Badge (e.g. CANVAS, PNG) */}
-          {typeBadge && !isEditing && (
-            <span className="text-[10px] font-mono text-[var(--noether-text-muted,#777777)] uppercase tracking-wider shrink-0 ml-1.5 select-none">
+          {typeBadge && (
+            <span className="text-[10px] text-[var(--noether-text-muted,#888888)] opacity-50 uppercase tracking-wider shrink-0 ml-1.5 select-none font-normal">
               {typeBadge}
             </span>
           )}

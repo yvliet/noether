@@ -219,11 +219,16 @@ export function useKeyboardShortcuts() {
 
       // 6. New Canvas: Ctrl + Shift + C or Ctrl + Shift + N
       if (isMatch('workspace:new-canvas', ['Ctrl+Shift+C', 'Ctrl+Shift+N'])) {
-        const handled = await appInstance.commands.executeCommand('cmd-canvas', appInstance);
+        const handled =
+          (await appInstance.commands.executeCommand('cmd-open-canvas', appInstance)) ||
+          (await appInstance.commands.executeCommand('cmd-canvas', appInstance));
         if (handled) {
           e.preventDefault();
           return;
         }
+        await appInstance.vault.createNewCanvas();
+        e.preventDefault();
+        return;
       }
 
       // 7. Graph View: Ctrl + G

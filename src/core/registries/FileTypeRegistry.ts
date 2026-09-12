@@ -79,6 +79,20 @@ export class FileTypeRegistry {
   }
 
   /**
+   * Retrieves a file type definition by workspace view type identifier.
+   */
+  public getByViewType(viewType?: string | null): CustomFileTypeDefinition | undefined {
+    if (!viewType) return undefined;
+    const clean = viewType.toLowerCase().trim();
+    for (const def of this.cachedList) {
+      if (def.viewType && def.viewType.toLowerCase().trim() === clean) {
+        return def;
+      }
+    }
+    return undefined;
+  }
+
+  /**
    * Resolves a file type definition matching a filepath or filename based on its extension.
    */
   public getByPath(pathOrTitle?: string | null): CustomFileTypeDefinition | undefined {

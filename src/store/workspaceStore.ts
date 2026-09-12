@@ -471,6 +471,45 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   mainViewMode: 'document',
   setMainViewMode: (mode) => {
     if (mode !== 'document') {
+      const isFileType = Boolean(fileTypeRegistry.getByDocType(mode) || fileTypeRegistry.getByViewType(mode));
+      if (isFileType) {
+        const { panes, focusedPaneId, layoutTree, tabs, activeTabId } = get();
+        const allValidPaneIds = getAllPaneIds(layoutTree);
+        const targetPaneId =
+          panes[focusedPaneId] && allValidPaneIds.includes(focusedPaneId)
+            ? focusedPaneId
+            : (allValidPaneIds.includes('main') && panes['main'] ? 'main' : allValidPaneIds[0] || 'main');
+        const currentPane = panes[targetPaneId] || panes['main'];
+        const paneTabs = currentPane?.tabs || tabs;
+        const currentTab = paneTabs.find((t) => t.id === currentPane?.activeTabId) || tabs.find((t) => t.id === activeTabId);
+
+        // If current tab already matches this viewType, keep it
+        if (currentTab && (currentTab.view_type === mode || currentTab.view_mode === mode)) {
+          set({ mainViewMode: mode });
+          return;
+        }
+
+        // Switch to an existing tab with this viewType in the pane if available
+        const existingTab = paneTabs.find((t) => t.view_type === mode || t.view_mode === mode);
+        if (existingTab) {
+          get().setActiveTabInPane(targetPaneId, existingTab.id);
+          set({ mainViewMode: mode });
+          return;
+        }
+
+        // If active document matches this file type, open a tab for it
+        const activeDoc = useDocumentStore.getState().activeDocument;
+        if (activeDoc && (activeDoc.doc_type === mode || fileTypeRegistry.getByDocType(activeDoc.doc_type)?.viewType === mode)) {
+          get().openTabInPane(targetPaneId, activeDoc.id, activeDoc.title, { viewType: mode, viewMode: mode as any });
+          set({ mainViewMode: mode });
+          return;
+        }
+
+        // For document-based file types, never open a fake '__${mode}__' singleton tab
+        set({ mainViewMode: mode });
+        return;
+      }
+
       set({ mainViewMode: mode });
       get().openCustomTab({
         viewType: mode,
@@ -754,10 +793,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   openCanvasTab: () => {
-    get().openCustomTab({
-      viewType: 'canvas',
-      title: 'Canvas',
-    });
+    const { panes, focusedPaneId, layoutTree, tabs } = get();
+    const allValidPaneIds = getAllPaneIds(layoutTree);
+    const targetPaneId =
+      panes[focusedPaneId] && allValidPaneIds.includes(focusedPaneId)
+        ? focusedPaneId
+        : (allValidPaneIds.includes('main') && panes['main'] ? 'main' : allValidPaneIds[0] || 'main');
+    const currentPane = panes[targetPaneId] || panes['main'];
+    const paneTabs = currentPane?.tabs || tabs;
+    const existingCanvasTab = paneTabs.find((t) => t.view_type === 'canvas' || t.view_mode === 'canvas');
+    if (existingCanvasTab) {
+      get().setActiveTabInPane(targetPaneId, existingCanvasTab.id);
+      return;
+    }
+    useDocumentStore.getState().createNewCanvas();
   },
 
   openTasksTab: () => {

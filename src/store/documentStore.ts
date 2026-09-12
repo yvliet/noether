@@ -363,7 +363,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       const shouldPreserve = options?.preserveViewMode === true;
       if (!shouldPreserve) {
         const targetMode = (doc.doc_type && doc.doc_type !== 'base') ? doc.doc_type : 'document';
-        useWorkspaceStore.getState().setMainViewMode(targetMode);
         useWorkspaceStore.getState().openTab(doc.id, doc.title, {
           viewType: targetMode,
           replaceCurrentTab: options?.replaceCurrentTab ?? true,
@@ -605,7 +604,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     if (autoOpenInMain) {
       if (customType) {
-        ws.setMainViewMode(customType.viewType as any);
         ws.openTab(doc.id, doc.title, {
           newTab: true,
           replaceCurrentTab: false,
@@ -616,7 +614,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         // Open the new note in a background tab so the active surface remains focused
         ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false, background: true });
       } else {
-        ws.setMainViewMode('document');
         ws.openTab(doc.id, doc.title, { newTab: true, replaceCurrentTab: false });
       }
     }
