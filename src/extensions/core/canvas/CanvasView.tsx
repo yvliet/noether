@@ -36,6 +36,7 @@ import {
   FileImageIcon,
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
+import { Tooltip } from '@/components/common/Tooltip';
 import { useNoetherApp, useVaultDocuments, useActiveDocument, useToast } from 'noether';
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
@@ -5991,44 +5992,48 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         customRightActions={
           <>
             {/* 1. Fit to Center Button */}
-            <button
-              type="button"
-              onClick={handleFitToCenter}
-              title="Zoom to fit all (Shift+1)"
-              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
-            >
-              <CenterFocusIcon size={14} />
-            </button>
+            <Tooltip content="Zoom to fit all" shortcut="Shift+1">
+              <button
+                type="button"
+                onClick={handleFitToCenter}
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+              >
+                <CenterFocusIcon size={14} />
+              </button>
+            </Tooltip>
 
             {/* 2. Reset Zoom (Restore) Button */}
-            <button
-              type="button"
-              onClick={handleResetZoom}
-              title={`Reset zoom (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
-            >
-              <RotateCcwIcon size={14} />
-            </button>
+            <Tooltip content="Reset zoom" shortcut={`${Math.round(zoom * 100)}%`}>
+              <button
+                type="button"
+                onClick={handleResetZoom}
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+              >
+                <RotateCcwIcon size={14} />
+              </button>
+            </Tooltip>
 
             {/* 3. Zoom In Button */}
-            <button
-              type="button"
-              onClick={handleZoomIn}
-              title={`Zoom in (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
-            >
-              <PlusSignIcon size={14} />
-            </button>
+            <Tooltip content="Zoom in" shortcut={`${Math.round(zoom * 100)}%`}>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+              >
+                <PlusSignIcon size={14} />
+              </button>
+            </Tooltip>
 
             {/* 4. Zoom Out Button */}
-            <button
-              type="button"
-              onClick={handleZoomOut}
-              title={`Zoom out (${Math.round(zoom * 100)}%)`}
-              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
-            >
-              <MinusSignIcon size={14} />
-            </button>
+            <Tooltip content="Zoom out" shortcut={`${Math.round(zoom * 100)}%`}>
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+              >
+                <MinusSignIcon size={14} />
+              </button>
+            </Tooltip>
           </>
         }
       />

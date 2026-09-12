@@ -985,7 +985,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                           }
                           setIsEditingSubheader(true);
                         }}
-                        title={isLocked ? 'Note is locked (Read-only)' : 'Click to rename'}
+                        data-tooltip={isLocked ? 'Note is locked' : 'Click to rename'}
+                        data-shortcuts={isLocked ? JSON.stringify(['Read-only']) : undefined}
                         className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink overflow-hidden ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}

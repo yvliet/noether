@@ -16,6 +16,7 @@ import {
   HelpCircleIcon,
 } from '@/components/common/Icons';
 import { CollapseAllButton } from '@/components/common/CollapseAllButton';
+import { Tooltip } from '@/components/common/Tooltip';
 
 interface TagTreeRowProps {
   node: TagTreeNode;
@@ -203,17 +204,18 @@ export const TagsView: React.FC = () => {
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header */}
       <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)] shrink-0">
-        <button
-          onClick={() => setSortMode(sortMode === 'count' ? 'alpha' : 'count')}
-          title={`Sort order: ${sortMode === 'count' ? 'Frequency (9-1)' : 'Alphabetical (A-Z)'}`}
-          className={`p-1.5 rounded-[5px] cursor-pointer ${
-            sortMode === 'count'
-              ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
-              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] border border-transparent'
-          }`}
-        >
-          {sortMode === 'count' ? <ArrowDown10Icon size={14} /> : <ArrowDownAZIcon size={14} />}
-        </button>
+        <Tooltip content="Sort order" shortcut={sortMode === 'count' ? 'Frequency: 9-1' : 'Alphabetical: A-Z'}>
+          <button
+            onClick={() => setSortMode(sortMode === 'count' ? 'alpha' : 'count')}
+            className={`p-1.5 rounded-[5px] cursor-pointer ${
+              sortMode === 'count'
+                ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] border border-transparent'
+            }`}
+          >
+            {sortMode === 'count' ? <ArrowDown10Icon size={14} /> : <ArrowDownAZIcon size={14} />}
+          </button>
+        </Tooltip>
 
         <button
           onClick={() => setViewMode(viewMode === 'tree' ? 'flat' : 'tree')}

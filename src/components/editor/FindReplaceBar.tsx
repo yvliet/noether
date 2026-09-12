@@ -14,6 +14,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@/components/common/Icons';
+import { Tooltip } from '@/components/common/Tooltip';
 
 export interface FindReplaceBarProps {
   editor: any;
@@ -229,22 +230,23 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
           )}
 
           {/* Case Sensitivity Toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              const nextCase = !caseSensitive;
-              setCaseSensitive(nextCase);
-              syncSearch(searchTerm, replaceTerm, nextCase, currentIndex);
-            }}
-            title="Match Case (Aa)"
-            className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer shrink-0 ${
-              caseSensitive
-                ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-bold border border-[var(--noether-border-strong)]'
-                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
-            }`}
-          >
-            Aa
-          </button>
+          <Tooltip content="Match Case" shortcut="Aa">
+            <button
+              type="button"
+              onClick={() => {
+                const nextCase = !caseSensitive;
+                setCaseSensitive(nextCase);
+                syncSearch(searchTerm, replaceTerm, nextCase, currentIndex);
+              }}
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer shrink-0 ${
+                caseSensitive
+                  ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-bold border border-[var(--noether-border-strong)]'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
+              }`}
+            >
+              Aa
+            </button>
+          </Tooltip>
         </div>
 
         {/* Row 1, Col 2: Find Navigation & Controls spaced to fill the column */}

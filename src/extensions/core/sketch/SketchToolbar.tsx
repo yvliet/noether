@@ -21,6 +21,7 @@ import {
   Delete02Icon,
   Cancel01Icon,
 } from '@/components/common/Icons';
+import { Tooltip } from '@/components/common/Tooltip';
 
 const COLOR_PRESETS = [
   { label: 'Noether Accent', value: '#3b82f6' },
@@ -163,57 +164,61 @@ export const SketchToolbar: React.FC = React.memo(() => {
     >
       {/* Tool Selectors (Icon-only) */}
       <div className="flex items-center gap-0.5 bg-[#141414] p-0.5 rounded border border-[#262626]">
-        <button
-          type="button"
-          onClick={() => setTool('select')}
-          title="Select & Move (V)"
-          className={`p-1.5 rounded cursor-pointer ${
-            activeTool === 'select'
-              ? 'bg-[#282828] text-white'
-              : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
-          }`}
-        >
-          <Cursor02Icon size={14} />
-        </button>
+        <Tooltip content="Select & Move" shortcut="V">
+          <button
+            type="button"
+            onClick={() => setTool('select')}
+            className={`p-1.5 rounded cursor-pointer ${
+              activeTool === 'select'
+                ? 'bg-[#282828] text-white'
+                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+            }`}
+          >
+            <Cursor02Icon size={14} />
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          onClick={() => setTool('pen')}
-          title="Pen (Draw, B)"
-          className={`p-1.5 rounded cursor-pointer ${
-            activeTool === 'pen'
-              ? 'bg-[#282828] text-white'
-              : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
-          }`}
-        >
-          <PaintBrush01Icon size={14} />
-        </button>
+        <Tooltip content="Pen" shortcuts={['Draw', 'B']}>
+          <button
+            type="button"
+            onClick={() => setTool('pen')}
+            className={`p-1.5 rounded cursor-pointer ${
+              activeTool === 'pen'
+                ? 'bg-[#282828] text-white'
+                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+            }`}
+          >
+            <PaintBrush01Icon size={14} />
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          onClick={() => setTool('highlighter')}
-          title="Highlighter (H)"
-          className={`p-1.5 rounded cursor-pointer ${
-            activeTool === 'highlighter'
-              ? 'bg-[#282828] text-white'
-              : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
-          }`}
-        >
-          <HighlighterIcon size={14} />
-        </button>
+        <Tooltip content="Highlighter" shortcut="H">
+          <button
+            type="button"
+            onClick={() => setTool('highlighter')}
+            className={`p-1.5 rounded cursor-pointer ${
+              activeTool === 'highlighter'
+                ? 'bg-[#282828] text-white'
+                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+            }`}
+          >
+            <HighlighterIcon size={14} />
+          </button>
+        </Tooltip>
 
-        <button
-          type="button"
-          onClick={() => setTool('eraser')}
-          title="Eraser (E: Click or drag to erase strokes)"
-          className={`p-1.5 rounded cursor-pointer ${
-            activeTool === 'eraser'
-              ? 'bg-[#282828] text-white'
-              : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
-          }`}
-        >
-          <EraserIcon size={14} />
-        </button>
+        <Tooltip content="Eraser" shortcuts={['Click or drag to erase strokes', 'E']}>
+          <button
+            type="button"
+            onClick={() => setTool('eraser')}
+            className={`p-1.5 rounded cursor-pointer ${
+              activeTool === 'eraser'
+                ? 'bg-[#282828] text-white'
+                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+            }`}
+          >
+            <EraserIcon size={14} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Color Palette (Active when drawing with pen/highlighter) */}
@@ -280,53 +285,57 @@ export const SketchToolbar: React.FC = React.memo(() => {
         >
           <TextIcon size={14} />
         </button>
-        <button
-          type="button"
-          onClick={() => setAnchoring('viewport')}
-          title="Fixed to viewport: Drawings stay pinned on screen (HUD glass)"
-          className={`p-1.5 rounded cursor-pointer ${
-            activeAnchoring === 'viewport'
-              ? 'bg-[#282828] text-white'
-              : 'text-[#777] hover:text-[#ccc]'
-          }`}
-        >
-          <FullscreenIcon size={14} />
-        </button>
+        <Tooltip content="Fixed to viewport: Drawings stay pinned on screen" shortcut="HUD glass">
+          <button
+            type="button"
+            onClick={() => setAnchoring('viewport')}
+            className={`p-1.5 rounded cursor-pointer ${
+              activeAnchoring === 'viewport'
+                ? 'bg-[#282828] text-white'
+                : 'text-[#777] hover:text-[#ccc]'
+            }`}
+          >
+            <FullscreenIcon size={14} />
+          </button>
+        </Tooltip>
       </div>
 
       <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
 
       {/* Undo / Redo */}
-      <button
-        type="button"
-        onClick={undo}
-        disabled={undoStack.length === 0}
-        title="Undo stroke (Ctrl+Z)"
-        className="p-1.5 rounded text-[#888] hover:text-[#dcddde] hover:bg-[#222] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
-      >
-        <UndoIcon size={14} />
-      </button>
+      <Tooltip content="Undo stroke" shortcut="Ctrl+Z">
+        <button
+          type="button"
+          onClick={undo}
+          disabled={undoStack.length === 0}
+          className="p-1.5 rounded text-[#888] hover:text-[#dcddde] hover:bg-[#222] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+        >
+          <UndoIcon size={14} />
+        </button>
+      </Tooltip>
 
-      <button
-        type="button"
-        onClick={redo}
-        disabled={redoStack.length === 0}
-        title="Redo stroke (Ctrl+Y)"
-        className="p-1.5 rounded text-[#888] hover:text-[#dcddde] hover:bg-[#222] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
-      >
-        <RedoIcon size={14} />
-      </button>
+      <Tooltip content="Redo stroke" shortcut="Ctrl+Y">
+        <button
+          type="button"
+          onClick={redo}
+          disabled={redoStack.length === 0}
+          className="p-1.5 rounded text-[#888] hover:text-[#dcddde] hover:bg-[#222] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+        >
+          <RedoIcon size={14} />
+        </button>
+      </Tooltip>
 
       {/* Delete Selected Strokes (When select tool has an active selection) */}
       {selectedStrokeIds.length > 0 && (
-        <button
-          type="button"
-          onClick={deleteSelectedStrokes}
-          title={`Delete selected ${selectedStrokeIds.length > 1 ? `${selectedStrokeIds.length} drawings` : 'drawing'} (Del / Backspace)`}
-          className="p-1.5 rounded text-[#f87171] hover:text-white hover:bg-[#dc2626] cursor-pointer"
-        >
-          <Delete02Icon size={14} />
-        </button>
+        <Tooltip content={`Delete selected ${selectedStrokeIds.length > 1 ? `${selectedStrokeIds.length} drawings` : 'drawing'}`} shortcuts={['Del', 'Backspace']}>
+          <button
+            type="button"
+            onClick={deleteSelectedStrokes}
+            className="p-1.5 rounded text-[#f87171] hover:text-white hover:bg-[#dc2626] cursor-pointer"
+          >
+            <Delete02Icon size={14} />
+          </button>
+        </Tooltip>
       )}
 
       {/* Clear All Strokes (When nothing selected but document has drawings) */}
@@ -344,14 +353,15 @@ export const SketchToolbar: React.FC = React.memo(() => {
       <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
 
       {/* Done / Close HUD button (Icon-only) */}
-      <button
-        type="button"
-        onClick={handleClose}
-        title="Close toolbar (Drawings remain visible on note, Esc)"
-        className="p-1.5 rounded text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer"
-      >
-        <Cancel01Icon size={14} />
-      </button>
+      <Tooltip content="Close toolbar" shortcuts={['Drawings remain visible on note', 'Esc']}>
+        <button
+          type="button"
+          onClick={handleClose}
+          className="p-1.5 rounded text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer"
+        >
+          <Cancel01Icon size={14} />
+        </button>
+      </Tooltip>
     </div>
   );
 });

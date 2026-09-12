@@ -7,6 +7,7 @@ import {
   PaletteIcon,
 } from '@/components/common/Icons';
 import { InlineColorPicker } from '@/components/common/ColorPicker';
+import { Tooltip } from '@/components/common/Tooltip';
 import { CARD_COLOR_PRESETS, resolveCardColorTheme } from './cardColors';
 import { computePillScale } from './CardActionPill';
 import { CanvasAlignMenu } from './CanvasAlignMenu';
@@ -107,19 +108,20 @@ export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React
 
         {/* 2. Create Group */}
         {onCreateGroup && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsAlignMenuOpen(false);
-              setIsColorMenuOpen(false);
-              onCreateGroup();
-            }}
-            title={`Create group from ${count} selected items (Ctrl+G)`}
-            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-          >
-            <GroupIcon size={14} />
-          </button>
+          <Tooltip content={`Create group from ${count} selected items`} shortcut="Ctrl+G">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsAlignMenuOpen(false);
+                setIsColorMenuOpen(false);
+                onCreateGroup();
+              }}
+              className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+            >
+              <GroupIcon size={14} />
+            </button>
+          </Tooltip>
         )}
 
         {/* 3. Fit Selection to Center */}
@@ -222,19 +224,20 @@ export const MultiSelectActionPill: React.FC<MultiSelectActionPillProps> = React
         )}
 
         {/* 5. Delete Selected Items */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsAlignMenuOpen(false);
-            setIsColorMenuOpen(false);
-            onDelete();
-          }}
-          title={`Delete ${count} selected item${count > 1 ? 's' : ''} (Backspace/Delete)`}
-          className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-        >
-          <Delete02Icon size={14} />
-        </button>
+        <Tooltip content={`Delete ${count} selected item${count > 1 ? 's' : ''}`} shortcuts={['Backspace', 'Delete']}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsAlignMenuOpen(false);
+              setIsColorMenuOpen(false);
+              onDelete();
+            }}
+            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+          >
+            <Delete02Icon size={14} />
+          </button>
+        </Tooltip>
       </div>
     );
   }

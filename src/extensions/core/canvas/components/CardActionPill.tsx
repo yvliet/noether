@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { CenterFocusIcon, Delete02Icon, File01Icon, PaletteIcon, PencilEdit02Icon } from '@/components/common/Icons';
+import { Tooltip } from '@/components/common/Tooltip';
 import { InlineColorPicker } from '@/components/common/ColorPicker';
 import { CARD_COLOR_PRESETS, resolveCardColorTheme } from './cardColors';
 
@@ -198,17 +199,18 @@ export const CardActionPill: React.FC<CardActionPillProps> = React.memo(
         )}
 
         {/* Delete Card */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title="Delete card (Backspace/Delete)"
-          className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-        >
-          <Delete02Icon size={14} />
-        </button>
+        <Tooltip content="Delete card" shortcuts={['Backspace', 'Delete']}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+          >
+            <Delete02Icon size={14} />
+          </button>
+        </Tooltip>
       </div>
     );
   }

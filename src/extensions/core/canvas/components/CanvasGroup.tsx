@@ -10,6 +10,7 @@ import {
   UngroupIcon,
 } from '@/components/common/Icons';
 import { InlineColorPicker } from '@/components/common/ColorPicker';
+import { Tooltip } from '@/components/common/Tooltip';
 import { CARD_COLOR_PRESETS, resolveCardColorTheme, resolveGroupBackground } from './cardColors';
 import { computePillScale } from './CardActionPill';
 import { CanvasAlignMenu } from './CanvasAlignMenu';
@@ -645,35 +646,37 @@ export const CanvasGroup: React.FC<CanvasGroupProps> = React.memo(
 
               {/* 5. Ungroup items */}
               {onUngroup && (
+                <Tooltip content="Ungroup items" shortcut="Ctrl+Shift+G">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsAlignMenuOpen(false);
+                      setIsColorMenuOpen(false);
+                      onUngroup(node.id);
+                    }}
+                    className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+                  >
+                    <UngroupIcon size={14} />
+                  </button>
+                </Tooltip>
+              )}
+
+              {/* 6. Delete group and contents */}
+              <Tooltip content="Delete group and contents" shortcuts={['Backspace', 'Delete']}>
                 <button
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setIsAlignMenuOpen(false);
                     setIsColorMenuOpen(false);
-                    onUngroup(node.id);
+                    onDelete(node.id);
                   }}
-                  title="Ungroup items (Ctrl+Shift+G)"
-                  className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+                  className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
                 >
-                  <UngroupIcon size={14} />
+                  <Delete02Icon size={14} />
                 </button>
-              )}
-
-              {/* 6. Delete group and contents */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsAlignMenuOpen(false);
-                  setIsColorMenuOpen(false);
-                  onDelete(node.id);
-                }}
-                title="Delete group and contents (Backspace/Delete)"
-                className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-              >
-                <Delete02Icon size={14} />
-              </button>
+              </Tooltip>
             </div>
           )}
         </div>

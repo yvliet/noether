@@ -5,6 +5,8 @@ import {
   FileImageIcon,
 } from '@/components/common/Icons';
 
+import { Tooltip } from '@/components/common/Tooltip';
+
 export type CanvasDockActionType = 'card' | 'note' | 'media';
 
 export interface CanvasBottomDockProps {
@@ -17,23 +19,27 @@ export interface CanvasBottomDockProps {
 interface DockButtonDef {
   type: CanvasDockActionType;
   title: string;
+  shortcuts: string[];
   icon: React.ReactNode;
 }
 
 const DOCK_BUTTONS: DockButtonDef[] = [
   {
     type: 'card',
-    title: 'Card (Click to add or drag to place)',
+    title: 'Card',
+    shortcuts: ['Click to add', 'Drag to place'],
     icon: <StickyNote03Icon size={26} />,
   },
   {
     type: 'note',
-    title: 'Note (Click to search or drag to place)',
+    title: 'Note',
+    shortcuts: ['Click to search', 'Drag to place'],
     icon: <FileEmpty01Icon size={26} />,
   },
   {
     type: 'media',
-    title: 'Media (Click to search or drag to place)',
+    title: 'Media',
+    shortcuts: ['Click to search', 'Drag to place'],
     icon: <FileImageIcon size={26} />,
   },
 ];
@@ -116,15 +122,20 @@ export const CanvasBottomDock: React.FC<CanvasBottomDockProps> = React.memo(
           onPointerDown={(e) => e.stopPropagation()}
         >
           {DOCK_BUTTONS.map((btn) => (
-            <button
+            <Tooltip
               key={btn.type}
-              type="button"
-              title={btn.title}
-              onPointerDown={(e) => handlePointerDown(btn.type, e)}
-              className="p-1.5 text-[#9e9e9e] hover:text-white cursor-grab active:cursor-grabbing select-none transition-none flex items-center justify-center focus:outline-none"
+              content={btn.title}
+              shortcuts={btn.shortcuts}
+              position="top"
             >
-              {btn.icon}
-            </button>
+              <button
+                type="button"
+                onPointerDown={(e) => handlePointerDown(btn.type, e)}
+                className="p-1.5 text-[#9e9e9e] hover:text-white cursor-grab active:cursor-grabbing select-none transition-none flex items-center justify-center focus:outline-none"
+              >
+                {btn.icon}
+              </button>
+            </Tooltip>
           ))}
         </div>
       </div>

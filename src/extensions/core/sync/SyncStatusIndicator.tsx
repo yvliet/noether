@@ -9,6 +9,7 @@
 import React from 'react';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { DatabaseIcon, DatabaseSync01Icon } from '@/components/common/Icons';
+import { Tooltip } from '@/components/common/Tooltip';
 import { useSyncStore } from './syncStore';
 
 interface SyncStatusIndicatorProps {
@@ -64,19 +65,23 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ app })
 
   // 1. Unconfigured or Error state -> Red DatabaseIcon
   if (!isConfigured || telemetry.lastStatus === 'error') {
-    const errorTooltip = !isConfigured
-      ? 'Sync: Unconfigured (Click to configure)'
-      : `Sync Error: ${telemetry.lastError || 'Unknown error'} (Click to open settings)`;
+    const errorContent = !isConfigured
+      ? 'Sync: Unconfigured'
+      : telemetry.lastError
+      ? `Sync Error: ${telemetry.lastError}`
+      : 'Sync Error';
+    const errorShortcut = !isConfigured ? 'Click to configure' : 'Click to open settings';
 
     return (
-      <button
-        type="button"
-        onClick={handleClick}
-        title={errorTooltip}
-        className="p-1 rounded-[4px] flex items-center justify-center text-red-500 hover:text-red-400 cursor-pointer bg-transparent border-none outline-none select-none"
-      >
-        <DatabaseIcon size={12} className="text-red-500" />
-      </button>
+      <Tooltip content={errorContent} shortcuts={[errorShortcut]}>
+        <button
+          type="button"
+          onClick={handleClick}
+          className="p-1 rounded-[4px] flex items-center justify-center text-red-500 hover:text-red-400 cursor-pointer bg-transparent border-none outline-none select-none"
+        >
+          <DatabaseIcon size={12} className="text-red-500" />
+        </button>
+      </Tooltip>
     );
   }
 
@@ -93,18 +98,19 @@ export const SyncStatusIndicator: React.FC<SyncStatusIndicatorProps> = ({ app })
   }
 
   // 3. Ready / Synced state -> Green DatabaseSync01Icon
-  const successTooltip = telemetry.lastSyncedAt
-    ? `Sync: Synced (${config.activeProvider}) - Click to sync now`
-    : `Sync: Ready (${config.activeProvider}) - Click to sync now`;
+  const successContent = telemetry.lastSyncedAt
+    ? `Sync: Synced (${config.activeProvider})`
+    : `Sync: Ready (${config.activeProvider})`;
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      title={successTooltip}
-      className="p-1 rounded-[4px] flex items-center justify-center text-emerald-400 hover:text-emerald-300 cursor-pointer bg-transparent border-none outline-none select-none"
-    >
-      <DatabaseSync01Icon size={12} className="text-emerald-400" />
-    </button>
+    <Tooltip content={successContent} shortcuts={['Click to sync now']}>
+      <button
+        type="button"
+        onClick={handleClick}
+        className="p-1 rounded-[4px] flex items-center justify-center text-emerald-400 hover:text-emerald-300 cursor-pointer bg-transparent border-none outline-none select-none"
+      >
+        <DatabaseSync01Icon size={12} className="text-emerald-400" />
+      </button>
+    </Tooltip>
   );
 };

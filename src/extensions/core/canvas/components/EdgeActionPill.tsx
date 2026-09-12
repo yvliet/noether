@@ -10,6 +10,7 @@ import {
   RotateCcwIcon,
 } from '@/components/common/Icons';
 import { InlineColorPicker } from '@/components/common/ColorPicker';
+import { Tooltip } from '@/components/common/Tooltip';
 import { CARD_COLOR_PRESETS, resolveCardColorTheme } from './cardColors';
 import type { CanvasEdgeDirection, CanvasEdgeStyle } from '../types';
 
@@ -430,17 +431,18 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
         </div>
 
         {/* 6. Delete Arrow */}
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete();
-          }}
-          title="Delete arrow (Backspace/Delete)"
-          className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
-        >
-          <Delete02Icon size={14} />
-        </button>
+        <Tooltip content="Delete arrow" shortcuts={['Backspace', 'Delete']}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="w-6 h-6 flex items-center justify-center rounded-[4px] text-[#888] hover:text-rose-400 hover:bg-[#282828] cursor-pointer transition-none shrink-0"
+          >
+            <Delete02Icon size={14} />
+          </button>
+        </Tooltip>
       </div>
     );
   }

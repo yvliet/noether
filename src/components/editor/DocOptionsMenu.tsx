@@ -592,7 +592,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleToggleReadingView}
-                  title={isLocked ? 'Note is locked (Read-only)\nUnlock in Properties to enable Editing view' : undefined}
+                  data-tooltip={isLocked ? 'Note is locked' : undefined}
+                  data-shortcuts={isLocked ? JSON.stringify(['Read-only', 'Unlock in Properties to enable Editing view']) : undefined}
                   className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 group ${
                     isLocked
                       ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
@@ -622,7 +623,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
                     setIsOpen(false);
                     showToast(`Switched to ${next}`, 'info');
                   }}
-                  title={isLocked ? 'Note is locked (Read-only)' : undefined}
+                  data-tooltip={isLocked ? 'Note is locked' : undefined}
+                  data-shortcuts={isLocked ? JSON.stringify(['Read-only']) : undefined}
                   className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 group ${
                     isLocked
                       ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'

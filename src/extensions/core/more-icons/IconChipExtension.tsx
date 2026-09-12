@@ -93,7 +93,8 @@ export const IconChipView: React.FC<NodeViewProps> = ({
         lineHeight: 'inherit',
       }}
       onClick={handleChipClick}
-      title={`${fullIdentifier} (click to customize)`}
+      data-tooltip={fullIdentifier}
+      data-shortcuts={JSON.stringify(['Click to customize'])}
     >
       <span
         className="inline-flex items-center justify-center leading-none"

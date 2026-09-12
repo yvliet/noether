@@ -8,6 +8,7 @@ import {
   LockIcon,
   CheckIcon,
 } from '@/components/common/Icons';
+import { Tooltip } from '@/components/common/Tooltip';
 import { useCanvasSettings } from '../canvasSettings';
 
 export interface CanvasSettingsRailProps {
@@ -133,26 +134,28 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
         </button>
 
         {/* Undo Button */}
-        <button
-          type="button"
-          onClick={onUndo}
-          disabled={!canUndo}
-          title={canUndo ? 'Undo (Ctrl+Z)' : 'Nothing to undo'}
-          className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
-        >
-          <UndoIcon size={14} />
-        </button>
+        <Tooltip content={canUndo ? 'Undo' : 'Nothing to undo'} shortcut={canUndo ? 'Ctrl+Z' : undefined}>
+          <button
+            type="button"
+            onClick={onUndo}
+            disabled={!canUndo}
+            className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
+          >
+            <UndoIcon size={14} />
+          </button>
+        </Tooltip>
 
         {/* Redo Button */}
-        <button
-          type="button"
-          onClick={onRedo}
-          disabled={!canRedo}
-          title={canRedo ? 'Redo (Ctrl+Y)' : 'Nothing to redo'}
-          className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
-        >
-          <RedoIcon size={14} />
-        </button>
+        <Tooltip content={canRedo ? 'Redo' : 'Nothing to redo'} shortcut={canRedo ? 'Ctrl+Y' : undefined}>
+          <button
+            type="button"
+            onClick={onRedo}
+            disabled={!canRedo}
+            className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
+          >
+            <RedoIcon size={14} />
+          </button>
+        </Tooltip>
       </div>
 
       {/* Settings Popover Dropdown */}
