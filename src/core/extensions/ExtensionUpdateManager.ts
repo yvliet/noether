@@ -16,7 +16,6 @@ import type { NoetherApp } from '../app/NoetherApp';
 import type { ExtensionManifest } from './types';
 import { platform } from '@/lib/platform/platformAdapter';
 import { fetchTursoPluginBundle, getRegistryUrl } from '@/lib/registry/tursoRegistryClient';
-import { KNOWN_COMMUNITY_EXTENSIONS, KnownExtensionMetadata } from './communityRegistry';
 
 export interface ExtensionUpdateInfo {
   id: string;
@@ -131,20 +130,8 @@ function resolveGitHubRepo(target: ExtensionDownloadTarget): { owner: string; re
     }
   }
 
-  // Lookup in static KNOWN_COMMUNITY_EXTENSIONS catalog
+  // Fallback to author or default organization repository
   const cleanId = target.id.trim();
-  const known = KNOWN_COMMUNITY_EXTENSIONS.find(
-    (e) =>
-      e.id === cleanId ||
-      e.id === `noether-${cleanId}` ||
-      e.id.replace(/^noether-/, '') === cleanId
-  );
-  if (known?.repoUrl) {
-    const match = known.repoUrl.match(/github\.com\/([^/]+)\/([^/?#]+)/i);
-    if (match && match[1] && match[2]) {
-      return { owner: match[1], repo: match[2].replace(/\.git$/, '') };
-    }
-  }
 
   // Author-based inference
   const authorMatch = target.author?.match(/github\.com\/([^/]+)/i);
@@ -455,32 +442,16 @@ export class ExtensionUpdateManager {
         return [];
       }
 
-      const catalogueMap = new Map<string, KnownExtensionMetadata>();
-      for (const item of KNOWN_COMMUNITY_EXTENSIONS) {
-        catalogueMap.set(item.id, item);
-        catalogueMap.set(item.id.replace(/^noether-/, ''), item);
-      }
-
       const discoveredUpdates: ExtensionUpdateInfo[] = [];
 
       for (const installed of installedCommunity) {
         const id = installed.id;
         const currentVersion = cleanSemVer(installed.version || '1.0.0');
-        const catItem = catalogueMap.get(id);
-
         let latestVersion = currentVersion;
         let releaseNotes: string | undefined;
-        let repoUrl = catItem?.repoUrl || (installed as any).repoUrl;
+        let repoUrl = (installed as any).repoUrl;
 
-        // 1. Check catalogue version first
-        if (catItem && catItem.version) {
-          const catVer = cleanSemVer(catItem.version);
-          if (compareSemVer(catVer, latestVersion) > 0) {
-            latestVersion = catVer;
-          }
-        }
-
-        // 2. Check GitHub Releases API for dynamic tags
+        // 1. Check GitHub Releases API for dynamic tags
         const ghRepo = resolveGitHubRepo({ id, repoUrl });
         if (ghRepo) {
           try {
@@ -504,11 +475,11 @@ export class ExtensionUpdateManager {
         if (compareSemVer(latestVersion, currentVersion) > 0) {
           const updateInfo: ExtensionUpdateInfo = {
             id,
-            name: installed.name || catItem?.name || id,
+            name: installed.name || id,
             currentVersion,
             latestVersion,
-            author: installed.author || catItem?.author,
-            description: installed.description || catItem?.description,
+            author: installed.author,
+            description: installed.description,
             repoUrl,
             releaseNotes,
           };

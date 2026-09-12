@@ -15,7 +15,6 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  COMMUNITY_MARKETPLACE_CATALOGUE,
   MarketplaceExtensionItem,
 } from './marketplaceCatalogue';
 import {
@@ -26,6 +25,7 @@ import {
   Brain02Icon,
   DatabaseSync01Icon,
   BookOpen02Icon,
+  PencilEdit02Icon,
 } from '@/components/common/Icons';
 import { fetchTursoPlugins } from './tursoClient';
 
@@ -125,6 +125,9 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
     if (lower === 'brain-02' || lower === 'brain' || lower === 'fsrs') {
       return React.createElement(Brain02Icon, { size: 18, className: 'text-[#ec4899]' });
     }
+    if (lower === 'pencil' || lower === 'pencil-edit' || lower === 'sketch2text' || lower === 'sketch') {
+      return React.createElement(PencilEdit02Icon, { size: 18, className: 'text-[#38bdf8]' });
+    }
     if (lower === 'cloud' || lower === 'sync' || lower === 'database' || lower === 'databasesync') {
       return React.createElement(DatabaseSync01Icon, { size: 18, className: 'text-[#3ecf8e]' });
     }
@@ -142,18 +145,9 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
 }
 
 /**
- * Normalizes raw remote items into strongly typed MarketplaceExtensionItem models,
- * preserving custom rich icons from the local bundled catalogue whenever IDs match.
+ * Normalizes raw remote items into strongly typed MarketplaceExtensionItem models.
  */
-function normalizePluginItem(
-  raw: RawRegistryPlugin,
-  catalogueMap: Map<string, MarketplaceExtensionItem>
-): MarketplaceExtensionItem {
-  const localItem =
-    catalogueMap.get(raw.id) ||
-    catalogueMap.get(raw.id.replace(/^noether-/, '')) ||
-    catalogueMap.get(`noether-${raw.id}`);
-
+function normalizePluginItem(raw: RawRegistryPlugin): MarketplaceExtensionItem {
   const rawDownloads = raw.downloads;
   let formattedDownloads = '0';
   if (typeof rawDownloads === 'number') {
@@ -163,11 +157,9 @@ function normalizePluginItem(
         : String(rawDownloads);
   } else if (typeof rawDownloads === 'string' && rawDownloads.trim()) {
     formattedDownloads = rawDownloads.trim();
-  } else if (localItem) {
-    formattedDownloads = localItem.downloads;
   }
 
-  const categoryCandidate = raw.category || localItem?.category || 'Productivity';
+  const categoryCandidate = raw.category || 'Productivity';
   const validCategories: Array<MarketplaceExtensionItem['category']> = [
     'Productivity',
     'Visualization',
@@ -179,7 +171,7 @@ function normalizePluginItem(
     : 'Productivity';
 
   let authorName = 'Community';
-  let authorUrl = raw.authorUrl || localItem?.authorUrl;
+  let authorUrl = raw.authorUrl;
 
   if (typeof raw.author === 'string' && raw.author.trim()) {
     authorName = raw.author.trim();
@@ -189,8 +181,6 @@ function normalizePluginItem(
     if (!authorUrl && authorObj.github_username) {
       authorUrl = `https://github.com/${authorObj.github_username}`;
     }
-  } else if (localItem?.author) {
-    authorName = localItem.author;
   }
 
   const registryUrl = getRegistryUrl();
@@ -205,19 +195,19 @@ function normalizePluginItem(
 
   return {
     id: raw.id,
-    name: raw.name || localItem?.name || raw.id,
-    version: raw.version || localItem?.version || '1.0.0',
+    name: raw.name || raw.id,
+    version: raw.version || '1.0.0',
     author: authorName,
     authorUrl,
-    repoUrl: raw.repoUrl || raw.repo_url || localItem?.repoUrl,
-    description: raw.description || localItem?.description || '',
+    repoUrl: raw.repoUrl || raw.repo_url,
+    description: raw.description || '',
     downloads: formattedDownloads,
-    stars: typeof raw.stars === 'number' ? raw.stars : localItem?.stars ?? 5,
+    stars: typeof raw.stars === 'number' ? raw.stars : 5,
     category,
-    icon: localItem?.icon || createFallbackIcon(raw.name || raw.id, raw.icon),
-    featured: raw.featured ?? localItem?.featured ?? false,
-    readme: raw.readme || localItem?.readme,
-    bannerImage: raw.bannerImage || localItem?.bannerImage,
+    icon: createFallbackIcon(raw.name || raw.id, raw.icon),
+    featured: raw.featured ?? false,
+    readme: raw.readme,
+    bannerImage: raw.bannerImage,
     mainJsUrl: resolveUrl(rawJsUrl) || `${registryUrl}/${raw.id}/bundle`,
     manifestUrl: resolveUrl(raw.manifestUrl) || `${registryUrl}/${raw.id}/manifest.json`,
     stylesCssUrl: resolveUrl(raw.stylesCssUrl) || `${registryUrl}/${raw.id}/styles`,
@@ -246,34 +236,44 @@ const CORE_EXTENSION_IDS = new Set([
 ]);
 
 /**
- * Merges a list of remote registry plugins with the built-in offline catalogue,
- * ensuring all first-party extensions remain accessible even if omitted from the remote response.
+ * Normalizes an extension ID for collision-free deduplication and lookup.
+ * Strips prefix and maps aliases so 'quicknote' matches 'noether-quicknote',
+ * and 'fsrs-spaced-repetition' matches 'noether-fsrs'.
+ */
+function normalizeExtensionLookupKey(id: string): string {
+  const stripped = id.trim().toLowerCase().replace(/^noether-/, '').replace(/^flint-/, '');
+  if (stripped === 'fsrs' || stripped === 'fsrs-spaced-repetition' || stripped === 'spaced-repetition') {
+    return 'fsrs';
+  }
+  if (stripped === 'quicknote') {
+    return 'quicknote';
+  }
+  if (stripped === 'cascade') {
+    return 'cascade';
+  }
+  if (stripped === 'copilot') {
+    return 'copilot';
+  }
+  if (stripped === 'sketch2text' || stripped === 'sketch-to-text') {
+    return 'sketch2text';
+  }
+  return stripped;
+}
+
+/**
+ * Normalizes and deduplicates a list of remote registry plugins.
+ * Excludes built-in native core extensions and deduplicates aliased IDs.
  */
 function mergeCatalogue(remoteItems: RawRegistryPlugin[]): MarketplaceExtensionItem[] {
-  const catalogueMap = new Map<string, MarketplaceExtensionItem>();
-  for (const item of COMMUNITY_MARKETPLACE_CATALOGUE) {
-    catalogueMap.set(item.id, item);
-    catalogueMap.set(item.id.replace(/^noether-/, ''), item);
-    if (!item.id.startsWith('noether-')) {
-      catalogueMap.set(`noether-${item.id}`, item);
-    }
-  }
-
-  const seenIds = new Set<string>();
+  const seenKeys = new Set<string>();
   const merged: MarketplaceExtensionItem[] = [];
 
   for (const raw of remoteItems) {
-    if (!raw.id || seenIds.has(raw.id) || CORE_EXTENSION_IDS.has(raw.id)) continue;
-    seenIds.add(raw.id);
-    merged.push(normalizePluginItem(raw, catalogueMap));
-  }
-
-  // Ensure built-in offline items are never lost
-  for (const item of COMMUNITY_MARKETPLACE_CATALOGUE) {
-    if (!seenIds.has(item.id) && !CORE_EXTENSION_IDS.has(item.id)) {
-      merged.push(item);
-      seenIds.add(item.id);
-    }
+    if (!raw.id) continue;
+    const lookupKey = normalizeExtensionLookupKey(raw.id);
+    if (seenKeys.has(lookupKey) || CORE_EXTENSION_IDS.has(raw.id) || CORE_EXTENSION_IDS.has(lookupKey)) continue;
+    seenKeys.add(lookupKey);
+    merged.push(normalizePluginItem(raw));
   }
 
   return merged;
@@ -287,7 +287,7 @@ function loadCachedExtensions(): {
   timestamp: number | null;
 } {
   if (typeof window === 'undefined') {
-    return { items: COMMUNITY_MARKETPLACE_CATALOGUE, timestamp: null };
+    return { items: [], timestamp: null };
   }
 
   try {
@@ -308,7 +308,7 @@ function loadCachedExtensions(): {
     console.warn('[useMarketplaceQuery] Failed to read cached catalogue:', e);
   }
 
-  return { items: COMMUNITY_MARKETPLACE_CATALOGUE, timestamp: null };
+  return { items: [], timestamp: null };
 }
 
 /**

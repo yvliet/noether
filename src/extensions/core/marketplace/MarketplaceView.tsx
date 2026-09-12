@@ -52,7 +52,7 @@ export const MarketplaceView: React.FC = () => {
   const fontSize = useNoetherStore('settings', (s) => s?.fontSize ?? 16);
 
   // Dynamic SWR marketplace hook with instant local fallback
-  const { extensions, isUpdating, isError, refetch } = useMarketplaceQuery();
+  const { extensions, isUpdating, isError, isOffline, refetch } = useMarketplaceQuery();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -322,16 +322,20 @@ export const MarketplaceView: React.FC = () => {
               <div className="w-12 h-12 rounded-xl bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--noether-accent,#eb584d)]">
                 <Store01Icon size={24} />
               </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">No Community Extensions Yet</h3>
+              <h3 className="text-sm font-semibold text-white mb-1.5">
+                {isOffline ? 'You Are Currently Offline' : 'No Community Extensions Yet'}
+              </h3>
               <p className="text-xs text-[#888] leading-relaxed mb-4 text-center">
-                The Noether community extensions registry is open with a clean slate. Publish or sync extensions from the registry.
+                {isOffline
+                  ? 'Connect to the internet to discover, explore, and install community extensions from the registry.'
+                  : 'The Noether community extensions registry is open with a clean slate. Publish or sync extensions from the registry.'}
               </p>
               <button
                 onClick={() => refetch()}
                 className="noether-btn noether-btn-primary !py-1.5 !px-3.5 text-xs flex items-center gap-1.5 cursor-pointer"
               >
                 <RotateCcwIcon size={13} className={isUpdating ? 'animate-spin' : ''} />
-                <span>Check Registry Updates</span>
+                <span>{isOffline ? 'Retry Connection' : 'Check Registry Updates'}</span>
               </button>
             </div>
           ) : filteredExtensions.length === 0 ? (

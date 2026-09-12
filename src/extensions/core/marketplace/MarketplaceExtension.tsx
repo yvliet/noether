@@ -15,7 +15,7 @@ import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { Store01Icon } from '@/components/common/Icons';
 import { marketplaceReadme } from './readme';
-import { COMMUNITY_MARKETPLACE_CATALOGUE } from './MarketplaceView';
+import { fetchTursoPlugins } from './tursoClient';
 
 const LazyMarketplaceView = React.lazy(() =>
   import('./MarketplaceView').then((m) => ({ default: m.MarketplaceView }))
@@ -168,24 +168,44 @@ export class MarketplaceExtension extends Extension {
       handler: async (args: Record<string, unknown>): Promise<McpToolResult> => {
         try {
           const q = String(args.query || '').trim().toLowerCase();
-          const matches = COMMUNITY_MARKETPLACE_CATALOGUE.filter(
+          let items: any[] = [];
+
+          if (typeof window !== 'undefined') {
+            try {
+              const rawCache = localStorage.getItem('noether_marketplace_catalogue_cache');
+              if (rawCache) {
+                const parsed = JSON.parse(rawCache);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  items = parsed;
+                }
+              }
+            } catch {}
+          }
+
+          if (items.length === 0) {
+            try {
+              items = await fetchTursoPlugins();
+            } catch {}
+          }
+
+          const matches = items.filter(
             (p) =>
               !q ||
-              p.name.toLowerCase().includes(q) ||
-              p.description.toLowerCase().includes(q) ||
-              p.author.toLowerCase().includes(q) ||
-              p.category.toLowerCase().includes(q)
+              (p.name && p.name.toLowerCase().includes(q)) ||
+              (p.description && p.description.toLowerCase().includes(q)) ||
+              (p.author && (typeof p.author === 'string' ? p.author.toLowerCase().includes(q) : false)) ||
+              (p.category && p.category.toLowerCase().includes(q))
           );
 
           const results = matches.map((m) => ({
             id: m.id,
             name: m.name,
             version: m.version,
-            author: m.author,
+            author: typeof m.author === 'string' ? m.author : m.author?.display_name || 'Community',
             description: m.description,
-            downloads: m.downloads,
-            stars: m.stars,
-            category: m.category,
+            downloads: String(m.downloads || '0'),
+            stars: Number(m.stars || 5),
+            category: m.category || 'Productivity',
             featured: Boolean(m.featured),
             isInstalled: Boolean(this.app.extensions.getExtensionManifest(m.id)),
           }));
