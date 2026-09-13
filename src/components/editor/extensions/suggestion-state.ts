@@ -14,10 +14,6 @@ import { SlashCommandPluginKey } from './slash-command';
  * Combines ProseMirror plugin state verification with a DOM query fallback for maximum reliability.
  */
 export function isSuggestionActive(state?: any): boolean {
-  if (typeof document !== 'undefined') {
-    return Boolean(document.querySelector('[data-noether-suggestion-popup="true"]'));
-  }
-
   if (state) {
     try {
       const isWikiActive = Boolean(WikiLinkPluginKey.getState(state)?.active);
@@ -25,9 +21,14 @@ export function isSuggestionActive(state?: any): boolean {
       if (isWikiActive || isSlashActive) {
         return true;
       }
+      return false;
     } catch {
-      // Ignore if state resolution fails
+      // Fall through to DOM fallback if state resolution fails
     }
+  }
+
+  if (typeof document !== 'undefined') {
+    return Boolean(document.querySelector('[data-noether-suggestion-popup="true"]'));
   }
 
   return false;

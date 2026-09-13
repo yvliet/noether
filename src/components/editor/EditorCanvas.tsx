@@ -343,7 +343,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         setEditorMinHeight(currentHeight);
       }
     }
-  });
+  }, [documentFooters.length, editorMinHeight]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -696,6 +696,15 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }, 400);
   }, [flushPendingSave]);
 
+  const handleTyping = useCallback(() => {
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        flushPendingSave();
+      }, 800);
+    }
+  }, [flushPendingSave]);
+
   const handleTitleChange = useCallback((val: string) => {
     if (isLocked) return;
     setTitle(val);
@@ -860,7 +869,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
         {/* Left: Navigation History Arrows */}
         <div
-          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out pointer-events-auto ${
+          className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
             isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
           }`}
         >
@@ -869,7 +878,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoBack}
             data-tooltip="Navigate back"
             data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer disabled:cursor-default"
+            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
           >
             <ArrowLeft01Icon size={14} />
           </button>
@@ -878,7 +887,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoForward}
             data-tooltip="Navigate forward"
             data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer disabled:cursor-default"
+            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
           >
             <ArrowRight01Icon size={14} />
           </button>
@@ -888,7 +897,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-20">
           {currentDoc ? (
             <div
-              className={`pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden text-[#777] transition-all duration-300 ease-out ${
+              className={`pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden text-[#777] ${
                 isScrolled
                   ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]'
                   : 'drop-shadow-none'
@@ -1057,7 +1066,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
         {/* Right: Reading View, Bookmark, Search & More Options */}
         <div
-          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out pointer-events-auto ${
+          className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
             isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
           }`}
         >
@@ -1080,7 +1089,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 ? 'Reading view\n(Ctrl+Click to split)'
                 : 'Editing view\n(Ctrl+Click to split)'
             }
-            className={`p-1 rounded transition-colors ${
+            className={`p-1 rounded ${
               !currentDoc
                 ? 'opacity-20 cursor-default hover:bg-transparent text-[#777]'
                 : isLocked
@@ -1104,7 +1113,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }}
             disabled={!currentDoc}
             title={currentDoc?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'}
-            className={`p-1 rounded transition-colors disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
+            className={`p-1 rounded disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
               currentDoc?.is_bookmarked
                 ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[#282828]'
                 : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
@@ -1126,7 +1135,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }}
             disabled={!currentDoc}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
-            className={`p-1 rounded transition-colors disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
+            className={`p-1 rounded disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
               isFindOpen
                 ? 'text-white bg-[#282828]'
                 : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
@@ -1329,7 +1338,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                             title={isHeaderFolded ? 'Unfold document header' : 'Fold document header'}
                             className={`absolute ${
                               isSidebarMode ? '-left-[22px] w-[22px]' : '-left-[36px] w-[36px]'
-                            } top-[calc(50%-4px)] -translate-y-1/2 h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] transition-opacity cursor-pointer z-10 ${
+                            } top-[calc(50%-4px)] -translate-y-1/2 h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] cursor-pointer z-10 ${
                               isHeaderFolded ? 'opacity-100 text-[#aaa]' : 'opacity-0 group-hover/title:opacity-100'
                             }`}
                           >
@@ -1479,6 +1488,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                       editable={isEditable}
                       onChange={handleContentChange}
                       onEditorReady={setEditorInstance}
+                      onTyping={handleTyping}
                     />
                   </div>
 

@@ -352,12 +352,16 @@ export const AppShell: React.FC = React.memo(() => {
     window.addEventListener('storage', handleStorage);
 
     // 5. User activity heartbeat reporter (reports activity to keep-awake manager)
-    let lastActivityReport = 0;
+    let lastActivityReport = Date.now();
     const reportUserActivity = () => {
       const now = Date.now();
       if (now - lastActivityReport > 15000) {
         lastActivityReport = now;
-        platform.notifyUserActivity();
+        if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+          window.requestIdleCallback(() => platform.notifyUserActivity());
+        } else {
+          setTimeout(() => platform.notifyUserActivity(), 0);
+        }
       }
     };
     window.addEventListener('keydown', reportUserActivity, { passive: true });

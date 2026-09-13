@@ -21,6 +21,7 @@ export function findMathRangeAtPos(doc: any, pos: number): {
 
   const blockStart = $pos.start();
   const text = parent.textContent;
+  if (!text || !text.includes('$')) return null;
   const offset = pos - blockStart;
 
   // 1. Check for block math: $$...$$

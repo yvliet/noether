@@ -294,11 +294,10 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
       [isDocBacked]
     );
 
-    const editor = useEditor({
-      editable,
-      autofocus: autoFocus ? 'end' : false,
-      content: initialParsedDoc,
-      extensions: [
+    const editorRef = useRef<any>(null);
+
+    const extensions = useMemo(
+      () => [
         StarterKit.configure({
           heading: { levels: [1, 2, 3, 4, 5, 6] },
           hardBreak: { keepMarks: true },
@@ -326,7 +325,11 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
           autolink: true,
         }),
       ],
-      editorProps: {
+      []
+    );
+
+    const editorProps = useMemo(
+      () => ({
         attributes: {
           class: `focus:outline-none select-text ${
             compact ? 'noether-compact-doc-inner' : 'min-h-full noether-standard-doc-inner'
@@ -334,7 +337,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
           spellcheck: 'false',
         },
         handleDOMEvents: {
-          keydown: (_view, event) => {
+          keydown: (_view: any, event: any) => {
             if (event.key === 'Escape') {
               event.preventDefault();
               event.stopPropagation();
@@ -342,7 +345,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
                 clearTimeout(saveTimerRef.current);
                 saveTimerRef.current = null;
               }
-              emitSave(editor);
+              emitSave(editorRef.current);
               onEscapeRef.current?.();
               return true;
             }
@@ -353,13 +356,13 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
                 clearTimeout(saveTimerRef.current);
                 saveTimerRef.current = null;
               }
-              emitSave(editor);
+              emitSave(editorRef.current);
               onBlurRef.current?.();
               return true;
             }
             return false;
           },
-          click: (view, event) => {
+          click: (view: any, event: any) => {
             const targetEl = event.target as HTMLElement;
 
             // Interactive task checkbox toggle in reading view
@@ -379,7 +382,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
                         checked: newChecked,
                       })
                     );
-                    emitSave(editor);
+                    emitSave(editorRef.current);
                     event.preventDefault();
                     event.stopPropagation();
                     return true;
@@ -422,7 +425,17 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
             return false;
           },
         },
-      },
+      }),
+      [compact, editable, emitSave]
+    );
+
+    const editor = useEditor({
+      shouldRerenderOnTransaction: false,
+      editable,
+      autofocus: autoFocus ? 'end' : false,
+      content: initialParsedDoc,
+      extensions,
+      editorProps,
       onSelectionUpdate: ({ editor: ed }) => {
         if (ed.isEditable) {
           const { from, to } = ed.state.selection;
@@ -445,6 +458,8 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
         onBlurRef.current?.();
       },
     });
+
+    editorRef.current = editor;
 
     // Synchronize external content changes when document is updated externally
     useEffect(() => {

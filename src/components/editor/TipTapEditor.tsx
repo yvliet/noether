@@ -812,6 +812,7 @@ interface TipTapEditorProps {
   onChange: (jsonString: string, documentId?: string) => void;
   onSave?: () => void;
   onEditorReady?: (editor: any) => void;
+  onTyping?: () => void;
 }
 
 export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
@@ -820,6 +821,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   editable = true,
   onChange,
   onEditorReady,
+  onTyping,
 }) => {
   const app = useNoetherApp();
   const extensionList = useExtensionList();
@@ -985,31 +987,41 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     []
   );
 
-  const editor = useEditor({
-    editable,
-    onBlur: ({ event }) => {
-      if (updateTimerRef.current) {
-        clearTimeout(updateTimerRef.current);
-        updateTimerRef.current = null;
-        if (editor && !editor.isDestroyed) {
-          try {
-            const jsonStr = JSON.stringify(editor.getJSON());
-            if (jsonStr !== lastEmittedJsonRef.current) {
-              isInternalUpdateRef.current = true;
-              lastEmittedJsonRef.current = jsonStr;
-              onChange(jsonStr);
-            }
-          } catch (e) {}
-        }
-      }
-      // Retain popup if focus moved to something inside this editor container (or popup)
-      const related = (event as FocusEvent)?.relatedTarget as Node | null;
-      if (related && containerRef.current?.contains(related)) {
-        return;
-      }
-      suggestionPopupsRef.current?.closeAll();
-    },
-    extensions: [
+  const onTypingRef = useRef(onTyping);
+  onTypingRef.current = onTyping;
+
+  const editorRef = useRef<any>(null);
+
+  const initialContent = useMemo(() => {
+    if (!content || content === '{}') {
+      return {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [],
+          },
+        ],
+      };
+    }
+    try {
+      const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+      return normalizeTipTapContent(parsed);
+    } catch (e) {
+      return {
+        type: 'doc',
+        content: [
+          {
+            type: 'paragraph',
+            content: [],
+          },
+        ],
+      };
+    }
+  }, []);
+
+  const extensions = useMemo(
+    () => [
       createCommunityEditorBridge(app, documentId),
       ...app.editor.getExtensions(),
       SlashCommands.configure({
@@ -1307,34 +1319,11 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         autolink: false,
       }),
     ],
-    content: (() => {
-      if (!content || content === '{}') {
-        return {
-          type: 'doc',
-          content: [
-            {
-              type: 'paragraph',
-              content: [],
-            },
-          ],
-        };
-      }
-      try {
-        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
-        return normalizeTipTapContent(parsed);
-      } catch (e) {
-        return {
-          type: 'doc',
-          content: [
-            {
-              type: 'paragraph',
-              content: [],
-            },
-          ],
-        };
-      }
-    })(),
-    editorProps: {
+    [app, documentId, placeholderText, createNewNote]
+  );
+
+  const editorProps = useMemo(
+    () => ({
       attributes: {
         class: `prose prose-invert max-w-none focus:outline-none flex-1 min-h-[60px] text-[#dcddde] leading-relaxed select-text ${
           editable ? 'cursor-text' : 'cursor-default'
@@ -1342,7 +1331,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         spellcheck: useSettingsStore.getState().spellcheck ? 'true' : 'false',
       },
       handleDOMEvents: {
-        mousedown: (view, event) => {
+        mousedown: (_view: any, event: any) => {
           const me = event as MouseEvent;
           if (me.button !== 0 && me.button !== 1) return false;
 
@@ -1354,14 +1343,14 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             return false;
           }
 
-          const info = extractLinkTargetFromEvent(editor, me);
+          const info = extractLinkTargetFromEvent(editorRef.current, me);
           if (info) {
             me.preventDefault();
             return true;
           }
           return false;
         },
-        mouseup: (_view, event) => {
+        mouseup: (_view: any, event: any) => {
           const me = event as MouseEvent;
           if (me.button !== 0) return false;
 
@@ -1381,7 +1370,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           }
           return false;
         },
-        click: (_view, event) => {
+        click: (_view: any, event: any) => {
           const me = event as MouseEvent;
           if (me.button !== 0) return false;
 
@@ -1404,7 +1393,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           }
           return false;
         },
-        contextmenu: (view, event) => {
+        contextmenu: (_view: any, event: any) => {
           if (handleContextMenuRef.current) {
             handleContextMenuRef.current(event as MouseEvent);
             event.preventDefault();
@@ -1413,13 +1402,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           return false;
         },
       },
-      transformPastedHTML: (html) => {
+      transformPastedHTML: (html: string) => {
         return transformPastedHtmlToMarkdown(html);
       },
-      transformPastedText: (text) => {
+      transformPastedText: (text: string) => {
         return text.replace(/\u00a0/g, ' ');
       },
-      handlePaste: (view, event) => {
+      handlePaste: (view: any, event: any) => {
         // 1. Check for image files in clipboard
         const clipboardItems = event.clipboardData?.items;
         if (clipboardItems) {
@@ -1445,11 +1434,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
                   // Determine target folder by matching the configured path
                   // against each folder's computed document path (title chain).
-                  // Why path match: promptFolderSelection stores the full path
-                  // (e.g. "Parent/Attachments") via getDocumentPath(), not just
-                  // the folder title. Matching only by title fails for nested
-                  // folders and the fallback would create a new folder with the
-                  // literal path string as its name.
                   let targetParentId: string | null = null;
                   const configuredFolder = ss.attachmentFolder?.trim().toLowerCase();
                   if (configuredFolder) {
@@ -1509,17 +1493,18 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         }
         return false;
       },
-      handleClick: (view, pos, event) => {
+      handleClick: (_view: any, _pos: any, event: any) => {
         // Suppress link navigation if there is an active text selection or dragged range
         const domSelection = window.getSelection();
         if (domSelection && !domSelection.isCollapsed && domSelection.toString().length > 0) {
           return false;
         }
-        if (editor?.state && !editor.state.selection.empty) {
+        const ed = editorRef.current;
+        if (ed?.state && !ed.state.selection.empty) {
           return false;
         }
 
-        const info = extractLinkTargetFromEvent(editor, event as MouseEvent);
+        const info = extractLinkTargetFromEvent(ed, event as MouseEvent);
         if (info) {
           const rawTarget = (event.target as HTMLElement)?.closest('.md-link, .md-wikilink, a');
           if (rawTarget) {
@@ -1548,27 +1533,62 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         }
         return false;
       },
+    }),
+    [editable, handleNavigateToWikiLink]
+  );
+
+  const editor = useEditor({
+    shouldRerenderOnTransaction: false,
+    editable,
+    content: initialContent,
+    extensions,
+    editorProps,
+    onBlur: ({ event }) => {
+      if (updateTimerRef.current) {
+        clearTimeout(updateTimerRef.current);
+        updateTimerRef.current = null;
+        const ed = editorRef.current;
+        if (ed && !ed.isDestroyed) {
+          try {
+            const jsonStr = JSON.stringify(ed.getJSON());
+            if (jsonStr !== lastEmittedJsonRef.current) {
+              isInternalUpdateRef.current = true;
+              lastEmittedJsonRef.current = jsonStr;
+              onChange(jsonStr, documentId);
+            }
+          } catch (e) {}
+        }
+      }
+      // Retain popup if focus moved to something inside this editor container (or popup)
+      const related = (event as FocusEvent)?.relatedTarget as Node | null;
+      if (related && containerRef.current?.contains(related)) {
+        return;
+      }
+      suggestionPopupsRef.current?.closeAll();
     },
-    onSelectionUpdate: ({ editor }) => {
-      if (editor.isEditable) {
-        const { from, to } = editor.state.selection;
+    onSelectionUpdate: ({ editor: ed }) => {
+      if (ed.isEditable) {
+        const { from, to } = ed.state.selection;
         savedSelectionRef.current = { from, to };
       }
     },
-    onUpdate: ({ editor }) => {
+    onUpdate: ({ editor: ed }) => {
+      onTypingRef.current?.();
       if (updateTimerRef.current) {
         clearTimeout(updateTimerRef.current);
       }
       updateTimerRef.current = setTimeout(() => {
         updateTimerRef.current = null;
-        if (!editor || editor.isDestroyed) return;
+        if (!ed || ed.isDestroyed) return;
         isInternalUpdateRef.current = true;
-        const jsonStr = JSON.stringify(editor.getJSON());
+        const jsonStr = JSON.stringify(ed.getJSON());
         lastEmittedJsonRef.current = jsonStr;
         onChange(jsonStr, documentId);
       }, 150);
     },
   });
+
+  editorRef.current = editor;
 
   const handleEditorContextMenu = useCallback(
     (e: MouseEvent | React.MouseEvent) => {

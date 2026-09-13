@@ -118,7 +118,9 @@ export const SmartMathNavigation = Extension.create({
 
             const { state } = view;
             const { selection } = state;
-            const { from, to, empty } = selection;
+            const { from, to, empty, $from } = selection;
+            const parentText = $from?.parent?.textContent;
+            if (!parentText || !parentText.includes('$')) return false;
 
             const mathRange = findMathRangeAtPos(state.doc, from);
             if (!mathRange) return false;

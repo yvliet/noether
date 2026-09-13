@@ -853,14 +853,8 @@ export const Fold = Extension.create<FoldOptions>({
             let nextFoldedCallouts = new Set<number>();
             let nextUnfoldedCallouts = new Set<number>();
 
-            // Restore saved fold state only on reload, init, or when state was completely uninitialized
-            if (
-              reloadFoldState ||
-              (oldState.foldedHeadings.size === 0 &&
-                oldState.foldedIndents.size === 0 &&
-                oldState.foldedCallouts.size === 0 &&
-                !tr.docChanged)
-            ) {
+            // Restore saved fold state only on explicit reload metadata
+            if (reloadFoldState) {
               const loaded = loadFoldState(tr.doc, documentId);
               nextFoldedHeadings = loaded.foldedHeadings;
               nextFoldedIndents = loaded.foldedIndents;

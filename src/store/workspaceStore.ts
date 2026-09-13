@@ -1391,12 +1391,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setFocusedPane: (paneId: PaneId) => {
     if (paneId.startsWith('sidebar:')) return;
+    const currentFocused = get().focusedPaneId;
+    if (currentFocused === paneId) return;
     const { panes, layoutTree } = get();
     const allValidPaneIds = getAllPaneIds(layoutTree);
     const targetPaneId =
       panes[paneId] && allValidPaneIds.includes(paneId)
         ? paneId
         : (panes['main'] ? 'main' : allValidPaneIds[0] || Object.keys(panes)[0] || 'main');
+
+    if (currentFocused === targetPaneId) return;
 
     const currentPane = panes[targetPaneId];
     if (!currentPane) return;

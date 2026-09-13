@@ -1220,7 +1220,7 @@ export async function saveDocumentAndSynchronize(
   documentId: string,
   contentJson: string,
   title?: string,
-  options?: { skipDiskExport?: boolean; rawMarkdownOverride?: string }
+  options?: { skipDiskExport?: boolean; rawMarkdownOverride?: string; documents?: DocumentItem[] }
 ): Promise<{ headings: HeadingItem[]; wordCount: number; charCount: number }> {
   const now = Date.now();
 
@@ -1456,7 +1456,16 @@ export async function saveDocumentAndSynchronize(
       }
     } catch (tErr) {}
     if (platform.isDesktop() && docRecord && !options?.skipDiskExport) {
-      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      let allDocs = options?.documents;
+      if (!allDocs || allDocs.length === 0) {
+        try {
+          const { useDocumentStore } = await import('@/store/documentStore');
+          allDocs = useDocumentStore.getState().documents;
+        } catch {}
+      }
+      if (!allDocs || allDocs.length === 0) {
+        allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      }
       const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
 
       const normRel = (relPath || docTitle).replace(/\\/g, '/').toLowerCase();

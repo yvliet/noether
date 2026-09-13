@@ -1255,7 +1255,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
       docId,
       contentJson,
-      title
+      title,
+      { documents: get().documents }
     );
 
     // Update word and character counts instantly in status bar
@@ -1319,7 +1320,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       id,
       contentJson,
       title,
-      { rawMarkdownOverride }
+      { rawMarkdownOverride, documents: get().documents }
     );
     const currentActive = get().activeDocument;
     const existingDoc = get().documents.find((d) => d.id === id);
