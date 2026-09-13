@@ -17,6 +17,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { TableEdgeControls } from './TableEdgeControls';
+import { getLineEdgeInfo, getLineEdgePos } from './editorCoords';
 
 import { SlashCommands, SlashItem } from './extensions/slash-command';
 import { WikiLinks, WikiLinkItem } from './extensions/wikilink';
@@ -1325,7 +1326,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const editorProps = useMemo(
     () => ({
       attributes: {
-        class: `prose prose-invert max-w-none focus:outline-none flex-1 min-h-[60px] text-[#dcddde] leading-relaxed select-text ${
+        class: `prose prose-invert max-w-none focus:outline-none flex-1 min-h-full h-full flex flex-col text-[#dcddde] leading-relaxed select-text ${
           editable ? 'cursor-text' : 'cursor-default'
         }`,
         spellcheck: useSettingsStore.getState().spellcheck ? 'true' : 'false',
@@ -1349,28 +1350,70 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             return true;
           }
 
-          // If clicking in empty space of ProseMirror below the last child element
+          // If clicking in empty trailing line space or empty bottom space in ProseMirror:
           if (me.button === 0 && editable) {
-            const proseEl = _view.dom as HTMLElement | null;
-            if (proseEl) {
-              const lastChild = proseEl.lastElementChild as HTMLElement | null;
-              const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : proseEl.getBoundingClientRect().bottom;
-              if (me.clientY > lastBottom) {
-                me.preventDefault();
-                const ed = editorRef.current;
-                if (ed && !ed.isDestroyed) {
-                  const { state, schema } = ed;
-                  if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
-                    const insertPos = state.doc.content.size;
-                    const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
-                    tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
-                    ed.view.dispatch(tr);
-                    ed.view.focus();
-                  } else {
-                    ed.commands.focus('end');
-                  }
+            if (
+              target?.closest(
+                'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .document-footer, .cm-editor, table, [data-node-type]'
+              )
+            ) {
+              return false;
+            }
+
+            const ed = editorRef.current;
+            if (ed && !ed.isDestroyed && ed.view) {
+              const edgeInfo = getLineEdgeInfo(ed.view, me.clientX, me.clientY);
+              // Only intercept if the click was in dead space (e.g. trailing whitespace after text, or below doc)
+              if (edgeInfo && edgeInfo.isDeadSpace) {
+                // If table at doc end and clicked below it:
+                const { state, schema } = ed;
+                const proseEl = _view.dom as HTMLElement | null;
+                const lastChild = proseEl?.lastElementChild as HTMLElement | null;
+                const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : proseEl?.getBoundingClientRect().bottom ?? 0;
+                if (state.doc.lastChild && state.doc.lastChild.type.name === 'table' && me.clientY > lastBottom) {
+                  me.preventDefault();
+                  const insertPos = state.doc.content.size;
+                  const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
+                  tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+                  ed.view.dispatch(tr);
+                  ed.view.focus();
                   return true;
                 }
+
+                me.preventDefault();
+                const anchorPos = edgeInfo.pos;
+                try {
+                  const tr = ed.view.state.tr.setSelection(TextSelection.create(ed.view.state.doc, anchorPos));
+                  ed.view.dispatch(tr);
+                  ed.view.focus();
+                } catch {}
+
+                // Support drag selection from trailing whitespace or bottom empty space
+                const onMouseMove = (moveEv: MouseEvent) => {
+                  if ((moveEv.buttons & 1) !== 1) {
+                    cleanup();
+                    return;
+                  }
+                  const headPos = getLineEdgePos(ed.view, moveEv.clientX, moveEv.clientY);
+                  if (headPos === null) return;
+                  try {
+                    const tr = ed.view.state.tr.setSelection(TextSelection.create(ed.view.state.doc, anchorPos, headPos));
+                    ed.view.dispatch(tr);
+                  } catch {}
+                };
+
+                const onMouseUp = () => {
+                  cleanup();
+                };
+
+                const cleanup = () => {
+                  window.removeEventListener('mousemove', onMouseMove, true);
+                  window.removeEventListener('mouseup', onMouseUp, true);
+                };
+
+                window.addEventListener('mousemove', onMouseMove, true);
+                window.addEventListener('mouseup', onMouseUp, true);
+                return true;
               }
             }
           }
@@ -2531,45 +2574,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      onMouseDown={(e) => {
-        if (e.button !== 0 || !editor || !editable) return;
-        const target = e.target as HTMLElement | null;
-        if (!target) return;
-
-        if (
-          target.closest(
-            'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
-          )
-        ) {
-          return;
-        }
-
-        const pm = containerRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
-        const lastChild = pm?.lastElementChild as HTMLElement | null;
-        const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
-
-        if (
-          e.clientY > lastBottom ||
-          target === containerRef.current ||
-          target.classList.contains('tiptap') ||
-          target.classList.contains('editor-canvas') ||
-          target.classList.contains('flex-1')
-        ) {
-          e.preventDefault();
-          const { state, schema } = editor;
-          if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
-            const insertPos = state.doc.content.size;
-            const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
-            tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
-            editor.view.dispatch(tr);
-            editor.view.focus();
-          } else {
-            editor.commands.focus('end');
-          }
-        }
-      }}
       onClick={(e) => {
-        if (editor && editable) {
+        if (editor && editable && editor.state.selection.empty) {
           const target = e.target as HTMLElement | null;
           if (!target) return;
           if (
@@ -2580,28 +2586,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             return;
           }
 
-          const pm = containerRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
-          const lastChild = pm?.lastElementChild as HTMLElement | null;
-          const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
-
-          if (
-            e.clientY > lastBottom ||
-            target === e.currentTarget ||
-            target.classList.contains('ProseMirror') ||
-            target.classList.contains('tiptap') ||
-            target.classList.contains('editor-canvas') ||
-            target.classList.contains('flex-1')
-          ) {
-            const { state, schema } = editor;
-            if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
-              const insertPos = state.doc.content.size;
-              const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
-              tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
-              editor.view.dispatch(tr);
-              editor.view.focus();
-            } else {
-              editor.commands.focus('end');
-            }
+          const { state, schema } = editor;
+          if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
+            const insertPos = state.doc.content.size;
+            const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
+            tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+            editor.view.dispatch(tr);
+            editor.view.focus();
           }
         }
       }}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { TextSelection } from '@tiptap/pm/state';
+import { getLineEdgePos } from './editorCoords';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSidebarDockStore } from '@/store/sidebarDockStore';
@@ -213,6 +214,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
   const titleRef = useRef<string>(title);
   titleRef.current = title;
+  const isDraggingDeadSpaceRef = useRef(false);
 
   // Synchronous document state derivation during render:
   // When currentDoc switches, immediately align title and content state before child components render.
@@ -448,11 +450,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
   const handleDeadSpaceMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !isEditable) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      // Preserve native interactions on inputs, buttons, wikilinks, tags, math, title header, properties, footers
       if (
         target.closest(
           'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
@@ -461,39 +462,78 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         return;
       }
 
-      if (!isEditable) return;
-
       if (isSourceMode) {
         const textarea = scrollViewportRef.current?.querySelector('textarea');
         if (textarea && target !== textarea) {
-          e.preventDefault();
           textarea.focus();
-          const len = textarea.value.length;
-          textarea.setSelectionRange(len, len);
         }
         return;
       }
 
       if (editorInstance && !editorInstance.isDestroyed) {
         const pm = scrollViewportRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
-        const lastChild = pm?.lastElementChild as HTMLElement | null;
-        const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
+        if (!pm || pm.contains(target)) return;
 
-        // Position caret at end when clicking below the last child element or outside the ProseMirror container
-        const isDeadSpace = !pm || e.clientY > lastBottom || !pm.contains(target);
-        if (isDeadSpace) {
+        const pmRect = pm.getBoundingClientRect();
+        const { state, view } = editorInstance;
+
+        // If doc ends with a table and clicked below it, insert trailing paragraph
+        if (state.doc.lastChild && state.doc.lastChild.type.name === 'table' && e.clientY > pmRect.bottom - 20) {
           e.preventDefault();
-          const { state, schema } = editorInstance;
-          if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
-            const insertPos = state.doc.content.size;
-            const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
-            tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
-            editorInstance.view.dispatch(tr);
-            editorInstance.view.focus();
-          } else {
-            editorInstance.commands.focus('end');
-          }
+          const insertPos = state.doc.content.size;
+          const tr = state.tr.insert(insertPos, state.schema.nodes.paragraph.create());
+          tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+          view.dispatch(tr);
+          view.focus();
+          return;
         }
+
+        const anchorPos = getLineEdgePos(view, e.clientX, e.clientY);
+        if (anchorPos === null) return;
+
+        e.preventDefault();
+
+        // Immediately set caret at line edge / position (which clears any existing selection!)
+        try {
+          const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, anchorPos));
+          view.dispatch(tr);
+          view.focus();
+        } catch {}
+
+        // Track drag selection from dead space into content
+        let hasMoved = false;
+        const onMouseMove = (moveEv: MouseEvent) => {
+          if ((moveEv.buttons & 1) !== 1) {
+            cleanup();
+            return;
+          }
+          hasMoved = true;
+          isDraggingDeadSpaceRef.current = true;
+          const headPos = getLineEdgePos(view, moveEv.clientX, moveEv.clientY);
+          if (headPos === null) return;
+
+          try {
+            const tr = view.state.tr.setSelection(TextSelection.create(view.state.doc, anchorPos, headPos));
+            view.dispatch(tr);
+          } catch {}
+        };
+
+        const onMouseUp = () => {
+          cleanup();
+          if (hasMoved) {
+            setTimeout(() => {
+              isDraggingDeadSpaceRef.current = false;
+            }, 50);
+          }
+        };
+
+        const cleanup = () => {
+          window.removeEventListener('mousemove', onMouseMove, true);
+          window.removeEventListener('mouseup', onMouseUp, true);
+        };
+
+        window.addEventListener('mousemove', onMouseMove, true);
+        window.addEventListener('mouseup', onMouseUp, true);
       }
     },
     [isEditable, isSourceMode, editorInstance]
@@ -501,7 +541,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
   const handleDeadSpaceClick = useCallback(
     (e: React.MouseEvent) => {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || isDraggingDeadSpaceRef.current) return;
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
@@ -519,28 +559,29 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         const textarea = scrollViewportRef.current?.querySelector('textarea');
         if (textarea && target !== textarea) {
           textarea.focus();
-          const len = textarea.value.length;
-          textarea.setSelectionRange(len, len);
         }
         return;
       }
 
       if (editorInstance && !editorInstance.isDestroyed) {
         const pm = scrollViewportRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
-        const lastChild = pm?.lastElementChild as HTMLElement | null;
-        const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
-
-        const isDeadSpace = !pm || e.clientY > lastBottom || !pm.contains(target);
-        if (isDeadSpace) {
-          const { state, schema } = editorInstance;
+        if (!pm || !pm.contains(target)) {
+          const { state, schema, view } = editorInstance;
           if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
             const insertPos = state.doc.content.size;
             const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
             tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
             editorInstance.view.dispatch(tr);
             editorInstance.view.focus();
-          } else if (!editorInstance.isFocused) {
-            editorInstance.commands.focus('end');
+          } else {
+            const pos = getLineEdgePos(view, e.clientX, e.clientY);
+            if (pos !== null) {
+              const tr = state.tr.setSelection(TextSelection.create(state.doc, pos));
+              view.dispatch(tr);
+              view.focus();
+              return;
+            }
+            editorInstance.commands.focus();
           }
         }
       }
@@ -1424,7 +1465,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             onMouseDown={handleDeadSpaceMouseDown}
             onClick={handleDeadSpaceClick}
             onContextMenu={handleDeadSpaceContextMenu}
-            className={`flex-1 overflow-y-auto custom-scrollbar ${
+            className={`flex-1 overflow-y-auto custom-scrollbar flex flex-col ${
               !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
             } ${isReadingMode ? 'cursor-default' : ''}`}
           >
@@ -1449,7 +1490,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   ? { paddingTop: 'calc(var(--noether-header-offset, 0px) + 40px)' }
                   : undefined
               }
-              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 noether-editor-canvas-column ${
+              className={`mx-auto pt-3 pb-8 flex-1 flex flex-col min-h-full relative z-10 noether-editor-canvas-column ${
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
               } ${isEditable ? 'cursor-text' : ''}`}
             >
