@@ -58,7 +58,16 @@ Cover images can be discovered and applied in seconds through live Wallhaven wal
 
 The Covers extension leverages Noether's Inversion of Control (IoC) architecture and dynamic Portal Slot Registry. Rather than injecting hardcoded native DOM nodes, it mounts into the host `'editor:banner'` portal slot using `this.registerPortalSlot()`.
 
-Cover images are persisted directly to the note's frontmatter properties (`cover` and `cover_y`), ensuring full interoperability with plain Markdown files on disk and Obsidian Banners compatibility.
+Cover images are persisted directly to the note's frontmatter properties (`Cover` and `Cover_y`), ensuring full interoperability with plain Markdown files on disk.
+
+### High-Performance Zero-Lag Architecture
+
+To deliver instant tab switching and eliminate image pop-in or blank frames when opening notes, the Covers extension implements a multi-tier rendering pipeline:
+
+- **In-Memory Decoded Texture Retention**: When switching tabs, standard DOM unmounting drops native image elements, prompting the browser engine to discard expensive GPU textures. The Covers extension maintains an in-memory decoded image cache (`HTMLImageElement`) that keeps decompressed bitmaps hot in memory across tab switches.
+- **Synchronous Vault Lookups**: The banner component avoids reactive store subscriptions (such as subscribing to the full vault documents array), resolving local attachments synchronously from `app.vault.documents` and fast-pathing web links immediately.
+- **Priority Hints & Native Decoding**: Banner image tags declare `loading="eager"`, `decoding="async"`, and `fetchPriority="high"` to tell the browser engine to prioritize cover textures ahead of idle background operations.
+- **Proactive Idle Preloading**: On vault load and document navigation, note covers are parsed and pre-decoded off-thread using `requestIdleCallback` and `HTMLImageElement.prototype.decode()`, guaranteeing that images are ready before you switch tabs.
 
 ```typescript
 import { Extension, NoetherApp } from 'noether';
@@ -73,10 +82,10 @@ export default class CustomBannerExtension extends Extension {
       order: 10,
       predicate: (ctx) => {
         const props = ctx.document?.properties;
-        return Boolean(props && (props.cover || props.banner));
+        return Boolean(props && props.Cover);
       },
       render: ({ document, app }) => {
-        const coverUrl = document?.properties?.cover;
+        const coverUrl = document?.properties?.Cover;
         return React.createElement(
           'div',
           { className: 'w-full max-w-5xl mx-auto px-4 pt-3' },
@@ -97,7 +106,7 @@ export default class CustomBannerExtension extends Extension {
         if (!activeDoc) return;
         await app.vault.setDocumentProperties(activeDoc.id, {
           ...activeDoc.properties,
-          cover: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
+          Cover: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb',
         });
         app.workspace.showToast('Cover set', 'success');
       },
@@ -126,8 +135,8 @@ Retrieves the current cover image URL and vertical positioning offset for a note
 {
   "documentId": "doc-12345",
   "hasCover": true,
-  "cover": "https://w.wallhaven.cc/full/...",
-  "cover_y": 0.45
+  "Cover": "https://w.wallhaven.cc/full/...",
+  "Cover_y": 0.45
 }
 ```
 
@@ -149,8 +158,8 @@ Assigns a cover image URL, data URI, or vault attachment path to a document, wit
 {
   "success": true,
   "documentId": "doc-12345",
-  "cover": "https://w.wallhaven.cc/full/...",
-  "cover_y": 0.45
+  "Cover": "https://w.wallhaven.cc/full/...",
+  "Cover_y": 0.45
 }
 ```
 

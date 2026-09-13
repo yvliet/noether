@@ -26,6 +26,7 @@ import { COVER_PRESETS, CoverPreset } from './presets';
 import { useCoversSettings } from './coversSettings';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { useVaultDocuments } from 'noether';
+import { preloadCoverImage } from './coverPreloader';
 
 export interface CoverPickerModalProps {
   isOpen: boolean;
@@ -56,6 +57,14 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
 
   const [presetCategory, setPresetCategory] = useState<string>('All');
   const [customLinkInput, setCustomLinkInput] = useState('');
+
+  const handleSelectCover = useCallback(
+    (url: string) => {
+      preloadCoverImage(url);
+      onSelect(url);
+    },
+    [onSelect]
+  );
 
   const { wallhavenApiKey } = useCoversSettings();
   const allVaultDocuments = useVaultDocuments();
@@ -291,7 +300,7 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                       <div
                         key={wp.id}
                         onClick={() => {
-                          onSelect(wp.path);
+                          handleSelectCover(wp.path);
                           onClose();
                         }}
                         className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
@@ -353,7 +362,7 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                     <div
                       key={p.id}
                       onClick={() => {
-                        onSelect(p.url);
+                        handleSelectCover(p.url);
                         onClose();
                       }}
                       className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
@@ -415,7 +424,7 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                       <div
                         key={doc.id}
                         onClick={() => {
-                          onSelect(targetIdentifier);
+                          handleSelectCover(targetIdentifier);
                           onClose();
                         }}
                         className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
@@ -473,7 +482,7 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                     disabled={!customLinkInput.trim()}
                     onClick={() => {
                       if (customLinkInput.trim()) {
-                        onSelect(customLinkInput.trim());
+                        handleSelectCover(customLinkInput.trim());
                         onClose();
                       }
                     }}

@@ -293,18 +293,6 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     }, [isOnly, isLast, totalColumns]);
 
     const activeTabObj = tabs.find((t) => t.id === activeTabId);
-    const activeDoc = activeTabObj?.document_id ? documents.find((d) => d.id === activeTabObj.document_id) : null;
-    const activeHasCover = useMemo(() => {
-      if (!activeDoc?.properties) return false;
-      try {
-        const props = typeof activeDoc.properties === 'string'
-          ? JSON.parse(activeDoc.properties)
-          : (activeDoc.properties as Record<string, any>);
-        return Boolean(props?.cover || props?.banner);
-      } catch {
-        return false;
-      }
-    }, [activeDoc?.properties]);
     const activeViewType = activeTabObj?.view_type || activeTabObj?.view_mode || 'document';
     const isCutoutActive = Boolean(activeTabObj);
 
@@ -351,12 +339,33 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
       if (paneContainerRef.current) ro.observe(paneContainerRef.current);
       if (activeTabRef.current) ro.observe(activeTabRef.current);
 
+      const tabContainer = tabReorder.containerRef.current;
+      if (tabContainer) {
+        tabContainer.addEventListener('scroll', updateRect, { passive: true });
+      }
+
       window.addEventListener('resize', updateRect);
       return () => {
         ro.disconnect();
+        if (tabContainer) {
+          tabContainer.removeEventListener('scroll', updateRect);
+        }
         window.removeEventListener('resize', updateRect);
       };
     }, [isCutoutActive, activeTabId, tabs.length, totalColumns, tabReorder.isDragging]);
+
+    useEffect(() => {
+      const activeEl = activeTabRef.current;
+      const containerEl = tabReorder.containerRef.current;
+      if (!activeEl || !containerEl) return;
+      const activeRect = activeEl.getBoundingClientRect();
+      const containerRect = containerEl.getBoundingClientRect();
+      if (activeRect.left < containerRect.left) {
+        containerEl.scrollLeft -= (containerRect.left - activeRect.left);
+      } else if (activeRect.right > containerRect.right) {
+        containerEl.scrollLeft += (activeRect.right - containerRect.right);
+      }
+    }, [activeTabId]);
 
     const cutoutPath = useMemo(() => {
       if (!isCutoutActive || !activeTabRect) return null;
@@ -466,12 +475,21 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
           data-tauri-drag-region
         />
 
-        {/* Tab strip */}
+        {/* Tab strip: scrollable when tabs exceed available width */}
         <div
           ref={tabReorder.containerRef}
           data-no-drag="true"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          className="flex items-end gap-[2px] shrink min-w-0 overflow-visible relative pointer-events-auto z-10"
+          onWheel={(e) => {
+            if (e.deltaY !== 0) {
+              e.currentTarget.scrollLeft += e.deltaY;
+            }
+          }}
+          style={{
+            WebkitAppRegion: 'no-drag',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          } as React.CSSProperties}
+          className="flex items-end gap-[2px] shrink min-w-0 overflow-x-auto [&::-webkit-scrollbar]:hidden relative pointer-events-auto z-10 px-2"
         >
           {tabs.map((tab, index) => {
             const isTabActive = tab.id === activeTabId;
@@ -504,7 +522,6 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             const hasElementsBehind = isTabActive && (
               activeViewType === 'canvas' ||
               activeViewType === 'graph' ||
-              activeHasCover ||
               isContentScrolled
             );
 
@@ -671,31 +688,27 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
           )}
         </div>
 
-        {/* Right side: Plus button and draggable space in ONE continuous topbar container */}
-        <div
-          className="flex-1 h-full flex items-center pointer-events-auto min-w-0 z-10"
+        {/* Plus button: always visible, never squeezed by tab overflow */}
+        <button
+          onClick={() => {
+            setFocusedPane(paneId);
+            openEmptyTabInPane(paneId);
+          }}
+          title="New tab (Ctrl+T)"
+          data-tauri-drag-region="false"
+          data-no-drag="true"
+          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-0.5 cursor-pointer pointer-events-auto z-10"
         >
-          <button
-            onClick={() => {
-              setFocusedPane(paneId);
-              openEmptyTabInPane(paneId);
-            }}
-            title="New tab (Ctrl+T)"
-            data-tauri-drag-region="false"
-            data-no-drag="true"
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
-          >
-            <PlusSignIcon size={14} />
-          </button>
+          <PlusSignIcon size={14} />
+        </button>
 
-          {/* Empty draggable space spanning the remainder of the pane's header */}
-          <div
-            className="flex-1 h-full min-w-4 self-stretch"
-            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-            data-tauri-drag-region
-          />
-        </div>
+        {/* Empty draggable space spanning the remainder of the pane's header */}
+        <div
+          className="flex-1 h-full min-w-4 self-stretch pointer-events-auto z-10"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          data-tauri-drag-region
+        />
       </div>
     );
   }

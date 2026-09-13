@@ -69,7 +69,7 @@ export const PropertiesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setShowInDocument(DEFAULT_PROPERTIES_SETTINGS.showInDocument)}
                 title="Restore default (Enabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -83,7 +83,7 @@ export const PropertiesSettingsTab: React.FC = () => {
 
         {/* Start folded */}
         <div
-          className={`flex items-center justify-between p-4 transition-all duration-150 ${
+          className={`flex items-center justify-between p-4 ${
             !showInDocument ? 'opacity-40 select-none' : ''
           }`}
         >
@@ -99,7 +99,7 @@ export const PropertiesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setStartFolded(DEFAULT_PROPERTIES_SETTINGS.startFolded)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -126,7 +126,7 @@ export const PropertiesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setDefaultPropertyType(DEFAULT_PROPERTIES_SETTINGS.defaultPropertyType)}
                 title="Restore default (Text)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -159,7 +159,7 @@ export const PropertiesSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setSortPropertiesAlphabetically(DEFAULT_PROPERTIES_SETTINGS.sortPropertiesAlphabetically)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>

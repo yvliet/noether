@@ -207,9 +207,9 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
   }, [lowerKey, isYes, isToggle, isReadOnlyValue, localVal]);
 
   return (
-    <div className="flex items-center gap-2 min-h-[28px] group transition-colors">
+    <div className="flex items-center gap-2 min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
       {/* Property Name + Icon */}
-      <div className={`relative flex items-center shrink-0 ${variant === 'sidebar' ? 'w-24 min-w-[80px]' : 'w-24'}`}>
+      <div className="relative flex items-center shrink-0 w-24">
         {isBuiltIn ? (
           <span
             title={iconTooltip}
@@ -223,7 +223,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               type="button"
               onClick={() => setIsPickerOpen(!isPickerOpen)}
               title={iconTooltip}
-              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] transition-colors cursor-pointer shrink-0 mr-1"
+              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer shrink-0 mr-1"
             >
               {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
             </button>
@@ -287,7 +287,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
       </div>
 
       {/* Property Value Input */}
-      <div className={`flex items-center gap-1.5 flex-1 min-w-0 ${variant === 'sidebar' ? 'justify-end' : ''}`}>
+      <div className="flex items-center gap-1.5 flex-1 min-w-0">
         {isReadOnlyValue ? (
           <span
             title={valueTooltip}
@@ -310,9 +310,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder={matchedCustomType.placeholder || 'Empty'}
-            className={`bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 transition-colors ${
-              variant === 'sidebar' ? 'text-right w-full' : 'flex-1'
-            }`}
+            className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 flex-1 min-w-0"
           />
         ) : isToggle ? (
           <button
@@ -323,7 +321,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               onSaveValue(propertyKey, nextVal);
             }}
             title={valueTooltip}
-            className="text-xs font-medium text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline cursor-pointer select-none px-0.5 py-0.5 transition-colors"
+            className="text-xs font-medium text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline cursor-pointer select-none px-0.5 py-0.5"
           >
             {isYes ? 'Yes' : 'No'}
           </button>
@@ -345,9 +343,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder="0"
-            className={`bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 transition-colors ${
-              variant === 'sidebar' ? 'text-right w-full' : 'flex-1'
-            }`}
+            className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 flex-1 min-w-0"
           />
         ) : (
           <input
@@ -364,9 +360,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder="Empty"
-            className={`bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 transition-colors ${
-              variant === 'sidebar' ? 'text-right w-full' : 'flex-1'
-            }`}
+            className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] text-xs placeholder:text-[var(--noether-text-muted)] px-0.5 py-0.5 flex-1 min-w-0"
           />
         )}
 
@@ -376,7 +370,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             type="button"
             onClick={() => onDelete(propertyKey)}
             title={`Delete ${propertyKey}`}
-            className="opacity-0 group-hover:opacity-100 text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer p-0.5 transition-opacity shrink-0"
+            className="opacity-0 group-hover:opacity-100 text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer p-0.5 shrink-0 ml-auto"
           >
             <Cancel01Icon size={11} />
           </button>

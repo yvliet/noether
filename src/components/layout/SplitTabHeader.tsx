@@ -325,10 +325,19 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       }}
       className="h-[38px] flex items-end justify-between pl-6 pr-2 select-none border-b border-[var(--noether-border-base)] shrink-0 relative z-20"
     >
-      {/* Split Tabs Row */}
+      {/* Split Tabs Row: scrollable when tabs exceed available width */}
       <div
         ref={splitTabReorder.containerRef}
-        className="flex items-end gap-[2px] shrink min-w-0 flex-1 overflow-visible relative -mb-[1px]"
+        onWheel={(e) => {
+          if (e.deltaY !== 0) {
+            e.currentTarget.scrollLeft += e.deltaY;
+          }
+        }}
+        style={{
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        } as React.CSSProperties}
+        className="flex items-end gap-[2px] shrink min-w-0 flex-1 overflow-x-auto [&::-webkit-scrollbar]:hidden relative -mb-[1px] px-2"
       >
         {splitTabs.map((tab, index) => {
           const isTabActive = tab.id === splitActiveTabId;
@@ -484,18 +493,18 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
             className="absolute bottom-[7px] w-[3px] h-[20px] bg-white rounded-full pointer-events-none z-50 shadow-[0_0_4px_rgba(255,255,255,0.6)]"
           />
         )}
-
-        <button
-          onClick={() => {
-            setFocusedPane(targetPaneId);
-            openEmptyTabInPane(targetPaneId);
-          }}
-          title="New split tab"
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
-        >
-          <PlusSignIcon size={14} />
-        </button>
       </div>
+
+      <button
+        onClick={() => {
+          setFocusedPane(targetPaneId);
+          openEmptyTabInPane(targetPaneId);
+        }}
+        title="New split tab"
+        className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-0.5 cursor-pointer"
+      >
+        <PlusSignIcon size={14} />
+      </button>
     </div>
   );
 });

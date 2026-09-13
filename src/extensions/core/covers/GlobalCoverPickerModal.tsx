@@ -12,6 +12,7 @@ import React, { useMemo } from 'react';
 import { useCoverModalStore } from './coversModalStore';
 import { CoverPickerModal } from './CoverPickerModal';
 import { useNoetherApp, useVaultDocuments } from 'noether';
+import { preloadCoverImage } from './coverPreloader';
 
 export const GlobalCoverPickerModal: React.FC = () => {
   const { isOpen, targetDocId, close } = useCoverModalStore();
@@ -34,11 +35,14 @@ export const GlobalCoverPickerModal: React.FC = () => {
     }
   }, [targetDoc?.properties]);
 
-  const currentUrl = (currentProperties.cover || currentProperties.banner || '') as string;
+  const currentUrl = (currentProperties.Cover || '') as string;
 
   const handleSelect = async (url: string) => {
     if (!targetDocId) return;
-    const nextProps = { ...currentProperties, cover: url };
+    preloadCoverImage(url);
+    const nextProps = { ...currentProperties, Cover: url };
+    delete nextProps.cover;
+    delete nextProps.banner;
     await app.vault.setDocumentProperties(targetDocId, nextProps);
     app.workspace.showToast('Cover image updated', 'success');
   };
@@ -46,6 +50,8 @@ export const GlobalCoverPickerModal: React.FC = () => {
   const handleRemove = async () => {
     if (!targetDocId) return;
     const nextProps = { ...currentProperties };
+    delete nextProps.Cover;
+    delete nextProps.Cover_y;
     delete nextProps.cover;
     delete nextProps.banner;
     delete nextProps.cover_y;
