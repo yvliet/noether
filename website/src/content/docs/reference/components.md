@@ -329,4 +329,77 @@ Noether provides built-in dialog helpers on `app.workspace` for user confirmatio
 - `app.workspace.showInputDialog({ title, message, placeholder, onConfirm })`: Requests user text input.
 - `app.workspace.showToast(message, 'info' | 'success' | 'warning' | 'error')`: Displays non-intrusive toast alerts in the bottom-right corner.
 
-To learn how to register custom settings tabs, see [[Extension Points Reference]]. To view the underlying design tokens, explore [[CSS Variables & Design Tokens]].
+
+## 10. PageView Component
+
+---
+
+The `PageView` component provides the canonical full-page shell for custom workspace views, tabs, and documents. It coordinates the top active-tab cutout mask passthrough, sticky floating `PageSubHeader`, dynamic scroll dissolve effects, custom scrollbar tracks, and responsive padding.
+
+```typescript
+import React from 'react';
+import { PageView } from 'noether';
+
+export const CustomAnalyticsView: React.FC = () => {
+  return (
+    <PageView
+      title="Vault Analytics"
+      icon={<span className="text-base">📊</span>}
+      options={[
+        {
+          id: 'export-csv',
+          label: 'Export to CSV',
+          onClick: () => console.log('Exporting...'),
+        },
+      ]}
+      actions={
+        <button className="text-xs px-2.5 py-1 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 rounded border border-neutral-700">
+          Sync
+        </button>
+      }
+    >
+      <div className="p-8 max-w-4xl mx-auto space-y-6">
+        <h2 className="text-lg font-semibold text-neutral-100">Overview</h2>
+        <p className="text-sm text-neutral-400">
+          Analytics for your vault notes, links, and tags.
+        </p>
+      </div>
+    </PageView>
+  );
+};
+```
+
+### Architectural Features
+
+- **Active Tab Cutout Passthrough**: In Noether's tabbed workspace, tabs feature curved wing cutouts. `PageView` renders with `data-main="true"` and `bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]` so the active tab visually merges into the page content without visual breaks.
+- **Floating Sticky Subheader**: Positions the subheader floating at `top: var(--noether-header-offset, 0px)` with navigation history buttons (back/forward), icon, title, options dropdown, and custom action slots.
+- **Dynamic Scroll Transparency**: When the user scrolls down, the subheader transitions its background to transparent and adds subtle text and icon drop-shadows, maintaining contrast above scrolling text while maximizing visible workspace area.
+- **Scrollbar Offset**: Applies `.scrollbar-track-offset-subheader` so the native scrollbar track begins neatly below the floating subheader rather than clashing against subheader buttons.
+- **Spatial / Non-Scrollable Modes**: Passing `scrollable={false}` disables internal scrolling for canvas, graph, or infinite-pan interfaces.
+
+### Props Reference
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `title` | `string` | `undefined` | View title rendered in the subheader. |
+| `icon` | `React.ReactNode` | `undefined` | Icon element rendered beside the title. |
+| `options` | `PageSubHeaderOption[]` | `[]` | Dropdown menu options rendered in the subheader three-dot menu. |
+| `actions` | `React.ReactNode` | `undefined` | Custom React controls rendered on the right side of the subheader. |
+| `showNavigationHistory` | `boolean` | `true` | Whether to display the back and forward navigation history arrows. |
+| `hideSubHeader` | `boolean` | `false` | When true, omits the subheader entirely. |
+| `scrollable` | `boolean` | `true` | When true, renders a scroll container. When false, content fills the shell for canvas or spatial layouts. |
+| `readableLineLength` | `boolean` | `false` | When true, constrains content to readable line length matching document view settings. |
+| `dataMain` | `boolean` | `true` | Sets `data-main="true"` attribute for workspace layout matching. |
+| `className` | `string` | `''` | Additional CSS classes applied to the root container. |
+| `children` | `React.ReactNode` | `undefined` | View body content rendered in the viewport. |
+
+
+## 11. Related Reading & References
+
+---
+
+- [[Extension Points Reference]]: Register custom views with `this.registerView()`.
+- [[CSS Variables & Design Tokens]]: Style custom controls using Noether's theme variables.
+- [[Noether SDK API Reference]]: Complete method signatures and hook definitions.
+- [[Events & Relational Storage]]: Coordinate UI actions with database events.
+- [[Model Context Protocol (MCP) Tools]]: Expose extension capabilities to AI agent copilots.

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useWorkspaceStore } from '@/store/workspaceStore';
 
 /**
  * Observes whether a pane's content area has been scrolled away from the top.
@@ -6,26 +7,47 @@ import { useState, useEffect, useRef } from 'react';
  * when page content sits behind the header region.
  *
  * Finds the scroll container by querying for the first overflow-y-auto
- * descendant inside the pane's DOM subtree (identified by data-pane-id).
+ * descendant inside the pane's DOM subtree (identified by data-pane-id),
+ * and continuously captures scroll events across all view types.
  */
 export function useContentScrolled(paneId: string | undefined): boolean {
   const [scrolled, setScrolled] = useState(false);
   const rafRef = useRef(0);
   const listenerRef = useRef<{ el: Element; handler: () => void } | null>(null);
 
+  const activeTabId = useWorkspaceStore(
+    (s) => s.panes[paneId || 'main']?.activeTabId
+  );
+
   useEffect(() => {
     if (!paneId) return;
 
-    // Small delay to let the pane DOM mount before querying
-    const findTimer = setTimeout(() => {
-      const paneEl = document.querySelector(`[data-pane-id="${paneId}"]`);
-      if (!paneEl) return;
+    let cleanupCapture: (() => void) | null = null;
 
-      // The editor scroll container is the first element with overflow-y: auto
+    // Immediate and frame-delayed query to catch initial or re-rendered view DOM
+    const paneEl = document.querySelector(`[data-pane-id="${paneId}"]`);
+    if (paneEl) {
+      const onCaptureScroll = (e: Event) => {
+        const target = e.target as HTMLElement | null;
+        if (target && paneEl.contains(target)) {
+          const isScrolled = target.scrollTop > 2;
+          setScrolled(isScrolled);
+        }
+      };
+      paneEl.addEventListener('scroll', onCaptureScroll, { capture: true, passive: true });
+      cleanupCapture = () => {
+        paneEl.removeEventListener('scroll', onCaptureScroll, { capture: true });
+      };
+    }
+
+    const findTimer = setTimeout(() => {
+      const el = document.querySelector(`[data-pane-id="${paneId}"]`);
+      if (!el) return;
+
       const scrollEl =
-        paneEl.querySelector('.overflow-y-auto') ||
-        paneEl.querySelector('[style*="overflow-y: auto"]') ||
-        paneEl.querySelector('[style*="overflow: auto"]');
+        el.querySelector('.overflow-y-auto') ||
+        el.querySelector('[style*="overflow-y: auto"]') ||
+        el.querySelector('[style*="overflow: auto"]');
 
       if (!scrollEl) return;
 
@@ -43,7 +65,7 @@ export function useContentScrolled(paneId: string | undefined): boolean {
 
       scrollEl.addEventListener('scroll', onScroll, { passive: true });
       listenerRef.current = { el: scrollEl, handler: onScroll };
-    }, 100);
+    }, 50);
 
     return () => {
       clearTimeout(findTimer);
@@ -52,9 +74,13 @@ export function useContentScrolled(paneId: string | undefined): boolean {
         listenerRef.current.el.removeEventListener('scroll', listenerRef.current.handler);
         listenerRef.current = null;
       }
+      if (cleanupCapture) {
+        cleanupCapture();
+      }
       setScrolled(false);
     };
-  }, [paneId]);
+  }, [paneId, activeTabId]);
 
   return scrolled;
 }
+

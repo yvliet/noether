@@ -65,7 +65,7 @@ export const DeadDocumentView: React.FC<DeadDocumentViewProps> = React.memo(({
   }, [createNewNote, displayTitle, openTabInPane, paneId, tabId, showToast]);
 
   return (
-    <div className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--noether-bg-main)]">
+    <div data-main="true" className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] relative">
       {/* 1. View Subheader with interactive inline action link */}
       <PageSubHeader
         title={displayTitle}

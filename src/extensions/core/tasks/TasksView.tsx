@@ -13,7 +13,7 @@ import {
   RotateCcwIcon,
   CheckmarkCircle02Icon,
 } from '@/components/common/Icons';
-import { PageSubHeader } from '@/components/layout/PageSubHeader';
+import { PageView } from '@/components/layout/PageView';
 
 export const TasksView: React.FC = React.memo(() => {
   const app = useNoetherApp();
@@ -101,33 +101,22 @@ export const TasksView: React.FC = React.memo(() => {
   const pendingCount = useMemo(() => totalCount - completedCount, [totalCount, completedCount]);
 
   return (
-    <div data-main="true" className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--noether-bg-main)] select-none">
-      {/* 1. Modular Sub-Header */}
-      <PageSubHeader
-        title="Tasks"
-        icon={<CheckmarkSquare02Icon size={13} />}
-        document={null}
-        customRightActions={
-          <button
-            type="button"
-            onClick={handleManualRefresh}
-            title="Refresh tasks"
-            className={`p-1 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer ${
-              isRefreshing ? 'animate-spin text-white' : ''
-            }`}
-          >
-            <RotateCcwIcon size={14} />
-          </button>
-        }
-      />
-
-      {/* 2. Scrollable Body Laid Out Like a Standard Note */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar">
-        <div
-          className={`mx-auto pt-4 pb-12 flex flex-col ${
-            readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
+    <PageView
+      title="Tasks"
+      icon={<CheckmarkSquare02Icon size={13} />}
+      customRightActions={
+        <button
+          type="button"
+          onClick={handleManualRefresh}
+          title="Refresh tasks"
+          className={`p-1 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer ${
+            isRefreshing ? 'animate-spin text-white' : ''
           }`}
         >
+          <RotateCcwIcon size={14} />
+        </button>
+      }
+    >
           {/* Note Title Header (Identical to Note H1 Title) */}
           {inlineTitle && (
             <div className="mb-4">
@@ -261,9 +250,7 @@ export const TasksView: React.FC = React.memo(() => {
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </PageView>
   );
 });
 

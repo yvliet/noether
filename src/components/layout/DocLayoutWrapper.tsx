@@ -1,8 +1,7 @@
-import React, { useCallback } from 'react';
-import { useSettingsStore } from '@/store/settingsStore';
-import platform from '@/lib/platform/platformAdapter';
+import React from 'react';
+import { PageView, PageViewProps } from './PageView';
 
-export interface DocLayoutWrapperProps {
+export interface DocLayoutWrapperProps extends Partial<PageViewProps> {
   children: React.ReactNode;
   className?: string;
   isReadingMode?: boolean;
@@ -17,45 +16,20 @@ export const DocLayoutWrapper: React.FC<DocLayoutWrapperProps> = React.memo(({
   children,
   className = '',
   isReadingMode = false,
+  hideSubHeader = true,
+  ...props
 }) => {
-  const { readableLineLength, showExternalLinkIcon } = useSettingsStore();
-
-  const handleContainerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement | null;
-    const anchor = target?.closest('a');
-    if (anchor) {
-      const href = anchor.getAttribute('href');
-      if (href && (/^https?:\/\//i.test(href) || href.startsWith('mailto:') || href.startsWith('www.'))) {
-        e.preventDefault();
-        e.stopPropagation();
-        platform.openUrl(href);
-      }
-    }
-  }, []);
-
   return (
-    <div
-      data-doc-view="true"
-      onClick={handleContainerClick}
-      className={`noether-doc-wrapper flex-1 overflow-hidden relative flex flex-col min-w-0 ${
-        showExternalLinkIcon ? 'noether-show-link-icon' : ''
-      }`}
+    <PageView
+      hideSubHeader={hideSubHeader}
+      isReadingMode={isReadingMode}
+      className={className}
+      {...props}
     >
-      <div
-        data-doc-view="true"
-        style={{ touchAction: 'pan-x pan-y' }}
-        className={`flex-1 overflow-y-auto custom-scrollbar ${
-          isReadingMode ? 'cursor-default' : ''
-        } ${className}`}
-      >
-        <div
-          className={`mx-auto pt-4 pb-12 flex flex-col min-h-full ${
-            readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
-          }`}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
+      {children}
+    </PageView>
   );
 });
+
+DocLayoutWrapper.displayName = 'DocLayoutWrapper';
+
