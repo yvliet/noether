@@ -8,6 +8,7 @@ import { DocsReader, extractTocItems, computeBacklinks } from './components/docs
 import { InteractiveGraphWidget } from './components/graph/InteractiveGraphWidget';
 import { OnThisPageOutline } from './components/docs/OnThisPageOutline';
 import { Menu01Icon, Sun01Icon, Moon02Icon } from './components/common/Icons';
+import { TooltipProvider } from './components/common/TooltipProvider';
 
 const THEME_STORAGE_KEY = 'noether_docs_theme';
 const PORTAL_STORAGE_KEY = 'noether_active_portal';
@@ -666,6 +667,9 @@ export const App: React.FC = () => {
           </aside>
         )}
       </div>
+
+      {/* Global Tooltip Engine (Matching Noether Desktop App) */}
+      <TooltipProvider />
     </div>
   );
 };

@@ -66,6 +66,11 @@
   --text-muted: #b3b3b3;
   --text-faint: #666666;
 
+  /* Tooltip tokens */
+  --noether-tooltip-bg: #0d0d0d;
+  --noether-tooltip-text: #ffffff;
+  --noether-tooltip-muted: #888888;
+
   /* Accent tokens (Noether signature flame orange accent) */
   --noether-accent: #eb584d;
   --noether-accent-hover: #d94338;
@@ -130,6 +135,11 @@ html.light {
   --text-normal: #22252a;
   --text-muted: #6b7280;
   --text-faint: #9ca3af;
+
+  /* Tooltip tokens */
+  --noether-tooltip-bg: #22252a;
+  --noether-tooltip-text: #ffffff;
+  --noether-tooltip-muted: #9ca3af;
 
   /* Accent tokens (Noether signature flame orange accent) */
   --noether-accent: #eb584d;
