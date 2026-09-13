@@ -60,6 +60,27 @@ export interface ExtensionVersionRow {
 
 export type PluginVersionRow = ExtensionVersionRow & { plugin_id?: string };
 
+const isEmojiGlyph = (val: string): boolean => {
+  return (
+    val.startsWith('emoji:') ||
+    val.startsWith(':emoji:') ||
+    /\p{Extended_Pictographic}/u.test(val)
+  );
+};
+
+export const ExtensionIconConfigSchema = z.object({
+  name: z
+    .string()
+    .refine((val) => !isEmojiGlyph(val), {
+      message: 'Emojis cannot be registered as extension icons. Use a HugeIcon identifier (e.g. "clock-01", "sparkles") or custom SVG.',
+    })
+    .optional(),
+  type: z.enum(['solid', 'gradient']).optional(),
+  backgroundColor: z.string().optional(),
+  gradientColors: z.array(z.string()).optional(),
+  gradientDirection: z.union([z.number(), z.string()]).optional(),
+});
+
 /**
  * Public extension manifest shape conforming to Noether extension specifications.
  */
@@ -73,7 +94,15 @@ export const ExtensionManifestSchema = z.object({
   authorUrl: z.string().url().optional(),
   category: z.enum(['Productivity', 'Visualization', 'Integration', 'Formatting']).optional().default('Productivity'),
   tags: z.array(z.string()).optional().default([]),
-  icon: z.string().optional(),
+  icon: z
+    .union([
+      z.string().refine((val) => !isEmojiGlyph(val), {
+        message: 'Emojis cannot be registered as extension icons. Use a HugeIcon identifier (e.g. "clock-01", "sparkles") or custom SVG.',
+      }),
+      ExtensionIconConfigSchema,
+    ])
+    .optional(),
+  iconConfig: ExtensionIconConfigSchema.optional(),
   repoUrl: z.string().url().optional(),
   bannerImage: z.string().optional(),
 });

@@ -35,6 +35,7 @@ import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
+import { platform } from '@/lib/platform/platformAdapter';
 import { storeRefs, bindNoetherStores, setAppInstanceBridge } from './storeBridge';
 import {
   getDocumentPath as dbGetDocumentPath,
@@ -118,6 +119,16 @@ export class NoetherApp {
   public events: EventBus;
   /** Extensions manager overseeing discovery, loading, enable/disable states, and sandbox. */
   public extensions: ExtensionManager;
+  /** Version control and revision history provider for vaults. */
+  public vcs = {
+    checkStatus: () => platform.vcsCheckStatus(),
+    initVault: () => platform.vcsInitVault(),
+    createSnapshot: (relativePath?: string, message?: string) => platform.vcsCreateSnapshot(relativePath, message),
+    getFileHistory: (relativePath: string, limit?: number) => platform.vcsGetFileHistory(relativePath, limit),
+    getFileDiff: (relativePath: string, commitA: string, commitB?: string) => platform.vcsGetFileDiff(relativePath, commitA, commitB),
+    getHistoricalContent: (relativePath: string, commit: string) => platform.vcsGetHistoricalContent(relativePath, commit),
+    restoreFile: (relativePath: string, commit: string) => platform.vcsRestoreFile(relativePath, commit),
+  };
 
   constructor() {
     this.commands = new CommandRegistry();

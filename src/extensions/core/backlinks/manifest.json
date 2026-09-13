@@ -2,7 +2,7 @@
   "id": "backlinks",
   "name": "Backlinks & Unlinked Mentions",
   "version": "1.0.0",
-  "description": "Displays incoming bidirectional backlinks and unlinked mentions to the active note.",
+  "description": "See every note that links to or mentions your current page, helping you rediscover forgotten connections and follow your train of thought.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

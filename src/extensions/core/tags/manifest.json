@@ -2,7 +2,7 @@
   "id": "tags-explorer",
   "name": "Tags Explorer",
   "version": "1.0.0",
-  "description": "Hierarchical nested tags tree view across all documents in the vault.",
+  "description": "Organize topics with simple hashtags and explore your notes grouped neatly by tags and sub-tags.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

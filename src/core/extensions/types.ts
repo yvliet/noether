@@ -41,6 +41,7 @@ export type ExtensionIconBackgroundType = 'solid' | 'gradient';
 export interface ExtensionIconConfig {
   /**
    * Icon glyph name (e.g. 'book-open-02', 'sparkles', 'brain-02', 'sticky-note-02', 'pencil-edit-02', 'download-01').
+   * Emojis are strictly disallowed as extension icons. Use HugeIcons identifiers or raw SVG strings.
    */
   name?: string;
   /**
@@ -85,7 +86,7 @@ export interface ExtensionManifest {
   isCore?: boolean;
   /** Whether a core extension should default to disabled on fresh installations. */
   defaultDisabled?: boolean;
-  /** Icon identifier, structured icon configuration, or custom React node for the extension. */
+  /** Icon identifier, structured icon configuration, or custom React node for the extension (emojis disallowed). */
   icon?: string | ExtensionIconConfig | React.ReactNode;
   /** Optional standalone icon styling configuration when icon is specified as a string identifier. */
   iconConfig?: ExtensionIconConfig;

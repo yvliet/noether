@@ -2,7 +2,7 @@
   "id": "graph-view",
   "name": "Graph View",
   "version": "1.0.0",
-  "description": "Interactive force-directed graph visualizing knowledge network relationships between notes.",
+  "description": "Watch your ideas blossom into an interactive visual galaxy where every connected thought sparkles and grows over time.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [
