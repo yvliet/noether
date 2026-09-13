@@ -55,7 +55,7 @@ export const ActionRail: React.FC = React.memo(() => {
           WebkitAppRegion: 'no-drag',
         } as React.CSSProperties
       }
-      className="noether-action-rail noether-ribbon no-drag relative w-11 flex flex-col items-center justify-between py-2 select-none z-20 shrink-0 border-r border-[var(--noether-border-base)]"
+      className="noether-action-rail noether-ribbon no-drag relative w-11 flex flex-col items-center justify-between pt-[41px] pb-2 select-none z-20 shrink-0 border-r border-[var(--noether-border-base)]"
     >
       {/* Top Action Icons */}
       <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full">

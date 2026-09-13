@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useMemo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   Folder01Icon,
@@ -292,8 +292,95 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
       return { flex: 1 };
     }, [isOnly, isLast, totalColumns]);
 
+    const activeTabObj = tabs.find((t) => t.id === activeTabId);
+    const activeDoc = activeTabObj?.document_id ? documents.find((d) => d.id === activeTabObj.document_id) : null;
+    const activeHasCover = useMemo(() => {
+      if (!activeDoc?.properties) return false;
+      try {
+        const props = typeof activeDoc.properties === 'string'
+          ? JSON.parse(activeDoc.properties)
+          : (activeDoc.properties as Record<string, any>);
+        return Boolean(props?.cover || props?.banner);
+      } catch {
+        return false;
+      }
+    }, [activeDoc?.properties]);
+    const activeViewType = activeTabObj?.view_type || activeTabObj?.view_mode || 'document';
+    const isCutoutActive = Boolean(activeTabObj);
+
+    const paneContainerRef = useRef<HTMLDivElement | null>(null);
+    const activeTabRef = useRef<HTMLDivElement | null>(null);
+    const [activeTabRect, setActiveTabRect] = useState<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    } | null>(null);
+
+    useLayoutEffect(() => {
+      if (!isCutoutActive) {
+        setActiveTabRect(null);
+        return;
+      }
+
+      const updateRect = () => {
+        if (!activeTabRef.current || !paneContainerRef.current) return;
+        const tabBbox = activeTabRef.current.getBoundingClientRect();
+        const containerBbox = paneContainerRef.current.getBoundingClientRect();
+        const nextX = tabBbox.left - containerBbox.left;
+        const nextY = tabBbox.top - containerBbox.top;
+        const nextW = tabBbox.width;
+        const nextH = tabBbox.height;
+        setActiveTabRect((prev) => {
+          if (
+            prev &&
+            Math.abs(prev.x - nextX) < 0.2 &&
+            Math.abs(prev.y - nextY) < 0.2 &&
+            Math.abs(prev.width - nextW) < 0.2 &&
+            Math.abs(prev.height - nextH) < 0.2
+          ) {
+            return prev;
+          }
+          return { x: nextX, y: nextY, width: nextW, height: nextH };
+        });
+      };
+
+      updateRect();
+
+      const ro = new ResizeObserver(updateRect);
+      if (paneContainerRef.current) ro.observe(paneContainerRef.current);
+      if (activeTabRef.current) ro.observe(activeTabRef.current);
+
+      window.addEventListener('resize', updateRect);
+      return () => {
+        ro.disconnect();
+        window.removeEventListener('resize', updateRect);
+      };
+    }, [isCutoutActive, activeTabId, tabs.length, totalColumns, tabReorder.isDragging]);
+
+    const cutoutPath = useMemo(() => {
+      if (!isCutoutActive || !activeTabRect) return null;
+      // Inset body by 0.5px to strictly contain within tab visual bounding box and prevent subpixel border bleed
+      const x0 = activeTabRect.x + 0.5;
+      const x1 = activeTabRect.x + activeTabRect.width - 0.5;
+      const y0 = activeTabRect.y + 0.5;
+      const wingL = x0 - 8;
+      const wingR = x1 + 8;
+      // Radius concentric with 7px CSS border-radius: 7 - 0.5 = 6.5px
+      const rTop = Math.min(6.5, Math.max(0, (activeTabRect.width - 2) / 2));
+      const cornerY = Math.min(33, activeTabRect.y + 7);
+
+      // Single continuous closed path:
+      // Left wing scoop (A 8 8 0 0 0 x0 33) -> left side (L x0 cornerY) ->
+      // top-left corner (A rTop rTop 0 0 1 activeTabRect.x+7 y0) -> top edge (L activeTabRect.x+w-7 y0) ->
+      // top-right corner (A rTop rTop 0 0 1 x1 cornerY) -> right side (L x1 33) ->
+      // right wing scoop (A 8 8 0 0 0 wingR 41) -> bottom bleed (L wingR 42 L wingL 42 Z)
+      return `M ${wingL} 41 A 8 8 0 0 0 ${x0} 33 L ${x0} ${cornerY} A ${rTop} ${rTop} 0 0 1 ${activeTabRect.x + 7} ${y0} L ${activeTabRect.x + activeTabRect.width - 7} ${y0} A ${rTop} ${rTop} 0 0 1 ${x1} ${cornerY} L ${x1} 33 A 8 8 0 0 0 ${wingR} 41 L ${wingR} 42 L ${wingL} 42 Z`;
+    }, [isCutoutActive, activeTabRect]);
+
     return (
       <div
+        ref={paneContainerRef}
         data-pane-id={paneId}
         onContextMenu={handleBarContextMenu}
         style={
@@ -301,13 +388,90 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             ...widthStyle,
           } as unknown as React.CSSProperties
         }
-        className="flex items-end h-[41px] pl-6 pr-2 min-w-0 z-10 overflow-visible relative"
+        className="flex items-end h-[41px] min-w-0 z-10 overflow-visible relative pointer-events-none"
       >
+        {/* Dynamic Topbar Background with Cutout Mask for this pane */}
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+          <svg className="w-full h-full" preserveAspectRatio="none">
+            <defs>
+              <mask id={`topbar-pane-mask-${paneId}`}>
+                {/* 1. Base solid white: topbar is visible everywhere */}
+                <rect x="-1000" y="0" width="20000" height="41" fill="white" />
+
+                {/* 2. Punch cutout hole only if isCutoutActive and cutoutPath exists */}
+                {cutoutPath && (
+                  <path d={cutoutPath} fill="black" />
+                )}
+              </mask>
+
+              {/* Seamless bottom-to-top gradient across active tab body AND wings */}
+              <linearGradient
+                id={`active-tab-gradient-${paneId}`}
+                x1="0"
+                y1="41"
+                x2="0"
+                y2={activeTabRect?.y ?? 5}
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop
+                  offset="0%"
+                  stopColor="var(--noether-bg-tab-active, var(--noether-bg-main, #1c1c1c))"
+                  stopOpacity="0"
+                />
+                <stop
+                  offset="18%"
+                  stopColor="var(--noether-bg-tab-active, var(--noether-bg-main, #1c1c1c))"
+                  stopOpacity="0.45"
+                />
+                <stop
+                  offset="50%"
+                  stopColor="var(--noether-bg-tab-active, var(--noether-bg-main, #1c1c1c))"
+                  stopOpacity="0.85"
+                />
+                <stop
+                  offset="80%"
+                  stopColor="var(--noether-bg-tab-active, var(--noether-bg-main, #1c1c1c))"
+                  stopOpacity="1"
+                />
+                <stop
+                  offset="100%"
+                  stopColor="var(--noether-bg-tab-active, var(--noether-bg-main, #1c1c1c))"
+                  stopOpacity="1"
+                />
+              </linearGradient>
+            </defs>
+            <rect
+              x="-1000"
+              y="0"
+              width="20000"
+              height="41"
+              fill="var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #0d0d0d))"
+              mask={`url(#topbar-pane-mask-${paneId})`}
+            />
+
+            {/* Seamless gradient overlay covering active tab body AND authentic wings */}
+            {cutoutPath && (
+              <path
+                d={cutoutPath}
+                fill={`url(#active-tab-gradient-${paneId})`}
+              />
+            )}
+          </svg>
+        </div>
+
+        {/* Left spacing before tabs */}
+        <div
+          className="w-6 h-full shrink-0 pointer-events-auto z-10"
+          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+          data-tauri-drag-region
+        />
+
+        {/* Tab strip */}
         <div
           ref={tabReorder.containerRef}
           data-no-drag="true"
           style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          className="flex items-end gap-[2px] shrink min-w-0 overflow-visible relative"
+          className="flex items-end gap-[2px] shrink min-w-0 overflow-visible relative pointer-events-auto z-10"
         >
           {tabs.map((tab, index) => {
             const isTabActive = tab.id === activeTabId;
@@ -337,6 +501,12 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             const isSingleTab = tabs.length <= 1 && isOnly;
             const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
             const canCloseTab = !isSingleTab || !isTabEmpty;
+            const hasElementsBehind = isTabActive && (
+              activeViewType === 'canvas' ||
+              activeViewType === 'graph' ||
+              activeHasCover ||
+              isContentScrolled
+            );
 
             return (
               <div
@@ -344,7 +514,12 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 role="tab"
                 data-tab-id={tab.id}
                 data-tab-doc-id={tab.document_id || ''}
-                ref={(el) => tabReorder.registerTabRef(index, el)}
+                ref={(el) => {
+                  tabReorder.registerTabRef(index, el);
+                  if (isTabActive) {
+                    activeTabRef.current = el;
+                  }
+                }}
                 data-tauri-drag-region="false"
                 data-no-drag="true"
                 onPointerDown={(e) => tabReorder.handlePointerDown(index, e)}
@@ -375,7 +550,9 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 } as React.CSSProperties}
                 className={`group relative flex items-center gap-1.5 px-2.5 text-xs cursor-pointer select-none w-[180px] max-w-[180px] min-w-[36px] h-[36px] shrink border-0 ${
                   isTabActive
-                    ? 'rounded-t-[7px] bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] font-normal z-20 shadow-xs overflow-visible'
+                    ? isCutoutActive
+                      ? 'rounded-t-[7px] font-normal z-20 overflow-visible'
+                      : 'rounded-t-[7px] bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] font-normal z-20 shadow-xs overflow-visible'
                     : 'bg-transparent font-normal hover:z-30'
                 }`}
               >
@@ -391,7 +568,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   />
                 )}
 
-                {isTabActive && (
+                {isTabActive && !isCutoutActive && (
                   <>
                     <svg
                       className="absolute -bottom-[1px] -left-[8px] w-[8px] h-[9px] pointer-events-none z-30 opacity-100"
@@ -429,7 +606,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 )}
 
                 {/*
-                 * Scroll-triggered shadow on the active tab icon + title.
+                 * Scroll/element-triggered shadow on the active tab icon + title.
                  *
                  * INTENTIONAL ANIMATION EXCEPTION: This 150ms opacity transition is explicitly
                  * allowed despite the zero-animation rule. Without it, the shadow pops in/out
@@ -440,8 +617,8 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                 <div
                   className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-6"
                   style={{
-                    filter: isTabActive && isContentScrolled
-                      ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))'
+                    filter: hasElementsBehind
+                      ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.9)) drop-shadow(0 0 8px rgba(0,0,0,0.6))'
                       : 'none',
                     // Intentional transition exception: prevents choppy pop when elements move behind the tab
                     transition: 'filter 150ms ease',
@@ -467,7 +644,11 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                     type="button"
                     data-tauri-drag-region="false"
                     data-no-drag="true"
-                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+                    style={{
+                      WebkitAppRegion: 'no-drag',
+                      filter: hasElementsBehind ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.9))' : 'none',
+                      transition: 'filter 150ms ease',
+                    } as React.CSSProperties}
                     onClick={(e) => {
                       e.stopPropagation();
                       closeTabInPane(paneId, tab.id);
@@ -490,26 +671,31 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
           )}
         </div>
 
-        <button
-          onClick={() => {
-            setFocusedPane(paneId);
-            openEmptyTabInPane(paneId);
-          }}
-          title="New tab (Ctrl+T)"
-          data-tauri-drag-region="false"
-          data-no-drag="true"
-          style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
-        >
-          <PlusSignIcon size={14} />
-        </button>
-
-        {/* Empty draggable space spanning the remainder of the pane's header */}
+        {/* Right side: Plus button and draggable space in ONE continuous topbar container */}
         <div
-          className="flex-1 h-full min-w-4 self-stretch"
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-          data-tauri-drag-region
-        />
+          className="flex-1 h-full flex items-center pointer-events-auto min-w-0 z-10"
+        >
+          <button
+            onClick={() => {
+              setFocusedPane(paneId);
+              openEmptyTabInPane(paneId);
+            }}
+            title="New tab (Ctrl+T)"
+            data-tauri-drag-region="false"
+            data-no-drag="true"
+            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 self-center ml-1.5 cursor-pointer"
+          >
+            <PlusSignIcon size={14} />
+          </button>
+
+          {/* Empty draggable space spanning the remainder of the pane's header */}
+          <div
+            className="flex-1 h-full min-w-4 self-stretch"
+            style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
+            data-tauri-drag-region
+          />
+        </div>
       </div>
     );
   }
@@ -1016,16 +1202,18 @@ export const WindowHeader: React.FC = React.memo(() => {
         }
       }}
       style={{
-        background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
         WebkitAppRegion: isItemDragging ? 'no-drag' : 'drag',
       } as React.CSSProperties}
-      className="noether-header h-[41px] flex items-center justify-between pl-0 pr-0 select-none shrink-0 relative z-30"
+      className="noether-header absolute top-0 left-0 right-0 h-[41px] flex items-center justify-between pl-0 pr-0 select-none z-30 pointer-events-none"
     >
       {/* 1. macOS Window Controls Reserved Area (w-[72px]) */}
       {isMac && (
         <div
-          style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
-          className="w-[72px] h-full shrink-0"
+          style={{
+            background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
+            WebkitAppRegion: 'drag',
+          } as React.CSSProperties}
+          className="w-[72px] h-full shrink-0 pointer-events-auto"
           aria-hidden="true"
         />
       )}
@@ -1037,9 +1225,10 @@ export const WindowHeader: React.FC = React.memo(() => {
             data-no-drag="true"
             style={{
               width: `${Math.max(36, leftSidebarWidth + 44 - 72)}px`,
+              background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
               WebkitAppRegion: 'no-drag',
             } as React.CSSProperties}
-            className="h-full flex items-center pr-2 shrink-0 min-w-0 select-none relative"
+            className="h-full flex items-center pr-2 shrink-0 min-w-0 select-none relative pointer-events-auto"
           >
             <div
               ref={leftTopReorder.containerRef}
@@ -1137,8 +1326,11 @@ export const WindowHeader: React.FC = React.memo(() => {
           /* Collapsed on macOS: Expand button directly adjacent to the 72px window controls zone */
           <div
             data-no-drag="true"
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            className="w-11 h-full flex items-center justify-center shrink-0"
+            style={{
+              background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties}
+            className="w-11 h-full flex items-center justify-center shrink-0 pointer-events-auto"
           >
             <button
               type="button"
@@ -1157,9 +1349,12 @@ export const WindowHeader: React.FC = React.memo(() => {
         /* Windows / Linux layout (standard ribbon column + left dock items) */
         <>
           <div
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
+            style={{
+              background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties}
             data-no-drag="true"
-            className="w-11 h-full flex items-center justify-center shrink-0"
+            className="w-11 h-full flex items-center justify-center shrink-0 pointer-events-auto"
           >
             <button
               type="button"
@@ -1187,11 +1382,12 @@ export const WindowHeader: React.FC = React.memo(() => {
               }}
               style={{
                 width: `${leftSidebarWidth}px`,
+                background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
                 WebkitAppRegion: 'no-drag',
                 scrollbarWidth: 'none',
                 msOverflowStyle: 'none',
               } as React.CSSProperties}
-              className="h-full flex items-center gap-0.5 px-2 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative"
+              className="h-full flex items-center gap-0.5 px-2 shrink-0 min-w-0 overflow-x-auto overflow-y-hidden [&::-webkit-scrollbar]:hidden select-none relative pointer-events-auto"
             >
               {leftTopDockItems.map((item, index) => {
                 const tabKey = item.id.includes(':') ? item.id.split(':')[1] : item.id;
@@ -1261,7 +1457,7 @@ export const WindowHeader: React.FC = React.memo(() => {
       {/* 3. Document Tabs Area across all top-row panes */}
       {showTabTitleBar ? (
         <div
-          className="flex-1 flex items-end h-[41px] -mb-[1px] min-w-0 relative z-20 overflow-visible"
+          className="flex-1 flex items-end h-[41px] min-w-0 relative z-20 overflow-visible pointer-events-none"
         >
           {topRowLeaves.map((leaf, index) => (
             <WindowHeaderTopPaneTabs
@@ -1278,7 +1474,14 @@ export const WindowHeader: React.FC = React.memo(() => {
           ))}
         </div>
       ) : (
-        <div className="flex-1 h-full" style={{ WebkitAppRegion: 'drag' } as React.CSSProperties} data-tauri-drag-region />
+        <div
+          className="flex-1 h-full pointer-events-auto"
+          style={{
+            background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
+            WebkitAppRegion: 'drag',
+          } as React.CSSProperties}
+          data-tauri-drag-region
+        />
       )}
 
       {/* 4. Right Controls */}
@@ -1287,9 +1490,10 @@ export const WindowHeader: React.FC = React.memo(() => {
           data-no-drag="true"
           style={{
             width: isRightSidebarOpen ? `${rightSidebarWidth}px` : 'auto',
+            background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
             WebkitAppRegion: 'no-drag',
           } as React.CSSProperties}
-          className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30"
+          className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30 pointer-events-auto"
         >
           {isRightSidebarOpen && (
             <div
@@ -1394,8 +1598,9 @@ export const WindowHeader: React.FC = React.memo(() => {
         <div
           style={{
             width: isRightSidebarOpen ? `${rightSidebarWidth + 42}px` : 'auto',
+            background: 'var(--noether-bg-topbar-gradient, var(--noether-bg-topbar, #111111))',
           } as React.CSSProperties}
-          className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30"
+          className="h-full flex items-center justify-end pr-0 shrink-0 relative z-30 pointer-events-auto"
         >
           <button
             type="button"

@@ -503,7 +503,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
         width: `${leftSidebarWidth}px`,
         background: 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar))',
       }}
-      className="noether-sidebar-left flex flex-col h-full select-none shrink-0 relative border-r border-[var(--noether-border-base)]"
+      className="noether-sidebar-left flex flex-col h-full pt-[41px] select-none shrink-0 relative border-r border-[var(--noether-border-base)]"
     >
       {activeDrag?.targetDockZone === 'left-bottom' && (
         <div

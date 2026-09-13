@@ -178,7 +178,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     <>
       <div
         style={{ marginBottom: `-${contentOverlap}px` }}
-        className={`w-full max-w-6xl mx-auto px-2.5 sm:px-3 pt-8 select-none relative ${
+        className={`w-full max-w-6xl mx-auto px-2.5 sm:px-3 select-none relative ${
           isRepositioning ? 'z-20' : 'z-0'
         }`}
       >

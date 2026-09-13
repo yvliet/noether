@@ -839,22 +839,19 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       {!isSidebarMode && (
         <div
           data-sub-header="true"
-          className={
-            hasCover
-              ? `absolute top-0 left-0 right-0 h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none z-20 pointer-events-none ${
-                  isScrolled
-                    ? 'bg-transparent'
-                    : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
-                }`
-              : 'relative h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none'
-          }
+          style={{ top: 'var(--noether-header-offset, 0px)' }}
+          className={`absolute left-0 right-0 h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none z-20 pointer-events-none ${
+            isScrolled
+              ? 'bg-transparent'
+              : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
+          }`}
         >
 
         {/* Left: Navigation History Arrows */}
         <div
-          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out ${
-            hasCover ? 'pointer-events-auto' : ''
-          } ${hasCover && isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'}`}
+          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out pointer-events-auto ${
+            isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+          }`}
         >
           <button
             onClick={handleBack}
@@ -881,7 +878,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           {currentDoc ? (
             <div
               className={`pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden text-[#777] transition-all duration-300 ease-out ${
-                hasCover && isScrolled
+                isScrolled
                   ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]'
                   : 'drop-shadow-none'
               }`}
@@ -1049,9 +1046,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
         {/* Right: Reading View, Bookmark, Search & More Options */}
         <div
-          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out ${
-            hasCover ? 'pointer-events-auto' : ''
-          } ${hasCover && isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'}`}
+          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out pointer-events-auto ${
+            isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+          }`}
         >
           {/* Dynamic Extension Subheader Actions Slot (Left of View Mode Toggle) */}
           <ExtensionPortalSlotHost
@@ -1226,16 +1223,30 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             onScroll={handleScroll}
             onContextMenu={handleDeadSpaceContextMenu}
             className={`flex-1 overflow-y-auto custom-scrollbar ${
-              hasCover && !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
+              !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
             } ${isReadingMode ? 'cursor-default' : ''}`}
           >
             {/* Dynamic Extension Banner Slot */}
-            <ExtensionPortalSlotHost
-              slot="editor:banner"
-              context={portalSlotContext}
-              className="w-full shrink-0"
-            />
             <div
+              style={
+                hasCover && !isSidebarMode
+                  ? { paddingTop: 'calc(var(--noether-header-offset, 0px) + 32px)' }
+                  : undefined
+              }
+              className="w-full shrink-0"
+            >
+              <ExtensionPortalSlotHost
+                slot="editor:banner"
+                context={portalSlotContext}
+                className="w-full shrink-0"
+              />
+            </div>
+            <div
+              style={
+                !hasCover && !isSidebarMode
+                  ? { paddingTop: 'calc(var(--noether-header-offset, 0px) + 40px)' }
+                  : undefined
+              }
               className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 ${
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
               }`}
