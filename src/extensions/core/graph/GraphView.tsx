@@ -27,10 +27,11 @@ import type { DocMenuActionDefinition } from '@/core/extensions/types';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { platform } from '@/lib/platform/platformAdapter';
-import { useNoetherApp, storeRefs } from 'noether';
+import { useNoetherApp, storeRefs, fileTypeRegistry } from 'noether';
 
 function getGraphNodeTitle(doc: DocumentItem, allDocs: DocumentItem[]): string {
-  return getDocumentPath(doc, allDocs) || doc.title || 'Untitled';
+  const pathOrTitle = getDocumentPath(doc, allDocs) || doc.title || 'Untitled';
+  return fileTypeRegistry.ensureExtension(pathOrTitle, doc.doc_type);
 }
 
 interface GraphNode {
@@ -207,6 +208,9 @@ function createGraphNodeItem(
   if (options.isTag && !displayTitle.startsWith('#')) {
     displayTitle = `#${displayTitle}`;
     fullPath = displayTitle;
+  } else if (!options.isTag) {
+    displayTitle = fileTypeRegistry.ensureExtension(displayTitle, doc.doc_type);
+    fullPath = fileTypeRegistry.ensureExtension(fullPath, doc.doc_type);
   }
 
   let folderName = 'Root';
@@ -1038,10 +1042,15 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     for (const d of docsList) {
       if (d.is_folder) continue;
       docMap.set(d.title.toLowerCase(), d.id);
-      const cleanNoExt = d.title.toLowerCase().replace(/\.md$/, '');
+      const cleanNoExt = fileTypeRegistry.cleanTitle(d.title.toLowerCase().replace(/\.md$/, ''), d.doc_type);
       docMap.set(cleanNoExt, d.id);
       const base = cleanNoExt.split('/').pop() || cleanNoExt;
       docMap.set(base, d.id);
+      const customType = fileTypeRegistry.getByDocType(d.doc_type) || fileTypeRegistry.getByPath(d.title);
+      if (customType) {
+        docMap.set(`${cleanNoExt}.${customType.extension}`, d.id);
+        docMap.set(`${base}.${customType.extension}`, d.id);
+      }
     }
 
     const links: GraphLink[] = [];
@@ -1061,6 +1070,45 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         };
         extractText(parsed);
 
+        // Extract note cards and outgoing references embedded directly inside structured board JSON
+        const isCustomDoc = Boolean(fileTypeRegistry.getByDocType(d.doc_type) || fileTypeRegistry.getByPath(d.title));
+        if (isCustomDoc && parsed && typeof parsed === 'object') {
+          if (Array.isArray(parsed.nodes)) {
+            for (const cn of parsed.nodes) {
+              if (cn.document_id && cn.document_id !== d.id) {
+                const pairKey = `${d.id}->${cn.document_id}`;
+                if (!seenPair.has(pairKey)) {
+                  seenPair.add(pairKey);
+                  links.push({
+                    source: d.id,
+                    target: cn.document_id,
+                    hoverAlpha: 0,
+                    dimAlpha: 0,
+                  });
+                }
+              } else if (cn.file) {
+                const targetKey = fileTypeRegistry.cleanTitle(String(cn.file).toLowerCase().replace(/\.md$/, ''));
+                const targetId = docMap.get(targetKey) || docMap.get(targetKey.split('/').pop() || targetKey);
+                if (targetId && targetId !== d.id) {
+                  const pairKey = `${d.id}->${targetId}`;
+                  if (!seenPair.has(pairKey)) {
+                    seenPair.add(pairKey);
+                    links.push({
+                      source: d.id,
+                      target: targetId,
+                      hoverAlpha: 0,
+                      dimAlpha: 0,
+                    });
+                  }
+                }
+              }
+              if (typeof cn.text_content === 'string') {
+                text += ' ' + cn.text_content;
+              }
+            }
+          }
+        }
+
         // 1. WikiLinks [[target]] or [[target|alias]]
         const wikiRegex = /\[\[(.*?)\]\]/g;
         let match;
@@ -1069,8 +1117,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           if (raw) {
             if (raw.includes('|')) raw = raw.split('|')[0].trim();
             if (raw.includes('#')) raw = raw.split('#')[0].trim();
-            const targetKey = raw.toLowerCase().replace(/\.md$/, '');
-            const targetId = docMap.get(targetKey) || docMap.get(targetKey.split('/').pop() || targetKey);
+            const lowerRaw = raw.toLowerCase();
+            const targetKey = fileTypeRegistry.cleanTitle(lowerRaw.replace(/\.md$/, ''));
+            const targetId = docMap.get(lowerRaw) || docMap.get(targetKey) || docMap.get(targetKey.split('/').pop() || targetKey);
             if (targetId && targetId !== d.id) {
               const pairKey = `${d.id}->${targetId}`;
               if (!seenPair.has(pairKey)) {
@@ -1246,7 +1295,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 const newTitle = getGraphNodeTitle(d, allDocs);
                 if (existingNode.title !== newTitle) {
                   existingNode.title = newTitle;
-                  existingNode.displayTitle = newTitle.includes('/') ? newTitle.split('/').pop() || newTitle : newTitle;
+                  let disp = newTitle.includes('/') ? newTitle.split('/').pop() || newTitle : newTitle;
+                  disp = fileTypeRegistry.ensureExtension(disp, d.doc_type);
+                  existingNode.displayTitle = disp;
                   titleOrMetaChanged = true;
                 }
               }
@@ -2559,8 +2610,10 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           const tb = Math.min(255, Math.max(0, Math.round(222 * (1 - node.dimAlpha) * (1 - node.hoverAlpha) + 255 * node.hoverAlpha + 60 * node.dimAlpha)));
 
           ctx.fillStyle = isFilterActive && isMatch ? `rgba(255, 255, 255, ${labelAlpha.toFixed(3)})` : `rgba(${tr}, ${tg}, ${tb}, ${labelAlpha.toFixed(3)})`;
-          ctx.textAlign = 'center';
-          const displayTitle = node.displayTitle || (node.title?.includes('/') ? node.title.split('/').pop() || node.title : node.title || 'Untitled');
+          let displayTitle = node.displayTitle || (node.title?.includes('/') ? node.title.split('/').pop() || node.title : node.title || 'Untitled');
+          if (!node.isTag) {
+            displayTitle = fileTypeRegistry.ensureExtension(displayTitle, node.docType);
+          }
           ctx.fillText(displayTitle, node.x, node.y + radius + defaultTextOffset);
         }
       };
@@ -3560,7 +3613,10 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const targetDoc = allDocs.find((d) => d.id === targetId);
         openTab(targetId, targetDoc?.title || dragNodeRef.current.title);
         await setActiveDocumentById(targetId);
-        setMainViewMode('document');
+        const customType = targetDoc
+          ? fileTypeRegistry.getByDocType(targetDoc.doc_type) || fileTypeRegistry.getByPath(targetDoc.title)
+          : (dragNodeRef.current.docType ? fileTypeRegistry.getByDocType(dragNodeRef.current.docType) : undefined);
+        setMainViewMode((customType?.viewType || customType?.docType || 'document') as any);
       } else {
         persistPositions();
       }
@@ -3579,7 +3635,10 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       const targetDoc = allDocs.find((d: any) => d.id === targetId);
       openTab(targetId, targetDoc?.title || targetCandidate.title);
       await setActiveDocumentById(targetId);
-      setMainViewMode('document');
+      const customType = targetDoc
+        ? fileTypeRegistry.getByDocType(targetDoc.doc_type) || fileTypeRegistry.getByPath(targetDoc.title)
+        : (targetCandidate.docType ? fileTypeRegistry.getByDocType(targetCandidate.docType) : undefined);
+      setMainViewMode((customType?.viewType || customType?.docType || 'document') as any);
     }
 
     if (isDraggingRef.current) {

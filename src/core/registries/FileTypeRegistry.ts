@@ -122,12 +122,27 @@ export class FileTypeRegistry {
   /**
    * Strips any registered custom file extension from a title or filename string.
    */
-  public cleanTitle(pathOrTitle?: string | null): string {
+  public cleanTitle(pathOrTitle?: string | null, docType?: string | null): string {
     if (!pathOrTitle) return '';
-    const custom = this.getByPath(pathOrTitle);
+    const custom = this.getByDocType(docType) || this.getByPath(pathOrTitle);
     if (custom && pathOrTitle.toLowerCase().endsWith(`.${custom.extension}`)) {
       const stripped = pathOrTitle.slice(0, -(custom.extension.length + 1)).trim();
       return stripped || 'Untitled';
+    }
+    return pathOrTitle;
+  }
+
+  /**
+   * Ensures a filename or title includes its registered custom file extension if it is a custom file type.
+   *
+   * @param pathOrTitle - Filename, title, or relative path.
+   * @param docType - Optional document type identifier.
+   */
+  public ensureExtension(pathOrTitle?: string | null, docType?: string | null): string {
+    if (!pathOrTitle) return 'Untitled';
+    const custom = this.getByDocType(docType) || this.getByPath(pathOrTitle);
+    if (custom && !pathOrTitle.toLowerCase().endsWith(`.${custom.extension}`)) {
+      return `${pathOrTitle}.${custom.extension}`;
     }
     return pathOrTitle;
   }
