@@ -32,7 +32,7 @@ const DEFAULT_SETTINGS = {
   fadeEffect: true,
   showControlsOnHover: true,
   wallhavenApiKey: '',
-  defaultPreset: 'pixel-train-scenery',
+  defaultPreset: 'charcoal-cube-grid',
 };
 
 function loadSettings(): typeof DEFAULT_SETTINGS {

@@ -20,9 +20,18 @@ import {
   RotateCcwIcon,
   GlobeIcon,
   FileImageIcon,
+  Download01Icon,
 } from '@/components/common/Icons';
 import { searchWallhaven, WallhavenWallpaper } from './wallhavenService';
-import { COVER_PRESETS, CoverPreset } from './presets';
+import { COVER_PRESETS, PRESET_CATEGORIES, CoverPreset } from './presets';
+import {
+  initPresetCache,
+  isPresetCached,
+  getPresetUrl,
+  getPresetThumbUrl,
+  downloadAllPresets,
+  getCachedPresetCount,
+} from './presetCache';
 import { useCoversSettings } from './coversSettings';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { useVaultDocuments } from 'noether';
@@ -57,6 +66,23 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
 
   const [presetCategory, setPresetCategory] = useState<string>('All');
   const [customLinkInput, setCustomLinkInput] = useState('');
+  const [cachedCount, setCachedCount] = useState<number>(() => getCachedPresetCount());
+  const [isDownloadingPresets, setIsDownloadingPresets] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'presets') {
+      initPresetCache().then(() => {
+        setCachedCount(getCachedPresetCount());
+      });
+    }
+  }, [isOpen, activeTab]);
+
+  const handleDownloadAllPresets = useCallback(async () => {
+    setIsDownloadingPresets(true);
+    await downloadAllPresets(COVER_PRESETS);
+    setCachedCount(getCachedPresetCount());
+    setIsDownloadingPresets(false);
+  }, []);
 
   const handleSelectCover = useCallback(
     (url: string) => {
@@ -337,32 +363,60 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
           {activeTab === 'presets' && (
             <div className="flex flex-col gap-3">
               {/* Category Filter Pills */}
-              <div className="flex items-center gap-1.5">
-                {['All', 'Pixel Art', 'Nature', 'Cyberpunk', 'Minimalist'].map((cat) => (
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {PRESET_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setPresetCategory(cat)}
+                      className={`text-[11px] px-2.5 py-1 rounded cursor-pointer border ${
+                        presetCategory === cat
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-medium'
+                          : 'bg-[#202020] text-[#999] border-[#2e2e2e] hover:text-white hover:bg-[#282828]'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                {cachedCount < COVER_PRESETS.length && (
                   <button
-                    key={cat}
                     type="button"
-                    onClick={() => setPresetCategory(cat)}
-                    className={`text-[11px] px-2.5 py-1 rounded cursor-pointer border ${
-                      presetCategory === cat
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-medium'
-                        : 'bg-[#202020] text-[#999] border-[#2e2e2e] hover:text-white hover:bg-[#282828]'
-                    }`}
+                    onClick={handleDownloadAllPresets}
+                    disabled={isDownloadingPresets}
+                    className="px-2.5 py-1 rounded bg-[#252525] hover:bg-[#303030] text-[11px] text-[#dcddde] border border-[#383838] cursor-pointer flex items-center gap-1.5 shrink-0"
+                    title="Download presets for offline use"
                   >
-                    {cat}
+                    {isDownloadingPresets ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        <span>Downloading ({cachedCount}/{COVER_PRESETS.length})...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download01Icon size={12} className="text-emerald-400" />
+                        <span>Download offline ({cachedCount}/{COVER_PRESETS.length})</span>
+                      </>
+                    )}
                   </button>
-                ))}
+                )}
               </div>
 
               {/* Presets Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
                 {filteredPresets.map((p) => {
-                  const isSelected = currentUrl === p.url;
+                  const displayUrl = getPresetUrl(p);
+                  const thumbUrl = getPresetThumbUrl(p);
+                  const isSelected = currentUrl === p.url || currentUrl === displayUrl;
+                  const cached = isPresetCached(p.id);
+
                   return (
                     <div
                       key={p.id}
                       onClick={() => {
-                        handleSelectCover(p.url);
+                        handleSelectCover(displayUrl);
                         onClose();
                       }}
                       className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
@@ -372,14 +426,19 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                       }`}
                     >
                       <img
-                        src={p.thumbnail}
+                        src={thumbUrl}
                         alt={p.name}
                         className="w-full h-full object-cover select-none"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2 justify-between">
                         <span className="text-[11px] text-white font-medium truncate">
                           {p.name}
                         </span>
+                        {cached && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/70 text-emerald-400 font-mono shrink-0 ml-1 border border-emerald-500/30">
+                            Offline
+                          </span>
+                        )}
                       </div>
                       {isSelected && (
                         <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow">

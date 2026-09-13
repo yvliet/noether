@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @module coverPreloader
  * @description
  * High-performance in-memory decoded image cache and preloader for note cover banners.
@@ -107,13 +107,15 @@ export function resolveCoverSource(rawCover: string, app: NoetherApp): string {
   const trimmed = rawCover.trim();
   if (!trimmed) return '';
 
-  // Fast-path: external web URLs, data URIs, local blob URIs, or Tauri asset URIs
+  // Fast-path: external web URLs, data URIs, local blob URIs, Tauri asset URIs, or static paths
   if (
     trimmed.startsWith('http://') ||
     trimmed.startsWith('https://') ||
     trimmed.startsWith('data:') ||
     trimmed.startsWith('blob:') ||
-    trimmed.startsWith('asset://')
+    trimmed.startsWith('asset://') ||
+    trimmed.startsWith('/') ||
+    trimmed.startsWith('./')
   ) {
     preloadCoverImage(trimmed);
     return trimmed;

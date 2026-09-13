@@ -8,11 +8,18 @@
  * @since 1.0.0
  */
 
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useCoversSettings } from './coversSettings';
 import { useToast } from 'noether';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
-import { RotateCcwIcon } from '@/components/common/Icons';
+import { RotateCcwIcon, Download01Icon, Delete02Icon } from '@/components/common/Icons';
+import { COVER_PRESETS } from './presets';
+import {
+  initPresetCache,
+  downloadAllPresets,
+  clearPresetCache,
+  getCachedPresetCount,
+} from './presetCache';
 
 export const CoversSettingsTab: React.FC = () => {
   const {
@@ -28,6 +35,33 @@ export const CoversSettingsTab: React.FC = () => {
   } = useCoversSettings();
 
   const showToast = useToast();
+
+  const [cachedCount, setCachedCount] = useState<number>(() => getCachedPresetCount());
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  useEffect(() => {
+    initPresetCache().then(() => {
+      setCachedCount(getCachedPresetCount());
+    });
+  }, []);
+
+  const handleDownloadAll = useCallback(async () => {
+    setIsDownloading(true);
+    const res = await downloadAllPresets(COVER_PRESETS);
+    setCachedCount(getCachedPresetCount());
+    setIsDownloading(false);
+    if (res.failedCount === 0) {
+      showToast(`Downloaded all ${COVER_PRESETS.length} presets for offline use`, 'success');
+    } else {
+      showToast(`Downloaded ${res.successCount} presets (${res.failedCount} failed)`, 'info');
+    }
+  }, [showToast]);
+
+  const handleClearCache = useCallback(async () => {
+    await clearPresetCache();
+    setCachedCount(0);
+    showToast('Cleared offline preset cache', 'info');
+  }, [showToast]);
 
   const isModified =
     bannerHeight !== 270 ||
@@ -124,6 +158,52 @@ export const CoversSettingsTab: React.FC = () => {
               placeholder="Paste API key..."
               className="w-full bg-[#181818] border border-[#333] rounded px-2.5 py-1 text-xs text-[#dcddde] placeholder-[#555] outline-none focus:border-emerald-500/70"
             />
+          </div>
+        </div>
+
+        {/* Offline Presets Setup */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-xs font-medium text-[#dcddde]">Offline presets</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              {cachedCount === COVER_PRESETS.length
+                ? `All ${COVER_PRESETS.length} presets cached for offline use.`
+                : `${cachedCount} of ${COVER_PRESETS.length} presets downloaded.`}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {cachedCount < COVER_PRESETS.length && (
+              <button
+                type="button"
+                onClick={handleDownloadAll}
+                disabled={isDownloading}
+                className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer"
+              >
+                {isDownloading ? (
+                  <>
+                    <div className="w-3 h-3 border border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download01Icon size={12} className="text-emerald-400" />
+                    <span>Download presets</span>
+                  </>
+                )}
+              </button>
+            )}
+            {cachedCount > 0 && (
+              <button
+                type="button"
+                onClick={handleClearCache}
+                disabled={isDownloading}
+                className="text-xs py-1 px-2 rounded hover:bg-[#282828] text-[#888] hover:text-[#bbb] flex items-center gap-1 cursor-pointer border border-transparent hover:border-[#383838]"
+                title="Clear local preset cache"
+              >
+                <Delete02Icon size={12} />
+                <span>Clear cache</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

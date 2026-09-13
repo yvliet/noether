@@ -24,7 +24,7 @@ With rounded corners, dedicated side breathing room, and a smooth top-to-bottom 
 
 1. Open any note in Noether.
 2. Click the document options menu (`...`) in the top-right corner and select **Add or change cover**, or press `Ctrl+K` and run `Covers: Add or change cover`.
-3. In the cover picker modal, browse through the **Wallhaven** tab for online wallpapers, or switch to **Offline Presets** to select from bundled pixel art, landscapes, and gradients.
+3. In the cover picker modal, browse through the **Wallhaven** tab for online wallpapers, or switch to **Offline Presets** to select from curated minimalist, geometric, and textured wallpapers.
 4. Click any image card to immediately apply it to your active note.
 
 ### Wallhaven Wallpaper Search
@@ -37,8 +37,9 @@ With rounded corners, dedicated side breathing room, and a smooth top-to-bottom 
 ### Offline Presets
 
 1. If you are offline or prefer instant local artwork, switch to the **Offline Presets** tab in the modal.
-2. Filter by category: `Pixel Art`, `Nature`, `Cyberpunk`, or `Minimalist`.
-3. Select any preset (such as the Pixel Train & Street banner) to load standalone SVG artwork instantly with zero network requests.
+2. Filter by category: `Minimalist`, `Geometric`, or `Texture`.
+3. Presets are downloaded to the extension's local offline cache during setup (or manually via **Settings** → **Covers**), keeping the desktop distribution lightweight while ensuring 100% offline access.
+4. Select any preset (such as Charcoal Cube Grid or Obsidian Angular Rays) to load artwork instantly without blocking the UI thread.
 
 ### Interactive Vertical Repositioning
 
