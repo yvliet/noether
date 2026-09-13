@@ -23,7 +23,8 @@ const ImageLightboxModal = React.lazy(() => import('@/components/modals/ImageLig
 const UpdateModal = React.lazy(() => import('@/components/modals/UpdateModal').then(m => ({ default: m.UpdateModal })));
 import { dragTooltipManager, FOLDER_SVG } from '@/lib/dragTooltip';
 
-import { NoetherLogoIcon } from '@/components/common/Icons';
+import noetherSpinGif from '@/assets/noether_spin.gif';
+import noetherMonoSpinGif from '@/assets/noether_mono_spin.gif';
 import { dbAdapter } from '@/lib/db/adapter';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useAutoUpdater } from '@/hooks/useAutoUpdater';
@@ -291,6 +292,8 @@ export const AppShell: React.FC = React.memo(() => {
   const isRightSidebarOpen = useWorkspaceStore((s) => s.isRightSidebarOpen);
   const initVaultInfo = useWorkspaceStore((s) => s.initVaultInfo);
   const showActionRail = useSettingsStore((s) => s.showActionRail);
+  const accentColor = useSettingsStore((s) => s.accentColor);
+  const isDefaultAccent = !accentColor || accentColor.toLowerCase() === '#eb584d';
   const loadInitialData = useDocumentStore((s) => s.loadInitialData);
   const isLoading = useDocumentStore((s) => s.isLoading);
 
@@ -353,9 +356,11 @@ export const AppShell: React.FC = React.memo(() => {
       }, 300);
     });
 
-    // 3. Initialize Vault folder config, SQLite and load workspace
-    initVaultInfo()
-      .then(() => dbAdapter.init())
+    // 3. Initialize Vault folder config, SQLite and load workspace concurrently
+    Promise.all([
+      initVaultInfo(),
+      dbAdapter.init(),
+    ])
       .catch((err) => {
         console.error('[AppShell] Vault/DB initialization error:', err);
       })
@@ -475,14 +480,57 @@ export const AppShell: React.FC = React.memo(() => {
   if (isLoading) {
     return (
       <div
-        style={{ background: 'var(--noether-bg-main)', color: 'var(--noether-text-muted)' }}
-        className="w-full h-full flex flex-col items-center justify-center select-none font-sans"
+        style={{ background: 'var(--noether-bg-main)' }}
+        className="w-full h-full flex items-center justify-center select-none"
       >
-        <div className="mb-4">
-          <NoetherLogoIcon size={36} className="animate-pulse text-[var(--noether-accent)]" />
-        </div>
-        <div className="text-sm font-medium text-[var(--noether-text-primary)]">Initializing Noether...</div>
-        <div className="text-xs text-[var(--noether-text-muted)] mt-1">Booting SQLite relational store & Modular Extensions</div>
+        {isDefaultAccent ? (
+          <img
+            src={noetherSpinGif}
+            alt="Loading Noether"
+            width={40}
+            height={40}
+            className="w-10 h-10 object-contain select-none pointer-events-none"
+            draggable={false}
+          />
+        ) : (
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              position: 'relative',
+              flexShrink: 0,
+              display: 'inline-block',
+              isolation: 'isolate',
+            }}
+          >
+            <img
+              src={noetherMonoSpinGif}
+              width={40}
+              height={40}
+              alt="Loading Noether"
+              draggable={false}
+              style={{ display: 'block', width: 40, height: 40 }}
+              className="w-10 h-10 object-contain select-none pointer-events-none"
+            />
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundColor: 'var(--noether-accent, ' + accentColor + ')',
+                mixBlendMode: 'overlay',
+                WebkitMaskImage: `url(${noetherMonoSpinGif})`,
+                maskImage: `url(${noetherMonoSpinGif})`,
+                WebkitMaskSize: 'contain',
+                maskSize: 'contain',
+                WebkitMaskRepeat: 'no-repeat',
+                maskRepeat: 'no-repeat',
+                WebkitMaskPosition: 'center',
+                maskPosition: 'center',
+                pointerEvents: 'none',
+              }}
+            />
+          </div>
+        )}
       </div>
     );
   }
