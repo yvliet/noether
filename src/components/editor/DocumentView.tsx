@@ -171,7 +171,7 @@ export const COMPACT_DOC_CSS = `
     margin: 0.375rem 0 !important;
     padding-left: 0.625rem !important;
     border-left: 2px solid var(--noether-accent, #eb584d) !important;
-    background-color: rgba(235, 88, 77, 0.05) !important;
+    background-color: var(--noether-accent-subtle, rgba(235, 88, 77, 0.05)) !important;
     font-size: 14px !important;
     color: #bbb !important;
   }
@@ -547,7 +547,7 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
             e.stopPropagation();
           }
         }}
-        className={`document-view-root w-full h-full overflow-y-auto custom-scrollbar select-text overscroll-contain ${
+        className={`document-view-root w-full h-full overflow-y-auto custom-scrollbar select-none overscroll-contain ${
           compact ? 'noether-compact-doc p-3.5' : 'p-6'
         } ${accentListPrefixes ? 'noether-accent-lists' : ''} ${
           indentationGuides ? 'noether-indent-guides' : ''

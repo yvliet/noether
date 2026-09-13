@@ -161,7 +161,7 @@ export const PageView: React.FC<PageViewProps> = React.memo(({
     <div
       data-main="true"
       onClick={handleContainerClick}
-      className={`noether-doc-wrapper flex-1 flex flex-col h-full overflow-hidden bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] select-text relative ${
+      className={`noether-doc-wrapper flex-1 flex flex-col h-full overflow-hidden bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] select-none relative ${
         showExternalLinkIcon ? 'noether-show-link-icon' : ''
       } ${className}`}
     >

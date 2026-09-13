@@ -243,7 +243,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
   });
 
   return (
-    <div className="text-xs mb-3">
+    <div className="text-xs mb-3 select-none">
       <div className="flex flex-col gap-1.5">
         {/* 1. Created Date (Human-readable, read-only) */}
         {createdDateStr && (
@@ -355,6 +355,10 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                         }
                       }}
                       onKeyDown={(e) => {
+                        if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                          e.stopPropagation();
+                          return;
+                        }
                         if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
                           e.preventDefault();
                           if (newTagInput.trim()) {
@@ -456,6 +460,10 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                       }
                     }}
                     onKeyDown={(e) => {
+                      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                        e.stopPropagation();
+                        return;
+                      }
                       if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
                         e.preventDefault();
                         if (newAliasInput.trim()) {

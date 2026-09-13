@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
+import { TextSelection } from '@tiptap/pm/state';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSidebarDockStore } from '@/store/sidebarDockStore';
@@ -367,6 +368,185 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   useEffect(() => {
     setEditorMinHeight(undefined);
   }, [currentDoc?.id, content, documentFooters.length]);
+
+  // Scoped Document Selection Engine (Ctrl+A / Cmd+A):
+  // Confines selection strictly to document content, completely eliminating leakage
+  // into the note title, YAML frontmatter properties, sidebar, or window controls.
+  useEffect(() => {
+    const handleDocumentSelectAll = (e: KeyboardEvent) => {
+      if (!((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A') && !e.shiftKey && !e.altKey)) {
+        return;
+      }
+
+      // Check if this EditorCanvas is within the currently focused pane
+      const focusedPaneId = useWorkspaceStore.getState().focusedPaneId;
+      if (!isSidebarMode && currentPaneId !== focusedPaneId) {
+        return;
+      }
+
+      const activeEl = document.activeElement as HTMLElement | null;
+      const target = e.target as HTMLElement | null;
+
+      // 1. If currently inside an interactive text input/textarea (like note title or property input),
+      // let the input's native selection handle it and prevent it from bubbling out.
+      const isInputOrTextarea =
+        target?.tagName === 'INPUT' ||
+        target?.tagName === 'TEXTAREA' ||
+        activeEl?.tagName === 'INPUT' ||
+        activeEl?.tagName === 'TEXTAREA';
+
+      if (isInputOrTextarea) {
+        e.stopPropagation();
+        return;
+      }
+
+      // 2. Check if the event or active focus is associated with this document canvas
+      const container = editorContainerRef.current;
+      if (!container) return;
+
+      const isInsideEditor =
+        container.contains(target) ||
+        container.contains(activeEl) ||
+        activeEl === document.body ||
+        !activeEl;
+
+      if (!isInsideEditor) return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // 3. Document Content Selection:
+      if (isSourceMode) {
+        const textarea = container.querySelector('textarea') as HTMLTextAreaElement | null;
+        if (textarea) {
+          textarea.focus();
+          textarea.select();
+        }
+      } else if (isEditable && editorInstance && !editorInstance.isDestroyed) {
+        editorInstance.chain().focus().selectAll().run();
+      } else {
+        // Reading view or locked document: scope selection strictly to the rendered content
+        const proseEl = editorWrapperRef.current?.querySelector('.ProseMirror') ||
+                        editorWrapperRef.current?.querySelector('.markdown-prose');
+        if (proseEl) {
+          const selection = window.getSelection();
+          if (selection) {
+            selection.removeAllRanges();
+            const range = document.createRange();
+            range.selectNodeContents(proseEl);
+            selection.addRange(range);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleDocumentSelectAll, true);
+    return () => {
+      window.removeEventListener('keydown', handleDocumentSelectAll, true);
+    };
+  }, [currentPaneId, isSidebarMode, isSourceMode, isEditable, editorInstance]);
+
+  const handleDeadSpaceMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      // Preserve native interactions on inputs, buttons, wikilinks, tags, math, title header, properties, footers
+      if (
+        target.closest(
+          'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
+        )
+      ) {
+        return;
+      }
+
+      if (!isEditable) return;
+
+      if (isSourceMode) {
+        const textarea = scrollViewportRef.current?.querySelector('textarea');
+        if (textarea && target !== textarea) {
+          e.preventDefault();
+          textarea.focus();
+          const len = textarea.value.length;
+          textarea.setSelectionRange(len, len);
+        }
+        return;
+      }
+
+      if (editorInstance && !editorInstance.isDestroyed) {
+        const pm = scrollViewportRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
+        const lastChild = pm?.lastElementChild as HTMLElement | null;
+        const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
+
+        // Position caret at end when clicking below the last child element or outside the ProseMirror container
+        const isDeadSpace = !pm || e.clientY > lastBottom || !pm.contains(target);
+        if (isDeadSpace) {
+          e.preventDefault();
+          const { state, schema } = editorInstance;
+          if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
+            const insertPos = state.doc.content.size;
+            const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
+            tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+            editorInstance.view.dispatch(tr);
+            editorInstance.view.focus();
+          } else {
+            editorInstance.commands.focus('end');
+          }
+        }
+      }
+    },
+    [isEditable, isSourceMode, editorInstance]
+  );
+
+  const handleDeadSpaceClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0) return;
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      if (
+        target.closest(
+          'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
+        )
+      ) {
+        return;
+      }
+
+      if (!isEditable) return;
+
+      if (isSourceMode) {
+        const textarea = scrollViewportRef.current?.querySelector('textarea');
+        if (textarea && target !== textarea) {
+          textarea.focus();
+          const len = textarea.value.length;
+          textarea.setSelectionRange(len, len);
+        }
+        return;
+      }
+
+      if (editorInstance && !editorInstance.isDestroyed) {
+        const pm = scrollViewportRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
+        const lastChild = pm?.lastElementChild as HTMLElement | null;
+        const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
+
+        const isDeadSpace = !pm || e.clientY > lastBottom || !pm.contains(target);
+        if (isDeadSpace) {
+          const { state, schema } = editorInstance;
+          if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
+            const insertPos = state.doc.content.size;
+            const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
+            tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+            editorInstance.view.dispatch(tr);
+            editorInstance.view.focus();
+          } else if (!editorInstance.isFocused) {
+            editorInstance.commands.focus('end');
+          }
+        }
+      }
+    },
+    [isEditable, isSourceMode, editorInstance]
+  );
 
   const portalSlotContext: PortalSlotContext = useMemo(
     () => ({
@@ -1241,6 +1421,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             ref={scrollViewportRef}
             style={{ touchAction: 'pan-x pan-y' }}
             onScroll={handleScroll}
+            onMouseDown={handleDeadSpaceMouseDown}
+            onClick={handleDeadSpaceClick}
             onContextMenu={handleDeadSpaceContextMenu}
             className={`flex-1 overflow-y-auto custom-scrollbar ${
               !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
@@ -1267,9 +1449,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   ? { paddingTop: 'calc(var(--noether-header-offset, 0px) + 40px)' }
                   : undefined
               }
-              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 ${
+              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 noether-editor-canvas-column ${
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
-              }`}
+              } ${isEditable ? 'cursor-text' : ''}`}
             >
               {/* Dynamic Extension Content Overlay Slot (Moves with text) */}
               <ExtensionPortalSlotHost
@@ -1329,7 +1511,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   <div className="relative group/title">
                     {/* Document Title Header */}
                     {inlineTitle && (
-                      <div className={`${hasActiveHeaders ? 'mb-3' : 'mb-4'} relative`}>
+                      <div className={`${hasActiveHeaders ? 'mb-3' : 'mb-4'} relative select-none`}>
                         {/* Fold button on Document Title Header */}
                         {foldHeading && hasActiveHeaders && currentDoc && (
                           <button
@@ -1370,6 +1552,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                     commitTitleRename(title);
                                   }}
                                   onKeyDown={(e) => {
+                                    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                                      e.stopPropagation();
+                                      return;
+                                    }
                                     if (e.key === 'Enter') {
                                       e.preventDefault();
                                       setIsMainTitleFocused(false);
@@ -1418,6 +1604,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                 commitTitleRename(title);
                               }}
                               onKeyDown={(e) => {
+                                if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                                  e.stopPropagation();
+                                  return;
+                                }
                                 if (e.key === 'Enter') {
                                   e.preventDefault();
                                   setIsMainTitleFocused(false);
@@ -1478,7 +1668,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                     } ${strictLineBreaks ? 'noether-strict-line-breaks' : ''} ${
                       showExternalLinkIcon ? 'noether-show-link-icon' : ''
                     } ${
-                      !isEditable ? 'tiptap-reading-view cursor-default' : ''
+                      !isEditable ? 'tiptap-reading-view cursor-default' : 'cursor-text'
                     }`}
                   >
                     <TipTapEditor
