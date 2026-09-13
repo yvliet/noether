@@ -1,3 +1,5 @@
+export type PortalSection = 'help' | 'docs';
+
 export interface DocNode {
   id: string;
   title: string;
@@ -10,6 +12,7 @@ export interface DocNode {
   category?: string;
   order?: number;
   aliases?: string[];
+  portal?: PortalSection;
 }
 
 export interface TableOfContentItem {
@@ -17,3 +20,4 @@ export interface TableOfContentItem {
   text: string;
   level: number;
 }
+

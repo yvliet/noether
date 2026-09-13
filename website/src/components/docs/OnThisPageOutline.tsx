@@ -78,7 +78,7 @@ export const OnThisPageOutline: React.FC<OnThisPageOutlineProps> = React.memo(({
             {backlinks.map((b) => (
               <a
                 key={b.id}
-                href={`#docs/${b.slug || b.id}`}
+                href={`#${b.portal || 'help'}/${b.slug || b.id}`}
                 onClick={(e) => {
                   e.preventDefault();
                   onSelectDoc?.(b);

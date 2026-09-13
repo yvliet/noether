@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { DocNode } from './types';
+import { DocNode, PortalSection } from './types';
+import { HELP_TREE } from './data/helpContent';
 import { DOCS_TREE } from './data/docsContent';
+import { findDocAcrossPortals } from './data/portalRegistry';
 import { DocTreeSidebar } from './components/tree/DocTreeSidebar';
 import { DocsReader, extractTocItems, computeBacklinks } from './components/docs/DocsReader';
 import { InteractiveGraphWidget } from './components/graph/InteractiveGraphWidget';
@@ -8,33 +10,60 @@ import { OnThisPageOutline } from './components/docs/OnThisPageOutline';
 import { Menu01Icon, Sun01Icon, Moon02Icon } from './components/common/Icons';
 
 const THEME_STORAGE_KEY = 'noether_docs_theme';
+const PORTAL_STORAGE_KEY = 'noether_active_portal';
+const LAST_HELP_DOC_KEY = 'noether_last_help_doc';
+const LAST_DOCS_DOC_KEY = 'noether_last_docs_doc';
 
 export const App: React.FC = () => {
-  // Find doc recursively by slug or id
-  const findDocBySlugOrId = useCallback((slugOrId: string, nodes: DocNode[] = DOCS_TREE): DocNode | null => {
-    const target = slugOrId.toLowerCase();
-    for (const n of nodes) {
-      if (n.slug?.toLowerCase() === target || n.id.toLowerCase() === target) {
-        return n;
-      }
-      if (n.children) {
-        const found = findDocBySlugOrId(target, n.children);
-        if (found) return found;
-      }
-    }
-    return null;
-  }, []);
+  // Determine initial portal based on URL hash (#help/... vs #docs/...) or storage
+  const [activePortal, setActivePortal] = useState<PortalSection>(() => {
+    const hash = window.location.hash.toLowerCase();
+    if (hash.startsWith('#docs/')) return 'docs';
+    if (hash.startsWith('#help/')) return 'help';
+    try {
+      const saved = localStorage.getItem(PORTAL_STORAGE_KEY);
+      if (saved === 'docs' || saved === 'help') return saved;
+    } catch {}
+    return 'help';
+  });
 
-  // Determine initial doc from URL hash (#docs/<slug>[#<heading>])
+  const currentTree = useMemo(() => {
+    return activePortal === 'help' ? HELP_TREE : DOCS_TREE;
+  }, [activePortal]);
+
+  // Determine initial doc from URL hash or remembered last doc
   const [activeDoc, setActiveDoc] = useState<DocNode>(() => {
     const hash = window.location.hash.toLowerCase();
     if (hash.startsWith('#docs/')) {
       const raw = hash.replace('#docs/', '');
       const slug = raw.split('#')[0];
-      const match = findDocBySlugOrId(slug);
-      if (match) return match;
+      const match = findDocAcrossPortals(slug, 'docs');
+      if (match) return match.doc;
+    } else if (hash.startsWith('#help/')) {
+      const raw = hash.replace('#help/', '');
+      const slug = raw.split('#')[0];
+      const match = findDocAcrossPortals(slug, 'help');
+      if (match) return match.doc;
     }
-    return DOCS_TREE[0];
+
+    try {
+      const initPortal: PortalSection = (() => {
+        if (hash.startsWith('#docs/')) return 'docs';
+        if (hash.startsWith('#help/')) return 'help';
+        const s = localStorage.getItem(PORTAL_STORAGE_KEY);
+        return s === 'docs' ? 'docs' : 'help';
+      })();
+
+      const key = initPortal === 'help' ? LAST_HELP_DOC_KEY : LAST_DOCS_DOC_KEY;
+      const savedSlug = localStorage.getItem(key);
+      if (savedSlug) {
+        const found = findDocAcrossPortals(savedSlug, initPortal);
+        if (found) return found.doc;
+      }
+      return (initPortal === 'help' ? HELP_TREE : DOCS_TREE)[0];
+    } catch {}
+
+    return HELP_TREE[0];
   });
 
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
@@ -287,16 +316,16 @@ export const App: React.FC = () => {
 
   // Compute backlinks ("Links to this page") for active document
   const backlinks = useMemo(() => {
-    return computeBacklinks(activeDoc, DOCS_TREE);
-  }, [activeDoc]);
+    return computeBacklinks(activeDoc, currentTree);
+  }, [activeDoc, currentTree]);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Initial scroll to heading anchor if present in URL
   useEffect(() => {
     const hash = window.location.hash.toLowerCase();
-    if (hash.startsWith('#docs/')) {
-      const raw = hash.replace('#docs/', '');
+    if (hash.startsWith('#docs/') || hash.startsWith('#help/')) {
+      const raw = hash.replace(/^#(docs|help)\//, '');
       const parts = raw.split('#');
       if (parts.length > 1 && parts[1]) {
         setTimeout(() => {
@@ -314,9 +343,44 @@ export const App: React.FC = () => {
       if (hash.startsWith('#docs/')) {
         const raw = hash.replace('#docs/', '');
         const [slug, headingAnchor] = raw.split('#');
-        const match = findDocBySlugOrId(slug);
+        const match = findDocAcrossPortals(slug, 'docs');
         if (match) {
-          setActiveDoc(match);
+          if (activePortal !== 'docs') {
+            setActivePortal('docs');
+            try {
+              localStorage.setItem(PORTAL_STORAGE_KEY, 'docs');
+            } catch {}
+          }
+          setActiveDoc(match.doc);
+          try {
+            localStorage.setItem(LAST_DOCS_DOC_KEY, match.doc.slug || match.doc.id);
+          } catch {}
+
+          if (headingAnchor) {
+            setTimeout(() => {
+              const el = document.getElementById(headingAnchor);
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }, 60);
+          } else {
+            scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+          }
+        }
+      } else if (hash.startsWith('#help/')) {
+        const raw = hash.replace('#help/', '');
+        const [slug, headingAnchor] = raw.split('#');
+        const match = findDocAcrossPortals(slug, 'help');
+        if (match) {
+          if (activePortal !== 'help') {
+            setActivePortal('help');
+            try {
+              localStorage.setItem(PORTAL_STORAGE_KEY, 'help');
+            } catch {}
+          }
+          setActiveDoc(match.doc);
+          try {
+            localStorage.setItem(LAST_HELP_DOC_KEY, match.doc.slug || match.doc.id);
+          } catch {}
+
           if (headingAnchor) {
             setTimeout(() => {
               const el = document.getElementById(headingAnchor);
@@ -327,20 +391,65 @@ export const App: React.FC = () => {
           }
         }
       } else if (!hash || hash === '#' || hash === '#home') {
-        setActiveDoc(DOCS_TREE[0]);
+        const defTree = activePortal === 'help' ? HELP_TREE : DOCS_TREE;
+        setActiveDoc(defTree[0]);
         scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       }
     };
 
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [findDocBySlugOrId]);
+  }, [activePortal]);
+
+  const handleTogglePortal = useCallback(() => {
+    setActivePortal((prevPortal) => {
+      const nextPortal: PortalSection = prevPortal === 'help' ? 'docs' : 'help';
+      try {
+        localStorage.setItem(PORTAL_STORAGE_KEY, nextPortal);
+      } catch {}
+
+      // Find doc to restore for next portal
+      let targetDoc: DocNode | null = null;
+      try {
+        const nextKey = nextPortal === 'help' ? LAST_HELP_DOC_KEY : LAST_DOCS_DOC_KEY;
+        const savedSlug = localStorage.getItem(nextKey);
+        if (savedSlug) {
+          const match = findDocAcrossPortals(savedSlug, nextPortal);
+          if (match && match.portal === nextPortal) {
+            targetDoc = match.doc;
+          }
+        }
+      } catch {}
+
+      if (!targetDoc) {
+        targetDoc = (nextPortal === 'help' ? HELP_TREE : DOCS_TREE)[0];
+      }
+
+      setActiveDoc(targetDoc);
+      window.location.hash = `#${nextPortal}/${targetDoc.slug || targetDoc.id}`;
+      scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+      return nextPortal;
+    });
+  }, []);
 
   const handleSelectDoc = useCallback((doc: DocNode) => {
+    const docPortal: PortalSection = doc.portal || activePortal;
+    if (docPortal !== activePortal) {
+      setActivePortal(docPortal);
+      try {
+        localStorage.setItem(PORTAL_STORAGE_KEY, docPortal);
+      } catch {}
+    }
+
+    try {
+      const key = docPortal === 'help' ? LAST_HELP_DOC_KEY : LAST_DOCS_DOC_KEY;
+      localStorage.setItem(key, doc.slug || doc.id);
+    } catch {}
+
     setActiveDoc(doc);
-    window.location.hash = `#docs/${doc.slug || doc.id}`;
+    window.location.hash = `#${docPortal}/${doc.slug || doc.id}`;
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
-  }, []);
+  }, [activePortal]);
 
   const handleScrollToHeading = useCallback((headingId: string) => {
     setActiveHeadingId(headingId);
@@ -415,8 +524,8 @@ export const App: React.FC = () => {
   }, [tocItems, activeDoc.id]);
 
   const homeNode = useMemo(() => {
-    return DOCS_TREE.find((n) => n.id === 'home' || n.slug === 'home') || DOCS_TREE[0];
-  }, []);
+    return currentTree.find((n) => n.id === 'home' || n.slug === 'home') || currentTree[0];
+  }, [currentTree]);
 
   return (
     <div
@@ -425,7 +534,7 @@ export const App: React.FC = () => {
     >
       {/* Mobile Top Navigation Header (< 1024px) */}
       <header className="sticky top-0 z-30 flex lg:hidden items-center justify-between px-4 py-2.5 bg-[#151515] border-b border-[#2e2e2e] select-none w-full shrink-0">
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setIsMobileNavOpen(true)}
@@ -435,23 +544,22 @@ export const App: React.FC = () => {
             <Menu01Icon size={18} />
           </button>
 
-          <a
-            href="#docs/home"
-            onClick={(e) => {
-              e.preventDefault();
-              handleSelectDoc(homeNode);
-            }}
-            className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer"
+          <button
+            type="button"
+            onClick={handleTogglePortal}
+            title={`Switch to Noether ${activePortal === 'help' ? 'Docs' : 'Help'}`}
+            className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer select-none transition-none text-left p-0"
           >
             <img
               src="./noether-icon-simple.png"
               alt="Noether"
               className="h-[18px] w-auto object-contain shrink-0"
             />
-            <span className="text-[17px] tracking-tight text-white leading-none font-brand">
-              <span className="font-medium">Noether</span> <span className="font-extralight">Docs</span>
+            <span className="text-[17px] tracking-tight text-white leading-none font-brand flex items-baseline gap-1">
+              <span className="font-medium">Noether</span>{' '}
+              <span className="font-extralight text-white capitalize">{activePortal === 'help' ? 'Help' : 'Docs'}</span>
             </span>
-          </a>
+          </button>
         </div>
 
         {/* Mobile Theme Toggle */}
@@ -500,8 +608,10 @@ export const App: React.FC = () => {
         }`}
       >
         <DocTreeSidebar
-          nodes={DOCS_TREE}
+          nodes={currentTree}
           activeDocId={activeDoc.id}
+          portal={activePortal}
+          onTogglePortal={handleTogglePortal}
           onSelectDoc={(doc) => {
             handleSelectDoc(doc);
             setIsMobileNavOpen(false);
@@ -516,8 +626,10 @@ export const App: React.FC = () => {
         {/* Column 1: Left Navigation Sidebar (pinned desktop sidebar, hidden on mobile) */}
         <div className="hidden lg:flex shrink-0 sticky top-0 h-screen">
           <DocTreeSidebar
-            nodes={DOCS_TREE}
+            nodes={currentTree}
             activeDocId={activeDoc.id}
+            portal={activePortal}
+            onTogglePortal={handleTogglePortal}
             onSelectDoc={handleSelectDoc}
           />
         </div>
@@ -525,7 +637,8 @@ export const App: React.FC = () => {
         {/* Column 2: Center Reading Canvas */}
         <DocsReader
           doc={activeDoc}
-          allDocs={DOCS_TREE}
+          allDocs={currentTree}
+          portal={activePortal}
           onSelectDoc={handleSelectDoc}
           backlinks={backlinks}
         />
@@ -535,7 +648,7 @@ export const App: React.FC = () => {
           <aside className="w-[260px] xl:w-[280px] shrink-0 sticky top-0 h-screen hidden lg:flex flex-col bg-transparent select-none pt-[35px] pb-6 overflow-hidden">
             {/* Interactive Graph View Canvas (Unmounted on mobile for zero physics overhead) */}
             <InteractiveGraphWidget
-              nodes={DOCS_TREE}
+              nodes={currentTree}
               activeDocId={activeDoc.id}
               onSelectDoc={handleSelectDoc}
             />
