@@ -50,6 +50,9 @@ function matchesHotkey(e: KeyboardEvent, hotkeyStr?: string): boolean {
 export function useKeyboardShortcuts() {
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
+      // Fast path: Immediately exit for printable characters without modifiers
+      if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) return;
+
       const isCtrlOrMeta = e.ctrlKey || e.metaKey;
       const isShift = e.shiftKey;
       const isAlt = e.altKey;

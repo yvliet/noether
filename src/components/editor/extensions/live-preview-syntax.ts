@@ -97,35 +97,49 @@ let measureCanvas: HTMLCanvasElement | null = null;
 let measureCtx: CanvasRenderingContext2D | null = null;
 const hangIndentCache = new Map<string, number>();
 
+let cachedEditorDom: HTMLElement | null = null;
+let cachedEditorFont = '';
+
+function getEditorFont(editor?: any): string {
+  const dom = editor?.view?.dom as HTMLElement | null;
+  if (dom) {
+    if (dom === cachedEditorDom && cachedEditorFont) {
+      return cachedEditorFont;
+    }
+    try {
+      const style = window.getComputedStyle(dom);
+      cachedEditorFont = `${style.fontSize} ${style.fontFamily}`;
+      cachedEditorDom = dom;
+      return cachedEditorFont;
+    } catch {
+      // Fallback below
+    }
+  }
+  const fs = useSettingsStore.getState().fontSize || 16;
+  return `${fs}px var(--font-text), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+}
+
 /**
- * Measures the exact pixel width of a list item prefix (leading spaces + marker + trailing space)
- * under the active editor font metrics.
- *
- * Measuring via an in-memory 2D canvas gives 100% pixel-perfect alignment with the first
+ * Accurately measures the rendered width of a list marker or prefix (e.g. "1. [x] ")
+ * in exact CSS pixels using an offscreen HTML5 2D Canvas context matching the editor's
+ * font styling. Used for continuous hanging indentation that dynamically aligns the second
  * character of the list item text across any font family (Segoe UI, Inter, Roboto, monospace)
  * and font size. Caching by `${font}::${prefix}` ensures O(1) instantaneous lookups during typing.
  */
 function measurePrefixWidth(prefix: string, editor?: any): number {
   try {
     if (typeof document === 'undefined') return prefix.length * 8;
+
+    const font = getEditorFont(editor);
+    const cacheKey = `${font}::${prefix}`;
+    const cached = hangIndentCache.get(cacheKey);
+    if (cached !== undefined) return cached;
+
     if (!measureCtx) {
       measureCanvas = document.createElement('canvas');
       measureCtx = measureCanvas.getContext('2d');
     }
     if (!measureCtx) return prefix.length * 8;
-
-    let font = '';
-    if (editor?.view?.dom) {
-      const style = window.getComputedStyle(editor.view.dom);
-      font = `${style.fontSize} ${style.fontFamily}`;
-    } else {
-      const fs = useSettingsStore.getState().fontSize || 16;
-      font = `${fs}px var(--font-text), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
-    }
-
-    const cacheKey = `${font}::${prefix}`;
-    const cached = hangIndentCache.get(cacheKey);
-    if (cached !== undefined) return cached;
 
     measureCtx.font = font;
     const width = Math.round(measureCtx.measureText(prefix).width * 10) / 10;
@@ -1542,7 +1556,8 @@ function updateDecorationsIncrementally(
   newState: any,
   isFocused: boolean,
   targetHeadingIndex: number | null,
-  editor: any
+  editor: any,
+  focusChanged: boolean = false
 ): DecorationSet {
   const { doc, selection } = newState;
   const { from: selFrom, to: selTo } = selection;
@@ -1611,12 +1626,12 @@ function updateDecorationsIncrementally(
     return currentDecos;
   }
 
-  // 2. Selection-only changes:
-  if (oldState) {
-    const oldFrom = oldState.selection.from;
-    const oldTo = oldState.selection.to;
+  // 2. Selection-only or focus-only changes:
+  if (oldState || focusChanged) {
+    const oldFrom = oldState ? oldState.selection.from : selFrom;
+    const oldTo = oldState ? oldState.selection.to : selTo;
 
-    if (oldFrom === selFrom && oldTo === selTo) {
+    if (oldFrom === selFrom && oldTo === selTo && !focusChanged) {
       return currentDecos;
     }
 
@@ -1736,7 +1751,6 @@ export const LivePreviewSyntax = Extension.create({
             if (
               !oldPluginState ||
               !oldPluginState.decorations ||
-              focusChanged ||
               targetHeadingChanged ||
               tr.getMeta('forceRebuildDecorations')
             ) {
@@ -1747,7 +1761,7 @@ export const LivePreviewSyntax = Extension.create({
               };
             }
 
-            if (tr.docChanged || selectionChanged || tr.selectionSet) {
+            if (tr.docChanged || selectionChanged || tr.selectionSet || focusChanged) {
               return {
                 decorations: updateDecorationsIncrementally(
                   tr,
@@ -1756,7 +1770,8 @@ export const LivePreviewSyntax = Extension.create({
                   newState,
                   isFocused,
                   targetHeadingIndex,
-                  extensionThis.editor
+                  extensionThis.editor,
+                  focusChanged
                 ),
                 focused: isFocused,
                 targetHeadingIndex,
