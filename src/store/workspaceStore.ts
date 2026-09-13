@@ -1295,12 +1295,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             await useDocumentStore.getState().setActiveDocumentById(entry.documentId, { preserveViewMode: true });
           }
         } else if (entry.documentId && !entry.documentId.startsWith('__')) {
-          const docTab = tabs.find((t) => t.document_id === entry.documentId);
-          if (docTab) {
-            set({ mainViewMode: 'document', activeTabId: docTab.id });
-          } else {
-            get().openTab(entry.documentId, entry.title || 'Untitled');
-          }
+          get().openTab(entry.documentId, entry.title || 'Untitled', { replaceCurrentTab: true });
           await useDocumentStore.getState().setActiveDocumentById(entry.documentId, { preserveViewMode: true });
           set({ mainViewMode: 'document' });
         } else {
@@ -1768,15 +1763,48 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       !currentTab?.is_pinned &&
       !isCurrentCustomTab;
 
-    if (isCurrentTabEmpty) {
-      nextTabId = explicitTabId || (currentTab.id.startsWith('tab-empty') ? `tab-${docId}-${Date.now()}` : currentTab.id);
+    const resolvedTitle = (title && title !== 'Untitled') ? title : (resolvedDoc?.title || title || 'Untitled');
+
+    if (explicitTabId) {
+      const explicitIndex = currentPane.tabs.findIndex((t) => t.id === explicitTabId);
+      if (explicitIndex >= 0) {
+        nextTabId = explicitTabId;
+        newTabs = currentPane.tabs.map((t, idx) =>
+          idx === explicitIndex
+            ? {
+                ...t,
+                id: explicitTabId,
+                document_id: docId,
+                title: resolvedTitle,
+                icon: options?.icon !== undefined ? options.icon : t.icon,
+                metadata: metadata !== undefined ? metadata : t.metadata,
+                view_type: resolvedViewType,
+                view_mode: resolvedViewMode,
+              }
+            : t
+        );
+      } else {
+        const newTab: TabItem = {
+          id: explicitTabId,
+          document_id: docId,
+          title: resolvedTitle,
+          view_mode: resolvedViewMode,
+          view_type: resolvedViewType,
+          icon: options?.icon,
+          metadata,
+        };
+        newTabs.push(newTab);
+        nextTabId = explicitTabId;
+      }
+    } else if (isCurrentTabEmpty && currentTab) {
+      nextTabId = currentTab.id.startsWith('tab-empty') ? `tab-${docId}-${Date.now()}` : currentTab.id;
       newTabs = currentPane.tabs.map((t) =>
         t.id === currentTab.id
           ? {
               ...t,
               id: nextTabId!,
               document_id: docId,
-              title: title || 'Untitled',
+              title: resolvedTitle,
               view_mode: resolvedViewMode,
               view_type: resolvedViewType,
               icon: options?.icon,
@@ -1784,71 +1812,40 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
             }
           : t
       );
+    } else if (shouldReplaceCurrent && currentTab) {
+      // Change the page in the current tab without creating a new tab
+      const isCustomOrEmptyTab =
+        currentTab.id.startsWith('tab-empty') ||
+        currentTab.id.startsWith('custom-');
+
+      nextTabId = isCustomOrEmptyTab ? `tab-${docId}-${Date.now()}` : currentTab.id;
+
+      newTabs = currentPane.tabs.map((t) =>
+        t.id === currentTab.id
+          ? {
+              ...t,
+              id: nextTabId!,
+              document_id: docId,
+              title: resolvedTitle,
+              view_mode: resolvedViewMode,
+              view_type: resolvedViewType,
+              icon: options?.icon !== undefined ? options.icon : (currentTab.document_id === docId ? t.icon : undefined),
+              metadata: metadata !== undefined ? metadata : (currentTab.document_id === docId ? t.metadata : undefined),
+            }
+          : t
+      );
     } else {
-      const existingIndex = currentPane.tabs.findIndex((t) => {
-        if (explicitTabId && t.id === explicitTabId) return true;
-        if (explicitTabId) return false;
-        if (t.document_id !== docId) return false;
-        if (!metadata && !t.metadata) return true;
-        if (metadata && t.metadata) {
-          const keysA = Object.keys(metadata);
-          const keysB = Object.keys(t.metadata);
-          return keysA.length === keysB.length && keysA.every((k) => metadata[k] === (t.metadata as Record<string, unknown>)[k]);
-        }
-        return false;
-      });
-
-      if (existingIndex >= 0) {
-        nextTabId = currentPane.tabs[existingIndex].id;
-        if (metadata !== undefined || options?.icon !== undefined || title || customType) {
-          newTabs = currentPane.tabs.map((t, idx) =>
-            idx === existingIndex
-              ? {
-                  ...t,
-                  title: title || t.title,
-                  icon: options?.icon !== undefined ? options.icon : t.icon,
-                  metadata: metadata !== undefined ? metadata : t.metadata,
-                  view_type: resolvedViewType,
-                  view_mode: resolvedViewMode,
-                }
-              : t
-          );
-        }
-      } else if (shouldReplaceCurrent && currentTab) {
-        // Change the page in the current tab without creating a new tab
-        const isCustomOrEmptyTab =
-          currentTab.id.startsWith('tab-empty') ||
-          currentTab.id.startsWith('custom-');
-
-        nextTabId = explicitTabId || (isCustomOrEmptyTab ? `tab-${docId}-${Date.now()}` : currentTab.id);
-
-        newTabs = currentPane.tabs.map((t) =>
-          t.id === currentTab.id
-            ? {
-                ...t,
-                id: nextTabId!,
-                document_id: docId,
-                title: title || 'Untitled',
-                view_mode: resolvedViewMode,
-                view_type: resolvedViewType,
-                icon: options?.icon,
-                metadata,
-              }
-            : t
-        );
-      } else {
-        const newTab: TabItem = {
-          id: explicitTabId || `tab-${docId}-${Date.now()}`,
-          document_id: docId,
-          title: title || 'Untitled',
-          view_mode: resolvedViewMode,
-          view_type: resolvedViewType,
-          icon: options?.icon,
-          metadata,
-        };
-        newTabs.push(newTab);
-        nextTabId = newTab.id;
-      }
+      const newTab: TabItem = {
+        id: `tab-${docId}-${Date.now()}`,
+        document_id: docId,
+        title: resolvedTitle,
+        view_mode: resolvedViewMode,
+        view_type: resolvedViewType,
+        icon: options?.icon,
+        metadata,
+      };
+      newTabs.push(newTab);
+      nextTabId = newTab.id;
     }
 
     const isBackground = options?.background === true;
