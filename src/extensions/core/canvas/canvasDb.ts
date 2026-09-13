@@ -356,11 +356,15 @@ export async function syncCanvasToDisk(boardId: string): Promise<void> {
   const { platform } = await import('@/lib/platform/platformAdapter');
   const { getAllDocuments, getDocumentPath, computeFastHash } = await import('@/lib/db/documents');
 
-  const docs = await getAllDocuments();
+  const { useDocumentStore } = await import('@/store/documentStore');
+  const storeDocs = useDocumentStore.getState().documents;
+  const docs = storeDocs && storeDocs.length > 0 ? storeDocs : await getAllDocuments();
   const doc = docs.find((d) => d.id === boardId);
   if (!doc) return;
 
   const json = await serializeCanvasBoard(boardId);
+  if (doc.content_json === json) return;
+
   const now = Date.now();
 
   // Update in SQLite documents table

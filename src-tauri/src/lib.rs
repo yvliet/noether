@@ -5,9 +5,7 @@ mod vcs;
 
 use std::path::{Path, PathBuf};
 use parking_lot::Mutex;
-use std::time::Duration;
 use notify::Event;
-use serde_json::json;
 use tauri::{Emitter, Manager};
 use vault::{load_config, AppState, WatcherState};
 
@@ -44,6 +42,7 @@ pub fn run() {
             vault::remove_recent_vault,
             vault::open_vault_in_explorer,
             vault::scan_vault_files,
+            vault::create_vault_folder,
             vault::save_markdown_file,
             vault::read_markdown_file,
             vault::set_file_attributes,
@@ -154,25 +153,17 @@ pub fn run() {
                                 .collect();
 
                             if !non_echo_paths.is_empty() {
-                                // Coalescing delay (100ms) to batch bursts of external changes (e.g. Git pull or multi-file sync)
-                                std::thread::sleep(Duration::from_millis(100));
-
                                 let verified_relative_paths: Vec<String> = non_echo_paths
                                     .iter()
-                                    .filter(|p| !p.is_dir() && !vault::is_internal_echo(p))
-                                    .map(|p| {
-                                        p.strip_prefix(&current_vault)
-                                            .unwrap_or(p)
-                                            .to_string_lossy()
-                                            .replace('\\', "/")
-                                    })
+                                    .filter(|p| !p.is_dir())
+                                    .map(|p| vault::relative_to_vault(&current_vault, p))
                                     .filter(|rel| !rel.is_empty() && rel != ".")
                                     .collect();
 
                                 if !verified_relative_paths.is_empty() {
                                     let _ = handle_watcher.emit(
                                         "vault-files-changed",
-                                        json!({ "paths": verified_relative_paths }),
+                                        serde_json::json!({ "paths": verified_relative_paths }),
                                     );
                                 }
                             }

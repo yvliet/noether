@@ -560,6 +560,8 @@ header[data-noether-header][data-item-interacting="true"] * {
   font-size: var(--editor-font-size, 16px);
   line-height: 1.75;
   color: var(--noether-text-primary);
+  width: 100% !important;
+  text-align: left !important;
 }
 
 code,

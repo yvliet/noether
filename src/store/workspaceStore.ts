@@ -1889,7 +1889,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     });
 
     if (!isBackground && docId && !docId.startsWith('__')) {
-      useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
+      const currentActive = useDocumentStore.getState().activeDocument;
+      if (currentActive?.id !== docId) {
+        useDocumentStore.getState().setActiveDocumentById(docId, { preserveViewMode: true });
+      }
     }
 
     if (!isBackground) {

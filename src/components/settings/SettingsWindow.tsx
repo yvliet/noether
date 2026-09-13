@@ -3571,7 +3571,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
   useEffect(() => {
     const unsub = platform.onVaultFilesChanged(async () => {
-      await dbAdapter.resetAndReload();
+      if (platform.isRecentInternalWrite()) return;
       useDocumentStore.getState().loadTrash();
     });
     return () => {

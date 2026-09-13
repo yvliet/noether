@@ -30,7 +30,6 @@ export function useTreeDragDrop({
   onCustomDrop,
   onStandardDrop,
 }: UseTreeDragDropOptions) {
-  const allDocs = useDocumentStore((s) => s.documents);
   const selectedDocIds = useDocumentStore((s) => s.selectedDocIds);
   const moveDocuments = useDocumentStore((s) => s.moveDocuments);
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -110,6 +109,7 @@ export function useTreeDragDrop({
         }
 
         if (hasStartedDrag) {
+          const allDocs = useDocumentStore.getState().documents;
           dragTooltipManager.updatePosition(moveEvent.clientX, moveEvent.clientY);
 
           const hoveredEl = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY) as HTMLElement | null;
@@ -275,6 +275,7 @@ export function useTreeDragDrop({
         document.body.style.userSelect = '';
 
         if (hasStartedDrag) {
+          const allDocs = useDocumentStore.getState().documents;
           dragTooltipManager.hide();
 
           const hoveredEl = document.elementFromPoint(upEvent.clientX, upEvent.clientY) as HTMLElement | null;
@@ -419,7 +420,6 @@ export function useTreeDragDrop({
       onCustomHover,
       onCustomDrop,
       onStandardDrop,
-      allDocs,
       setDraggedItem,
       setDragOverFolder,
       resetDragState,
