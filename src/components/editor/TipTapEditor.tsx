@@ -824,6 +824,16 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const app = useNoetherApp();
   const extensionList = useExtensionList();
   const placeholderHints = usePlaceholderHints();
+  const placeholderText = useMemo(() => {
+    const baseHints = ["type '/' for commands", "'[[' to link"];
+    const dynamicHints = placeholderHints.map((h) => h.hint);
+    const allHints = [...baseHints, ...dynamicHints];
+    if (allHints.length === 0) return 'Write thoughts...';
+    if (allHints.length === 1) return `Write thoughts, or ${allHints[0]}...`;
+    const last = allHints[allHints.length - 1];
+    const lead = allHints.slice(0, -1).join(', ');
+    return `Write thoughts, ${lead}, or ${last}...`;
+  }, [placeholderHints]);
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
 
@@ -1272,14 +1282,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           if (node.type.name === 'heading') {
             return `Heading ${node.attrs.level || 1}`;
           }
-          const baseHints = ["type '/' for commands", "'[[' to link"];
-          const dynamicHints = placeholderHints.map((h) => h.hint);
-          const allHints = [...baseHints, ...dynamicHints];
-          if (allHints.length === 0) return 'Write thoughts...';
-          if (allHints.length === 1) return `Write thoughts, or ${allHints[0]}...`;
-          const last = allHints[allHints.length - 1];
-          const lead = allHints.slice(0, -1).join(', ');
-          return `Write thoughts, ${lead}, or ${last}...`;
+          return placeholderText;
         },
         emptyEditorClass: 'is-editor-empty',
       }),
@@ -1301,7 +1304,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       Highlight.configure({ multicolor: true }),
       Link.configure({
         openOnClick: true,
-        autolink: true,
+        autolink: false,
       }),
     ],
     content: (() => {
@@ -2170,9 +2173,12 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
       if (currentJson !== content || docChanged) {
         // ProseMirror Authority Invariant:
-        // If the same document is currently focused with active typing in progress, preserve ProseMirror's buffer.
-        // When switching documents (docChanged is true), bypass focus guard and apply incoming content cleanly.
-        if (!docChanged && editor.isFocused) {
+        // If the editor is currently focused on this document, ProseMirror is the sole ground truth.
+        // Never call setContent while focused as it resets selection, destroys undo history, and introduces typing latency.
+        if (
+          !docChanged &&
+          (editor.isFocused || editor.view?.hasFocus() || (containerRef.current && typeof document !== 'undefined' && containerRef.current.contains(document.activeElement)))
+        ) {
           return;
         }
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);

@@ -51,6 +51,7 @@ export interface IPlatformAdapter {
   // File I/O
   scanVaultFiles(customVaultPath?: string, allowedExtensions?: string[]): Promise<VaultDiskItem[]>;
   saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  readMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; content?: string; mtime?: number; error?: string }>;
   setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }>;
   deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
   renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
@@ -74,7 +75,7 @@ export interface IPlatformAdapter {
 
   // Events
   onVaultChanged(callback: (vault: { path: string; name: string; recentVaults: RecentVaultItem[] }) => void): () => void;
-  onVaultFilesChanged(callback: () => void): () => void;
+  onVaultFilesChanged(callback: (payload?: { paths?: string[] }) => void): () => void;
 
   // Extensions / Plugins
   openExtensionsFolder(): Promise<{ success: boolean; path?: string; error?: string }>;
@@ -532,6 +533,13 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: false, error: 'Desktop mode only' };
   }
 
+  public async readMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; content?: string; mtime?: number; error?: string }> {
+    if (this.isTauri()) {
+      return await invoke('read_markdown_file', { filenameOrPath });
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
   public async setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }> {
     if (this.isTauri()) {
       return (await invoke('set_file_attributes', {
@@ -666,12 +674,12 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return () => {};
   }
 
-  public onVaultFilesChanged(callback: () => void): () => void {
+  public onVaultFilesChanged(callback: (payload?: { paths?: string[] }) => void): () => void {
     if (this.isTauri()) {
       let unlisten: (() => void) | null = null;
       let disposed = false;
-      listen('vault-files-changed', () => {
-        callback();
+      listen<{ paths?: string[] }>('vault-files-changed', (event) => {
+        callback(event.payload);
       }).then((fn) => {
         if (disposed) {
           fn();

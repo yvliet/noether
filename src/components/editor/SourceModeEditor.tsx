@@ -18,7 +18,7 @@ export interface SourceModeEditorProps {
   title: string;
   properties?: DocumentProperties | string;
   editable?: boolean;
-  onChange: (contentJson: string, title?: string, properties?: DocumentProperties) => void;
+  onChange: (contentJson: string, title?: string, properties?: DocumentProperties, rawMarkdown?: string) => void;
   onSave?: () => void;
 }
 
@@ -112,7 +112,7 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
   const syncToAst = useCallback((rawText: string) => {
     const { properties: parsedProps, bodyText } = parseFrontmatter(rawText);
     const newContentJson = markdownToTipTapJson(bodyText);
-    onChange(newContentJson, undefined, parsedProps);
+    onChange(newContentJson, undefined, parsedProps, rawText);
   }, [onChange]);
 
   // Handle changes and sync back to Noether document models
@@ -189,8 +189,8 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
       if (parseTimerRef.current) {
         clearTimeout(parseTimerRef.current);
         parseTimerRef.current = null;
-        syncToAst(text);
       }
+      syncToAst(text);
       onSave?.();
       return;
     }

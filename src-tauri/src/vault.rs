@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -9,6 +10,102 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tauri::{AppHandle, Emitter, Manager};
 use walkdir::WalkDir;
+use xxhash_rust::xxh3::xxh3_64;
+
+#[derive(Clone, Debug)]
+pub struct WriteFingerprint {
+    pub size: u64,
+    pub hash: u64,
+    pub recorded_at: u64,
+}
+
+static WRITE_FINGERPRINTS: Mutex<Option<HashMap<PathBuf, WriteFingerprint>>> = Mutex::new(None);
+
+fn with_fingerprints<R>(f: impl FnOnce(&mut HashMap<PathBuf, WriteFingerprint>) -> R) -> R {
+    let mut lock = WRITE_FINGERPRINTS.lock();
+    let map = lock.get_or_insert_with(HashMap::new);
+    f(map)
+}
+
+/// Normalizes a path for case-insensitive dictionary lookup on Windows and canonical comparison
+pub fn canonical_key_path(p: &Path) -> PathBuf {
+    let normalized = normalize_path(p);
+    #[cfg(windows)]
+    {
+        PathBuf::from(normalized.to_string_lossy().to_lowercase())
+    }
+    #[cfg(not(windows))]
+    {
+        normalized
+    }
+}
+
+/// Registers an internal write fingerprint for deterministic echo suppression.
+pub fn register_internal_write(path: &Path, content_bytes: &[u8]) {
+    let key = canonical_key_path(path);
+    let size = content_bytes.len() as u64;
+    let hash = xxh3_64(content_bytes);
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+
+    with_fingerprints(|map| {
+        if map.len() > 100 {
+            let cutoff = now.saturating_sub(30_000);
+            map.retain(|_, v| v.recorded_at >= cutoff);
+        }
+        map.insert(key, WriteFingerprint { size, hash, recorded_at: now });
+    });
+}
+
+/// Registers an internal path operation (rename, delete, directory creation)
+pub fn register_internal_path_touch(path: &Path) {
+    let key = canonical_key_path(path);
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+
+    with_fingerprints(|map| {
+        if map.len() > 100 {
+            let cutoff = now.saturating_sub(30_000);
+            map.retain(|_, v| v.recorded_at >= cutoff);
+        }
+        map.insert(key, WriteFingerprint { size: 0, hash: 0, recorded_at: now });
+    });
+}
+
+/// Determines whether an incoming filesystem watcher event on `path` is an internal echo of Noether's own write.
+pub fn is_internal_echo(path: &Path) -> bool {
+    let key = canonical_key_path(path);
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
+
+    let fingerprint = with_fingerprints(|map| map.get(&key).cloned());
+
+    if let Some(fp) = fingerprint {
+        if now.saturating_sub(fp.recorded_at) > 30_000 {
+            return false;
+        }
+
+        // Structural touch check (deletion/rename/mkdir) valid within 3 seconds
+        if fp.size == 0 && fp.hash == 0 {
+            return now.saturating_sub(fp.recorded_at) < 3_000;
+        }
+
+        if let Ok(metadata) = fs::metadata(path) {
+            let disk_size = metadata.len();
+            // Fast reject on size mismatch
+            if disk_size != fp.size {
+                return false;
+            }
+
+            // Verify content hash
+            if let Ok(content) = fs::read(path) {
+                let disk_hash = xxh3_64(&content);
+                if disk_hash == fp.hash {
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
+}
 
 static LAST_INTERNAL_WRITE: AtomicU64 = AtomicU64::new(0);
 
@@ -17,6 +114,7 @@ pub fn mark_internal_write() {
     LAST_INTERNAL_WRITE.store(now, Ordering::Relaxed);
 }
 
+#[allow(dead_code)]
 pub fn is_recent_internal_write() -> bool {
     let last = LAST_INTERNAL_WRITE.load(Ordering::Relaxed);
     let now = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0);
@@ -786,7 +884,7 @@ pub fn save_markdown_file(
     }
 
     let temp_file = file_path.with_extension(format!("tmp.{}", std::process::id()));
-    let write_res = fs::write(&temp_file, content);
+    let write_res = fs::write(&temp_file, &content);
 
     // Restore read-only permission if it was previously set
     if was_readonly {
@@ -798,6 +896,8 @@ pub fn save_markdown_file(
 
     match write_res {
         Ok(_) => {
+            // Register fingerprint BEFORE renaming so the watcher thread sees the record immediately upon OS event
+            register_internal_write(&file_path, content.as_bytes());
             if let Err(e) = fs::rename(&temp_file, &file_path) {
                 let _ = fs::remove_file(&temp_file);
                 json!({ "success": false, "error": format!("Failed to persist file: {}", e) })
@@ -809,6 +909,46 @@ pub fn save_markdown_file(
             let _ = fs::remove_file(&temp_file);
             json!({ "success": false, "error": e.to_string() })
         }
+    }
+}
+
+#[tauri::command]
+pub fn read_markdown_file(
+    state: tauri::State<AppState>,
+    filename_or_path: String,
+) -> Value {
+    let cfg = state.config.lock();
+    let target_vault = PathBuf::from(&cfg.current_vault_path);
+
+    let clean = filename_or_path.replace('\\', "/");
+    let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
+    let mut file_path = target_vault.join(&file_with_ext);
+    if !file_path.exists() {
+        let alt = target_vault.join(&clean);
+        if alt.exists() {
+            file_path = alt;
+        }
+    }
+
+    if !is_safe_vault_path(&target_vault, &file_path) {
+        return json!({ "success": false, "error": "Security: Target path escapes vault directory boundary" });
+    }
+
+    if !file_path.exists() {
+        return json!({ "success": false, "error": "File does not exist" });
+    }
+
+    match fs::read_to_string(&file_path) {
+        Ok(content) => {
+            let mtime = fs::metadata(&file_path)
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            json!({ "success": true, "content": content, "mtime": mtime, "path": file_path.to_string_lossy() })
+        }
+        Err(e) => json!({ "success": false, "error": e.to_string() }),
     }
 }
 
@@ -853,6 +993,7 @@ pub fn set_file_attributes(
         if let Ok(mut perms) = fs::metadata(&file_path).map(|m| m.permissions()) {
             perms.set_readonly(ro);
             let _ = fs::set_permissions(&file_path, perms);
+            register_internal_path_touch(&file_path);
         }
     }
 
@@ -892,6 +1033,7 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
     }
 
     if file_path.exists() {
+        register_internal_path_touch(&file_path);
         if file_path.is_dir() {
             let _ = fs::remove_dir_all(&file_path);
         } else {
@@ -902,6 +1044,7 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
             return json!({ "success": false, "error": "Security: Target path escapes vault directory boundary" });
         }
         if direct_path.exists() {
+            register_internal_path_touch(&direct_path);
             if direct_path.is_dir() {
                 let _ = fs::remove_dir_all(&direct_path);
             } else {
@@ -974,10 +1117,14 @@ pub fn rename_markdown_file(
     }
 
     if old_path.exists() {
+        register_internal_path_touch(&old_path);
+        register_internal_path_touch(&new_path);
         let _ = fs::rename(&old_path, &new_path);
     } else if let Some(file_name) = old_path.file_name() {
         let old_root = target_vault.join(file_name);
         if old_root.exists() && is_safe_vault_path(&target_vault, &old_root) {
+            register_internal_path_touch(&old_root);
+            register_internal_path_touch(&new_path);
             let _ = fs::rename(&old_root, &new_path);
         }
     }
