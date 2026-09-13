@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import katex from 'katex';
 import { DocNode, TableOfContentItem, PortalSection } from '../../types';
 import { highlightCode } from './syntaxHighlighter';
@@ -26,6 +26,7 @@ import {
   ChevronRightIcon,
 } from '../common/Icons';
 import { ComponentPreviewMap } from './ComponentPreview';
+import { WikilinkHoverPreview } from './WikilinkHoverPreview';
 
 
 export interface DocsReaderProps {
@@ -134,7 +135,7 @@ export function computeBacklinks(doc: DocNode, allDocs: DocNode[]): DocNode[] {
 }
 
 // Inline markdown renderer for bold, italic, code, KaTeX math, links, and Obsidian wikilinks
-function renderInlineMarkdown(text: string): string {
+export function renderInlineMarkdown(text: string): string {
   // 1. First extract all inline code spans according to CommonMark spec
   // Matches any sequence of 1 or more backticks: (`+)([\s\S]*?)\1
   const codeTokens: string[] = [];
@@ -440,6 +441,140 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
       }
     }
   }, [findDocByTarget, onSelectDoc]);
+
+  // Hover preview state & timers for internal wikilinks
+  const [hoverPreview, setHoverPreview] = useState<{
+    targetDoc: DocNode | null;
+    targetTitle: string;
+    anchorRect: DOMRect;
+  } | null>(null);
+
+  const hoverOpenTimerRef = useRef<any>(null);
+  const hoverCloseTimerRef = useRef<any>(null);
+  const hoveredLinkRef = useRef<HTMLElement | null>(null);
+  const isMouseOverPreviewRef = useRef<boolean>(false);
+
+  const clearHoverTimers = useCallback(() => {
+    if (hoverOpenTimerRef.current) {
+      clearTimeout(hoverOpenTimerRef.current);
+      hoverOpenTimerRef.current = null;
+    }
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const handleCloseHoverPreview = useCallback(() => {
+    clearHoverTimers();
+    isMouseOverPreviewRef.current = false;
+    hoveredLinkRef.current = null;
+    setHoverPreview(null);
+  }, [clearHoverTimers]);
+
+  const handleContentMouseOver = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const targetElem = (e.target as HTMLElement | null);
+    if (!targetElem) return;
+
+    // Ignore if inside hover preview itself
+    if (targetElem.closest('[data-wikilink-hover-preview="true"]')) return;
+
+    const link = targetElem.closest('a.internal-link[data-wikilink]') as HTMLElement | null;
+    if (!link) return;
+
+    if (hoveredLinkRef.current === link) {
+      if (hoverCloseTimerRef.current) {
+        clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
+      }
+      return;
+    }
+
+    clearHoverTimers();
+    hoveredLinkRef.current = link;
+
+    const rawTarget = link.getAttribute('data-wikilink');
+    if (!rawTarget) return;
+
+    const [docTarget] = rawTarget.split('#');
+    const match = findDocByTarget(docTarget);
+
+    hoverOpenTimerRef.current = setTimeout(() => {
+      if (!link.isConnected) return;
+      const rect = link.getBoundingClientRect();
+      setHoverPreview({
+        targetDoc: match,
+        targetTitle: docTarget,
+        anchorRect: rect,
+      });
+    }, 250);
+  }, [clearHoverTimers, findDocByTarget]);
+
+  const handleContentMouseOut = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!hoveredLinkRef.current) return;
+
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (relatedTarget && hoveredLinkRef.current.contains(relatedTarget)) {
+      return;
+    }
+
+    if (hoverOpenTimerRef.current) {
+      clearTimeout(hoverOpenTimerRef.current);
+      hoverOpenTimerRef.current = null;
+    }
+
+    hoverCloseTimerRef.current = setTimeout(() => {
+      if (!isMouseOverPreviewRef.current) {
+        setHoverPreview(null);
+        hoveredLinkRef.current = null;
+      }
+    }, 300);
+  }, []);
+
+  const handleMouseEnterPreview = useCallback(() => {
+    isMouseOverPreviewRef.current = true;
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const handleMouseLeavePreview = useCallback(() => {
+    isMouseOverPreviewRef.current = false;
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+    }
+    hoverCloseTimerRef.current = setTimeout(() => {
+      setHoverPreview(null);
+      hoveredLinkRef.current = null;
+    }, 300);
+  }, []);
+
+  // Dismiss preview on doc change or Escape key or window scroll
+  useEffect(() => {
+    handleCloseHoverPreview();
+  }, [doc.id, handleCloseHoverPreview]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseHoverPreview();
+      }
+    };
+    const onScroll = (e: Event) => {
+      if (isMouseOverPreviewRef.current) return;
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest && target.closest('[data-wikilink-hover-preview="true"]')) return;
+      handleCloseHoverPreview();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('scroll', onScroll, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('scroll', onScroll, true);
+      clearHoverTimers();
+    };
+  }, [handleCloseHoverPreview, clearHoverTimers]);
 
   // Parse markdown content into structured React elements
   const elements = useMemo(() => {
@@ -1382,6 +1517,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
     <div
       ref={contentContainerRef}
       onClick={handleContentClick}
+      onMouseOver={handleContentMouseOver}
+      onMouseOut={handleContentMouseOut}
       className="flex-1 min-w-0 px-6 sm:px-10 py-6 bg-transparent select-text"
     >
       <article className="max-w-3xl w-full mx-auto flex flex-col pb-24">
@@ -1446,6 +1583,20 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
           ) : <div />}
         </div>
       </article>
+
+      {/* Internal Wikilink Floating Hover Preview */}
+      {hoverPreview && (
+        <WikilinkHoverPreview
+          targetDoc={hoverPreview.targetDoc}
+          targetTitle={hoverPreview.targetTitle}
+          anchorRect={hoverPreview.anchorRect}
+          onSelectDoc={onSelectDoc}
+          onClose={handleCloseHoverPreview}
+          onMouseEnter={handleMouseEnterPreview}
+          onMouseLeave={handleMouseLeavePreview}
+          onFindDoc={findDocByTarget}
+        />
+      )}
     </div>
   );
 });
