@@ -377,9 +377,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           viewType: customType ? customType.viewType : 'document',
           viewMode: customType ? (customType.viewType as any) : 'document',
         });
+        setActiveDocumentById(item.id, { preserveViewMode: true });
       }
     },
-    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, displayTitle, customType, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen]
+    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, displayTitle, customType, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen, setActiveDocumentById]
   );
 
   const handleAuxClick = useCallback(
