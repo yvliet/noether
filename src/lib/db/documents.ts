@@ -56,6 +56,19 @@ export async function getAllDocuments(options?: { includeContent?: boolean }): P
 }
 
 /**
+ * Resolves document items for path calculation, prioritizing in-memory Zustand store to eliminate IPC overhead.
+ */
+async function getCachedOrDbDocs(providedDocs?: DocumentItem[]): Promise<Array<{ id: string; title: string; parent_id?: string | null; is_folder?: number | boolean }>> {
+  if (providedDocs && providedDocs.length > 0) return providedDocs;
+  try {
+    const { useDocumentStore } = await import('@/store/documentStore');
+    const storeDocs = useDocumentStore.getState().documents;
+    if (storeDocs && storeDocs.length > 0) return storeDocs;
+  } catch {}
+  return await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title, is_folder FROM documents`);
+}
+
+/**
  * Efficiently queries only non-folder documents containing embed directives (![[...]])
  * directly from SQLite to avoid holding all document content in the Zustand store.
  */
@@ -135,7 +148,7 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
     try {
       const doc = (await dbAdapter.query<DocumentItem>(`SELECT * FROM documents WHERE id = ? LIMIT 1`, [id]))[0];
       if (doc && !doc.is_folder) {
-        const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+        const allDocs = await getCachedOrDbDocs();
         const relPath = getDocumentPath(doc, allDocs);
         const mdContent = jsonToMarkdown(doc.content_json, doc.title, propertiesJson);
         await platform.saveMarkdownFile(doc.title, mdContent, relPath);
@@ -233,7 +246,7 @@ export async function createDocument(
   // Persist raw file to disk if not a folder
   if (!isFolder && platform.isDesktop()) {
     try {
-      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const allDocs = await getCachedOrDbDocs();
       const relPath = getDocumentPath({ id, title, parent_id: parentId }, allDocs);
       const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(title);
       const targetRelPath = customType
@@ -319,7 +332,7 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
       await dbAdapter.transaction(queries);
 
       if (platform.isDesktop()) {
-        const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+        const allDocs = await getCachedOrDbDocs();
         for (const item of changedDocs) {
           try {
             const relPath = getDocumentPath(item.doc as DocumentItem, allDocs);
@@ -358,7 +371,7 @@ export async function updateDocumentTitle(id: string, newTitle: string): Promise
   );
   if (oldTitle && oldTitle !== cleanNewTitle && platform.isDesktop() && doc) {
     try {
-      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const allDocs = await getCachedOrDbDocs();
       const oldRelPath = getDocumentPath({ id, title: oldTitle, parent_id: doc.parent_id }, allDocs);
       const newRelPath = getDocumentPath({ id, title: cleanNewTitle, parent_id: doc.parent_id }, allDocs);
       const oldFile = customType ? (oldRelPath.endsWith(`.${customType.extension}`) ? oldRelPath : `${oldRelPath}.${customType.extension}`) : oldRelPath;
@@ -416,7 +429,7 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
 
   if (platform.isDesktop() && doc.content_json) {
     try {
-      const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
+      const allDocs = await getCachedOrDbDocs();
       const relPath = getDocumentPath({ id: newId, title: newTitle, parent_id: doc.parent_id }, allDocs);
       const md = jsonToMarkdown(doc.content_json, newTitle, doc.properties);
       await platform.saveMarkdownFile(newTitle, md, relPath);
@@ -1456,16 +1469,7 @@ export async function saveDocumentAndSynchronize(
       }
     } catch (tErr) {}
     if (platform.isDesktop() && docRecord && !options?.skipDiskExport) {
-      let allDocs = options?.documents;
-      if (!allDocs || allDocs.length === 0) {
-        try {
-          const { useDocumentStore } = await import('@/store/documentStore');
-          allDocs = useDocumentStore.getState().documents;
-        } catch {}
-      }
-      if (!allDocs || allDocs.length === 0) {
-        allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
-      }
+      const allDocs = await getCachedOrDbDocs(options?.documents);
       const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
 
       const normRel = (relPath || docTitle).replace(/\\/g, '/').toLowerCase();

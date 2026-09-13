@@ -25,7 +25,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().addRowBefore().run()}
           title="Add row above"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] transition-colors cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] cursor-pointer flex items-center gap-1"
         >
           <span>+ Row ↑</span>
         </button>
@@ -33,7 +33,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().addRowAfter().run()}
           title="Add row below"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] transition-colors cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] cursor-pointer flex items-center gap-1"
         >
           <span>+ Row ↓</span>
         </button>
@@ -41,7 +41,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().deleteRow().run()}
           title="Delete current row"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted,#888)] hover:text-[#eb5757] hover:bg-rose-950/20 transition-colors cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted,#888)] hover:text-[#eb5757] hover:bg-rose-950/20 cursor-pointer flex items-center gap-1"
         >
           <span>- Row</span>
         </button>
@@ -55,7 +55,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().addColumnBefore().run()}
           title="Add column left"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] transition-colors cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] cursor-pointer flex items-center gap-1"
         >
           <span>+ Col ←</span>
         </button>
@@ -63,7 +63,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().addColumnAfter().run()}
           title="Add column right"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] transition-colors cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] cursor-pointer flex items-center gap-1"
         >
           <span>+ Col →</span>
         </button>
@@ -71,7 +71,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().deleteColumn().run()}
           title="Delete current column"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted,#888)] hover:text-[#eb5757] hover:bg-rose-950/20 transition-colors cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted,#888)] hover:text-[#eb5757] hover:bg-rose-950/20 cursor-pointer flex items-center gap-1"
         >
           <span>- Col</span>
         </button>
@@ -85,7 +85,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().toggleHeaderRow().run()}
           title="Toggle header row"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] transition-colors cursor-pointer"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-secondary,#bbb)] hover:text-white hover:bg-[var(--noether-bg-card-hover,#2e2e2e)] cursor-pointer"
         >
           <span>Header</span>
         </button>
@@ -93,7 +93,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().deleteTable().run()}
           title="Delete entire table"
-          className="p-1 rounded-[4px] text-[#eb5757] hover:bg-rose-950/30 transition-colors cursor-pointer flex items-center justify-center"
+          className="p-1 rounded-[4px] text-[#eb5757] hover:bg-rose-950/30 cursor-pointer flex items-center justify-center"
         >
           <Delete02Icon size={14} />
         </button>

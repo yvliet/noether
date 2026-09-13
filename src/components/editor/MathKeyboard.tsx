@@ -115,7 +115,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => setActiveTab('123')}
-            className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
+            className={`pb-1 text-sm font-medium tracking-wide relative ${
               activeTab === '123'
                 ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
@@ -129,7 +129,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => setActiveTab('symbols')}
-            className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
+            className={`pb-1 text-sm font-medium tracking-wide relative ${
               activeTab === 'symbols'
                 ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
@@ -143,7 +143,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => setActiveTab('abc')}
-            className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
+            className={`pb-1 text-sm font-medium tracking-wide relative ${
               activeTab === 'abc'
                 ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
@@ -157,7 +157,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => setActiveTab('greek')}
-            className={`pb-1 text-sm font-medium tracking-wide transition-colors relative ${
+            className={`pb-1 text-sm font-medium tracking-wide relative ${
               activeTab === 'greek'
                 ? 'text-[#eb584d]'
                 : 'text-[#888888] hover:text-[#cccccc]'
@@ -175,7 +175,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => editor?.chain().focus().undo().run()}
-            className="p-1 hover:text-white transition-colors"
+            className="p-1 hover:text-white"
             title="Undo (Ctrl+Z)"
           >
             <span className="text-sm">↺</span>
@@ -183,7 +183,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => editor?.chain().focus().redo().run()}
-            className="p-1 hover:text-white transition-colors"
+            className="p-1 hover:text-white"
             title="Redo (Ctrl+Y)"
           >
             <span className="text-sm">↻</span>
@@ -191,7 +191,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={handleCopy}
-            className="p-1 hover:text-white transition-colors"
+            className="p-1 hover:text-white"
             title="Copy Selection"
           >
             <Copy01Icon size={14} />
@@ -199,7 +199,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 hover:text-white transition-colors ml-2"
+            className="p-1 hover:text-white ml-2"
             title="Close Math Keyboard"
           >
             <Cancel01Icon size={15} />

@@ -39,6 +39,7 @@ const LazyDisabledExtensionView = React.lazy(() =>
 const DynamicModalHost: React.FC = React.memo(() => {
   const app = useNoetherApp();
   const modals = useModals();
+  if (modals.length === 0) return null;
   return (
     <>
       {modals.map((m) => (
@@ -47,6 +48,31 @@ const DynamicModalHost: React.FC = React.memo(() => {
         </div>
       ))}
     </>
+  );
+});
+
+const GlobalModalHost: React.FC = React.memo(() => {
+  const isCommandPaletteOpen = useWorkspaceStore((s) => s.isCommandPaletteOpen);
+  const isSettingsOpen = useWorkspaceStore((s) => s.isSettingsOpen);
+  const isVaultModalOpen = useWorkspaceStore((s) => s.isVaultModalOpen);
+  const isHelpModalOpen = useWorkspaceStore((s) => s.isHelpModalOpen);
+  const isConfirmOpen = useWorkspaceStore((s) => Boolean(s.confirmDialog?.isOpen));
+  const isPromptOpen = useWorkspaceStore((s) => Boolean(s.inputDialog?.isOpen));
+  const isLightboxOpen = useWorkspaceStore((s) => Boolean(s.imageLightbox?.isOpen));
+  const isUpdateModalOpen = useWorkspaceStore((s) => s.isUpdateModalOpen);
+
+  return (
+    <React.Suspense fallback={null}>
+      {isCommandPaletteOpen && <CommandPalette />}
+      <DynamicModalHost />
+      {isSettingsOpen && <SettingsModal />}
+      {isVaultModalOpen && <VaultModal />}
+      {isHelpModalOpen && <HelpModal />}
+      {isConfirmOpen && <ConfirmModal />}
+      {isPromptOpen && <PromptModal />}
+      {isLightboxOpen && <ImageLightboxModal />}
+      {isUpdateModalOpen && <UpdateModal />}
+    </React.Suspense>
   );
 });
 
@@ -486,17 +512,7 @@ export const AppShell: React.FC = React.memo(() => {
         </div>
 
         {/* Global Interactive Modals, Dialogs, Context Menu & Tooltips */}
-        <React.Suspense fallback={null}>
-          <CommandPalette />
-          <DynamicModalHost />
-          <SettingsModal />
-          <VaultModal />
-          <HelpModal />
-          <ConfirmModal />
-          <PromptModal />
-          <ImageLightboxModal />
-          <UpdateModal />
-        </React.Suspense>
+        <GlobalModalHost />
 
         <ToastNotification />
         <ContextMenuRenderer />

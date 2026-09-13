@@ -410,13 +410,28 @@ export const LeftSidebar: React.FC = React.memo(() => {
     };
   }, []);
 
+  // Pre-bucket documents by parent_id into a Map for O(1) child tree lookups
+  const childrenMap = useMemo(() => {
+    const map = new Map<string | null, DocumentItem[]>();
+    for (const d of documents) {
+      const p = d.parent_id || null;
+      const list = map.get(p);
+      if (list) {
+        list.push(d);
+      } else {
+        map.set(p, [d]);
+      }
+    }
+    return map;
+  }, [documents]);
+
   // Filter root documents (parent_id === null)
   const rootDocs = useMemo(() => {
     return sortDocuments(
-      documents.filter((d) => !d.parent_id),
+      childrenMap.get(null) || [],
       sortOrder
     );
-  }, [documents, sortOrder]);
+  }, [childrenMap, sortOrder]);
 
   // Filter search results with sorting and case sensitivity support
   const searchFilteredDocs = useMemo(() => {
@@ -669,7 +684,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           ) : (
             <div data-tree-section="search-results" className="flex-1 flex flex-col gap-0.5">
               {searchFilteredDocs.map((doc) => (
-                <FileTreeNode key={doc.id} item={doc} allDocs={documents} sortOrder={sortOrder} />
+                <FileTreeNode key={doc.id} item={doc} allDocs={documents} childrenMap={childrenMap} sortOrder={sortOrder} />
               ))}
             </div>
           )
@@ -685,7 +700,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             {/* Standard Vault Root Documents & Folders */}
             <div data-tree-section="vault-files" className="flex flex-col gap-0.5">
               {rootDocs.map((doc) => (
-                <FileTreeNode key={doc.id} item={doc} allDocs={documents} sortOrder={sortOrder} />
+                <FileTreeNode key={doc.id} item={doc} allDocs={documents} childrenMap={childrenMap} sortOrder={sortOrder} />
               ))}
             </div>
             {rootDocs.length === 0 && fileTreeSections.length === 0 && (

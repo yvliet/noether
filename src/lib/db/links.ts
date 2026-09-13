@@ -176,20 +176,6 @@ export async function getUnlinkedMentionsForDocument(
       );
     }
 
-    // Fallback if FTS returned 0 results (e.g. prefix/substring match)
-    if (blocks.length === 0) {
-      blocks = await dbAdapter.query<any>(
-        `SELECT b.document_id, b.content_text, d.title as source_document_title, d.updated_at
-         FROM blocks b
-         JOIN documents d ON d.id = b.document_id
-         WHERE b.document_id != ? 
-           AND d.is_folder = 0
-           AND b.content_text LIKE '%' || ? || '%'
-         ORDER BY d.updated_at DESC`,
-        [targetDocId, cleanTitle]
-      );
-    }
-
     // Filter out blocks that only have mentions inside existing [[...]] links
     const unlinked: UnlinkedMentionItem[] = [];
     const seenDocs = new Set<string>();

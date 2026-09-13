@@ -56,6 +56,7 @@ export interface FileTreeNodeProps {
   item: DocumentItem;
   level?: number;
   allDocs: DocumentItem[];
+  childrenMap?: Map<string | null, DocumentItem[]>;
   sortOrder?: FileSortOrder;
 }
 
@@ -63,6 +64,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   item,
   level = 0,
   allDocs,
+  childrenMap,
   sortOrder = 'alphabetical',
 }) => {
   const isFolder = !!item.is_folder;
@@ -116,11 +118,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const prevIsEditingRef = useRef(false);
 
   const app = useNoetherApp();
-  const tabs = useWorkspaceStore((s) => s.tabs);
-  const activeTabId = useWorkspaceStore((s) => s.activeTabId);
-  const activeTab = useMemo(() => tabs.find((t) => t.id === activeTabId) || null, [tabs, activeTabId]);
-
   const decorators = useFileTreeDecorators();
+  const activeTab = useWorkspaceStore(
+    useCallback((s) => (decorators.length > 0 ? (s.tabs.find((t) => t.id === s.activeTabId) || null) : null), [decorators.length])
+  );
   const isHighlightSuppressed = useMemo(() => {
     if (decorators.length === 0) return false;
     const ctx = { doc: item, activeTab, app, isOpen };
@@ -272,15 +273,17 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     : (fileExtMatch ? fileExtMatch[1].toUpperCase() : (item.doc_type && item.doc_type !== 'base' ? item.doc_type.toUpperCase() : null));
 
   const sortedChildren = useMemo(() => {
-    const children = allDocs.filter((d) => d.parent_id === item.id);
+    if (!isFolder) return [];
+    const children = childrenMap ? (childrenMap.get(item.id) || []) : allDocs.filter((d) => d.parent_id === item.id);
     return sortDocuments(children, sortOrder);
-  }, [allDocs, item.id, sortOrder]);
+  }, [isFolder, childrenMap, allDocs, item.id, sortOrder]);
 
   const isDuplicateName = useMemo(() => {
     if (!isEditing) return false;
     const trimmed = editTitle.trim().toLowerCase();
     if (!trimmed || trimmed === originalTitleRef.current.trim().toLowerCase()) return false;
-    return allDocs.some(
+    const siblings = childrenMap ? (childrenMap.get(item.parent_id || null) || []) : allDocs;
+    return siblings.some(
       (d) =>
         d.id !== item.id &&
         !!d.is_folder === isFolder &&
@@ -288,7 +291,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         (d.parent_id || null) === (item.parent_id || null) &&
         d.title.trim().toLowerCase() === trimmed
     );
-  }, [isEditing, editTitle, allDocs, item.id, item.parent_id, isFolder, item.doc_type]);
+  }, [isEditing, editTitle, childrenMap, allDocs, item.id, item.parent_id, isFolder, item.doc_type]);
 
   // Keep edit title in sync
   useEffect(() => {
@@ -932,6 +935,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
               item={child}
               level={level + 1}
               allDocs={allDocs}
+              childrenMap={childrenMap}
               sortOrder={sortOrder}
             />
           ))}

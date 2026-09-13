@@ -351,7 +351,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
             type="button"
             onClick={handleEyeDropper}
             title="Pick color from screen"
-            className="p-1 rounded-[4px] text-[#888] hover:text-white hover:bg-[#333333] transition-colors cursor-pointer shrink-0"
+            className="p-1 rounded-[4px] text-[#888] hover:text-white hover:bg-[#333333] cursor-pointer shrink-0"
           >
             <EyedropperIcon size={15} />
           </button>
@@ -383,7 +383,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
           </div>
         </div>
 
-        {/* 3. Inputs & Format Switcher */}
+        {/* 3. Numeric Inputs (R, G, B or HEX) */}
         {format === 'rgb' ? (
           <div className="flex items-center gap-1.5 pt-0.5">
             {/* R */}
@@ -394,7 +394,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 max={255}
                 value={rgb.r}
                 onChange={(e) => handleRgbChange('r', e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal transition-colors"
+                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
               />
               <span className="text-[9px] text-[#888] mt-0.5 font-normal">R</span>
             </div>
@@ -407,7 +407,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 max={255}
                 value={rgb.g}
                 onChange={(e) => handleRgbChange('g', e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal transition-colors"
+                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
               />
               <span className="text-[9px] text-[#888] mt-0.5 font-normal">G</span>
             </div>
@@ -420,7 +420,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 max={255}
                 value={rgb.b}
                 onChange={(e) => handleRgbChange('b', e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal transition-colors"
+                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
               />
               <span className="text-[9px] text-[#888] mt-0.5 font-normal">B</span>
             </div>
@@ -430,7 +430,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
               type="button"
               onClick={() => setFormat('hex')}
               title="Switch to HEX format"
-              className="p-1 mb-2.5 text-[#777] hover:text-white hover:bg-[#333] rounded-[4px] transition-colors cursor-pointer shrink-0"
+              className="p-1 mb-2.5 text-[#777] hover:text-white hover:bg-[#333] rounded-[4px] cursor-pointer shrink-0"
             >
               <ChevronsUpDownIcon size={13} />
             </button>
@@ -443,7 +443,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 type="text"
                 value={tempHexInput}
                 onChange={(e) => handleHexChange(e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal uppercase transition-colors"
+                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal uppercase"
               />
               <span className="text-[9px] text-[#888] mt-0.5 font-normal">HEX</span>
             </div>
@@ -453,7 +453,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
               type="button"
               onClick={() => setFormat('rgb')}
               title="Switch to RGB format"
-              className="p-1 mb-2.5 text-[#777] hover:text-white hover:bg-[#333] rounded-[4px] transition-colors cursor-pointer shrink-0"
+              className="p-1 mb-2.5 text-[#777] hover:text-white hover:bg-[#333] rounded-[4px] cursor-pointer shrink-0"
             >
               <ChevronsUpDownIcon size={13} />
             </button>
@@ -478,8 +478,8 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                       updateColor(newHsv);
                       addColorHistory(presetColor);
                     }}
-                    className={`w-4 h-4 rounded-full border cursor-pointer transition-transform hover:scale-120 active:scale-95 flex items-center justify-center p-0 ${
-                      isSelected ? 'border-white ring-1 ring-white/70 scale-110' : 'border-white/20'
+                    className={`w-4 h-4 rounded-full border cursor-pointer flex items-center justify-center p-0 ${
+                      isSelected ? 'border-white ring-1 ring-white/70' : 'border-white/20'
                     }`}
                     style={{ backgroundColor: presetColor }}
                     title={presetName}
@@ -607,7 +607,7 @@ export const ColorPicker: React.FC<ColorPickerProps> = React.memo(({
         }}
         className={
           triggerClassName ||
-          'w-5 h-5 rounded-full border border-white/20 shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer transition-transform hover:scale-105 active:scale-95 flex items-center justify-center p-0 outline-none'
+          'w-5 h-5 rounded-full border border-white/20 shadow-[0_1px_2px_rgba(0,0,0,0.35)] cursor-pointer flex items-center justify-center p-0 outline-none'
         }
         style={{ backgroundColor: value }}
         title={`Color: ${value}`}
