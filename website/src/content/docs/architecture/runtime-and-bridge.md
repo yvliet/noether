@@ -50,39 +50,16 @@ In typical React state architectures, top-level components inadvertently subscri
 - **Status Bar**: Subscribes to boolean flags (`isLocked`, `hasActiveDoc`) and decoupled metric slices, preserving 120+ FPS typing performance.
 - **Document Options Menu**: Extracted into an inert trigger button while closed. Store subscriptions, plugin action evaluations, and positioning calculations execute only when the menu dropdown is explicitly opened by the user.
 
-## 3. Deterministic File Watcher Fingerprinting & Conflict Safety
+## 3. Atomic File Saves & Echo Suppression
 ---
 
-When Noether saves a note to disk, the operating system's filesystem watcher immediately generates file modification events. In naive architectures, applications attempt to suppress these save echoes using crude elapsed-time heuristics (such as discarding events within a fixed millisecond window). 
+When Noether saves a note to disk, the operating system's filesystem watcher fires a change event. Without proper handling, this creates an infinite loop: save note → watcher detects change → reload note → re-save note.
 
-In local-first systems, time-window heuristics fail catastrophically under real-world conditions:
-- **The Sync Collision Problem**: When a remote peer (via Syncthing, Dropbox, or iCloud) synchronizes an edit at the same moment the user types locally, a fixed time heuristic misclassifies the incoming sync as an internal echo and silently drops it, or overwrites the remote edit on the next debounce flush.
-- **OS Watcher Drift**: Operating system event streams (macOS `FSEvents`, Windows `ReadDirectoryChangesW`, Linux `inotify`) lack deterministic dispatch timing. Under heavy disk load, macOS `FSEvents` routinely batches and delays notifications by 1 to 3 seconds, rendering hardcoded time thresholds useless.
-
-Noether eliminates heuristics in favor of **per-path deterministic fingerprinting** and **conflict-safe buffer reconciliation**:
-
-### Per-Path Write Fingerprint Registry (`xxh3_64`)
-Whenever the native Rust backend persists a note through its atomic `temp-and-rename` pipeline, it computes a fast 64-bit non-cryptographic content hash (`xxh3_64`) of the persisted bytes and records a `WriteFingerprint` in an in-memory concurrent registry:
-
-- **Path Canonicalization**: File paths are normalized and canonicalized (`canonical_key_path`) to prevent Windows case-sensitivity mismatches and UNC prefix variance.
-- **Fingerprint Record**: Each entry captures `(file_size, xxh3_hash, recorded_at)`.
-- **Zero Vault-Wide Blind Spots**: Fingerprints are scoped strictly per file path. Saving `NoteA.md` never blinds the watcher to changes occurring in `NoteB.md`.
-
-### Echo Verification Pipeline
-When the background filesystem watcher thread receives an OS notification:
-
-1. **Path Filtering**: Directory-only notifications, vault root events, temporary swap files (`*.tmp.*`), and internal dotfolders (`.noether`, `.git`, `.trash`) are immediately filtered out.
-2. **Fingerprint Match**: The watcher checks whether the affected path exists in the `WriteFingerprint` registry (registered immediately prior to atomic file rename).
-   - If present, Noether verifies that the disk file matches the registered size and `xxh3_64` content hash. If identical, the event is verified as an internal save echo and silently suppressed.
-   - If the file size or content hash differs by even a single byte, it is classified as a **genuine external modification**, regardless of when it arrived.
-3. **Granular Path Emission**: External changes are coalesced over a 100ms window to batch multi-file operations (such as Git checkouts or batch Syncthing syncs) and emitted over the Tauri bridge with targeted relative paths:
-   `handle_watcher.emit("vault-files-changed", json!({ "paths": verified_relative_paths }))`.
-
-### Conflict-Safe Buffer Reconciliation
-When external sync events arrive:
-
-- **ProseMirror Authority**: When the editor is actively focused, ProseMirror maintains sole ground truth over its active buffer. Background reloads never invoke `setContent` while focused, preventing cursor resets, IME disruptions, or typing latency.
-- **Selective Background Synchronization**: External changes for other notes or for the active note while unfocused reload the database and store models smoothly without tearing down the editor canvas or degrading active user flow.
+Noether prevents this through signature-based echo suppression:
+- **Timestamp Registration**: When an internal save occurs, the timestamp is registered in memory via `mark_internal_write()`.
+- **Echo Suppression**: When the watcher fires, it compares the event timestamp against `LAST_INTERNAL_WRITE`. If the event originated from Noether's own save within the last 500ms, the reload is silently discarded.
+- **External Change Detection**: If an external modification occurs (from Git, another editor, or a background script), Noether detects it, debounces the burst, and reloads the note in the editor without losing external changes.
+- **Conflict Protection**: When the editor is actively focused, ProseMirror maintains sole authority over its active buffer, preventing cursor jumps or typing interruptions during background file sync.
 
 ## 4. Win32 Working Set Memory Trimming
 ---

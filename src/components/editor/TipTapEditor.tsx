@@ -1326,7 +1326,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   const editorProps = useMemo(
     () => ({
       attributes: {
-        class: `prose prose-invert max-w-none focus:outline-none flex-1 min-h-full h-full flex flex-col text-[#dcddde] leading-relaxed select-text ${
+        class: `prose prose-invert max-w-none focus:outline-none flex-1 w-full min-h-[60px] text-[#dcddde] leading-relaxed select-text text-left ${
           editable ? 'cursor-text' : 'cursor-default'
         }`,
         spellcheck: useSettingsStore.getState().spellcheck ? 'true' : 'false',
@@ -2599,7 +2599,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       onContextMenu={(e) => handleEditorContextMenu(e)}
       className={`relative w-full flex-1 flex flex-col ${editable ? 'cursor-text' : 'cursor-default tiptap-reading-view'}`}
     >
-      <EditorContent editor={editor} className="flex-1 flex flex-col" />
+      <EditorContent editor={editor} className="flex-1 w-full flex flex-col text-left" />
 
       {/* Minimalist Hover Edge Add-Row / Add-Column Controls */}
       {editable && <TableEdgeControls editor={editor} />}

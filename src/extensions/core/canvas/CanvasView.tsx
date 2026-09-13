@@ -749,7 +749,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const dotPatternRef = useRef<SVGPatternElement>(null);
   const dotCircleRef = useRef<SVGCircleElement>(null);
   const dotGridRectRef = useRef<SVGRectElement>(null);
-  const syncStateRafRef = useRef<number | null>(null);
+  const panSyncTimerRef = useRef<any>(null);
+  const lastZoomStateSyncRef = useRef<number>(0);
+
+  const schedulePanSync = useCallback(() => {
+    if (panSyncTimerRef.current) clearTimeout(panSyncTimerRef.current);
+    panSyncTimerRef.current = setTimeout(() => {
+      setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+      panSyncTimerRef.current = null;
+    }, 100);
+  }, []);
 
   // Fast timestamp-based continuous scroll stream tracking (zero timers, zero GC overhead)
   const lastWheelTimeRef = useRef(0);
@@ -841,9 +850,15 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       panRef.current = { x: current.x, y: current.y };
       zoomRef.current = current.scale;
 
+      // Direct GPU transform without full React re-render during continuous easing
       syncDomTransform(current.x, current.y, current.scale);
-      setPan({ x: current.x, y: current.y });
-      setZoom(current.scale);
+
+      // Low-frequency throttle for zoom percentage badge (every 120ms max)
+      const now = performance.now();
+      if (now - lastZoomStateSyncRef.current > 120) {
+        lastZoomStateSyncRef.current = now;
+        setZoom(current.scale);
+      }
 
       cameraRafRef.current = requestAnimationFrame(tick);
     };
@@ -867,9 +882,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         cancelAnimationFrame(cameraRafRef.current);
         cameraRafRef.current = null;
       }
-      if (syncStateRafRef.current !== null) {
-        cancelAnimationFrame(syncStateRafRef.current);
-        syncStateRafRef.current = null;
+      if (panSyncTimerRef.current) {
+        clearTimeout(panSyncTimerRef.current);
+        panSyncTimerRef.current = null;
       }
       if (mouseMoveRafRef.current !== null) {
         cancelAnimationFrame(mouseMoveRafRef.current);
@@ -983,6 +998,34 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
         if (currentDoc?.content_json && currentDoc.content_json.trim().length > 0) {
           try {
+            const trimmed = currentDoc.content_json.trim();
+            // Fast-path empty canvas boards without triggering DB transactions or WAL flushes
+            let isEmptyBoard = false;
+            try {
+              const parsed = JSON.parse(trimmed);
+              if (
+                (!parsed.nodes || parsed.nodes.length === 0) &&
+                (!parsed.edges || parsed.edges.length === 0)
+              ) {
+                isEmptyBoard = true;
+              }
+            } catch {
+              isEmptyBoard = trimmed === '{"nodes":[],"edges":[]}';
+            }
+
+            if (isEmptyBoard) {
+              if (!isMounted) return;
+              setNodes([]);
+              setEdges([]);
+              if (!hasInitialFittedRef.current) {
+                hasInitialFittedRef.current = true;
+                if (sessionKey) {
+                  canvasTabTransformCache.set(sessionKey, { x: 100, y: 100, scale: 1 });
+                }
+              }
+              return;
+            }
+
             const { nodes: importedNodes, edges: importedEdges } = await importCanvasBoard(
               effectiveBoardId,
               currentDoc.content_json
@@ -4302,13 +4345,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       panRef.current = { x: newX, y: newY };
 
       syncDomTransform(newX, newY, ct.scale);
-
-      if (syncStateRafRef.current === null) {
-        syncStateRafRef.current = requestAnimationFrame(() => {
-          syncStateRafRef.current = null;
-          setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
-        });
-      }
+      schedulePanSync();
 
       if (isDraggingCard) {
         performNodeDrag(pos.clientX, pos.clientY);
@@ -4401,13 +4438,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               panRef.current = { x: newX, y: newY };
 
               syncDomTransform(newX, newY, curScale);
-
-              if (syncStateRafRef.current === null) {
-                syncStateRafRef.current = requestAnimationFrame(() => {
-                  syncStateRafRef.current = null;
-                  setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
-                });
-              }
+              schedulePanSync();
             } else {
               const newX = pos.clientX - panStartRef.current.x;
               const newY = pos.clientY - panStartRef.current.y;
@@ -4418,13 +4449,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               panRef.current = { x: newX, y: newY };
 
               syncDomTransform(newX, newY, currentTransformRef.current.scale);
-
-              if (syncStateRafRef.current === null) {
-                syncStateRafRef.current = requestAnimationFrame(() => {
-                  syncStateRafRef.current = null;
-                  setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
-                });
-              }
+              schedulePanSync();
             }
           } else if (resizingNodeIdRef.current) {
             performNodeResize(pos.clientX, pos.clientY);
@@ -4516,6 +4541,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       isAltDragRef.current = false;
       altDragClonedRef.current = false;
       resizeDidMoveRef.current = false;
+      if (isPanningRef.current) {
+        if (panSyncTimerRef.current) {
+          clearTimeout(panSyncTimerRef.current);
+          panSyncTimerRef.current = null;
+        }
+        setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
+      }
       isPanningRef.current = false;
       setIsPanningState(false);
       panCanvasAnchorRef.current = null;
@@ -4639,11 +4671,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   // Spatial Viewport Culling Engine (bounds memory & DOM count to O(viewport) cards)
   const visibleNodes = useMemo(() => {
-    if (containerSize.width === 0 || containerSize.height === 0) {
+    if (nodes.length <= 100 || containerSize.width === 0 || containerSize.height === 0) {
       return nodes;
     }
 
-    const overscan = 400; // px in canvas coordinates
+    const overscan = 800; // px in canvas coordinates
     const left = -pan.x / zoom - overscan;
     const top = -pan.y / zoom - overscan;
     const right = (-pan.x + containerSize.width) / zoom + overscan;
@@ -5981,13 +6013,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       // Instant direct GPU transform (zero lag, 144Hz+)
       syncDomTransform(nextX, nextY, currentScale);
 
-      // Throttled React state update to avoid redundant multi-render per frame
-      if (syncStateRafRef.current === null) {
-        syncStateRafRef.current = requestAnimationFrame(() => {
-          syncStateRafRef.current = null;
-          setPan({ x: targetTransformRef.current.x, y: targetTransformRef.current.y });
-        });
-      }
+      // Debounced React state update once wheel stream settles (avoids re-rendering cards during scroll)
+      schedulePanSync();
     };
 
     const handleTouchStart = (e: TouchEvent) => {

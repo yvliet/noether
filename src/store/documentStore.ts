@@ -215,6 +215,29 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
   loadInitialData: async (options?: { showLoading?: boolean; changedPaths?: string[] }) => {
     try {
+      // Fast branch: If this is a targeted file watcher event, skip full database scans
+      if (options?.changedPaths && options.changedPaths.length > 0 && options.changedPaths.length <= 20) {
+        const syncRes = await syncVaultDiskToSQLite(options.changedPaths);
+        if (!syncRes || syncRes.syncedCount === 0) {
+          // Untouched or internal write echo: zero overhead, zero re-renders
+          return;
+        }
+        const [docs, globalTasks, tags, trash] = await Promise.all([
+          getAllDocuments(),
+          getAllGlobalTasks(),
+          getAllVaultTags(),
+          getTrashItems(),
+        ]);
+        set({
+          documents: docs,
+          trashItems: trash,
+          globalTasks,
+          vaultTags: tags,
+        });
+        get().recomputeBrokenEmbeds();
+        return;
+      }
+
       // 1. Fast path: Immediately query and hydrate from local in-memory WASM SQLite (1-2ms)
       // This populates documents, bookmarks, cascades, and the file tree with 0 perceived latency.
       const [initialDocs, initialTasks, initialTags, initialTrash] = await Promise.all([
@@ -273,100 +296,104 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
             }
           }
         }
-      } else {
-        const shouldShowLoading = options?.showLoading ?? true;
-        if (shouldShowLoading) {
-          set({ isLoading: true });
-        }
+
+        // Cold boot with cache: Background differential disk sync after UI is 100% interactive
+        setTimeout(async () => {
+          try {
+            cleanExpiredTrash().catch(console.error);
+            const syncRes = await syncVaultDiskToSQLite();
+            if (syncRes && syncRes.syncedCount > 0) {
+              const [docs, globalTasks, tags, trash] = await Promise.all([
+                getAllDocuments(),
+                getAllGlobalTasks(),
+                getAllVaultTags(),
+                getTrashItems(),
+              ]);
+              set({
+                documents: docs,
+                trashItems: trash,
+                globalTasks,
+                vaultTags: tags,
+              });
+              get().recomputeBrokenEmbeds();
+            }
+          } catch (bgErr) {
+            console.error('[DocumentStore] Background disk sync error:', bgErr);
+          }
+        }, 1000);
+
+        return;
       }
 
-      // 2. Background differential sync: Scan disk markdown files & clean trash
+      // Empty vault / first cold boot: show loading indicator and perform initial disk sync
+      const shouldShowLoading = options?.showLoading ?? true;
+      if (shouldShowLoading) {
+        set({ isLoading: true });
+      }
+
       cleanExpiredTrash().catch(console.error);
       const syncRes = await syncVaultDiskToSQLite();
       const syncedCount = syncRes?.syncedCount ?? 0;
 
-      // Refresh from SQLite if disk files changed or if we had no cached docs initially
-      if (syncedCount > 0 || !hasCachedDocs) {
-        const [docs, globalTasks, tags, trash] = await Promise.all([
-          getAllDocuments(),
-          getAllGlobalTasks(),
-          getAllVaultTags(),
-          getTrashItems(),
-        ]);
+      const [docs, globalTasks, tags, trash] = await Promise.all([
+        getAllDocuments(),
+        getAllGlobalTasks(),
+        getAllVaultTags(),
+        getTrashItems(),
+      ]);
 
-        const currentActive = get().activeDocument;
-        let nextActive = currentActive;
-        if (currentActive) {
-          const matching = docs.find((d) => d.id === currentActive.id);
-          if (
-            matching &&
-            !platform.isRecentInternalWrite() &&
-            (matching.updated_at !== currentActive.updated_at ||
-              matching.content_json !== currentActive.content_json ||
-              matching.title !== currentActive.title)
-          ) {
-            nextActive = matching;
-          }
-        }
+      set({
+        documents: docs,
+        trashItems: trash,
+        globalTasks,
+        vaultTags: tags,
+        isLoading: false,
+      });
+      get().recomputeBrokenEmbeds();
+      emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
 
-        set({
-          documents: docs,
-          trashItems: trash,
-          globalTasks,
-          vaultTags: tags,
-          activeDocument: nextActive,
-          isLoading: false,
-        });
-        get().recomputeBrokenEmbeds();
-        if (!hasCachedDocs) {
-          emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
-        }
+      const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
+      if (!hasRestoredInitialTabsSession) {
+        hasRestoredInitialTabsSession = true;
+        const isRestored = shouldRestoreTabs
+          ? useWorkspaceStore.getState().restoreTabsSession(docs)
+          : false;
 
-        const shouldRestoreTabs = useSettingsStore.getState().restoreTabs;
-        if (!hasRestoredInitialTabsSession) {
-          hasRestoredInitialTabsSession = true;
-          const isRestored = shouldRestoreTabs
-            ? useWorkspaceStore.getState().restoreTabsSession(docs)
-            : false;
-
-          if (isRestored) {
-            const { tabs, activeTabId } = useWorkspaceStore.getState();
-            const activeTab = tabs.find((t) => t.id === activeTabId);
-            if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
-              const docExists = docs.some((d) => d.id === activeTab.document_id);
-              if (docExists) {
-                await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
-              } else {
-                set({ activeDocument: null });
-              }
-            } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
-              useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
-              set({ activeDocument: null });
+        if (isRestored) {
+          const { tabs, activeTabId } = useWorkspaceStore.getState();
+          const activeTab = tabs.find((t) => t.id === activeTabId);
+          if (activeTab && activeTab.document_id && !activeTab.document_id.startsWith('__')) {
+            const docExists = docs.some((d) => d.id === activeTab.document_id);
+            if (docExists) {
+              await get().setActiveDocumentById(activeTab.document_id, { preserveViewMode: true });
             } else {
               set({ activeDocument: null });
+            }
+          } else if (activeTab && (activeTab.view_type || activeTab.view_mode)) {
+            useWorkspaceStore.getState().setMainViewMode((activeTab.view_type || activeTab.view_mode) as any);
+            set({ activeDocument: null });
+          } else {
+            set({ activeDocument: null });
+          }
+        } else {
+          if (docs.length > 0) {
+            const welcomeDoc = docs.find((d) => d.id === 'welcome-to-noether') || docs.find((d) => !d.is_folder) || docs[0];
+            if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
+              await get().setActiveDocumentById(welcomeDoc.id);
             }
           } else {
-            if (docs.length > 0) {
-              const welcomeDoc = docs.find((d) => d.id === 'welcome-to-noether') || docs.find((d) => !d.is_folder) || docs[0];
-              if (welcomeDoc && !welcomeDoc.is_folder && !get().activeDocument) {
-                await get().setActiveDocumentById(welcomeDoc.id);
-              }
-            } else {
-              if (useWorkspaceStore.getState().tabs.length === 0) {
-                useWorkspaceStore.getState().openEmptyTab();
-              }
+            if (useWorkspaceStore.getState().tabs.length === 0) {
+              useWorkspaceStore.getState().openEmptyTab();
             }
           }
         }
+      }
 
-        if (!get().activeDocument && useWorkspaceStore.getState().mainViewMode === 'document' && docs.length > 0) {
-          const defaultDoc = docs.find((d) => d.id === 'welcome-to-noether') || docs.find((d) => !d.is_folder);
-          if (defaultDoc) {
-            await get().setActiveDocumentById(defaultDoc.id);
-          }
+      if (!get().activeDocument && useWorkspaceStore.getState().mainViewMode === 'document' && docs.length > 0) {
+        const defaultDoc = docs.find((d) => d.id === 'welcome-to-noether') || docs.find((d) => !d.is_folder);
+        if (defaultDoc) {
+          await get().setActiveDocumentById(defaultDoc.id);
         }
-      } else {
-        set({ isLoading: false });
       }
     } catch (e) {
       console.error('Failed to load initial data:', e);
@@ -622,6 +649,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     const activeDocBefore = get().activeDocument?.id || null;
     const resolvedDocType = customType ? customType.docType : (docType || 'base');
+    const isCanvas = resolvedDocType === 'canvas';
     const doc: DocumentItem = {
       id,
       parent_id: targetParentId,
@@ -641,6 +669,18 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const activeViewType = activeTab?.view_type || activeTab?.view_mode || ws.mainViewMode || 'document';
     const activePolicy = viewRegistry.getBehaviorPolicy(activeViewType);
     const shouldOpenInBackground = activePolicy?.openNewDocumentsInBackground ?? false;
+
+    if (platform.isDesktop()) {
+      platform.recordInternalWrite(finalTitle);
+      const ext = customType ? customType.extension : (isCanvas ? 'canvas' : 'md');
+      platform.recordInternalWrite(`${finalTitle}.${ext}`);
+      const allDocs = get().documents;
+      const relPath = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, allDocs);
+      if (relPath) {
+        platform.recordInternalWrite(relPath);
+        platform.recordInternalWrite(`${relPath}.${ext}`);
+      }
+    }
 
     // 0ms instantaneous optimistic state update
     if (shouldOpenInBackground) {
@@ -690,22 +730,24 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         if (platform.isDesktop()) {
           const allDocs = get().documents;
           const relPath = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, allDocs);
-          const ext = customType ? customType.extension : 'md';
-          const targetRelPath = customType
+          const ext = customType ? customType.extension : (isCanvas ? 'canvas' : 'md');
+          const targetRelPath = (customType || isCanvas)
             ? (relPath.endsWith(`.${ext}`) ? relPath : `${relPath}.${ext}`)
             : relPath;
-          const diskContent = customType && customType.isRawContent
+          const diskContent = (customType && customType.isRawContent) || isCanvas
             ? defaultContent
             : jsonToMarkdown(defaultContent, finalTitle);
-          await platform.saveMarkdownFile(finalTitle, diskContent, targetRelPath);
+          const saveRes = await platform.saveMarkdownFile(finalTitle, diskContent, targetRelPath);
 
           const normRel = (targetRelPath || finalTitle).replace(/\\/g, '/').toLowerCase();
           const manifestKey = normRel.endsWith(`.${ext}`) ? normRel : `${normRel}.${ext}`;
           const contentHash = computeFastHash(diskContent);
+          const actualMtime = saveRes?.mtime ?? now;
+          const actualSize = saveRes?.size ?? diskContent.length;
           try {
             await dbAdapter.execute(
               `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
-              [manifestKey, now, diskContent.length, contentHash, now]
+              [manifestKey, actualMtime, actualSize, contentHash, now]
             );
           } catch (mErr) {}
         }
@@ -781,6 +823,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       updated_at: now,
     };
 
+    if (platform.isDesktop()) {
+      platform.recordInternalWrite(finalTitle);
+      const allDocs = get().documents;
+      const folderPath = getDocumentPath(doc, allDocs);
+      if (folderPath) {
+        platform.recordInternalWrite(folderPath);
+      }
+    }
+
     set((state) => ({
       documents: [doc, ...state.documents],
       editingDocId: doc.id,
@@ -802,8 +853,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         if (platform.isDesktop()) {
           const allDocs = get().documents;
           const folderPath = getDocumentPath(doc, allDocs);
-          await platform.saveMarkdownFile('.noether_folder', '', `${folderPath}/.noether_folder`);
-          await platform.deleteMarkdownFile(`${folderPath}/.noether_folder`);
+          await platform.createFolder(folderPath);
         }
       } catch (err) {
         console.error('[DocumentStore] Failed to persist new folder:', err);

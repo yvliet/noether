@@ -134,6 +134,7 @@ export interface VaultDiskItem {
   name: string;
   isFolder: boolean;
   mtime: number;
+  size?: number;
   content?: string;
 }
 

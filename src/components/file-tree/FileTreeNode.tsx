@@ -55,7 +55,7 @@ export function getVisibleTreeItemIds(targetEl?: HTMLElement | null): string[] {
 export interface FileTreeNodeProps {
   item: DocumentItem;
   level?: number;
-  allDocs: DocumentItem[];
+  allDocs?: DocumentItem[];
   childrenMap?: Map<string | null, DocumentItem[]>;
   sortOrder?: FileSortOrder;
 }
@@ -63,10 +63,11 @@ export interface FileTreeNodeProps {
 const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   item,
   level = 0,
-  allDocs,
+  allDocs: propAllDocs,
   childrenMap,
   sortOrder = 'alphabetical',
 }) => {
+  const allDocs = propAllDocs || useDocumentStore.getState().documents;
   const isFolder = !!item.is_folder;
   const isSelected = useDocumentStore((s) => (isFolder ? s.selectedDocIds.length > 1 && s.selectedDocIds.includes(item.id) : s.selectedDocIds.includes(item.id)));
   const isMultiSelected = useDocumentStore((s) => s.selectedDocIds.length > 1 && s.selectedDocIds.includes(item.id));
@@ -192,9 +193,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const folderBrokenDocCount = useMemo(() => {
     if (!isFolder || !showBrokenEmbedIndicators || !brokenEmbedCounts) return 0;
+    const docs = allDocs || useDocumentStore.getState().documents;
     let count = 0;
     for (const brokenId of Object.keys(brokenEmbedCounts)) {
-      if (brokenEmbedCounts[brokenId] > 0 && isDescendant(brokenId, item.id, allDocs)) {
+      if (brokenEmbedCounts[brokenId] > 0 && isDescendant(brokenId, item.id, docs)) {
         count++;
       }
     }
@@ -274,7 +276,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   const sortedChildren = useMemo(() => {
     if (!isFolder) return [];
-    const children = childrenMap ? (childrenMap.get(item.id) || []) : allDocs.filter((d) => d.parent_id === item.id);
+    const docs = allDocs || useDocumentStore.getState().documents;
+    const children = childrenMap ? (childrenMap.get(item.id) || []) : docs.filter((d) => d.parent_id === item.id);
     return sortDocuments(children, sortOrder);
   }, [isFolder, childrenMap, allDocs, item.id, sortOrder]);
 
@@ -282,7 +285,8 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     if (!isEditing) return false;
     const trimmed = editTitle.trim().toLowerCase();
     if (!trimmed || trimmed === originalTitleRef.current.trim().toLowerCase()) return false;
-    const siblings = childrenMap ? (childrenMap.get(item.parent_id || null) || []) : allDocs;
+    const docs = allDocs || useDocumentStore.getState().documents;
+    const siblings = childrenMap ? (childrenMap.get(item.parent_id || null) || []) : docs;
     return siblings.some(
       (d) =>
         d.id !== item.id &&

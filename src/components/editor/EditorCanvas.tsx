@@ -408,9 +408,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
       const isInsideEditor =
         container.contains(target) ||
-        container.contains(activeEl) ||
-        activeEl === document.body ||
-        !activeEl;
+        container.contains(activeEl);
 
       if (!isInsideEditor) return;
 
@@ -1465,7 +1463,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             onMouseDown={handleDeadSpaceMouseDown}
             onClick={handleDeadSpaceClick}
             onContextMenu={handleDeadSpaceContextMenu}
-            className={`flex-1 overflow-y-auto custom-scrollbar flex flex-col ${
+            className={`flex-1 overflow-y-auto custom-scrollbar ${
               !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
             } ${isReadingMode ? 'cursor-default' : ''}`}
           >
@@ -1490,8 +1488,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   ? { paddingTop: 'calc(var(--noether-header-offset, 0px) + 40px)' }
                   : undefined
               }
-              className={`mx-auto pt-3 pb-8 flex-1 flex flex-col min-h-full relative z-10 noether-editor-canvas-column ${
-                isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
+              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 ${
+                isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'w-full max-w-3xl px-10' : 'w-full px-12 max-w-none'
               } ${isEditable ? 'cursor-text' : ''}`}
             >
               {/* Dynamic Extension Content Overlay Slot (Moves with text) */}
@@ -1702,7 +1700,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   <div
                     ref={editorWrapperRef}
                     style={editorMinHeight ? { minHeight: `${editorMinHeight}px` } : undefined}
-                    className={`flex-1 flex flex-col ${
+                    className={`flex-1 w-full flex flex-col ${
                       lineNumbers ? 'noether-line-numbers' : ''
                     } ${indentationGuides ? 'noether-indent-guides' : ''} ${
                       accentListPrefixes ? 'noether-accent-lists' : ''

@@ -318,24 +318,35 @@ export const AppShell: React.FC = React.memo(() => {
     // 2. External Vault files changed listener (Git pulls, external edits, sync)
     let syncTimeout: any = null;
     const unsubFiles = platform.onVaultFilesChanged((payload) => {
-      const activeDoc = useDocumentStore.getState().activeDocument;
-      const activeTitle = activeDoc?.title?.toLowerCase();
       const changed = payload?.paths || [];
 
-      // If we just saved our own active document and it is the only changed path, ignore the echo
-      if (
-        platform.isRecentInternalWrite() &&
-        changed.length === 1 &&
-        activeTitle &&
-        changed[0].toLowerCase().replace(/\.md$/, '') === activeTitle.replace(/\.md$/, '')
-      ) {
-        return;
+      // Always cancel any pending sync timer first
+      if (syncTimeout) {
+        clearTimeout(syncTimeout);
+        syncTimeout = null;
       }
 
-      if (syncTimeout) clearTimeout(syncTimeout);
+      // Suppress full vault reload storm when the change was initiated internally by Noether
+      if (platform.isRecentInternalWrite()) {
+        const allInternal = changed.length === 0 || changed.every((p) => {
+          const clean = p.replace(/\\/g, '/').toLowerCase();
+          const baseName = clean.split('/').pop()?.replace(/\.[^/.]+$/, '') || clean;
+          return platform.isInternalWriteMatch(clean) || platform.isInternalWriteMatch(baseName);
+        });
+        if (allInternal) {
+          return;
+        }
+      }
+
       syncTimeout = setTimeout(async () => {
+        syncTimeout = null;
+        if (platform.isRecentInternalWrite()) {
+          return;
+        }
+
         try {
-          await loadInitialData({ showLoading: false, changedPaths: payload?.paths });
+          // Targeted differential sync: sync only the changed paths instead of scanning the whole vault
+          await loadInitialData({ showLoading: false, changedPaths: changed });
         } catch (e) {
           console.error('[AppShell] External files sync error:', e);
         }

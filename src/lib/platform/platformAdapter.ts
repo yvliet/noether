@@ -50,7 +50,8 @@ export interface IPlatformAdapter {
 
   // File I/O
   scanVaultFiles(customVaultPath?: string, allowedExtensions?: string[]): Promise<VaultDiskItem[]>;
-  saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  createFolder(relativePath: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; mtime?: number; size?: number; error?: string }>;
   readMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; content?: string; mtime?: number; error?: string }>;
   setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }>;
   deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
@@ -525,7 +526,15 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return [];
   }
 
-  public async saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }> {
+  public async createFolder(relativePath: string): Promise<{ success: boolean; path?: string; error?: string }> {
+    this.recordInternalWrite(relativePath);
+    if (this.isTauri()) {
+      return await invoke('create_vault_folder', { relativePath });
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public async saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; mtime?: number; size?: number; error?: string }> {
     this.recordInternalWrite(relativePath || filename);
     if (this.isTauri()) {
       return await invoke('save_markdown_file', { filename, content, relativePath: relativePath || null, vaultPath: vaultPath || null });

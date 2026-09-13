@@ -8,7 +8,7 @@ import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
 export async function getAllDocuments(options?: { includeContent?: boolean }): Promise<DocumentItem[]> {
   const contentExpr = options?.includeContent
     ? 'content_json'
-    : `CASE WHEN doc_type != 'base' THEN content_json ELSE '' END AS content_json`;
+    : `CASE WHEN doc_type = 'canvas' THEN content_json ELSE '' END AS content_json`;
 
   try {
     const docs = await dbAdapter.query<DocumentItem>(
@@ -1686,7 +1686,7 @@ Feel free to edit this note, delete it, or keep it around as a quick reference. 
  * Scans the physical vault folder on disk and synchronizes all .md files and folders into SQLite.
  * Uses file_manifest for fast O(N stat) differential indexing, skipping untouched files.
  */
-export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> {
+export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ syncedCount: number }> {
   if (!platform.isDesktop()) {
     return { syncedCount: 0 };
   }
@@ -1694,7 +1694,30 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
   try {
     const customExts = fileTypeRegistry.getAllExtensions();
     const allowedExtensions = Array.from(new Set(['md', ...customExts]));
-    let diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
+    let diskItems: import('@/types').VaultDiskItem[] = [];
+
+    if (changedPaths && changedPaths.length > 0 && changedPaths.length <= 20) {
+      for (const p of changedPaths) {
+        const cleanP = p.replace(/\\/g, '/');
+        const parts = cleanP.split('/');
+        const fileName = parts[parts.length - 1];
+        const ext = fileName.split('.').pop()?.toLowerCase();
+        if (ext && (ext === 'md' || allowedExtensions.includes(ext))) {
+          const readRes = await platform.readMarkdownFile(cleanP);
+          if (readRes.success && readRes.content !== undefined) {
+            diskItems.push({
+              relativePath: cleanP,
+              name: fileName,
+              isFolder: false,
+              mtime: readRes.mtime || Date.now(),
+              content: readRes.content,
+            });
+          }
+        }
+      }
+    } else {
+      diskItems = await platform.scanVaultFiles(undefined, allowedExtensions);
+    }
     const existingDocs = await getAllDocuments();
 
     // Check if the initial welcome note has ever been seeded
@@ -1827,20 +1850,40 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
         matchedDoc = existingDocs.find((d) => d.id === 'welcome-to-noether');
       }
 
-      const fileContent = file.content || '';
       const fileMtime = file.mtime || Date.now();
-      const fileSize = fileContent.length;
+      const fileSize = typeof file.size === 'number' ? file.size : (file.content?.length ?? 0);
       const manifestEntry = manifestMap.get(normKey) || manifestMap.get(pathKey);
 
       // Fast-path: Check if file was already indexed and is untouched on disk
-      if (matchedDoc && manifestEntry && manifestEntry.mtime === fileMtime && manifestEntry.size === fileSize) {
-        // Document is 100% up-to-date in SQLite index! Skip parsing!
+      if (
+        matchedDoc &&
+        manifestEntry &&
+        (manifestEntry.mtime === fileMtime || Math.abs(manifestEntry.mtime - fileMtime) < 1000) &&
+        manifestEntry.size === fileSize
+      ) {
+        // Document is 100% up-to-date in SQLite index! Skip reading & parsing!
         continue;
+      }
+
+      // If untouched check failed, now read disk content if needed
+      let fileContent = file.content;
+      if (fileContent === undefined) {
+        const readRes = await platform.readMarkdownFile(file.relativePath);
+        if (!readRes.success || readRes.content === undefined) {
+          continue;
+        }
+        fileContent = readRes.content;
       }
 
       const contentHash = computeFastHash(fileContent);
       if (matchedDoc && manifestEntry && manifestEntry.content_hash === contentHash) {
-        // Content hash matches exactly
+        // Content hash matches exactly, update mtime/size in manifest
+        try {
+          await dbAdapter.execute(
+            `UPDATE file_manifest SET mtime = ?, size = ?, indexed_at = ? WHERE LOWER(relative_path) = ?`,
+            [fileMtime, fileSize, Date.now(), normKey]
+          );
+        } catch (e) {}
         continue;
       }
 
@@ -1919,47 +1962,51 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       }
     }
 
-    // 3. Detect and remove external deletions from SQLite (files removed outside Noether e.g. git checkout)
-    const diskPathSet = new Set<string>();
-    for (const f of diskFiles) {
-      const relPath = f.relativePath.replace(/\\/g, '/').toLowerCase();
-      diskPathSet.add(relPath);
-      diskPathSet.add(relPath.endsWith('.md') ? relPath : `${relPath}.md`);
-      for (const ext of customExts) {
-        if (relPath.endsWith(`.${ext}`)) {
-          diskPathSet.add(relPath);
-        }
-      }
-    }
-
+    // 3. Detect and remove external deletions from SQLite (only on full vault scans, NEVER on partial changedPaths)
+    const isPartialScan = Boolean(changedPaths && changedPaths.length > 0 && changedPaths.length <= 20);
     const removedDocIds: string[] = [];
     const removedPaths: string[] = [];
-    for (const doc of existingDocs) {
-      if (doc.is_folder) continue;
 
-      // Preserve media attachments stored in SQLite
-      const isMediaOrAttachment =
-        doc.doc_type === 'image' ||
-        doc.doc_type === 'audio' ||
-        doc.doc_type === 'video' ||
-        doc.doc_type === 'pdf' ||
-        /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a)$/i.test(doc.title);
-
-      if (isMediaOrAttachment) {
-        continue;
+    if (!isPartialScan) {
+      const diskPathSet = new Set<string>();
+      for (const f of diskFiles) {
+        const relPath = f.relativePath.replace(/\\/g, '/').toLowerCase();
+        diskPathSet.add(relPath);
+        diskPathSet.add(relPath.endsWith('.md') ? relPath : `${relPath}.md`);
+        for (const ext of customExts) {
+          if (relPath.endsWith(`.${ext}`)) {
+            diskPathSet.add(relPath);
+          }
+        }
       }
 
-      const docCustomType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
-      const ext = docCustomType ? docCustomType.extension : 'md';
-      const docPath = getDocumentPath(doc, existingDocs).replace(/\\/g, '/').toLowerCase();
-      const docPathWithExt = docPath.endsWith(`.${ext}`) ? docPath : `${docPath}.${ext}`;
+      for (const doc of existingDocs) {
+        if (doc.is_folder) continue;
 
-      const existsOnDisk = diskPathSet.has(docPath) || diskPathSet.has(docPathWithExt);
-      const isTrashed = trashSet.has(docPath) || trashSet.has(docPathWithExt);
+        // Preserve media attachments stored in SQLite
+        const isMediaOrAttachment =
+          doc.doc_type === 'image' ||
+          doc.doc_type === 'audio' ||
+          doc.doc_type === 'video' ||
+          doc.doc_type === 'pdf' ||
+          /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a)$/i.test(doc.title);
 
-      if (!existsOnDisk && !isTrashed) {
-        removedDocIds.push(doc.id);
-        removedPaths.push(docPathWithExt);
+        if (isMediaOrAttachment) {
+          continue;
+        }
+
+        const docCustomType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
+        const ext = docCustomType ? docCustomType.extension : 'md';
+        const docPath = getDocumentPath(doc, existingDocs).replace(/\\/g, '/').toLowerCase();
+        const docPathWithExt = docPath.endsWith(`.${ext}`) ? docPath : `${docPath}.${ext}`;
+
+        const existsOnDisk = diskPathSet.has(docPath) || diskPathSet.has(docPathWithExt);
+        const isTrashed = trashSet.has(docPath) || trashSet.has(docPathWithExt);
+
+        if (!existsOnDisk && !isTrashed) {
+          removedDocIds.push(doc.id);
+          removedPaths.push(docPathWithExt);
+        }
       }
     }
 
@@ -1981,11 +2028,10 @@ export async function syncVaultDiskToSQLite(): Promise<{ syncedCount: number }> 
       }
     }
 
-    // 4. Synchronize blocks, headings, FTS, tags, cards, and wiki-links for all modified/added documents
+    // 4. Synchronize blocks, headings, FTS, tags, cards, and wiki-links for modified/added documents
     if (modifiedOrAddedDocIds.length > 0) {
-      const allUpdated = await getAllDocuments();
       for (const id of modifiedOrAddedDocIds) {
-        const doc = allUpdated.find((d) => d.id === id);
+        const doc = await getDocumentById(id);
         if (!doc) continue;
         const custom = fileTypeRegistry.getByDocType(doc.doc_type);
         if (custom && custom.isRawContent) continue;
