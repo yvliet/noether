@@ -1375,6 +1375,53 @@ export function registerNativeTools(app: NoetherApp): void {
         };
       },
     },
+
+    // ── 28. Toggle Sidebar ──
+    {
+      name: 'noether_toggle_sidebar',
+      description: 'Toggle the left or right sidebar visibility in the workspace.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {
+          side: {
+            type: 'string',
+            enum: ['left', 'right'],
+            description: 'Which sidebar to toggle (left or right)',
+          },
+        },
+        required: ['side'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        const side = args.side === 'right' ? 'right' : 'left';
+        if (side === 'right') {
+          hostApp.workspace.toggleRightSidebar();
+        } else {
+          hostApp.workspace.toggleLeftSidebar();
+        }
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, side }) }],
+        };
+      },
+    },
+
+    // ── 29. Toggle Split View ──
+    {
+      name: 'noether_toggle_split_view',
+      description: 'Toggle the split editor pane in the active workspace.',
+      category: 'workspace',
+      parameters: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+      handler: async (_args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        hostApp.workspace.toggleSplitView();
+        return {
+          content: [{ type: 'text', text: JSON.stringify({ success: true, splitViewToggled: true }) }],
+        };
+      },
+    },
   ];
 
   // Register each native tool directly on the application's ToolRegistry

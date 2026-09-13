@@ -262,7 +262,6 @@ const CORE_EXTENSION_IDS = new Set([
   'more-icons',
   'iconify',
   'sketch',
-  'default-commands',
 ]);
 
 /**

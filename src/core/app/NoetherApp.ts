@@ -33,6 +33,7 @@ import { FileContextMenuRegistry, fileContextMenuRegistry } from '../registries/
 import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
 import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
+import { registerNativeCommands } from '../commands/NativeCommands';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -182,6 +183,9 @@ export class NoetherApp {
 
     // Register Native Vault-Level MCP Tools
     registerNativeTools(this);
+
+    // Register Native Workspace Commands
+    registerNativeCommands(this);
 
     // Register built-in Extension & Plugin Document Viewer
     this.views.registerView({
@@ -381,6 +385,9 @@ export class NoetherApp {
       },
       openHelpModal: (): void => {
         storeRefs.workspace?.getState()?.setIsHelpModalOpen(true);
+      },
+      openVaultModal: (): void => {
+        storeRefs.workspace?.getState()?.setIsVaultModalOpen(true);
       },
       showContextMenu: (
         eventOrCoords: React.MouseEvent | MouseEvent | { x: number; y: number },
