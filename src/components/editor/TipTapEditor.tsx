@@ -1348,6 +1348,33 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
             me.preventDefault();
             return true;
           }
+
+          // If clicking in empty space of ProseMirror below the last child element
+          if (me.button === 0 && editable) {
+            const proseEl = _view.dom as HTMLElement | null;
+            if (proseEl) {
+              const lastChild = proseEl.lastElementChild as HTMLElement | null;
+              const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : proseEl.getBoundingClientRect().bottom;
+              if (me.clientY > lastBottom) {
+                me.preventDefault();
+                const ed = editorRef.current;
+                if (ed && !ed.isDestroyed) {
+                  const { state, schema } = ed;
+                  if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
+                    const insertPos = state.doc.content.size;
+                    const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
+                    tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+                    ed.view.dispatch(tr);
+                    ed.view.focus();
+                  } else {
+                    ed.commands.focus('end');
+                  }
+                  return true;
+                }
+              }
+            }
+          }
+
           return false;
         },
         mouseup: (_view: any, event: any) => {
@@ -2504,10 +2531,67 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   return (
     <div
       ref={containerRef}
+      onMouseDown={(e) => {
+        if (e.button !== 0 || !editor || !editable) return;
+        const target = e.target as HTMLElement | null;
+        if (!target) return;
+
+        if (
+          target.closest(
+            'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
+          )
+        ) {
+          return;
+        }
+
+        const pm = containerRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
+        const lastChild = pm?.lastElementChild as HTMLElement | null;
+        const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
+
+        if (
+          e.clientY > lastBottom ||
+          target === containerRef.current ||
+          target.classList.contains('tiptap') ||
+          target.classList.contains('editor-canvas') ||
+          target.classList.contains('flex-1')
+        ) {
+          e.preventDefault();
+          const { state, schema } = editor;
+          if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
+            const insertPos = state.doc.content.size;
+            const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
+            tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
+            editor.view.dispatch(tr);
+            editor.view.focus();
+          } else {
+            editor.commands.focus('end');
+          }
+        }
+      }}
       onClick={(e) => {
         if (editor && editable) {
-          const target = e.target as HTMLElement;
-          if (target === e.currentTarget || target.classList.contains('ProseMirror') || target.classList.contains('tiptap') || target.classList.contains('editor-canvas')) {
+          const target = e.target as HTMLElement | null;
+          if (!target) return;
+          if (
+            target.closest(
+              'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
+            )
+          ) {
+            return;
+          }
+
+          const pm = containerRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
+          const lastChild = pm?.lastElementChild as HTMLElement | null;
+          const lastBottom = lastChild ? lastChild.getBoundingClientRect().bottom : pm?.getBoundingClientRect().bottom ?? 0;
+
+          if (
+            e.clientY > lastBottom ||
+            target === e.currentTarget ||
+            target.classList.contains('ProseMirror') ||
+            target.classList.contains('tiptap') ||
+            target.classList.contains('editor-canvas') ||
+            target.classList.contains('flex-1')
+          ) {
             const { state, schema } = editor;
             if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
               const insertPos = state.doc.content.size;
@@ -2515,7 +2599,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
               tr.setSelection(TextSelection.create(tr.doc, insertPos + 1));
               editor.view.dispatch(tr);
               editor.view.focus();
-            } else if (!editor.isFocused) {
+            } else {
               editor.commands.focus('end');
             }
           }

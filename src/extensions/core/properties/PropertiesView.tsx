@@ -420,6 +420,10 @@ export const PropertiesView: React.FC = () => {
                             }
                           }}
                           onKeyDown={(e) => {
+                            if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                              e.stopPropagation();
+                              return;
+                            }
                             if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
                               e.preventDefault();
                               if (newTagInput.trim()) {
@@ -523,6 +527,10 @@ export const PropertiesView: React.FC = () => {
                           }
                         }}
                         onKeyDown={(e) => {
+                          if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                            e.stopPropagation();
+                            return;
+                          }
                           if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
                             e.preventDefault();
                             if (newAliasInput.trim()) {

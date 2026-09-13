@@ -3,6 +3,103 @@ import { CORE_THEME, PREINSTALLED_THEMES } from './preinstalled';
 
 const CUSTOM_THEMES_STORAGE_KEY = 'noether_custom_themes_v1';
 
+/**
+ * Parses a hex (#rgb, #rgba, #rrggbb, #rrggbbaa) or rgb/rgba color string into RGB integers in range 0-255.
+ */
+export function parseColorToRgb(color: string): { r: number; g: number; b: number } | null {
+  if (!color || typeof color !== 'string') return null;
+  const str = color.trim();
+
+  // Hex format (#rgb, #rgba, #rrggbb, #rrggbbaa)
+  if (str.startsWith('#')) {
+    const hex = str.slice(1);
+    if (hex.length === 3 || hex.length === 4) {
+      const r = parseInt(hex[0] + hex[0], 16);
+      const g = parseInt(hex[1] + hex[1], 16);
+      const b = parseInt(hex[2] + hex[2], 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+      return { r, g, b };
+    }
+    if (hex.length >= 6) {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      if (isNaN(r) || isNaN(g) || isNaN(b)) return null;
+      return { r, g, b };
+    }
+  }
+
+  // Functional rgb/rgba format: rgb(r, g, b)
+  const rgbMatch = str.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
+  if (rgbMatch) {
+    const r = Math.min(255, Math.max(0, parseInt(rgbMatch[1], 10)));
+    const g = Math.min(255, Math.max(0, parseInt(rgbMatch[2], 10)));
+    const b = Math.min(255, Math.max(0, parseInt(rgbMatch[3], 10)));
+    return { r, g, b };
+  }
+
+  return null;
+}
+
+/**
+ * Formats RGB integers into a normalized 6-character hex string.
+ */
+export function rgbToHex(r: number, g: number, b: number): string {
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const hex = (v: number) => clamp(v).toString(16).padStart(2, '0');
+  return `#${hex(r)}${hex(g)}${hex(b)}`;
+}
+
+/**
+ * Derives a hover shade from an accent color.
+ * For standard accents, darkens by 9%. For very dark accents, lightens by 18% to preserve contrast.
+ */
+export function deriveAccentHover(accent: string): string {
+  const rgb = parseColorToRgb(accent);
+  if (!rgb) return accent;
+  const { r, g, b } = rgb;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (luminance < 0.25) {
+    return rgbToHex(r + (255 - r) * 0.18, g + (255 - g) * 0.18, b + (255 - b) * 0.18);
+  }
+  return rgbToHex(r * 0.91, g * 0.91, b * 0.91);
+}
+
+/**
+ * Derives an active shade from an accent color.
+ * For standard accents, darkens by 22%. For very dark accents, lightens by 32% to preserve contrast.
+ */
+export function deriveAccentActive(accent: string): string {
+  const rgb = parseColorToRgb(accent);
+  if (!rgb) return accent;
+  const { r, g, b } = rgb;
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (luminance < 0.25) {
+    return rgbToHex(r + (255 - r) * 0.32, g + (255 - g) * 0.32, b + (255 - b) * 0.32);
+  }
+  return rgbToHex(r * 0.78, g * 0.78, b * 0.78);
+}
+
+/**
+ * Derives a subtle translucent background from an accent color.
+ */
+export function deriveAccentSubtle(accent: string, opacity: number = 0.15): string {
+  const rgb = parseColorToRgb(accent);
+  if (!rgb) return `${accent}26`;
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${opacity})`;
+}
+
+/**
+ * Derives a 2-stop linear gradient for buttons and active UI elements.
+ */
+export function deriveAccentGradient(accent: string): string {
+  const rgb = parseColorToRgb(accent);
+  if (!rgb) return `linear-gradient(135deg, ${accent} 0%, ${accent} 100%)`;
+  const { r, g, b } = rgb;
+  const lighter = rgbToHex(r + (255 - r) * 0.12, g + (255 - g) * 0.12, b + (255 - b) * 0.12);
+  return `linear-gradient(135deg, ${accent} 0%, ${lighter} 100%)`;
+}
+
 class ThemeRegistry {
   private coreTheme: ThemeDefinition = CORE_THEME;
   private preinstalledThemes: Map<string, ThemeDefinition> = new Map();
@@ -208,17 +305,39 @@ class ThemeRegistry {
   }
 
   /**
-   * Translates theme color tokens into a map of CSS variables
+   * Translates theme color tokens into a map of CSS variables.
+   * When a custom accent is provided that differs from the theme base accent,
+   * hover, active, subtle, and gradient tokens are dynamically derived from it
+   * so interactive elements like links and filter pills stay true to the user chosen accent.
    */
   public generateCssVariables(
     tokens: ThemeColorTokens,
     customAccent?: string
   ): Record<string, string> {
-    const accent = customAccent || tokens.accent || '#eb584d';
-    const accentHover = tokens.accentHover || accent;
-    const accentActive = tokens.accentActive || accent;
-    const accentSubtle = tokens.accentSubtle || `${accent}25`;
-    const accentGradient = tokens.accentGradient || `linear-gradient(135deg, ${accent} 0%, ${accentHover} 100%)`;
+    const trimmedCustom = customAccent?.trim();
+    const isCustomAccent = Boolean(
+      trimmedCustom &&
+      trimmedCustom.toLowerCase() !== (tokens.accent || '').toLowerCase()
+    );
+
+    const accent = trimmedCustom || tokens.accent || '#eb584d';
+
+    let accentHover: string;
+    let accentActive: string;
+    let accentSubtle: string;
+    let accentGradient: string;
+
+    if (isCustomAccent) {
+      accentHover = deriveAccentHover(accent);
+      accentActive = deriveAccentActive(accent);
+      accentSubtle = deriveAccentSubtle(accent, 0.15);
+      accentGradient = deriveAccentGradient(accent);
+    } else {
+      accentHover = tokens.accentHover || deriveAccentHover(accent);
+      accentActive = tokens.accentActive || deriveAccentActive(accent);
+      accentSubtle = tokens.accentSubtle || deriveAccentSubtle(accent, 0.15);
+      accentGradient = tokens.accentGradient || deriveAccentGradient(accent);
+    }
 
     const vars: Record<string, string> = {
       // Backgrounds

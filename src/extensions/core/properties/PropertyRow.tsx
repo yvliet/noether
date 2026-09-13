@@ -247,6 +247,10 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             onChange={(e) => setLocalKey(e.target.value)}
             onBlur={handleCommitKey}
             onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                e.stopPropagation();
+                return;
+              }
               if (e.key === 'Enter' || e.key === 'Tab') {
                 e.preventDefault();
                 const trimmed = localKey.trim();
@@ -291,7 +295,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
         {isReadOnlyValue ? (
           <span
             title={valueTooltip}
-            className="text-xs text-[var(--noether-text-secondary)] select-text px-0.5 py-0.5 font-normal truncate"
+            className="text-xs text-[var(--noether-text-secondary)] select-none px-0.5 py-0.5 font-normal truncate cursor-default"
           >
             {String(localVal !== undefined && localVal !== null ? localVal : '')}
           </span>
@@ -303,6 +307,10 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             onChange={(e) => setLocalVal(e.target.value)}
             onBlur={handleFlushCustomType}
             onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                e.stopPropagation();
+                return;
+              }
               if (e.key === 'Enter') {
                 e.preventDefault();
                 handleFlushCustomType();
@@ -336,6 +344,10 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             }}
             onBlur={handleFlushValue}
             onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                e.stopPropagation();
+                return;
+              }
               if (e.key === 'Enter') {
                 e.preventDefault();
                 handleFlushValue();
@@ -353,6 +365,10 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             onChange={(e) => handleDebouncedSaveValue(e.target.value)}
             onBlur={handleFlushValue}
             onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+                e.stopPropagation();
+                return;
+              }
               if (e.key === 'Enter') {
                 e.preventDefault();
                 handleFlushValue();
