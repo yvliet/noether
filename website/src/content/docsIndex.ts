@@ -103,7 +103,7 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     title: 'Infinite 2D Spatial Canvas',
     description: 'Visual whiteboarding, note cards, sticky notes, groups, and connector arrows.',
     category: 'User Guide',
-    icon: 'Layout01Icon',
+    icon: 'DashboardSquare01Icon',
     path: 'website/src/content/docs/user-guide/spatial-canvas.md',
     content: spatialCanvasRaw,
   },

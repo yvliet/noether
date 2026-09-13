@@ -37,6 +37,8 @@ import {
   DatabaseSync01Icon as HugeDatabaseSync01Icon,
   ArrowUpDownIcon as HugeArrowUpDownIcon,
   GitForkIcon as HugeGitForkIcon,
+  DashboardSquare01Icon as HugeDashboardSquare01Icon,
+  DashboardSquareAddIcon as HugeDashboardSquareAddIcon,
   Layout01Icon as HugeLayout01Icon,
   LayoutLeftIcon as HugeLayoutLeftIcon,
   LayoutRightIcon as HugeLayoutRightIcon,
@@ -319,6 +321,8 @@ export const DatabaseSync01Icon = createIcon(HugeDatabaseSync01Icon);
 export const ArrowUpDownIcon = createIcon(HugeArrowUpDownIcon);
 export const GitForkIcon = createIcon(HugeGitForkIcon);
 export const NeuralNetworkIcon = createIcon(HugeNeuralNetworkIcon);
+export const DashboardSquare01Icon = createIcon(HugeDashboardSquare01Icon);
+export const DashboardSquareAddIcon = createIcon(HugeDashboardSquareAddIcon);
 export const Layout01Icon = createIcon(HugeLayout01Icon);
 export const LayoutLeftIcon = createIcon(HugeLayoutLeftIcon);
 export const LayoutRightIcon = createIcon(HugeLayoutRightIcon);

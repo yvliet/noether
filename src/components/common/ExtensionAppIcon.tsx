@@ -25,6 +25,7 @@ import {
   HashIcon,
   LeftToRightListBulletIcon,
   Link01Icon,
+  DashboardSquare01Icon,
 } from '@/components/common/Icons';
 
 export interface ExtensionAppIconProps {
@@ -115,6 +116,13 @@ function resolveIconComponent(rawName?: string): React.ComponentType<any> {
     case 'motion-01':
     case 'motion01':
       return Motion01Icon;
+
+    case 'dashboard-square':
+    case 'dashboard-square-01':
+    case 'dashboardsquare':
+    case 'dashboardsquare01':
+    case 'canvas':
+      return DashboardSquare01Icon;
 
     case 'folder':
     case 'folder-01':

@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import {
   FileAddIcon,
-  Layout01Icon,
   FolderAddIcon,
   ArrowShrink02Icon,
   ArrowExpand01Icon,

@@ -30,7 +30,7 @@ import {
   File01Icon,
   Delete02Icon,
   SparklesIcon,
-  Layout01Icon,
+  DashboardSquare01Icon,
   StickyNote03Icon,
   FileEmpty01Icon,
   FileImageIcon,
@@ -6095,7 +6095,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       {/* 100% Consistent Page Subheader */}
       <PageSubHeader
         title={activeDoc?.title || 'Canvas'}
-        icon={<Layout01Icon size={13} />}
+        icon={<DashboardSquare01Icon size={13} />}
         document={activeDoc}
         hideBar={true}
         showReadingToggle={false}
