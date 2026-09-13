@@ -128,6 +128,7 @@ Noether tools are auto-discovered when the MCP server is configured in your agen
 | `noether_search_across_vaults` | Search for notes across all known Vaults |
 | `noether_toggle_sidebar` | Toggle left or right sidebar visibility |
 | `noether_toggle_split_view` | Toggle split editor pane |
+| `noether_insert_table` | Insert an interactive table grid |
 
 ---
 

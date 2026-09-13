@@ -256,7 +256,6 @@ const CORE_EXTENSION_IDS = new Set([
   'tags',
   'outline',
   'properties',
-  'tables',
   'bookmarks',
   'marketplace',
   'more-icons',

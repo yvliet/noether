@@ -148,6 +148,23 @@ const baseSlashItems: SlashItem[] = [
     },
   },
   {
+    title: 'Table',
+    description: 'Insert an interactive table grid',
+    icon: 'table',
+    aliases: ['table', 'grid', 'matrix'],
+    command: ({ editor, range, rows, cols }: any) => {
+      const { tableDefaultRows, tableDefaultCols } = useSettingsStore.getState();
+      const r = rows || tableDefaultRows || 3;
+      const c = cols || tableDefaultCols || 3;
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({ rows: r, cols: c, withHeaderRow: true })
+        .run();
+    },
+  },
+  {
     title: 'Callout',
     description: 'Callout box',
     icon: 'callout',
@@ -1272,7 +1289,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         nested: true,
       }),
       Table.configure({
-        resizable: true,
+        resizable: useSettingsStore.getState().tableEnableColumnResizing ?? true,
         HTMLAttributes: {
           class: 'noether-table',
         },
@@ -2427,12 +2444,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   useEffect(() => {
     if (!editor) return;
     const handleInsertTable = (payload?: { rows?: number; cols?: number }) => {
-      const rows = payload?.rows ?? 3;
-      const cols = payload?.cols ?? 3;
+      const { tableDefaultRows, tableDefaultCols } = useSettingsStore.getState();
+      const rows = payload?.rows ?? tableDefaultRows ?? 3;
+      const cols = payload?.cols ?? tableDefaultCols ?? 3;
       editor
         .chain()
         .focus()
-        .insertTable({ rows, cols, withHeaderRow: false })
+        .insertTable({ rows, cols, withHeaderRow: true })
         .run();
     };
 

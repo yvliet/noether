@@ -59,8 +59,10 @@ import {
   Alert02Icon,
   AlertDiamondIcon,
   Search01Icon,
+  GridTableIcon,
 } from '@/components/common/Icons';
 import { insertOrWrapMarkdownLink } from '@/components/editor/extensions/markdown-shortcuts';
+import { useSettingsStore } from '@/store/settingsStore';
 
 /**
  * Predicate determining if an active Markdown editor is available for formatting operations.
@@ -885,6 +887,28 @@ export function registerNativeCommands(app: NoetherApp): void {
       isEnabled: isMarkdownEditorActive,
       action: (appInstance) => {
         appInstance.editor.getActiveEditor()?.chain().focus().insertContent('![]()').run();
+      },
+    },
+    {
+      id: 'editor:insert-table',
+      title: 'Insert table',
+      section: 'Editor',
+      icon: <GridTableIcon size={16} />,
+      aliases: ['table', 'grid', 'matrix', 'insert table'],
+      isEnabled: isMarkdownEditorActive,
+      action: (appInstance) => {
+        const { tableDefaultRows, tableDefaultCols } = useSettingsStore.getState();
+        const rows = tableDefaultRows || 3;
+        const cols = tableDefaultCols || 3;
+        const handled = appInstance.editor.dispatchAction('insertTable', { rows, cols, withHeaderRow: true });
+        if (!handled) {
+          appInstance.events.emit('editor:action', { action: 'insert-table', payload: { rows, cols } });
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(
+              new CustomEvent('noether:insert-table-command', { detail: { rows, cols } })
+            );
+          }
+        }
       },
     },
   ];

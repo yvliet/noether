@@ -80,6 +80,11 @@ export interface SettingsState {
   // Hotkeys
   customHotkeys: Record<string, string>;
 
+  // Tables
+  tableDefaultRows: number;
+  tableDefaultCols: number;
+  tableEnableColumnResizing: boolean;
+
   // Setters
   setAutoUpdates: (val: boolean) => void;
   setEarlyAccess: (val: boolean) => void;
@@ -126,6 +131,9 @@ export interface SettingsState {
   setBlueLinks: (val: boolean) => void;
   setUnderlineLinks: (val: boolean) => void;
   setMatchLinkUnderlineColor: (val: boolean) => void;
+  setTableDefaultRows: (rows: number) => void;
+  setTableDefaultCols: (cols: number) => void;
+  setTableEnableColumnResizing: (val: boolean) => void;
   setSkipDeleteConfirmation: (val: boolean) => void;
   setSkipRenameConfirmation: (val: boolean) => void;
   setCloseTabsOnDelete: (val: boolean) => void;
@@ -141,6 +149,18 @@ export interface SettingsState {
   restoreAllDefaults: () => void;
   restoreTabDefaults: (tabId: string) => void;
 }
+
+const legacyTableSettings = (() => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem('noether_extension_data_tables');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return parsed.state || parsed;
+    }
+  } catch {}
+  return null;
+})();
 
 export const DEFAULT_SETTINGS = {
   autoUpdates: true,
@@ -191,6 +211,14 @@ export const DEFAULT_SETTINGS = {
   blueLinks: false,
   underlineLinks: true,
   matchLinkUnderlineColor: false,
+
+  // Tables
+  tableDefaultRows: typeof legacyTableSettings?.defaultRows === 'number' ? legacyTableSettings.defaultRows : 3,
+  tableDefaultCols: typeof legacyTableSettings?.defaultCols === 'number' ? legacyTableSettings.defaultCols : 3,
+  tableEnableColumnResizing:
+    typeof legacyTableSettings?.enableColumnResizing === 'boolean'
+      ? legacyTableSettings.enableColumnResizing
+      : true,
 
   skipDeleteConfirmation: false,
   skipRenameConfirmation: false,
@@ -568,6 +596,10 @@ export const useSettingsStore = create<SettingsState>()(
         applyAppearanceDOM({ ...get(), matchLinkUnderlineColor });
       },
 
+      setTableDefaultRows: (tableDefaultRows) => set({ tableDefaultRows }),
+      setTableDefaultCols: (tableDefaultCols) => set({ tableDefaultCols }),
+      setTableEnableColumnResizing: (tableEnableColumnResizing) => set({ tableEnableColumnResizing }),
+
       setSkipDeleteConfirmation: (skipDeleteConfirmation) => {
         if (typeof window !== 'undefined') {
           localStorage.setItem('noether_skip_delete_confirmation', skipDeleteConfirmation ? 'true' : 'false');
@@ -671,6 +703,9 @@ export const useSettingsStore = create<SettingsState>()(
             blueLinks: DEFAULT_SETTINGS.blueLinks,
             underlineLinks: DEFAULT_SETTINGS.underlineLinks,
             matchLinkUnderlineColor: DEFAULT_SETTINGS.matchLinkUnderlineColor,
+            tableDefaultRows: DEFAULT_SETTINGS.tableDefaultRows,
+            tableDefaultCols: DEFAULT_SETTINGS.tableDefaultCols,
+            tableEnableColumnResizing: DEFAULT_SETTINGS.tableEnableColumnResizing,
           });
           applyAppearanceDOM({
             ...get(),
@@ -708,6 +743,9 @@ export const useSettingsStore = create<SettingsState>()(
           applyAppearanceDOM(state);
           const skipDel = state.skipDeleteConfirmation ?? false;
           const skipRen = state.skipRenameConfirmation ?? false;
+          if (state.tableDefaultRows === undefined) state.tableDefaultRows = 3;
+          if (state.tableDefaultCols === undefined) state.tableDefaultCols = 3;
+          if (state.tableEnableColumnResizing === undefined) state.tableEnableColumnResizing = true;
           if (typeof window !== 'undefined') {
             localStorage.setItem('noether_skip_delete_confirmation', skipDel ? 'true' : 'false');
             localStorage.setItem('noether_skip_rename_confirmation', skipRen ? 'true' : 'false');

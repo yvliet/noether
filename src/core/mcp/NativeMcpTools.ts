@@ -1422,6 +1422,68 @@ export function registerNativeTools(app: NoetherApp): void {
         };
       },
     },
+
+    // ── 30. Insert Table ──
+    {
+      name: 'noether_insert_table',
+      description: 'Insert a new table grid block into the active document editor.',
+      category: 'editor',
+      parameters: {
+        type: 'object',
+        properties: {
+          rows: {
+            type: 'number',
+            description: 'Number of rows in the table (minimum 1, default 3)',
+          },
+          cols: {
+            type: 'number',
+            description: 'Number of columns in the table (minimum 1, default 3)',
+          },
+        },
+        required: ['rows', 'cols'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        try {
+          const rows = Math.max(1, Math.floor(Number(args.rows) || 3));
+          const cols = Math.max(1, Math.floor(Number(args.cols) || 3));
+
+          const handled = hostApp.editor.dispatchAction('insertTable', { rows, cols, withHeaderRow: true });
+          if (!handled) {
+            hostApp.events.emit('editor:action', {
+              action: 'insert-table',
+              payload: { rows, cols },
+            });
+
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(
+                new CustomEvent('noether:insert-table-command', {
+                  detail: { rows, cols },
+                })
+              );
+            }
+          }
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify({
+                  success: true,
+                  rows,
+                  cols,
+                }),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    },
   ];
 
   // Register each native tool directly on the application's ToolRegistry
