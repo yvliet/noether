@@ -235,43 +235,44 @@ export const PropertiesView: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full select-none text-xs">
-      {/* Top Action Header (Matching Nav Sidebar Toolbar) */}
-      <div className="h-9 px-2 flex items-center justify-between text-[var(--noether-text-muted)] shrink-0">
+      {/* Top Centered Action Header */}
+      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)] shrink-0">
         {!isLocked && (
           <button
             onClick={handleAddDirectProperty}
             title={`Add Property\nCreate a new metadata field for this note`}
-            className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer flex items-center gap-1 text-[11px] font-medium"
+            className="p-1.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
-            <PlusSignIcon size={13} />
-            <span>Add property</span>
+            <PlusSignIcon size={14} />
           </button>
         )}
 
-        <div className="flex items-center gap-0.5 ml-auto">
-          <button
-            onClick={() => setSortAlpha(!sortAlpha)}
-            title={`Sort Properties\nSwitch to ${sortAlpha ? 'default order' : 'alphabetical order'}`}
-            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer ${
-              sortAlpha ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
-            }`}
-          >
-            <ArrowDownAZIcon size={14} />
-          </button>
+        <button
+          onClick={() => setSortAlpha(!sortAlpha)}
+          title={`Sort Properties\nSwitch to ${sortAlpha ? 'default order' : 'alphabetical order'}`}
+          className={`p-1.5 rounded-[5px] cursor-pointer ${
+            sortAlpha
+              ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]'
+              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+          }`}
+        >
+          <ArrowDownAZIcon size={14} />
+        </button>
 
-          <button
-            onClick={() => {
-              setIsSearchOpen(!isSearchOpen);
-              if (isSearchOpen) setSearchQuery('');
-            }}
-            title={isSearchOpen ? 'Close search' : 'Search properties'}
-            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer ${
-              isSearchOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
-            }`}
-          >
-            <Search01Icon size={14} />
-          </button>
-        </div>
+        <button
+          onClick={() => {
+            setIsSearchOpen(!isSearchOpen);
+            if (isSearchOpen) setSearchQuery('');
+          }}
+          title={isSearchOpen ? 'Close search' : 'Search properties'}
+          className={`p-1.5 rounded-[5px] cursor-pointer ${
+            isSearchOpen
+              ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]'
+              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+          }`}
+        >
+          <Search01Icon size={14} />
+        </button>
       </div>
 
       {/* Optional Search Input */}
@@ -596,21 +597,6 @@ export const PropertiesView: React.FC = () => {
               variant="sidebar"
             />
           ))}
-
-          {/* Seamless Add Property Button */}
-          {!isLocked && (
-            <div key="system-add-property" className="pt-0.5">
-              <button
-                type="button"
-                onClick={handleAddDirectProperty}
-                title={`Add Property\nCreate a new metadata field for this note`}
-                className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer py-1 px-1.5 rounded hover:bg-[var(--noether-bg-card-hover)]"
-              >
-                <PlusSignIcon size={11} />
-                <span>Add property</span>
-              </button>
-            </div>
-          )}
         </div>
 
         {/* Document Details Section */}
@@ -634,19 +620,21 @@ export const PropertiesView: React.FC = () => {
             <div className="px-1.5 py-1 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Words</span>
-                <span className="text-[var(--noether-text-primary)] font-mono">{wordCount}</span>
+                <span className="text-[var(--noether-text-primary)] font-medium">{wordCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Characters</span>
-                <span className="text-[var(--noether-text-primary)] font-mono">{charCount}</span>
+                <span className="text-[var(--noether-text-primary)] font-medium">{charCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Read time</span>
-                <span className="text-[var(--noether-text-primary)] font-mono">{readingTimeMins} min</span>
+                <span className="text-[var(--noether-text-primary)] font-medium">{readingTimeMins} min</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Type</span>
-                <span className="text-[var(--noether-text-primary)] font-medium uppercase text-[10px]">{activeDocument.doc_type || 'Note'}</span>
+                <span className="text-[var(--noether-text-primary)] font-medium uppercase text-[10px]">
+                  {(!activeDocument.doc_type || activeDocument.doc_type === 'base') ? 'MD' : activeDocument.doc_type}
+                </span>
               </div>
             </div>
           )}
