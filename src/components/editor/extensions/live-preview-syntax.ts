@@ -1738,9 +1738,7 @@ export const LivePreviewSyntax = Extension.create({
               !oldPluginState.decorations ||
               focusChanged ||
               targetHeadingChanged ||
-              selectionChanged ||
-              tr.selectionSet ||
-              doc.nodeSize < 25000
+              tr.getMeta('forceRebuildDecorations')
             ) {
               return {
                 decorations: buildAllDecorations(doc, isFocused, selFrom, selTo, targetHeadingIndex, extensionThis.editor),
@@ -1749,7 +1747,7 @@ export const LivePreviewSyntax = Extension.create({
               };
             }
 
-            if (tr.docChanged) {
+            if (tr.docChanged || selectionChanged || tr.selectionSet) {
               return {
                 decorations: updateDecorationsIncrementally(
                   tr,

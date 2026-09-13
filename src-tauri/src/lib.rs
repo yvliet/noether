@@ -3,10 +3,11 @@ mod icon_tint;
 mod db;
 mod vcs;
 
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use parking_lot::Mutex;
 use std::time::Duration;
 use notify::Event;
+use serde_json::json;
 use tauri::{Emitter, Manager};
 use vault::{load_config, AppState, WatcherState};
 
@@ -44,6 +45,7 @@ pub fn run() {
             vault::open_vault_in_explorer,
             vault::scan_vault_files,
             vault::save_markdown_file,
+            vault::read_markdown_file,
             vault::set_file_attributes,
             vault::delete_markdown_file,
             vault::rename_markdown_file,
@@ -123,21 +125,55 @@ pub fn run() {
                 while let Ok(res) = watcher_rx.recv() {
                     match res {
                         Ok(Event { paths, .. }) => {
-                            // If Noether itself just saved/edited the file internally, ignore the event
-                            if vault::is_recent_internal_write() {
-                                continue;
-                            }
+                            let current_vault = {
+                                let app_state = handle_watcher.state::<AppState>();
+                                let cfg = app_state.config.lock();
+                                PathBuf::from(&cfg.current_vault_path)
+                            };
 
-                            let should_emit = paths.iter().any(|p| {
-                                let p_str = p.to_string_lossy().replace('\\', "/");
-                                !p_str.contains("/.noether") && !p_str.contains("/.git") && !p_str.contains("/.")
-                            });
+                            // Filter paths: ignore vault root, directory-only events, dotfolders, temp files, and verified internal echoes
+                            let non_echo_paths: Vec<PathBuf> = paths
+                                .into_iter()
+                                .filter(|p| {
+                                    if p == &current_vault || p.is_dir() {
+                                        return false;
+                                    }
+                                    let p_str = p.to_string_lossy().replace('\\', "/");
+                                    if p_str.contains("/.noether") || p_str.contains("/.git") || p_str.contains("/.trash") {
+                                        return false;
+                                    }
+                                    if p_str.contains(".tmp.") || p_str.ends_with(".tmp") {
+                                        return false;
+                                    }
+                                    // Deterministic echo suppression: verify against per-path fingerprint
+                                    if vault::is_internal_echo(p) {
+                                        return false;
+                                    }
+                                    true
+                                })
+                                .collect();
 
-                            if should_emit {
-                                // Debounce slightly
-                                std::thread::sleep(Duration::from_millis(150));
-                                if !vault::is_recent_internal_write() {
-                                    let _ = handle_watcher.emit("vault-files-changed", ());
+                            if !non_echo_paths.is_empty() {
+                                // Coalescing delay (100ms) to batch bursts of external changes (e.g. Git pull or multi-file sync)
+                                std::thread::sleep(Duration::from_millis(100));
+
+                                let verified_relative_paths: Vec<String> = non_echo_paths
+                                    .iter()
+                                    .filter(|p| !p.is_dir() && !vault::is_internal_echo(p))
+                                    .map(|p| {
+                                        p.strip_prefix(&current_vault)
+                                            .unwrap_or(p)
+                                            .to_string_lossy()
+                                            .replace('\\', "/")
+                                    })
+                                    .filter(|rel| !rel.is_empty() && rel != ".")
+                                    .collect();
+
+                                if !verified_relative_paths.is_empty() {
+                                    let _ = handle_watcher.emit(
+                                        "vault-files-changed",
+                                        json!({ "paths": verified_relative_paths }),
+                                    );
                                 }
                             }
                         }

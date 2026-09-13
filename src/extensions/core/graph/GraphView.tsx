@@ -409,7 +409,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const isSidebar = propIsSidebar ?? isSidebarDetected;
 
   const dockDefaultMode = useGraphSettings((s) => s.dockDefaultMode);
-  const activeDoc = useDocumentStore((s) => s.activeDocument);
+  const activeDocId = useDocumentStore((s) => (s.activeDocument && !s.activeDocument.is_folder ? s.activeDocument.id : null));
   const isSplitView = useWorkspaceStore((s) => s.layoutTree.type === 'split');
   const panes = useWorkspaceStore((s) => s.panes);
   const splitTabs = useWorkspaceStore((s) => s.splitTabs);
@@ -461,7 +461,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   // Determine effective mode and active target document
   const effectiveMode = isSidebar ? dockGraphMode : (splitNote ? pageGraphMode : 'global');
   const targetDocId = isSidebar
-    ? (activeDoc && !activeDoc.is_folder ? activeDoc.id : null)
+    ? activeDocId
     : (splitNote ? splitNote.id : null);
 
   const effectiveModeRef = useRef(effectiveMode);

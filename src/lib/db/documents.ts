@@ -525,7 +525,13 @@ export function formatFrontmatter(properties?: DocumentProperties | string): str
     return '';
   }
 
-  const entries = Object.entries(parsedProps).filter(([_, v]) => v !== undefined && v !== null && v !== '');
+  // If raw frontmatter was preserved, use it verbatim to protect comments, custom YAML scalars, and formatting
+  const rawFm = (parsedProps as any)._raw_frontmatter;
+  if (typeof rawFm === 'string' && rawFm.startsWith('---') && rawFm.includes('\n---')) {
+    return rawFm.endsWith('\n\n') ? rawFm : (rawFm.endsWith('\n') ? rawFm + '\n' : rawFm + '\n\n');
+  }
+
+  const entries = Object.entries(parsedProps).filter(([k, v]) => !k.startsWith('_') && v !== undefined && v !== null && v !== '');
   if (entries.length === 0) return '';
 
   const lines: string[] = ['---'];
@@ -552,7 +558,7 @@ export function formatFrontmatter(properties?: DocumentProperties | string): str
 /**
  * Parses YAML frontmatter from raw Markdown text
  */
-export function parseFrontmatter(rawText: string): { properties: DocumentProperties; bodyText: string } {
+export function parseFrontmatter(rawText: string): { properties: DocumentProperties; bodyText: string; rawFrontmatter?: string } {
   if (!rawText) return { properties: {}, bodyText: '' };
   const normalized = rawText.replace(/\r\n/g, '\n');
   if (!normalized.startsWith('---')) {
@@ -564,9 +570,13 @@ export function parseFrontmatter(rawText: string): { properties: DocumentPropert
     return { properties: {}, bodyText: rawText };
   }
 
+  const fullFrontmatter = normalized.slice(0, endIdx + 4);
   const frontmatterStr = normalized.slice(3, endIdx).trim();
   const bodyText = normalized.slice(endIdx + 4).replace(/^\n+/, '');
   const properties: DocumentProperties = {};
+
+  // Store raw frontmatter to preserve comments and exact layout
+  (properties as any)._raw_frontmatter = fullFrontmatter;
 
   for (const line of frontmatterStr.split('\n')) {
     const colonIdx = line.indexOf(':');
@@ -595,7 +605,7 @@ export function parseFrontmatter(rawText: string): { properties: DocumentPropert
     }
   }
 
-  return { properties, bodyText };
+  return { properties, bodyText, rawFrontmatter: fullFrontmatter };
 }
 
 /**
@@ -672,8 +682,9 @@ export function jsonToMarkdown(
 
       if (node.type === 'bulletList') {
         return (node.content || []).map((li: any) => {
+          const marker = li.attrs?.marker || node.attrs?.marker || '-';
           const lines = (li.content || []).map(processNode).join('').trimEnd().split('\n');
-          const firstLine = `- ${lines[0] || ''}\n`;
+          const firstLine = `${marker} ${lines[0] || ''}\n`;
           const restLines = lines.slice(1).map((l: string) => l ? `  ${l}\n` : '\n').join('');
           return firstLine + restLines;
         }).join('');
@@ -691,8 +702,9 @@ export function jsonToMarkdown(
       if (node.type === 'taskList') {
         return (node.content || []).map((ti: any) => {
           const checked = ti.attrs?.checked ? 'x' : ' ';
+          const marker = ti.attrs?.marker || '-';
           const lines = (ti.content || []).map(processNode).join('').trimEnd().split('\n');
-          const firstLine = `- [${checked}] ${lines[0] || ''}\n`;
+          const firstLine = `${marker} [${checked}] ${lines[0] || ''}\n`;
           const restLines = lines.slice(1).map((l: string) => l ? `  ${l}\n` : '\n').join('');
           return firstLine + restLines;
         }).join('');
@@ -722,8 +734,8 @@ export function jsonToMarkdown(
           const cells = rowNode.content || [];
           const rowData: string[] = [];
           for (const cell of cells) {
-            const cellText = (cell.content || []).map(processNode).join('').replace(/\n+/g, ' ').trim();
-            rowData.push(cellText);
+            const cellText = (cell.content || []).map(processNode).join('').replace(/\r?\n/g, '<br>').trim();
+            rowData.push(cellText.replace(/\|/g, '\\|'));
           }
           tableData.push(rowData);
         }
@@ -766,13 +778,13 @@ export function jsonToMarkdown(
 }
 
 /**
- * Parses raw table row cells from a markdown line
+ * Parses raw table row cells from a markdown line, respecting escaped pipes
  */
 function parseMarkdownTableRow(line: string): string[] {
   let clean = line.trim();
   if (clean.startsWith('|')) clean = clean.slice(1);
   if (clean.endsWith('|')) clean = clean.slice(0, -1);
-  return clean.split('|').map((c) => c.trim());
+  return clean.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'));
 }
 
 /**
@@ -879,19 +891,21 @@ interface ListItemParseResult {
   indent: number;
   checked: boolean;
   text: string;
+  marker?: string;
 }
 
 function matchListItemLine(line: string): ListItemParseResult | null {
   // 1. Task list item: [indent]- [ ] or - [x] or 1. [ ] or 1. [x]
-  const taskMatch = line.match(/^([ \t]*)(?:[-*+]|\d+\.)\s+\[([ xX])\]\s+(.*)$/);
+  const taskMatch = line.match(/^([ \t]*)(?:([-*+])|\d+\.)\s+\[([ xX])\]\s+(.*)$/);
   if (taskMatch) {
     const indentStr = taskMatch[1].replace(/\t/g, '  ');
     return {
       listType: 'taskList',
       itemType: 'taskItem',
       indent: indentStr.length,
-      checked: taskMatch[2].toLowerCase() === 'x',
-      text: taskMatch[3],
+      checked: taskMatch[3].toLowerCase() === 'x',
+      text: taskMatch[4],
+      marker: taskMatch[2] || '-',
     };
   }
 
@@ -909,7 +923,7 @@ function matchListItemLine(line: string): ListItemParseResult | null {
   }
 
   // 3. Bullet list item: [indent]- text or * text or + text
-  const ulMatch = line.match(/^([ \t]*)[-*+]\s+(.*)$/);
+  const ulMatch = line.match(/^([ \t]*)([-*+])\s+(.*)$/);
   if (ulMatch) {
     const indentStr = ulMatch[1].replace(/\t/g, '  ');
     return {
@@ -917,11 +931,32 @@ function matchListItemLine(line: string): ListItemParseResult | null {
       itemType: 'listItem',
       indent: indentStr.length,
       checked: false,
-      text: ulMatch[2],
+      text: ulMatch[3],
+      marker: ulMatch[2],
     };
   }
 
   return null;
+}
+
+/**
+ * Parses inline tokens in table cells, preserving <br> line breaks as hardBreak nodes
+ */
+function parseTableInlineTokens(cellText: string): any[] {
+  if (!cellText) return [];
+  const parts = cellText.split(/<br\s*\/?>/i);
+  if (parts.length === 1) {
+    return parseInlineMarkdownTokens(parts[0]);
+  }
+  const nodes: any[] = [];
+  for (let idx = 0; idx < parts.length; idx++) {
+    if (idx > 0) {
+      nodes.push({ type: 'hardBreak' });
+    }
+    const inlineNodes = parseInlineMarkdownTokens(parts[idx]);
+    nodes.push(...inlineNodes);
+  }
+  return nodes;
 }
 
 export function markdownToTipTapJson(md: string): string {
@@ -1017,7 +1052,7 @@ export function markdownToTipTapJson(md: string): string {
           let s = rowStr.trim();
           if (s.startsWith('|')) s = s.slice(1);
           if (s.endsWith('|')) s = s.slice(0, -1);
-          return s.split('|').map((c) => c.trim());
+          return s.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, '|'));
         };
 
         const headerCells = splitRow(line);
@@ -1028,7 +1063,7 @@ export function markdownToTipTapJson(md: string): string {
           type: 'tableRow',
           content: headerCells.map((cellText) => ({
             type: 'tableHeader',
-            content: [{ type: 'paragraph', content: cellText ? parseInlineMarkdownTokens(cellText) : [] }],
+            content: [{ type: 'paragraph', content: cellText ? parseTableInlineTokens(cellText) : [] }],
           })),
         });
 
@@ -1042,7 +1077,7 @@ export function markdownToTipTapJson(md: string): string {
             type: 'tableRow',
             content: cells.slice(0, colCount).map((cellText) => ({
               type: 'tableCell',
-              content: [{ type: 'paragraph', content: cellText ? parseInlineMarkdownTokens(cellText) : [] }],
+              content: [{ type: 'paragraph', content: cellText ? parseTableInlineTokens(cellText) : [] }],
             })),
           });
           i++;
@@ -1122,7 +1157,9 @@ export function markdownToTipTapJson(md: string): string {
           content: [{ type: 'paragraph', content: item.text ? parseInlineMarkdownTokens(item.text) : [] }],
         };
         if (item.listType === 'taskList') {
-          newListItem.attrs = { checked: item.checked };
+          newListItem.attrs = { checked: item.checked, marker: item.marker || '-' };
+        } else if (item.marker) {
+          newListItem.attrs = { marker: item.marker };
         }
 
         if (stack.length === 0) {
@@ -1183,7 +1220,7 @@ export async function saveDocumentAndSynchronize(
   documentId: string,
   contentJson: string,
   title?: string,
-  options?: { skipDiskExport?: boolean }
+  options?: { skipDiskExport?: boolean; rawMarkdownOverride?: string }
 ): Promise<{ headings: HeadingItem[]; wordCount: number; charCount: number }> {
   const now = Date.now();
 
@@ -1379,6 +1416,12 @@ export async function saveDocumentAndSynchronize(
     });
   }
 
+  // If processing a large document (500+ blocks), yield to the browser macro-task queue
+  // so the main UI thread never drops frames or suffers input latency during debounce flushes
+  if (extractedBlocks.length > 500) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+
   // Execute all sync queries in a single atomic transaction
   try {
     await dbAdapter.transaction(queries);
@@ -1399,7 +1442,9 @@ export async function saveDocumentAndSynchronize(
     const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string }>(`SELECT id, parent_id, title, properties FROM documents WHERE id = ?`, [documentId]))[0];
     const docTitle = title || docRecord?.title || 'Untitled';
     const docProps = docRecord?.properties || '{}';
-    let mdContent = jsonToMarkdown(contentJson, docTitle, docProps);
+    let mdContent = options?.rawMarkdownOverride !== undefined
+      ? options.rawMarkdownOverride
+      : jsonToMarkdown(contentJson, docTitle, docProps);
     try {
       const { appInstance } = await import('@/core/app/NoetherApp');
       if (appInstance?.editor) {
@@ -1413,13 +1458,15 @@ export async function saveDocumentAndSynchronize(
     if (platform.isDesktop() && docRecord && !options?.skipDiskExport) {
       const allDocs = await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title FROM documents`);
       const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
-      await platform.saveMarkdownFile(docTitle, mdContent, relPath);
-      const isLocked = isDocumentLocked(docProps);
-      await platform.setFileAttributes(relPath || docTitle, { readonly: isLocked, mtime: now });
 
       const normRel = (relPath || docTitle).replace(/\\/g, '/').toLowerCase();
       const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
       const contentHash = computeFastHash(mdContent);
+
+      await platform.saveMarkdownFile(docTitle, mdContent, relPath);
+      const isLocked = isDocumentLocked(docProps);
+      await platform.setFileAttributes(relPath || docTitle, { readonly: isLocked, mtime: now });
+
       try {
         await dbAdapter.execute(
           `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,

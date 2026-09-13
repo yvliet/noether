@@ -55,14 +55,12 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
   const setDefaultTabMode = useSettingsStore((s) => s.setDefaultTabMode);
   const setDefaultEditingMode = useSettingsStore((s) => s.setDefaultEditingMode);
   const showToast = useWorkspaceStore((s) => s.showToast);
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
+  const isLocked = useDocumentStore((s) => isDocumentLocked(s.activeDocument));
 
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ bottom?: number; left?: number; right?: number }>({});
-
-  const isLocked = useMemo(() => isDocumentLocked(activeDocument), [activeDocument]);
 
   const currentMode: 'Reading' | 'Source mode' | 'Live Preview' =
     isLocked || defaultTabMode === 'Reading view'
@@ -246,10 +244,10 @@ export const StatusBar: React.FC = React.memo(() => {
   const showWordCount = useSettingsStore((s) => s.showWordCountInStatusBar);
   const showCharCount = useSettingsStore((s) => s.showCharCountInStatusBar);
   const showReadingTime = useSettingsStore((s) => s.showReadingTimeInStatusBar);
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
+  const hasActiveDoc = useDocumentStore((s) => Boolean(s.activeDocument));
 
-  const hasNativeMetrics = Boolean(activeDocument && (showWordCount || showCharCount || showReadingTime));
-  const hasItems = leftItems.length > 0 || rightItems.length > 0 || (showMode && Boolean(activeDocument)) || hasNativeMetrics;
+  const hasNativeMetrics = Boolean(hasActiveDoc && (showWordCount || showCharCount || showReadingTime));
+  const hasItems = leftItems.length > 0 || rightItems.length > 0 || (showMode && hasActiveDoc) || hasNativeMetrics;
 
   if (!hasItems) {
     return null;
@@ -270,7 +268,7 @@ export const StatusBar: React.FC = React.memo(() => {
       ))}
 
       {/* Right-aligned native metrics */}
-      {activeDocument && <WordCharCountItem />}
+      {hasActiveDoc && <WordCharCountItem />}
 
       {/* Right-aligned status items */}
       {rightItems.map((item) => (
@@ -278,7 +276,7 @@ export const StatusBar: React.FC = React.memo(() => {
       ))}
 
       {/* Right-aligned mode switcher */}
-      {activeDocument && <ModeDropdownMenu />}
+      {hasActiveDoc && <ModeDropdownMenu />}
     </div>
   );
 });

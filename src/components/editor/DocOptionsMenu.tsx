@@ -41,14 +41,31 @@ interface DocOptionsMenuProps {
   buttonClassName?: string;
 }
 
-export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ document: customDoc, customActions, buttonClassName }) => {
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
-  const documents = useDocumentStore((s) => s.documents);
-  const renameDocument = useDocumentStore((s) => s.renameDocument);
-  const moveDocument = useDocumentStore((s) => s.moveDocument);
-  const removeDocument = useDocumentStore((s) => s.removeDocument);
+interface DocOptionsMenuDropdownProps {
+  doc: DocumentItem | null;
+  customActions?: DocMenuActionDefinition[];
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  onClose: () => void;
+}
 
-  const doc = customDoc !== undefined ? customDoc : activeDocument;
+const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
+  doc,
+  customActions,
+  triggerRef,
+  onClose,
+}) => {
+  const setIsOpen = useCallback((val: boolean | ((prev: boolean) => boolean)) => {
+    if (typeof val === 'function') {
+      if (!val(true)) onClose();
+    } else if (!val) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const documents = useDocumentStore.getState().documents;
+  const renameDocument = useDocumentStore.getState().renameDocument;
+  const moveDocument = useDocumentStore.getState().moveDocument;
+  const removeDocument = useDocumentStore.getState().removeDocument;
 
   const toggleSplitView = useWorkspaceStore((s) => s.toggleSplitView);
   const openSplitTab = useWorkspaceStore((s) => s.openSplitTab);
@@ -103,10 +120,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     [docMenuActions, app, doc]
   );
 
-  const [isOpen, setIsOpen] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<'copyPath' | 'linkedView' | 'zoomLevel' | null>(null);
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const [menuPos, setMenuPos] = useState<{ top: number; left: number; maxHeight: number }>({
     top: 0,
@@ -165,13 +180,10 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
   }, [doc]);
 
   useLayoutEffect(() => {
-    if (!isOpen) return;
     updatePosition();
-  }, [isOpen, updatePosition]);
+  }, [updatePosition]);
 
   useEffect(() => {
-    if (!isOpen) return;
-
     const handleOutsideClick = (e: MouseEvent) => {
       if (
         menuRef.current &&
@@ -179,7 +191,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         triggerRef.current &&
         !triggerRef.current.contains(e.target as Node)
       ) {
-        setIsOpen(false);
+        onClose();
         setActiveSubmenu(null);
       }
     };
@@ -190,7 +202,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsOpen(false);
+        onClose();
         setActiveSubmenu(null);
       }
     };
@@ -206,7 +218,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
       document.removeEventListener('mousedown', handleOutsideClick);
       document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, updatePosition]);
+  }, [updatePosition, onClose, triggerRef]);
 
   const isLocked = useMemo(() => isDocumentLocked(doc), [doc]);
   const isReadingView = defaultTabMode === 'Reading view';
@@ -553,24 +565,9 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
     return icon;
   }, []);
 
-  return (
-    <div className="relative">
-      <button
-        ref={triggerRef}
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        title="More options"
-        className={buttonClassName || `p-1 rounded hover:bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
-          isOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : ''
-        }`}
-      >
-        <MoreVerticalIcon size={14} />
-      </button>
-
-      {isOpen &&
-        createPortal(
-          <div
-            ref={menuRef}
+  return createPortal(
+    <div
+      ref={menuRef}
             style={{
               position: 'fixed',
               top: `${menuPos.top}px`,
@@ -1068,7 +1065,43 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
             )}
           </div>,
           document.body
-        )}
+  );
+};
+
+export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ document: customDoc, customActions, buttonClassName }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  const handleToggle = useCallback(() => {
+    setIsOpen((prev) => !prev);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+  }, []);
+
+  return (
+    <div className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={handleToggle}
+        title="More options"
+        className={buttonClassName || `p-1 rounded hover:bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
+          isOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : ''
+        }`}
+      >
+        <MoreVerticalIcon size={14} />
+      </button>
+
+      {isOpen && (
+        <DocOptionsMenuDropdown
+          doc={customDoc !== undefined ? customDoc : useDocumentStore.getState().activeDocument}
+          customActions={customActions}
+          triggerRef={triggerRef}
+          onClose={handleClose}
+        />
+      )}
     </div>
   );
 });

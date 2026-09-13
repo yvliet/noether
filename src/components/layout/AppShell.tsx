@@ -214,7 +214,8 @@ const WindowTitleSync: React.FC = React.memo(() => {
   const activePane = useWorkspaceStore((s) => s.activePane);
   const splitTabs = useWorkspaceStore((s) => s.splitTabs);
   const splitActiveTabId = useWorkspaceStore((s) => s.splitActiveTabId);
-  const activeDocument = useDocumentStore((s) => s.activeDocument);
+  const activeDocId = useDocumentStore((s) => s.activeDocument?.id);
+  const activeDocTitle = useDocumentStore((s) => s.activeDocument?.title);
 
   // Dynamic window title format: Tabname﹕Vaultname﹕Noether
   useEffect(() => {
@@ -226,8 +227,8 @@ const WindowTitleSync: React.FC = React.memo(() => {
 
     if (currentTab) {
       let tabTitle = currentTab.title;
-      if (activeDocument && currentTab.document_id === activeDocument.id && activeDocument.title) {
-        tabTitle = activeDocument.title;
+      if (activeDocId && currentTab.document_id === activeDocId && activeDocTitle) {
+        tabTitle = activeDocTitle;
       } else if (!tabTitle && currentTab.document_id && !currentTab.document_id.startsWith('__')) {
         const doc = useDocumentStore.getState().documents.find((d) => d.id === currentTab.document_id);
         if (doc?.title) tabTitle = doc.title;
@@ -250,7 +251,7 @@ const WindowTitleSync: React.FC = React.memo(() => {
     } else {
       platform.setWindowTitle(`${effectiveVault}﹕Noether`);
     }
-  }, [vaultName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, activeDocument]);
+  }, [vaultName, tabs, activeTabId, isSplitView, activePane, splitTabs, splitActiveTabId, activeDocId, activeDocTitle]);
 
   return null;
 });
@@ -290,19 +291,29 @@ export const AppShell: React.FC = React.memo(() => {
 
     // 2. External Vault files changed listener (Git pulls, external edits, sync)
     let syncTimeout: any = null;
-    const unsubFiles = platform.onVaultFilesChanged(() => {
-      // Suppress full vault reload storm when the change was initiated internally by Noether
-      if (platform.isRecentInternalWrite()) {
+    const unsubFiles = platform.onVaultFilesChanged((payload) => {
+      const activeDoc = useDocumentStore.getState().activeDocument;
+      const activeTitle = activeDoc?.title?.toLowerCase();
+      const changed = payload?.paths || [];
+
+      // If we just saved our own active document and it is the only changed path, ignore the echo
+      if (
+        platform.isRecentInternalWrite() &&
+        changed.length === 1 &&
+        activeTitle &&
+        changed[0].toLowerCase().replace(/\.md$/, '') === activeTitle.replace(/\.md$/, '')
+      ) {
         return;
       }
+
       if (syncTimeout) clearTimeout(syncTimeout);
       syncTimeout = setTimeout(async () => {
         try {
-          await loadInitialData({ showLoading: false });
+          await loadInitialData({ showLoading: false, changedPaths: payload?.paths });
         } catch (e) {
           console.error('[AppShell] External files sync error:', e);
         }
-      }, 600);
+      }, 300);
     });
 
     // 3. Initialize Vault folder config, SQLite and load workspace

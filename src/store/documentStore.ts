@@ -76,7 +76,7 @@ interface DocumentState {
   lastSelectedDocId: string | null;
 
   // Actions
-  loadInitialData: (options?: { showLoading?: boolean }) => Promise<void>;
+  loadInitialData: (options?: { showLoading?: boolean; changedPaths?: string[] }) => Promise<void>;
   loadTrash: () => Promise<TrashItem[]>;
   restoreFromTrash: (id: string) => Promise<void>;
   deletePermanently: (id: string) => Promise<void>;
@@ -114,7 +114,7 @@ interface DocumentState {
   removeDocument: (id: string, recordHistory?: boolean) => Promise<void>;
   removeDocuments: (ids: string[], recordHistory?: boolean) => Promise<void>;
   saveCurrentDocument: (contentJson: string, title?: string) => Promise<void>;
-  saveDocumentById: (id: string, contentJson: string, title?: string) => Promise<void>;
+  saveDocumentById: (id: string, contentJson: string, title?: string, rawMarkdownOverride?: string) => Promise<void>;
   refreshGlobalTasks: () => Promise<void>;
   refreshVaultTags: () => Promise<void>;
   loadLinksAndMentions: (docId: string, title: string) => Promise<void>;
@@ -155,6 +155,45 @@ let currentActivationEpoch = 0;
 /** Referentially stable empty properties singleton to avoid re-render loops in selectors */
 const EMPTY_PROPERTIES: DocumentProperties = Object.freeze({});
 
+/** Timer for Tier 3 idle background graph, backlinks, and FTS indexing */
+let idleIndexingTimeout: any = null;
+
+function scheduleIdleSecondaryIndexing(id: string, resolvedTitle: string): void {
+  if (idleIndexingTimeout) {
+    clearTimeout(idleIndexingTimeout);
+  }
+  idleIndexingTimeout = setTimeout(async () => {
+    idleIndexingTimeout = null;
+    const store = useDocumentStore.getState();
+    const currentActive = store.activeDocument;
+    if (!currentActive || currentActive.id !== id) return;
+
+    try {
+      const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
+        getBacklinksForDocument(id),
+        getOutgoingLinksWithDetails(id),
+        getUnlinkedMentionsForDocument(id, resolvedTitle),
+      ]);
+
+      const nowActive = useDocumentStore.getState().activeDocument;
+      if (nowActive && nowActive.id === id) {
+        useDocumentStore.setState({
+          backlinks,
+          outgoingLinks,
+          unlinkedMentions,
+        });
+        useWorkspaceStore.getState().setStatusMetrics({
+          backlinkCount: backlinks.length,
+        });
+      }
+
+      await useDocumentStore.getState().recomputeBrokenEmbeds();
+    } catch (e) {
+      console.warn('[Noether] Idle indexing error:', e);
+    }
+  }, 1200);
+}
+
 export const useDocumentStore = create<DocumentState>((set, get) => ({
   documents: [],
   trashItems: [],
@@ -174,7 +213,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
   brokenEmbedDocIds: new Set<string>(),
   brokenEmbedCounts: {},
 
-  loadInitialData: async (options?: { showLoading?: boolean }) => {
+  loadInitialData: async (options?: { showLoading?: boolean; changedPaths?: string[] }) => {
     try {
       // 1. Fast path: Immediately query and hydrate from local in-memory WASM SQLite (1-2ms)
       // This populates documents, bookmarks, cascades, and the file tree with 0 perceived latency.
@@ -255,7 +294,29 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           getTrashItems(),
         ]);
 
-        set({ documents: docs, trashItems: trash, globalTasks, vaultTags: tags, isLoading: false });
+        const currentActive = get().activeDocument;
+        let nextActive = currentActive;
+        if (currentActive) {
+          const matching = docs.find((d) => d.id === currentActive.id);
+          if (
+            matching &&
+            !platform.isRecentInternalWrite() &&
+            (matching.updated_at !== currentActive.updated_at ||
+              matching.content_json !== currentActive.content_json ||
+              matching.title !== currentActive.title)
+          ) {
+            nextActive = matching;
+          }
+        }
+
+        set({
+          documents: docs,
+          trashItems: trash,
+          globalTasks,
+          vaultTags: tags,
+          activeDocument: nextActive,
+          isLoading: false,
+        });
         get().recomputeBrokenEmbeds();
         if (!hasCachedDocs) {
           emitBridgeAppEvent('vault:loaded', { path: '', name: '' });
@@ -1197,54 +1258,58 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       title
     );
 
-    // Only refresh note-specific data on save (decoupled from vault-wide scans)
-    const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
-      getBacklinksForDocument(docId),
-      getOutgoingLinksWithDetails(docId),
-      getUnlinkedMentionsForDocument(docId, currentTitle),
-    ]);
+    // Update word and character counts instantly in status bar
+    useWorkspaceStore.getState().setStatusMetrics({
+      wordCount,
+      charCount,
+    });
 
     const currentActive = get().activeDocument;
     const isStillActive = currentActive && currentActive.id === docId;
+    const isTitleChange = title !== undefined && title !== active.title;
 
-    const updatedDocs = get().documents.map((d) =>
-      d.id === docId
-        ? {
-            ...d,
-            title: currentTitle,
-            ...(d.doc_type === 'canvas' ? { content_json: contentJson } : {}),
-          }
-        : d
-    );
-
-    if (isStillActive) {
-      set({
-        documents: updatedDocs,
-        activeDocument: { ...currentActive, title: currentTitle, content_json: contentJson },
-        headings,
-        backlinks,
-        outgoingLinks,
-        unlinkedMentions,
-      });
-
-      useWorkspaceStore.getState().setStatusMetrics({
-        wordCount,
-        charCount,
-        backlinkCount: backlinks.length,
-      });
+    if (isTitleChange) {
+      const updatedDocs = get().documents.map((d) =>
+        d.id === docId
+          ? {
+              ...d,
+              title: currentTitle,
+              ...(d.doc_type === 'canvas' ? { content_json: contentJson } : {}),
+            }
+          : d
+      );
+      if (isStillActive) {
+        set({
+          documents: updatedDocs,
+          activeDocument: { ...currentActive, title: currentTitle, content_json: contentJson },
+          headings,
+        });
+      } else {
+        set({ documents: updatedDocs });
+      }
+      useWorkspaceStore.getState().updateTabTitle(docId, title);
     } else {
-      set({ documents: updatedDocs });
+      const existing = get().documents.find((d) => d.id === docId);
+      if (existing) {
+        if (existing.doc_type === 'canvas') existing.content_json = contentJson;
+      }
+      if (isStillActive) {
+        currentActive.content_json = contentJson;
+        const prevHeadings = get().headings;
+        const headingsChanged =
+          prevHeadings.length !== headings.length ||
+          headings.some((h, idx) => h.text !== prevHeadings[idx]?.text || h.level !== prevHeadings[idx]?.level);
+        if (headingsChanged) {
+          set({ headings });
+        }
+      }
     }
 
     emitBridgeAppEvent('document:saved', { id: docId, title: currentTitle });
-    get().recomputeBrokenEmbeds();
-
-    if (title && title !== active.title) {
-      useWorkspaceStore.getState().updateTabTitle(docId, title);
-    }
+    scheduleIdleSecondaryIndexing(docId, currentTitle);
   },
 
-  saveDocumentById: async (id: string, contentJson: string, title?: string) => {
+  saveDocumentById: async (id: string, contentJson: string, title?: string, rawMarkdownOverride?: string) => {
     const pendingCreation = pendingCreationPromises.get(id);
     if (pendingCreation) {
       await pendingCreation;
@@ -1253,7 +1318,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
       id,
       contentJson,
-      title
+      title,
+      { rawMarkdownOverride }
     );
     const currentActive = get().activeDocument;
     const existingDoc = get().documents.find((d) => d.id === id);
@@ -1264,51 +1330,56 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           existingDoc?.title ||
           'Untitled';
 
-    const [backlinks, outgoingLinks, unlinkedMentions] = await Promise.all([
-      getBacklinksForDocument(id),
-      getOutgoingLinksWithDetails(id),
-      getUnlinkedMentionsForDocument(id, resolvedTitle),
-    ]);
+    // 1. Instantly update word and character metrics without triggering layout re-renders
+    useWorkspaceStore.getState().setStatusMetrics({
+      wordCount,
+      charCount,
+    });
 
-    const updatedDocs = get().documents.map((d) =>
-      d.id === id
-        ? {
-            ...d,
-            ...(title !== undefined ? { title } : {}),
-            content_json: contentJson,
-          }
-        : d
-    );
+    const isTitleChange = title !== undefined && existingDoc && title !== existingDoc.title;
+    const isCurrentActive = currentActive && currentActive.id === id;
 
-    const activeNow = get().activeDocument;
-    if (activeNow && activeNow.id === id) {
-      set({
-        documents: updatedDocs,
-        activeDocument: {
-          ...activeNow,
-          ...(title !== undefined ? { title } : {}),
-          content_json: contentJson,
-        },
-        headings,
-        backlinks,
-        outgoingLinks,
-        unlinkedMentions,
-      });
-      useWorkspaceStore.getState().setStatusMetrics({
-        wordCount,
-        charCount,
-        backlinkCount: backlinks.length,
-      });
+    if (isTitleChange) {
+      // Title was renamed: update document catalog array and tab title
+      const updatedDocs = get().documents.map((d) =>
+        d.id === id ? { ...d, title, content_json: contentJson } : d
+      );
+      if (isCurrentActive) {
+        set({
+          documents: updatedDocs,
+          activeDocument: { ...currentActive, title, content_json: contentJson },
+          headings,
+        });
+      } else {
+        set({ documents: updatedDocs });
+      }
+      if (title.trim()) {
+        useWorkspaceStore.getState().updateTabTitle(id, title.trim());
+      }
     } else {
-      set({ documents: updatedDocs });
+      // Content-only typing update: keep documents array referentially stable to prevent
+      // cascading re-renders across the file tree, sidebars, and breadcrumbs!
+      if (existingDoc) {
+        existingDoc.content_json = contentJson;
+      }
+      if (isCurrentActive) {
+        // Only emit new headings if heading count or structure actually changed
+        const prevHeadings = get().headings;
+        const headingsChanged =
+          prevHeadings.length !== headings.length ||
+          headings.some((h, idx) => h.text !== prevHeadings[idx]?.text || h.level !== prevHeadings[idx]?.level);
+
+        currentActive.content_json = contentJson;
+        if (headingsChanged) {
+          set({ headings });
+        }
+      }
     }
 
     emitBridgeAppEvent('document:saved', { id, title: resolvedTitle });
-    get().recomputeBrokenEmbeds();
 
-    if (title !== undefined && title.trim()) {
-      useWorkspaceStore.getState().updateTabTitle(id, title.trim());
-    }
+    // 2. Schedule heavy secondary graph & full-text indexing during idle pauses (3-Tier Architecture)
+    scheduleIdleSecondaryIndexing(id, resolvedTitle);
   },
 
   refreshGlobalTasks: async () => {
