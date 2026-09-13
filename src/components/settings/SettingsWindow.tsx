@@ -1909,8 +1909,19 @@ const EditorTab: React.FC = React.memo(() => {
   const setUnderlineLinks = useSettingsStore((s) => s.setUnderlineLinks);
   const matchLinkUnderlineColor = useSettingsStore((s) => s.matchLinkUnderlineColor);
   const setMatchLinkUnderlineColor = useSettingsStore((s) => s.setMatchLinkUnderlineColor);
+  const tableDefaultRows = useSettingsStore((s) => s.tableDefaultRows);
+  const setTableDefaultRows = useSettingsStore((s) => s.setTableDefaultRows);
+  const tableDefaultCols = useSettingsStore((s) => s.tableDefaultCols);
+  const setTableDefaultCols = useSettingsStore((s) => s.setTableDefaultCols);
+  const tableEnableColumnResizing = useSettingsStore((s) => s.tableEnableColumnResizing);
+  const setTableEnableColumnResizing = useSettingsStore((s) => s.setTableEnableColumnResizing);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
   const showToast = useWorkspaceStore((s) => s.showToast);
+
+  const isTablesModified =
+    tableDefaultRows !== DEFAULT_SETTINGS.tableDefaultRows ||
+    tableDefaultCols !== DEFAULT_SETTINGS.tableDefaultCols ||
+    tableEnableColumnResizing !== DEFAULT_SETTINGS.tableEnableColumnResizing;
 
   const isEditorModified =
     defaultTabMode !== DEFAULT_SETTINGS.defaultTabMode ||
@@ -1936,7 +1947,8 @@ const EditorTab: React.FC = React.memo(() => {
     colorLinksWithAccent !== DEFAULT_SETTINGS.colorLinksWithAccent ||
     blueLinks !== DEFAULT_SETTINGS.blueLinks ||
     underlineLinks !== DEFAULT_SETTINGS.underlineLinks ||
-    matchLinkUnderlineColor !== DEFAULT_SETTINGS.matchLinkUnderlineColor;
+    matchLinkUnderlineColor !== DEFAULT_SETTINGS.matchLinkUnderlineColor ||
+    isTablesModified;
 
   return (
     <div className="flex flex-col gap-6">
@@ -2403,6 +2415,83 @@ const EditorTab: React.FC = React.memo(() => {
               { value: '7', label: '7 spaces' },
               { value: '8', label: '8 spaces' },
             ]}
+          />
+        </SettingRow>
+      </SettingSection>
+
+      {/* Tables Section */}
+      <SettingSection
+        tabName="Editor"
+        sectionName="Tables"
+        defaultDescription="Configure interactive tables, default quick grid dimensions, and column resizing."
+        isModified={isTablesModified}
+        onReset={() => {
+          setTableDefaultRows(DEFAULT_SETTINGS.tableDefaultRows);
+          setTableDefaultCols(DEFAULT_SETTINGS.tableDefaultCols);
+          setTableEnableColumnResizing(DEFAULT_SETTINGS.tableEnableColumnResizing);
+          showToast('Restored Table settings to default', 'info');
+        }}
+        resetTitle="Restore default table settings"
+      >
+        {/* Interactive column resizing */}
+        <SettingRow
+          title="Interactive column resizing"
+          description="Allow dragging table borders horizontally to customize individual column widths."
+          keywords={['table', 'column', 'resize', 'width', 'drag', 'borders', 'grid']}
+          resetButton={
+            <FieldResetButton
+              isModified={tableEnableColumnResizing !== DEFAULT_SETTINGS.tableEnableColumnResizing}
+              onReset={() => setTableEnableColumnResizing(DEFAULT_SETTINGS.tableEnableColumnResizing)}
+              title="Restore default (Enabled)"
+            />
+          }
+        >
+          <ToggleSwitch checked={tableEnableColumnResizing} onChange={setTableEnableColumnResizing} />
+        </SettingRow>
+
+        {/* Default table columns */}
+        <SettingRow
+          title="Default quick table columns"
+          description="Number of columns when inserting via command palette or default action."
+          keywords={['table', 'columns', 'cols', 'grid', 'dimension']}
+          resetButton={
+            <FieldResetButton
+              isModified={tableDefaultCols !== DEFAULT_SETTINGS.tableDefaultCols}
+              onReset={() => setTableDefaultCols(DEFAULT_SETTINGS.tableDefaultCols)}
+              title="Restore default (3)"
+            />
+          }
+        >
+          <input
+            type="number"
+            min={1}
+            max={20}
+            value={tableDefaultCols}
+            onChange={(e) => setTableDefaultCols(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+            className="w-16 bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-lg px-2.5 py-1 text-xs text-white text-center outline-none"
+          />
+        </SettingRow>
+
+        {/* Default table rows */}
+        <SettingRow
+          title="Default quick table rows"
+          description="Number of rows when inserting via command palette or default action."
+          keywords={['table', 'rows', 'grid', 'dimension']}
+          resetButton={
+            <FieldResetButton
+              isModified={tableDefaultRows !== DEFAULT_SETTINGS.tableDefaultRows}
+              onReset={() => setTableDefaultRows(DEFAULT_SETTINGS.tableDefaultRows)}
+              title="Restore default (3)"
+            />
+          }
+        >
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={tableDefaultRows}
+            onChange={(e) => setTableDefaultRows(Math.max(1, Math.min(50, parseInt(e.target.value) || 1)))}
+            className="w-16 bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-lg px-2.5 py-1 text-xs text-white text-center outline-none"
           />
         </SettingRow>
       </SettingSection>
