@@ -13,6 +13,8 @@ import {
   ArrowDownAZIcon,
   Clock01Icon,
   Cancel01Icon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from '@/components/common/Icons';
 import { renderPropertyIcon, getPropertyIconName } from './propertyIcons';
 import { PropertyRow } from './PropertyRow';
@@ -43,7 +45,10 @@ export const PropertiesView: React.FC = () => {
   const [focusValueKey, setFocusValueKey] = useState<string | null>(null);
 
   const [newTagInput, setNewTagInput] = useState('');
+  const [isAddingTag, setIsAddingTag] = useState(false);
   const [newAliasInput, setNewAliasInput] = useState('');
+  const [isAddingAlias, setIsAddingAlias] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(true);
 
   const currentProps: DocumentProperties = useMemo(() => {
     if (activeDocument?.properties) {
@@ -160,52 +165,63 @@ export const PropertiesView: React.FC = () => {
     await updateProperties(activeDocument.id, nextProps);
   }, [activeDocument, currentProps, defaultPropertyType, updateProperties]);
 
-  const tagKey = currentProps.Tags !== undefined ? 'Tags' : 'tags';
-  const aliasKey = currentProps.Aliases !== undefined ? 'Aliases' : 'aliases';
+  const tagsList: string[] = useMemo(() => {
+    return Array.isArray(currentProps.Tags)
+      ? currentProps.Tags
+      : (Array.isArray(currentProps.tags) ? currentProps.tags : []);
+  }, [currentProps]);
 
-  const handleAddTag = useCallback(async () => {
-    if (!newTagInput.trim()) return;
+  const aliasesList: string[] = useMemo(() => {
+    return Array.isArray(currentProps.Aliases)
+      ? currentProps.Aliases
+      : (Array.isArray(currentProps.aliases) ? currentProps.aliases : []);
+  }, [currentProps]);
+
+  const handleAddTag = useCallback(async (keepAdding = false) => {
+    if (!activeDocument) return;
     const cleanTag = newTagInput.trim().replace(/^#/, '');
-    const currentTags = Array.isArray(currentProps[tagKey])
-      ? currentProps[tagKey]
-      : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []));
-    if (!currentTags.includes(cleanTag)) {
-      await handleSaveValue(tagKey, [...currentTags, cleanTag]);
+    if (!cleanTag) {
+      setIsAddingTag(false);
+      return;
+    }
+    if (!tagsList.includes(cleanTag)) {
+      const nextProps = { ...currentProps, Tags: [...tagsList, cleanTag] };
+      delete nextProps.tags;
+      await updateProperties(activeDocument.id, nextProps);
     }
     setNewTagInput('');
-  }, [newTagInput, currentProps, tagKey, handleSaveValue]);
+    setIsAddingTag(keepAdding);
+  }, [activeDocument, newTagInput, tagsList, currentProps, updateProperties]);
 
   const handleRemoveTag = useCallback(async (tagToRemove: string) => {
-    const currentTags = Array.isArray(currentProps[tagKey])
-      ? currentProps[tagKey]
-      : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []));
-    await handleSaveValue(
-      tagKey,
-      currentTags.filter((t: string) => t !== tagToRemove)
-    );
-  }, [currentProps, tagKey, handleSaveValue]);
+    if (!activeDocument) return;
+    const nextProps = { ...currentProps, Tags: tagsList.filter((t: string) => t !== tagToRemove) };
+    delete nextProps.tags;
+    await updateProperties(activeDocument.id, nextProps);
+  }, [activeDocument, tagsList, currentProps, updateProperties]);
 
-  const handleAddAlias = useCallback(async () => {
-    if (!newAliasInput.trim()) return;
+  const handleAddAlias = useCallback(async (keepAdding = false) => {
+    if (!activeDocument) return;
     const clean = newAliasInput.trim();
-    const currentAliases = Array.isArray(currentProps[aliasKey])
-      ? currentProps[aliasKey]
-      : (Array.isArray(currentProps.aliases) ? currentProps.aliases : (Array.isArray(currentProps.Aliases) ? currentProps.Aliases : []));
-    if (!currentAliases.includes(clean)) {
-      await handleSaveValue(aliasKey, [...currentAliases, clean]);
+    if (!clean) {
+      setIsAddingAlias(false);
+      return;
+    }
+    if (!aliasesList.includes(clean)) {
+      const nextProps = { ...currentProps, Aliases: [...aliasesList, clean] };
+      delete nextProps.aliases;
+      await updateProperties(activeDocument.id, nextProps);
     }
     setNewAliasInput('');
-  }, [newAliasInput, currentProps, aliasKey, handleSaveValue]);
+    setIsAddingAlias(keepAdding);
+  }, [activeDocument, newAliasInput, aliasesList, currentProps, updateProperties]);
 
   const handleRemoveAlias = useCallback(async (aliasToRemove: string) => {
-    const currentAliases = Array.isArray(currentProps[aliasKey])
-      ? currentProps[aliasKey]
-      : (Array.isArray(currentProps.aliases) ? currentProps.aliases : (Array.isArray(currentProps.Aliases) ? currentProps.Aliases : []));
-    await handleSaveValue(
-      aliasKey,
-      currentAliases.filter((a: string) => a !== aliasToRemove)
-    );
-  }, [currentProps, aliasKey, handleSaveValue]);
+    if (!activeDocument) return;
+    const nextProps = { ...currentProps, Aliases: aliasesList.filter((a: string) => a !== aliasToRemove) };
+    delete nextProps.aliases;
+    await updateProperties(activeDocument.id, nextProps);
+  }, [activeDocument, aliasesList, currentProps, updateProperties]);
 
   if (!activeDocument) {
     return (
@@ -219,26 +235,24 @@ export const PropertiesView: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full select-none text-xs">
-      {/* Top Action Header */}
-      <div className="h-9 px-2 flex items-center justify-between text-[var(--noether-text-muted)] shrink-0 border-b border-[var(--noether-border-subtle)]">
+      {/* Top Action Header (Matching Nav Sidebar Toolbar) */}
+      <div className="h-9 px-2 flex items-center justify-between text-[var(--noether-text-muted)] shrink-0">
         {!isLocked && (
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handleAddDirectProperty}
-              title={`Add Property\nCreate a new metadata field for this note`}
-              className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] transition-colors cursor-pointer flex items-center gap-1 text-[11px] font-medium"
-            >
-              <PlusSignIcon size={13} />
-              <span>Add property</span>
-            </button>
-          </div>
+          <button
+            onClick={handleAddDirectProperty}
+            title={`Add Property\nCreate a new metadata field for this note`}
+            className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer flex items-center gap-1 text-[11px] font-medium"
+          >
+            <PlusSignIcon size={13} />
+            <span>Add property</span>
+          </button>
         )}
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 ml-auto">
           <button
             onClick={() => setSortAlpha(!sortAlpha)}
             title={`Sort Properties\nSwitch to ${sortAlpha ? 'default order' : 'alphabetical order'}`}
-            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer ${
+            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer ${
               sortAlpha ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
@@ -250,8 +264,8 @@ export const PropertiesView: React.FC = () => {
               setIsSearchOpen(!isSearchOpen);
               if (isSearchOpen) setSearchQuery('');
             }}
-            title={isSearchOpen ? `Close Search\nHide property filter` : `Search Properties\nFilter properties by name`}
-            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer ${
+            title={isSearchOpen ? 'Close search' : 'Search properties'}
+            className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer ${
               isSearchOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
@@ -262,8 +276,8 @@ export const PropertiesView: React.FC = () => {
 
       {/* Optional Search Input */}
       {isSearchOpen && (
-        <div className="px-2.5 py-1.5 border-b border-[var(--noether-border-subtle)]">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-primary)] shadow-xs">
+        <div className="px-2 pb-1.5">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-secondary)]">
             <Search01Icon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
             <input
               type="text"
@@ -271,244 +285,284 @@ export const PropertiesView: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter properties..."
               autoFocus
-              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)]"
+              className="bg-transparent outline-none flex-1 text-xs text-[var(--noether-text-secondary)] placeholder-[var(--noether-text-faint)]"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
+              >
+                <Cancel01Icon size={11} />
+              </button>
+            )}
           </div>
         </div>
       )}
 
       {/* Main Properties Content */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 custom-scrollbar flex flex-col gap-2">
-        {/* Core & Custom Properties List */}
-        <div className="flex flex-col gap-1.5">
+      <div className="flex-1 overflow-y-auto px-2 py-1 custom-scrollbar flex flex-col gap-1">
+        <div className="flex flex-col gap-0.5">
           {/* Created Date */}
           {createdDateStr && (!searchQuery || 'created'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
-              <PropertyRow
-                propertyKey="Created"
-                value={createdDateStr}
-                isReadOnlyKey
-                isReadOnlyValue
-                onSaveValue={() => {}}
-                onRenameKey={() => {}}
-                onDelete={() => {}}
-                propertyIcons={propertyIcons}
-                setPropertyIcon={setPropertyIcon}
-                removePropertyIcon={removePropertyIcon}
-                variant="sidebar"
-              />
-            </div>
+            <PropertyRow
+              key="system-created"
+              propertyKey="Created"
+              value={createdDateStr}
+              isReadOnlyKey
+              isReadOnlyValue
+              onSaveValue={() => {}}
+              onRenameKey={() => {}}
+              onDelete={() => {}}
+              propertyIcons={propertyIcons}
+              setPropertyIcon={setPropertyIcon}
+              removePropertyIcon={removePropertyIcon}
+              variant="sidebar"
+            />
           )}
 
           {/* Modified Date */}
           {modifiedDateStr && (!searchQuery || 'modified'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
-              <PropertyRow
-                propertyKey="Modified"
-                value={modifiedDateStr}
-                isReadOnlyKey
-                isReadOnlyValue
-                onSaveValue={() => {}}
-                onRenameKey={() => {}}
-                onDelete={() => {}}
-                propertyIcons={propertyIcons}
-                setPropertyIcon={setPropertyIcon}
-                removePropertyIcon={removePropertyIcon}
-                variant="sidebar"
-              />
-            </div>
+            <PropertyRow
+              key="system-modified"
+              propertyKey="Modified"
+              value={modifiedDateStr}
+              isReadOnlyKey
+              isReadOnlyValue
+              onSaveValue={() => {}}
+              onRenameKey={() => {}}
+              onDelete={() => {}}
+              propertyIcons={propertyIcons}
+              setPropertyIcon={setPropertyIcon}
+              removePropertyIcon={removePropertyIcon}
+              variant="sidebar"
+            />
           )}
 
           {/* Locked / Read Only Toggle */}
           {(!searchQuery || 'locked'.includes(searchQuery.toLowerCase()) || 'read only'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
-              <PropertyRow
-                propertyKey="Locked"
-                value={isLocked ? 'Yes' : 'No'}
-                isReadOnlyKey
-                onSaveValue={async (_key, val) => {
-                  const lockKey = currentProps.Locked !== undefined ? 'Locked' : 'locked';
-                  await handleSaveValue(lockKey, val);
-                }}
-                onRenameKey={() => {}}
-                onDelete={() => {}}
-                propertyIcons={propertyIcons}
-                setPropertyIcon={setPropertyIcon}
-                removePropertyIcon={removePropertyIcon}
-                variant="sidebar"
-              />
-            </div>
+            <PropertyRow
+              key="system-locked"
+              propertyKey="Locked"
+              value={isLocked ? 'Yes' : 'No'}
+              isReadOnlyKey
+              onSaveValue={async (_key, val) => {
+                if (!activeDocument) return;
+                const nextProps: Record<string, any> = { ...currentProps, Locked: val };
+                delete nextProps.locked;
+                await updateProperties(activeDocument.id, nextProps);
+              }}
+              onRenameKey={() => {}}
+              onDelete={() => {}}
+              propertyIcons={propertyIcons}
+              setPropertyIcon={setPropertyIcon}
+              removePropertyIcon={removePropertyIcon}
+              variant="sidebar"
+            />
           )}
 
-          {/* Tags Section */}
+          {/* Tags Row */}
           {(!searchQuery || 'tags'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[var(--noether-text-secondary)]">
-                <div className="relative flex items-center">
-                  <span
-                    title={getPropertyIconName('Tags', propertyIcons)}
-                    className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
-                  >
-                    {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)]' })}
-                  </span>
+            <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+              <div className="relative flex items-center shrink-0 w-24">
+                <span
+                  title={getPropertyIconName('Tags', propertyIcons)}
+                  className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none"
+                >
+                  {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
+                </span>
 
-                  <span
-                    title={`Note Tags\nCategorize and filter notes with tags`}
-                    className="font-medium text-[11px] cursor-default text-[var(--noether-text-muted)]"
-                  >
-                    Tags
-                  </span>
-                </div>
-                <span className="text-[10px] text-[var(--noether-text-muted)] font-mono">
-                  {(Array.isArray(currentProps[tagKey]) ? currentProps[tagKey] : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []))).length}
+                <span
+                  title={`Note Tags\nCategorize and filter notes with tags`}
+                  className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+                >
+                  Tags
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {(Array.isArray(currentProps[tagKey]) ? currentProps[tagKey] : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []))).map((t: string) => (
+              <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 pl-0.5">
+                {tagsList.map((tag: string, idx: number) => (
                   <span
-                    key={t}
-                    title={`Tag: #${t}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-accent)] hover:text-[var(--noether-accent-hover,var(--noether-accent))] text-[11px] font-mono border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs group transition-all"
+                    key={`${tag}-${idx}`}
+                    title={`Tag: #${tag}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
                   >
-                    #{t}
+                    #{tag}
                     {!isLocked && (
                       <button
                         type="button"
-                        onClick={() => handleRemoveTag(t)}
-                        title={`Remove #${t}\nDelete this tag`}
-                        className="text-[var(--noether-text-muted)] hover:text-rose-500 opacity-60 group-hover:opacity-100 cursor-pointer"
+                        onClick={() => handleRemoveTag(tag)}
+                        title={`Remove #${tag}\nDelete this tag`}
+                        className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
                       >
                         <Cancel01Icon size={10} />
                       </button>
                     )}
                   </span>
                 ))}
+
                 {!isLocked && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] text-[var(--noether-accent)] text-[11px] font-mono border border-[var(--noether-border-base)] shadow-xs">
-                    <span className="inline-flex items-center">
-                      <span>#</span>
-                      <input
-                        type="text"
-                        value={newTagInput}
-                        style={{ width: `${Math.max(1, newTagInput.length)}ch` }}
-                        onChange={(e) => setNewTagInput(e.target.value.replace(/^#/, ''))}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
-                            e.preventDefault();
+                  isAddingTag ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
+                      <span className="inline-flex items-center">
+                        <span>#</span>
+                        <input
+                          type="text"
+                          autoFocus
+                          value={newTagInput}
+                          style={{ width: `${Math.max(1, newTagInput.length)}ch` }}
+                          onChange={(e) => setNewTagInput(e.target.value.replace(/^#/, ''))}
+                          onBlur={() => {
                             if (newTagInput.trim()) {
-                              handleAddTag();
+                              handleAddTag(false);
+                            } else {
+                              setIsAddingTag(false);
                             }
-                          } else if (e.key === 'Backspace' && !newTagInput) {
-                            const tagsList = Array.isArray(currentProps[tagKey]) ? currentProps[tagKey] : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []));
-                            if (tagsList.length > 0) {
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                              e.preventDefault();
+                              if (newTagInput.trim()) {
+                                handleAddTag(true);
+                              } else {
+                                setIsAddingTag(false);
+                              }
+                            } else if (e.key === 'Escape') {
+                              setNewTagInput('');
+                              setIsAddingTag(false);
+                            } else if (e.key === 'Backspace' && !newTagInput && tagsList.length > 0) {
                               handleRemoveTag(tagsList[tagsList.length - 1]);
                             }
-                          }
+                          }}
+                          placeholder=""
+                          className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                        />
+                      </span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setNewTagInput('');
+                          setIsAddingTag(false);
                         }}
-                        onBlur={() => {
-                          if (newTagInput.trim()) {
-                            handleAddTag();
-                          }
-                        }}
-                        placeholder=""
-                        className="bg-transparent border-none outline-none text-[var(--noether-accent)] text-[11px] font-mono p-0 m-0 min-w-0"
-                      />
+                        title={`Cancel\nDiscard tag input`}
+                        className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                      >
+                        <Cancel01Icon size={10} />
+                      </button>
                     </span>
+                  ) : (
                     <button
                       type="button"
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        setNewTagInput('');
-                      }}
-                      title={`Cancel\nDiscard tag input`}
-                      className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                      onClick={() => setIsAddingTag(true)}
+                      title={`Add Tag\nAttach a new tag to this note`}
+                      className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
                     >
-                      <Cancel01Icon size={10} />
+                      + Add tag
                     </button>
-                  </span>
+                  )
                 )}
               </div>
             </div>
           )}
 
-          {/* Aliases Section */}
+          {/* Aliases Row */}
           {(!searchQuery || 'aliases'.includes(searchQuery.toLowerCase())) && (
-            <div className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs flex flex-col gap-1.5">
-              <div className="flex items-center justify-between text-[var(--noether-text-secondary)]">
-                <div className="relative flex items-center">
-                  <span
-                    title={getPropertyIconName('Aliases', propertyIcons)}
-                    className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
-                  >
-                    {renderPropertyIcon('Aliases', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)]' })}
-                  </span>
+            <div key="system-aliases" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+              <div className="relative flex items-center shrink-0 w-24">
+                <span
+                  title={getPropertyIconName('Aliases', propertyIcons)}
+                  className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none"
+                >
+                  {renderPropertyIcon('Aliases', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
+                </span>
 
-                  <span
-                    title={`Note Aliases\nAlternate names and titles for linking`}
-                    className="font-medium text-[11px] cursor-default text-[var(--noether-text-muted)]"
-                  >
-                    Aliases
-                  </span>
-                </div>
-                <span className="text-[10px] text-[var(--noether-text-muted)] font-mono">
-                  {(Array.isArray(currentProps[aliasKey]) ? currentProps[aliasKey] : (Array.isArray(currentProps.aliases) ? currentProps.aliases : (Array.isArray(currentProps.Aliases) ? currentProps.Aliases : []))).length}
+                <span
+                  title={`Note Aliases\nAlternate names and titles for linking`}
+                  className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+                >
+                  Aliases
                 </span>
               </div>
 
-              <div className="flex flex-wrap gap-1.5 items-center">
-                {(Array.isArray(currentProps[aliasKey]) ? currentProps[aliasKey] : (Array.isArray(currentProps.aliases) ? currentProps.aliases : (Array.isArray(currentProps.Aliases) ? currentProps.Aliases : []))).map((a: string) => (
+              <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 pl-0.5">
+                {aliasesList.map((alias: string, idx: number) => (
                   <span
-                    key={a}
-                    title={`Alias: ${a}${isLocked ? '' : "\nClick 'x' to remove alias"}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] hover:text-[var(--noether-text-primary)] text-[11px] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs group transition-all font-medium"
+                    key={`${alias}-${idx}`}
+                    title={`Alias: ${alias}${isLocked ? '' : "\nClick 'x' to remove alias"}`}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
                   >
-                    {a}
+                    {alias}
                     {!isLocked && (
                       <button
                         type="button"
-                        onClick={() => handleRemoveAlias(a)}
-                        title={`Remove "${a}"\nDelete this alias`}
-                        className="text-[var(--noether-text-muted)] hover:text-rose-500 opacity-60 group-hover:opacity-100 cursor-pointer"
+                        onClick={() => handleRemoveAlias(alias)}
+                        title={`Remove "${alias}"\nDelete this alias`}
+                        className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
                       >
                         <Cancel01Icon size={10} />
                       </button>
                     )}
                   </span>
                 ))}
+
                 {!isLocked && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-input)] text-[var(--noether-text-primary)] text-[11px] border border-[var(--noether-border-base)] shadow-xs">
-                    <span className="inline-grid grid-cols-1 items-center">
-                      <span className="col-start-1 row-start-1 invisible whitespace-pre text-[11px] pointer-events-none min-w-[3ch]">
-                        {newAliasInput || 'Add alias'}
-                      </span>
+                  isAddingAlias ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
                       <input
                         type="text"
+                        autoFocus
                         value={newAliasInput}
+                        style={{ width: `${Math.max(3, newAliasInput.length)}ch` }}
                         onChange={(e) => setNewAliasInput(e.target.value)}
+                        onBlur={() => {
+                          if (newAliasInput.trim()) {
+                            handleAddAlias(false);
+                          } else {
+                            setIsAddingAlias(false);
+                          }
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
                             e.preventDefault();
                             if (newAliasInput.trim()) {
-                              handleAddAlias();
+                              handleAddAlias(true);
+                            } else {
+                              setIsAddingAlias(false);
                             }
-                          } else if (e.key === 'Backspace' && !newAliasInput) {
-                            const aliasesList = Array.isArray(currentProps[aliasKey]) ? currentProps[aliasKey] : (Array.isArray(currentProps.aliases) ? currentProps.aliases : (Array.isArray(currentProps.Aliases) ? currentProps.Aliases : []));
-                            if (aliasesList.length > 0) {
-                              handleRemoveAlias(aliasesList[aliasesList.length - 1]);
-                            }
+                          } else if (e.key === 'Escape') {
+                            setNewAliasInput('');
+                            setIsAddingAlias(false);
+                          } else if (e.key === 'Backspace' && !newAliasInput && aliasesList.length > 0) {
+                            handleRemoveAlias(aliasesList[aliasesList.length - 1]);
                           }
                         }}
-                        onBlur={() => {
-                          if (newAliasInput.trim()) {
-                            handleAddAlias();
-                          }
-                        }}
-                        placeholder="Add alias"
-                        className="col-start-1 row-start-1 bg-transparent border-none outline-none text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] text-[11px] p-0 m-0 w-full"
+                        placeholder=""
+                        className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
                       />
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          setNewAliasInput('');
+                          setIsAddingAlias(false);
+                        }}
+                        title={`Cancel\nDiscard alias input`}
+                        className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                      >
+                        <Cancel01Icon size={10} />
+                      </button>
                     </span>
-                  </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setIsAddingAlias(true)}
+                      title={`Add Alias\nAttach an alternate name to this note`}
+                      className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+                    >
+                      + Add alias
+                    </button>
+                  )
                 )}
               </div>
             </div>
@@ -516,77 +570,78 @@ export const PropertiesView: React.FC = () => {
 
           {/* Custom Properties Rows */}
           {customKeys.map((key) => (
-            <div key={key} className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs">
-              <PropertyRow
-                propertyKey={key}
-                value={currentProps[key]}
-                autoFocusKey={focusKey === key}
-                autoFocusValue={focusValueKey === key}
-                isReadOnlyKey={isLocked}
-                isReadOnlyValue={isLocked}
-                onSaveValue={handleSaveValue}
-                onRenameKey={handleRenameProperty}
-                onDelete={handleDeleteProperty}
-                onShiftFocusToValue={(k) => setFocusValueKey(k)}
-                propertyIcons={propertyIcons}
-                setPropertyIcon={setPropertyIcon}
-                removePropertyIcon={removePropertyIcon}
-                variant="sidebar"
-              />
-            </div>
+            <PropertyRow
+              key={key}
+              propertyKey={key}
+              value={currentProps[key]}
+              autoFocusKey={focusKey === key}
+              autoFocusValue={focusValueKey === key}
+              isReadOnlyKey={isLocked}
+              isReadOnlyValue={isLocked}
+              onSaveValue={handleSaveValue}
+              onRenameKey={handleRenameProperty}
+              onDelete={handleDeleteProperty}
+              onShiftFocusToValue={(k) => setFocusValueKey(k)}
+              propertyIcons={propertyIcons}
+              setPropertyIcon={setPropertyIcon}
+              removePropertyIcon={removePropertyIcon}
+              variant="sidebar"
+            />
           ))}
+
+          {/* Seamless Add Property Button */}
+          {!isLocked && (
+            <div key="system-add-property" className="pt-0.5">
+              <button
+                type="button"
+                onClick={handleAddDirectProperty}
+                title={`Add Property\nCreate a new metadata field for this note`}
+                className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer py-1 px-1.5 rounded hover:bg-[var(--noether-bg-card-hover)]"
+              >
+                <PlusSignIcon size={11} />
+                <span>Add property</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Note Statistics Card */}
-        <div className="mt-2 p-3 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-subtle)] shadow-xs flex flex-col gap-2">
-          <div className="flex items-center gap-1.5 text-[var(--noether-text-secondary)] font-medium text-[11px] border-b border-[var(--noether-border-subtle)] pb-1.5">
-            <Clock01Icon size={13} className="text-[var(--noether-text-muted)]" />
-            <span>Document Details</span>
-          </div>
+        {/* Document Details Section */}
+        <div className="mt-2 pt-2 border-t border-[var(--noether-border-subtle)] flex flex-col gap-1">
+          <button
+            type="button"
+            onClick={() => setIsDetailsOpen(!isDetailsOpen)}
+            className="flex items-center justify-between px-1.5 py-1 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] text-left cursor-pointer group text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]"
+          >
+            <div className="flex items-center gap-1.5 font-medium text-[11px]">
+              {isDetailsOpen ? (
+                <ChevronDownIcon size={12} className="text-[var(--noether-text-muted)]" />
+              ) : (
+                <ChevronRightIcon size={12} className="text-[var(--noether-text-muted)]" />
+              )}
+              <span>Document details</span>
+            </div>
+          </button>
 
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <div>
-              <span className="text-[var(--noether-text-muted)]">Words:</span>{' '}
-              <span className="text-[var(--noether-text-primary)] font-medium">{wordCount}</span>
+          {isDetailsOpen && (
+            <div className="px-1.5 py-1 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--noether-text-muted)]">Words</span>
+                <span className="text-[var(--noether-text-primary)] font-mono">{wordCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--noether-text-muted)]">Characters</span>
+                <span className="text-[var(--noether-text-primary)] font-mono">{charCount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--noether-text-muted)]">Read time</span>
+                <span className="text-[var(--noether-text-primary)] font-mono">{readingTimeMins} min</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[var(--noether-text-muted)]">Type</span>
+                <span className="text-[var(--noether-text-primary)] font-medium uppercase text-[10px]">{activeDocument.doc_type || 'Note'}</span>
+              </div>
             </div>
-            <div>
-              <span className="text-[var(--noether-text-muted)]">Characters:</span>{' '}
-              <span className="text-[var(--noether-text-primary)] font-medium">{charCount}</span>
-            </div>
-            <div>
-              <span className="text-[var(--noether-text-muted)]">Reading time:</span>{' '}
-              <span className="text-[var(--noether-text-primary)] font-medium">{readingTimeMins} min</span>
-            </div>
-            <div>
-              <span className="text-[var(--noether-text-muted)]">Doc Type:</span>{' '}
-              <span className="text-[var(--noether-text-primary)] font-medium uppercase">{activeDocument.doc_type || 'Note'}</span>
-            </div>
-          </div>
-
-          <div className="border-t border-[var(--noether-border-subtle)] pt-2 flex flex-col gap-1 text-[10px] text-[var(--noether-text-muted)]">
-            <div className="flex items-center justify-between">
-              <span>Created:</span>
-              <span className="text-[var(--noether-text-secondary)]">
-                {new Date(activeDocument.created_at).toLocaleString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span>Modified:</span>
-              <span className="text-[var(--noether-text-secondary)]">
-                {new Date(activeDocument.updated_at).toLocaleString(undefined, {
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
     </div>

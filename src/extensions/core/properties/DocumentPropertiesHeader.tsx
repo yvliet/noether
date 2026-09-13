@@ -41,6 +41,8 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
   const [focusValueKey, setFocusValueKey] = useState<string | null>(null);
   const [newTagInput, setNewTagInput] = useState('');
   const [isAddingTag, setIsAddingTag] = useState(false);
+  const [newAliasInput, setNewAliasInput] = useState('');
+  const [isAddingAlias, setIsAddingAlias] = useState(false);
 
   const currentDoc = (activeDocument && activeDocument.id === documentId) ? activeDocument : documents.find((d) => d.id === documentId);
 
@@ -134,7 +136,11 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
     await updateProperties(documentId, nextProps);
   }, [currentProps, defaultPropertyType, documentId, updateProperties]);
 
-  const tagKey = currentProps.Tags !== undefined ? 'Tags' : 'tags';
+  const tags: string[] = useMemo(() => {
+    return Array.isArray(currentProps.Tags)
+      ? currentProps.Tags
+      : (Array.isArray(currentProps.tags) ? currentProps.tags : []);
+  }, [currentProps]);
 
   const handleAddTag = useCallback(async (keepAdding = false) => {
     const cleanTag = newTagInput.trim().replace(/^#/, '');
@@ -142,26 +148,47 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
       setIsAddingTag(false);
       return;
     }
-    const currentTags = Array.isArray(currentProps[tagKey])
-      ? currentProps[tagKey]
-      : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []));
-    if (!currentTags.includes(cleanTag)) {
-      await handleSaveValue(tagKey, [...currentTags, cleanTag]);
+    if (!tags.includes(cleanTag)) {
+      const nextProps = { ...currentProps, Tags: [...tags, cleanTag] };
+      delete nextProps.tags;
+      await updateProperties(documentId, nextProps);
     }
     setNewTagInput('');
     setIsAddingTag(keepAdding);
-  }, [newTagInput, currentProps, tagKey, handleSaveValue]);
+  }, [newTagInput, tags, currentProps, documentId, updateProperties]);
 
   const handleRemoveTag = useCallback(async (tagToRemove: string) => {
-    const currentTags = Array.isArray(currentProps[tagKey])
-      ? currentProps[tagKey]
-      : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []));
-    await handleSaveValue(
-      tagKey,
-      currentTags.filter((t: string) => t !== tagToRemove)
-    );
-  }, [currentProps, tagKey, handleSaveValue]);
+    const nextProps = { ...currentProps, Tags: tags.filter((t: string) => t !== tagToRemove) };
+    delete nextProps.tags;
+    await updateProperties(documentId, nextProps);
+  }, [currentProps, tags, documentId, updateProperties]);
 
+  const aliases: string[] = useMemo(() => {
+    return Array.isArray(currentProps.Aliases)
+      ? currentProps.Aliases
+      : (Array.isArray(currentProps.aliases) ? currentProps.aliases : []);
+  }, [currentProps]);
+
+  const handleAddAlias = useCallback(async (keepAdding = false) => {
+    const cleanAlias = newAliasInput.trim();
+    if (!cleanAlias) {
+      setIsAddingAlias(false);
+      return;
+    }
+    if (!aliases.includes(cleanAlias)) {
+      const nextProps = { ...currentProps, Aliases: [...aliases, cleanAlias] };
+      delete nextProps.aliases;
+      await updateProperties(documentId, nextProps);
+    }
+    setNewAliasInput('');
+    setIsAddingAlias(keepAdding);
+  }, [newAliasInput, aliases, currentProps, documentId, updateProperties]);
+
+  const handleRemoveAlias = useCallback(async (aliasToRemove: string) => {
+    const nextProps = { ...currentProps, Aliases: aliases.filter((a: string) => a !== aliasToRemove) };
+    delete nextProps.aliases;
+    await updateProperties(documentId, nextProps);
+  }, [aliases, currentProps, documentId, updateProperties]);
 
   const createdDateStr = useMemo(() => {
     if (!currentDoc?.created_at) return '';
@@ -185,12 +212,13 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
     });
   }, [currentDoc?.updated_at]);
 
-  const isLocked = Boolean(currentProps?.locked ?? currentProps?.Locked) || app.vault.isDocumentLocked(documentId);
+  const isLocked = Boolean(currentProps?.Locked ?? (currentProps as Record<string, any>)?.locked) || app.vault.isDocumentLocked(documentId);
 
   const handleToggleLock = useCallback(async (_key: string, val: any) => {
-    const lockKey = currentProps.Locked !== undefined ? 'Locked' : 'locked';
-    await handleSaveValue(lockKey, val);
-  }, [currentProps, handleSaveValue]);
+    const nextProps: Record<string, any> = { ...currentProps, Locked: val };
+    delete nextProps.locked;
+    await updateProperties(documentId, nextProps);
+  }, [currentProps, documentId, updateProperties]);
 
   if (!showInDocument || isFolded) {
     return null;
@@ -207,9 +235,6 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
     );
   }
 
-  const tags: string[] = Array.isArray(currentProps[tagKey])
-    ? currentProps[tagKey]
-    : (Array.isArray(currentProps.tags) ? currentProps.tags : (Array.isArray(currentProps.Tags) ? currentProps.Tags : []));
   const systemKeys = new Set(['tags', 'aliases', 'created', 'modified', 'locked', 'read_only', 'lock', 'readonly', 'updated']);
   const customKeys = Object.keys(currentProps).filter((k) => {
     if (systemKeys.has(k.toLowerCase())) return false;
@@ -272,13 +297,14 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         />
 
         {/* 4. Tags Row */}
-        <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px]">
+        {/* 4. Tags Row */}
+        <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
           <div className="relative flex items-center shrink-0 w-24">
             <span
               title={getPropertyIconName('Tags', propertyIcons)}
-              className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center gap-1.5 mr-1 select-none"
+              className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none"
             >
-              {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)]' })}
+              {renderPropertyIcon('Tags', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
             </span>
 
             <span
@@ -289,12 +315,12 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 flex-wrap flex-1">
+          <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 pl-0.5">
             {tags.map((tag, idx) => (
               <span
                 key={`${tag}-${idx}`}
                 title={`Tag: #${tag}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs transition-all font-medium text-xs"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
               >
                 #{tag}
                 {!isLocked && (
@@ -365,9 +391,109 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                   type="button"
                   onClick={() => setIsAddingTag(true)}
                   title={`Add Tag\nAttach a new tag to this note`}
-                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer"
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
                 >
                   + Add tag
+                </button>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Aliases Row */}
+        <div key="system-aliases" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+          <div className="relative flex items-center shrink-0 w-24">
+            <span
+              title={getPropertyIconName('Aliases', propertyIcons)}
+              className="p-1 -ml-1 text-[var(--noether-text-muted)] cursor-default flex items-center justify-center shrink-0 mr-1 select-none"
+            >
+              {renderPropertyIcon('Aliases', propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
+            </span>
+
+            <span
+              title={`Note Aliases\nAlternate names and titles for linking`}
+              className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+            >
+              Aliases
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 pl-0.5">
+            {aliases.map((alias, idx) => (
+              <span
+                key={`${alias}-${idx}`}
+                title={`Alias: ${alias}${isLocked ? '' : "\nClick 'x' to remove alias"}`}
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
+              >
+                {alias}
+                {!isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAlias(alias)}
+                    title={`Remove "${alias}"\nDelete this alias`}
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                  >
+                    <Cancel01Icon size={10} />
+                  </button>
+                )}
+              </span>
+            ))}
+
+            {!isLocked && (
+              isAddingAlias ? (
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newAliasInput}
+                    style={{ width: `${Math.max(3, newAliasInput.length)}ch` }}
+                    onChange={(e) => setNewAliasInput(e.target.value)}
+                    onBlur={() => {
+                      if (newAliasInput.trim()) {
+                        handleAddAlias(false);
+                      } else {
+                        setIsAddingAlias(false);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ',' || e.key === 'Tab') {
+                        e.preventDefault();
+                        if (newAliasInput.trim()) {
+                          handleAddAlias(true);
+                        } else {
+                          setIsAddingAlias(false);
+                        }
+                      } else if (e.key === 'Escape') {
+                        setNewAliasInput('');
+                        setIsAddingAlias(false);
+                      } else if (e.key === 'Backspace' && !newAliasInput && aliases.length > 0) {
+                        handleRemoveAlias(aliases[aliases.length - 1]);
+                      }
+                    }}
+                    placeholder=""
+                    className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                  />
+                  <button
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      setNewAliasInput('');
+                      setIsAddingAlias(false);
+                    }}
+                    title={`Cancel\nDiscard alias input`}
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                  >
+                    <Cancel01Icon size={10} />
+                  </button>
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingAlias(true)}
+                  title={`Add Alias\nAttach an alternate name to this note`}
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+                >
+                  + Add alias
                 </button>
               )
             )}
@@ -397,12 +523,12 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
         {/* Seamless Add Property Button */}
         {!isLocked && (
-          <div key="system-add-property" className="pt-0.5">
+          <div key="system-add-property" className="pt-0.5 px-1.5">
             <button
               type="button"
               onClick={handleAddDirectProperty}
               title={`Add Property\nCreate a new metadata field for this note`}
-              className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer transition-colors py-0.5 px-1 rounded hover:bg-[var(--noether-bg-card-hover)]"
+              className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer py-0.5 px-1 rounded hover:bg-[var(--noether-bg-card-hover)]"
             >
               <PlusSignIcon size={11} /> Add property
             </button>

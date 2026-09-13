@@ -10,8 +10,9 @@ Notes in personal knowledge bases often deserve an inspiring visual identity. Th
 
 With rounded corners, dedicated side breathing room, and a smooth top-to-bottom fade into the note canvas, covers bring your note titles, properties, and content down gracefully without visual clutter.
 
-- **Non-Bleed Layout**: The banner sits with dedicated side margins (~14px–16px), preserving the clean frame of your workspace rather than aggressively stretching edge-to-edge.
+- **Non-Bleed Layout**: The banner sits with dedicated side margins (~14px-16px), preserving the clean frame of your workspace rather than aggressively stretching edge-to-edge.
 - **Top-to-Down Fade**: The artwork is fully visible at the top and seamlessly dissolves into the note background color toward the bottom, letting the note title and text flow naturally below.
+- **Instant Tab Switching**: Decoded image textures are preserved in memory and covers are pre-decoded in the background, eliminating blank pop-in frames when navigating between notes.
 - **Instant Discovery**: Discover artwork directly inside Noether through live Wallhaven search, offline presets, local vault image attachments, or custom links.
 - **Interactive Repositioning**: Drag up or down on any cover to customize vertical framing and crop to the exact focal point.
 
@@ -49,17 +50,16 @@ With rounded corners, dedicated side breathing room, and a smooth top-to-bottom 
 
 ---
 
-Cover images are persisted directly to the note's frontmatter properties, ensuring full interoperability with plain Markdown files on disk and Obsidian Banners compatibility:
+Cover images are persisted directly to the note's frontmatter properties, ensuring full interoperability with plain Markdown files on disk:
 
-- `cover`: Web URL, data URI, or vault attachment filename (e.g. `attachments/train.png`).
-- `cover_y`: Vertical positioning offset between `0.0` (top) and `1.0` (bottom). Defaults to `0.5`.
-- `banner`: Supported as an automatic fallback alias for notes migrating from Obsidian.
+- `Cover`: Web URL, data URI, or vault attachment filename (e.g. `attachments/train.png`).
+- `Cover_y`: Vertical positioning offset between `0.0` (top) and `1.0` (bottom). Defaults to `0.5`.
 
 ```yaml
 ---
 title: Tuesday October 21, 2025
-cover: "https://w.wallhaven.cc/full/2y/wallhaven-2y3g1m.jpg"
-cover_y: 0.45
+Cover: "https://w.wallhaven.cc/full/2y/wallhaven-2y3g1m.jpg"
+Cover_y: 0.45
 ---
 ```
 

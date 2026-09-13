@@ -21,6 +21,7 @@ import { useCoverModalStore } from './coversModalStore';
 import { CoversSettingsTab } from './CoversSettingsTab';
 import { useCoversSettings } from './coversSettings';
 import { DocumentItem } from '@/types';
+import { preloadCoverImage, preloadAllVaultCovers, resolveCoverSource } from './coverPreloader';
 
 export const COVERS_MANIFEST: ExtensionManifest = {
   ...(manifest as ExtensionManifest),
@@ -45,7 +46,12 @@ export class CoversExtension extends Extension {
         if (!props) return false;
         try {
           const parsed = typeof props === 'string' ? JSON.parse(props) : props;
-          return Boolean(parsed.cover || parsed.banner);
+          const coverVal = parsed?.Cover;
+          if (coverVal && typeof coverVal === 'string') {
+            preloadCoverImage(coverVal);
+            return true;
+          }
+          return false;
         } catch {
           return false;
         }
@@ -110,11 +116,13 @@ export class CoversExtension extends Extension {
             : { ...(activeDoc.properties || {}) };
         } catch {}
 
-        if (!props.cover && !props.banner) {
+        if (!props.Cover) {
           app.workspace.showToast('Note does not have a cover image', 'info');
           return;
         }
 
+        delete props.Cover;
+        delete props.Cover_y;
         delete props.cover;
         delete props.banner;
         delete props.cover_y;
@@ -169,12 +177,8 @@ export class CoversExtension extends Extension {
               : (doc.properties || {});
           } catch {}
 
-          const coverUrl = (props.cover || props.banner || '') as string;
-          const coverY = typeof props.cover_y === 'number'
-            ? props.cover_y
-            : typeof props.banner_y === 'number'
-            ? props.banner_y
-            : 0.5;
+          const coverUrl = (props.Cover || '') as string;
+          const coverY = typeof props.Cover_y === 'number' ? props.Cover_y : 0.5;
 
           return {
             content: [
@@ -184,8 +188,8 @@ export class CoversExtension extends Extension {
                   {
                     documentId,
                     hasCover: Boolean(coverUrl),
-                    cover: coverUrl || null,
-                    cover_y: coverY,
+                    Cover: coverUrl || null,
+                    Cover_y: coverY,
                   },
                   null,
                   2
@@ -233,6 +237,8 @@ export class CoversExtension extends Extension {
           if (!documentId) throw new Error("Parameter 'documentId' is required.");
           if (!url) throw new Error("Parameter 'url' is required.");
 
+          preloadCoverImage(url);
+
           const doc = this.app.vault.documents.find((d: DocumentItem) => d.id === documentId);
           if (!doc) {
             throw new Error(`Document with ID "${documentId}" was not found.`);
@@ -245,8 +251,12 @@ export class CoversExtension extends Extension {
               : { ...(doc.properties || {}) };
           } catch {}
 
-          props.cover = url;
-          props.cover_y = position;
+          props.Cover = url;
+          props.Cover_y = position;
+          delete props.cover;
+          delete props.banner;
+          delete props.cover_y;
+          delete props.banner_y;
 
           await this.app.vault.setDocumentProperties(documentId, props);
 
@@ -254,7 +264,7 @@ export class CoversExtension extends Extension {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify({ success: true, documentId, cover: url, cover_y: position }, null, 2),
+                text: JSON.stringify({ success: true, documentId, Cover: url, Cover_y: position }, null, 2),
               },
             ],
           };
@@ -299,6 +309,8 @@ export class CoversExtension extends Extension {
               : { ...(doc.properties || {}) };
           } catch {}
 
+          delete props.Cover;
+          delete props.Cover_y;
           delete props.cover;
           delete props.banner;
           delete props.cover_y;
@@ -321,6 +333,37 @@ export class CoversExtension extends Extension {
           };
         }
       },
+    });
+
+    // 7. Register Dynamic Property Icon for Cover
+    this.registerPropertyIcon({
+      id: 'banner-icon',
+      name: 'Cover',
+      category: 'Media',
+      keywords: ['photo', 'picture', 'cover', 'banner', 'wallpaper'],
+      component: ({ size = 12, className = '' }) => <FileImageIcon size={size} className={className} />,
+      defaultKeys: ['Cover'],
+    });
+
+    // 8. Proactive Image Preloading for Zero Perceived Latency
+    preloadAllVaultCovers(this.app);
+
+    this.onEvent('vault:loaded', () => {
+      preloadAllVaultCovers(this.app);
+    });
+
+    this.onEvent('document:opened', (evt) => {
+      const doc = this.app.vault.documents.find((d: DocumentItem) => d.id === evt.id);
+      if (doc?.properties) {
+        const raw = typeof doc.properties === 'string' ? doc.properties : '';
+        if (raw && !raw.includes('Cover')) return;
+        try {
+          const parsed = typeof doc.properties === 'string' ? JSON.parse(doc.properties) : doc.properties;
+          if (parsed?.Cover && typeof parsed.Cover === 'string') {
+            resolveCoverSource(parsed.Cover, this.app);
+          }
+        } catch {}
+      }
     });
   }
 }

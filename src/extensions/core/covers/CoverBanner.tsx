@@ -21,7 +21,7 @@ import { useCoversSettings } from './coversSettings';
 import { useCoverModalStore } from './coversModalStore';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { DocumentItem } from '@/types';
-import { useVaultDocuments } from 'noether';
+import { resolveCoverSource, preloadCoverImage } from './coverPreloader';
 
 export interface CoverBannerProps {
   document: DocumentItem | null | undefined;
@@ -30,7 +30,6 @@ export interface CoverBannerProps {
 
 export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) => {
   const { bannerHeight, fadeEffect, showControlsOnHover } = useCoversSettings();
-  const allDocuments = useVaultDocuments();
 
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [tempOffsetY, setTempOffsetY] = useState<number>(0.5);
@@ -49,57 +48,24 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     }
   }, [doc?.properties]);
 
-  const rawCover = (currentProperties.cover || currentProperties.banner || '') as string;
-  const savedOffsetY = typeof currentProperties.cover_y === 'number'
-    ? currentProperties.cover_y
-    : typeof currentProperties.banner_y === 'number'
-    ? currentProperties.banner_y
+  const rawCover = (currentProperties.Cover || '') as string;
+  const savedOffsetY = typeof currentProperties.Cover_y === 'number'
+    ? currentProperties.Cover_y
     : 0.5;
 
-  // Resolve image source: URL, data URI, or vault attachment document
+  // Resolve image source: URL, data URI, or vault attachment document without reactive store subscriptions
   const resolvedSrc = useMemo(() => {
-    if (!rawCover) return '';
-    const trimmed = rawCover.trim();
-    if (
-      trimmed.startsWith('http://') ||
-      trimmed.startsWith('https://') ||
-      trimmed.startsWith('data:') ||
-      trimmed.startsWith('blob:')
-    ) {
-      return trimmed;
-    }
-
-    // Lookup vault attachment by filename
-    const cleanTarget = trimmed.toLowerCase();
-    const cleanWithoutExt = cleanTarget.replace(/\.[a-zA-Z0-9]+$/, '');
-    const matched = allDocuments.find((d) => {
-      if (d.is_folder) return false;
-      const titleLower = d.title.toLowerCase();
-      return (
-        titleLower === cleanTarget ||
-        titleLower === cleanWithoutExt ||
-        d.title === trimmed
-      );
-    });
-
-    if (matched && matched.content_json) {
-      try {
-        const parsed = JSON.parse(matched.content_json);
-        const firstText = parsed.content?.[0]?.content?.[0]?.text;
-        if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
-          return firstText;
-        }
-      } catch {}
-    }
-
-    return trimmed;
-  }, [rawCover, allDocuments]);
+    return resolveCoverSource(rawCover, app);
+  }, [rawCover, app]);
 
   // Handle setting a new cover
   const handleSelectCover = useCallback(
     async (newUrl: string) => {
       if (!doc?.id) return;
-      const nextProps = { ...currentProperties, cover: newUrl };
+      preloadCoverImage(newUrl);
+      const nextProps = { ...currentProperties, Cover: newUrl };
+      delete nextProps.cover;
+      delete nextProps.banner;
       await app.vault.setDocumentProperties(doc.id, nextProps);
       app.workspace.showToast('Cover image updated', 'success');
     },
@@ -110,6 +76,8 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
   const handleRemoveCover = useCallback(async () => {
     if (!doc?.id) return;
     const nextProps = { ...currentProperties };
+    delete nextProps.Cover;
+    delete nextProps.Cover_y;
     delete nextProps.cover;
     delete nextProps.banner;
     delete nextProps.cover_y;
@@ -127,7 +95,9 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
   // Save repositioned offset
   const handleSaveReposition = useCallback(async () => {
     if (!doc?.id) return;
-    const nextProps = { ...currentProperties, cover_y: Math.round(tempOffsetY * 1000) / 1000 };
+    const nextProps = { ...currentProperties, Cover_y: Math.round(tempOffsetY * 1000) / 1000 };
+    delete nextProps.cover_y;
+    delete nextProps.banner_y;
     await app.vault.setDocumentProperties(doc.id, nextProps);
     setIsRepositioning(false);
     app.workspace.showToast('Cover position saved', 'success');
@@ -195,6 +165,11 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
             src={resolvedSrc}
             alt="Note Cover"
             draggable={false}
+            loading="eager"
+            decoding="async"
+            // @ts-expect-error React DOM fetchpriority attribute
+            fetchpriority="high"
+            fetchPriority="high"
             style={{
               objectPosition: `center ${effectiveOffsetY * 100}%`,
               ...(fadeEffect
