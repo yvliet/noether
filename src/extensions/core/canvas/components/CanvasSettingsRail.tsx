@@ -116,7 +116,8 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
       {/* Vertical Tool Rail: directly below More Options with 2px (gap-0.5) spacing and matching drop shadow */}
       <div
         data-canvas-settings-rail="true"
-        className="absolute right-4 top-[29px] z-20 flex flex-col gap-0.5 items-center pointer-events-auto select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
+        style={{ top: 'calc(var(--noether-header-offset, 0px) + 29px)' }}
+        className="absolute right-4 z-20 flex flex-col gap-0.5 items-center pointer-events-auto select-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]"
       >
         {/* Settings / Gear Button */}
         <button

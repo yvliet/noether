@@ -217,9 +217,10 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
     <div
       ref={containerRef}
       data-sub-header="true"
+      style={isFrameless ? { top: 'var(--noether-header-offset, 0px)' } : undefined}
       className={
         isFrameless
-          ? 'h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none absolute top-0 left-0 right-0 z-20 pointer-events-none bg-transparent drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
+          ? 'h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none absolute left-0 right-0 z-20 pointer-events-none bg-transparent drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
           : 'h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none relative z-20'
       }
     >

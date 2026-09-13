@@ -142,13 +142,18 @@ const TilingLayoutRenderer: React.FC<TilingLayoutRendererProps> = React.memo(({ 
 
   // Leaf Pane: Only render an inline header if this pane is NOT touching the top window bar
   const topRowLeafIds = getTopRowLeafIds(layoutTree);
-  const showInlineHeader = !topRowLeafIds.includes(node.id);
+  const isTopRowLeaf = topRowLeafIds.includes(node.id);
+  const showInlineHeader = !isTopRowLeaf;
 
   return (
     <div
       data-pane-id={node.id}
       onClick={() => setFocusedPane(node.id)}
-      style={{ background: 'var(--noether-bg-main-gradient, var(--noether-bg-main))', flex: node.flex || 1 }}
+      style={{
+        background: 'var(--noether-bg-main-gradient, var(--noether-bg-main))',
+        flex: node.flex || 1,
+        ['--noether-header-offset' as any]: isTopRowLeaf ? '41px' : '0px',
+      }}
       className="flex-1 flex flex-col min-w-0 min-h-0 h-full overflow-hidden"
     >
       {showInlineHeader && <SplitTabHeader paneId={node.id} />}
@@ -434,20 +439,20 @@ export const AppShell: React.FC = React.memo(() => {
     <AppProvider app={appInstance}>
       <div
         style={{ background: 'var(--noether-bg-app)', color: 'var(--noether-text-secondary)' }}
-        className="noether-app-shell w-full h-full flex flex-col select-none overflow-hidden font-sans"
+        className="noether-app-shell w-full h-full flex flex-col select-none overflow-hidden font-sans relative"
       >
         <WindowTitleSync />
         {/* Top Window Bar */}
         <WindowHeader />
 
-        {/* Main 3-Column Workspace Area */}
+        {/* Main 3-Column Workspace Area (Full Window Height) */}
         <div
           style={{
             background: isLeftSidebarOpen
               ? 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar))'
               : 'var(--noether-bg-ribbon, var(--noether-bg-sidebar))',
           }}
-          className="noether-workspace-layout flex-1 flex min-h-0 overflow-hidden relative"
+          className="noether-workspace-layout w-full h-full flex min-h-0 overflow-hidden relative"
         >
           {/* Left Action Rail (Slim) */}
           {showActionRail && <ActionRail />}

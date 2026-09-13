@@ -491,7 +491,7 @@ textarea::selection {
 }
 
 .scrollbar-track-offset-subheader::-webkit-scrollbar-track {
-  margin-top: 32px;
+  margin-top: calc(var(--noether-header-offset, 0px) + 32px);
 }
 
 .theme-light ::-webkit-scrollbar-thumb {

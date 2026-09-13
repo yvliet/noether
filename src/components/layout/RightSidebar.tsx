@@ -133,7 +133,7 @@ export const RightSidebar: React.FC = React.memo(() => {
         width: `${rightSidebarWidth}px`,
         background: 'var(--noether-bg-sidebar-gradient, var(--noether-bg-sidebar))',
       }}
-      className="noether-sidebar-right flex flex-col h-full select-none shrink-0 text-xs relative"
+      className="noether-sidebar-right flex flex-col h-full pt-[41px] select-none shrink-0 text-xs relative"
     >
       {activeDrag?.targetDockZone === 'right-bottom' && (
         <div
