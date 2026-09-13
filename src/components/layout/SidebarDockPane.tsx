@@ -66,28 +66,28 @@ const DockEmptyView: React.FC<DockEmptyViewProps> = React.memo(({ zone, activeIt
     <div className="flex-1 flex flex-col items-center justify-center select-none p-6 gap-3 bg-transparent">
       <button
         onClick={handleCreateNewNote}
-        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
       >
         Create new note <span className="text-[#555] ml-1">Ctrl + N</span>
       </button>
 
       <button
         onClick={() => setIsCommandPaletteOpen(true)}
-        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
       >
         Go to file <span className="text-[#555] ml-1">Ctrl + O</span>
       </button>
 
       <button
         onClick={() => setIsHelpModalOpen(true)}
-        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
       >
         Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>
       </button>
 
       <button
         onClick={handleClose}
-        className="text-[13px] text-[#888888] hover:text-[#dcddde] transition-colors cursor-pointer"
+        className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
       >
         Close
       </button>

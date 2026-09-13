@@ -64,7 +64,7 @@ Core folders (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`,
 Avoid calling Tauri or Node APIs directly inside React components or stores. Instead, route them through [`src/lib/platform/platformAdapter.ts`](../src/lib/platform/platformAdapter.ts) so things stay clean and testable.
 
 ### Native Desktop Feel
-I want Noether to feel like a true native desktop tool. Classic desktop apps don't make you wait around for a button to fade in or a menu to slowly drop down, so we keep controls instant. Clicks, toggles, and menus should snap into place immediately. The only animations that make sense are continuous spatial interactions like zooming on the canvas or force layout in the knowledge graph.
+I want Noether to feel like a true native desktop tool. Classic desktop apps don't make you wait around for a button to fade in or a menu to slowly drop down, so controls remain instant. Clicks, toggles, and menus should snap into place immediately. The only animations that make sense are continuous spatial interactions like zooming on the canvas or force layout in the knowledge graph.
 
 ### Type Verification
 Make sure `npx tsc --noEmit` runs with zero errors before opening a PR.

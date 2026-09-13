@@ -5,6 +5,28 @@ import { buildPlaceholderLatex } from './math-snippets';
 import { useContextMenuStore } from '@/store/contextMenuStore';
 import { useSettingsStore } from '@/store/settingsStore';
 
+// High-speed in-memory KaTeX render cache to prevent duplicate AST compilation during mount and typing
+const mathChipKatexCache = new Map<string, string>();
+const MAX_MATH_CACHE_SIZE = 1500;
+
+function getOrRenderMathChip(formattedLatex: string, displayMode: boolean): string {
+  const cacheKey = `${displayMode ? 'B' : 'I'}:${formattedLatex}`;
+  const hit = mathChipKatexCache.get(cacheKey);
+  if (hit !== undefined) return hit;
+
+  const html = katex.renderToString(formattedLatex, {
+    displayMode,
+    throwOnError: false,
+  });
+
+  if (mathChipKatexCache.size >= MAX_MATH_CACHE_SIZE) {
+    const keysToDelete = Array.from(mathChipKatexCache.keys()).slice(0, 500);
+    for (const k of keysToDelete) mathChipKatexCache.delete(k);
+  }
+  mathChipKatexCache.set(cacheKey, html);
+  return html;
+}
+
 export interface MathChipOptions {
   HTMLAttributes: Record<string, any>;
 }
@@ -195,10 +217,7 @@ export const MathChip = Node.create<MathChipOptions>({
               ? latex
               : `\\displaystyle ${latex}`;
 
-            renderSpan.innerHTML = katex.renderToString(formattedLatex, {
-              displayMode: currentDisplay === 'block',
-              throwOnError: false,
-            });
+            renderSpan.innerHTML = getOrRenderMathChip(formattedLatex, currentDisplay === 'block');
           } catch (e) {
             renderSpan.className = 'wce-math-render md-math-error';
             renderSpan.textContent = latex;

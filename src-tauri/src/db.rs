@@ -80,6 +80,7 @@ pub const SQL_SCHEMA_STATEMENTS: &[&str] = &[
     r#"CREATE INDEX IF NOT EXISTS idx_docs_title ON documents(title);"#,
     r#"CREATE INDEX IF NOT EXISTS idx_docs_is_folder ON documents(is_folder);"#,
     r#"CREATE INDEX IF NOT EXISTS idx_blocks_document_id ON blocks(document_id);"#,
+    r#"CREATE INDEX IF NOT EXISTS idx_blocks_doc_order ON blocks(document_id, order_index);"#,
     r#"CREATE INDEX IF NOT EXISTS idx_blocks_is_task ON blocks(is_task, task_completed);"#,
     r#"CREATE INDEX IF NOT EXISTS idx_doc_links_target ON document_links(target_document_id);"#,
     r#"CREATE INDEX IF NOT EXISTS idx_trash_deleted_at ON trash_items(deleted_at);"#,

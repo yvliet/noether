@@ -27,13 +27,14 @@ The **Infinite Canvas** extension gives you an unbounded 2D visual playground. P
 ### 2. Adding Cards & Nodes
 - **Note Cards**: Drag any Markdown note from the left file explorer directly onto the canvas. The note renders as an interactive card displaying its title and content. Double-click the card header to jump directly into the full note editor.
 - **Text & Sticky Notes**: Double-click anywhere on the empty canvas to create a fresh text card. Type quick thoughts, reminders, or headings.
+- **Visual Group Containers**: Select multiple cards and press `Ctrl+G` or click **Create group** on the ActionPill. Enclosed cards move in lockstep with the group container. Supports nested hierarchies, 8-direction perimeter resizing, and connection anchor points. Ungroup with `Ctrl+Shift+G`.
 - **Resizing & Moving**: Click any card to select it. Drag the card header to move it, or drag its corner resize handles to expand its dimensions.
 
-### 3. Drawing Connection Lines
-1. Hover over any card edge to reveal directional connection handles.
-2. Click and drag from a handle toward another card.
-3. Release to snap a directional arrow between the two ideas.
-4. Customize edge labels and arrow directions by clicking on the connection line.
+### 3. Connection Lines & Interactive Edge Bending
+1. Hover over any card edge to reveal connection handles (top, right, bottom, left).
+2. Click and drag from a handle toward another card to connect them.
+3. **Interactive Curve & Step Bending**: Hold `Shift` and drag along any edge, or select the edge to reveal its midpoint handle and drag it directly. This fluidly bends Bezier curves or repositions orthogonal step segments. Double-click the handle or select *Reset curve bend* to restore the automatic trajectory.
+4. Customize edge labels, routing styles (Curved, Step, Straight), and arrow directions directly from the Edge ActionPill.
 
 ### 4. Keyboard Shortcuts
 
@@ -41,6 +42,9 @@ The **Infinite Canvas** extension gives you an unbounded 2D visual playground. P
 | :--- | :--- | :--- |
 | **Pan Canvas** | `Spacebar + Drag` / `Middle Click + Drag` | Translates viewport across the infinite plane. |
 | **Zoom In / Out** | `Ctrl + Scroll` / Trackpad Pinch | Smoothly scales canvas between 10% and 300%. |
+| **Group Selected** | `Ctrl+G` | Encases selected cards in a visual group container. |
+| **Ungroup Selected** | `Ctrl+Shift+G` | Dissolves group boundary while preserving cards. |
+| **Bend Edge** | `Shift + Drag on Edge` | Fluidly bends curve or repositions orthogonal step. |
 | **Delete Card / Line** | `Delete` / `Backspace` | Removes currently selected nodes or edges. |
 | **Select All Nodes** | `Ctrl+A` | Highlights all cards on the active board. |
 

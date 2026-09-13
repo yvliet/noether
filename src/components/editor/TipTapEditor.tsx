@@ -444,7 +444,7 @@ const HighlightColorSwatch: React.FC = React.memo(() => {
   const highlightColor = useSettingsStore((s) => s.highlightColor) || '#ffd54f';
   return (
     <span
-      className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-[0_1px_2px_rgba(0,0,0,0.45)] cursor-pointer transition-transform hover:scale-125 active:scale-95 flex items-center justify-center p-0 shrink-0"
+      className="w-3.5 h-3.5 rounded-full border border-white/40 shadow-[0_1px_2px_rgba(0,0,0,0.45)] cursor-pointer flex items-center justify-center p-0 shrink-0"
       style={{ backgroundColor: highlightColor }}
       title={`Highlight color: ${highlightColor}`}
     />

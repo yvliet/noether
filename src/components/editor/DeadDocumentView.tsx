@@ -79,7 +79,7 @@ export const DeadDocumentView: React.FC<DeadDocumentViewProps> = React.memo(({
                 <button
                   type="button"
                   onClick={handleRestore}
-                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline ml-1"
+                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline ml-1"
                 >
                   Restore it back?
                 </button>
@@ -87,7 +87,7 @@ export const DeadDocumentView: React.FC<DeadDocumentViewProps> = React.memo(({
                 <button
                   type="button"
                   onClick={handleRecreate}
-                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer transition-colors bg-transparent border-0 p-0 inline ml-1"
+                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline ml-1"
                 >
                   Recreate note?
                 </button>

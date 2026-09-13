@@ -106,7 +106,14 @@ Located in the right sidebar, the Backlinks Pane displays:
 
 ### 2D Knowledge Graph (`Ctrl+G`)
 - Press `Ctrl+G` to open the full force-directed knowledge graph.
-- **Color Graph Nodes**: Master toggle in Settings → Graph view → Coloring to switch between classic neutral gray and custom color schemes. When disabled, all subordinate coloring controls are cleanly dimmed and disabled.
+- **Auto Fit to Center**: Opening graph view automatically centers and fits all nodes into the viewport. Switching back to an already open graph tab seamlessly restores your exact canvas zoom and pan position.
+- **Docking & Sidebar Operation**: Dock any graph tab into the sidebar panel using the dock icon. Docking automatically recalibrates zoom and centers all nodes inside the sidebar pane.
+- **Global vs. Local Mode**:
+  - **Global Mode** (network globe icon): Renders the complete macroscopic graph across your vault.
+  - **Local Mode** (slashed globe icon): Scopes the graph strictly to the active note and its immediate neighborhood. Toggling modes automatically recenters on the focused subset.
+- **The Floating Graph**: Click the **Float** button in the graph toolbar to keep nodes gently drifting and breathing. I personally love keeping the graph docked in the top-right sidebar with Float turned on while writing notes.
+  - *How it came to be*: The Float button was discovered by accident while testing the Fit to Center button. Spamming Fit to Center injected momentum into the nodes, making them float in a mesmerizing way. After testing a holdable button, I promoted it into its own dedicated toggle button so you can write while your second brain breathes in the background.
+- **Color Graph Nodes**: Master toggle in *Settings → Graph view → Coloring* to switch between classic neutral gray and custom color schemes.
 - **Node Coloring Schemes**: Choose between **Random** (default uniform palette cycling), **By File Type**, **By Folder Hierarchy**, or **By First Tag**.
 - **Tactile Aesthetic Palettes**: Select from 6 curated single-word palettes: **Amber**, **Emerald**, **Neon**, **Ocean**, **Sunset**, and **Pastel**.
 - **In-App Color Picker**: In **By File Type** mode, click any category swatch (Notes, Canvases, Images, Media, Documents, Tags, Other) to open Noether's custom color picker popover with 2D spectrum, hue slider, eyedropper, and RGB/HEX inputs.
@@ -114,7 +121,7 @@ Located in the right sidebar, the Backlinks Pane displays:
   - **Directional link arrows**: Render clean arrowheads along connections indicating wiki link directions.
   - **Orphan node filter**: Toggle visibility of unconnected notes without links.
   - **Virtual #tag nodes**: Render tag nodes as virtual hubs connecting tagged notes. Clicking any tag node instantly filters the graph.
-- **Pauses when idle**: The graph physics automatically pauses when you are not interacting with it, saving battery and GPU power.
+- **Pauses when idle**: The graph physics simulation settles within 3 to 5 seconds and automatically suspends when idle, minimized, or switched to another tab, saving battery and GPU cycles.
 
 ## 5. Infinite 2D Spatial Canvas
 ---
@@ -122,10 +129,16 @@ Located in the right sidebar, the Backlinks Pane displays:
 For visual brainstorming, concept maps, flowcharts, and moodboards:
 
 - Click **Canvas** on the Action Rail or run `Ctrl+K` → *New spatial canvas*.
-- **Note Cards**: Drag documents from the file tree directly onto the canvas plane.
-- **Sticky Text Nodes**: Double-click anywhere to create free-form sticky cards.
-- **Group Containers**: Select cards and press `Ctrl+G` to encase them in colored, titled container frames.
-- **Connectors**: Drag connection handles from card borders to create Bezier curve arrows with custom labels.
+- **Note Cards**: Drag documents from the file tree directly onto the canvas plane for live interactive previews. Double-clicking the card header navigates to the note in a split editor.
+- **Sticky Text Nodes**: Double-click anywhere to create free-form sticky cards with markdown support.
+- **Visual Group Containers**: Select multiple cards and press `Ctrl+G` to encase them in colored, titled container frames.
+  - Enclosed cards move in lockstep with the container.
+  - Supports nested group hierarchies where moving a parent group transports all child groups and enclosed cards together.
+  - **Ungroup vs Delete**: Ungroup (`Ctrl+Shift+G`) dissolves the boundary while keeping contents intact; Delete (`Delete` / `Backspace`) removes the group and its contents.
+- **Connectors & Interactive Edge Bending**: Drag connection handles from card borders to create Bezier curve, orthogonal step, or straight arrows:
+  - **Bend Curves & Steps**: Hold `Shift` and drag along any edge, or drag the selected edge midpoint handle to fluidly bend the curve or reposition the orthogonal step segment.
+  - Double-click the midpoint handle or select *Reset curve bend* on the ActionPill to restore the automatic trajectory.
+  - Double-click any arrow to type an explanatory relationship label (e.g. *"implements"*, *"leads to"*).
 - **Navigation**: Hold `Spacebar` or `Ctrl` to pan, scroll with `Ctrl+Wheel` to zoom, and use snap-to-grid for tidy alignment.
 
 ## 6. Embedded FSRS-4.5 Spaced Repetition

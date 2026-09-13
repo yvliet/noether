@@ -1,6 +1,6 @@
 # Noether Architecture
 
-A pragmatic look at how Noether works under the hood: how we keep plain Markdown files fast and durable, our SQLite indexing strategy, and how our extension system stays out of the way of core performance.
+A pragmatic look at how Noether works under the hood: how plain Markdown files stay fast and durable on disk, the native SQLite indexing strategy, and how the extension system stays out of the way of core performance.
 
 ## 1. Stack Overview
 ---
@@ -28,7 +28,7 @@ Noether keeps your notes as clean Markdown files on disk while maintaining a fas
 - **Active buffer protection**: Keystrokes update memory immediately. The active note you are editing is protected from being overwritten by background file reloads.
 - **Debounced saves (300ms)**: Writes wait 300ms after you stop typing to avoid hammering the disk while you write.
 - **Crash-safe atomic saves**: Noether writes note changes to a temporary file first (`<target>.tmp.<pid>`), then renames it over the target file. If power cuts out mid-save, your original note is never left corrupted or half-written.
-- **Ignoring our own saves**: Before writing to disk, Noether records an internal write timestamp (`LAST_INTERNAL_WRITE`). When the file watcher notices a change, it checks this timestamp to avoid reloading a file Noether just saved, while still catching external edits (like Git branches or external editors) right away.
+- **Ignoring internal saves**: Before writing to disk, Noether records an internal write timestamp (`LAST_INTERNAL_WRITE`). When the file watcher notices a change, it checks this timestamp to avoid reloading a file Noether just saved, while still catching external edits (like Git branches or external editors) right away.
 
 ### Fast Search & Relational Index (`rusqlite`)
 - **Native Rust SQLite over Tauri IPC**: Extracted frontmatter, tags, `[[wikilinks]]`, and tasks are sent directly to compiled Rust. Running SQLite natively eliminates sluggish WebAssembly exports and RAM dumps.
@@ -58,7 +58,7 @@ To keep the codebase maintainable and prevent extensions from tangling with core
 ## 4. Editor Performance on Large Notes (100k+ Words)
 ---
 
-Typing in a note should always feel instantaneous. To keep input latency under 8ms even on massive documents, we avoid common editor bottlenecks:
+Typing in a note should always feel instantaneous. To keep input latency under 8ms even on massive documents, Noether avoids common editor bottlenecks:
 
 - **Map decorations instead of reparsing**: When you type, ProseMirror maps existing syntax chips and highlights forward with position math (`DecorationSet.map`) rather than re-parsing the whole document.
 - **Only scan changed paragraphs**: Noether only checks modified blocks and their immediate parents for wikilinks and markdown tokens.

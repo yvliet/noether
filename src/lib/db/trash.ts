@@ -68,11 +68,29 @@ export async function cleanExpiredTrash(): Promise<number> {
 export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentItem[]> {
   if (!docIds || docIds.length === 0) return [];
 
-  // Get all documents to compute tree, paths, and descendants
-  const allDocs = await dbAdapter.query<DocumentItem>(
-    `SELECT id, parent_id, title, is_daily_note, is_folder, is_bookmarked, doc_type, properties, content_json, created_at, updated_at FROM documents`
-  );
+  // Get documents to compute tree, paths, and descendants, prioritizing in-memory store
+  let allDocs: DocumentItem[] = [];
+  try {
+    const { useDocumentStore } = await import('@/store/documentStore');
+    allDocs = useDocumentStore.getState().documents;
+  } catch {}
+  if (!allDocs || allDocs.length === 0) {
+    allDocs = await dbAdapter.query<DocumentItem>(
+      `SELECT id, parent_id, title, is_daily_note, is_folder, is_bookmarked, doc_type, properties, content_json, created_at, updated_at FROM documents`
+    );
+  }
+
   const docMap = new Map(allDocs.map((d) => [d.id, d]));
+  const childrenByParent = new Map<string | null, DocumentItem[]>();
+  for (const d of allDocs) {
+    const p = d.parent_id || null;
+    const existing = childrenByParent.get(p);
+    if (existing) {
+      existing.push(d);
+    } else {
+      childrenByParent.set(p, [d]);
+    }
+  }
 
   const itemsToTrash: DocumentItem[] = [];
   const addedIds = new Set<string>();
@@ -86,7 +104,7 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
     addedIds.add(id);
 
     if (doc.is_folder) {
-      const children = allDocs.filter((d) => d.parent_id === id);
+      const children = childrenByParent.get(id) || [];
       for (const child of children) {
         collectItemAndChildren(child.id);
       }
@@ -250,6 +268,17 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
   const targets = allTrash.filter((t) => targetIds.has(t.id) || targetIds.has(t.original_id));
   if (targets.length === 0) return [];
 
+  const trashChildrenByParent = new Map<string | null, TrashItem[]>();
+  for (const t of allTrash) {
+    const p = t.parent_id || null;
+    const existing = trashChildrenByParent.get(p);
+    if (existing) {
+      existing.push(t);
+    } else {
+      trashChildrenByParent.set(p, [t]);
+    }
+  }
+
   const itemsToRestore: TrashItem[] = [];
   const addedIds = new Set<string>();
 
@@ -259,7 +288,7 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
     addedIds.add(item.id);
 
     if (item.is_folder) {
-      const children = allTrash.filter((t) => t.parent_id === item.original_id);
+      const children = trashChildrenByParent.get(item.original_id) || [];
       for (const child of children) {
         collectTrashItemAndChildren(child);
       }
@@ -271,7 +300,14 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
   }
 
   // Get current active documents to check if parent folder still exists
-  const existingDocs = await dbAdapter.query<DocumentItem>(`SELECT id, is_folder FROM documents`);
+  let existingDocs: Array<{ id: string; is_folder?: number | boolean }> = [];
+  try {
+    const { useDocumentStore } = await import('@/store/documentStore');
+    existingDocs = useDocumentStore.getState().documents;
+  } catch {}
+  if (!existingDocs || existingDocs.length === 0) {
+    existingDocs = await dbAdapter.query<DocumentItem>(`SELECT id, is_folder FROM documents`);
+  }
   const existingFolderIds = new Set(existingDocs.filter((d) => d.is_folder).map((d) => d.id));
   for (const item of itemsToRestore) {
     if (item.is_folder) {

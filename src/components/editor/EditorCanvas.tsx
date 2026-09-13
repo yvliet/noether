@@ -964,7 +964,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
                           title={topFolder.title}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[260px] overflow-hidden transition-colors ${
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[260px] overflow-hidden ${
                             (topFolder as any).className || ''
                           }`}
                         >
@@ -981,7 +981,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
                           title={collapsedTooltip || undefined}
-                          className="text-[#666] hover:text-[#999] hover:bg-[var(--noether-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0 transition-colors"
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--noether-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
                         >
                           ...
                         </span>
@@ -1049,7 +1049,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         }}
                         data-tooltip={isLocked ? 'Note is locked' : 'Click to rename'}
                         data-shortcuts={isLocked ? JSON.stringify(['Read-only']) : undefined}
-                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink overflow-hidden transition-colors ${
+                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink overflow-hidden ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}
                       >
