@@ -28,6 +28,7 @@ import eventsStorageRaw from './docs/extensions/events-and-storage.md?raw';
 import publishingRaw from './docs/extensions/publishing.md?raw';
 import syncRaw from './docs/extensions/sync.md?raw';
 import moreIconsRaw from './docs/extensions/more-icons.md?raw';
+import coversRaw from './docs/extensions/covers.md?raw';
 
 export interface DocItem {
   id: string;
@@ -217,6 +218,16 @@ export const DOC_ITEMS: Record<string, DocItem> = {
     path: 'website/src/content/docs/extensions/more-icons.md',
     content: moreIconsRaw,
   },
+  'extensions/covers': {
+    id: 'covers',
+    slug: 'extensions/covers',
+    title: 'Covers Extension',
+    description: 'Custom banner cover images with top-to-bottom fading, Wallhaven search, and offline presets.',
+    category: 'Extension Development',
+    icon: 'FileImageIcon',
+    path: 'website/src/content/docs/extensions/covers.md',
+    content: coversRaw,
+  },
   'extensions/mcp-tools': {
     id: 'mcp-tools',
     slug: 'extensions/mcp-tools',
@@ -304,6 +315,7 @@ export const docsTree: DocFolder[] = [
       DOC_ITEMS['extensions/manifest-spec'],
       DOC_ITEMS['extensions/extension-points'],
       DOC_ITEMS['extensions/more-icons'],
+      DOC_ITEMS['extensions/covers'],
       DOC_ITEMS['extensions/mcp-tools'],
       DOC_ITEMS['extensions/events-and-storage'],
       DOC_ITEMS['extensions/publishing'],

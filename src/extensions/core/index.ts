@@ -13,6 +13,7 @@ import { MoreIconsExtension, MORE_ICONS_MANIFEST } from './more-icons/MoreIconsE
 import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { SyncExtension, SYNC_MANIFEST } from './sync/SyncExtension';
 import { HistoryExtension, HISTORY_MANIFEST } from './history/HistoryExtension';
+import { CoversExtension, COVERS_MANIFEST } from './covers/CoversExtension';
 
 export function registerAllCoreExtensions(app: NoetherApp): void {
   app.extensions.registerExtension(HISTORY_MANIFEST, HistoryExtension);
@@ -29,4 +30,5 @@ export function registerAllCoreExtensions(app: NoetherApp): void {
   app.extensions.registerExtension(PROPERTIES_MANIFEST, PropertiesExtension);
   app.extensions.registerExtension(MORE_ICONS_MANIFEST, MoreIconsExtension);
   app.extensions.registerExtension(SKETCH_MANIFEST, SketchExtension);
+  app.extensions.registerExtension(COVERS_MANIFEST, CoversExtension);
 }

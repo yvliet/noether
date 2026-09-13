@@ -477,6 +477,30 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     });
   }, [currentDoc]);
 
+  const hasCover = useMemo(() => {
+    if (!currentDoc?.properties) return false;
+    try {
+      const props = typeof currentDoc.properties === 'string'
+        ? JSON.parse(currentDoc.properties)
+        : currentDoc.properties;
+      return Boolean(props?.cover || props?.banner);
+    } catch {
+      return false;
+    }
+  }, [currentDoc?.properties]);
+
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const top = scrollViewportRef.current?.scrollTop || 0;
+    setIsScrolled(top > 0);
+  }, [currentDoc?.id]);
+
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const top = e.currentTarget.scrollTop;
+    setIsScrolled(top > 0);
+  }, []);
+
   const isDuplicateTitle = useMemo(() => {
     if (!currentDoc) return false;
     if (!isMainTitleFocused && !isEditingSubheader) return false;
@@ -806,23 +830,38 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       data-main={isSidebarMode ? undefined : 'true'}
       data-sidebar-mode={isSidebarMode ? 'true' : undefined}
       style={{ touchAction: 'pan-x pan-y' }}
-      className={`noether-doc-wrapper editor-canvas flex-1 flex flex-col h-full overflow-hidden ${
+      className={`noether-doc-wrapper editor-canvas relative flex-1 flex flex-col h-full overflow-hidden ${
         isSidebarMode ? 'bg-transparent' : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
       }`}
     >
 
       {/* Obsidian Document Sub-Header: Navigation Arrows, Breadcrumbs & Options - Hidden in Sidebar Mode */}
       {!isSidebarMode && (
-        <div data-sub-header="true" className="relative h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none">
+        <div
+          data-sub-header="true"
+          className={
+            hasCover
+              ? `absolute top-0 left-0 right-0 h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none z-20 pointer-events-none ${
+                  isScrolled
+                    ? 'bg-transparent'
+                    : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
+                }`
+              : 'relative h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none'
+          }
+        >
 
         {/* Left: Navigation History Arrows */}
-        <div className="relative z-10 flex items-center gap-0.5 shrink-0">
+        <div
+          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out ${
+            hasCover ? 'pointer-events-auto' : ''
+          } ${hasCover && isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'}`}
+        >
           <button
             onClick={handleBack}
             disabled={!canGoBack}
             data-tooltip="Navigate back"
             data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] transition-colors"
+            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer disabled:cursor-default"
           >
             <ArrowLeft01Icon size={14} />
           </button>
@@ -831,7 +870,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoForward}
             data-tooltip="Navigate forward"
             data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] transition-colors"
+            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer disabled:cursor-default"
           >
             <ArrowRight01Icon size={14} />
           </button>
@@ -840,7 +879,13 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         {/* Center: Truly Absolute Centered Document Breadcrumb Title (Click to rename live in-place) */}
         <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-20">
           {currentDoc ? (
-            <div className="pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden">
+            <div
+              className={`pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden text-[#777] transition-all duration-300 ease-out ${
+                hasCover && isScrolled
+                  ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]'
+                  : 'drop-shadow-none'
+              }`}
+            >
               {(() => {
                 const parts = breadcrumbItems;
                 const hasFolders = parts.length > 1;
@@ -902,7 +947,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(topFolder.id, (topFolder as any).onClick)}
                           title={topFolder.title}
-                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[260px] overflow-hidden ${
+                          className={`text-[#666] hover:text-[#999] cursor-pointer inline-flex items-center gap-1.5 shrink min-w-0 max-w-[260px] overflow-hidden transition-colors ${
                             (topFolder as any).className || ''
                           }`}
                         >
@@ -919,7 +964,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         <span
                           onClick={handleFolderClick(immediateParentFolder.id, (immediateParentFolder as any).onClick)}
                           title={collapsedTooltip || undefined}
-                          className="text-[#666] hover:text-[#999] hover:bg-[var(--noether-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0"
+                          className="text-[#666] hover:text-[#999] hover:bg-[var(--noether-bg-card-hover)] px-1.5 py-0.5 rounded cursor-pointer font-medium select-none shrink-0 transition-colors"
                         >
                           ...
                         </span>
@@ -987,7 +1032,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                         }}
                         data-tooltip={isLocked ? 'Note is locked' : 'Click to rename'}
                         data-shortcuts={isLocked ? JSON.stringify(['Read-only']) : undefined}
-                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink overflow-hidden ${
+                        className={`text-[#dcddde] font-normal py-0.5 inline-flex items-center gap-1.5 min-w-0 max-w-full shrink overflow-hidden transition-colors ${
                           isLocked ? 'cursor-default' : 'cursor-text'
                         }`}
                       >
@@ -1003,7 +1048,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         </div>
 
         {/* Right: Reading View, Bookmark, Search & More Options */}
-        <div className="relative z-10 flex items-center gap-0.5 shrink-0">
+        <div
+          className={`relative z-10 flex items-center gap-0.5 shrink-0 transition-all duration-300 ease-out ${
+            hasCover ? 'pointer-events-auto' : ''
+          } ${hasCover && isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'}`}
+        >
           {/* Dynamic Extension Subheader Actions Slot (Left of View Mode Toggle) */}
           <ExtensionPortalSlotHost
             slot="editor:subheader-actions"
@@ -1174,11 +1223,20 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           <div
             ref={scrollViewportRef}
             style={{ touchAction: 'pan-x pan-y' }}
+            onScroll={handleScroll}
             onContextMenu={handleDeadSpaceContextMenu}
-            className={`flex-1 overflow-y-auto custom-scrollbar ${isReadingMode ? 'cursor-default' : ''}`}
+            className={`flex-1 overflow-y-auto custom-scrollbar ${
+              hasCover && !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
+            } ${isReadingMode ? 'cursor-default' : ''}`}
           >
+            {/* Dynamic Extension Banner Slot */}
+            <ExtensionPortalSlotHost
+              slot="editor:banner"
+              context={portalSlotContext}
+              className="w-full shrink-0"
+            />
             <div
-              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative ${
+              className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 ${
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
               }`}
             >

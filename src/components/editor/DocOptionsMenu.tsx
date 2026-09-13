@@ -38,9 +38,10 @@ const ZOOM_PRESETS = [50, 75, 90, 100, 110, 125, 150, 175, 200];
 interface DocOptionsMenuProps {
   document?: DocumentItem | null;
   customActions?: DocMenuActionDefinition[];
+  buttonClassName?: string;
 }
 
-export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ document: customDoc, customActions }) => {
+export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ document: customDoc, customActions, buttonClassName }) => {
   const activeDocument = useDocumentStore((s) => s.activeDocument);
   const documents = useDocumentStore((s) => s.documents);
   const renameDocument = useDocumentStore((s) => s.renameDocument);
@@ -559,7 +560,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title="More options"
-        className={`p-1 rounded hover:bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
+        className={buttonClassName || `p-1 rounded hover:bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
           isOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : ''
         }`}
       >

@@ -833,6 +833,7 @@ export type PortalSlotLocation =
   | 'editor:gutter'
   | 'editor:subheader-actions'
   | 'editor:content-overlay'
+  | 'editor:banner'
   | 'workspace:root'
   | (string & {});
 

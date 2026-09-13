@@ -1,0 +1,132 @@
+/**
+ * @module CoversSettingsTab
+ * @description
+ * Settings panel for the Covers extension.
+ * Provides configuration for banner dimensions, top-to-bottom fading,
+ * hover controls, and Wallhaven integration.
+ *
+ * @since 1.0.0
+ */
+
+import React from 'react';
+import { useCoversSettings } from './coversSettings';
+import { useToast } from 'noether';
+import { ToggleSwitch } from '@/components/common/ToggleSwitch';
+import { RotateCcwIcon } from '@/components/common/Icons';
+
+export const CoversSettingsTab: React.FC = () => {
+  const {
+    bannerHeight,
+    setBannerHeight,
+    fadeEffect,
+    setFadeEffect,
+    showControlsOnHover,
+    setShowControlsOnHover,
+    wallhavenApiKey,
+    setWallhavenApiKey,
+    restoreDefaults,
+  } = useCoversSettings();
+
+  const showToast = useToast();
+
+  const isModified =
+    bannerHeight !== 270 ||
+    fadeEffect !== true ||
+    showControlsOnHover !== true ||
+    wallhavenApiKey !== '';
+
+  return (
+    <div className="flex flex-col gap-2.5">
+      {/* Top Header */}
+      <div className="flex items-center justify-between px-4">
+        <div>
+          <h3 className="text-sm font-semibold text-white mb-0.5">Covers</h3>
+          <p className="text-[11px] text-[#777]">
+            Configure note cover banners, top-to-bottom fade effects, and Wallhaven search integration.
+          </p>
+        </div>
+        {isModified && (
+          <button
+            type="button"
+            onClick={() => {
+              restoreDefaults();
+              showToast('Restored covers defaults', 'info');
+            }}
+            className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5 cursor-pointer"
+          >
+            <RotateCcwIcon size={12} />
+            <span>Restore defaults</span>
+          </button>
+        )}
+      </div>
+
+      {/* Main Options Group */}
+      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        {/* Banner Height */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-xs font-medium text-[#dcddde]">Banner height</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Default height of note cover images in pixels (160px – 450px).
+            </span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <input
+              type="range"
+              min={160}
+              max={450}
+              step={10}
+              value={bannerHeight}
+              onChange={(e) => setBannerHeight(Number(e.target.value))}
+              className="w-28 accent-emerald-500 cursor-pointer"
+            />
+            <span className="text-xs font-mono text-[#aaa] w-12 text-right">
+              {bannerHeight}px
+            </span>
+          </div>
+        </div>
+
+        {/* Top-to-Down Fade */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-xs font-medium text-[#dcddde]">Top-to-down fade</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Smoothly fade the cover image into the note background color toward the bottom.
+            </span>
+          </div>
+          <ToggleSwitch checked={fadeEffect} onChange={setFadeEffect} />
+        </div>
+
+        {/* Hover Controls */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-xs font-medium text-[#dcddde]">Show controls on hover</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Display quick actions (Change cover, Reposition, Remove) when hovering over the banner.
+            </span>
+          </div>
+          <ToggleSwitch checked={showControlsOnHover} onChange={setShowControlsOnHover} />
+        </div>
+
+        {/* Wallhaven API Key */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex flex-col pr-4">
+            <span className="text-xs font-medium text-[#dcddde]">Wallhaven API key (Optional)</span>
+            <span className="text-[11px] text-[#777] mt-0.5">
+              Leave blank to use Wallhaven's free public SFW search, or provide an API key for custom collections.
+            </span>
+          </div>
+          <div className="w-52">
+            <input
+              type="password"
+              value={wallhavenApiKey}
+              onChange={(e) => setWallhavenApiKey(e.target.value)}
+              placeholder="Paste API key..."
+              className="w-full bg-[#181818] border border-[#333] rounded px-2.5 py-1 text-xs text-[#dcddde] placeholder-[#555] outline-none focus:border-emerald-500/70"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
