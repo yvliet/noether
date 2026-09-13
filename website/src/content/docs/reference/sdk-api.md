@@ -267,4 +267,32 @@ Noether decouples native UI shells from extensions using singleton Inversion of 
 - **`FileTypeRegistry`**: Associates custom file extensions (`.canvas`, `.sketch`, `.table`) with custom document archetypes and view types.
 - **`SlotRegistry`**: Injects arbitrary React components into high-level shell slots.
 
+## 8. View Layout Components
+---
+
+The SDK exports unified layout wrappers that guarantee custom views match Noether's native desktop geometry and theming:
+
+### `PageView`
+
+The root layout container for all custom workspace views. Encapsulates active tab cutout mask passthrough, sticky floating `PageSubHeader`, dynamic scroll dissolve transparency, custom scrollbar tracks, and navigation history.
+
+```typescript
+import { PageView, PageViewProps } from 'noether';
+
+export const MyView: React.FC = () => {
+  return (
+    <PageView
+      title="Extension View"
+      icon={<MyIcon />}
+      options={[{ id: 'reload', label: 'Reload', onClick: handleReload }]}
+    >
+      <div className="p-6">Content here</div>
+    </PageView>
+  );
+};
+```
+
+For the complete list of UI primitives (buttons, toggles, text inputs, sliders, and setting builders), see [[Noether UI Components]].
+
 To learn how extensions store relational data, read [[Database Schema Reference]] and [[Events & Relational Storage]]. To register AI tools, read [[Model Context Protocol (MCP) Tools]].
+

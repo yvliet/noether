@@ -17,8 +17,7 @@ import {
   ChevronRightIcon,
   BookOpen01Icon,
 } from '@/components/common/Icons';
-import { PageSubHeader } from '@/components/layout/PageSubHeader';
-import { DocLayoutWrapper } from '@/components/layout/DocLayoutWrapper';
+import { PageView } from '@/components/layout/PageView';
 import { ToggleSwitch } from '@/components/common/ToggleSwitch';
 import { ExtensionAppIcon } from '@/components/common/ExtensionAppIcon';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -748,94 +747,85 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
   const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[var(--noether-bg-main)] overflow-hidden select-text">
-      {/* 1. Shared Modular Document Sub-Header (Standard layout matching notes & graph view) */}
-      <PageSubHeader
-        title={meta.name}
-        icon={<BookOpen01Icon size={13} />}
-        document={null}
-        showReadingToggle={false}
-        showBookmark={false}
-        showSearch={false}
-        showDocOptions={false}
-        customRightActions={
-          <>
-            {/* Quick Configure Link to Settings */}
-            {isInstalled && (
+    <PageView
+      title={meta.name}
+      icon={<BookOpen01Icon size={13} />}
+      isReadingMode={true}
+      customRightActions={
+        <>
+          {/* Quick Configure Link to Settings */}
+          {isInstalled && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsSettingsOpen(true, targetExtensionId);
+              }}
+              title={`${meta.name} options`}
+              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-hover)] cursor-pointer"
+            >
+              <Settings02Icon size={14} />
+            </button>
+          )}
+
+          {/* Quick Enabled Toggle or Install Button */}
+          <div className="flex items-center px-1">
+            {isInstalled ? (
+              <ToggleSwitch
+                checked={isEnabled}
+                onChange={async (val) => {
+                  setIsEnabled(val);
+                  if (val) {
+                    await app.extensions.enableExtension(targetExtensionId);
+                    showToast(`Enabled ${meta.name}`, 'success');
+                  } else {
+                    await app.extensions.disableExtension(targetExtensionId);
+                    showToast(`Disabled ${meta.name}`, 'info');
+                  }
+                }}
+              />
+            ) : (
               <button
                 type="button"
-                onClick={() => {
-                  setIsSettingsOpen(true, targetExtensionId);
+                onClick={async () => {
+                  setIsInstalling(true);
+                  try {
+                    const ok = await app.extensions.installExtension({
+                      id: targetExtensionId,
+                      name: meta.name,
+                      version: meta.version,
+                      description: meta.description,
+                      author: meta.author,
+                      isCore: false,
+                    });
+                    if (ok) {
+                      showToast(`Installed ${meta.name}`, 'success');
+                    } else {
+                      showToast(`Failed to install ${meta.name}`, 'warning');
+                    }
+                  } catch (err) {
+                    console.error('[ExtensionDocViewer] Install failed:', err);
+                    showToast(`Failed to install ${meta.name}`, 'warning');
+                  } finally {
+                    setIsInstalling(false);
+                  }
                 }}
-                title={`${meta.name} options`}
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-hover)] cursor-pointer"
+                disabled={isInstalling}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[5px] bg-[#e5e7eb] hover:bg-white text-black cursor-pointer"
               >
-                <Settings02Icon size={14} />
+                {isInstalling ? (
+                  <span>Installing...</span>
+                ) : (
+                  <>
+                    <Download01Icon size={13} />
+                    <span>Install</span>
+                  </>
+                )}
               </button>
             )}
-
-            {/* Quick Enabled Toggle or Install Button */}
-            <div className="flex items-center px-1">
-              {isInstalled ? (
-                <ToggleSwitch
-                  checked={isEnabled}
-                  onChange={async (val) => {
-                    setIsEnabled(val);
-                    if (val) {
-                      await app.extensions.enableExtension(targetExtensionId);
-                      showToast(`Enabled ${meta.name}`, 'success');
-                    } else {
-                      await app.extensions.disableExtension(targetExtensionId);
-                      showToast(`Disabled ${meta.name}`, 'info');
-                    }
-                  }}
-                />
-              ) : (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setIsInstalling(true);
-                    try {
-                      const ok = await app.extensions.installExtension({
-                        id: targetExtensionId,
-                        name: meta.name,
-                        version: meta.version,
-                        description: meta.description,
-                        author: meta.author,
-                        isCore: false,
-                      });
-                      if (ok) {
-                        showToast(`Installed ${meta.name}`, 'success');
-                      } else {
-                        showToast(`Failed to install ${meta.name}`, 'warning');
-                      }
-                    } catch (err) {
-                      console.error('[ExtensionDocViewer] Install failed:', err);
-                      showToast(`Failed to install ${meta.name}`, 'warning');
-                    } finally {
-                      setIsInstalling(false);
-                    }
-                  }}
-                  disabled={isInstalling}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-[5px] bg-[#e5e7eb] hover:bg-white text-black cursor-pointer"
-                >
-                  {isInstalling ? (
-                    <span>Installing...</span>
-                  ) : (
-                    <>
-                      <Download01Icon size={13} />
-                      <span>Install</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          </>
-        }
-      />
-
-      {/* 2. Shared Document Layout Canvas Wrapper (Identical pixel layout & margins to Note Document) */}
-      <DocLayoutWrapper isReadingMode={true}>
+          </div>
+        </>
+      }
+    >
         {/* Optional Banner Asset Image */}
         {meta.bannerImage && (
           <div className="w-full h-44 mb-6 rounded-xl overflow-hidden border border-[var(--noether-border-subtle)] shadow-lg relative bg-[var(--noether-bg-card)]">
@@ -985,8 +975,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
         >
           <MarkdownDocRenderer content={readmeContent} />
         </div>
-      </DocLayoutWrapper>
-    </div>
+    </PageView>
   );
 });
 

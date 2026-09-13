@@ -40,6 +40,7 @@ export interface PageSubHeaderProps {
   floating?: boolean;
   hideBar?: boolean;
   isSidebar?: boolean;
+  isScrolled?: boolean;
 }
 
 export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
@@ -67,9 +68,11 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   floating = false,
   hideBar = false,
   isSidebar: propIsSidebar,
+  isScrolled: propIsScrolled,
 }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isSidebarDetected, setIsSidebarDetected] = React.useState(false);
+  const [internalIsScrolled, setInternalIsScrolled] = React.useState(false);
 
   React.useEffect(() => {
     if (propIsSidebar !== undefined) {
@@ -90,6 +93,54 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   const tabs = useWorkspaceStore((s) => s.tabs);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const mainViewMode = useWorkspaceStore((s) => s.mainViewMode);
+
+  // Auto-detect container scroll to transition from solid to transparent with legibility drop shadows
+  const isScrolled = propIsScrolled !== undefined ? propIsScrolled : internalIsScrolled;
+
+  React.useEffect(() => {
+    if (propIsScrolled !== undefined || isSidebar) return;
+    const headerEl = containerRef.current;
+    if (!headerEl) return;
+    const parent = headerEl.parentElement;
+    if (!parent) return;
+
+    const findScrollTarget = () => {
+      return (
+        parent.querySelector<HTMLElement>('.overflow-y-auto') ||
+        parent.querySelector<HTMLElement>('[data-doc-view="true"] .custom-scrollbar') ||
+        parent.querySelector<HTMLElement>('[style*="overflow-y: auto"]')
+      );
+    };
+
+    let scrollEl = findScrollTarget();
+
+    const checkScroll = () => {
+      const top = scrollEl ? scrollEl.scrollTop : 0;
+      setInternalIsScrolled(top > 2);
+    };
+
+    checkScroll();
+
+    if (scrollEl) {
+      scrollEl.addEventListener('scroll', checkScroll, { passive: true });
+    }
+
+    const handleCaptureScroll = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target && parent.contains(target) && target !== headerEl) {
+        if (!scrollEl) scrollEl = target;
+        setInternalIsScrolled(target.scrollTop > 2);
+      }
+    };
+    parent.addEventListener('scroll', handleCaptureScroll, { capture: true, passive: true });
+
+    return () => {
+      if (scrollEl) {
+        scrollEl.removeEventListener('scroll', checkScroll);
+      }
+      parent.removeEventListener('scroll', handleCaptureScroll, { capture: true });
+    };
+  }, [propIsScrolled, isSidebar, activeTabId]);
 
   const storeCanGoBack = useWorkspaceStore((s) => s.canGoBack);
   const storeCanGoForward = useWorkspaceStore((s) => s.canGoForward);
@@ -213,19 +264,25 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
     );
   }
 
+  const isTransparent = isFrameless || isScrolled;
+
   return (
     <div
       ref={containerRef}
       data-sub-header="true"
-      style={isFrameless ? { top: 'var(--noether-header-offset, 0px)' } : undefined}
-      className={
-        isFrameless
-          ? 'h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none absolute left-0 right-0 z-20 pointer-events-none bg-transparent drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]'
-          : 'h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none relative z-20'
-      }
+      style={{ top: 'var(--noether-header-offset, 0px)' }}
+      className={`h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none absolute left-0 right-0 z-20 pointer-events-none ${
+        isTransparent
+          ? 'bg-transparent'
+          : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
+      }`}
     >
       {/* Left: Navigation History Arrows & Custom Left Actions */}
-      <div className={`relative z-10 flex items-center gap-0.5 shrink-0 ${isFrameless ? 'pointer-events-auto' : ''}`}>
+      <div
+        className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
+          isTransparent ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+        }`}
+      >
         <button
           type="button"
           onClick={handleBack}
@@ -250,13 +307,17 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
       </div>
 
       {/* Center: Truly Absolute Centered Title (100% dead center across ALL views) */}
-      <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-28">
+      <div
+        className={`absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-28 ${
+          isTransparent ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+        }`}
+      >
         {centerContent ? (
-          <div className={isFrameless ? 'pointer-events-auto' : ''}>
+          <div className="pointer-events-auto">
             {centerContent}
           </div>
         ) : (
-          <div className={`text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans ${isFrameless ? 'pointer-events-auto' : ''}`}>
+          <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans pointer-events-auto">
             {resolvedIcon && (
               <span className="shrink-0 text-[var(--noether-text-secondary)] flex items-center">
                 {React.isValidElement(resolvedIcon)
@@ -275,7 +336,11 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
       </div>
 
       {/* Right: Reading View, Bookmark, Search & Options */}
-      <div className={`relative z-10 flex items-center gap-0.5 shrink-0 ${isFrameless ? 'pointer-events-auto' : ''}`}>
+      <div
+        className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
+          isTransparent ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+        }`}
+      >
         {customRightActions}
 
         {/* Reading mode toggle button */}

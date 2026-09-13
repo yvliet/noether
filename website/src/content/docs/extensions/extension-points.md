@@ -141,23 +141,46 @@ this.registerContextMenuItem({
 
 ---
 
-Extensions can register full-screen view types that render inside workspace tabs (similar to Noether's native Graph View or Canvas).
+Extensions can register full-screen view types that render inside workspace tabs (similar to Noether's native Graph View, Tasks, and Marketplace).
+
+When rendering custom views, wrap your content in the SDK's `PageView` component. `PageView` provides the native Noether view architecture:
+- **Active Tab Cutout Passthrough**: The active workspace tab cutout seamlessly connects to the view background.
+- **Floating Subheader**: Mounts navigation history (back and forward), view icon, title, and custom action buttons or option menus floating at `var(--noether-header-offset)`.
+- **Dynamic Scroll Dissolve**: The subheader dissolves to transparent on scroll, with subtle drop-shadows keeping controls crisp over scrolling content.
+- **Scrollbar Track Offset**: Applies `.scrollbar-track-offset-subheader` so custom scrollbar thumbs never overlap the floating header.
 
 ```typescript
+import React from 'react';
+import { Extension, PageView } from 'noether';
+
 // 1. Register the custom view definition
 this.registerView({
   type: 'pomodoro-timer',
   title: 'Focus Timer',
   icon: React.createElement('span', null, '⏳'),
   render: ({ app, tabId }) => {
-    return React.createElement(
-      'div',
-      { className: 'flex flex-col items-center justify-center h-full p-8 text-neutral-200' },
-      React.createElement('h1', { className: 'text-3xl font-bold mb-4' }, '25:00'),
-      React.createElement('button', {
-        className: 'px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded text-sm font-medium',
-        onClick: () => app.workspace.showToast('Pomodoro session started!', 'success')
-      }, 'Start Focus Session')
+    return (
+      <PageView
+        title="Focus Timer"
+        icon={<span>⏳</span>}
+        options={[
+          {
+            id: 'settings',
+            label: 'Timer Settings',
+            onClick: () => app.workspace.showToast('Opening settings...', 'info'),
+          },
+        ]}
+      >
+        <div className="flex flex-col items-center justify-center p-8 text-neutral-200">
+          <h1 className="text-3xl font-bold mb-4">25:00</h1>
+          <button
+            className="px-4 py-2 bg-orange-600 hover:bg-orange-500 rounded text-sm font-medium"
+            onClick={() => app.workspace.showToast('Pomodoro session started!', 'success')}
+          >
+            Start Focus Session
+          </button>
+        </div>
+      </PageView>
     );
   },
 });

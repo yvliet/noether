@@ -109,9 +109,13 @@ export type {
   SliderProps,
 } from '../components/ui';
 
-// ── Native Document Presentation & Editing ──
+// ── Native Document & Page View Presentation ──
 export { DocumentView } from '../components/editor/DocumentView';
 export type { DocumentViewProps } from '../components/editor/DocumentView';
+export { PageView } from '../components/layout/PageView';
+export type { PageViewProps } from '../components/layout/PageView';
+export { DocLayoutWrapper } from '../components/layout/DocLayoutWrapper';
+export type { DocLayoutWrapperProps } from '../components/layout/DocLayoutWrapper';
 
 
 // ── Public API Contracts ──

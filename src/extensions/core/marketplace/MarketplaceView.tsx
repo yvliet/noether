@@ -19,7 +19,7 @@ import {
   Tag01Icon,
 } from '@/components/common/Icons';
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
-import { PageSubHeader } from '@/components/layout/PageSubHeader';
+import { PageView } from '@/components/layout/PageView';
 import { RotateCcwIcon } from '@/components/common/Icons';
 import { platform } from '@/lib/platform/platformAdapter';
 import type { ExtensionManifest } from '@/core/extensions/types';
@@ -177,55 +177,50 @@ export const MarketplaceView: React.FC = () => {
   }, [extensions, searchQuery, selectedCategory, sortBy, sortOrder, extensionList]);
 
   return (
-    <div data-main="true" className="flex-1 h-full flex flex-col overflow-hidden bg-[var(--noether-bg-main)] text-[var(--noether-text-primary)] select-none">
-      {/* 100% Consistent Page Subheader */}
-      <PageSubHeader
-        title="Marketplace"
-        icon={<Store01Icon size={13} />}
-        document={null}
-        isFindOpen={isFindOpen}
-        onToggleFind={() => setIsFindOpen((prev) => !prev)}
-      />
-
-      {/* Main Page Body: Respects exact Note Page margins and empty space */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar relative">
-        {/* In-Note Find Floating Overlay Bar (Exact same search experience as basic pages) */}
-        {isFindOpen && (
-          <div className="sticky top-2 z-40 px-10 max-w-3xl mx-auto flex justify-end">
-            <div className="bg-[#1c1c1c] border border-[#333333] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.6)] p-1.5 text-xs flex items-center gap-2 w-80">
-              <Search01Icon size={13} className="text-[#666] shrink-0" />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Find in community extensions..."
-                className="bg-transparent outline-none flex-1 text-xs text-white placeholder-[#555]"
-              />
-              {searchQuery && (
-                <span className="text-[10px] text-[#777] font-mono shrink-0">
-                  {filteredExtensions.length} found
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsFindOpen(false);
-                  setSearchQuery('');
-                }}
-                className="p-1 rounded text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer"
-              >
-                <Cancel01Icon size={12} />
-              </button>
-            </div>
-          </div>
-        )}
-
+    <PageView
+      title="Marketplace"
+      icon={<Store01Icon size={13} />}
+      isFindOpen={isFindOpen}
+      onToggleFind={() => setIsFindOpen((prev) => !prev)}
+      showSearch={false}
+      showReadingToggle={false}
+      showBookmark={false}
+      showDocOptions={false}
+    >
+      {/* In-Note Find Floating Overlay Bar (Exact same search experience as basic pages) */}
+      {isFindOpen && (
         <div
-          className={`mx-auto pt-4 pb-12 flex flex-col min-h-full ${
-            readableLineLength ? 'max-w-3xl px-10' : 'w-full px-12 max-w-none'
-          }`}
+          style={{ top: 'calc(var(--noether-header-offset, 0px) + 36px)' }}
+          className="sticky z-40 px-10 max-w-3xl mx-auto flex justify-end"
         >
+          <div className="bg-[#1c1c1c] border border-[#333333] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.6)] p-1.5 text-xs flex items-center gap-2 w-80">
+            <Search01Icon size={13} className="text-[#666] shrink-0" />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Find in community extensions..."
+              className="bg-transparent outline-none flex-1 text-xs text-white placeholder-[#555]"
+            />
+            {searchQuery && (
+              <span className="text-[10px] text-[#777] font-mono shrink-0">
+                {filteredExtensions.length} found
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsFindOpen(false);
+                setSearchQuery('');
+              }}
+              className="p-1 rounded text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer"
+            >
+              <Cancel01Icon size={12} />
+            </button>
+          </div>
+        </div>
+      )}
           {/* Page Header */}
           <div className="relative mb-4">
             <div className="mb-3 relative">
@@ -484,8 +479,6 @@ export const MarketplaceView: React.FC = () => {
               })}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </PageView>
   );
 };
