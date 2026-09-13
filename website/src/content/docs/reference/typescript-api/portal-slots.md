@@ -33,6 +33,7 @@ this.registerPortalSlot({
 ---
 
 - `workspace:root`: Full viewport modal overlays, HUD widgets, and floating draw panels.
+- `editor:banner`: In-editor header banner slot mounted directly below the subheader bar, scrolling naturally with the document and pushing document content down.
 - `editor:subheader-actions`: Action button dock in the document subheader immediately to the left of the Reading / Editing view toggle button.
 - `editor:content-overlay`: In-editor canvas overlay mounted inside the scrollable document content column, scrolling naturally with text paragraphs.
 - `editor:viewport-overlay`: In-editor canvas overlay pinned to the screen viewport (fixed HUD glass).

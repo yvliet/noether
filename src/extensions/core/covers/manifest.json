@@ -1,0 +1,19 @@
+{
+  "id": "covers",
+  "name": "Covers",
+  "version": "1.0.0",
+  "minAppVersion": "0.4.0",
+  "isCore": true,
+  "description": "Custom banner cover images for notes with top-to-bottom fading, Wallhaven search, and offline presets.",
+  "author": "Yuliet Li",
+  "authorUrl": "https://github.com/yvliet",
+  "tags": ["appearance", "editor", "customization", "banners"],
+  "icon": {
+    "name": "image-02",
+    "gradientColors": [
+      "#10b981",
+      "#059669"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

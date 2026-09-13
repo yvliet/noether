@@ -490,6 +490,10 @@ textarea::selection {
   scrollbar-gutter: stable;
 }
 
+.scrollbar-track-offset-subheader::-webkit-scrollbar-track {
+  margin-top: 32px;
+}
+
 .theme-light ::-webkit-scrollbar-thumb {
   background: rgba(0, 0, 0, 0.16);
 }

@@ -28,6 +28,7 @@ import optimizeLoadTimeRaw from '../content/docs/extensions/optimize-load-time.m
 import publishingRaw from '../content/docs/extensions/publishing.md?raw';
 import starterTemplatesRaw from '../content/docs/extensions/starter-templates.md?raw';
 import moreIconsRaw from '../content/docs/extensions/more-icons.md?raw';
+import coversRaw from '../content/docs/extensions/covers.md?raw';
 import syncRaw from '../content/docs/extensions/sync.md?raw';
 import historyRaw from '../content/docs/extensions/history.md?raw';
 
@@ -250,6 +251,13 @@ export const DOCS_TREE: DocNode[] = [
         slug: 'more-icons',
         aliases: ['More icons', 'Iconify', 'File Tree Icons', 'Custom Icons', 'more-icons'],
         content: moreIconsRaw,
+      },
+      {
+        id: 'covers',
+        title: 'Covers Extension',
+        slug: 'covers',
+        aliases: ['Covers', 'Banners', 'Note Covers', 'Cover Images', 'Header Banners'],
+        content: coversRaw,
       },
       {
         id: 'mcp-tools',
