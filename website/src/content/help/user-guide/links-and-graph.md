@@ -111,3 +111,21 @@ Full-page graph views remain in Global mode by default. When you work with a not
 Force-directed simulations can consume significant CPU/GPU resources if left running in the background. Noether's physics engine employs an **automatic kinematic sleep cycle**:
 - Simulation physics settle into equilibrium within 3-5 seconds of user pan/zoom interaction.
 - If the application window is minimized, hidden, or switched to another tab, the physics animation loop **suspends immediately**, eliminating unnecessary battery drain and GPU utilization.
+
+## 5. The Floating Graph (My Personal Favorite Feature)
+---
+
+Most graph views in note-taking apps feel like dead, static diagrams once the initial force simulation settles into place. In Noether, there is a dedicated **Float** button that keeps the graph gently breathing and drifting.
+
+I personally love keeping the graph view docked in the top-right sidebar and toggling Float on while I write notes. Watching the cluster of interconnected ideas gently drift and reorient itself in the periphery of your screen adds an organic, lively presence to your workspace.
+
+### The Accidental Discovery Behind the Float Button
+
+The idea for the Float button came about completely by accident while I was testing the **Fit to Center** feature.
+
+Every time you hit Fit to Center, the camera recalibrates and injects a small amount of momentum/alpha into the force layout so nodes can re-balance themselves cleanly in the frame. While testing this, I ended up repeatedly spamming the button and noticed that as long as I kept clicking it, the nodes floated around in an unexpectedly mesmerizing way.
+
+I paused and thought: *“Wait, what if I just make the button holdable so it floats as long as you hold it down?”*
+
+I implemented that, and while it was neat, having to physically hold down the mouse button defeated the point when you want to actually type or read. So I promoted it into its own dedicated **Float toggle button** right on the graph control bar. You can click it once to start the gentle floating physics, dock the graph in your sidebar, and let your second brain breathe while you get into flow.
+

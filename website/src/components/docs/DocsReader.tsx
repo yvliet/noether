@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import katex from 'katex';
-import { DocNode, TableOfContentItem } from '../../types';
+import { DocNode, TableOfContentItem, PortalSection } from '../../types';
 import { highlightCode } from './syntaxHighlighter';
 import {
   Copy01Icon,
@@ -27,12 +27,15 @@ import {
 } from '../common/Icons';
 import { ComponentPreviewMap } from './ComponentPreview';
 
+
 export interface DocsReaderProps {
   doc: DocNode;
   allDocs: DocNode[];
   onSelectDoc: (doc: DocNode) => void;
   backlinks?: DocNode[];
+  portal?: PortalSection;
 }
+
 
 // Generate URL slug from heading text
 export function slugify(text: string): string {
@@ -187,11 +190,11 @@ function renderInlineMarkdown(text: string): string {
   processed = processed
     .replace(
       /\[\[([^\]|]+)\|([^\]]+)\]\]/g,
-      '<a href="#docs/$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$2</a>'
+      '<a href="#$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$2</a>'
     )
     .replace(
       /\[\[([^\]]+)\]\]/g,
-      '<a href="#docs/$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$1</a>'
+      '<a href="#$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$1</a>'
     );
 
   // 5. Standard markdown links [text](url) with Noether orange accent
@@ -257,7 +260,7 @@ const DocsCalloutItem: React.FC<DocsCalloutItemProps> = ({
   const isFoldable = foldMarker === '+' || foldMarker === '-';
   const [isCollapsed, setIsCollapsed] = useState(foldMarker === '-');
   const CalloutIcon = style.icon;
-  const displayTitle = inlineTitle || (calloutType.charAt(0).toUpperCase() + calloutType.slice(1).toLowerCase());
+  const displayTitle = inlineTitle || calloutType;
 
   return (
     <div
@@ -305,6 +308,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
   allDocs,
   onSelectDoc,
   backlinks = [],
+  portal = 'help',
 }) => {
   const [copiedCodeIndex, setCopiedCodeIndex] = useState<number | null>(null);
   const [copiedHeadingId, setCopiedHeadingId] = useState<string | null>(null);
@@ -430,7 +434,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
             }, 80);
           }
         } else {
-          window.location.hash = `#docs/${slugify(docTarget)}${anchor ? '#' + slugify(anchor) : ''}`;
+          const currentPortal = doc.portal || portal || 'help';
+          window.location.hash = `#${currentPortal}/${slugify(docTarget)}${anchor ? '#' + slugify(anchor) : ''}`;
         }
       }
     }
@@ -1135,9 +1140,10 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
                 e.preventDefault();
                 e.stopPropagation();
                 const baseUrl = window.location.origin + window.location.pathname;
+                const currentPortal = doc.portal || portal || 'help';
                 const docSlug = doc.slug || doc.id;
-                const fullUrl = `${baseUrl}#docs/${docSlug}#${id}`;
-                window.location.hash = `#docs/${docSlug}#${id}`;
+                const fullUrl = `${baseUrl}#${currentPortal}/${docSlug}#${id}`;
+                window.location.hash = `#${currentPortal}/${docSlug}#${id}`;
                 navigator.clipboard.writeText(fullUrl).then(() => {
                   setCopiedHeadingId(id);
                   setTimeout(() => {
@@ -1394,7 +1400,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
               {backlinks.map((b) => (
                 <a
                   key={b.id}
-                  href={`#docs/${b.slug || b.id}`}
+                  href={`#${b.portal || doc.portal || portal || 'help'}/${b.slug || b.id}`}
                   onClick={(e) => {
                     e.preventDefault();
                     onSelectDoc(b);

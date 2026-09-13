@@ -7,9 +7,11 @@
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?logo=gnu&logoColor=white)](LICENSE)
 [![Runtime](https://img.shields.io/badge/Runtime-Tauri%20v2%20(Rust)-24C8D8.svg?logo=tauri&logoColor=white)](src-tauri)
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=white)](package.json)
-[![Documentation](https://img.shields.io/badge/Documentation-Website-eb584d.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/noether/)
+[![Help Center](https://img.shields.io/badge/Help_Center-User_Guide-eb584d.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/noether/#help/home)
+[![Developer Docs](https://img.shields.io/badge/Docs-Architecture_%26_SDK-38bdf8.svg?logo=rust&logoColor=white)](https://yvliet.github.io/noether/#docs/home)
 
-[Documentation](https://yvliet.github.io/noether/) •
+[Help Center](https://yvliet.github.io/noether/#help/home) •
+[Developer Docs](https://yvliet.github.io/noether/#docs/home) •
 [Availability](#1-availability) •
 [Why Noether?](#2-why-noether) •
 [Features](#3-key-capabilities) •
@@ -24,6 +26,7 @@ Official pre-compiled desktop binaries and one-click installers will be availabl
 - **Windows**: `.msi` Windows Installer and `.exe` standalone packages (x64, ARM64)
 - **macOS**: `.dmg` package (Universal binary for Apple Silicon and Intel)
 - **Linux**: `.AppImage` portable package and `.deb` Debian/Ubuntu package (x86_64, ARM64)
+- **Android (Mobile)**: Planned following the desktop 1.0.0 milestone. (Desktop foundation comes first; iOS is not planned in the near term due to filesystem sandbox constraints).
 
 Until pre-built binaries are published, you can compile and run Noether locally from source (see [Developer Quickstart](#4-developer-quickstart)).
 
@@ -79,9 +82,14 @@ npm run build
 npm run tauri:build
 ```
 
-## 5. Documentation
+## 5. Documentation & Help
 
-Documentation and guides are available on the website at **[yvliet.github.io/noether](https://yvliet.github.io/noether/)** or in the `docs/` folder:
+Online guides are available across two dedicated portals:
+
+- **[Noether Help](https://yvliet.github.io/noether/#help/home)**: Practical user guide, note-taking workflows, wikilinks, graph view, and personal stories.
+- **[Noether Docs](https://yvliet.github.io/noether/#docs/home)**: The Story of Noether, 8 in-depth architecture blueprints, Extension SDK, and API reference.
+
+Local guides are also available directly in the `docs/` folder:
 
 - **[User Guide](docs/USER_GUIDE.md)**: Daily note-taking, flashcards, visual canvas, and vault organization.
 - **[Architecture Specification](docs/ARCHITECTURE.md)**: System design, storage pipeline, and editor performance.

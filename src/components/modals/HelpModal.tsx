@@ -9,9 +9,11 @@
 
 import React, { useState } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { platform } from '@/lib/platform/platformAdapter';
 import {
   Cancel01Icon,
   HelpCircleIcon,
+  ExternalLinkIcon,
 } from '@/components/common/Icons';
 
 export const HelpModal: React.FC = React.memo(() => {
@@ -37,12 +39,23 @@ export const HelpModal: React.FC = React.memo(() => {
             <HelpCircleIcon size={16} className="text-[var(--noether-text-muted)]" />
             <span>Noether Guide & Keyboard Shortcuts</span>
           </div>
-          <button
-            onClick={() => setIsHelpModalOpen(false)}
-            className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
-          >
-            <Cancel01Icon size={16} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => platform.openUrl('https://yvliet.github.io/noether/#help/home')}
+              className="flex items-center gap-1.5 px-2 py-1 text-[11px] rounded bg-[var(--noether-bg-card,#202020)] hover:bg-[var(--noether-bg-card-hover,#282828)] text-[var(--noether-text-secondary,#aaa)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-subtle,#333)] cursor-pointer transition-none"
+              title="Open full online documentation & help portal"
+            >
+              <span>Online Help & Docs</span>
+              <ExternalLinkIcon size={11} />
+            </button>
+            <button
+              onClick={() => setIsHelpModalOpen(false)}
+              className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
+            >
+              <Cancel01Icon size={16} />
+            </button>
+          </div>
         </div>
 
         {/* Tab Switcher */}

@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { DocNode } from '../../types';
+import { DocNode, PortalSection } from '../../types';
 import { DocTreeNodeRow } from './DocTreeNodeRow';
 import { Search01Icon, Cancel01Icon, Sun01Icon, Moon02Icon } from '../common/Icons';
 
@@ -9,10 +9,12 @@ export interface DocTreeSidebarProps {
   onSelectDoc: (node: DocNode) => void;
   className?: string;
   onClose?: () => void;
+  portal?: PortalSection;
+  onTogglePortal?: () => void;
 }
 
-const STORAGE_KEY = 'noether_docs_open_folders';
 const THEME_STORAGE_KEY = 'noether_docs_theme';
+
 
 const findAncestorFolderIds = (targetId: string, list: DocNode[], path: string[] = []): string[] | null => {
   if (!targetId) return null;
@@ -35,6 +37,8 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
   onSelectDoc,
   className = '',
   onClose,
+  portal = 'help',
+  onTogglePortal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDarkTheme, setIsDarkTheme] = useState<boolean>(() => {
@@ -72,19 +76,17 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
     }
   }, [isDarkTheme]);
 
-  // Restore previous visit's folder state, or expand active doc ancestors on first load
+  // Restore previous visit's folder state for the current portal
   const [openFolderIds, setOpenFolderIds] = useState<Set<string>>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(`noether_${portal}_open_folders`);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           return new Set<string>(parsed);
         }
       }
-    } catch {
-      // Ignore localStorage read errors
-    }
+    } catch {}
 
     const initial = new Set<string>();
     const ancestors = findAncestorFolderIds(activeDocId, nodes);
@@ -94,14 +96,33 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
     return initial;
   });
 
-  // Persist open folders to localStorage
+  // Re-sync open folder state whenever portal switches
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(openFolderIds)));
-    } catch {
-      // Ignore localStorage write errors
+      const saved = localStorage.getItem(`noether_${portal}_open_folders`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          setOpenFolderIds(new Set<string>(parsed));
+          return;
+        }
+      }
+    } catch {}
+
+    const initial = new Set<string>();
+    const ancestors = findAncestorFolderIds(activeDocId, nodes);
+    if (ancestors && ancestors.length > 0) {
+      ancestors.forEach((id) => initial.add(id));
     }
-  }, [openFolderIds]);
+    setOpenFolderIds(initial);
+  }, [portal]);
+
+  // Persist open folders to localStorage for active portal
+  useEffect(() => {
+    try {
+      localStorage.setItem(`noether_${portal}_open_folders`, JSON.stringify(Array.from(openFolderIds)));
+    } catch {}
+  }, [openFolderIds, portal]);
 
   // Ensure active doc's parent folders are opened when navigating
   useEffect(() => {
@@ -226,31 +247,29 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
     <aside
       className={`sidebar-container w-[280px] shrink-0 sticky top-0 h-screen max-h-screen flex flex-col bg-transparent select-none pt-2 pl-4 pr-1.5 border-r border-[#363636] overscroll-contain overflow-x-hidden ${className}`}
     >
-      {/* Top Header: Brand Lockup with PNG Icon matching Image 1 */}
+      {/* Top Header: Brand Lockup with PNG Icon & Interactive Switcher */}
       <div className="pt-4 px-3 pb-2.5 flex items-center justify-between">
-        <a
-          href="#docs/home"
-          onClick={(e) => {
-            e.preventDefault();
-            if (homeNode) {
-              onSelectDoc(homeNode);
-              onClose?.();
-            } else {
-              window.location.hash = '#docs/home';
-              onClose?.();
-            }
+        <button
+          type="button"
+          onClick={() => {
+            onTogglePortal?.();
+            onClose?.();
           }}
-          className="flex items-start gap-1.5 text-white hover:text-white cursor-pointer"
+          title={`Click to switch to Noether ${portal === 'help' ? 'Docs' : 'Help'}`}
+          className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer select-none transition-none text-left p-0"
         >
           <img
             src="./noether-icon-simple.png"
             alt="Noether"
-            className="h-[21px] w-auto object-contain shrink-0 translate-y-[1.5px]"
+            className="h-[21px] w-auto object-contain shrink-0 translate-y-[0.5px]"
           />
-          <span className="text-[21px] tracking-tight text-white leading-tight font-brand">
-            <span className="font-medium">Noether</span> <span className="font-extralight">Docs</span>
+          <span className="text-[21px] tracking-tight text-white leading-tight font-brand flex items-baseline gap-1.5">
+            <span className="font-medium">Noether</span>
+            <span className="font-extralight text-white capitalize">
+              {portal === 'help' ? 'Help' : 'Docs'}
+            </span>
           </span>
-        </a>
+        </button>
 
         {onClose && (
           <button
