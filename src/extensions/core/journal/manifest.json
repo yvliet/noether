@@ -2,7 +2,7 @@
   "id": "journal",
   "name": "Journal",
   "version": "1.0.0",
-  "description": "Quickly create and jump to periodic daily journal and logging notes.",
+  "description": "Your daily space for morning thoughts, meeting notes, and habit logs, created automatically with a single tap.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

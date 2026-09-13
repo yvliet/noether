@@ -100,6 +100,15 @@ export interface IPlatformAdapter {
 
   // External URLs
   openUrl(url: string): Promise<{ success: boolean; error?: string }>;
+
+  // Version Control & File History (VCS)
+  vcsCheckStatus(): Promise<{ installed: boolean; initialized: boolean; version?: string; vaultPath?: string; error?: string }>;
+  vcsInitVault(): Promise<{ success: boolean; error?: string }>;
+  vcsCreateSnapshot(relativePath?: string, message?: string): Promise<{ success: boolean; committed?: boolean; hash?: string; message?: string; error?: string }>;
+  vcsGetFileHistory(relativePath: string, limit?: number): Promise<{ success: boolean; revisions?: Array<{ hash: string; shortHash: string; author: string; timestamp: number; message: string }>; error?: string }>;
+  vcsGetFileDiff(relativePath: string, commitA: string, commitB?: string): Promise<{ success: boolean; diff?: string; error?: string }>;
+  vcsGetHistoricalContent(relativePath: string, commit: string): Promise<{ success: boolean; content?: string; error?: string }>;
+  vcsRestoreFile(relativePath: string, commit: string): Promise<{ success: boolean; content?: string; error?: string }>;
 }
 
 class PlatformAdapterImpl implements IPlatformAdapter {
@@ -859,6 +868,101 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     }
 
     return { success: true };
+  }
+
+  // ==========================================
+  // VERSION CONTROL & FILE HISTORY (VCS)
+  // ==========================================
+
+  public async vcsCheckStatus(): Promise<{ installed: boolean; initialized: boolean; version?: string; vaultPath?: string; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_check_status');
+      } catch (err: any) {
+        return { installed: false, initialized: false, error: err?.message || String(err) };
+      }
+    }
+    return { installed: true, initialized: true, version: 'git version 2.45.0 (web mock)' };
+  }
+
+  public async vcsInitVault(): Promise<{ success: boolean; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_init_vault');
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return { success: true };
+  }
+
+  public async vcsCreateSnapshot(relativePath?: string, message?: string): Promise<{ success: boolean; committed?: boolean; hash?: string; message?: string; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_create_snapshot', { relativePath, message });
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return { success: true, committed: true, hash: 'a1b2c3d', message: message || 'Web snapshot' };
+  }
+
+  public async vcsGetFileHistory(relativePath: string, limit?: number): Promise<{ success: boolean; revisions?: Array<{ hash: string; shortHash: string; author: string; timestamp: number; message: string }>; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_get_file_history', { relativePath, limit });
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return {
+      success: true,
+      revisions: [
+        {
+          hash: 'mock-commit-hash-001',
+          shortHash: 'a1b2c3d',
+          author: 'Noether User',
+          timestamp: Date.now() - 3600000,
+          message: 'Saved changes',
+        },
+      ],
+    };
+  }
+
+  public async vcsGetFileDiff(relativePath: string, commitA: string, commitB?: string): Promise<{ success: boolean; diff?: string; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_get_file_diff', { relativePath, commitA, commitB });
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return {
+      success: true,
+      diff: `--- a/${relativePath}\n+++ b/${relativePath}\n@@ -1,3 +1,3 @@\n-Old line\n+New line\n Context line`,
+    };
+  }
+
+  public async vcsGetHistoricalContent(relativePath: string, commit: string): Promise<{ success: boolean; content?: string; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_get_historical_content', { relativePath, commit });
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return { success: true, content: '# Previous version content\n\nThis is a historical snapshot.' };
+  }
+
+  public async vcsRestoreFile(relativePath: string, commit: string): Promise<{ success: boolean; content?: string; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('vcs_restore_file', { relativePath, commit });
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return { success: true, content: '# Restored content' };
   }
 }
 

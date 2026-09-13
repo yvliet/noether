@@ -1,0 +1,26 @@
+{
+  "id": "history",
+  "name": "Version History",
+  "version": "1.0.0",
+  "description": "Travel back in time to view earlier drafts, compare changes with clean visual diffs, and safely restore previous versions of your notes.",
+  "author": "Yuliet Li",
+  "isCore": true,
+  "tags": [
+    "history",
+    "versions",
+    "diff",
+    "backup",
+    "git",
+    "revisions",
+    "safety"
+  ],
+  "icon": {
+    "name": "history",
+    "type": "gradient",
+    "gradientColors": [
+      "#0ea5e9",
+      "#0284c7"
+    ],
+    "gradientDirection": "135deg"
+  }
+}

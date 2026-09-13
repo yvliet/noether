@@ -55,15 +55,15 @@ export interface ExtensionManifest {
 export type ExtensionIconBackgroundType = 'solid' | 'gradient';
 
 export interface ExtensionIconConfig {
-  /** Icon glyph name (e.g., 'book-open-02', 'sparkles', 'brain-02') */
+  /** Icon glyph name (any HugeIcon name or SVG string; emojis are disallowed) */
   name?: string;
   /** Background fill style: 'solid' or 'gradient' */
   type?: ExtensionIconBackgroundType;
-  /** Background color for solid fills or gradient fallbacks */
+  /** Background hex color for solid fills or automatic 2-stop gradient generation */
   backgroundColor?: string;
   /** Array of colors for linear gradients */
   gradientColors?: string[];
-  /** Angle in degrees or direction string (defaults to '180deg') */
+  /** Angle in degrees or direction string (defaults to '135deg') */
   gradientDirection?: number | string;
 }
 ```
@@ -83,7 +83,14 @@ export interface ExtensionIconConfig {
   "author": "Yuliet Li",
   "authorUrl": "https://github.com/yvliet",
   "tags": ["productivity", "writing"],
-  "icon": "TimerIcon"
+  "icon": {
+    "name": "clock-01",
+    "gradientColors": [
+      "#0ea5e9",
+      "#0284c7"
+    ],
+    "gradientDirection": "135deg"
+  }
 }
 ```
 

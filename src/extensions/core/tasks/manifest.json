@@ -2,7 +2,7 @@
   "id": "tasks",
   "name": "Tasks & Checklists",
   "version": "1.0.0",
-  "description": "Global task aggregation dashboard extracting checklists and todo items across all notes.",
+  "description": "Gather every to-do item and checklist from all your notes into one tidy, satisfying action center.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

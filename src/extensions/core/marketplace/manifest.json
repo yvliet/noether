@@ -2,7 +2,7 @@
   "id": "marketplace",
   "name": "Community Extensions Marketplace",
   "version": "1.0.0",
-  "description": "Browse, discover, and install community extensions into your Vault.",
+  "description": "Discover creative add-ons, playful themes, and useful tools built by the community to make Noether feel like home.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

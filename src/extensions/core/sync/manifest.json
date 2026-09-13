@@ -2,7 +2,7 @@
   "id": "sync",
   "name": "Sync",
   "version": "1.0.0",
-  "description": "Bidirectional cloud sync engine supporting Supabase, Turso, Cloudflare D1, and Custom REST APIs.",
+  "description": "Keep your notes in sync across all your devices using your own free cloud storage, with complete privacy and zero monthly fees.",
   "author": "Yuliet Li",
   "isCore": true,
   "defaultDisabled": true,

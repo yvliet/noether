@@ -2,7 +2,7 @@
   "id": "outline",
   "name": "Document Outline",
   "version": "1.0.0",
-  "description": "Interactive table of contents and document outline navigator based on Markdown headings.",
+  "description": "A clean table of contents that lets you glide effortlessly between headings in long notes and outlines.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

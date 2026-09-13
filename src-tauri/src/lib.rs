@@ -1,6 +1,7 @@
 mod vault;
 mod icon_tint;
 mod db;
+mod vcs;
 
 use std::path::Path;
 use parking_lot::Mutex;
@@ -77,6 +78,13 @@ pub fn run() {
             db::noether_db_execute,
             db::noether_db_transaction,
             db::noether_db_supports_fts5,
+            vcs::vcs_check_status,
+            vcs::vcs_init_vault,
+            vcs::vcs_create_snapshot,
+            vcs::vcs_get_file_history,
+            vcs::vcs_get_file_diff,
+            vcs::vcs_get_historical_content,
+            vcs::vcs_restore_file,
         ])
         .setup(move |app| {
             let handle = app.handle().clone();

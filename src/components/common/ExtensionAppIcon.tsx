@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ExtensionIconConfig, ExtensionIconBackgroundType } from '@/core/extensions/types';
+import { HugeiconsIcon } from '@hugeicons/react';
+import {
+  getCachedIconDef,
+  loadDynamicIcon,
+  subscribeToIconCache,
+} from '@/components/common/IconPicker';
 import {
   BookOpen02Icon,
   SparklesIcon,
@@ -26,6 +32,7 @@ import {
   LeftToRightListBulletIcon,
   Link01Icon,
   DashboardSquare01Icon,
+  HistoryIcon,
 } from '@/components/common/Icons';
 
 export interface ExtensionAppIconProps {
@@ -52,206 +59,231 @@ export interface ExtensionAppIconProps {
 }
 
 /**
- * Maps known icon names or extension slugs to their corresponding Hugeicon component.
+ * Fast synchronous map for common built-in icons to guarantee instant 0ms initial paint.
  */
-function resolveIconComponent(rawName?: string): React.ComponentType<any> {
-  if (!rawName) return Store01Icon;
+const FAST_STATIC_ICON_MAP: Record<string, React.ComponentType<any>> = {
+  book: BookOpen02Icon,
+  'book-open': BookOpen02Icon,
+  'book-open-02': BookOpen02Icon,
+  cascade: BookOpen02Icon,
+  sparkle: SparklesIcon,
+  sparkles: SparklesIcon,
+  copilot: SparklesIcon,
+  ai: SparklesIcon,
+  'sticky-note': StickyNote02Icon,
+  'sticky-note-02': StickyNote02Icon,
+  quicknote: StickyNote02Icon,
+  brain: Brain02Icon,
+  'brain-02': Brain02Icon,
+  fsrs: Brain02Icon,
+  'spaced-repetition': Brain02Icon,
+  pencil: PencilEdit02Icon,
+  'pencil-edit': PencilEdit02Icon,
+  'pencil-edit-02': PencilEdit02Icon,
+  sketch: PencilEdit02Icon,
+  download: Download01Icon,
+  'download-01': Download01Icon,
+  inbox: Download01Icon,
+  sync: DatabaseSync01Icon,
+  'database-sync': DatabaseSync01Icon,
+  'database-sync-01': DatabaseSync01Icon,
+  motion: Motion01Icon,
+  'motion-01': Motion01Icon,
+  canvas: DashboardSquare01Icon,
+  'dashboard-square': DashboardSquare01Icon,
+  'dashboard-square-01': DashboardSquare01Icon,
+  folder: Folder01Icon,
+  'folder-01': Folder01Icon,
+  file: File01Icon,
+  'file-01': File01Icon,
+  tag: Tag01Icon,
+  'tag-01': Tag01Icon,
+  bookmark: Bookmark01Icon,
+  'bookmark-01': Bookmark01Icon,
+  task: CheckmarkSquare02Icon,
+  tasks: CheckmarkSquare02Icon,
+  'checkmark-square': CheckmarkSquare02Icon,
+  'checkmark-square-02': CheckmarkSquare02Icon,
+  calendar: Calendar01Icon,
+  'calendar-01': Calendar01Icon,
+  journal: Calendar01Icon,
+  command: CommandIcon,
+  terminal: TerminalIcon,
+  table: GridTableIcon,
+  tables: GridTableIcon,
+  'grid-table': GridTableIcon,
+  graph: NeuralNetworkIcon,
+  'graph-view': NeuralNetworkIcon,
+  'neural-network': NeuralNetworkIcon,
+  hash: HashIcon,
+  outline: LeftToRightListBulletIcon,
+  'left-to-right-list-bullet': LeftToRightListBulletIcon,
+  link: Link01Icon,
+  'link-01': Link01Icon,
+  history: HistoryIcon,
+  'version-history': HistoryIcon,
+  package: PackageIcon,
+  puzzle: PuzzleIcon,
+  store: Store01Icon,
+  'store-01': Store01Icon,
+};
 
-  const key = rawName.toLowerCase().trim().replace(/^noether-/, '').replace(/^flint-/, '');
+/**
+ * Curated fallback gradients dynamically chosen via deterministic string hashing
+ * when an extension manifest does not specify any gradient or background color.
+ */
+const CURATED_GRADIENTS: [string, string][] = [
+  ['#3b82f6', '#1d4ed8'], // Royal Blue
+  ['#8b5cf6', '#6d28d9'], // Vivid Violet
+  ['#ec4899', '#be185d'], // Modern Rose
+  ['#10b981', '#047857'], // Emerald Green
+  ['#f59e0b', '#b45309'], // Warm Amber
+  ['#06b6d4', '#0e7490'], // Ocean Cyan
+  ['#f43f5e', '#be123c'], // Crimson Rose
+  ['#6366f1', '#4338ca'], // Deep Indigo
+  ['#14b8a6', '#0f766e'], // Modern Teal
+  ['#84cc16', '#4d7c0f'], // Fresh Lime
+  ['#f97316', '#c2410c'], // Tangerine Orange
+  ['#0ea5e9', '#0369a1'], // Sky Blue
+  ['#a855f7', '#7e22ce'], // Electric Purple
+  ['#64748b', '#334155'], // Slate Gray
+];
 
-  switch (key) {
-    case 'book':
-    case 'book-open':
-    case 'book-open-02':
-    case 'bookopen02':
-    case 'cascade':
-      return BookOpen02Icon;
+/**
+ * Known default gradients for built-in core extensions when omitted from older manifests.
+ */
+const KNOWN_CORE_GRADIENTS: Record<string, [string, string]> = {
+  history: ['#0ea5e9', '#0284c7'],
+  'version-history': ['#0ea5e9', '#0284c7'],
+  bookmarks: ['#f59e0b', '#d97706'],
+  bookmark: ['#f59e0b', '#d97706'],
+  canvas: ['#ec4899', '#db2777'],
+  defaults: ['#64748b', '#475569'],
+  command: ['#64748b', '#475569'],
+  graph: ['#8b5cf6', '#7c3aed'],
+  journal: ['#10b981', '#059669'],
+  calendar: ['#10b981', '#059669'],
+  marketplace: ['#f43f5e', '#e11d48'],
+  'more-icons': ['#a855f7', '#9333ea'],
+  outline: ['#3b82f6', '#2563eb'],
+  properties: ['#14b8a6', '#0d9488'],
+  tables: ['#84cc16', '#65a30d'],
+  tags: ['#eab308', '#ca8a04'],
+  tasks: ['#22c55e', '#16a34a'],
+  backlinks: ['#6366f1', '#4f46e5'],
+  sync: ['#059669', '#047857'],
+};
 
-    case 'sparkle':
-    case 'sparkles':
-    case 'copilot':
-    case 'ai':
-      return SparklesIcon;
-
-    case 'sticky-note':
-    case 'sticky-note-02':
-    case 'stickynote02':
-    case 'quicknote':
-    case 'note':
-      return StickyNote02Icon;
-
-    case 'brain':
-    case 'brain-02':
-    case 'brain02':
-    case 'fsrs':
-    case 'spaced-repetition':
-    case 'flashcards':
-      return Brain02Icon;
-
-    case 'pencil':
-    case 'pencil-edit':
-    case 'pencil-edit-02':
-    case 'penciledit02':
-    case 'sketch':
-    case 'sketch2text':
-    case 'draw':
-      return PencilEdit02Icon;
-
-    case 'download':
-    case 'download-01':
-    case 'download01':
-    case 'inbox':
-    case 'inbox-download':
-      return Download01Icon;
-
-    case 'sync':
-    case 'cloud':
-    case 'database':
-    case 'database-sync':
-    case 'database-sync-01':
-    case 'databasesync01':
-      return DatabaseSync01Icon;
-
-    case 'motion':
-    case 'motion-01':
-    case 'motion01':
-      return Motion01Icon;
-
-    case 'dashboard-square':
-    case 'dashboard-square-01':
-    case 'dashboardsquare':
-    case 'dashboardsquare01':
-    case 'canvas':
-      return DashboardSquare01Icon;
-
-    case 'folder':
-    case 'folder-01':
-      return Folder01Icon;
-
-    case 'file':
-    case 'file-01':
-      return File01Icon;
-
-    case 'tag':
-    case 'tag-01':
-      return Tag01Icon;
-
-    case 'bookmark':
-    case 'bookmark-01':
-      return Bookmark01Icon;
-
-    case 'tasks':
-    case 'task':
-    case 'todo':
-    case 'checkmark':
-      return CheckmarkSquare02Icon;
-
-    case 'calendar':
-    case 'journal':
-      return Calendar01Icon;
-
-    case 'command':
-    case 'cmd':
-      return CommandIcon;
-
-    case 'terminal':
-    case 'code':
-      return TerminalIcon;
-
-    case 'table':
-    case 'tables':
-    case 'grid':
-    case 'grid-table':
-      return GridTableIcon;
-
-    case 'graph':
-    case 'graph-view':
-    case 'neural-network':
-    case 'network':
-      return NeuralNetworkIcon;
-
-    case 'hash':
-    case 'hashtag':
-      return HashIcon;
-
-    case 'outline':
-    case 'list':
-    case 'toc':
-    case 'headings':
-    case 'left-to-right-list-bullet':
-      return LeftToRightListBulletIcon;
-
-    case 'link':
-    case 'links':
-    case 'backlink':
-    case 'backlinks':
-    case 'link-01':
-      return Link01Icon;
-
-    case 'package':
-      return PackageIcon;
-
-    case 'puzzle':
-      return PuzzleIcon;
-
-    default:
-      return Store01Icon;
+/**
+ * Hashes an identifier string into a deterministic gradient from the curated palette.
+ */
+function hashStringToGradient(str: string): [string, string] {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
   }
+  const index = Math.abs(hash) % CURATED_GRADIENTS.length;
+  return CURATED_GRADIENTS[index];
 }
 
 /**
- * Resolves sensible default gradient colors for known extensions when not explicitly specified in the manifest.
+ * Computes a harmonious deeper companion tone from a single hex color to create a gradient.
  */
-function resolveDefaultGradient(rawKey?: string): [string, string] {
-  if (!rawKey) return ['#2b2b36', '#1c1c24'];
+function generateCompanionGradientColor(hex: string): string {
+  const clean = hex.replace(/^#/, '');
+  let r = 0;
+  let g = 0;
+  let b = 0;
 
-  const key = rawKey.toLowerCase().trim().replace(/^noether-/, '').replace(/^flint-/, '');
-
-  switch (key) {
-    case 'cascade':
-    case 'book':
-    case 'book-open':
-    case 'book-open-02':
-      return ['#312e81', '#1e1b4b']; // Deep Indigo
-
-    case 'copilot':
-    case 'sparkles':
-    case 'ai':
-      return ['#9333ea', '#6b21a8']; // Cosmic Purple
-
-    case 'quicknote':
-    case 'sticky-note':
-    case 'sticky-note-02':
-    case 'inbox':
-      return ['#0284c7', '#0369a1']; // Vibrant Sky Blue
-
-    case 'fsrs':
-    case 'spaced-repetition':
-    case 'brain':
-    case 'brain-02':
-      return ['#ec4899', '#be185d']; // Modern Rose
-
-    case 'sketch':
-    case 'sketch2text':
-    case 'pencil':
-    case 'pencil-edit':
-    case 'pencil-edit-02':
-      return ['#8b5cf6', '#6d28d9']; // Vivid Violet
-
-    case 'sync':
-    case 'universal-sync':
-      return ['#059669', '#047857']; // Emerald Green
-
-    default:
-      return ['#2d2d38', '#1c1c22'];
+  if (clean.length === 3) {
+    r = parseInt(clean[0] + clean[0], 16);
+    g = parseInt(clean[1] + clean[1], 16);
+    b = parseInt(clean[2] + clean[2], 16);
+  } else if (clean.length === 6) {
+    r = parseInt(clean.slice(0, 2), 16);
+    g = parseInt(clean.slice(2, 4), 16);
+    b = parseInt(clean.slice(4, 6), 16);
+  } else {
+    return hex;
   }
+
+  const factor = 0.82;
+  const newR = Math.max(0, Math.min(255, Math.round(r * factor)));
+  const newG = Math.max(0, Math.min(255, Math.round(g * factor)));
+  const newB = Math.max(0, Math.min(255, Math.round(b * factor)));
+
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(newR)}${toHex(newG)}${toHex(newB)}`;
 }
+
+/**
+ * Dynamically loads and renders any HugeIcon on demand, updating seamlessly when resolved.
+ */
+const DynamicExtensionGlyph: React.FC<{
+  glyphName: string;
+  size: number;
+  fallbackIcon: React.ComponentType<any>;
+}> = React.memo(({ glyphName, size, fallbackIcon: FallbackIcon }) => {
+  const [iconDef, setIconDef] = useState<any>(() => getCachedIconDef(glyphName));
+
+  useEffect(() => {
+    let isMounted = true;
+    const current = getCachedIconDef(glyphName);
+    if (current) {
+      setIconDef(current);
+      return;
+    }
+
+    const unsubscribe = subscribeToIconCache(() => {
+      if (isMounted) {
+        const found = getCachedIconDef(glyphName);
+        if (found) setIconDef(found);
+      }
+    });
+
+    loadDynamicIcon(glyphName).then((def) => {
+      if (isMounted && def) {
+        setIconDef(def);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [glyphName]);
+
+  if (iconDef) {
+    return (
+      <HugeiconsIcon
+        icon={iconDef}
+        size={size}
+        color="white"
+        strokeWidth={1.8}
+        className="text-white shrink-0 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+      />
+    );
+  }
+
+  return (
+    <FallbackIcon
+      size={size}
+      strokeWidth={1.8}
+      className="text-white shrink-0 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+    />
+  );
+});
+DynamicExtensionGlyph.displayName = 'DynamicExtensionGlyph';
 
 /**
  * Standard Noether extension icon component.
  *
  * Renders a tactile squircle container with customizable solid or gradient backgrounds,
  * a crisp light sheen outline along the top edge, and an immutable white icon glyph.
+ *
+ * Fully modular and manifest-driven: dynamically resolves any HugeIcon, custom SVG,
+ * or image asset without requiring manual code registration. Emojis are disallowed.
  *
  * @since 0.4.0
  */
@@ -289,23 +321,42 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
   }
 
   // Determine glyph identifier
-  const glyphName = resolvedConfig.name || (typeof icon === 'string' && !icon.trim().startsWith('{') ? icon.trim() : name);
+  const glyphName =
+    resolvedConfig.name ||
+    (typeof icon === 'string' && !icon.trim().startsWith('{') ? icon.trim() : name);
 
   // 2. Compute background style (solid vs gradient)
-  const isSolid = resolvedConfig.type === 'solid' || (resolvedConfig.backgroundColor && !resolvedConfig.gradientColors);
+  const isSolid = resolvedConfig.type === 'solid';
   const backgroundStyle: React.CSSProperties = {};
 
-  if (isSolid) {
-    backgroundStyle.backgroundColor = resolvedConfig.backgroundColor || '#2563eb';
+  if (isSolid && resolvedConfig.backgroundColor) {
+    backgroundStyle.backgroundColor = resolvedConfig.backgroundColor;
   } else {
-    const defaultStops = resolveDefaultGradient(glyphName || name);
-    const gradientStops = resolvedConfig.gradientColors && resolvedConfig.gradientColors.length >= 2
-      ? resolvedConfig.gradientColors
-      : (resolvedConfig.backgroundColor ? [resolvedConfig.backgroundColor, resolvedConfig.backgroundColor] : defaultStops);
-
     const dir = resolvedConfig.gradientDirection
-      ? (typeof resolvedConfig.gradientDirection === 'number' ? `${resolvedConfig.gradientDirection}deg` : resolvedConfig.gradientDirection)
-      : '180deg';
+      ? typeof resolvedConfig.gradientDirection === 'number'
+        ? `${resolvedConfig.gradientDirection}deg`
+        : resolvedConfig.gradientDirection
+      : '135deg';
+
+    let gradientStops: [string, string] | string[];
+
+    if (resolvedConfig.gradientColors && resolvedConfig.gradientColors.length >= 2) {
+      gradientStops = resolvedConfig.gradientColors;
+    } else if (resolvedConfig.backgroundColor) {
+      gradientStops = [
+        resolvedConfig.backgroundColor,
+        generateCompanionGradientColor(resolvedConfig.backgroundColor),
+      ];
+    } else {
+      const normalizedKey = (glyphName || name || '')
+        .toLowerCase()
+        .trim()
+        .replace(/^noether-/, '')
+        .replace(/^flint-/, '');
+      gradientStops =
+        KNOWN_CORE_GRADIENTS[normalizedKey] ||
+        hashStringToGradient(normalizedKey || 'extension');
+    }
 
     backgroundStyle.backgroundImage = `linear-gradient(${dir}, ${gradientStops.join(', ')})`;
   }
@@ -316,6 +367,7 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
 
   // 3. Render icon glyph
   const renderGlyph = () => {
+    // 1. Direct React element
     if (directNode) {
       return (
         <div className="text-white flex items-center justify-center [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]">
@@ -324,7 +376,22 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
       );
     }
 
-    if (glyphName && (glyphName.startsWith('http://') || glyphName.startsWith('https://') || glyphName.startsWith('data:image'))) {
+    if (!glyphName) {
+      return (
+        <PackageIcon
+          size={glyphSize}
+          strokeWidth={1.8}
+          className="text-white shrink-0 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+        />
+      );
+    }
+
+    // 2. Remote image or Data URI
+    if (
+      glyphName.startsWith('http://') ||
+      glyphName.startsWith('https://') ||
+      glyphName.startsWith('data:image')
+    ) {
       return (
         <img
           src={glyphName}
@@ -336,12 +403,57 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
       );
     }
 
-    const IconComp = resolveIconComponent(glyphName);
+    // 3. Raw SVG string
+    if (glyphName.trim().startsWith('<svg')) {
+      return (
+        <div
+          style={{ width: glyphSize, height: glyphSize }}
+          className="flex items-center justify-center text-white shrink-0 [&>svg]:w-full [&>svg]:h-full [&>svg]:fill-current [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+          dangerouslySetInnerHTML={{ __html: glyphName }}
+        />
+      );
+    }
+
+    // 4. Emojis are strictly disallowed as extension icons.
+    // If an extension attempts to declare an emoji, log a dev warning and fall back to PackageIcon.
+    if (
+      glyphName.startsWith('emoji:') ||
+      glyphName.startsWith(':emoji:') ||
+      /\p{Extended_Pictographic}/u.test(glyphName)
+    ) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[ExtensionAppIcon] Emojis are disallowed for extension icons ("${glyphName}"). Please declare a HugeIcon identifier (e.g. 'clock-01', 'sparkles') or custom SVG instead.`
+        );
+      }
+      return (
+        <PackageIcon
+          size={glyphSize}
+          strokeWidth={1.8}
+          className="text-white shrink-0 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+        />
+      );
+    }
+
+    // 5. Fast synchronous match in pre-imported core map
+    const normalizedKey = glyphName.toLowerCase().trim().replace(/^noether-/, '').replace(/^flint-/, '');
+    const StaticComp = FAST_STATIC_ICON_MAP[normalizedKey] || FAST_STATIC_ICON_MAP[glyphName];
+    if (StaticComp) {
+      return (
+        <StaticComp
+          size={glyphSize}
+          strokeWidth={1.8}
+          className="text-white shrink-0 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+        />
+      );
+    }
+
+    // 6. Dynamic HugeIcon loader for ANY icon in @hugeicons/core-free-icons
     return (
-      <IconComp
+      <DynamicExtensionGlyph
+        glyphName={glyphName}
         size={glyphSize}
-        strokeWidth={1.8}
-        className="text-white shrink-0 [filter:drop-shadow(0_1px_2px_rgba(0,0,0,0.35))]"
+        fallbackIcon={PackageIcon}
       />
     );
   };
@@ -373,3 +485,4 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
 };
 
 export default ExtensionAppIcon;
+

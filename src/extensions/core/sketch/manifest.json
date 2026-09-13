@@ -2,7 +2,7 @@
   "id": "sketch",
   "name": "Sketch",
   "version": "1.0.0",
-  "description": "Lightweight freehand vector drawing and markup overlay for notes and canvases.",
+  "description": "Draw, doodle, and sketch visual diagrams directly alongside your notes and boards whenever words aren't enough.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

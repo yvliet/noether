@@ -2,7 +2,7 @@
   "id": "default-commands",
   "name": "Default Workspace Commands",
   "version": "1.0.0",
-  "description": "Standard built-in commands for file management, sidebar toggling, and settings.",
+  "description": "Quick keyboard shortcuts and helpful actions to navigate your workspace, manage files, and adjust settings without leaving your flow.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [

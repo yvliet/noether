@@ -29,6 +29,7 @@ import publishingRaw from '../content/docs/extensions/publishing.md?raw';
 import starterTemplatesRaw from '../content/docs/extensions/starter-templates.md?raw';
 import moreIconsRaw from '../content/docs/extensions/more-icons.md?raw';
 import syncRaw from '../content/docs/extensions/sync.md?raw';
+import historyRaw from '../content/docs/extensions/history.md?raw';
 
 import buildFirstThemeRaw from '../content/docs/themes/build-first-theme.md?raw';
 import submitThemeRaw from '../content/docs/themes/submit-theme.md?raw';
@@ -270,6 +271,13 @@ export const DOCS_TREE: DocNode[] = [
         slug: 'sync',
         aliases: ['Sync', 'Cloud Sync', 'Database Sync', 'Multi-device Sync'],
         content: syncRaw,
+      },
+      {
+        id: 'history',
+        title: 'Version History',
+        slug: 'history',
+        aliases: ['Version History', 'History', 'Git History', 'Diffs', 'Drafts', 'Revisions'],
+        content: historyRaw,
       },
       {
         id: 'optimize-load-time',

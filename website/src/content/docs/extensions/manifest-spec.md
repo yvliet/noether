@@ -38,10 +38,33 @@ Every Noether extension must include a valid `manifest.json` file in its root di
 | `author` | `string` | No | Name of the author, team, or maintainer. |
 | `authorUrl` | `string` | No | Web URL to the author's GitHub profile, portfolio, or documentation site. |
 | `tags` | `string[]` | No | Array of category keywords for search and marketplace filtering (e.g., `["productivity", "formatting", "ai"]`). |
-| `icon` | `string` | No | Icon identifier (matching standard icon names) or custom SVG string for display in cards. |
+| `icon` | `string \| object` | No | Icon glyph name (any HugeIcon name or SVG) or structured icon styling configuration with custom colors and gradients. Emojis are disallowed. |
 | `readme` | `string` | No | Full Markdown documentation shown in the Marketplace details modal. |
 | `bannerImage` | `string` | No | Relative path (e.g., `assets/banner.png`) or URL to a header image displayed in the marketplace. |
 | `isCore` | `boolean` | No | Reserved for Noether internal bundled extensions. Community extensions must omit this or set it to `false`. |
+
+### Icon & Background Customization
+The `icon` property is fully dynamic and manifest-driven. Noether automatically resolves any icon without requiring host code changes:
+
+- **HugeIcon String**: Specify any name from the 14,000+ HugeIcons library (e.g., `"clock-01"`, `"git-branch"`, `"cpu"`, `"sparkles"`, `"shield"`). The glyph loads on demand and caches for instant 0ms subsequent renders.
+- **Custom Gradients**: Provide an object with `gradientColors` and an optional `gradientDirection`:
+  ```json
+  "icon": {
+    "name": "rocket",
+    "gradientColors": ["#ec4899", "#8b5cf6"],
+    "gradientDirection": "135deg"
+  }
+  ```
+- **Single Color with Automatic Gradient**: Provide `backgroundColor`. Noether automatically derives a richer companion shadow tone to generate a sleek 2-stop gradient:
+  ```json
+  "icon": {
+    "name": "shield",
+    "backgroundColor": "#0ea5e9"
+  }
+  ```
+- **Solid Fills**: Set `"type": "solid"` with `backgroundColor` for a flat background.
+- **Automatic Fallback Gradients**: If colors are omitted entirely (e.g., `"icon": "clock-01"`), Noether deterministically hashes the extension ID to assign a consistent, vibrant gradient from its curated palette.
+- **SVGs & Vector Marks**: Raw SVG strings and custom vector marks are rendered cleanly inside the tactile squircle. Emojis are strictly disallowed as extension icons.
 
 
 ## 3. Manifest JSON Schema
@@ -101,21 +124,21 @@ You can validate your `manifest.json` using the official JSON Schema:
       "oneOf": [
         {
           "type": "string",
-          "description": "Icon glyph name from the standard catalog (e.g. 'book-open-02', 'sparkles', 'brain-02')."
+          "description": "Icon glyph name from HugeIcons, SVG string, or image URL (emojis disallowed)."
         },
         {
           "type": "object",
           "description": "Structured icon styling configuration with solid or gradient background.",
           "properties": {
-            "name": { "type": "string", "description": "Icon glyph name." },
+            "name": { "type": "string", "description": "Icon glyph name from HugeIcons, SVG string, or image URL (emojis disallowed)." },
             "type": { "type": "string", "enum": ["solid", "gradient"], "description": "Background fill style." },
-            "backgroundColor": { "type": "string", "description": "Background color for solid fill or fallback." },
+            "backgroundColor": { "type": "string", "description": "Background hex color for solid fill or automatic 2-stop gradient generation." },
             "gradientColors": {
               "type": "array",
               "items": { "type": "string" },
               "description": "Array of color hex codes or CSS colors for linear gradients."
             },
-            "gradientDirection": { "type": ["string", "number"], "description": "Gradient angle or direction (defaults to '180deg')." }
+            "gradientDirection": { "type": ["string", "number"], "description": "Gradient angle or direction (defaults to '135deg')." }
           },
           "required": ["name"]
         }

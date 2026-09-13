@@ -14,9 +14,11 @@ import { MoreIconsExtension, MORE_ICONS_MANIFEST } from './more-icons/MoreIconsE
 import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { DefaultCommandsExtension, DEFAULT_COMMANDS_MANIFEST } from './defaults/DefaultCommandsExtension';
 import { SyncExtension, SYNC_MANIFEST } from './sync/SyncExtension';
+import { HistoryExtension, HISTORY_MANIFEST } from './history/HistoryExtension';
 
 export function registerAllCoreExtensions(app: NoetherApp): void {
   app.extensions.registerExtension(DEFAULT_COMMANDS_MANIFEST, DefaultCommandsExtension);
+  app.extensions.registerExtension(HISTORY_MANIFEST, HistoryExtension);
   app.extensions.registerExtension(SYNC_MANIFEST, SyncExtension);
   app.extensions.registerExtension(BOOKMARKS_MANIFEST, BookmarksExtension);
   app.extensions.registerExtension(MARKETPLACE_MANIFEST, MarketplaceExtension);

@@ -2,7 +2,7 @@
   "id": "note-properties",
   "name": "Note Properties",
   "version": "1.0.0",
-  "description": "Structured frontmatter metadata and property fields editor.",
+  "description": "Add tidy details to your notes like dates, tags, ratings, and custom fields to keep your ideas neatly organized.",
   "author": "Yuliet Li",
   "isCore": true,
   "tags": [
