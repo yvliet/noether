@@ -20,6 +20,7 @@ import {
 import {
   Store01Icon,
   Motion01Icon,
+  DashboardSquare01Icon,
   SparklesIcon,
   StickyNote02Icon,
   Brain02Icon,
@@ -114,6 +115,9 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
     const lower = iconUrl.toLowerCase().trim();
     if (lower === 'motion' || lower === 'motion-01' || lower === 'motion01') {
       return React.createElement(Motion01Icon, { size: 18, className: 'text-[#38bdf8]' });
+    }
+    if (lower === 'dashboard-square-01' || lower === 'dashboardsquare01' || lower === 'dashboard-square' || lower === 'dashboardsquare' || lower === 'canvas') {
+      return React.createElement(DashboardSquare01Icon, { size: 18, className: 'text-[#ec4899]' });
     }
     if (lower === 'book-open' || lower === 'book' || lower === 'bookopen02' || lower === 'book-open-02' || lower === 'cascade') {
       return React.createElement(BookOpen02Icon, { size: 18, className: 'text-[#38bdf8]' });

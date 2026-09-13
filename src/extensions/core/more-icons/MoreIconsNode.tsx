@@ -14,7 +14,7 @@ import {
   Folder01Icon,
   FolderOpenIcon,
   File01Icon,
-  Layout01Icon,
+  DashboardSquare01Icon,
 } from '@/components/common/Icons';
 import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
@@ -92,7 +92,7 @@ export const MoreIconsNode: React.FC<MoreIconsNodeProps> = React.memo(({
       className="w-4 h-4 flex items-center justify-center shrink-0 text-[#777777] group-hover:text-[#dcddde] select-none pointer-events-none"
       title={customType ? (customType.badgeLabel || customType.extension.toUpperCase()) : 'Note'}
     >
-      {customType ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
+      {customType ? <DashboardSquare01Icon size={14} /> : <File01Icon size={14} />}
     </span>
   );
 });
@@ -147,7 +147,7 @@ export const MoreIconsFileIconSlot: React.FC<MoreIconsFileIconSlotProps> = ({ do
         className="w-4 h-4 flex items-center justify-center shrink-0 text-[#777777] group-hover:text-[#dcddde] select-none pointer-events-none"
         title={customType ? (customType.badgeLabel || customType.extension.toUpperCase()) : 'Note'}
       >
-        {customType ? <Layout01Icon size={14} /> : <File01Icon size={14} />}
+        {customType ? <DashboardSquare01Icon size={14} /> : <File01Icon size={14} />}
       </span>
     );
   }

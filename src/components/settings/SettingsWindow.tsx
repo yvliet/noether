@@ -12,7 +12,7 @@ import {
   GlobeIcon,
   PuzzleIcon,
   LinkSquare02Icon,
-  Layout01Icon,
+  DashboardSquare01Icon,
   Calendar01Icon,
   Brain02Icon,
   CheckmarkSquare02Icon,
@@ -635,7 +635,7 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                       {item.is_folder ? (
                         <Folder01Icon size={15} />
                       ) : customType ? (
-                        <Layout01Icon size={15} />
+                        <DashboardSquare01Icon size={15} />
                       ) : (
                         <File01Icon size={15} />
                       )}

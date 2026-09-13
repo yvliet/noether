@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   FileEmpty01Icon,
-  Layout01Icon,
+  DashboardSquare01Icon,
   CommandIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -447,7 +447,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                             }`}
                           >
                             {item.is_canvas ? (
-                              <Layout01Icon size={16} />
+                              <DashboardSquare01Icon size={16} />
                             ) : (
                               <FileEmpty01Icon size={16} />
                             )}
@@ -566,7 +566,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                           }`}
                         >
                           {item.is_canvas ? (
-                            <Layout01Icon size={16} />
+                            <DashboardSquare01Icon size={16} />
                           ) : (
                             <FileEmpty01Icon size={16} />
                           )}

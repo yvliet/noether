@@ -2,7 +2,7 @@ import {
   StickyNote02Icon,
   Folder01Icon,
   NeuralNetworkIcon,
-  Layout01Icon,
+  DashboardSquare01Icon,
 } from '@hugeicons/core-free-icons';
 import { renderHugeIconSvg } from '@/components/common/Icons';
 
@@ -10,7 +10,7 @@ export const STICKY_NOTE_02_SVG = renderHugeIconSvg(StickyNote02Icon, { size: 15
 export const FOLDER_SVG = renderHugeIconSvg(Folder01Icon, { size: 15, color: '#dcdcdc', strokeWidth: 2, style: 'flex-shrink:0;' });
 export const NEURAL_NETWORK_SVG = renderHugeIconSvg(NeuralNetworkIcon, { size: 15, color: '#dcdcdc', strokeWidth: 1.5, style: 'flex-shrink:0;' });
 export const GIT_FORK_SVG = NEURAL_NETWORK_SVG;
-export const CANVAS_LAYOUT_SVG = renderHugeIconSvg(Layout01Icon, { size: 15, color: '#dcdcdc', strokeWidth: 1.5, style: 'flex-shrink:0;' });
+export const CANVAS_LAYOUT_SVG = renderHugeIconSvg(DashboardSquare01Icon, { size: 15, color: '#dcdcdc', strokeWidth: 1.5, style: 'flex-shrink:0;' });
 
 class DragTooltipManager {
   private el: HTMLElement | null = null;

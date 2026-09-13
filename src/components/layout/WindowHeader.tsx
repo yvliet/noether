@@ -6,6 +6,7 @@ import {
   PlusSignIcon,
   Cancel01Icon,
   NeuralNetworkIcon,
+  DashboardSquare01Icon,
   Layout01Icon,
   LayoutLeftIcon,
   LayoutAlignLeftIcon,
@@ -953,7 +954,7 @@ export const WindowHeader: React.FC = React.memo(() => {
           return regView.icon;
         }
         if (viewType === 'graph') return <NeuralNetworkIcon size={14} />;
-        if (viewType === 'canvas') return <Layout01Icon size={14} />;
+        if (viewType === 'canvas') return <DashboardSquare01Icon size={14} />;
       }
 
       return <Folder01Icon size={14} />;

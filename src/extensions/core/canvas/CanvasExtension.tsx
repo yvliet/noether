@@ -14,7 +14,7 @@ import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
 import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
-import { Layout01Icon } from '@/components/common/Icons';
+import { DashboardSquare01Icon, DashboardSquareAddIcon } from '@/components/common/Icons';
 import { CanvasSettingsTab } from './CanvasSettingsTab';
 import { useCanvasSettings } from './canvasSettings';
 import manifest from './manifest.json';
@@ -55,7 +55,7 @@ export class CanvasExtension extends Extension {
     this.registerView({
       type: 'canvas',
       title: 'Canvas',
-      icon: <Layout01Icon size={14} />,
+      icon: <DashboardSquare01Icon size={14} />,
       render: (props?: { tabId?: string; documentId?: string }) => (
         <CanvasView
           key={props?.tabId || props?.documentId || 'canvas'}
@@ -68,7 +68,7 @@ export class CanvasExtension extends Extension {
     // 2. Register Action Rail item
     this.addActionRailIcon(
       'open-canvas',
-      <Layout01Icon size={16} />,
+      <DashboardSquare01Icon size={16} />,
       'Create new spatial canvas',
       async (app) => {
         await app.vault.createNewCanvas();
@@ -91,7 +91,7 @@ export class CanvasExtension extends Extension {
       id: 'cmd-open-canvas',
       title: 'New spatial canvas',
       section: 'Navigation',
-      icon: <Layout01Icon size={16} />,
+      icon: <DashboardSquare01Icon size={16} />,
       action: async (app) => {
         await app.vault.createNewCanvas();
       },
@@ -101,7 +101,7 @@ export class CanvasExtension extends Extension {
     this.registerSettingTab({
       id: 'canvas-settings',
       name: 'Canvas',
-      icon: <Layout01Icon size={14} />,
+      icon: <DashboardSquare01Icon size={14} />,
       render: () => <CanvasSettingsTab />,
       onRestoreDefaults: () => {
         useCanvasSettings.getState().restoreDefaults();
@@ -112,7 +112,7 @@ export class CanvasExtension extends Extension {
     this.registerFileTreeAction({
       id: 'create-canvas',
       title: 'New canvas',
-      icon: <Layout01Icon size={14} />,
+      icon: <DashboardSquareAddIcon size={14} />,
       order: 20,
       onClick: async (app) => {
         await app.vault.createNewCanvas();

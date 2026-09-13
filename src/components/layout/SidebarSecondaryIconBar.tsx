@@ -7,7 +7,7 @@ import {
   Folder01Icon,
   Search01Icon,
   NeuralNetworkIcon,
-  Layout01Icon,
+  DashboardSquare01Icon,
   Store01Icon,
   CheckmarkSquare02Icon,
   Brain02Icon,
@@ -101,7 +101,7 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
         return regView.icon;
       }
       if (viewType === 'graph') return <NeuralNetworkIcon size={15} />;
-      if (viewType === 'canvas') return <Layout01Icon size={15} />;
+      if (viewType === 'canvas') return <DashboardSquare01Icon size={15} />;
       if (viewType === 'marketplace') return <Store01Icon size={15} />;
       if (viewType === 'tasks') return <CheckmarkSquare02Icon size={15} />;
       if (viewType === 'flashcards') return <Brain02Icon size={15} />;
