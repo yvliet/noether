@@ -10,6 +10,8 @@ import { useContextMenuStore } from '@/store/contextMenuStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { useFileHistoryStore } from '@/store/fileHistoryStore';
 
+import { dbAdapter } from '@/lib/db/adapter';
+
 // Bind all core stores to the app singleton
 bindNoetherStores({
   workspace: useWorkspaceStore,
@@ -18,6 +20,10 @@ bindNoetherStores({
   settings: useSettingsStore,
   fileHistory: useFileHistoryStore,
 });
+
+// Pre-warm native SQLite connection and Vault info concurrently with module evaluation
+dbAdapter.init().catch((err) => console.error('[Main] Pre-warm DB error:', err));
+useWorkspaceStore.getState().initVaultInfo().catch((err) => console.error('[Main] Pre-warm Vault info error:', err));
 
 // Register and initialize core extensions across all window modes
 registerAllCoreExtensions(appInstance);
