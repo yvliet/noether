@@ -11,6 +11,7 @@ import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
+import { WikilinkHoverPreview } from './WikilinkHoverPreview';
 import { useNoetherApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import type { PortalSlotContext } from '@/core/extensions/types';
@@ -32,6 +33,61 @@ import {
   LeftToRightListNumberIcon,
   TextUnderlineIcon,
 } from '@/components/common/Icons';
+
+/**
+ * Extracts a valid internal wikilink target from a mouse event target.
+ * Explicitly ignores external URLs, media embeds, and hover popovers.
+ */
+function extractWikilinkFromTarget(rawTarget: EventTarget | null): { element: HTMLElement; target: string } | null {
+  const targetElem = (
+    rawTarget && (rawTarget as Node).nodeType === Node.ELEMENT_NODE
+      ? (rawTarget as HTMLElement)
+      : ((rawTarget as Node)?.parentElement as HTMLElement | null)
+  );
+  if (!targetElem) return null;
+
+  // Ignore embeds, media, or hover preview itself
+  if (targetElem.closest('.noether-embed-wrapper, .noether-embed-media, [data-wikilink-hover-preview="true"]')) {
+    return null;
+  }
+
+  // 1. Direct check for .md-wikilink
+  const wikiElem = targetElem.closest('.md-wikilink') as HTMLElement | null;
+  if (wikiElem) {
+    const target = wikiElem.getAttribute('data-wikilink-target') || wikiElem.textContent?.trim() || '';
+    if (target) return { element: wikiElem, target };
+  }
+
+  // 2. Direct check for [data-wikilink-target]
+  const dataWikiElem = targetElem.closest('[data-wikilink-target]') as HTMLElement | null;
+  if (dataWikiElem) {
+    const target = dataWikiElem.getAttribute('data-wikilink-target');
+    if (target) return { element: dataWikiElem, target };
+  }
+
+  // 3. Check for .md-link pointing to internal wikilink
+  const mdLinkElem = targetElem.closest('.md-link') as HTMLElement | null;
+  if (mdLinkElem) {
+    const explicitWikiTarget = mdLinkElem.getAttribute('data-wikilink-target');
+    if (explicitWikiTarget) {
+      return { element: mdLinkElem, target: explicitWikiTarget };
+    }
+    const rawUrl = mdLinkElem.getAttribute('data-link-url') || mdLinkElem.getAttribute('href') || null;
+    if (rawUrl) {
+      const trimmed = rawUrl.trim();
+      if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+        let inner = trimmed.slice(2, -2).trim();
+        if (inner.includes('|')) inner = inner.split('|')[0].trim();
+        if (inner) return { element: mdLinkElem, target: inner };
+      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
+        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        if (decoded) return { element: mdLinkElem, target: decoded };
+      }
+    }
+  }
+
+  return null;
+}
 
 interface DocumentHeaderItemProps {
   header: import('@/core/extensions/types').DocumentHeaderDefinition;
@@ -711,15 +767,129 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Wikilink hover preview state & timers
+  const [wikilinkHoverPreview, setWikilinkHoverPreview] = useState<{
+    target: string;
+    anchorRect: DOMRect;
+  } | null>(null);
+
+  const hoverOpenTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hoverCloseTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hoveredLinkRef = useRef<HTMLElement | null>(null);
+  const isMouseOverPreviewRef = useRef<boolean>(false);
+
+  const clearHoverTimers = useCallback(() => {
+    if (hoverOpenTimerRef.current) {
+      clearTimeout(hoverOpenTimerRef.current);
+      hoverOpenTimerRef.current = null;
+    }
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const handleCloseHoverPreview = useCallback(() => {
+    clearHoverTimers();
+    isMouseOverPreviewRef.current = false;
+    hoveredLinkRef.current = null;
+    setWikilinkHoverPreview(null);
+  }, [clearHoverTimers]);
+
+  const handleViewportMouseOver = useCallback((e: React.MouseEvent) => {
+    const result = extractWikilinkFromTarget(e.target);
+    if (!result) return;
+
+    const { element, target } = result;
+
+    if (hoveredLinkRef.current === element) {
+      if (hoverCloseTimerRef.current) {
+        clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
+      }
+      return;
+    }
+
+    clearHoverTimers();
+    hoveredLinkRef.current = element;
+
+    hoverOpenTimerRef.current = setTimeout(() => {
+      if (!element.isConnected) return;
+      const rect = element.getBoundingClientRect();
+      setWikilinkHoverPreview({ target, anchorRect: rect });
+    }, 250);
+  }, [clearHoverTimers]);
+
+  const handleViewportMouseOut = useCallback((e: React.MouseEvent) => {
+    if (!hoveredLinkRef.current) return;
+
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (relatedTarget && hoveredLinkRef.current.contains(relatedTarget)) {
+      return;
+    }
+
+    if (hoverOpenTimerRef.current) {
+      clearTimeout(hoverOpenTimerRef.current);
+      hoverOpenTimerRef.current = null;
+    }
+
+    hoverCloseTimerRef.current = setTimeout(() => {
+      if (!isMouseOverPreviewRef.current) {
+        setWikilinkHoverPreview(null);
+        hoveredLinkRef.current = null;
+      }
+    }, 300);
+  }, []);
+
+  const handleMouseEnterPreview = useCallback(() => {
+    isMouseOverPreviewRef.current = true;
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
+    }
+  }, []);
+
+  const handleMouseLeavePreview = useCallback(() => {
+    isMouseOverPreviewRef.current = false;
+    if (hoverCloseTimerRef.current) {
+      clearTimeout(hoverCloseTimerRef.current);
+    }
+    hoverCloseTimerRef.current = setTimeout(() => {
+      setWikilinkHoverPreview(null);
+      hoveredLinkRef.current = null;
+    }, 300);
+  }, []);
+
+  // Dismiss hover preview on active doc change or tab switch
+  useEffect(() => {
+    handleCloseHoverPreview();
+  }, [currentDoc?.id, handleCloseHoverPreview]);
+
+  // Global escape key listener to dismiss hover preview
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseHoverPreview();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      clearHoverTimers();
+    };
+  }, [handleCloseHoverPreview, clearHoverTimers]);
+
   useEffect(() => {
     const top = scrollViewportRef.current?.scrollTop || 0;
     setIsScrolled(top > 0);
   }, [currentDoc?.id]);
 
   const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (isMouseOverPreviewRef.current) return;
+    handleCloseHoverPreview();
     const top = e.currentTarget.scrollTop;
     setIsScrolled(top > 0);
-  }, []);
+  }, [handleCloseHoverPreview]);
 
   const isDuplicateTitle = useMemo(() => {
     if (!currentDoc) return false;
@@ -1463,6 +1633,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             onMouseDown={handleDeadSpaceMouseDown}
             onClick={handleDeadSpaceClick}
             onContextMenu={handleDeadSpaceContextMenu}
+            onMouseOver={handleViewportMouseOver}
+            onMouseOut={handleViewportMouseOut}
             className={`flex-1 overflow-y-auto custom-scrollbar ${
               !isSidebarMode ? 'scrollbar-track-offset-subheader' : ''
             } ${isReadingMode ? 'cursor-default' : ''}`}
@@ -1737,6 +1909,17 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             </div>
           </div>
       </div>
+      )}
+
+      {/* Wikilink Floating Hover Preview */}
+      {wikilinkHoverPreview && (
+        <WikilinkHoverPreview
+          target={wikilinkHoverPreview.target}
+          anchorRect={wikilinkHoverPreview.anchorRect}
+          onClose={handleCloseHoverPreview}
+          onMouseEnter={handleMouseEnterPreview}
+          onMouseLeave={handleMouseLeavePreview}
+        />
       )}
     </div>
   );
