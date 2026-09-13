@@ -375,6 +375,12 @@ export interface WorkspaceAPI {
   openHelpModal(): void;
 
   /**
+   * Opens the vault switcher and management modal.
+   * @since 0.4.7
+   */
+  openVaultModal(): void;
+
+  /**
    * Programmatically shows a context menu at the given position.
    *
    * @param eventOrCoords - A MouseEvent or `{ x, y }` coordinate object.

@@ -152,7 +152,7 @@ const KNOWN_EXTENSION_NAMES: Record<string, string> = {
 };
 
 function getExtensionName(cmd: CommandItem): string | null {
-  if (!cmd.extensionId || cmd.extensionId === 'defaults' || cmd.extensionId === 'default-commands') {
+  if (!cmd.extensionId) {
     return null;
   }
   if (KNOWN_EXTENSION_NAMES[cmd.extensionId]) {
