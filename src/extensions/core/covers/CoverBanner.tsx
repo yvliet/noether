@@ -185,36 +185,37 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
 
           {/* Normal Hover Action Controls */}
           {showControlsOnHover && !isRepositioning && (
-            <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 flex items-center gap-1 bg-[#181818]/90 border border-[#333]/80 backdrop-blur-md rounded-lg p-1 shadow-lg pointer-events-auto z-30">
+            <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-0.5 pointer-events-auto z-30 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
               <button
                 type="button"
                 onClick={() => {
                   if (doc?.id) useCoverModalStore.getState().open(doc.id);
                 }}
-                title="Change Cover Image"
-                className="px-2.5 py-1 rounded text-[11px] text-[#bbb] hover:text-white hover:bg-[#282828] cursor-pointer flex items-center gap-1"
+                title="Change cover"
+                aria-label="Change cover"
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
               >
-                <FileImageIcon size={13} />
-                <span>Change cover</span>
+                <FileImageIcon size={14} />
               </button>
 
               <button
                 type="button"
                 onClick={handleStartReposition}
-                title="Reposition Image"
-                className="px-2 py-1 rounded text-[11px] text-[#bbb] hover:text-white hover:bg-[#282828] cursor-pointer flex items-center gap-1"
+                title="Reposition cover"
+                aria-label="Reposition cover"
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
               >
-                <ArrowUpDownIcon size={12} />
-                <span>Reposition</span>
+                <ArrowUpDownIcon size={14} />
               </button>
 
               <button
                 type="button"
                 onClick={handleRemoveCover}
-                title="Remove Cover Image"
-                className="p-1 rounded text-[#888] hover:text-red-400 hover:bg-red-500/10 cursor-pointer flex items-center justify-center"
+                title="Remove cover"
+                aria-label="Remove cover"
+                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-rose-500 hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
               >
-                <Delete02Icon size={13} />
+                <Delete02Icon size={14} />
               </button>
             </div>
           )}

@@ -22,6 +22,8 @@ import { CoversSettingsTab } from './CoversSettingsTab';
 import { useCoversSettings } from './coversSettings';
 import { DocumentItem } from '@/types';
 import { preloadCoverImage, preloadAllVaultCovers, resolveCoverSource } from './coverPreloader';
+import { initPresetCache, downloadAllPresets, getCachedPresetCount } from './presetCache';
+import { COVER_PRESETS } from './presets';
 
 export const COVERS_MANIFEST: ExtensionManifest = {
   ...(manifest as ExtensionManifest),
@@ -365,6 +367,23 @@ export class CoversExtension extends Extension {
         } catch {}
       }
     });
+
+    // 9. Initialize Preset Cache & Background Setup Download
+    if (typeof window !== 'undefined') {
+      const scheduleSetup = typeof requestIdleCallback === 'function'
+        ? requestIdleCallback
+        : (cb: () => void) => setTimeout(cb, 1200);
+
+      scheduleSetup(() => {
+        initPresetCache().then(() => {
+          if (getCachedPresetCount() < COVER_PRESETS.length) {
+            downloadAllPresets(COVER_PRESETS).catch(() => {
+              // Graceful silent fallback if offline during initial setup
+            });
+          }
+        });
+      });
+    }
   }
 }
 
