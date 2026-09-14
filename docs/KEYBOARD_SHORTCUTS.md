@@ -47,6 +47,9 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 | **Navigate Back in Note History** | `Alt+←` | `Cmd+[` |
 | **Navigate Forward in Note History** | `Alt+→` | `Cmd+]` |
 
+> [!NOTE]
+> Noether allows opening multiple tabs for the same note across different split panes. Selecting a note from the left sidebar or quick open replaces the active tab buffer in place rather than forcing focus onto an existing tab elsewhere.
+
 ## 4. Note Creation & Editing
 ---
 

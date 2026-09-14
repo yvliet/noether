@@ -26,6 +26,15 @@ When you reference a note that does not yet exist on disk (e.g. `[[Future Resear
 - Clicking the link instantly creates the target Markdown file in your active Vault and navigates directly to it.
 - Your relational graph immediately tracks the edge, allowing top-down thought structuring without breaking your writing flow.
 
+### Wikilink Hover Previews
+Hovering over any internal wikilink (`[[Note Title]]`, `[[Note Title#Heading]]`, or `[[Note Title|Alias]]`) displays a lightweight, instant live preview card of the target document:
+- **Rich Document Preview**: Renders live formatted content, including Obsidian callouts, KaTeX math formulas, tables, checklists, and syntax-highlighted code blocks without switching tabs.
+- **Snug Viewport Alignment**: The card dynamically positions itself snug against the link with an exact 8px margin, utilizing bottom anchoring when placed above to ensure the card never floats far overhead or covers the link text.
+- **Scroll & Navigation Persistence**: Move your mouse across the gap into the preview popover to scroll through long content or click internal links within the card without premature dismissal.
+- **Direct Note Opening**: Click the link icon in the top-right corner to open the note immediately in your workspace.
+- **Ghost Note Support**: Hovering over an uncreated note displays a *"Create note"* button that instantiates the file on disk and opens it.
+- **Documentation Parity**: The exact same hover preview system powers all internal links across the Noether documentation website.
+
 
 ## 2. Persistent Visited Link Tracking
 

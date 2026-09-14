@@ -54,6 +54,9 @@ The **Command Palette** is your central cockpit in Noether.
 | **Navigate Forward in Note History** | `Alt+→` | `Cmd+]` |
 | **Split / Close Split Editor Pane** | `Ctrl+Alt+\` | `Cmd+Alt+\` |
 
+> [!NOTE]
+> Noether allows opening multiple tabs for the same note across different split panes, making it effortless to cross-reference different sections of a document while writing. Selecting a note from the left sidebar or quick search replaces the active tab buffer in place rather than forcing focus onto an existing tab elsewhere.
+
 ## 4. Editing & Text Formatting
 ---
 

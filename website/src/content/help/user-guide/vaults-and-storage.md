@@ -37,6 +37,9 @@ Noether is engineered for seamless multi-workspace management:
 - **Instant Context Switching**: Switch between *Work*, *Personal*, *Research*, or *Client* vaults in milliseconds without restarting the desktop application.
 - **Cross-Vault Auto-Discovery**: Noether maintains a system-wide registry of recently opened vaults. External AI tools and the built-in MCP server can discover and search across all known Vaults automatically.
 
+### Multi-Tab Document Navigation
+Noether supports opening multiple tabs for the same note across different split editor panes or columns. When clicking notes in the sidebar navigation or file tree, Noether cleanly updates the active tab buffer in place rather than forcing focus onto an existing tab in another split column.
+
 ## 3. High-Performance Full-Text Search (SQLite FTS5 + BM25)
 ---
 
