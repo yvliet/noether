@@ -137,6 +137,7 @@ Noether features a fully visual table editing engine that eliminates the frictio
 - **Edge Controls**: Click the `+` buttons along table borders to instantly insert rows or columns.
 - **Floating Toolbar**: Highlight cells to toggle header rows, change column alignments (left, center, right), clear cell contents, or delete rows and columns.
 - **Keyboard Navigation**: Press `Tab` to navigate to the next cell; pressing `Tab` in the final cell automatically appends a new row. Press `Shift+Tab` to navigate backward.
+- **Column Sizing & Portability**: Drag column border handles to resize columns visually. When Noether writes files to disk, it produces standard, portable GFM pipe tables without injecting proprietary HTML markup, ensuring your notes render cleanly in any external Markdown reader (which format column widths dynamically based on content).
 
 
 ## 7. Callouts & Alerts

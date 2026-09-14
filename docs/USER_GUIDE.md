@@ -38,6 +38,7 @@ In Noether, individual note vaults are called **Vaults**.
 - On first launch, select an existing directory on your drive or create a new empty folder.
 - Noether initializes a hidden `.noether/` directory inside that folder to store local relational indexes (`noether.sqlite`), canvas workspaces, and extension settings.
 - **Switching Vaults (`Ctrl+Shift+O`)**: Press `Ctrl+Shift+O` to open the Vault Switcher modal. Switch between *Work*, *Personal*, or *Research* vaults instantly without restarting the app.
+- **Ground Truth vs. SQLite Cache**: Plain Markdown files (`*.md`) on disk are the authoritative ground truth for all note text, tags, frontmatter, and links. If `noether.sqlite` is ever deleted, Noether automatically regenerates it and re-indexes all notes on launch. Note that extension-specific database records (like flashcard review schedules) and rich layout tweaks unsupported by Markdown syntax (such as manual table column widths) live in SQLite, so avoid deleting `.noether/noether.sqlite` unless you intend to reset extension state and trigger a full cache rebuild.
 
 ### File Safety & Trash Confirmation
 When you delete a note, Noether never immediately destroys the file on disk:
@@ -92,6 +93,7 @@ Type `/` on any blank line to access the quick-insertion menu:
 - Use **Edge Controls** (`+` handles on borders) to insert rows and columns with a single click.
 - Highlight cells to reveal the **Floating Toolbar** for alignment, header toggling, and deletions.
 - Press `Tab` to navigate between cells; pressing `Tab` in the final cell automatically creates a new row.
+- **Column Sizing & Portability**: Drag column border handles to resize columns interactively. When exporting to `.md` files on disk, Noether generates clean, standard GFM pipe tables without proprietary HTML, preserving full portability across other Markdown readers (which size columns dynamically based on content).
 
 ### Web Clip Cleaner & Citation Stripper
 Pasting text copied from research articles, Wikipedia, or web pages automatically cleans up formatting:
