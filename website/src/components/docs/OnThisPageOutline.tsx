@@ -42,7 +42,8 @@ export const OnThisPageOutline: React.FC<OnThisPageOutlineProps> = React.memo(({
                   key={item.id}
                   type="button"
                   onClick={() => onSelectHeading(item.id)}
-                  title={item.text}
+                  data-tooltip={item.text}
+                  data-tooltip-position="left"
                   style={{ paddingLeft: `${indent}px` }}
                   className={`group relative text-left text-[13px] py-0.5 pr-1 whitespace-normal break-words cursor-pointer leading-[1.35] transition-none ${
                     isActive
@@ -83,7 +84,8 @@ export const OnThisPageOutline: React.FC<OnThisPageOutlineProps> = React.memo(({
                   e.preventDefault();
                   onSelectDoc?.(b);
                 }}
-                title={b.title}
+                data-tooltip={b.title}
+                data-tooltip-position="left"
                 className="text-left text-[13px] text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer py-0.5 pr-1 whitespace-normal break-words leading-[1.35] transition-none"
               >
                 {b.title}

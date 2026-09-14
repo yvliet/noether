@@ -194,7 +194,8 @@ export const TextInputPreview: React.FC = () => {
                 type="button"
                 onClick={() => setValue('')}
                 className="w-4 h-4 flex items-center justify-center rounded-full bg-[#2a2a2a] hover:bg-[#383838] text-[#888888] hover:text-white text-[10px] cursor-pointer"
-                title="Clear text"
+                data-tooltip="Clear text"
+                data-tooltip-position="top"
               >
                 ✕
               </button>

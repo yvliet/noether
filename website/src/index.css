@@ -70,6 +70,7 @@
   --noether-tooltip-bg: #0d0d0d;
   --noether-tooltip-text: #ffffff;
   --noether-tooltip-muted: #888888;
+  --noether-tooltip-border: #333333;
 
   /* Accent tokens (Noether signature flame orange accent) */
   --noether-accent: #eb584d;
@@ -140,6 +141,7 @@ html.light {
   --noether-tooltip-bg: #22252a;
   --noether-tooltip-text: #ffffff;
   --noether-tooltip-muted: #9ca3af;
+  --noether-tooltip-border: #e8e8ec;
 
   /* Accent tokens (Noether signature flame orange accent) */
   --noether-accent: #eb584d;

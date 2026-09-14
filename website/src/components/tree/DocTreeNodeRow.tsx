@@ -94,7 +94,8 @@ export const DocTreeNodeRow: React.FC<DocTreeNodeRowProps> = React.memo(({
               type="button"
               onClick={handleChevronClick}
               className="w-4 h-4 mt-0.5 flex items-center justify-center shrink-0 text-[#777777] group-hover:text-white cursor-pointer"
-              title={isOpen ? 'Collapse' : 'Expand'}
+              data-tooltip={isOpen ? 'Collapse' : 'Expand'}
+              data-tooltip-position="right"
             >
               {isOpen ? (
                 <svg

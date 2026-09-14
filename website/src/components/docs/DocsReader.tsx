@@ -1088,7 +1088,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
                 className={`absolute top-2.5 right-2.5 z-10 w-7 h-7 flex items-center justify-center rounded-md bg-[#252525]/90 hover:bg-[#333333] text-[#888888] hover:text-white border border-[#383838]/80 cursor-pointer ${
                   isCopied ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
                 }`}
-                title={isCopied ? 'Copied' : 'Copy code'}
+                data-tooltip={isCopied ? 'Copied' : 'Copy code'}
+                data-tooltip-position="top"
                 aria-label="Copy code"
               >
                 {isCopied ? (
@@ -1304,7 +1305,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
                   }, 1500);
                 });
               }}
-              title={isCopied ? 'Copied link to section!' : 'Copy link to section'}
+              data-tooltip={isCopied ? 'Copied link to section!' : 'Copy link to section'}
+              data-tooltip-position="top"
               aria-label={`Copy link to section ${headingText}`}
               className={`inline-flex items-center align-middle ml-1.5 p-0 rounded cursor-pointer transition-none ${
                 isCopied
@@ -1560,7 +1562,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
                     e.preventDefault();
                     onSelectDoc(b);
                   }}
-                  title={b.title}
+                  data-tooltip={b.title}
+                  data-tooltip-position="top"
                   className="text-left text-[13.5px] text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer py-0.5 leading-snug transition-none"
                 >
                   {b.title}

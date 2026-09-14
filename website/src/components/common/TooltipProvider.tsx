@@ -219,12 +219,32 @@ export const TooltipProvider: React.FC = React.memo(() => {
     let placement: TooltipPlacement = preferredPlacement || 'bottom';
 
     if (!preferredPlacement) {
+      // 1. Sidebar bias: elements inside the sticky left sidebar render on the right
+      const isSidebar = Boolean(
+        target.closest('aside, .sidebar-container, [data-sidebar]') ||
+        (tRect.left < 280 && tRect.top > 60)
+      );
+
+      // 2. Top bar bias: elements in the top navigation strip render at the bottom
       const isTopBar = Boolean(
-        target.closest('header, [data-top-bar]') || tRect.top <= 80
+        !isSidebar && (
+          target.closest('header, [data-top-bar]') ||
+          tRect.top <= 80
+        )
+      );
+
+      // 3. Right outline bias: elements in the right TOC outline render on the left
+      const isRightOutline = Boolean(
+        target.closest('[data-outline]') ||
+        tRect.left > winWidth - 280
       );
 
       if (isTopBar) {
         placement = 'bottom';
+      } else if (isSidebar) {
+        placement = 'right';
+      } else if (isRightOutline) {
+        placement = 'left';
       } else if (tRect.bottom > winHeight - 65) {
         placement = 'top';
       } else if (tRect.top < 65) {
@@ -317,22 +337,40 @@ export const TooltipProvider: React.FC = React.memo(() => {
 
   useEffect(() => {
     // 1. Initial pass to convert all existing title attributes
-    document.querySelectorAll('[title]').forEach((el) => {
+    const sanitizeElement = (el: HTMLElement) => {
+      if (el.closest('.ProseMirror, [contenteditable="true"]')) return;
       const title = el.getAttribute('title');
       if (title) {
         el.setAttribute('data-tooltip', title);
         el.removeAttribute('title');
       }
+    };
+
+    const sanitizeSubtree = (root: Node) => {
+      if (root.nodeType === Node.ELEMENT_NODE) {
+        const el = root as HTMLElement;
+        sanitizeElement(el);
+        const titledChildren = el.querySelectorAll?.('[title]');
+        if (titledChildren && titledChildren.length > 0) {
+          titledChildren.forEach((child) => sanitizeElement(child as HTMLElement));
+        }
+      }
+    };
+
+    document.querySelectorAll('[title]').forEach((el) => {
+      sanitizeElement(el as HTMLElement);
     });
 
-    // 2. Throttled MutationObserver to intercept any dynamic title attribute added by React re-renders
+    // 2. Throttled MutationObserver observing attributes AND childList insertions
     let mutationRaf: number | null = null;
     const pendingMutations: MutationRecord[] = [];
 
     const processMutations = () => {
       mutationRaf = null;
       for (const m of pendingMutations) {
-        if (m.type === 'attributes') {
+        if (m.type === 'childList') {
+          m.addedNodes.forEach(sanitizeSubtree);
+        } else if (m.type === 'attributes') {
           const el = m.target as HTMLElement;
           if (m.attributeName === 'title') {
             const title = el.getAttribute('title');
@@ -368,6 +406,7 @@ export const TooltipProvider: React.FC = React.memo(() => {
 
     observer.observe(document.documentElement, {
       attributes: true,
+      childList: true,
       subtree: true,
       attributeFilter: [
         'title',
@@ -380,10 +419,23 @@ export const TooltipProvider: React.FC = React.memo(() => {
       ],
     });
 
-    // 3. Pointer event listeners (delegated on pointerover / pointerout)
-    const handlePointerOver = (e: PointerEvent) => {
+    // 3. Pointer & Mouse event listeners (capture phase to strip title and show tooltip immediately)
+    const handlePointerOver = (e: Event) => {
       const rawTarget = e.target as Element | null;
       if (!rawTarget) return;
+
+      // Aggressively strip any title attribute on target or ancestors in capture phase
+      let curr: Element | null = rawTarget;
+      while (curr && curr !== document.documentElement) {
+        if (curr.hasAttribute('title') && !curr.closest('.ProseMirror, [contenteditable="true"]')) {
+          const t = curr.getAttribute('title');
+          if (t) {
+            curr.setAttribute('data-tooltip', t);
+            curr.removeAttribute('title');
+          }
+        }
+        curr = curr.parentElement;
+      }
 
       const target = rawTarget.closest?.('[data-tooltip], [title]');
       if (!target) {
@@ -401,28 +453,33 @@ export const TooltipProvider: React.FC = React.memo(() => {
       updateTooltipForElement(target);
     };
 
-    const handlePointerOut = (e: PointerEvent) => {
-      const related = e.relatedTarget as Element | null;
+    const handlePointerOut = (e: Event) => {
+      const pe = e as PointerEvent;
+      const related = pe.relatedTarget as Element | null;
       if (!related || !activeTargetRef.current?.contains(related)) {
         activeTargetRef.current = null;
         setTooltip(null);
       }
     };
 
-    const handlePointerDown = () => {
+    const handleDismiss = () => {
       activeTargetRef.current = null;
       setTooltip(null);
     };
 
-    const handleScroll = () => {
-      activeTargetRef.current = null;
-      setTooltip(null);
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleDismiss();
+      }
     };
 
     document.addEventListener('pointerover', handlePointerOver, true);
+    document.addEventListener('mouseover', handlePointerOver, true);
     document.addEventListener('pointerout', handlePointerOut, true);
-    document.addEventListener('pointerdown', handlePointerDown, true);
-    window.addEventListener('scroll', handleScroll, true);
+    document.addEventListener('pointerdown', handleDismiss, true);
+    window.addEventListener('scroll', handleDismiss, true);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('blur', handleDismiss);
 
     return () => {
       if (mutationRaf !== null) {
@@ -430,9 +487,12 @@ export const TooltipProvider: React.FC = React.memo(() => {
       }
       observer.disconnect();
       document.removeEventListener('pointerover', handlePointerOver, true);
+      document.removeEventListener('mouseover', handlePointerOver, true);
       document.removeEventListener('pointerout', handlePointerOut, true);
-      document.removeEventListener('pointerdown', handlePointerDown, true);
-      window.removeEventListener('scroll', handleScroll, true);
+      document.removeEventListener('pointerdown', handleDismiss, true);
+      window.removeEventListener('scroll', handleDismiss, true);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('blur', handleDismiss);
     };
   }, [updateTooltipForElement]);
 

@@ -540,6 +540,8 @@ export const App: React.FC = () => {
             type="button"
             onClick={() => setIsMobileNavOpen(true)}
             aria-label="Open navigation menu"
+            data-tooltip="Open navigation menu"
+            data-tooltip-position="bottom"
             className="p-1.5 -ml-1 rounded-md text-[#999999] hover:text-white hover:bg-[#202020] cursor-pointer"
           >
             <Menu01Icon size={18} />
@@ -548,7 +550,8 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={handleTogglePortal}
-            title={`Switch to Noether ${activePortal === 'help' ? 'Docs' : 'Help'}`}
+            data-tooltip={`Switch to Noether ${activePortal === 'help' ? 'Docs' : 'Help'}`}
+            data-tooltip-position="bottom"
             className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer select-none transition-none text-left p-0"
           >
             <img
@@ -568,7 +571,8 @@ export const App: React.FC = () => {
           <button
             type="button"
             onClick={toggleTheme}
-            title={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+            data-tooltip={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+            data-tooltip-position="bottom"
             className={`flex items-center justify-between w-[44px] h-[22px] px-1.5 rounded-full cursor-pointer select-none transition-none ${
               isDarkTheme
                 ? 'bg-[#1e1e1e] border border-[#2b2b2b] hover:border-[#3a3a3a]'
