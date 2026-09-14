@@ -47,3 +47,14 @@ Noether memoizes rendered equation DOM nodes in an in-memory LRU cache keyed by 
 In long-running editing sessions, ProseMirror's undo/redo history can capture hundreds of step inversions, bloating heap memory by hundreds of megabytes.
 
 Noether enforces a strict **bounded undo stack of 50 snapshots**. Old history steps are pruned automatically, ensuring your editing buffer maintains a lightweight, constant memory footprint regardless of whether you have been writing for five minutes or five hours.
+
+## 5. Lightweight Wikilink Hover Previews
+---
+
+To inspect referenced notes without context switching, the editor canvas implements an asynchronous, collision-aware **Wikilink Hover Preview system**:
+
+- **Target Extraction & Debouncing**: Mouse events across the editor canvas are delegated to detect internal `.md-wikilink` spans and wikilink attributes with a 250ms activation debounce, avoiding spurious popups during rapid cursor transit.
+- **Snug Viewport Anchoring**: The preview popover uses dynamic CSS `bottom` anchoring when placed above the link and `top` anchoring when placed below with an 8px collision margin, guaranteeing the preview sits snug against the link text regardless of whether the note card contains a single sentence or multiple paragraphs.
+- **In-Memory AST Parity**: The preview card renders through the identical `DocumentView` engine with `compact={true}`, retaining full markdown formatting fidelity (callouts, LaTeX formulas, code highlighting, tables, and task items) with sub-frame render times.
+- **Navigation Continuity**: Hovering over the popover card maintains visibility via a 300ms mouse grace period and isolates scroll events, allowing you to scroll through long documents or click internal links without closing the preview.
+

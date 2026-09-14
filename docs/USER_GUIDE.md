@@ -43,8 +43,11 @@ In Noether, individual note vaults are called **Vaults**.
 When you delete a note, Noether never immediately destroys the file on disk:
 - The `.md` file is moved into the hidden `.trash/` directory inside your Vault.
 - Noether remembers where the file came from and when it was deleted, so you can restore it anytime.
-- **Confirmation Dialogue**: By default, deleting a note prompts you with a confirmation dialog explaining where it will be stored and providing a "Don't ask again" option. You can customize this preference anytime in *Settings → File Safety*.
+- Confirmation Dialogue: By default, deleting a note prompts you with a confirmation dialog explaining where it will be stored and providing a "Don't ask again" option. You can customize this preference anytime in *Settings → File Safety*.
 - Files can be restored to their exact prior location at any time from *Settings → File Safety*.
+
+### Multi-Tab Document Navigation
+Noether supports opening multiple tabs for the same note across different panes or split layouts, making it effortless to reference one section of a long note while editing another. When browsing your file tree or search results, selecting a note cleanly replaces the active tab buffer in place rather than forcing focus onto an existing tab elsewhere.
 
 ## 3. Live Preview Editor & Markdown
 ---
@@ -97,6 +100,14 @@ Noether turns independent notes into a structured web of thoughts.
 - Type `[[` to open the **Fuzzy Note Linker**.
 - Select an existing note or type a new title and press `Enter` to create a new linked document.
 - **Aliased Links**: `[[Actual Note Title|Display Name]]` shows custom text while pointing to the target file.
+
+### Wikilink Hover Previews
+Hovering over any internal wikilink (`[[Note Title]]`, `[[Note Title#Heading]]`, or `[[Note Title|Alias]]`) shows an instant, collision-aware live preview card:
+- **Live Markdown & Callouts**: View the referenced note's formatted content, including callouts, math formulas, tables, checklists, and code fences without switching tabs.
+- **Snug Positioning**: The card sits snug directly above or below the link with an exact 8px spacing, adapting dynamically to the card's content height so it never floats high above or covers the link text.
+- **Scroll Persistence**: Moving your cursor into the card lets you scroll through the note or click internal links without closing the preview.
+- **Quick Open**: Click the link icon in the top right to open the note immediately in your workspace.
+- **Create from Preview**: Hovering over uncreated notes provides a *"Create note"* button that creates and opens the document on disk.
 
 ### Backlinks Pane (`Ctrl+Shift+\`)
 Located in the right sidebar, the Backlinks Pane displays:
