@@ -501,6 +501,9 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
 
     hoverOpenTimerRef.current = setTimeout(() => {
       if (!link.isConnected) return;
+      if (hoveredLinkRef.current !== link) return;
+      if (match && (!match.content || !match.content.trim())) return;
+
       const rect = link.getBoundingClientRect();
       setHoverPreview({
         targetDoc: match,
@@ -523,12 +526,20 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
       hoverOpenTimerRef.current = null;
     }
 
-    hoverCloseTimerRef.current = setTimeout(() => {
-      if (!isMouseOverPreviewRef.current) {
-        setHoverPreview(null);
-        hoveredLinkRef.current = null;
+    // Moving into the hover preview popover or its gap bridge: retain preview
+    if (relatedTarget && (relatedTarget as HTMLElement).closest?.('[data-wikilink-hover-preview="true"]')) {
+      return;
+    }
+
+    // Instant dismissal once cursor leaves the link boundary to an external element
+    if (!isMouseOverPreviewRef.current) {
+      if (hoverCloseTimerRef.current) {
+        clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
       }
-    }, 300);
+      setHoverPreview(null);
+      hoveredLinkRef.current = null;
+    }
   }, []);
 
   const handleMouseEnterPreview = useCallback(() => {
@@ -539,15 +550,22 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
     }
   }, []);
 
-  const handleMouseLeavePreview = useCallback(() => {
+  const handleMouseLeavePreview = useCallback((e?: React.MouseEvent) => {
     isMouseOverPreviewRef.current = false;
     if (hoverCloseTimerRef.current) {
       clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
     }
-    hoverCloseTimerRef.current = setTimeout(() => {
-      setHoverPreview(null);
-      hoveredLinkRef.current = null;
-    }, 300);
+
+    // Moving back to the active wikilink: retain preview
+    const relatedTarget = e?.relatedTarget as Node | null;
+    if (relatedTarget && hoveredLinkRef.current && hoveredLinkRef.current.contains(relatedTarget)) {
+      return;
+    }
+
+    // Instant dismissal once leaving the preview card
+    setHoverPreview(null);
+    hoveredLinkRef.current = null;
   }, []);
 
   // Dismiss preview on doc change or Escape key or window scroll

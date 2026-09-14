@@ -11,7 +11,7 @@ import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
-import { WikilinkHoverPreview } from './WikilinkHoverPreview';
+import { WikilinkHoverPreview, resolveTargetDocument, isDocumentContentEmpty } from './WikilinkHoverPreview';
 import { useNoetherApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import type { PortalSlotContext } from '@/core/extensions/types';
@@ -813,8 +813,28 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     clearHoverTimers();
     hoveredLinkRef.current = element;
 
-    hoverOpenTimerRef.current = setTimeout(() => {
+    hoverOpenTimerRef.current = setTimeout(async () => {
       if (!element.isConnected) return;
+      if (hoveredLinkRef.current !== element) return;
+
+      // Suppress hover preview if the target note exists but has no content
+      const documents = useDocumentStore.getState().documents;
+      const { doc } = resolveTargetDocument(target, documents);
+      if (doc) {
+        let contentJson = doc.content_json;
+        if (!contentJson) {
+          const fullDoc = await getDocumentById(doc.id);
+          contentJson = fullDoc?.content_json || '';
+        }
+
+        // Verify element is still hovered and mounted after async fetch
+        if (hoveredLinkRef.current !== element || !element.isConnected) return;
+
+        if (isDocumentContentEmpty(contentJson, doc.doc_type)) {
+          return;
+        }
+      }
+
       const rect = element.getBoundingClientRect();
       setWikilinkHoverPreview({ target, anchorRect: rect });
     }, 250);
@@ -833,12 +853,20 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       hoverOpenTimerRef.current = null;
     }
 
-    hoverCloseTimerRef.current = setTimeout(() => {
-      if (!isMouseOverPreviewRef.current) {
-        setWikilinkHoverPreview(null);
-        hoveredLinkRef.current = null;
+    // Moving into the hover preview popover or its gap bridge: retain preview
+    if (relatedTarget && (relatedTarget as HTMLElement).closest?.('[data-wikilink-hover-preview="true"]')) {
+      return;
+    }
+
+    // Instant dismissal once cursor leaves the link boundary to an external element
+    if (!isMouseOverPreviewRef.current) {
+      if (hoverCloseTimerRef.current) {
+        clearTimeout(hoverCloseTimerRef.current);
+        hoverCloseTimerRef.current = null;
       }
-    }, 300);
+      setWikilinkHoverPreview(null);
+      hoveredLinkRef.current = null;
+    }
   }, []);
 
   const handleMouseEnterPreview = useCallback(() => {
@@ -849,15 +877,22 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     }
   }, []);
 
-  const handleMouseLeavePreview = useCallback(() => {
+  const handleMouseLeavePreview = useCallback((e?: React.MouseEvent) => {
     isMouseOverPreviewRef.current = false;
     if (hoverCloseTimerRef.current) {
       clearTimeout(hoverCloseTimerRef.current);
+      hoverCloseTimerRef.current = null;
     }
-    hoverCloseTimerRef.current = setTimeout(() => {
-      setWikilinkHoverPreview(null);
-      hoveredLinkRef.current = null;
-    }, 300);
+
+    // Moving back to the active wikilink: retain preview
+    const relatedTarget = e?.relatedTarget as Node | null;
+    if (relatedTarget && hoveredLinkRef.current && hoveredLinkRef.current.contains(relatedTarget)) {
+      return;
+    }
+
+    // Instant dismissal once leaving the preview card
+    setWikilinkHoverPreview(null);
+    hoveredLinkRef.current = null;
   }, []);
 
   // Dismiss hover preview on active doc change or tab switch
