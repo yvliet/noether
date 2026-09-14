@@ -43,12 +43,12 @@ export const SketchSubheaderButton: React.FC<SketchSubheaderButtonProps> = React
           ? 'Sketch overlay active - Click to edit (Ctrl+Shift+S)'
           : 'Draw on note (Ctrl+Shift+S)'
       }
-      className={`relative p-1 rounded cursor-pointer ${
+      className={`relative p-1 rounded hover:[&_svg]:drop-shadow-none cursor-pointer ${
         isSketchingActive
-          ? 'text-white bg-[#282828]'
+          ? 'text-white bg-white/20'
           : hasStrokes
-          ? 'text-[#38bdf8] hover:text-[#7dd3fc] hover:bg-[#222]'
-          : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
+          ? 'text-[#38bdf8] hover:text-[#7dd3fc] hover:bg-white/10'
+          : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10'
       }`}
     >
       <PaintBoardIcon size={14} />

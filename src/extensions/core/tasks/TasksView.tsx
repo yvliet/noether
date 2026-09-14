@@ -109,7 +109,7 @@ export const TasksView: React.FC = React.memo(() => {
           type="button"
           onClick={handleManualRefresh}
           title="Refresh tasks"
-          className={`p-1 rounded hover:bg-[#222] text-[#777] hover:text-[#dcddde] transition-colors cursor-pointer ${
+          className={`p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none text-[#777] hover:text-[#dcddde] cursor-pointer ${
             isRefreshing ? 'animate-spin text-white' : ''
           }`}
         >

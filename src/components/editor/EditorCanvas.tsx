@@ -1302,7 +1302,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoBack}
             data-tooltip="Navigate back"
             data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-            className="p-1 rounded hover:bg-[#222] hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
+            className="p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
           >
             <ArrowLeft01Icon size={14} />
           </button>
@@ -1311,7 +1311,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoForward}
             data-tooltip="Navigate forward"
             data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-            className="p-1 rounded hover:bg-[#222] hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
+            className="p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
           >
             <ArrowRight01Icon size={14} />
           </button>
@@ -1518,7 +1518,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 ? 'opacity-20 cursor-default hover:bg-transparent text-[#777]'
                 : isLocked
                 ? 'text-[#666] opacity-40 hover:bg-transparent cursor-not-allowed'
-                : 'hover:bg-[#222] text-[#777] hover:text-[#dcddde] cursor-pointer'
+                : 'hover:bg-white/10 text-[#777] hover:text-[#dcddde] cursor-pointer'
             }`}
           >
             {effectiveReadingMode ? <BookOpen01Icon size={14} /> : <Edit02Icon size={14} />}
@@ -1539,8 +1539,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             title={currentDoc?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'}
             className={`p-1 rounded hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
               currentDoc?.is_bookmarked
-                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[#282828]'
-                : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
+                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-white/10'
+                : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10'
             }`}
           >
             <Bookmark01Icon size={14} className={currentDoc?.is_bookmarked ? 'fill-current' : ''} />
@@ -1561,8 +1561,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
             className={`p-1 rounded hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
               isFindOpen
-                ? 'text-white bg-[#282828]'
-                : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
+                ? 'text-white bg-white/15'
+                : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10'
             }`}
           >
             <Search01Icon size={14} />

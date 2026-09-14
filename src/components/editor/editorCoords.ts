@@ -18,6 +18,50 @@ function safeCoordsAtPos(view: EditorView, pos: number, side: number = 1) {
   }
 }
 
+function isZeroCoords(rect: { top: number; bottom: number; left: number; right: number }) {
+  return rect.top === 0 && rect.bottom === 0 && rect.left === 0 && rect.right === 0;
+}
+
+/**
+ * Resolves screen coordinates for a document position, searching outward for the nearest
+ * visible glyph if the target position falls within hidden markdown syntax (display: none).
+ */
+function getVisibleCoordsAtPos(
+  view: EditorView,
+  pos: number,
+  side: number = 1,
+  minPos: number = 0,
+  maxPos: number = Infinity,
+  preferBackward: boolean = false
+): { coords: { top: number; bottom: number; left: number; right: number }; pos: number } {
+  const coords = safeCoordsAtPos(view, pos, side);
+  if (!isZeroCoords(coords)) {
+    return { coords, pos };
+  }
+
+  const primaryDir = preferBackward ? -1 : 1;
+  let p = pos + primaryDir;
+  while (p >= minPos && p <= maxPos) {
+    const c = safeCoordsAtPos(view, p, side);
+    if (!isZeroCoords(c)) {
+      return { coords: c, pos: p };
+    }
+    p += primaryDir;
+  }
+
+  // Search opposite direction if primary search yielded no rendered glyph
+  p = pos - primaryDir;
+  while (p >= minPos && p <= maxPos) {
+    const c = safeCoordsAtPos(view, p, side);
+    if (!isZeroCoords(c)) {
+      return { coords: c, pos: p };
+    }
+    p -= primaryDir;
+  }
+
+  return { coords, pos };
+}
+
 /**
  * Calculates document position when clicking or dragging in dead space or line margins.
  *
@@ -116,40 +160,46 @@ export function getLineEdgeInfo(
 
   while (low <= high) {
     const mid = Math.floor((low + high) / 2);
-    const coords = safeCoordsAtPos(view, mid, 1);
-    if (coords.bottom < clientY) {
-      low = mid + 1;
-    } else if (coords.top > clientY) {
-      high = mid - 1;
+    const visible = getVisibleCoordsAtPos(view, mid, 1, start, end, false);
+    const coords = visible.coords;
+    if (!isZeroCoords(coords)) {
+      if (coords.bottom < clientY) {
+        low = mid + 1;
+      } else if (coords.top > clientY) {
+        high = mid - 1;
+      } else {
+        lineProbePos = visible.pos;
+        break;
+      }
+      lineProbePos = visible.pos;
     } else {
-      lineProbePos = mid;
       break;
     }
-    lineProbePos = mid;
   }
 
   // 6. Expand outward from lineProbePos to find visual line boundaries
-  const refCoords =
+  const refCoordsResult =
     lineProbePos === end
-      ? safeCoordsAtPos(view, lineProbePos, -1)
-      : safeCoordsAtPos(view, lineProbePos, 1);
+      ? getVisibleCoordsAtPos(view, lineProbePos, -1, start, end, true)
+      : getVisibleCoordsAtPos(view, lineProbePos, 1, start, end, false);
+  const refCoords = refCoordsResult.coords;
 
   let lineStart = lineProbePos;
   while (lineStart > start) {
     const c = safeCoordsAtPos(view, lineStart - 1, 1);
-    if (c.bottom <= refCoords.top + 3) break;
+    if (!isZeroCoords(c) && c.bottom <= refCoords.top + 3) break;
     lineStart--;
   }
 
   let lineEnd = lineProbePos;
   while (lineEnd < end) {
     const c = safeCoordsAtPos(view, lineEnd + 1, -1);
-    if (c.top >= refCoords.bottom - 3) break;
+    if (!isZeroCoords(c) && c.top >= refCoords.bottom - 3) break;
     lineEnd++;
   }
 
-  const startCoords = safeCoordsAtPos(view, lineStart, 1);
-  const endCoords = safeCoordsAtPos(view, lineEnd, -1);
+  const startCoords = getVisibleCoordsAtPos(view, lineStart, 1, start, end, false).coords;
+  const endCoords = getVisibleCoordsAtPos(view, lineEnd, -1, start, end, true).coords;
 
   // 7. Check horizontal margins relative to visual line bounds
   // Left dead space / margin: cursor is at or to the left of the first glyph

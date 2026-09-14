@@ -371,73 +371,6 @@ function extractLinkTargetFromEvent(
     }
   }
 
-  // 4. Fallback: ProseMirror posAtCoords directly from mouse screen coordinates
-  // Only triggered when clicking directly on link text in reading view or with direct cursor hit
-  if (editor && editor.view && typeof editor.view.posAtCoords === 'function') {
-    try {
-      const coords = editor.view.posAtCoords({ left: event.clientX, top: event.clientY });
-      if (coords && typeof coords.pos === 'number') {
-        const $pos = editor.state.doc.resolve(coords.pos);
-        const parent = $pos.parent;
-        if (parent && parent.isTextblock) {
-          const blockStart = $pos.start();
-          const text = parent.textContent;
-          const offset = coords.pos - blockStart;
-
-          // WikiLinks (excluding embeds ![[...]])
-          const wikiRegex = /\[\[([^\]\n]+)\]\]/g;
-          let match: RegExpExecArray | null;
-          while ((match = wikiRegex.exec(text)) !== null) {
-            if (match.index > 0 && text[match.index - 1] === '!') {
-              continue; // Skip embeds
-            }
-            const matchStart = match.index;
-            const matchEnd = matchStart + match[0].length;
-            if (offset >= matchStart && offset < matchEnd) {
-              let raw = match[1];
-              if (raw.includes('|')) {
-                raw = raw.split('|')[0];
-              }
-              const targetTitle = raw.trim();
-              if (targetTitle) {
-                return { type: 'wikilink', target: targetTitle };
-              }
-            }
-          }
-
-          // Markdown links: [Text](url) (excluding embeds ![...](...))
-          const mdLinkRegex = /\[([^\]\n]+)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
-          let mdMatch: RegExpExecArray | null;
-          while ((mdMatch = mdLinkRegex.exec(text)) !== null) {
-            if (mdMatch.index > 0 && text[mdMatch.index - 1] === '!') {
-              continue; // Skip image embeds
-            }
-            const mStart = mdMatch.index;
-            const mEnd = mStart + mdMatch[0].length;
-            if (offset >= mStart && offset < mEnd) {
-              const url = mdMatch[2].trim();
-              if (url) {
-                let wikiTarget: string | null = null;
-                if (url.startsWith('[[') && url.endsWith(']]')) {
-                  let inner = url.slice(2, -2).trim();
-                  if (inner.includes('|')) inner = inner.split('|')[0].trim();
-                  if (inner) wikiTarget = inner;
-                } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(url) && !url.startsWith('#')) {
-                  const decoded = decodeURIComponent(url).replace(/\.md$/, '').trim();
-                  if (decoded) wikiTarget = decoded;
-                }
-                if (wikiTarget) {
-                  return { type: 'wikilink', target: wikiTarget };
-                }
-                return { type: 'url', target: url };
-              }
-            }
-          }
-        }
-      }
-    } catch (e) {}
-  }
-
   return null;
 }
 
@@ -1354,7 +1287,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           if (me.button === 0 && editable) {
             if (
               target?.closest(
-                'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .document-footer, .cm-editor, table, [data-node-type]'
+                'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .md-link, .katex, .noether-embed-wrapper, .document-footer, .cm-editor, table, [data-node-type]'
               )
             ) {
               return false;

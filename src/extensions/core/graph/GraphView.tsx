@@ -3736,8 +3736,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 isFloatActive
                   ? 'text-[#444] opacity-40 cursor-not-allowed'
                   : isTimelapseActive
-                  ? 'text-white bg-[#282828] cursor-pointer'
-                  : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
+                  ? 'text-white bg-white/20 cursor-pointer'
+                  : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
               }`}
             >
               {isTimelapseActive && !isTimelapsePaused ? (
@@ -3759,7 +3759,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
               }
               className={`p-1 rounded ${
                 isTimelapseActive
-                  ? 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
+                  ? 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
                   : 'text-[#444] opacity-40 cursor-not-allowed'
               }`}
             >
@@ -3779,7 +3779,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
               className={`p-1 rounded ${
                 ((isTimelapseActive && !isTimelapsePaused) || isFloatActive) && graphFocusCamera
                   ? 'text-[#444] opacity-40 cursor-not-allowed'
-                  : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
+                  : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
               }`}
             >
               <CenterFocusIcon size={14} />
@@ -3801,8 +3801,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 isTimelapseActive
                   ? 'text-[#444] opacity-40 cursor-not-allowed'
                   : isFloatActive
-                  ? 'text-white bg-[#282828] cursor-pointer'
-                  : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer'
+                  ? 'text-white bg-white/20 cursor-pointer'
+                  : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
               }`}
             >
               <BubblesIcon size={14} />
@@ -3817,7 +3817,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 data-shortcuts={JSON.stringify([
                   effectiveMode === 'global' ? 'Switch to local' : 'Switch to global',
                 ])}
-                className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#222] cursor-pointer"
+                className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer"
               >
                 {effectiveMode === 'global' ? (
                   <InternetIcon size={14} />

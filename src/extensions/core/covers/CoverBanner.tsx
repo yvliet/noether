@@ -193,7 +193,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 }}
                 title="Change cover"
                 aria-label="Change cover"
-                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
+                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 cursor-pointer flex items-center justify-center"
               >
                 <FileImageIcon size={14} />
               </button>
@@ -203,7 +203,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 onClick={handleStartReposition}
                 title="Reposition cover"
                 aria-label="Reposition cover"
-                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
+                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 cursor-pointer flex items-center justify-center"
               >
                 <ArrowUpDownIcon size={14} />
               </button>
@@ -213,7 +213,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 onClick={handleRemoveCover}
                 title="Remove cover"
                 aria-label="Remove cover"
-                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-rose-500 hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
+                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-rose-500 hover:bg-white/10 cursor-pointer flex items-center justify-center"
               >
                 <Delete02Icon size={14} />
               </button>
