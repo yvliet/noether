@@ -27,6 +27,9 @@ All interaction between the host application and extensions is decoupled using:
 | **Tool Builder** | Schema builders, Typed MCP definitions, Settings API |
 | **Micro-Kernel IoC Registries** | Central inversion-of-control registries managed by the host application |
 | `CommandRegistry` | Palette commands, keybindings, and hotkey listeners |
+| `OmniboxProviderRegistry` | Universal command palette search providers, prefix filters (`task:`, `bm:`, `tag:`, `canvas:`), and concurrent queries |
+| `TabContextMenuRegistry` | Contextual actions on tab headers in `SplitTabHeader`, ordering, and visibility guards |
+| `CanvasCardRegistry` | Modular custom card rendering for infinite canvas via `canvas:register-card-renderer` |
 | `ViewRegistry` | Leaf views, tab types, and split pane panels |
 | `ActionRailRegistry` | Left activity bar icons and action triggers |
 | `StatusBarRegistry` | Bottom status items and progress indicators |
@@ -50,6 +53,10 @@ export interface NoetherApp {
   workspace: WorkspaceManager;
   /** Command palette items and hotkey bindings */
   commands: CommandRegistry;
+  /** Universal omnibox multi-provider search engine */
+  omnibox: OmniboxProviderRegistry;
+  /** Tab context menu actions in split tab headers */
+  tabContextMenu: TabContextMenuRegistry;
   /** Left icon rail (Action Rail / Ribbon) */
   actionRail: ActionRailRegistry;
   /** Bottom status bar widgets */
@@ -147,7 +154,19 @@ To avoid name collisions between independent extensions:
 - **Database Tables**: Tables created via `this.defineTable()` are namespaced with the extension ID prefix in SQLite to prevent cross-extension schema corruption.
 
 
-## 5. Related Reading & References
+## 5. Decoupled Lighting Mode Architecture
+
+---
+
+I architected Noether's lighting mode engine around strict orthogonality between visual themes and lighting conditions:
+
+- **Orthogonal State Separation**: Lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is decoupled from theme selection (`activeTheme`). Users can switch lighting modes independently without losing their active theme customization.
+- **Explicit Theme Mode Support**: Themes declare their capabilities via `modeSupport: 'both' | 'dark-only' | 'light-only'`. Single-mode themes enforce their intended aesthetic, while dual-mode themes dynamically adapt to the user's active lighting mode.
+- **Dynamic Token Resolution**: During runtime theme activation, `resolveThemeTokens()` merges baseline variables with `modes.light` overrides for light mode sessions, producing a single resolved token tree.
+- **Normalized Interactive Surface Tokens**: Themes compile through `generateCssVariables()`, which derives high-contrast interactive surface tokens (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`). Extensions and components can safely rely on these tokens for effortless dual-mode contrast compliance.
+
+
+## 6. Related Reading & References
 
 ---
 

@@ -280,7 +280,116 @@ this.registerWorkerTask('heavy-calculation', (input, emitEvent) => {
 const sum = await this.runTask('heavy-calculation', { numbers: [1, 2, 3, 4, 5] });
 ```
 
-### M. Shared Host Dependencies & Subpaths
+### M. Tab Context Menu Actions
+Contribute contextual actions when users right-click document tabs in `SplitTabHeader`:
+
+```javascript
+this.registerTabContextMenuAction({
+  id: 'copy-note-markdown-link',
+  title: 'Copy note link',
+  section: 'actions', // 'tabs' | 'split' | 'actions' | 'danger'
+  order: 40,
+  isVisible: (ctx) => Boolean(ctx.doc),
+  isEnabled: (ctx) => true,
+  onClick: async (ctx) => {
+    const link = `[[${ctx.doc.title}]]`;
+    await navigator.clipboard.writeText(link);
+    ctx.app.workspace.showToast(`Copied ${link}`, 'success');
+  }
+});
+```
+
+### N. Omnibox Search Providers (`Ctrl+P` / `Ctrl+K`)
+Contribute searchable items and dedicated prefix search filters into the universal command palette:
+
+```javascript
+this.registerSearchProvider({
+  id: 'custom-snippets',
+  name: 'Snippets',
+  prefix: 'snip:',
+  placeholder: 'Filter code snippets...',
+  prefixOnly: true, // Only searches when input starts with "snip:"
+  order: 25,
+  search: async (query, ctx) => {
+    const q = query.toLowerCase().trim();
+    const snippets = [
+      { id: '1', title: 'React Functional Component', body: 'export function Component() {}' },
+      { id: '2', title: 'Rust Match Pattern', body: 'match result { Ok(v) => v, Err(e) => panic!() }' }
+    ];
+
+    return snippets
+      .filter((s) => !q || s.title.toLowerCase().includes(q))
+      .map((s) => ({
+        id: `snip:${s.id}`,
+        title: s.title,
+        description: 'Code snippet',
+        category: 'Snippets',
+        onSelect: () => {
+          ctx.app.workspace.insertText(s.body);
+        }
+      }));
+  }
+});
+```
+
+### O. Universal Document Title Decorators
+Mount custom chips, badges, or icons directly alongside document titles in `PageSubHeader` and the editor canvas:
+
+```javascript
+this.registerDocumentTitleDecorator({
+  id: 'draft-indicator',
+  order: 10,
+  matches: (ctx) => Boolean(ctx.doc),
+  renderPrefix: (ctx) => {
+    if (ctx.doc?.title.startsWith('Draft:')) {
+      return React.createElement(
+        'span',
+        { className: 'px-1.5 py-0.5 text-[10px] uppercase font-mono rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 mr-1.5' },
+        'Draft'
+      );
+    }
+    return null;
+  },
+  renderSuffix: (ctx) => null
+});
+```
+
+### P. Custom Breadcrumb Providers
+Customize the navigation trail in `PageSubHeader` for custom views or virtual documents:
+
+```javascript
+this.registerBreadcrumbProvider({
+  id: 'custom-board-crumbs',
+  order: 10,
+  matches: (ctx) => ctx.viewType === 'kanban',
+  getBreadcrumbs: (ctx) => [
+    { id: 'root', title: 'Projects', isFolder: true, onClick: () => {} },
+    { id: 'board', title: 'Sprint Board', isFolder: false }
+  ],
+  getTitleOverride: (ctx) => 'Active Sprint Board'
+});
+```
+
+### Q. Infinite Canvas Custom Card Renderers
+Render custom visual card content (e.g. Kanban boards, 3D models, data charts) on Noether's infinite spatial canvas via the decoupled EventBus bridge:
+
+```javascript
+this.app.events.emit('canvas:register-card-renderer', {
+  id: 'custom-card-renderer',
+  name: 'Custom Chart Card',
+  order: 100,
+  matches: (ctx) => ctx.node.type === 'custom-chart' || ctx.doc?.doc_type === 'chart',
+  render: (ctx) => {
+    return React.createElement(
+      'div',
+      { className: 'p-3 bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded' },
+      React.createElement('h4', { className: 'text-xs text-[var(--noether-text-primary)] font-medium' }, 'Chart Preview')
+    );
+  }
+});
+```
+
+### R. Shared Host Dependencies & Subpaths
 Noether shares common libraries with extensions so your bundles stay small and avoid duplicate runtime overhead:
 
 - **SDK Aliases**: `require('noether')`, `require('noether/sdk')`, `require('@noether')`, `require('@noether/core')`, `require('noether-sdk')`
@@ -290,7 +399,21 @@ Noether shares common libraries with extensions so your bundles stay small and a
 - **State Management**: `require('zustand')`, `require('zustand/vanilla')`
 - **Icon System**: `require('@hugeicons/react')`, `require('@hugeicons/core-free-icons')`
 
-## 3. Core & Standalone Community Extensions
+## 3. Theming & Lighting Mode Guidelines
+---
+
+Noether provides an orthogonal lighting mode engine (`system`, `dark`, `light`). To ensure your extension renders seamlessly regardless of whether the user prefers dark or light mode:
+
+- **Never hardcode hex values**: Avoid writing fixed colors like `#1a1a1a` or `#ffffff` in extension CSS or inline styles.
+- **Use semantic CSS custom properties**:
+  - Surfaces: `var(--noether-bg-main)`, `var(--noether-bg-card)`, `var(--noether-bg-card-hover)`, `var(--noether-bg-popover)`, `var(--noether-bg-input)`.
+  - Buttons & Interactive Elements: `var(--noether-btn-hover-bg)`, `var(--noether-btn-active-bg)`.
+  - Borders: `var(--noether-border-subtle)`, `var(--noether-border-base)`, `var(--noether-border-strong)`.
+  - Text: `var(--noether-text-primary)`, `var(--noether-text-secondary)`, `var(--noether-text-muted)`, `var(--noether-text-faint)`.
+  - Accents: `var(--noether-accent)`, `var(--noether-accent-hover)`, `var(--noether-accent-active)`, `var(--noether-accent-subtle)`.
+- **Automatic Contrast Derivation**: When users switch between Dark and Light mode, Noether recomputes surface and button tokens instantly. Styling with these variables guarantees your extension maintains proper contrast without manual media queries.
+
+## 4. Core & Standalone Community Extensions
 ---
 
 In Noether, all built-in features (Graph, Canvas, Tasks, Daily Notes, Backlinks, Tags, Outline, Properties) are built using the exact same Extension SDK. You can review their implementation in `src/extensions/core/`.

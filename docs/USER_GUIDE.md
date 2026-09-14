@@ -49,6 +49,14 @@ When you delete a note, Noether never immediately destroys the file on disk:
 ### Multi-Tab Document Navigation
 Noether supports opening multiple tabs for the same note across different panes or split layouts, making it effortless to reference one section of a long note while editing another. When browsing your file tree or search results, selecting a note cleanly replaces the active tab buffer in place rather than forcing focus onto an existing tab elsewhere.
 
+### Tab Context Menu Actions
+Right-clicking any tab header in the workspace opens a comprehensive context menu with instant actions:
+- **Tab Closing**: Close tab, Close other tabs, Close tabs to the right, Close tabs to the left.
+- **Split Layouts**: Split right, Split down, Close pane.
+- **Duplication**: Duplicate tab (re-opens the active note or view in an adjacent horizontal split).
+- **Path & Wikilinks**: Copy relative path (e.g. `Research/Notes.md`), Copy absolute filesystem path, or Copy note link (`[[Note Title]]`).
+- **Extension Contributions**: Community extensions can contribute specialized tab actions via `this.registerTabContextMenuAction()`.
+
 ## 3. Live Preview Editor & Markdown
 ---
 
@@ -204,6 +212,14 @@ Noether features a lightning-fast launcher and file switcher accessible anytime 
 - **Full-Text Content Search**: Matches note content using fast SQLite FTS5 search, displaying matching excerpt previews under note results.
 - **Press `Enter` to Open**: Instantly loads the selected note into the active tab.
 
+### Omnibox Search Prefixes (`Ctrl+P` / `Ctrl+K`)
+Noether features an extensible prefix-routing search engine in the Command Palette. Type a prefix followed by your search query to filter specific data types instantly:
+- `task:` or `tasks:`: Searches and filters checklist tasks across all vault notes with completion status badges.
+- `bm:` or `bookmark:`: Filters bookmarked notes for high-speed navigation.
+- `tag:` or `#`: Searches and filters vault tags, showing note count statistics.
+- `canvas:`: Filters spatial whiteboard canvases (`.canvas`).
+- **Extension Prefixes**: Community extensions can register specialized search providers (e.g. `snip:` for code snippets or `calc:` for math evaluations) that activate seamlessly.
+
 ### Actionable Stateful Verbs
 Noether eliminates confusing "Toggle" labels in favor of dynamic verbs indicating exact actions:
 - Sidebars: **"Collapse left sidebar"** (when open) vs **"Expand left sidebar"** (when collapsed).
@@ -260,7 +276,13 @@ Open **Settings** (`Ctrl+,` or `Cmd+,`) from anywhere in the app or via the Comm
 - **Seamless Tab Inspection**: Clicking any filtered tab in the sidebar navigates to that tab while preserving your search term and highlights. Clicking or focusing back into the search bar clears the selection and restores the all-occurrences view.
 - **Quick Clearing**: Press `Escape` or click the clear icon in the search bar to reset your query and restore the active tab view.
 
-### Themes & Customization
+### Appearance & Lighting Mode
+In **Settings → Appearance**, customize how Noether renders lighting and visual themes:
+- **Orthogonal Lighting Mode**: Choose between **System** (synchronizes automatically with OS dark/light mode preference), **Dark**, or **Light**. Lighting mode functions independently of theme selection, allowing you to enjoy your preferred theme in whichever lighting condition fits your environment.
+- **Theme Compatibility Badges**: In the theme selector, badges display each theme's supported lighting modes:
+  - `Dual Mode`: Themes providing fully tailored dark and light color tokens.
+  - `Dark only`: High-contrast dark themes optimized exclusively for dark backgrounds.
+  - `Light only`: Crisp porcelain themes designed for light environments.
 - **Pre-installed Themes**: Catppuccin, Nord, Cyberpunk Neon, Rosé Pine, Tokyo Night, Solarized Dark/Light, Noether Dark/Light, Forest Emerald, and Minimal under **Settings → Appearance**.
 - **Custom Accent Colors**: Customize the global accent color for highlights, active tabs, and interactive controls with the native color picker.
 - **Typography**: Independently configure Interface, Text, and Monospace fonts with live selection previews and quick zoom adjustment (`Ctrl+Scroll`).

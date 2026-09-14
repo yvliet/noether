@@ -269,7 +269,7 @@ const CORE_EXTENSION_IDS = new Set([
  * and 'fsrs-spaced-repetition' matches 'noether-fsrs'.
  */
 function normalizeExtensionLookupKey(id: string): string {
-  const stripped = id.trim().toLowerCase().replace(/^noether-/, '').replace(/^flint-/, '');
+  const stripped = id.trim().toLowerCase().replace(/^noether-/, '');
   if (stripped === 'fsrs' || stripped === 'fsrs-spaced-repetition' || stripped === 'spaced-repetition') {
     return 'fsrs';
   }

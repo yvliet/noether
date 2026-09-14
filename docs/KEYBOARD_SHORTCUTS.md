@@ -20,6 +20,17 @@ The Command Palette is the universal launcher in Noether for file switching, vie
 > [!NOTE]
 > `Ctrl+K` works universally across the entire application, even while actively typing in the Markdown editor. It launches the Command Palette instantly without inserting markdown link boilerplate into your note.
 
+### Omnibox Search Prefixes (`Ctrl+P` / `Ctrl+K`)
+
+Type any prefix followed by your search query to filter specific note resources across your vault:
+
+| Prefix | Filter Scope | Example |
+| :--- | :--- | :--- |
+| `task:` or `tasks:` | Vault-wide checklist tasks with completion indicators | `task: deploy` |
+| `bm:` or `bookmark:` | Bookmarked notes and documents | `bm: roadmap` |
+| `tag:` or `#` | Tagged notes and tag hierarchy | `#research` or `tag: physics` |
+| `canvas:` | Infinite spatial canvas boards (`.canvas`) | `canvas: architecture` |
+
 ## 2. Sidebars & Workspace Layout
 ---
 
@@ -33,7 +44,7 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 | **Reading View Toggle** | `Switch to editing view` ↔ `Switch to reading view` | `Ctrl+E` | `Cmd+E` |
 | **Source Mode Toggle** | `Switch to live preview` ↔ `Switch to source mode` | `Ctrl+Alt+S` | `Cmd+Alt+S` |
 
-## 3. Tabs Navigation
+## 3. Tabs Navigation & Context Actions
 ---
 
 | Action | Windows / Linux | macOS |
@@ -46,6 +57,19 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 | **Go to Last Tab** | `Ctrl+9` | `Cmd+9` |
 | **Navigate Back in Note History** | `Alt+←` | `Cmd+[` |
 | **Navigate Forward in Note History** | `Alt+→` | `Cmd+]` |
+
+### Tab Context Menu Actions (Right-Click Tab)
+
+| Action | Description |
+| :--- | :--- |
+| **Close tab** | Closes the clicked tab buffer (`Ctrl+W`). |
+| **Close other tabs** | Closes all open tabs in the current pane except the clicked tab. |
+| **Close tabs to the right** | Closes all tabs positioned to the right of the active tab. |
+| **Close tabs to the left** | Closes all tabs positioned to the left of the active tab. |
+| **Split right / Split down** | Splits the current workspace pane horizontally or vertically with the active note. |
+| **Duplicate tab** | Duplicates the active tab into an adjacent horizontal split. |
+| **Copy relative path** | Copies the vault-relative path to your clipboard (e.g. `Guides/Setup.md`). |
+| **Copy absolute path** | Copies the full filesystem path to your clipboard. |
 
 > [!NOTE]
 > Noether allows opening multiple tabs for the same note across different split panes. Selecting a note from the left sidebar or quick open replaces the active tab buffer in place rather than forcing focus onto an existing tab elsewhere.

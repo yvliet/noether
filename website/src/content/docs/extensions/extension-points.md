@@ -137,7 +137,170 @@ this.registerContextMenuItem({
 ```
 
 
-## 5. Custom Workspace Views (Tab Panes)
+## 5. Tab Context Menu Actions (`registerTabContextMenuAction`)
+
+---
+
+Contribute contextual actions when users right-click tabs in the tab bar or split panes:
+
+```typescript
+import { Extension, TabContextMenuActionDefinition, TabContextMenuContext } from 'noether';
+import React from 'react';
+
+export default class TabActionExample extends Extension {
+  async onload() {
+    this.registerTabContextMenuAction({
+      id: 'copy-note-wikilink',
+      title: 'Copy note link',
+      section: 'actions', // 'tabs' | 'split' | 'actions' | 'danger'
+      order: 40,
+      isVisible: (ctx: TabContextMenuContext) => Boolean(ctx.doc),
+      isEnabled: (ctx: TabContextMenuContext) => true,
+      onClick: async (ctx: TabContextMenuContext) => {
+        if (!ctx.doc) return;
+        const link = `[[${ctx.doc.title}]]`;
+        await navigator.clipboard.writeText(link);
+        ctx.app.workspace.showToast(`Copied ${link}`, 'success');
+      },
+    });
+  }
+}
+```
+
+
+## 6. Omnibox Search Providers (`registerSearchProvider`)
+
+---
+
+Contribute searchable items and custom prefix routing to Noether's universal command palette (`Ctrl+P` / `Ctrl+K`):
+
+```typescript
+import { Extension, OmniboxProvider, OmniboxSearchContext, OmniboxItem } from 'noether';
+import React from 'react';
+
+export default class SnippetSearchProvider extends Extension {
+  async onload() {
+    this.registerSearchProvider({
+      id: 'code-snippets',
+      name: 'Snippets',
+      prefix: 'snip:',
+      placeholder: 'Filter code snippets...',
+      prefixOnly: true, // Only triggers when search query begins with "snip:"
+      order: 25,
+      search: async (query: string, ctx: OmniboxSearchContext): Promise<OmniboxItem[]> => {
+        const q = query.toLowerCase().trim();
+        const snippets = [
+          { id: '1', title: 'React Functional Component', body: 'export function Component() {}' },
+          { id: '2', title: 'Rust Match Pattern', body: 'match res { Ok(v) => v, Err(e) => panic!() }' },
+        ];
+
+        return snippets
+          .filter((s) => !q || s.title.toLowerCase().includes(q))
+          .map((s) => ({
+            id: `snip-${s.id}`,
+            title: s.title,
+            description: 'Insert snippet code',
+            category: 'Snippets',
+            onSelect: () => {
+              ctx.app.workspace.insertText(s.body);
+            },
+          }));
+      },
+    });
+  }
+}
+```
+
+
+## 7. Universal Document Title Decorators (`registerDocumentTitleDecorator`)
+
+---
+
+Mount custom prefix or suffix chips, badges, and icon indicators around document titles in `PageSubHeader` and the editor canvas across all view types:
+
+```typescript
+import { Extension, DocumentTitleDecoratorDefinition, DocumentTitleDecoratorContext } from 'noether';
+import React from 'react';
+
+export default class DraftTitleDecorator extends Extension {
+  async onload() {
+    this.registerDocumentTitleDecorator({
+      id: 'draft-badge',
+      order: 10,
+      matches: (ctx: DocumentTitleDecoratorContext) => Boolean(ctx.doc?.title.startsWith('Draft:')),
+      renderPrefix: (ctx: DocumentTitleDecoratorContext) => {
+        return React.createElement(
+          'span',
+          { className: 'px-1.5 py-0.5 text-[10px] uppercase font-mono rounded bg-amber-500/10 text-amber-500 border border-amber-500/20 mr-1.5 shrink-0' },
+          'Draft'
+        );
+      },
+      renderSuffix: (ctx: DocumentTitleDecoratorContext) => null,
+    });
+  }
+}
+```
+
+
+## 8. Custom Breadcrumb Providers (`registerBreadcrumbProvider`)
+
+---
+
+Customize the subheader navigation trail and title overrides for specialized view types or virtual documents:
+
+```typescript
+import { Extension, BreadcrumbProviderDefinition, BreadcrumbMatchContext, BreadcrumbContext } from 'noether';
+import React from 'react';
+
+export default class CustomBreadcrumbsProvider extends Extension {
+  async onload() {
+    this.registerBreadcrumbProvider({
+      id: 'kanban-breadcrumbs',
+      order: 20,
+      matches: (ctx: BreadcrumbMatchContext) => ctx.viewType === 'kanban',
+      getBreadcrumbs: (ctx: BreadcrumbContext) => [
+        { id: 'projects-root', title: 'Projects', isFolder: true, onClick: () => {} },
+        { id: 'board-node', title: 'Sprint Board', isFolder: false },
+      ],
+      getTitleOverride: (ctx) => 'Sprint Kanban Board',
+    });
+  }
+}
+```
+
+
+## 9. Infinite Canvas Custom Card Renderers (`canvas:register-card-renderer`)
+
+---
+
+Render custom visual cards (such as Kanban boards, 3D model viewports, or charts) on Noether's infinite spatial canvas via the decoupled EventBus bridge:
+
+```typescript
+import { Extension, CanvasCardRendererDefinition, CanvasCardRenderContext } from 'noether';
+import React from 'react';
+
+export default class CustomCanvasCardExtension extends Extension {
+  async onload() {
+    this.app.events.emit('canvas:register-card-renderer', {
+      id: 'chart-card',
+      name: 'Interactive Chart Card',
+      order: 100,
+      matches: (ctx: CanvasCardRenderContext) =>
+        ctx.node.type === 'chart' || ctx.doc?.doc_type === 'chart',
+      render: (ctx: CanvasCardRenderContext) => {
+        return React.createElement(
+          'div',
+          { className: 'p-4 bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-lg text-xs' },
+          React.createElement('span', { className: 'font-semibold text-[var(--noether-text-primary)]' }, 'Chart Visualization')
+        );
+      },
+    });
+  }
+}
+```
+
+
+## 10. Custom Workspace Views (Tab Panes)
 
 ---
 
@@ -200,7 +363,7 @@ this.addCommand({
 ```
 
 
-## 6. Global Modals & Dialogs
+## 11. Global Modals & Dialogs
 
 ---
 
@@ -227,7 +390,7 @@ this.registerModal({
 ```
 
 
-## 7. Settings Tabs
+## 12. Settings Tabs
 
 ---
 
@@ -259,7 +422,7 @@ this.registerSettingTab({
 ```
 
 
-## 8. Advanced Editor Extension Points
+## 13. Advanced Editor Extension Points
 
 ---
 
@@ -313,7 +476,7 @@ this.registerPortalSlot({
 ```
 
 
-## 9. Custom File Types (`registerFileType`)
+## 14. Custom File Types (`registerFileType`)
 
 ---
 
@@ -335,7 +498,7 @@ this.registerFileType({
 ```
 
 
-## 10. Related Reading & References
+## 15. Related Reading & References
 
 ---
 

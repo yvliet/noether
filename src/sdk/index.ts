@@ -69,6 +69,9 @@ export {
   useViewportActions,
   useTabContextMenuActions,
   useOmniboxProviders,
+  useDocumentTitleDecorators,
+  useBreadcrumbProviders,
+  useBreadcrumbDecorators,
 } from '../core/app/AppContext';
 export { ToolbarIconButton } from '../components/common/ToolbarIconButton';
 export { ViewportActionSlotHost } from '../components/layout/ViewportActionSlotHost';

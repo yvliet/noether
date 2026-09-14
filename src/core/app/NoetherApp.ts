@@ -36,6 +36,9 @@ import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
 import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
 import { registerNativeCommands } from '../commands/NativeCommands';
+import { registerNativeTabActions } from '../commands/NativeTabActions';
+import { registerNativeOmniboxProviders } from '../search/NativeOmniboxProviders';
+import { registerNativeDocumentDecorators } from '../decorators/NativeDocumentDecorators';
 import { EventBus } from '../events/EventBus';
 import { ExtensionManager } from '../extensions/ExtensionManager';
 import { platform } from '@/lib/platform/platformAdapter';
@@ -194,6 +197,15 @@ export class NoetherApp {
 
     // Register Native Workspace Commands
     registerNativeCommands(this);
+
+    // Register Native Tab Context Actions
+    registerNativeTabActions(this);
+
+    // Register Native Omnibox Search Providers
+    registerNativeOmniboxProviders(this);
+
+    // Register Native Document Header Decorators
+    registerNativeDocumentDecorators(this);
 
     // Register built-in Extension & Plugin Document Viewer
     this.views.registerView({
