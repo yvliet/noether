@@ -761,7 +761,7 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                 setIsSettingsOpen(true, targetExtensionId);
               }}
               title={`${meta.name} options`}
-              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-hover)] cursor-pointer"
+              className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer"
             >
               <Settings02Icon size={14} />
             </button>
