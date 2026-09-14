@@ -35,14 +35,52 @@ Create `manifest.json` inside your theme folder:
   "version": "1.0.0",
   "minAppVersion": "0.1.0",
   "type": "theme",
-  "description": "A high-contrast dark theme with warm embers and deep charcoal surfaces.",
+  "modeSupport": "both",
+  "description": "A warm ember theme with deep charcoal dark surfaces and crisp daylight light mode accents.",
   "author": "Yuliet Li",
-  "authorUrl": "https://github.com/yvliet"
+  "authorUrl": "https://github.com/yvliet",
+  "variables": {
+    "bgTopBar": "#181412",
+    "bgSidebar": "#1f1a17",
+    "bgMain": "#241e1a",
+    "bgCard": "#2c2520",
+    "bgPopover": "#2c2520",
+    "bgInput": "#1a1613",
+    "accent": "#d94338"
+  },
+  "modes": {
+    "light": {
+      "bgTopBar": "#f7ede0",
+      "bgSidebar": "#fbf4eb",
+      "bgMain": "#ffffff",
+      "bgCard": "#f2e4d4",
+      "bgPopover": "#ffffff",
+      "bgInput": "#f0e0ce",
+      "accent": "#eb584d"
+    }
+  }
 }
 ```
 
+### Lighting Mode Declarations (`modeSupport`)
 
-## 3. Writing Theme CSS (`styles.css`)
+Noether's lighting mode engine decouples lighting mode from theme identity. Declare your theme's capabilities via `modeSupport`:
+- `"both"`: Your theme provides tailored palettes for both Dark and Light environments. Baseline tokens in `variables` define dark mode values, while `modes.light` defines overrides merged dynamically when light mode is active.
+- `"dark-only"`: Your theme is strictly optimized for dark environments.
+- `"light-only"`: Your theme is strictly optimized for light porcelain environments.
+
+
+## 3. Orthogonal Lighting Modes & Dynamic Derivation
+
+---
+
+In Noether, theme lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is completely orthogonal to theme selection:
+- Users can switch between **System** (OS preference), **Dark**, and **Light** modes under **Settings > Appearance** without losing their active theme choice.
+- When `modeSupport` is `"both"`, switching to Light mode dynamically merges `modes.light` overrides via `resolveThemeTokens()`.
+- Interactive surface tokens (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`) are derived automatically across dark and light modes, guaranteeing contrast compliance even if you omit explicit overrides.
+
+
+## 4. Writing Theme CSS (`styles.css`)
 
 ---
 
@@ -62,6 +100,10 @@ Noether uses semantic CSS custom properties defined in [[CSS Variables & Design 
   --noether-bg-card: #2c2520;
   --noether-bg-popover: #2c2520;
   --noether-bg-input: #1a1613;
+
+  /* Interactive surfaces */
+  --noether-btn-hover-bg: rgba(255, 255, 255, 0.1);
+  --noether-btn-active-bg: rgba(255, 255, 255, 0.2);
 
   /* Borders */
   --noether-border-subtle: #2d241e;
@@ -90,7 +132,11 @@ Noether uses semantic CSS custom properties defined in [[CSS Variables & Design 
   --noether-bg-sidebar: #f7ede0;
   --noether-bg-main: #ffffff;
   --noether-bg-card: #f2e4d4;
+  --noether-bg-popover: #ffffff;
   --noether-border-base: #e0ceba;
+
+  --noether-btn-hover-bg: rgba(0, 0, 0, 0.08);
+  --noether-btn-active-bg: rgba(0, 0, 0, 0.15);
 
   --noether-text-primary: #3d2c1d;
   --noether-text-secondary: #5c432d;
@@ -102,18 +148,18 @@ Noether uses semantic CSS custom properties defined in [[CSS Variables & Design 
 ```
 
 
-## 4. Activating & Testing Your Theme
+## 5. Activating & Testing Your Theme
 
 ---
 
 1. Open Noether.
 2. Go to **Settings > Appearance** (`Cmd+,` / `Ctrl+,`).
 3. Under the **Installed Themes** dropdown, select **Solar Ember**.
-4. Noether immediately applies your CSS rules.
+4. Test switching between **Dark**, **Light**, and **System** mode toggles to verify contrast.
 5. Keep `styles.css` open in your favorite code editor; each time you save, Noether updates the preview instantly.
 
 
-## 5. Next Steps
+## 6. Next Steps
 
 ---
 

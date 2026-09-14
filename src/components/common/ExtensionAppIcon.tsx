@@ -351,8 +351,7 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
       const normalizedKey = (glyphName || name || '')
         .toLowerCase()
         .trim()
-        .replace(/^noether-/, '')
-        .replace(/^flint-/, '');
+        .replace(/^noether-/, '');
       gradientStops =
         KNOWN_CORE_GRADIENTS[normalizedKey] ||
         hashStringToGradient(normalizedKey || 'extension');
@@ -436,7 +435,7 @@ export const ExtensionAppIcon: React.FC<ExtensionAppIconProps> = ({
     }
 
     // 5. Fast synchronous match in pre-imported core map
-    const normalizedKey = glyphName.toLowerCase().trim().replace(/^noether-/, '').replace(/^flint-/, '');
+    const normalizedKey = glyphName.toLowerCase().trim().replace(/^noether-/, '');
     const StaticComp = FAST_STATIC_ICON_MAP[normalizedKey] || FAST_STATIC_ICON_MAP[glyphName];
     if (StaticComp) {
       return (
