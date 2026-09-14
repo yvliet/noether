@@ -1450,7 +1450,8 @@ export const InteractiveGraphWidget: React.FC<InteractiveGraphWidgetProps> = Rea
               type="button"
               onClick={handleResetView}
               className="p-1 rounded bg-[#202020]/80 hover:bg-[#2c2c2c] text-[#9e9e9e] hover:text-white border border-[#333] cursor-pointer"
-              title="Fit to center"
+              data-tooltip="Fit to center"
+              data-tooltip-position="bottom"
             >
               <CenterFocusIcon size={13} />
             </button>
@@ -1462,7 +1463,8 @@ export const InteractiveGraphWidget: React.FC<InteractiveGraphWidgetProps> = Rea
                 startAnimation();
               }}
               className="p-1 rounded bg-[#202020]/80 hover:bg-[#2c2c2c] text-[#9e9e9e] hover:text-white border border-[#333] cursor-pointer"
-              title="Expand interactive graph"
+              data-tooltip="Expand interactive graph"
+              data-tooltip-position="bottom"
             >
               <Maximize01Icon size={13} />
             </button>

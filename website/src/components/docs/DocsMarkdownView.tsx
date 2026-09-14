@@ -506,7 +506,8 @@ export const DocsMarkdownView: React.FC<DocsMarkdownViewProps> = React.memo(({
                   }, 1500);
                 });
               }}
-              title={isCopied ? 'Copied link to section!' : 'Copy link to section'}
+              data-tooltip={isCopied ? 'Copied link to section!' : 'Copy link to section'}
+              data-tooltip-position="top"
               aria-label={`Copy link to section ${headingText}`}
               className={`inline-flex items-center align-middle ml-1.5 p-0 rounded cursor-pointer transition-none ${
                 isCopied
@@ -555,7 +556,8 @@ export const DocsMarkdownView: React.FC<DocsMarkdownViewProps> = React.memo(({
                     setTimeout(() => setCopiedCodeIndex((prev) => (prev === codeIdx ? null : prev)), 2000);
                   }}
                   className="flex items-center gap-1 hover:text-white transition-none cursor-pointer"
-                  title="Copy code"
+                  data-tooltip={isCopied ? 'Copied!' : 'Copy code'}
+                  data-tooltip-position="top"
                 >
                   {isCopied ? (
                     <>

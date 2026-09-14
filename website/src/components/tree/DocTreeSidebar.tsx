@@ -255,7 +255,8 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
             onTogglePortal?.();
             onClose?.();
           }}
-          title={`Click to switch to Noether ${portal === 'help' ? 'Docs' : 'Help'}`}
+          data-tooltip={`Click to switch to Noether ${portal === 'help' ? 'Docs' : 'Help'}`}
+          data-tooltip-position="bottom"
           className="flex items-center gap-1.5 text-white hover:text-white cursor-pointer select-none transition-none text-left p-0"
         >
           <img
@@ -276,6 +277,8 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
             type="button"
             onClick={onClose}
             aria-label="Close navigation"
+            data-tooltip="Close navigation"
+            data-tooltip-position="bottom"
             className="p-1 rounded-md text-[#888888] hover:text-white hover:bg-[#252525] cursor-pointer"
           >
             <Cancel01Icon size={16} />
@@ -288,7 +291,8 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
         <button
           type="button"
           onClick={toggleTheme}
-          title={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+          data-tooltip={isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'}
+          data-tooltip-position="bottom"
           className={`flex items-center justify-between w-[46px] h-[22px] px-1.5 rounded-full cursor-pointer select-none transition-none ${
             isDarkTheme
               ? 'bg-[#1e1e1e] border border-[#2b2b2b] hover:border-[#3a3a3a]'
@@ -328,6 +332,8 @@ export const DocTreeSidebar: React.FC<DocTreeSidebarProps> = React.memo(({
             <button
               type="button"
               onClick={() => setSearchQuery('')}
+              data-tooltip="Clear search"
+              data-tooltip-position="top"
               className="absolute right-2 text-[#666666] hover:text-[#dadada] cursor-pointer"
             >
               <Cancel01Icon size={12} />

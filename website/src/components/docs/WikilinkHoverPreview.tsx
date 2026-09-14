@@ -160,7 +160,8 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
             <button
               type="button"
               onClick={handleOpenDoc}
-              title={`Open ${cleanDisplayTitle}`}
+              data-tooltip={`Open ${cleanDisplayTitle}`}
+              data-tooltip-position="bottom"
               className="p-1.5 rounded-md text-[#888888] hover:text-[#ffffff] hover:bg-[#252525] cursor-pointer"
             >
               <Link04Icon size={16} />
