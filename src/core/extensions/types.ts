@@ -594,19 +594,21 @@ export interface BreadcrumbProviderDefinition {
   /** Sorting order priority. */
   order?: number;
   /** Predicate determining if this provider should format the given document/tab. */
-  matches: (context: { tab?: TabItem; doc: DocumentItem; isSplit?: boolean }) => boolean;
+  matches: (context: { tab?: TabItem | null; doc: DocumentItem | null; isSplit?: boolean; viewType?: string }) => boolean;
   /** Computes the custom list of breadcrumb items. */
   getBreadcrumbs: (context: {
-    tab?: TabItem;
-    doc: DocumentItem;
+    tab?: TabItem | null;
+    doc: DocumentItem | null;
     defaultBreadcrumbs: { id: string; title: string; isFolder: boolean }[];
     app: NoetherApp;
+    viewType?: string;
   }) => BreadcrumbItem[] | undefined;
   /** Optional title override displayed in the header / subheader. */
   getTitleOverride?: (context: {
-    tab?: TabItem;
-    doc: DocumentItem;
+    tab?: TabItem | null;
+    doc: DocumentItem | null;
     defaultTitle: string;
+    viewType?: string;
   }) => string | undefined;
 }
 
@@ -615,12 +617,13 @@ export interface BreadcrumbProviderDefinition {
  * @since 0.3.0
  */
 export interface BreadcrumbDecoratorContext {
-  tab?: TabItem;
-  doc: DocumentItem;
+  tab?: TabItem | null;
+  doc: DocumentItem | null;
   item: BreadcrumbItem;
   index: number;
   total: number;
   app: NoetherApp;
+  viewType?: string;
 }
 
 /**
@@ -647,10 +650,11 @@ export interface BreadcrumbDecoratorDefinition {
  * @since 0.3.0
  */
 export interface DocumentTitleDecoratorContext {
-  doc: DocumentItem;
-  tab?: TabItem;
+  doc: DocumentItem | null;
+  tab?: TabItem | null;
   app: NoetherApp;
   isReadingMode: boolean;
+  viewType?: string;
 }
 
 /**

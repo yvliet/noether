@@ -46,3 +46,9 @@ export interface CanvasEdge {
   control_points?: CanvasControlPoint[];
 }
 
+export type {
+  CanvasCardRenderContext,
+  CanvasCardRendererDefinition,
+} from './registries/CanvasCardRegistry';
+
+

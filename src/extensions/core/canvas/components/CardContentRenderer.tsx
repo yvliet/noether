@@ -3,7 +3,12 @@ import type { DocumentItem } from '@/types';
 import type { CanvasNode } from '../types';
 import { File01Icon, LinkSquare02Icon } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { DocumentView } from 'noether';
+import { DocumentView, useNoetherApp } from 'noether';
+import {
+  canvasCardRegistry,
+  useCanvasCardRenderers,
+  type CanvasCardRenderContext,
+} from '../registries/CanvasCardRegistry';
 
 export interface CardContentRendererProps {
   node: CanvasNode;
@@ -89,6 +94,42 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
     onTaskToggle,
   }) => {
     const pointerDownPosRef = React.useRef<{ x: number; y: number } | null>(null);
+    const app = useNoetherApp();
+    useCanvasCardRenderers();
+
+    const renderContext = React.useMemo<CanvasCardRenderContext>(() => ({
+      node,
+      doc,
+      contentJson,
+      isEditingText,
+      app,
+      onTextChange,
+      onDocContentChange,
+      onTextBlur,
+      onImageDimensions,
+      onTaskToggle,
+    }), [
+      node,
+      doc,
+      contentJson,
+      isEditingText,
+      app,
+      onTextChange,
+      onDocContentChange,
+      onTextBlur,
+      onImageDimensions,
+      onTaskToggle,
+    ]);
+
+    // 0. Custom Extension Card Renderers (via CanvasCardRegistry)
+    const customRenderer = canvasCardRegistry.findRenderer(renderContext);
+    if (customRenderer) {
+      try {
+        return <>{customRenderer.render(renderContext)}</>;
+      } catch (err) {
+        console.error(`[CardContentRenderer] Error rendering custom card "${customRenderer.id}":`, err);
+      }
+    }
 
     // 1. Image Attachment Cards
     const isImage =
