@@ -1294,7 +1294,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         {/* Left: Navigation History Arrows */}
         <div
           className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
-            isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+            isScrolled ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
           }`}
         >
           <button
@@ -1302,7 +1302,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoBack}
             data-tooltip="Navigate back"
             data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
+            className="p-1 rounded hover:bg-[#222] hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
           >
             <ArrowLeft01Icon size={14} />
           </button>
@@ -1311,7 +1311,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoForward}
             data-tooltip="Navigate forward"
             data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-            className="p-1 rounded hover:bg-[#222] disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
+            className="p-1 rounded hover:bg-[#222] hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
           >
             <ArrowRight01Icon size={14} />
           </button>
@@ -1491,7 +1491,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         {/* Right: Reading View, Bookmark, Search & More Options */}
         <div
           className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
-            isScrolled ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+            isScrolled ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
           }`}
         >
           {/* Dynamic Extension Subheader Actions Slot (Left of View Mode Toggle) */}
@@ -1513,7 +1513,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 ? 'Reading view\n(Ctrl+Click to split)'
                 : 'Editing view\n(Ctrl+Click to split)'
             }
-            className={`p-1 rounded ${
+            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
               !currentDoc
                 ? 'opacity-20 cursor-default hover:bg-transparent text-[#777]'
                 : isLocked
@@ -1537,7 +1537,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }}
             disabled={!currentDoc}
             title={currentDoc?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'}
-            className={`p-1 rounded disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
+            className={`p-1 rounded hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
               currentDoc?.is_bookmarked
                 ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[#282828]'
                 : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
@@ -1559,7 +1559,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }}
             disabled={!currentDoc}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
-            className={`p-1 rounded disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
+            className={`p-1 rounded hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
               isFindOpen
                 ? 'text-white bg-[#282828]'
                 : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'

@@ -1087,7 +1087,7 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         type="button"
         onClick={handleToggle}
         title="More options"
-        className={buttonClassName || `p-1 rounded hover:bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
+        className={buttonClassName || `p-1 rounded hover:[&_svg]:drop-shadow-none hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
           isOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : ''
         }`}
       >
