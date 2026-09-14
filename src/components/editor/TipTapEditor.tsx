@@ -21,7 +21,7 @@ import { getLineEdgeInfo, getLineEdgePos } from './editorCoords';
 
 import { SlashCommands, SlashItem } from './extensions/slash-command';
 import { WikiLinks, WikiLinkItem } from './extensions/wikilink';
-import { LivePreviewSyntax } from './extensions/live-preview-syntax';
+import { LivePreviewSyntax, LivePreviewSyntaxPluginKey } from './extensions/live-preview-syntax';
 import { AutoPairing } from './extensions/auto-pairing';
 import { MarkdownShortcuts, toggleFormat, isFormatActive, clearFormatting } from './extensions/markdown-shortcuts';
 import { SmartMathNavigation } from './extensions/smart-math-navigation';
@@ -1431,10 +1431,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
               const dist = Math.hypot(me.clientX - imgMouseDownPosRef.current.x, me.clientY - imgMouseDownPosRef.current.y);
               imgMouseDownPosRef.current = null;
               if (dist <= 5) {
-                me.preventDefault();
-                me.stopPropagation();
-                useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
-                return true;
+                const isLightboxCombo = me.ctrlKey || me.metaKey || me.detail === 2;
+                if (isLightboxCombo) {
+                  me.preventDefault();
+                  me.stopPropagation();
+                  useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+                  return true;
+                }
               }
             }
           }
@@ -1447,18 +1450,26 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           const target = me.target as HTMLElement | null;
           const imgEl = target?.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
           if (imgEl && imgEl.src) {
-            if (imgMouseDownPosRef.current) {
-              const dist = Math.hypot(me.clientX - imgMouseDownPosRef.current.x, me.clientY - imgMouseDownPosRef.current.y);
-              imgMouseDownPosRef.current = null;
-              if (dist <= 5) {
-                me.preventDefault();
-                me.stopPropagation();
-                useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
-                return true;
-              }
+            const isLightboxCombo = me.ctrlKey || me.metaKey || me.detail === 2;
+            if (isLightboxCombo) {
+              me.preventDefault();
+              me.stopPropagation();
+              useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+              return true;
             }
+          }
+          return false;
+        },
+        dblclick: (_view: any, event: any) => {
+          const me = event as MouseEvent;
+          if (me.button !== 0) return false;
+
+          const target = me.target as HTMLElement | null;
+          const imgEl = target?.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
+          if (imgEl && imgEl.src) {
             me.preventDefault();
             me.stopPropagation();
+            useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
             return true;
           }
           return false;
@@ -2274,6 +2285,9 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);
         const parsed = typeof content === 'string' ? JSON.parse(content) : content;
         editor.commands.setContent(normalizeTipTapContent(parsed), false);
+        if (editor.view && !editor.isDestroyed) {
+          editor.view.dispatch(editor.state.tr.setMeta('forceRebuildDecorations', true));
+        }
       }
     } catch (e) {}
   }, [content, editor, documentId]);
@@ -2284,6 +2298,16 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       app.editor.setActiveEditor(editor);
       if (onEditorReady) {
         onEditorReady(editor);
+      }
+      if (editor.view && !editor.isDestroyed && editor.state.doc.content.size > 2) {
+        const lpState = LivePreviewSyntaxPluginKey.getState(editor.state);
+        if (
+          !lpState?.decorations ||
+          lpState.decorations === DecorationSet.empty ||
+          lpState.decorations.find(0, editor.state.doc.content.size).length === 0
+        ) {
+          editor.view.dispatch(editor.state.tr.setMeta('forceRebuildDecorations', true));
+        }
       }
       return () => {
         if (app.editor.getActiveEditor() === editor) {

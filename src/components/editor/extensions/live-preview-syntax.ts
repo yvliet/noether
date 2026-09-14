@@ -1,5 +1,5 @@
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey } from '@tiptap/pm/state';
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
 import katex from 'katex';
 import { setupMathLive } from './mathlive-setup';
@@ -934,35 +934,33 @@ function scanBlockDecorations(
       const matchStart = blockStart + wikiEmbedMatch.index;
       const matchEnd = matchStart + wikiEmbedMatch[0].length;
       const rawTarget = wikiEmbedMatch[1];
-      const contentStart = matchStart + 3; // after '![['
-      const contentEnd = matchEnd - 2;   // before ']]'
-      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
+      const afterMatch = text.slice(wikiEmbedMatch.index + wikiEmbedMatch[0].length);
+      const trailingSpace = afterMatch.match(/^[ \t]+/)?.[0]?.length ?? 0;
+      const effectiveEnd = matchEnd + trailingSpace;
+      const isMatchFocused = isFocused && selFrom <= effectiveEnd && selTo >= matchStart;
+
+      // Always render the embed widget so image/media remains visible directly below the syntax line
+      const dom = renderEmbedWidget(rawTarget, 'wikilink');
+      decorations.push(
+        Decoration.widget(effectiveEnd, dom, {
+          side: 1,
+          stopEvent: (event) => {
+            const target = event.target as HTMLElement;
+            return !!target.closest('button, a, audio, video, iframe, input, select, [data-embed-action]');
+          },
+        })
+      );
 
       if (isMatchFocused) {
         decorations.push(
-          Decoration.inline(matchStart, contentStart, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-        decorations.push(
-          Decoration.inline(contentEnd, matchEnd, {
+          Decoration.inline(matchStart, matchEnd, {
             class: 'md-syntax-dimmed',
           })
         );
       } else {
         decorations.push(
-          Decoration.inline(matchStart, matchEnd, {
+          Decoration.inline(matchStart, effectiveEnd, {
             class: 'md-syntax-hidden',
-          })
-        );
-        const dom = renderEmbedWidget(rawTarget, 'wikilink');
-        decorations.push(
-          Decoration.widget(matchStart, dom, {
-            side: -1,
-            stopEvent: (event) => {
-              const target = event.target as HTMLElement;
-              return !!target.closest('img, button, a, audio, video, iframe, input, select, [data-embed-action]');
-            },
           })
         );
       }
@@ -976,43 +974,33 @@ function scanBlockDecorations(
       const matchEnd = matchStart + mdEmbedMatch[0].length;
       const altText = mdEmbedMatch[1];
       const url = mdEmbedMatch[2];
-      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
+      const afterMatch = text.slice(mdEmbedMatch.index + mdEmbedMatch[0].length);
+      const trailingSpace = afterMatch.match(/^[ \t]+/)?.[0]?.length ?? 0;
+      const effectiveEnd = matchEnd + trailingSpace;
+      const isMatchFocused = isFocused && selFrom <= effectiveEnd && selTo >= matchStart;
+
+      // Always render the embed widget so image/media remains visible directly below the syntax line
+      const dom = renderEmbedWidget(url, 'markdown', null, altText);
+      decorations.push(
+        Decoration.widget(effectiveEnd, dom, {
+          side: 1,
+          stopEvent: (event) => {
+            const target = event.target as HTMLElement;
+            return !!target.closest('button, a, audio, video, iframe, input, select, [data-embed-action]');
+          },
+        })
+      );
 
       if (isMatchFocused) {
-        const altStart = matchStart + 2; // after '!['
-        const altEnd = altStart + altText.length;
-        const urlStart = altEnd + 2; // after ']('
-        const urlEnd = matchEnd - 1; // before ')'
-
         decorations.push(
-          Decoration.inline(matchStart, altStart, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-        decorations.push(
-          Decoration.inline(altEnd, urlStart, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-        decorations.push(
-          Decoration.inline(urlEnd, matchEnd, {
+          Decoration.inline(matchStart, matchEnd, {
             class: 'md-syntax-dimmed',
           })
         );
       } else {
         decorations.push(
-          Decoration.inline(matchStart, matchEnd, {
+          Decoration.inline(matchStart, effectiveEnd, {
             class: 'md-syntax-hidden',
-          })
-        );
-        const dom = renderEmbedWidget(url, 'markdown', null, altText);
-        decorations.push(
-          Decoration.widget(matchStart, dom, {
-            side: -1,
-            stopEvent: (event) => {
-              const target = event.target as HTMLElement;
-              return !!target.closest('img, button, a, audio, video, iframe, input, select, [data-embed-action]');
-            },
           })
         );
       }
@@ -1712,10 +1700,22 @@ export const LivePreviewSyntax = Extension.create({
       new Plugin<LivePreviewPluginState>({
         key: LivePreviewSyntaxPluginKey,
         state: {
-          init() {
+          init(config, instance) {
+            const isEditable = extensionThis.editor ? extensionThis.editor.isEditable : true;
+            const doc = instance?.doc || (config as any)?.doc;
+            if (!doc || doc.content.size <= 2) {
+              return {
+                decorations: DecorationSet.empty,
+                focused: false,
+                targetHeadingIndex: null as number | null,
+              };
+            }
+            const selection = instance?.selection;
+            const selFrom = selection?.from ?? 0;
+            const selTo = selection?.to ?? 0;
             return {
-              decorations: DecorationSet.empty,
-              focused: true,
+              decorations: buildAllDecorations(doc, false, selFrom, selTo, null, extensionThis.editor),
+              focused: false,
               targetHeadingIndex: null as number | null,
             };
           },
@@ -1725,7 +1725,7 @@ export const LivePreviewSyntax = Extension.create({
             const { from: selFrom, to: selTo } = selection;
 
             const metaFocus = tr.getMeta('livePreviewFocus');
-            let isFocused = metaFocus !== undefined ? metaFocus : (oldPluginState?.focused ?? true);
+            let isFocused = metaFocus !== undefined ? metaFocus : (oldPluginState?.focused ?? false);
             if (!isEditable) {
               isFocused = false;
             }
@@ -1748,9 +1748,26 @@ export const LivePreviewSyntax = Extension.create({
               (oldPluginState?.targetHeadingIndex !== null && targetHeadingIndex === null);
             const selectionChanged = !oldState || !oldState.selection.eq(newState.selection);
 
-            if (
+            // Detect if a transaction fully replaced the document (e.g. setContent or select-all paste)
+            let isFullDocDirty = false;
+            if (tr.docChanged && tr.mapping && tr.mapping.maps) {
+              for (const stepMap of tr.mapping.maps) {
+                stepMap.forEach((oldStart: number, oldEnd: number, newStart: number, newEnd: number) => {
+                  if (newStart === 0 && newEnd >= doc.content.size) isFullDocDirty = true;
+                  if (oldStart === 0 && oldEnd >= (oldState?.doc?.content?.size ?? 0)) isFullDocDirty = true;
+                });
+              }
+            }
+
+            const hasNoDecorations =
               !oldPluginState ||
               !oldPluginState.decorations ||
+              oldPluginState.decorations === DecorationSet.empty ||
+              (doc.content.size > 2 && oldPluginState.decorations.find(0, doc.content.size).length === 0);
+
+            if (
+              hasNoDecorations ||
+              isFullDocDirty ||
               targetHeadingChanged ||
               tr.getMeta('forceRebuildDecorations')
             ) {
@@ -1789,20 +1806,172 @@ export const LivePreviewSyntax = Extension.create({
           decorations(state) {
             return this.getState(state)?.decorations;
           },
+          handleKeyDown(view, event) {
+            if (event.ctrlKey || event.metaKey || event.altKey) return false;
+
+            const key = event.key;
+            if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'ArrowDown' && key !== 'ArrowUp') {
+              return false;
+            }
+
+            const { state } = view;
+            const { selection, doc } = state;
+            if (!selection.empty) return false;
+
+            const pos = selection.from;
+            const $pos = doc.resolve(pos);
+            const parent = $pos.parent;
+            if (!parent || !parent.isTextblock) return false;
+
+            const parentStart = $pos.start();
+            const text = parent.textContent;
+            const offsetInParent = pos - parentStart;
+            const embeds = findEmbedsInText(text);
+
+            // ── ArrowRight: step into embed or next block with embed ──
+            if (key === 'ArrowRight' && !event.shiftKey) {
+              // 1. If currently at start of embed (e.g. before '![['), step inside target
+              for (const emb of embeds) {
+                if (offsetInParent === emb.start) {
+                  event.preventDefault();
+                  view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(parentStart + emb.targetStart))));
+                  return true;
+                }
+              }
+
+              // 2. If at end of current block, check if next block contains an embed
+              const isAtBlockEnd = view.endOfTextblock('right', state) || offsetInParent === text.length;
+              if (isAtBlockEnd) {
+                const afterPos = $pos.after();
+                if (afterPos < doc.content.size) {
+                  const nextNode = doc.nodeAt(afterPos);
+                  if (nextNode && nextNode.isTextblock) {
+                    const nextEmbeds = findEmbedsInText(nextNode.textContent);
+                    if (nextEmbeds.length > 0) {
+                      event.preventDefault();
+                      const nextStart = afterPos + 1;
+                      view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(nextStart + nextEmbeds[0].targetStart))));
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+
+            // ── ArrowLeft: step backwards into embed or prev block with embed ──
+            if (key === 'ArrowLeft' && !event.shiftKey) {
+              // 1. If currently at end of embed (e.g. after ']]'), step backwards into target
+              for (const emb of embeds) {
+                if (offsetInParent === emb.end) {
+                  event.preventDefault();
+                  view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(parentStart + emb.targetEnd))));
+                  return true;
+                }
+              }
+
+              // 2. If at start of current block, check if prev block contains an embed
+              const isAtBlockStart = view.endOfTextblock('left', state) || offsetInParent === 0;
+              if (isAtBlockStart) {
+                const beforePos = $pos.before();
+                if (beforePos > 0) {
+                  const $before = doc.resolve(beforePos);
+                  const prevNode = $before.nodeBefore;
+                  if (prevNode && prevNode.isTextblock) {
+                    const prevEmbeds = findEmbedsInText(prevNode.textContent);
+                    if (prevEmbeds.length > 0) {
+                      event.preventDefault();
+                      const prevStart = beforePos - prevNode.nodeSize + 1;
+                      const lastEmbed = prevEmbeds[prevEmbeds.length - 1];
+                      view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(prevStart + lastEmbed.targetEnd))));
+                      return true;
+                    }
+                  }
+                }
+              }
+            }
+
+            // ── ArrowDown: step down into embed block or out to block below ──
+            if (key === 'ArrowDown' && !event.shiftKey) {
+              if (view.endOfTextblock('down', state)) {
+                const afterPos = $pos.after();
+                if (afterPos < doc.content.size) {
+                  const nextNode = doc.nodeAt(afterPos);
+                  if (nextNode && nextNode.isTextblock) {
+                    const nextEmbeds = findEmbedsInText(nextNode.textContent);
+                    if (nextEmbeds.length > 0) {
+                      event.preventDefault();
+                      const nextStart = afterPos + 1;
+                      view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(nextStart + nextEmbeds[0].targetStart))));
+                      return true;
+                    }
+                  }
+
+                  // If current block is an embed and moving down: step cleanly to next block
+                  if (embeds.length > 0) {
+                    event.preventDefault();
+                    view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(afterPos + 1), 1)));
+                    return true;
+                  }
+                }
+              }
+            }
+
+            // ── ArrowUp: step up into embed block or out to block above ──
+            if (key === 'ArrowUp' && !event.shiftKey) {
+              if (view.endOfTextblock('up', state)) {
+                const beforePos = $pos.before();
+                if (beforePos > 0) {
+                  const $before = doc.resolve(beforePos);
+                  const prevNode = $before.nodeBefore;
+                  if (prevNode && prevNode.isTextblock) {
+                    const prevEmbeds = findEmbedsInText(prevNode.textContent);
+                    if (prevEmbeds.length > 0) {
+                      event.preventDefault();
+                      const prevStart = beforePos - prevNode.nodeSize + 1;
+                      const lastEmbed = prevEmbeds[prevEmbeds.length - 1];
+                      view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(prevStart + lastEmbed.targetStart))));
+                      return true;
+                    }
+                  }
+
+                  // If current block is an embed and moving up: step cleanly to prev block
+                  if (embeds.length > 0) {
+                    event.preventDefault();
+                    view.dispatch(state.tr.setSelection((selection.constructor as any).near(doc.resolve(beforePos), -1)));
+                    return true;
+                  }
+                }
+              }
+            }
+
+            return false;
+          },
           handleClick(view, pos, event) {
             const target = event.target as HTMLElement;
 
-            // 0. Direct Image click action: Open Image Lightbox
+            // 0. Direct Image click action
             const imgEl = target.closest('img.noether-media-image, .noether-image-embed img') as HTMLImageElement | null;
             if (imgEl && imgEl.src) {
               if (mouseDownPos) {
                 const dist = Math.hypot(event.clientX - mouseDownPos.x, event.clientY - mouseDownPos.y);
                 mouseDownPos = null;
                 if (dist > 5) {
-                  return true; // Card was dragged, do not open lightbox
+                  return true; // Card was dragged, do not process click
                 }
               }
-              useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+              const isLightboxCombo = event.ctrlKey || event.metaKey || event.detail === 2;
+              if (isLightboxCombo) {
+                useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+                return true;
+              }
+
+              // Single click without modifier: Focus editor and place caret inside embed target text
+              view.focus();
+              const embedTargetPos = getEmbedTargetPosAt(view.state.doc, pos);
+              const tr = view.state.tr.setSelection(
+                (view.state.selection.constructor as any).near(view.state.doc.resolve(embedTargetPos))
+              );
+              view.dispatch(tr);
               return true;
             }
 
@@ -1821,8 +1990,9 @@ export const LivePreviewSyntax = Extension.create({
             const codeBtn = target.closest('[data-embed-action="code"]') as HTMLElement | null;
             if (codeBtn) {
               view.focus();
+              const embedTargetPos = getEmbedTargetPosAt(view.state.doc, pos);
               const tr = view.state.tr.setSelection(
-                (view.state.selection.constructor as any).near(view.state.doc.resolve(pos))
+                (view.state.selection.constructor as any).near(view.state.doc.resolve(embedTargetPos))
               );
               view.dispatch(tr);
               return true;
@@ -1835,8 +2005,9 @@ export const LivePreviewSyntax = Extension.create({
             const embedEl = target.closest('.noether-embed-wrapper, .noether-embed-card, .noether-embed-media') as HTMLElement | null;
             if (embedEl) {
               view.focus();
+              const embedTargetPos = getEmbedTargetPosAt(view.state.doc, pos);
               const tr = view.state.tr.setSelection(
-                (view.state.selection.constructor as any).near(view.state.doc.resolve(pos))
+                (view.state.selection.constructor as any).near(view.state.doc.resolve(embedTargetPos))
               );
               view.dispatch(tr);
               return true;
@@ -1869,8 +2040,11 @@ export const LivePreviewSyntax = Extension.create({
                 const dist = Math.hypot(me.clientX - mouseDownPos.x, me.clientY - mouseDownPos.y);
                 mouseDownPos = null;
                 if (dist <= 5) {
-                  useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
-                  return true;
+                  const isLightboxCombo = me.ctrlKey || me.metaKey || me.detail === 2;
+                  if (isLightboxCombo) {
+                    useWorkspaceStore.getState().openImageLightbox(imgEl.src, imgEl.alt || '');
+                    return true;
+                  }
                 }
               }
               return false;
@@ -1913,7 +2087,7 @@ export const LivePreviewSyntax = Extension.create({
             if (foundPos !== null) {
               editorView.focus();
               const tr = editorView.state.tr.setSelection(
-                (editorView.state.selection.constructor as any).near(editorView.state.doc.resolve(foundPos + 1))
+                (editorView.state.selection.constructor as any).near(editorView.state.doc.resolve(foundPos))
               );
               editorView.dispatch(tr);
             }
@@ -2000,3 +2174,82 @@ function normalizeDOMSelection(view: any) {
     } catch (e) {}
   }
 }
+
+interface EmbedInfo {
+  start: number;
+  end: number;
+  targetStart: number;
+  targetEnd: number;
+  rawTarget: string;
+  type: 'wikilink' | 'markdown';
+}
+
+function findEmbedsInText(text: string): EmbedInfo[] {
+  if (!text || !text.includes('![')) return [];
+  const embeds: EmbedInfo[] = [];
+
+  // Wikilink Embeds: ![[target]]
+  const wikiRegex = /!\[\[([^\]\n]+)\]\]/g;
+  let wikiMatch: RegExpExecArray | null;
+  while ((wikiMatch = wikiRegex.exec(text)) !== null) {
+    const start = wikiMatch.index;
+    const end = start + wikiMatch[0].length;
+    const rawTarget = wikiMatch[1];
+    embeds.push({
+      start,
+      end,
+      targetStart: start + 3,
+      targetEnd: start + 3 + rawTarget.length,
+      rawTarget,
+      type: 'wikilink',
+    });
+  }
+
+  // Markdown Embeds: ![alt](url)
+  const mdRegex = /!\[([^\]\n]*)\]\(([^)\n]+)\)/g;
+  let mdMatch: RegExpExecArray | null;
+  while ((mdMatch = mdRegex.exec(text)) !== null) {
+    const start = mdMatch.index;
+    const end = start + mdMatch[0].length;
+    const alt = mdMatch[1];
+    const url = mdMatch[2];
+    const targetStart = start + 2 + alt.length + 2;
+    embeds.push({
+      start,
+      end,
+      targetStart,
+      targetEnd: targetStart + url.length,
+      rawTarget: url,
+      type: 'markdown',
+    });
+  }
+
+  return embeds.sort((a, b) => a.start - b.start);
+}
+
+function getEmbedTargetPosAt(doc: any, pos: number): number {
+  try {
+    const safePos = Math.max(0, Math.min(pos, doc.content.size));
+    const $pos = doc.resolve(safePos);
+    const parent = $pos.parent;
+    if (!parent || !parent.isTextblock) return safePos;
+
+    const parentStart = $pos.start();
+    const text = parent.textContent;
+    const offsetInParent = Math.max(0, safePos - parentStart);
+    const embeds = findEmbedsInText(text);
+
+    if (embeds.length === 0) return safePos;
+
+    for (const emb of embeds) {
+      if (offsetInParent >= emb.start && offsetInParent <= emb.end) {
+        return parentStart + emb.targetStart;
+      }
+    }
+
+    return parentStart + embeds[0].targetStart;
+  } catch {
+    return pos;
+  }
+}
+

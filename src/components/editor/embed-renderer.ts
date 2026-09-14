@@ -25,6 +25,7 @@ const PDF_EXTS = new Set(['pdf']);
 
 let cachedDocsRef: any = null;
 let cachedDocIndex: Map<string, any> = new Map();
+const imageSrcCache = new Map<string, string>();
 
 function getDocIndex(documents: any[]): Map<string, any> {
   if (cachedDocsRef === documents) {
@@ -480,20 +481,32 @@ export function renderEmbedWidget(
     imgWrapper.className = 'noether-embed-media noether-image-embed relative group my-0.5 inline-block max-w-full leading-none';
 
     let resolvedSrc = embed.url;
+    let pendingFetchDocId: string | null = null;
     if (!embed.isExternalUrl) {
-      const ds = useDocumentStore.getState();
       const cleanTgt = embed.target.toLowerCase();
       const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
-      const docIndex = getDocIndex(ds.documents);
-      const matched = docIndex.get(cleanTgt) || docIndex.get(cleanWithoutExt) || docIndex.get(embed.target);
-      if (matched && matched.content_json) {
-        try {
-          const parsed = JSON.parse(matched.content_json);
-          const firstText = parsed.content?.[0]?.content?.[0]?.text;
-          if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
-            resolvedSrc = firstText;
+      const cached = imageSrcCache.get(cleanTgt) || imageSrcCache.get(cleanWithoutExt);
+      if (cached) {
+        resolvedSrc = cached;
+      } else {
+        const ds = useDocumentStore.getState();
+        const docIndex = getDocIndex(ds.documents);
+        const matched = docIndex.get(cleanTgt) || docIndex.get(cleanWithoutExt) || docIndex.get(embed.target);
+        if (matched) {
+          if (matched.content_json) {
+            try {
+              const parsed = JSON.parse(matched.content_json);
+              const firstText = parsed.content?.[0]?.content?.[0]?.text;
+              if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
+                resolvedSrc = firstText;
+                imageSrcCache.set(cleanTgt, firstText);
+                imageSrcCache.set(cleanWithoutExt, firstText);
+              }
+            } catch {}
+          } else {
+            pendingFetchDocId = matched.id;
           }
-        } catch {}
+        }
       }
     }
 
@@ -541,48 +554,58 @@ export function renderEmbedWidget(
     const img = document.createElement('img');
     img.src = resolvedSrc;
     img.alt = embed.aliasOrDimensions || altText || embed.target;
-    img.className = 'noether-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-zoom-in select-none';
+    img.className = 'noether-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-text select-none';
     img.loading = 'lazy';
     img.draggable = false;
     img.ondragstart = (e) => e.preventDefault();
 
-    let pointerDownPos: { x: number; y: number } | null = null;
-    img.onpointerdown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
-      pointerDownPos = { x: e.clientX, y: e.clientY };
+    if (pendingFetchDocId) {
+      const docIdToFetch = pendingFetchDocId;
+      const cleanTgt = embed.target.toLowerCase();
+      const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
+      getDocumentById(docIdToFetch).then((fullDoc) => {
+        if (fullDoc?.content_json) {
+          try {
+            const parsed = JSON.parse(fullDoc.content_json);
+            const firstText = parsed.content?.[0]?.content?.[0]?.text;
+            if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
+              imageSrcCache.set(cleanTgt, firstText);
+              imageSrcCache.set(cleanWithoutExt, firstText);
+              resolvedSrc = firstText;
+              img.src = firstText;
+            }
+          } catch {}
+        }
+      });
+    }
+
+    const triggerLightbox = (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      useWorkspaceStore.getState().openImageLightbox(
+        resolvedSrc || embed.url,
+        embed.aliasOrDimensions || altText || embed.target || ''
+      );
     };
 
-    img.onpointerup = (e: PointerEvent) => {
+    img.ondblclick = (e: MouseEvent) => {
       if (e.button !== 0) return;
-      if (pointerDownPos) {
-        const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-        pointerDownPos = null;
-        if (dist <= 5) {
-          useWorkspaceStore.getState().openImageLightbox(
-            resolvedSrc || embed.url,
-            embed.aliasOrDimensions || altText || embed.target || ''
-          );
-        }
-      }
+      triggerLightbox(e);
     };
 
     img.onclick = (e: MouseEvent) => {
       if (e.button !== 0) return;
-      if (pointerDownPos) {
-        const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
-        pointerDownPos = null;
-        if (dist <= 5) {
-          e.preventDefault();
-          e.stopPropagation();
-          useWorkspaceStore.getState().openImageLightbox(
-            resolvedSrc || embed.url,
-            embed.aliasOrDimensions || altText || embed.target || ''
-          );
-          return;
-        }
+      if (e.ctrlKey || e.metaKey || e.detail === 2) {
+        triggerLightbox(e);
+        return;
       }
       e.preventDefault();
       e.stopPropagation();
+      document.dispatchEvent(
+        new CustomEvent('noether:focus-embed-code', {
+          detail: { target: rawTarget, cleanTarget: embed.target },
+        })
+      );
     };
 
     if (embed.width) {

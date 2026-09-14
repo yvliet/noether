@@ -2684,22 +2684,31 @@ math-field::part(content) {
   max-width: 100%;
   height: auto;
   display: block;
-  cursor: zoom-in;
+  cursor: text;
 }
 
 .noether-embed-media.noether-image-embed {
   display: inline-block;
   line-height: 0;
   vertical-align: top;
+  margin-bottom: 0 !important;
 }
 
 .noether-embed-media.noether-image-embed img {
   display: block;
   margin: 0;
-  cursor: zoom-in;
+  cursor: text;
 }
 
-/* Eliminate phantom line box and excess margins in ProseMirror paragraphs hosting embeds */
+/* Embed Container & Paragraph Layout */
+.noether-embed-wrapper {
+  display: block !important;
+  width: 100% !important;
+  clear: both !important;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
 .ProseMirror p:has(.noether-embed-wrapper) {
   margin-top: 0.25rem !important;
   margin-bottom: 0.25rem !important;
@@ -2707,10 +2716,25 @@ math-field::part(content) {
   font-size: 0 !important;
 }
 
+/* Ensure dimmed syntax inside embed paragraphs stays strictly inline on a single line on top */
+.ProseMirror p:has(.noether-embed-wrapper) .md-syntax-dimmed {
+  display: inline !important;
+  white-space: pre-wrap !important;
+  font-size: var(--editor-font-size, 16px) !important;
+  line-height: 1.75 !important;
+}
+
+/* Suppress trailing breaks in ProseMirror paragraphs hosting embeds */
 .ProseMirror p:has(.noether-embed-wrapper) > .ProseMirror-trailingBreak,
 .noether-embed-wrapper ~ .ProseMirror-trailingBreak,
-.noether-embed-wrapper + .ProseMirror-trailingBreak {
+.noether-embed-wrapper + .ProseMirror-trailingBreak,
+.ProseMirror p:has(.noether-embed-wrapper)::after {
   display: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* ==========================================================================
