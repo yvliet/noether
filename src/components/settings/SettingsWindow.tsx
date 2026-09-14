@@ -2618,7 +2618,9 @@ const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) => {
   const [tempVaultName, setTempVaultName] = useState(vaultName);
 
   useEffect(() => {
-    loadTrash();
+    if (useDocumentStore.getState().trashItems.length === 0) {
+      loadTrash();
+    }
   }, [loadTrash]);
 
   useEffect(() => {
@@ -3621,9 +3623,12 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   const restoreAllDefaults = useSettingsStore((s) => s.restoreAllDefaults);
 
   const [activeTab, setActiveTab] = useState<string>(initialTab || 'general');
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set([initialTab || 'general']));
   const [searchQuery, setSearchQuery] = useState('');
   const [showAllOccurrences, setShowAllOccurrences] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const mainScrollRef = useRef<HTMLElement>(null);
+  const tabScrollPositions = useRef<Record<string, number>>({});
 
   // Sub-view navigation (e.g. for Font Pickers & Trash)
   const [fontPickerMode, setFontPickerMode] = useState<'interface' | 'text' | 'monospace' | null>(null);
@@ -3632,6 +3637,12 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   useEffect(() => {
     if (initialTab) {
       setActiveTab(initialTab);
+      setVisitedTabs((prev) => {
+        if (prev.has(initialTab)) return prev;
+        const next = new Set(prev);
+        next.add(initialTab);
+        return next;
+      });
     }
   }, [initialTab]);
 
@@ -3874,12 +3885,83 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     });
   }, [communityExtensionTabs, searchQuery, app]);
 
-  const handleNavigateTab = useCallback((tabId: string) => {
+  const visitedExtensionTabIds = useMemo(() => {
+    const BUILTIN_TABS = new Set([
+      'general', 'appearance', 'interface', 'editor', 'files', 'hotkeys',
+      'core-extensions', 'core-plugins', 'community-extensions', 'community-plugins',
+    ]);
+    const seenTabKeys = new Set<string>();
+    const result: string[] = [];
+
+    for (const id of visitedTabs) {
+      if (BUILTIN_TABS.has(id)) continue;
+      const tabObj =
+        allSettingTabs.find((t) => isTabMatch(t, id)) ||
+        coreExtensionTabs.find((t) => isTabMatch(t, id)) ||
+        communityExtensionTabs.find((t) => isTabMatch(t, id));
+      const canonicalKey = tabObj?.id || id;
+      if (!seenTabKeys.has(canonicalKey)) {
+        seenTabKeys.add(canonicalKey);
+        result.push(id);
+      }
+    }
+    return result;
+  }, [visitedTabs, allSettingTabs, coreExtensionTabs, communityExtensionTabs]);
+
+  const handleNavigateTab = useCallback((targetTabId: string) => {
+    if (mainScrollRef.current) {
+      tabScrollPositions.current[activeTab] = mainScrollRef.current.scrollTop;
+    }
     setFontPickerMode(null);
     setIsTrashViewOpen(false);
     setShowAllOccurrences(false);
-    setActiveTab(tabId);
-  }, []);
+    setActiveTab(targetTabId);
+    setVisitedTabs((prev) => {
+      if (prev.has(targetTabId)) return prev;
+      const next = new Set(prev);
+      next.add(targetTabId);
+      return next;
+    });
+    requestAnimationFrame(() => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTop = tabScrollPositions.current[targetTabId] || 0;
+      }
+    });
+  }, [activeTab]);
+
+  const handleOpenFontPicker = useCallback((mode: 'interface' | 'text' | 'monospace') => {
+    if (mainScrollRef.current) {
+      tabScrollPositions.current[activeTab] = mainScrollRef.current.scrollTop;
+      mainScrollRef.current.scrollTop = 0;
+    }
+    setFontPickerMode(mode);
+  }, [activeTab]);
+
+  const handleCloseFontPicker = useCallback(() => {
+    setFontPickerMode(null);
+    requestAnimationFrame(() => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTop = tabScrollPositions.current[activeTab] || 0;
+      }
+    });
+  }, [activeTab]);
+
+  const handleOpenTrash = useCallback(() => {
+    if (mainScrollRef.current) {
+      tabScrollPositions.current[activeTab] = mainScrollRef.current.scrollTop;
+      mainScrollRef.current.scrollTop = 0;
+    }
+    setIsTrashViewOpen(true);
+  }, [activeTab]);
+
+  const handleCloseTrash = useCallback(() => {
+    setIsTrashViewOpen(false);
+    requestAnimationFrame(() => {
+      if (mainScrollRef.current) {
+        mainScrollRef.current.scrollTop = tabScrollPositions.current[activeTab] || 0;
+      }
+    });
+  }, [activeTab]);
 
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -4041,12 +4123,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
-                        setFontPickerMode(null);
-                        setIsTrashViewOpen(false);
-                        setShowAllOccurrences(false);
-                        setActiveTab(item.id);
-                      }}
+                      onClick={() => handleNavigateTab(item.id)}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
                           ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
@@ -4070,12 +4147,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   return (
                     <button
                       key={item.id}
-                      onClick={() => {
-                        setFontPickerMode(null);
-                        setIsTrashViewOpen(false);
-                        setShowAllOccurrences(false);
-                        setActiveTab(item.id);
-                      }}
+                      onClick={() => handleNavigateTab(item.id)}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
                           ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
@@ -4099,12 +4171,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   return (
                     <button
                       key={tab.id}
-                      onClick={() => {
-                        setFontPickerMode(null);
-                        setIsTrashViewOpen(false);
-                        setShowAllOccurrences(false);
-                        setActiveTab(tab.id);
-                      }}
+                      onClick={() => handleNavigateTab(tab.id)}
                       className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
                         isActive
                           ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
@@ -4137,7 +4204,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         </aside>
 
         {/* RIGHT COLUMN: Tab Content */}
-        <main className="flex-1 bg-[var(--noether-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6">
+        <main
+          ref={mainScrollRef}
+          className="flex-1 bg-[var(--noether-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6"
+        >
           <div className="max-w-2xl mx-auto">
             <SettingsSearchContext.Provider value={{ searchQuery, showAllOccurrences }}>
               {showAllOccurrences && searchQuery.trim() ? (
@@ -4145,10 +4215,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   {hasAnyMatches ? (
                     <>
                       <GeneralTab />
-                      <AppearanceTab onOpenFontPicker={setFontPickerMode} />
+                      <AppearanceTab onOpenFontPicker={handleOpenFontPicker} />
                       <InterfaceTab />
                       <EditorTab />
-                      <FilesTab onOpenTrash={() => setIsTrashViewOpen(true)} />
+                      <FilesTab onOpenTrash={handleOpenTrash} />
                       <HotkeysTab />
                       <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
                       <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
@@ -4171,81 +4241,95 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   {fontPickerMode && (
                     <FontPickerView
                       mode={fontPickerMode}
-                      onClose={() => setFontPickerMode(null)}
+                      onClose={handleCloseFontPicker}
                     />
                   )}
 
                   {/* SUB-VIEW: TRASH VIEWER */}
                   {isTrashViewOpen && (
-                    <TrashView onClose={() => setIsTrashViewOpen(false)} />
+                    <TrashView onClose={handleCloseTrash} />
                   )}
 
                   {/* TAB: GENERAL */}
-                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'general' && (
-                    <GeneralTab />
+                  {visitedTabs.has('general') && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && activeTab === 'general' ? 'block' : 'none' }}>
+                      <GeneralTab />
+                    </div>
                   )}
 
                   {/* TAB: APPEARANCE */}
-                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'appearance' && (
-                    <AppearanceTab onOpenFontPicker={setFontPickerMode} />
+                  {visitedTabs.has('appearance') && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && activeTab === 'appearance' ? 'block' : 'none' }}>
+                      <AppearanceTab onOpenFontPicker={handleOpenFontPicker} />
+                    </div>
                   )}
 
                   {/* TAB: INTERFACE */}
-                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'interface' && (
-                    <InterfaceTab />
+                  {visitedTabs.has('interface') && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && activeTab === 'interface' ? 'block' : 'none' }}>
+                      <InterfaceTab />
+                    </div>
                   )}
 
                   {/* TAB: EDITOR */}
-                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'editor' && (
-                    <EditorTab />
+                  {visitedTabs.has('editor') && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && activeTab === 'editor' ? 'block' : 'none' }}>
+                      <EditorTab />
+                    </div>
                   )}
 
                   {/* TAB: FILES AND LINKS */}
-                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'files' && (
-                    <FilesTab onOpenTrash={() => setIsTrashViewOpen(true)} />
+                  {visitedTabs.has('files') && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && activeTab === 'files' ? 'block' : 'none' }}>
+                      <FilesTab onOpenTrash={handleOpenTrash} />
+                    </div>
                   )}
 
                   {/* TAB: HOTKEYS */}
-                  {!fontPickerMode && !isTrashViewOpen && activeTab === 'hotkeys' && (
-                    <HotkeysTab />
+                  {visitedTabs.has('hotkeys') && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && activeTab === 'hotkeys' ? 'block' : 'none' }}>
+                      <HotkeysTab />
+                    </div>
                   )}
 
                   {/* TAB: CORE EXTENSIONS */}
-                  {!fontPickerMode && !isTrashViewOpen && (activeTab === 'core-extensions' || activeTab === 'core-plugins') && (
-                    <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                  {(visitedTabs.has('core-extensions') || visitedTabs.has('core-plugins')) && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && (activeTab === 'core-extensions' || activeTab === 'core-plugins') ? 'block' : 'none' }}>
+                      <CoreExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                    </div>
                   )}
 
                   {/* TAB: COMMUNITY EXTENSIONS */}
-                  {!fontPickerMode && !isTrashViewOpen && (activeTab === 'community-extensions' || activeTab === 'community-plugins') && (
-                    <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                  {(visitedTabs.has('community-extensions') || visitedTabs.has('community-plugins')) && (
+                    <div style={{ display: !fontPickerMode && !isTrashViewOpen && (activeTab === 'community-extensions' || activeTab === 'community-plugins') ? 'block' : 'none' }}>
+                      <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
+                    </div>
                   )}
 
-                  {/* DYNAMIC EXTENSION SETTING TAB RENDER (CORE & COMMUNITY) */}
-                  {(() => {
-                    if (fontPickerMode || isTrashViewOpen) return null;
-                    const BUILTIN_TABS = new Set([
-                      'general', 'appearance', 'interface', 'editor', 'files', 'hotkeys',
-                      'core-extensions', 'core-plugins', 'community-extensions', 'community-plugins',
-                    ]);
-                    if (BUILTIN_TABS.has(activeTab)) return null;
-
+                  {/* DYNAMIC EXTENSION SETTING TABS (CORE & COMMUNITY) */}
+                  {visitedExtensionTabIds.map((tabId) => {
                     const currentTab =
-                      allSettingTabs.find((t) => isTabMatch(t, activeTab)) ||
-                      coreExtensionTabs.find((t) => isTabMatch(t, activeTab)) ||
-                      communityExtensionTabs.find((t) => isTabMatch(t, activeTab));
-                    const candidateId = activeTab.includes(':') ? activeTab.split(':')[0] : activeTab;
+                      allSettingTabs.find((t) => isTabMatch(t, tabId)) ||
+                      coreExtensionTabs.find((t) => isTabMatch(t, tabId)) ||
+                      communityExtensionTabs.find((t) => isTabMatch(t, tabId));
+                    const candidateId = tabId.includes(':') ? tabId.split(':')[0] : tabId;
                     const manifest = currentTab
                       ? app.extensions.getExtensionManifest(currentTab.extensionId || currentTab.id.split(':')[0])
-                      : (app.extensions.getExtensionManifest(candidateId) || app.extensions.getExtensionManifest(activeTab));
+                      : (app.extensions.getExtensionManifest(candidateId) || app.extensions.getExtensionManifest(tabId));
 
                     if (!currentTab && !manifest) return null;
 
                     const extId = currentTab?.extensionId || manifest?.id || candidateId;
                     const isEnabled = extId ? app.extensions.isExtensionEnabled(extId) : false;
                     const tabName = manifest?.name || currentTab?.name || extId;
+                    const isCurrentlyActive = !fontPickerMode && !isTrashViewOpen && isTabMatch(currentTab || { id: tabId }, activeTab);
 
                     return (
-                      <div className="flex flex-col gap-4">
+                      <div
+                        key={currentTab?.id || tabId}
+                        style={{ display: isCurrentlyActive ? 'block' : 'none' }}
+                        className="flex flex-col gap-4"
+                      >
                         {/* Top Extension Header with Enabled Toggle matching CoreExtensions row design */}
                         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-3.5 flex items-center justify-between">
                           <div className="flex-1 pr-4">
@@ -4341,7 +4425,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         )}
                       </div>
                     );
-                  })()}
+                  })}
                 </>
               )}
             </SettingsSearchContext.Provider>
