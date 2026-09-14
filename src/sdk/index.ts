@@ -35,9 +35,14 @@ export { Extension } from '../core/extensions/Extension';
 export { ExtensionManager } from '../core/extensions/ExtensionManager';
 export { NoetherApp, appInstance } from '../core/app/NoetherApp';
 export { storeRefs } from '../core/app/storeBridge';
-export { SlotRegistry } from '../core/registries/SlotRegistry';
-export { DocumentHeaderActionRegistry, documentHeaderActionRegistry } from '../core/registries/DocumentHeaderActionRegistry';
-export type { DocumentHeaderActionDefinition, DocumentHeaderActionContext } from '../core/registries/DocumentHeaderActionRegistry';
+export { ViewportActionRegistry, viewportActionRegistry } from '../core/registries/ViewportActionRegistry';
+export type {
+  ViewportActionDefinition,
+  ViewportActionContext,
+  ViewportCorner,
+  ViewportActionDirection,
+  ViewportScope,
+} from '../core/registries/ViewportActionRegistry';
 export { FileContextMenuRegistry, fileContextMenuRegistry } from '../core/registries/FileContextMenuRegistry';
 export type { FileContextMenuActionDefinition, FileContextMenuContext } from '../core/registries/FileContextMenuRegistry';
 export { FileTypeRegistry, fileTypeRegistry } from '../core/registries/FileTypeRegistry';
@@ -49,7 +54,9 @@ export { registerNativeTools } from '../core/mcp/NativeMcpTools';
 export { EventBus } from '../core/events/EventBus';
 export { z } from 'zod';
 export { zodToMcpJsonSchema, formatZodIssues } from '../lib/mcp/zodToJsonSchema';
-export { usePortalSlots, useEditorPlugins } from '../core/app/AppContext';
+export { usePortalSlots, useEditorPlugins, useViewportActions } from '../core/app/AppContext';
+export { ToolbarIconButton } from '../components/common/ToolbarIconButton';
+export { ViewportActionSlotHost } from '../components/layout/ViewportActionSlotHost';
 
 // ── Reactive React Hooks ──
 export {

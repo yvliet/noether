@@ -14,7 +14,9 @@ import { DeadDocumentView } from './DeadDocumentView';
 import { WikilinkHoverPreview, resolveTargetDocument, isDocumentContentEmpty } from './WikilinkHoverPreview';
 import { useNoetherApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
+import { ViewportActionSlotHost } from '@/components/layout/ViewportActionSlotHost';
 import type { PortalSlotContext } from '@/core/extensions/types';
+import type { ViewportActionContext } from '@/core/registries/ViewportActionRegistry';
 import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
 import { DocumentProperties } from '@/types';
 import { useAppContextMenu } from '@/components/common/ContextMenu';
@@ -653,6 +655,17 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       scrollContainer: scrollViewportRef.current,
     }),
     [app, currentDoc, editorInstance, isSourceMode]
+  );
+
+  const viewportActionContext: ViewportActionContext = useMemo(
+    () => ({
+      document: currentDoc,
+      activeTab: activeTab || null,
+      app,
+      viewType: 'document',
+      isSidebar: isSidebarMode,
+    }),
+    [currentDoc, activeTab, app, isSidebarMode]
   );
 
   const defaultHeaderFolded = useMemo(() => {
@@ -1302,7 +1315,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoBack}
             data-tooltip="Navigate back"
             data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-            className="p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
+            className="noether-toolbar-btn"
           >
             <ArrowLeft01Icon size={14} />
           </button>
@@ -1311,10 +1324,16 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             disabled={!canGoForward}
             data-tooltip="Navigate forward"
             data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-            className="p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[#777] hover:text-[#dcddde] cursor-pointer disabled:cursor-default"
+            className="noether-toolbar-btn"
           >
             <ArrowRight01Icon size={14} />
           </button>
+          <ViewportActionSlotHost corner="top-left" direction="horizontal" context={viewportActionContext} />
+        </div>
+
+        {/* Top-Left Vertical Floating Actions */}
+        <div className="absolute left-4 top-[calc(var(--noether-header-offset,0px)+34px)] z-20 pointer-events-none select-none">
+          <ViewportActionSlotHost corner="top-left" direction="vertical" context={viewportActionContext} />
         </div>
 
         {/* Center: Truly Absolute Centered Document Breadcrumb Title (Click to rename live in-place) */}
@@ -1495,6 +1514,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           }`}
         >
           {/* Dynamic Extension Subheader Actions Slot (Left of View Mode Toggle) */}
+          <ViewportActionSlotHost
+            corner="top-right"
+            direction="horizontal"
+            context={viewportActionContext}
+          />
           <ExtensionPortalSlotHost
             slot="editor:subheader-actions"
             context={portalSlotContext}
@@ -1513,12 +1537,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 ? 'Reading view\n(Ctrl+Click to split)'
                 : 'Editing view\n(Ctrl+Click to split)'
             }
-            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
+            className={`noether-toolbar-btn ${
               !currentDoc
-                ? 'opacity-20 cursor-default hover:bg-transparent text-[#777]'
+                ? 'opacity-20 cursor-default'
                 : isLocked
-                ? 'text-[#666] opacity-40 hover:bg-transparent cursor-not-allowed'
-                : 'hover:bg-white/10 text-[#777] hover:text-[#dcddde] cursor-pointer'
+                ? 'opacity-40 cursor-not-allowed hover:bg-transparent'
+                : ''
             }`}
           >
             {effectiveReadingMode ? <BookOpen01Icon size={14} /> : <Edit02Icon size={14} />}
@@ -1537,10 +1561,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }}
             disabled={!currentDoc}
             title={currentDoc?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'}
-            className={`p-1 rounded hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
+            className={`noether-toolbar-btn ${
               currentDoc?.is_bookmarked
-                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-white/10'
-                : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10'
+                ? '!text-[#f59e0b] hover:!text-[#fbbf24]'
+                : ''
             }`}
           >
             <Bookmark01Icon size={14} className={currentDoc?.is_bookmarked ? 'fill-current' : ''} />
@@ -1559,16 +1583,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }}
             disabled={!currentDoc}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
-            className={`p-1 rounded hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer ${
-              isFindOpen
-                ? 'text-white bg-white/15'
-                : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10'
-            }`}
+            data-active={isFindOpen ? 'true' : undefined}
+            className={`noether-toolbar-btn ${isFindOpen ? 'active' : ''}`}
           >
             <Search01Icon size={14} />
           </button>
 
           <DocOptionsMenu document={currentDoc} />
+        </div>
+
+        {/* Top-Right Vertical Floating Actions */}
+        <div className="absolute right-4 top-[calc(var(--noether-header-offset,0px)+34px)] z-20 pointer-events-none select-none">
+          <ViewportActionSlotHost corner="top-right" direction="vertical" context={viewportActionContext} />
         </div>
       </div>
       )}
@@ -1945,6 +1971,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           </div>
       </div>
       )}
+
+      {/* Bottom-Left Viewport Actions */}
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none select-none flex flex-col gap-1">
+        <ViewportActionSlotHost corner="bottom-left" direction="vertical" context={viewportActionContext} />
+        <ViewportActionSlotHost corner="bottom-left" direction="horizontal" context={viewportActionContext} />
+      </div>
+
+      {/* Bottom-Right Viewport Actions */}
+      <div className="absolute bottom-4 right-4 z-20 pointer-events-none select-none flex flex-col items-end gap-1">
+        <ViewportActionSlotHost corner="bottom-right" direction="vertical" context={viewportActionContext} />
+        <ViewportActionSlotHost corner="bottom-right" direction="horizontal" context={viewportActionContext} />
+      </div>
 
       {/* Wikilink Floating Hover Preview */}
       {wikilinkHoverPreview && (

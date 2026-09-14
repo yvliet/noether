@@ -27,6 +27,12 @@ import {
   PortalSlotContext,
   EditorPluginDefinition,
 } from '../extensions/types';
+import type {
+  ViewportActionDefinition,
+  ViewportActionContext,
+  ViewportCorner,
+  ViewportActionDirection,
+} from '../registries/ViewportActionRegistry';
 
 import { ExtensionListSnapshot } from '../extensions/ExtensionManager';
 
@@ -349,6 +355,22 @@ export const useEditorPlugins = (): EditorPluginDefinition[] => {
     },
     () => app.editor.getEditorPlugins()
   );
+};
+
+export const useViewportActions = (
+  corner: ViewportCorner,
+  direction: ViewportActionDirection = 'horizontal',
+  context?: ViewportActionContext
+): ViewportActionDefinition[] => {
+  const app = useNoetherApp();
+  const version = useSyncExternalStore(
+    (onStoreChange) => app.viewportActions.subscribe(onStoreChange),
+    () => app.viewportActions.getVersion()
+  );
+
+  return useMemo(() => {
+    return app.viewportActions.getActions(corner, direction, context);
+  }, [app, corner, direction, context, version]);
 };
 
 

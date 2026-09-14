@@ -14,6 +14,8 @@ import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { DocumentItem } from '@/types';
 import { isDocumentLocked } from '@/lib/db/documents';
 import { DocMenuActionDefinition } from '@/core/extensions/types';
+import { ViewportActionSlotHost } from './ViewportActionSlotHost';
+import { useViewportActions } from '@/core/app/AppContext';
 
 export interface PageSubHeaderProps {
   title: string;
@@ -155,18 +157,6 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   const handleBack = onNavigateBack || storeNavigateBack;
   const handleForward = onNavigateForward || storeNavigateForward;
 
-  const [registeredActions, setRegisteredActions] = React.useState(() =>
-    app.documentHeaderActions?.getActions() ?? []
-  );
-
-  React.useEffect(() => {
-    if (!app.documentHeaderActions) return;
-    setRegisteredActions(app.documentHeaderActions.getActions());
-    return app.documentHeaderActions.subscribe(() => {
-      setRegisteredActions(app.documentHeaderActions.getActions());
-    });
-  }, [app.documentHeaderActions]);
-
   const activeTab = useMemo(() => {
     return tabs.find((t) => t.id === activeTabId) ?? null;
   }, [tabs, activeTabId]);
@@ -175,7 +165,10 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
     document,
     activeTab,
     app,
-  }), [document, activeTab, app]);
+    isSidebar,
+  }), [document, activeTab, app, isSidebar]);
+
+  const registeredTopRightActions = useViewportActions('top-right', 'horizontal', actionContext);
 
   const resolvedIcon = useMemo(() => {
     if (icon !== undefined) return icon;
@@ -248,11 +241,8 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             type="button"
             onClick={onToggleFind}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find (Ctrl+F)'}
-            className={`p-1 rounded ${
-              isFindOpen
-                ? 'text-[var(--noether-text-primary)] bg-white/15'
-                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10'
-            } cursor-pointer`}
+            data-active={isFindOpen ? 'true' : undefined}
+            className={`noether-toolbar-btn ${isFindOpen ? 'active' : ''}`}
           >
             <Search01Icon size={14} />
           </button>
@@ -289,7 +279,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canBack}
           data-tooltip="Navigate back"
           data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-          className="p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
+          className="noether-toolbar-btn"
         >
           <ArrowLeft01Icon size={14} />
         </button>
@@ -299,11 +289,12 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canForward}
           data-tooltip="Navigate forward"
           data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-          className="p-1 rounded hover:bg-white/10 hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
+          className="noether-toolbar-btn"
         >
           <ArrowRight01Icon size={14} />
         </button>
         {customLeftActions}
+        <ViewportActionSlotHost corner="top-left" direction="horizontal" context={actionContext} />
       </div>
 
       {/* Center: Truly Absolute Centered Title (100% dead center across ALL views) */}
@@ -328,14 +319,12 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
                   : resolvedIcon}
               </span>
             )}
-            <span className="text-[var(--noether-text-secondary)] font-medium truncate">
-              {title}
-            </span>
+            <span className="truncate block min-w-0">{title || 'Untitled'}</span>
           </div>
         )}
       </div>
 
-      {/* Right: Reading View, Bookmark, Search & Options */}
+      {/* Right: Custom Actions, Dynamic Viewport Actions, Reading View, Bookmark, Search & More Options */}
       <div
         className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
           isTransparent ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
@@ -343,12 +332,15 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
       >
         {customRightActions}
 
-        {/* Reading mode toggle button */}
+        {/* Dynamic Registered Extension Header Actions */}
+        <ViewportActionSlotHost corner="top-right" direction="horizontal" context={actionContext} />
+
+        {/* Reading / Editing View Toggle */}
         {showReadingToggle && (
           <button
             type="button"
-            onClick={handleToggleReading}
-            disabled={!onToggleReadingMode}
+            onClick={onToggleReadingMode}
+            disabled={!onToggleReadingMode || isLocked}
             title={
               !onToggleReadingMode
                 ? 'Reading view'
@@ -358,52 +350,28 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
                 ? 'Reading view\n(Ctrl+Click to split)'
                 : 'Editing view\n(Ctrl+Click to split)'
             }
-            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
+            className={`noether-toolbar-btn ${
               !onToggleReadingMode
-                ? 'opacity-20 cursor-default text-[var(--noether-text-muted)]'
+                ? 'opacity-20 cursor-default'
                 : isLocked
-                ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
-                : 'hover:bg-white/10 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer'
+                ? 'opacity-40 cursor-not-allowed hover:bg-transparent'
+                : ''
             }`}
           >
             {effectiveReadingMode ? <BookOpen01Icon size={14} /> : <Edit02Icon size={14} />}
           </button>
         )}
 
-        {/* Dynamic Registered Extension Header Actions */}
-        {registeredActions.map((action) => {
-          if (action.isVisible && !action.isVisible(actionContext)) return null;
-          const titleStr = typeof action.title === 'function' ? action.title(actionContext) : action.title;
-          const classNameStr = typeof action.className === 'function' ? action.className(actionContext) : action.className;
-          const isEnabled = action.isEnabled ? action.isEnabled(actionContext) : true;
-
-          return (
-            <button
-              key={action.id}
-              type="button"
-              onClick={() => action.onClick(actionContext)}
-              disabled={!isEnabled}
-              title={titleStr}
-              className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
-                classNameStr ||
-                'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 cursor-pointer'
-              }`}
-            >
-              {action.icon(actionContext)}
-            </button>
-          );
-        })}
-
         {/* Fallback bookmark toggle button (when explicitly passed as direct prop) */}
-        {showBookmark && onToggleBookmark && !registeredActions.some((a) => a.id.includes('bookmark')) && (
+        {showBookmark && onToggleBookmark && !registeredTopRightActions.some((a) => a.id.includes('bookmark')) && (
           <button
             type="button"
             onClick={handleBookmarkClick}
             title={document?.is_bookmarked || isBookmarked ? 'Remove bookmark' : 'Bookmark note'}
-            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
+            className={`noether-toolbar-btn ${
               document?.is_bookmarked || isBookmarked
-                ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-white/10 cursor-pointer'
-                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 cursor-pointer'
+                ? '!text-[#f59e0b] hover:!text-[#fbbf24]'
+                : ''
             }`}
           >
             <Bookmark01Icon
@@ -420,13 +388,8 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             onClick={onToggleFind}
             disabled={!onToggleFind}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
-            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
-              onToggleFind
-                ? isFindOpen
-                  ? 'text-[var(--noether-text-primary)] bg-white/15 cursor-pointer'
-                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 cursor-pointer'
-                : 'opacity-20 cursor-default text-[var(--noether-text-muted)]'
-            }`}
+            data-active={isFindOpen ? 'true' : undefined}
+            className={`noether-toolbar-btn ${isFindOpen ? 'active' : ''}`}
           >
             <Search01Icon size={14} />
           </button>
@@ -434,6 +397,16 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
 
         {/* Document Options Menu */}
         {showDocOptions && <DocOptionsMenu document={document} customActions={customDocMenuActions} />}
+      </div>
+
+      {/* Top-Left Vertical Floating Actions (e.g. tools below navigation arrows) */}
+      <div className="absolute left-4 top-8 pt-1 z-20 pointer-events-none select-none">
+        <ViewportActionSlotHost corner="top-left" direction="vertical" context={actionContext} />
+      </div>
+
+      {/* Top-Right Vertical Floating Actions (e.g. tools below more options) */}
+      <div className="absolute right-4 top-8 pt-1 z-20 pointer-events-none select-none">
+        <ViewportActionSlotHost corner="top-right" direction="vertical" context={actionContext} />
       </div>
     </div>
   );

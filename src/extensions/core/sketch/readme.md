@@ -54,7 +54,8 @@ Drawings never corrupt your note files. Stroke data is indexed in SQLite and emb
 The Sketch extension demonstrates how to inject custom visual overlay layers and document transform serialization hooks via the Noether SDK.
 
 ### SDK Extension Points Used
-- `this.registerPortalSlot()`: Mounts interactive React overlays into host layout portals (`editor:content-overlay`, `editor:viewport-overlay`, `editor:subheader-actions`).
+- `this.registerViewportAction()`: Mounts the interactive drawing toggle action button into the document subheader (`corner: 'top-right'`, `direction: 'horizontal'`).
+- `this.registerPortalSlot()`: Mounts interactive React overlays into host layout portals (`editor:content-overlay`, `editor:viewport-overlay`).
 - `this.registerDocumentTransformHook()`: Injects export/import hooks to serialize custom data alongside Markdown files non-destructively.
 - `this.defineTable()`: Declares the SQLite schema for local vector stroke storage.
 - `this.onEvent('document:deleted')`: Automatically cleans up stroke records when notes are deleted.

@@ -6136,7 +6136,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               <button
                 type="button"
                 onClick={handleFitToCenter}
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer"
+                className="noether-toolbar-btn"
               >
                 <CenterFocusIcon size={14} />
               </button>
@@ -6147,7 +6147,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               <button
                 type="button"
                 onClick={handleResetZoom}
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer"
+                className="noether-toolbar-btn"
               >
                 <RotateCcwIcon size={14} />
               </button>
@@ -6158,7 +6158,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               <button
                 type="button"
                 onClick={handleZoomIn}
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer"
+                className="noether-toolbar-btn"
               >
                 <PlusSignIcon size={14} />
               </button>
@@ -6169,7 +6169,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               <button
                 type="button"
                 onClick={handleZoomOut}
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer"
+                className="noether-toolbar-btn"
               >
                 <MinusSignIcon size={14} />
               </button>

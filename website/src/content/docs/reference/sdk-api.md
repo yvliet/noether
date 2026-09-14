@@ -262,7 +262,7 @@ export const MyExtensionView: React.FC = () => {
 
 Noether decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:
 
-- **`DocumentHeaderActionRegistry`**: Registers action icons and buttons into the document subheader toolbar (`PageSubHeader`). Used by core extensions like Backlinks and Document Properties.
+- **`ViewportActionRegistry`**: Registers action buttons across any viewport corner (`top-left`, `top-right`, `bottom-left`, `bottom-right`) in horizontal or vertical orientations with view scoping (`document`, `canvas`, `graph`, `all`).
 - **`FileContextMenuRegistry`**: Injects contextual action items into the file explorer tree context menu (`FileTreeNode`).
 - **`FileTypeRegistry`**: Associates custom file extensions (`.canvas`, `.sketch`, `.table`) with custom document archetypes and view types.
 - **`SlotRegistry`**: Injects arbitrary React components into high-level shell slots.

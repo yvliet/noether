@@ -69,7 +69,7 @@ import {
   CustomFileTypeDefinition,
 } from './types';
 import type { IconPackProvider } from '../registries/IconRegistry';
-import type { DocumentHeaderActionDefinition } from '../registries/DocumentHeaderActionRegistry';
+import type { ViewportActionDefinition } from '../registries/ViewportActionRegistry';
 import type { FileContextMenuActionDefinition } from '../registries/FileContextMenuRegistry';
 
 export abstract class Extension {
@@ -569,13 +569,13 @@ export abstract class Extension {
   }
 
   /**
-   * Registers a document header action button displayed in the note sub-header.
-   * @param action - Header action definition.
+   * Registers an interactive action button in any viewport corner (top-left, top-right, bottom-left, bottom-right).
+   * Supports horizontal and vertical orientations with document, canvas, or custom view scoping.
+   * @param action - Viewport action definition.
    * @returns A Disposable to unregister the action.
-   * @since 0.4.6
    */
-  public registerDocumentHeaderAction(action: DocumentHeaderActionDefinition): Disposable {
-    const d = this.app.documentHeaderActions.registerAction({
+  public registerViewportAction(action: ViewportActionDefinition): Disposable {
+    const d = this.app.viewportActions.registerAction({
       ...action,
       id: `${this.manifest.id}:${action.id}`,
     });

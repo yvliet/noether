@@ -3732,13 +3732,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Resume time-lapse'
                   : 'Pause time-lapse'
               }
-              className={`p-1 rounded ${
-                isFloatActive
-                  ? 'text-[#444] opacity-40 cursor-not-allowed'
-                  : isTimelapseActive
-                  ? 'text-white bg-white/20 cursor-pointer'
-                  : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
-              }`}
+              className={`noether-toolbar-btn ${isTimelapseActive ? 'active' : ''}`}
+              data-active={isTimelapseActive ? 'true' : undefined}
             >
               {isTimelapseActive && !isTimelapsePaused ? (
                 <PauseIcon size={14} />
@@ -3757,11 +3752,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Restore graph (Finish time-lapse)'
                   : 'Restore graph'
               }
-              className={`p-1 rounded ${
-                isTimelapseActive
-                  ? 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
-                  : 'text-[#444] opacity-40 cursor-not-allowed'
-              }`}
+              className="noether-toolbar-btn"
             >
               <RotateCcwIcon size={14} />
             </button>
@@ -3776,11 +3767,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Fit to center (Disabled when focus camera is active)'
                   : 'Fit to center'
               }
-              className={`p-1 rounded ${
-                ((isTimelapseActive && !isTimelapsePaused) || isFloatActive) && graphFocusCamera
-                  ? 'text-[#444] opacity-40 cursor-not-allowed'
-                  : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
-              }`}
+              className="noether-toolbar-btn"
             >
               <CenterFocusIcon size={14} />
             </button>
@@ -3797,13 +3784,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   ? 'Stop float'
                   : 'Float'
               }
-              className={`p-1 rounded ${
-                isTimelapseActive
-                  ? 'text-[#444] opacity-40 cursor-not-allowed'
-                  : isFloatActive
-                  ? 'text-white bg-white/20 cursor-pointer'
-                  : 'text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer'
-              }`}
+              data-active={isFloatActive ? 'true' : undefined}
+              className={`noether-toolbar-btn ${isFloatActive ? 'active' : ''}`}
             >
               <BubblesIcon size={14} />
             </button>
@@ -3817,7 +3799,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 data-shortcuts={JSON.stringify([
                   effectiveMode === 'global' ? 'Switch to local' : 'Switch to global',
                 ])}
-                className="p-1 rounded text-[#777] hover:text-[#dcddde] hover:bg-white/10 cursor-pointer"
+                className="noether-toolbar-btn"
               >
                 {effectiveMode === 'global' ? (
                   <InternetIcon size={14} />
