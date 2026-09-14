@@ -3,6 +3,7 @@ import {
   FileEmpty01Icon,
   DashboardSquare01Icon,
   CommandIcon,
+  Search01Icon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -12,6 +13,7 @@ import { useNoetherApp, useCommands } from '@/core/app/AppContext';
 import type { NoetherApp } from '@/core/app/NoetherApp';
 import type { DocumentItem } from '@/types';
 import type { CommandItem } from '@/core/extensions/types';
+import type { OmniboxItem, OmniboxProvider } from '@/core/registries/OmniboxProviderRegistry';
 
 export const CommandPalette: React.FC = React.memo(() => {
   const app = useNoetherApp();
@@ -27,6 +29,8 @@ export const CommandPalette: React.FC = React.memo(() => {
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FTSResult[]>([]);
+  const [providerResults, setProviderResults] = useState<OmniboxItem[]>([]);
+  const [activeSearchProvider, setActiveSearchProvider] = useState<OmniboxProvider | undefined>(undefined);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -36,6 +40,8 @@ export const CommandPalette: React.FC = React.memo(() => {
     if (isCommandPaletteOpen) {
       setQuery('');
       setResults([]);
+      setProviderResults([]);
+      setActiveSearchProvider(undefined);
       setSelectedIndex(0);
       const timer = setTimeout(() => {
         inputRef.current?.focus();
@@ -44,20 +50,38 @@ export const CommandPalette: React.FC = React.memo(() => {
     }
   }, [isCommandPaletteOpen]);
 
-  // Execute FTS search on query changes
+  // Execute omnibox and FTS search on query changes
   useEffect(() => {
     if (!query.trim()) {
       setResults([]);
+      setProviderResults([]);
+      setActiveSearchProvider(undefined);
       return;
     }
 
+    let isCurrent = true;
     const timer = setTimeout(async () => {
-      const searchRes = await searchFullText(query);
-      setResults(searchRes);
+      const omniRes = await app.omnibox.searchAll(query, { app, documents });
+      if (!isCurrent) return;
+
+      setActiveSearchProvider(omniRes.activeProvider);
+      setProviderResults(omniRes.items);
+
+      if (omniRes.activeProvider) {
+        setResults([]);
+      } else {
+        const searchRes = await searchFullText(query);
+        if (isCurrent) {
+          setResults(searchRes);
+        }
+      }
     }, 150);
 
-    return () => clearTimeout(timer);
-  }, [query]);
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [query, app, documents]);
 
   // Recent notes for initial state (when query is empty)
   const recentNotes = useMemo(() => {
@@ -74,7 +98,7 @@ export const CommandPalette: React.FC = React.memo(() => {
 
   // Instant document matches by title or path
   const matchedDocs = useMemo(() => {
-    if (!query.trim()) return [];
+    if (!query.trim() || activeSearchProvider) return [];
     const q = query.toLowerCase().trim();
     return documents
       .filter((doc: DocumentItem) => {
@@ -85,11 +109,11 @@ export const CommandPalette: React.FC = React.memo(() => {
         return path.includes(q);
       })
       .slice(0, 15);
-  }, [query, documents]);
+  }, [query, activeSearchProvider, documents]);
 
   // Combined notes from title matches & FTS block matches
   const displayedNotes = useMemo(() => {
-    if (!query.trim()) return [];
+    if (!query.trim() || activeSearchProvider) return [];
 
     const seenDocIds = new Set<string>();
     const combined: Array<{
@@ -131,37 +155,23 @@ export const CommandPalette: React.FC = React.memo(() => {
     }
 
     return combined;
-  }, [query, matchedDocs, results, documents]);
+  }, [query, activeSearchProvider, matchedDocs, results, documents]);
 
-const KNOWN_EXTENSION_NAMES: Record<string, string> = {
-  canvas: 'Canvas',
-  graph: 'Graph view',
-  'graph-view': 'Graph view',
-  tables: 'Tables',
-  tasks: 'Tasks',
-  journal: 'Journal',
-  bookmarks: 'Bookmarks',
-  backlinks: 'Backlinks',
-  marketplace: 'Marketplace',
-  sketch: 'Sketch',
-  sync: 'Sync',
-  'more-icons': 'More icons',
-  outline: 'Outline',
-  tags: 'Tags',
-  properties: 'Properties',
-};
-
-function getExtensionName(cmd: CommandItem): string | null {
+function getExtensionName(cmd: CommandItem, app: NoetherApp): string | null {
   if (!cmd.extensionId) {
     return null;
   }
-  if (KNOWN_EXTENSION_NAMES[cmd.extensionId]) {
-    return KNOWN_EXTENSION_NAMES[cmd.extensionId];
+  const manifest = app.extensions.getExtensionManifest(cmd.extensionId);
+  if (manifest?.name) {
+    return manifest.name.replace(/\s+Extension$/i, '').trim();
   }
   if (cmd.extensionName) {
     return cmd.extensionName.replace(/\s+Extension$/i, '').trim();
   }
-  return null;
+  return cmd.extensionId
+    .split(/[-_]/)
+    .map((w, i) => (i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w))
+    .join(' ');
 }
 
 function cleanCommandTitle(title: string, extName: string | null): string {
@@ -172,11 +182,6 @@ function cleanCommandTitle(title: string, extName: string | null): string {
     cleaned = cleaned.replace(new RegExp(`\\s*\\(${escaped}\\)\\s*$`, 'i'), '');
   }
   cleaned = cleaned.replace(/^extensions?:\s*/i, '');
-  for (const known of Object.values(KNOWN_EXTENSION_NAMES)) {
-    const escaped = known.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    cleaned = cleaned.replace(new RegExp(`^${escaped}\\s*[:\\-]\\s*`, 'i'), '');
-    cleaned = cleaned.replace(new RegExp(`\\s*\\(${escaped}\\)\\s*$`, 'i'), '');
-  }
   return cleaned.trim();
 }
 
@@ -205,9 +210,10 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
   // Filter commands by query if query is typed
   const filteredCommands = useMemo(() => {
     if (!query.trim()) return registeredCommands;
+    if (activeSearchProvider) return [];
     const q = query.toLowerCase().trim();
     return registeredCommands.filter((c) => {
-      const extName = getExtensionName(c);
+      const extName = getExtensionName(c, app);
       const dynamicTitle = getCommandTitle(c, app);
       const cleanTitle = cleanCommandTitle(dynamicTitle, extName);
       const extSuffix = extName ? ` (${extName})` : '';
@@ -228,10 +234,12 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
 
       return false;
     });
-  }, [query, registeredCommands, app]);
+  }, [query, activeSearchProvider, registeredCommands, app]);
 
   const totalItems = query.trim()
-    ? displayedNotes.length + filteredCommands.length
+    ? activeSearchProvider
+      ? providerResults.length
+      : displayedNotes.length + providerResults.length + filteredCommands.length
     : recentNotes.length + registeredCommands.length;
 
   // Check whether an item at a given index is selectable / enabled
@@ -241,13 +249,25 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         if (index < recentNotes.length) return true;
         const cmd = registeredCommands[index - recentNotes.length];
         return cmd ? (cmd.isEnabled ? cmd.isEnabled(app) : true) : false;
+      } else if (activeSearchProvider) {
+        return index >= 0 && index < providerResults.length;
       } else {
         if (index < displayedNotes.length) return true;
-        const cmd = filteredCommands[index - displayedNotes.length];
+        if (index < displayedNotes.length + providerResults.length) return true;
+        const cmd = filteredCommands[index - displayedNotes.length - providerResults.length];
         return cmd ? (cmd.isEnabled ? cmd.isEnabled(app) : true) : false;
       }
     },
-    [query, recentNotes.length, registeredCommands, displayedNotes.length, filteredCommands, app]
+    [
+      query,
+      activeSearchProvider,
+      recentNotes.length,
+      registeredCommands,
+      displayedNotes.length,
+      providerResults.length,
+      filteredCommands,
+      app,
+    ]
   );
 
   // Keep selectedIndex in bounds and on an enabled item
@@ -289,6 +309,18 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
       setMainViewMode('document');
     },
     [documents, openTab, setActiveDocumentById, setMainViewMode, setIsCommandPaletteOpen]
+  );
+
+  const handleSelectProviderItem = useCallback(
+    async (item: OmniboxItem) => {
+      setIsCommandPaletteOpen(false);
+      try {
+        await item.onSelect();
+      } catch (err) {
+        console.error('[CommandPalette] Error executing omnibox item:', err);
+      }
+    },
+    [setIsCommandPaletteOpen]
   );
 
   const handleExecuteCommand = useCallback(
@@ -348,14 +380,22 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         if (totalItems === 0 || !isIndexEnabled(selectedIndex)) return;
 
         if (query.trim()) {
-          if (selectedIndex < displayedNotes.length) {
-            const note = displayedNotes[selectedIndex];
-            handleSelectNote(note.document_id, note.document_title);
+          if (activeSearchProvider) {
+            const item = providerResults[selectedIndex];
+            if (item) handleSelectProviderItem(item);
           } else {
-            const cmdIndex = selectedIndex - displayedNotes.length;
-            const cmd = filteredCommands[cmdIndex];
-            if (cmd) {
-              handleExecuteCommand(cmd);
+            if (selectedIndex < displayedNotes.length) {
+              const note = displayedNotes[selectedIndex];
+              handleSelectNote(note.document_id, note.document_title);
+            } else if (selectedIndex < displayedNotes.length + providerResults.length) {
+              const item = providerResults[selectedIndex - displayedNotes.length];
+              if (item) handleSelectProviderItem(item);
+            } else {
+              const cmdIndex = selectedIndex - displayedNotes.length - providerResults.length;
+              const cmd = filteredCommands[cmdIndex];
+              if (cmd) {
+                handleExecuteCommand(cmd);
+              }
             }
           }
         } else {
@@ -374,14 +414,17 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
     },
     [
       query,
+      activeSearchProvider,
       totalItems,
       selectedIndex,
       displayedNotes,
+      providerResults,
       filteredCommands,
       recentNotes,
       registeredCommands,
       isIndexEnabled,
       handleSelectNote,
+      handleSelectProviderItem,
       handleExecuteCommand,
       setIsCommandPaletteOpen,
     ]
@@ -398,8 +441,14 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-xl bg-[var(--noether-bg-popover,#1e1e1e)] border border-[var(--noether-border-base,#333333)] rounded-xl shadow-2xl overflow-hidden flex flex-col"
       >
-        {/* Top Search Input - Pure and clean without icons */}
+        {/* Top Search Input - Pure and clean */}
         <div className="relative flex items-center px-4 py-3 border-b border-[var(--noether-border-subtle,#2b2b2b)]">
+          {activeSearchProvider && (
+            <div className="flex items-center gap-1.5 px-2 py-0.5 mr-2.5 rounded bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-subtle,#2b2b2b)] text-xs text-[var(--noether-text-primary)] shrink-0 font-medium select-none">
+              <span className="text-[var(--noether-text-muted)] font-mono">{activeSearchProvider.prefix}</span>
+              <span>{activeSearchProvider.name || activeSearchProvider.id}</span>
+            </div>
+          )}
           <input
             ref={inputRef}
             type="text"
@@ -409,7 +458,10 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
-            placeholder="Type a command or search..."
+            placeholder={
+              activeSearchProvider?.placeholder ||
+              (activeSearchProvider?.name ? `Search ${activeSearchProvider.name.toLowerCase()}...` : 'Type a command or search...')
+            }
             className="w-full bg-transparent text-sm text-[var(--noether-text-primary)] placeholder-[var(--noether-text-muted)] outline-none font-normal"
           />
         </div>
@@ -420,8 +472,9 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
           className="max-h-[340px] overflow-y-auto p-2 custom-scrollbar flex flex-col gap-0.5"
         >
           {query.trim() ? (
-            displayedNotes.length > 0 || filteredCommands.length > 0 ? (
+            displayedNotes.length > 0 || providerResults.length > 0 || filteredCommands.length > 0 ? (
               <>
+                {/* Document Matches */}
                 {displayedNotes.length > 0 && (
                   <div className="flex flex-col gap-0.5">
                     {displayedNotes.map((item, index) => {
@@ -472,17 +525,94 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                   </div>
                 )}
 
-                {displayedNotes.length > 0 && filteredCommands.length > 0 && (
-                  <div className="my-1 border-t border-[var(--noether-border-subtle,#282828)]" />
+                {/* Omnibox Provider Results */}
+                {providerResults.length > 0 && (
+                  <>
+                    {!activeSearchProvider && displayedNotes.length > 0 && (
+                      <div className="my-1 border-t border-[var(--noether-border-subtle,#282828)]" />
+                    )}
+                    <div className="flex flex-col gap-0.5">
+                      {providerResults.map((item, index) => {
+                        const overallIndex = (activeSearchProvider ? 0 : displayedNotes.length) + index;
+                        const isSelected = overallIndex === selectedIndex;
+
+                        return (
+                          <div
+                            key={item.id}
+                            data-selected={isSelected ? 'true' : undefined}
+                            onClick={() => handleSelectProviderItem(item)}
+                            onMouseEnter={() => setSelectedIndex(overallIndex)}
+                            className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm transition-none ${
+                              isSelected
+                                ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                                : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
+                            }`}
+                          >
+                            <span
+                              className={`shrink-0 mt-0.5 ${
+                                isSelected ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted)]'
+                              }`}
+                            >
+                              {item.icon || <Search01Icon size={16} />}
+                            </span>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="truncate font-normal leading-tight">
+                                  {item.title}
+                                </span>
+                                {item.category && (
+                                  <span
+                                    className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-medium tracking-wider shrink-0 ${
+                                      isSelected
+                                        ? 'bg-[var(--noether-bg-card)] text-[var(--noether-text-secondary)]'
+                                        : 'bg-[var(--noether-bg-card)] text-[var(--noether-text-muted)]'
+                                    }`}
+                                  >
+                                    {item.category}
+                                  </span>
+                                )}
+                              </div>
+                              {item.description && (
+                                <div
+                                  className={`text-xs line-clamp-1 leading-relaxed mt-0.5 ${
+                                    isSelected ? 'text-[var(--noether-text-secondary)]' : 'text-[var(--noether-text-muted)]'
+                                  }`}
+                                >
+                                  {item.description}
+                                </div>
+                              )}
+                            </div>
+                            {item.hotkey && (
+                              <span
+                                className={`text-xs shrink-0 ml-3 ${
+                                  isSelected ? 'text-[var(--noether-text-secondary)]' : 'text-[var(--noether-text-muted)]'
+                                }`}
+                              >
+                                {item.hotkey}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
                 )}
 
+                {/* Commands Divider */}
+                {!activeSearchProvider &&
+                  (displayedNotes.length > 0 || providerResults.length > 0) &&
+                  filteredCommands.length > 0 && (
+                    <div className="my-1 border-t border-[var(--noether-border-subtle,#282828)]" />
+                )}
+
+                {/* Filtered Commands */}
                 {filteredCommands.length > 0 && (
                   <div className="flex flex-col gap-0.5">
                     {filteredCommands.map((cmd, index) => {
-                      const overallIndex = displayedNotes.length + index;
+                      const overallIndex = displayedNotes.length + providerResults.length + index;
                       const isSelected = overallIndex === selectedIndex;
                       const isEnabled = cmd.isEnabled ? cmd.isEnabled(app) : true;
-                      const extName = getExtensionName(cmd);
+                      const extName = getExtensionName(cmd, app);
 
                       return (
                         <div
@@ -535,7 +665,9 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
               </>
             ) : (
               <div className="py-8 text-center text-xs text-[var(--noether-text-muted)]">
-                No matching notes or commands found
+                {activeSearchProvider
+                  ? `No matching ${activeSearchProvider.name?.toLowerCase() || 'items'} found`
+                  : 'No matching notes or commands found'}
               </div>
             )
           ) : (
@@ -591,7 +723,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                 const overallIndex = recentNotes.length + index;
                 const isSelected = overallIndex === selectedIndex;
                 const isEnabled = cmd.isEnabled ? cmd.isEnabled(app) : true;
-                const extName = getExtensionName(cmd);
+                const extName = getExtensionName(cmd, app);
 
                 return (
                   <div

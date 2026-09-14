@@ -71,6 +71,8 @@ import {
 import type { IconPackProvider } from '../registries/IconRegistry';
 import type { ViewportActionDefinition } from '../registries/ViewportActionRegistry';
 import type { FileContextMenuActionDefinition } from '../registries/FileContextMenuRegistry';
+import type { TabContextMenuActionDefinition } from '../registries/TabContextMenuRegistry';
+import type { OmniboxProvider } from '../registries/OmniboxProviderRegistry';
 
 export abstract class Extension {
   /**
@@ -592,6 +594,39 @@ export abstract class Extension {
     const d = this.app.fileContextMenus.registerAction({
       ...action,
       id: `${this.manifest.id}:${action.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a contextual action item in the document tab context menu.
+   * Enables extensions to contribute custom actions when right-clicking tabs
+   * (e.g. "Pin Tab", "Copy Note Link", "Close Tabs to Left").
+   *
+   * @param action - Tab context menu action definition.
+   * @returns A Disposable to unregister the action.
+   * @since 1.2.0
+   */
+  public registerTabContextMenuAction(action: TabContextMenuActionDefinition): Disposable {
+    const d = this.app.tabContextMenu.registerAction({
+      ...action,
+      id: `${this.manifest.id}:${action.id}`,
+    });
+    return this.registerDisposable(d);
+  }
+
+  /**
+   * Registers a search provider contributing searchable items to the universal command palette / omnibox (Ctrl+P / Ctrl+K).
+   * Supports global multi-provider search (tasks, bookmarks, tags, symbols) and targeted prefix queries.
+   *
+   * @param provider - Omnibox search provider definition.
+   * @returns A Disposable to unregister the provider.
+   * @since 1.2.0
+   */
+  public registerSearchProvider(provider: OmniboxProvider): Disposable {
+    const d = this.app.omnibox.registerProvider({
+      ...provider,
+      id: `${this.manifest.id}:${provider.id}`,
     });
     return this.registerDisposable(d);
   }

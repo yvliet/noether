@@ -33,6 +33,8 @@ import type {
   ViewportCorner,
   ViewportActionDirection,
 } from '../registries/ViewportActionRegistry';
+import type { TabContextMenuActionDefinition } from '../registries/TabContextMenuRegistry';
+import type { OmniboxProvider } from '../registries/OmniboxProviderRegistry';
 
 import { ExtensionListSnapshot } from '../extensions/ExtensionManager';
 
@@ -373,5 +375,18 @@ export const useViewportActions = (
   }, [app, corner, direction, context, version]);
 };
 
+export const useTabContextMenuActions = (): TabContextMenuActionDefinition[] => {
+  const app = useNoetherApp();
+  return useSyncExternalStore(
+    (onStoreChange) => app.tabContextMenu.subscribe(onStoreChange),
+    () => app.tabContextMenu.getAllActions()
+  );
+};
 
-
+export const useOmniboxProviders = (): OmniboxProvider[] => {
+  const app = useNoetherApp();
+  return useSyncExternalStore(
+    (onStoreChange) => app.omnibox.subscribe(onStoreChange),
+    () => app.omnibox.getProviders()
+  );
+};

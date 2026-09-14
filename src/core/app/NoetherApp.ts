@@ -30,6 +30,8 @@ import { ToolRegistry } from '../registries/ToolRegistry';
 import { SlotRegistry } from '../registries/SlotRegistry';
 import { ViewportActionRegistry, viewportActionRegistry } from '../registries/ViewportActionRegistry';
 import { FileContextMenuRegistry, fileContextMenuRegistry } from '../registries/FileContextMenuRegistry';
+import { TabContextMenuRegistry, tabContextMenuRegistry } from '../registries/TabContextMenuRegistry';
+import { OmniboxProviderRegistry, omniboxProviderRegistry } from '../registries/OmniboxProviderRegistry';
 import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
 import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
 import { registerNativeTools } from '../mcp/NativeMcpTools';
@@ -112,6 +114,10 @@ export class NoetherApp {
   public viewportActions: ViewportActionRegistry;
   /** File context menu registry managing contextual actions on files and folders. */
   public fileContextMenus: FileContextMenuRegistry;
+  /** Tab context menu registry managing custom right-click actions on document tabs. */
+  public tabContextMenu: TabContextMenuRegistry;
+  /** Omnibox search registry enabling extensions to contribute searchable items to Ctrl+P / Ctrl+K. */
+  public omnibox: OmniboxProviderRegistry;
   /** Relational database manager managing extension tables, migrations, and cascade teardown. */
   public dbManager: ExtensionDatabaseManager;
   /** Background Web Worker pool for off-thread CPU-intensive extension operations. */
@@ -149,6 +155,8 @@ export class NoetherApp {
     this.fileTypes = fileTypeRegistry;
     this.viewportActions = viewportActionRegistry;
     this.fileContextMenus = fileContextMenuRegistry;
+    this.tabContextMenu = tabContextMenuRegistry;
+    this.omnibox = omniboxProviderRegistry;
 
     // Register Native Built-in Icon Providers
     this.icons.registerProvider({
