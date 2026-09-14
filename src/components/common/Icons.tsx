@@ -182,6 +182,9 @@ import {
   AlignHorizontalJustifyCenterIcon as HugeAlignHorizontalJustifyCenterIcon,
   AlignVerticalJustifyCenterIcon as HugeAlignVerticalJustifyCenterIcon,
   UngroupIcon as HugeUngroupIcon,
+  Moon02Icon as HugeMoon02Icon,
+  Sun02Icon as HugeSun02Icon,
+  ComputerIcon as HugeComputerIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -370,6 +373,9 @@ export const RotateCcwIcon = createIcon(HugeRotateCcwIcon);
 export const HistoryIcon = createIcon(HugeHistoryIcon);
 export const PaletteIcon = createIcon(HugePaletteIcon);
 export const MonitorIcon = createIcon(HugeMonitorIcon);
+export const ComputerIcon = createIcon(HugeComputerIcon);
+export const Moon02Icon = createIcon(HugeMoon02Icon);
+export const Sun02Icon = createIcon(HugeSun02Icon);
 export const KeyIcon = createIcon(HugeKey01Icon);
 export const GlobeIcon = createIcon(HugeGlobeIcon);
 export const GlobeOffIcon = createIcon(HugeGlobeOffIcon);

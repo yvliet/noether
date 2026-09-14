@@ -124,6 +124,7 @@ class ThemeRegistry {
             if (theme && theme.id) {
               this.customThemes.set(theme.id.toLowerCase(), {
                 ...theme,
+                modeSupport: theme.modeSupport || (theme.type === 'light' ? 'light-only' : 'both'),
                 isBuiltIn: false,
                 isPreinstalled: false,
                 isCore: false,
@@ -169,13 +170,14 @@ class ThemeRegistry {
 
     // Alias matches for standard theme IDs
     const aliasMap: Record<string, string> = {
-      default: 'noether-dark',
-      dark: 'noether-dark',
-      'noether-dark': 'noether-dark',
-      'noether dark': 'noether-dark',
-      light: 'noether-light',
-      'noether-light': 'noether-light',
-      'noether light': 'noether-light',
+      default: 'noether',
+      noether: 'noether',
+      'noether-dark': 'noether',
+      'noether dark': 'noether',
+      dark: 'noether',
+      'noether-light': 'noether',
+      'noether light': 'noether',
+      light: 'noether',
     };
 
     const mapped = aliasMap[cleanId];
@@ -183,8 +185,33 @@ class ThemeRegistry {
       return this.preinstalledThemes.get(mapped)!;
     }
 
-    // Fallback to core engine baseline theme (Noether Dark)
+    // Fallback to core engine baseline theme (Noether)
     return this.coreTheme;
+  }
+
+  /**
+   * Resolves the active theme color tokens for a given lighting mode.
+   * If the theme supports 'both', merges baseline tokens with the active lighting mode overrides.
+   */
+  public resolveThemeTokens(
+    themeDef: ThemeDefinition,
+    effectiveMode: 'dark' | 'light'
+  ): ThemeColorTokens {
+    const support = themeDef.modeSupport || (themeDef.type === 'light' ? 'light-only' : 'both');
+
+    if (support === 'light-only' || support === 'dark-only') {
+      return themeDef.variables;
+    }
+
+    const modeOverrides = themeDef.modes?.[effectiveMode];
+    if (!modeOverrides) {
+      return themeDef.variables;
+    }
+
+    return {
+      ...themeDef.variables,
+      ...modeOverrides,
+    };
   }
 
   public registerCustomTheme(theme: ThemeDefinition): boolean {
@@ -194,6 +221,7 @@ class ThemeRegistry {
     this.customThemes.set(cleanId, {
       ...theme,
       id: cleanId,
+      modeSupport: theme.modeSupport || (theme.type === 'light' ? 'light-only' : 'both'),
       isCore: false,
       isPreinstalled: false,
       isBuiltIn: false,
@@ -223,7 +251,8 @@ class ThemeRegistry {
   public createCustomThemeDefinition(params: {
     id: string;
     name: string;
-    type: 'dark' | 'light';
+    modeSupport?: 'both' | 'dark-only' | 'light-only';
+    type?: 'dark' | 'light';
     hasGradient?: boolean;
     author?: string;
     description?: string;
@@ -233,16 +262,24 @@ class ThemeRegistry {
       bgMain: string;
       accent: string;
     };
+    modes?: {
+      dark?: Partial<ThemeColorTokens>;
+      light?: Partial<ThemeColorTokens>;
+    };
+    previewColors?: [string, string, string, string];
+    previewColorsLight?: [string, string, string, string];
     customCss?: string;
   }): ThemeDefinition {
-    const isLight = params.type === 'light';
-    const baseTheme = this.getTheme(isLight ? 'noether-light' : 'default');
+    const modeSupport = params.modeSupport || (params.type === 'light' ? 'light-only' : 'both');
+    const isLight = modeSupport === 'light-only';
+    const baseTheme = this.getTheme('default');
+    const baseTokens = this.resolveThemeTokens(baseTheme, isLight ? 'light' : 'dark');
 
     const fullTokens: ThemeColorTokens = {
-      ...baseTheme.variables,
+      ...baseTokens,
       ...params.variables,
-      bgApp: params.variables.bgSidebar || baseTheme.variables.bgApp,
-      bgRibbon: params.variables.bgSidebar || baseTheme.variables.bgRibbon,
+      bgApp: params.variables.bgSidebar || baseTokens.bgApp,
+      bgRibbon: params.variables.bgSidebar || baseTokens.bgRibbon,
       bgTopBar: params.variables.bgTopBar,
       bgSidebar: params.variables.bgSidebar,
       bgMain: params.variables.bgMain,
@@ -263,18 +300,21 @@ class ThemeRegistry {
     return {
       id: params.id,
       name: params.name,
-      type: params.type,
+      modeSupport,
+      type: isLight ? 'light' : 'dark',
       hasGradient: !!params.hasGradient,
       isBuiltIn: false,
       author: params.author || 'User',
       description: params.description || 'Custom theme',
-      previewColors: [
+      previewColors: params.previewColors || [
         params.variables.bgTopBar,
         params.variables.bgSidebar,
         params.variables.bgMain,
         params.variables.accent,
       ],
+      previewColorsLight: params.previewColorsLight,
       variables: fullTokens,
+      modes: params.modes,
       customCss: params.customCss,
     };
   }
@@ -289,11 +329,15 @@ class ThemeRegistry {
       const newTheme = this.createCustomThemeDefinition({
         id,
         name: parsed.name,
+        modeSupport: parsed.modeSupport || (parsed.type === 'light' ? 'light-only' : 'both'),
         type: parsed.type === 'light' ? 'light' : 'dark',
         hasGradient: !!parsed.hasGradient,
         author: parsed.author || 'Imported',
         description: parsed.description || 'Custom imported theme',
         variables: parsed.variables,
+        modes: parsed.modes,
+        previewColors: parsed.previewColors,
+        previewColorsLight: parsed.previewColorsLight,
         customCss: parsed.customCss || '',
       });
       this.registerCustomTheme(newTheme);
@@ -312,7 +356,8 @@ class ThemeRegistry {
    */
   public generateCssVariables(
     tokens: ThemeColorTokens,
-    customAccent?: string
+    customAccent?: string,
+    effectiveMode: 'dark' | 'light' = 'dark'
   ): Record<string, string> {
     const trimmedCustom = customAccent?.trim();
     const isCustomAccent = Boolean(
@@ -339,6 +384,8 @@ class ThemeRegistry {
       accentGradient = tokens.accentGradient || deriveAccentGradient(accent);
     }
 
+    const isLightMode = effectiveMode === 'light';
+
     const vars: Record<string, string> = {
       // Backgrounds
       '--noether-bg-app': tokens.bgApp,
@@ -360,6 +407,10 @@ class ThemeRegistry {
       '--noether-tab-corner-hover-fill': tokens.tabCornerHoverFill || tokens.bgCardHover,
       '--noether-bg-statusbar': tokens.bgStatusBar || tokens.bgCard,
 
+      // Button interactive tokens
+      '--noether-btn-hover-bg': tokens.btnHoverBg || (isLightMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)'),
+      '--noether-btn-active-bg': tokens.btnActiveBg || (isLightMode ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)'),
+
       // Borders
       '--noether-border-subtle': tokens.borderSubtle,
       '--noether-border-base': tokens.borderBase,
@@ -379,8 +430,8 @@ class ThemeRegistry {
       '--noether-accent-gradient': accentGradient,
 
       // Selection & Code
-      '--noether-selection-bg': tokens.selectionBg || '#4a4e57',
-      '--noether-selection-text': tokens.selectionText || '#ffffff',
+      '--noether-selection-bg': tokens.selectionBg || (isLightMode ? '#e4e4e7' : '#4a4e57'),
+      '--noether-selection-text': tokens.selectionText || (isLightMode ? '#09090b' : '#ffffff'),
       '--noether-code-bg': tokens.codeBg || tokens.bgInput,
       '--noether-code-text': tokens.codeText || tokens.textSecondary,
 
@@ -391,9 +442,9 @@ class ThemeRegistry {
       '--noether-tooltip-border': tokens.tooltipBorder || tokens.borderBase || '#333333',
 
       // Shadows & Elevation
-      '--noether-shadow-1': tokens.shadow1 || '0 1px 3px 0 rgba(0, 0, 0, 0.25)',
-      '--noether-shadow-2': tokens.shadow2 || '0 4px 16px 0 rgba(0, 0, 0, 0.4)',
-      '--noether-shadow-3': tokens.shadow3 || '0 8px 32px 0 rgba(0, 0, 0, 0.6)',
+      '--noether-shadow-1': tokens.shadow1 || (isLightMode ? '0 1px 2px 0 rgba(0, 0, 0, 0.03)' : '0 1px 3px 0 rgba(0, 0, 0, 0.25)'),
+      '--noether-shadow-2': tokens.shadow2 || (isLightMode ? '0 4px 12px -2px rgba(0, 0, 0, 0.06)' : '0 4px 16px 0 rgba(0, 0, 0, 0.4)'),
+      '--noether-shadow-3': tokens.shadow3 || (isLightMode ? '0 10px 24px -4px rgba(0, 0, 0, 0.08)' : '0 8px 32px 0 rgba(0, 0, 0, 0.6)'),
     };
 
     // Gradients
@@ -420,3 +471,4 @@ class ThemeRegistry {
 }
 
 export const themeRegistry = new ThemeRegistry();
+

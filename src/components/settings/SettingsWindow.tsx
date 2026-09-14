@@ -36,6 +36,9 @@ import {
   WindowRestoreIcon,
   WindowCloseIcon,
   CancelCircleIcon,
+  Moon02Icon,
+  Sun02Icon,
+  ComputerIcon,
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -50,6 +53,7 @@ import {
   applyAppearanceDOM,
   DEFAULT_SETTINGS,
   ThemePalette,
+  ThemeMode,
   DefaultTabMode,
   DefaultEditingMode,
   DocPropertiesMode,
@@ -861,11 +865,13 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
   const setFontSize = useSettingsStore((s) => s.setFontSize);
   const quickFontSize = useSettingsStore((s) => s.quickFontSize);
   const setQuickFontSize = useSettingsStore((s) => s.setQuickFontSize);
+  const themeMode = useSettingsStore((s) => s.themeMode);
+  const setThemeMode = useSettingsStore((s) => s.setThemeMode);
   const restoreTabDefaults = useSettingsStore((s) => s.restoreTabDefaults);
   const showToast = useWorkspaceStore((s) => s.showToast);
 
   // Theme Manager state
-  const [themeFilter, setThemeFilter] = useState<'all' | 'dark' | 'light' | 'gradient' | 'custom'>('all');
+  const [themeFilter, setThemeFilter] = useState<'all' | 'both' | 'dark' | 'light' | 'custom'>('all');
   const [themeSearchQuery, setThemeSearchQuery] = useState('');
   const [isCreatingTheme, setIsCreatingTheme] = useState(false);
   const [isImportingTheme, setIsImportingTheme] = useState(false);
@@ -874,6 +880,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
   // Custom Theme Form fields
   const [newThemeName, setNewThemeName] = useState('');
+  const [newThemeModeSupport, setNewThemeModeSupport] = useState<'both' | 'dark-only' | 'light-only'>('both');
   const [newThemeType, setNewThemeType] = useState<'dark' | 'light'>('dark');
   const [newThemeHasGradient, setNewThemeHasGradient] = useState(false);
   const [newThemeTopbar, setNewThemeTopbar] = useState('#0d0d0d');
@@ -890,11 +897,12 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
 
   const filteredThemes = useMemo(() => {
     return allThemes.filter((theme) => {
+      const modeSupport = theme.modeSupport || (theme.type === 'light' ? 'light-only' : 'both');
       // Type filter
-      if (themeFilter === 'dark' && theme.type !== 'dark') return false;
-      if (themeFilter === 'light' && theme.type !== 'light') return false;
-      if (themeFilter === 'gradient' && !theme.hasGradient) return false;
-      if (themeFilter === 'custom' && theme.isBuiltIn) return false;
+      if (themeFilter === 'both' && modeSupport !== 'both') return false;
+      if (themeFilter === 'dark' && modeSupport !== 'dark-only') return false;
+      if (themeFilter === 'light' && modeSupport !== 'light-only') return false;
+      if (themeFilter === 'custom' && (theme.isBuiltIn || theme.isPreinstalled || theme.isCore)) return false;
 
       // Text search
       if (themeSearchQuery.trim()) {
@@ -910,6 +918,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
   }, [allThemes, themeFilter, themeSearchQuery]);
 
   const isAppearanceModified =
+    themeMode !== DEFAULT_SETTINGS.themeMode ||
     accentColor !== DEFAULT_SETTINGS.accentColor ||
     activeTheme !== DEFAULT_SETTINGS.activeTheme ||
     interfaceFont !== DEFAULT_SETTINGS.interfaceFont ||
@@ -955,6 +964,53 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
         }}
         resetTitle="Restore default appearance settings"
       >
+        {/* Row: Lighting Mode */}
+        <SettingRow
+          title="Lighting mode"
+          description={
+            <div className="flex flex-col">
+              <span>{highlightMatch('Switch between dark, light, or automatic system appearance.', searchQuery)}</span>
+            </div>
+          }
+          descriptionText="Switch between dark, light, or automatic system appearance."
+          keywords={['lighting', 'mode', 'dark', 'light', 'system', 'appearance']}
+          resetButton={
+            <FieldResetButton
+              isModified={themeMode !== DEFAULT_SETTINGS.themeMode}
+              onReset={() => setThemeMode(DEFAULT_SETTINGS.themeMode)}
+              title="Restore default lighting mode (dark)"
+            />
+          }
+        >
+          <div className="flex items-center p-0.5 rounded-lg bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-base,#292929)] select-none">
+            {[
+              { id: 'dark', label: 'Dark', icon: <Moon02Icon size={13} /> },
+              { id: 'light', label: 'Light', icon: <Sun02Icon size={13} /> },
+              { id: 'system', label: 'System', icon: <ComputerIcon size={13} /> },
+            ].map((opt) => {
+              const isSelected = themeMode === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => {
+                    setThemeMode(opt.id as ThemeMode);
+                    showToast(`Switched lighting mode to ${opt.label}`, 'info');
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-none ${
+                    isSelected
+                      ? 'bg-[var(--noether-bg-card,#252525)] text-[var(--noether-text-primary,#ffffff)] shadow-xs'
+                      : 'text-[var(--noether-text-muted,#888888)] hover:text-[var(--noether-text-primary,#ffffff)]'
+                  }`}
+                >
+                  {opt.icon}
+                  <span>{opt.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </SettingRow>
+
         <SettingRow
           title="Accent color"
           description={
@@ -1057,6 +1113,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               <button
                 onClick={() => {
                   setNewThemeName('');
+                  setNewThemeModeSupport('both');
                   setNewThemeType('dark');
                   setNewThemeHasGradient(false);
                   setNewThemeTopbar('#0d0d0d');
@@ -1082,8 +1139,9 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { id: 'all', label: `All (${allThemes.length})` },
-              { id: 'dark', label: `Dark (${allThemes.filter((t) => t.type === 'dark').length})` },
-              { id: 'light', label: `Light (${allThemes.filter((t) => t.type === 'light').length})` },
+              { id: 'both', label: `Dark & Light (${allThemes.filter((t) => (t.modeSupport || (t.type === 'light' ? 'light-only' : 'both')) === 'both').length})` },
+              { id: 'dark', label: `Dark only (${allThemes.filter((t) => (t.modeSupport || (t.type === 'light' ? 'light-only' : 'both')) === 'dark-only').length})` },
+              { id: 'light', label: `Light only (${allThemes.filter((t) => (t.modeSupport || (t.type === 'light' ? 'light-only' : 'both')) === 'light-only').length})` },
               ...(allThemes.some((t) => !t.isBuiltIn && !t.isPreinstalled && !t.isCore)
                 ? [{ id: 'custom', label: `Custom (${allThemes.filter((t) => !t.isBuiltIn && !t.isPreinstalled && !t.isCore).length})` }]
                 : []),
@@ -1120,8 +1178,20 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
         {/* Theme Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredThemes.map((theme) => {
-            const isActive = (activeTheme || 'default').toLowerCase() === theme.id.toLowerCase();
-            const v = theme.variables;
+            const normalizedActive = (activeTheme || 'default').toLowerCase();
+            const isActive =
+              normalizedActive === theme.id.toLowerCase() ||
+              ((normalizedActive === 'noether-dark' || normalizedActive === 'noether-light' || normalizedActive === 'default') && theme.id === 'noether');
+
+            const cardMode: 'dark' | 'light' =
+              theme.modeSupport === 'dark-only'
+                ? 'dark'
+                : theme.modeSupport === 'light-only'
+                  ? 'light'
+                  : (themeMode === 'light' ? 'light' : themeMode === 'dark' ? 'dark' : (typeof window !== 'undefined' && window.matchMedia?.('(prefers-color-scheme: dark)')?.matches === false ? 'light' : 'dark'));
+
+            const v = themeRegistry.resolveThemeTokens(theme, cardMode);
+            const modeSupport = theme.modeSupport || (theme.type === 'light' ? 'light-only' : 'both');
             return (
               <div
                 key={theme.id}
@@ -1199,12 +1269,14 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                         )}
                         <span
                           className={`text-[9px] font-semibold tracking-wide uppercase px-1.5 py-0.5 rounded ${
-                            theme.type === 'light'
+                            modeSupport === 'light-only'
                               ? 'bg-amber-950/50 text-amber-300 border border-amber-800/30'
-                              : 'bg-zinc-800 text-zinc-300 border border-zinc-700/50'
+                              : modeSupport === 'dark-only'
+                                ? 'bg-zinc-800 text-zinc-300 border border-zinc-700/50'
+                                : 'bg-blue-950/50 text-blue-300 border border-blue-800/30'
                           }`}
                         >
-                          {theme.type}
+                          {modeSupport === 'both' ? 'Dark & Light' : modeSupport === 'dark-only' ? 'Dark only' : 'Light only'}
                         </span>
                       </div>
                     </div>
@@ -1354,13 +1426,18 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
               </div>
 
               <div className="flex flex-col gap-1">
-                <label className="text-[11px] text-[#888]">Base Mode</label>
+                <label className="text-[11px] text-[#888]">Lighting Mode Support</label>
                 <CustomSelect
-                  value={newThemeType}
-                  onChange={(val) => setNewThemeType(val as 'dark' | 'light')}
+                  value={newThemeModeSupport}
+                  onChange={(val) => {
+                    const mode = val as 'both' | 'dark-only' | 'light-only';
+                    setNewThemeModeSupport(mode);
+                    setNewThemeType(mode === 'light-only' ? 'light' : 'dark');
+                  }}
                   options={[
-                    { value: 'dark', label: 'Dark' },
-                    { value: 'light', label: 'Light' },
+                    { value: 'both', label: 'Dark & Light' },
+                    { value: 'dark-only', label: 'Dark only' },
+                    { value: 'light-only', label: 'Light only' },
                   ]}
                   className="w-full"
                   buttonClassName="w-full justify-between"
@@ -1447,7 +1524,8 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   const customDef = themeRegistry.createCustomThemeDefinition({
                     id: themeId,
                     name: newThemeName.trim(),
-                    type: newThemeType,
+                    modeSupport: newThemeModeSupport,
+                    type: newThemeModeSupport === 'light-only' ? 'light' : 'dark',
                     hasGradient: newThemeHasGradient,
                     author: 'You',
                     description: 'Custom user defined theme',
