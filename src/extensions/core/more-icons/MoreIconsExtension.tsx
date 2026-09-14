@@ -149,6 +149,7 @@ export class MoreIconsExtension extends Extension {
     this.registerDocumentTitleDecorator({
       id: 'more-icons-editor-title-icon',
       renderPrefix: (ctx) => {
+        if (!ctx.doc) return null;
         return (
           <MoreIconsEditorTitleIcon
             docId={ctx.doc.id}

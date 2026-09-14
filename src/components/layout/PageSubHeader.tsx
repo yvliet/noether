@@ -1,7 +1,13 @@
 import React, { useCallback, useMemo } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
-import { useNoetherApp } from '@/core/app/AppContext';
+import {
+  useNoetherApp,
+  useViewportActions,
+  useBreadcrumbProviders,
+  useBreadcrumbDecorators,
+  useDocumentTitleDecorators,
+} from '@/core/app/AppContext';
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
@@ -12,10 +18,14 @@ import {
 } from '@/components/common/Icons';
 import { DocOptionsMenu } from '@/components/editor/DocOptionsMenu';
 import { DocumentItem } from '@/types';
-import { isDocumentLocked } from '@/lib/db/documents';
-import { DocMenuActionDefinition } from '@/core/extensions/types';
+import { isDocumentLocked, getDocumentBreadcrumbParts } from '@/lib/db/documents';
+import {
+  DocMenuActionDefinition,
+  BreadcrumbItem,
+  BreadcrumbDecoratorContext,
+  DocumentTitleDecoratorContext,
+} from '@/core/extensions/types';
 import { ViewportActionSlotHost } from './ViewportActionSlotHost';
-import { useViewportActions } from '@/core/app/AppContext';
 
 export interface PageSubHeaderProps {
   title: string;
@@ -151,6 +161,10 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   const showToast = useWorkspaceStore((s) => s.showToast);
 
   const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
+  const documents = useDocumentStore((s) => s.documents);
+  const breadcrumbProviders = useBreadcrumbProviders();
+  const breadcrumbDecorators = useBreadcrumbDecorators();
+  const documentTitleDecorators = useDocumentTitleDecorators();
 
   const canBack = customCanGoBack !== undefined ? customCanGoBack : storeCanGoBack;
   const canForward = customCanGoForward !== undefined ? customCanGoForward : storeCanGoForward;
@@ -216,6 +230,166 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
     }
     onToggleReadingMode?.();
   }, [isLocked, onToggleReadingMode, showToast]);
+
+  const currentViewType = useMemo(() => {
+    return (
+      activeTab?.view_type ||
+      activeTab?.view_mode ||
+      mainViewMode ||
+      (activeTab?.document_id?.startsWith('__')
+        ? activeTab.document_id.replace(/^__/, '').replace(/__$/, '')
+        : undefined)
+    );
+  }, [activeTab, mainViewMode]);
+
+  const titleDecoratorContext = useMemo<DocumentTitleDecoratorContext>(() => ({
+    doc: document ?? null,
+    tab: activeTab ?? null,
+    app,
+    isReadingMode: Boolean(effectiveReadingMode),
+    viewType: currentViewType,
+  }), [document, activeTab, app, effectiveReadingMode, currentViewType]);
+
+  const titlePrefixes = useMemo(() => {
+    if (documentTitleDecorators.length === 0) return [];
+    const nodes: React.ReactNode[] = [];
+    for (const d of documentTitleDecorators) {
+      try {
+        if (d.matches && !d.matches(titleDecoratorContext)) continue;
+        const res = d.renderPrefix?.(titleDecoratorContext);
+        if (res !== undefined && res !== null) {
+          nodes.push(<React.Fragment key={d.id}>{res}</React.Fragment>);
+        }
+      } catch (err) {
+        console.error(`[PageSubHeader] Error in title prefix decorator "${d.id}":`, err);
+      }
+    }
+    return nodes;
+  }, [documentTitleDecorators, titleDecoratorContext]);
+
+  const titleSuffixes = useMemo(() => {
+    if (documentTitleDecorators.length === 0) return [];
+    const nodes: React.ReactNode[] = [];
+    for (const d of documentTitleDecorators) {
+      try {
+        if (d.matches && !d.matches(titleDecoratorContext)) continue;
+        const res = d.renderSuffix?.(titleDecoratorContext);
+        if (res !== undefined && res !== null) {
+          nodes.push(<React.Fragment key={d.id}>{res}</React.Fragment>);
+        }
+      } catch (err) {
+        console.error(`[PageSubHeader] Error in title suffix decorator "${d.id}":`, err);
+      }
+    }
+    return nodes;
+  }, [documentTitleDecorators, titleDecoratorContext]);
+
+  const matchedBreadcrumbProvider = useMemo(() => {
+    const ctx = {
+      tab: activeTab ?? null,
+      doc: document ?? null,
+      isSplit: false,
+      viewType: currentViewType,
+    };
+    return (
+      breadcrumbProviders.find((p) => {
+        try {
+          return p.matches(ctx);
+        } catch {
+          return false;
+        }
+      }) ?? null
+    );
+  }, [breadcrumbProviders, activeTab, document, currentViewType]);
+
+  const matchedBreadcrumbs = useMemo<BreadcrumbItem[] | null>(() => {
+    if (centerContent) return null;
+    const defaultParts: { id: string; title: string; isFolder: boolean }[] = document
+      ? getDocumentBreadcrumbParts(document, documents).map((p) => ({
+          id: p.id,
+          title: p.title,
+          isFolder: Boolean(p.isFolder),
+        }))
+      : [];
+
+    if (matchedBreadcrumbProvider) {
+      try {
+        const custom = matchedBreadcrumbProvider.getBreadcrumbs({
+          tab: activeTab ?? null,
+          doc: document ?? null,
+          defaultBreadcrumbs: defaultParts,
+          app,
+          viewType: currentViewType,
+        });
+        if (custom && custom.length > 0) return custom;
+      } catch (err) {
+        console.error(`[PageSubHeader] Error in breadcrumb provider "${matchedBreadcrumbProvider.id}":`, err);
+      }
+    }
+    return null;
+  }, [centerContent, document, documents, matchedBreadcrumbProvider, activeTab, app, currentViewType]);
+
+  const displayTitle = useMemo(() => {
+    if (matchedBreadcrumbProvider?.getTitleOverride) {
+      try {
+        const override = matchedBreadcrumbProvider.getTitleOverride({
+          tab: activeTab ?? null,
+          doc: document ?? null,
+          defaultTitle: title || document?.title || 'Untitled',
+          viewType: currentViewType,
+        });
+        if (override !== undefined) return override;
+      } catch (err) {
+        console.error(`[PageSubHeader] Error in getTitleOverride "${matchedBreadcrumbProvider.id}":`, err);
+      }
+    }
+    return title || document?.title || 'Untitled';
+  }, [matchedBreadcrumbProvider, activeTab, document, title, currentViewType]);
+
+  const renderDecoratedBreadcrumbItem = useCallback(
+    (item: BreadcrumbItem, index: number, total: number) => {
+      const decCtx: BreadcrumbDecoratorContext = {
+        tab: activeTab ?? null,
+        doc: document ?? null,
+        item,
+        index,
+        total,
+        app,
+        viewType: currentViewType,
+      };
+
+      let icon = item.icon;
+      let prefix: React.ReactNode = null;
+      let suffix: React.ReactNode = null;
+
+      for (const dec of breadcrumbDecorators) {
+        try {
+          if (dec.matches && !dec.matches(item, decCtx)) continue;
+          if (dec.renderIcon) icon = dec.renderIcon(item, decCtx);
+          if (dec.renderPrefix) prefix = <>{prefix}{dec.renderPrefix(item, decCtx)}</>;
+          if (dec.renderSuffix) suffix = <>{suffix}{dec.renderSuffix(item, decCtx)}</>;
+        } catch (err) {
+          console.error(`[PageSubHeader] Error applying breadcrumb decorator "${dec.id}":`, err);
+        }
+      }
+
+      return (
+        <span
+          key={item.id || index}
+          onClick={(e) => item.onClick?.(app, e)}
+          className={`inline-flex items-center gap-1 truncate ${
+            item.onClick ? 'cursor-pointer hover:text-[var(--noether-text-primary)] transition-none' : ''
+          } ${item.className || ''}`}
+        >
+          {prefix}
+          {icon && <span className="shrink-0">{icon}</span>}
+          <span className="truncate">{item.title}</span>
+          {suffix}
+        </span>
+      );
+    },
+    [activeTab, document, app, currentViewType, breadcrumbDecorators]
+  );
 
   // Sidebar docked mode: render ONLY floating top-right action buttons in a vertical column
   if (isSidebar) {
@@ -297,31 +471,54 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
         <ViewportActionSlotHost corner="top-left" direction="horizontal" context={actionContext} />
       </div>
 
-      {/* Center: Truly Absolute Centered Title (100% dead center across ALL views) */}
+      {/* Center: Truly Absolute Centered Title & Universal Decorators */}
       <div
         className={`absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-28 ${
           isTransparent ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
         }`}
       >
-        {centerContent ? (
-          <div className="pointer-events-auto">
-            {centerContent}
-          </div>
-        ) : (
-          <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans pointer-events-auto">
-            {resolvedIcon && (
-              <span className="shrink-0 text-[var(--noether-text-secondary)] flex items-center">
-                {React.isValidElement(resolvedIcon)
-                  ? React.cloneElement(resolvedIcon as React.ReactElement<any>, {
-                      size: 13,
-                      className: 'shrink-0',
-                    })
-                  : resolvedIcon}
-              </span>
-            )}
-            <span className="truncate block min-w-0">{title || 'Untitled'}</span>
-          </div>
-        )}
+        <div className="pointer-events-auto flex items-center justify-center gap-1.5 max-w-full min-w-0">
+          {titlePrefixes.length > 0 && (
+            <div className="flex items-center gap-1 shrink-0">
+              {titlePrefixes}
+            </div>
+          )}
+
+          {centerContent ? (
+            <div className="min-w-0">
+              {centerContent}
+            </div>
+          ) : matchedBreadcrumbs && matchedBreadcrumbs.length > 0 ? (
+            <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1 font-sans min-w-0 text-[var(--noether-text-secondary,#888)]">
+              {matchedBreadcrumbs.map((crumb, idx) => (
+                <React.Fragment key={crumb.id || idx}>
+                  {idx > 0 && <span className="text-[#555] select-none mx-0.5">/</span>}
+                  {renderDecoratedBreadcrumbItem(crumb, idx, matchedBreadcrumbs.length)}
+                </React.Fragment>
+              ))}
+            </div>
+          ) : (
+            <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans min-w-0">
+              {resolvedIcon && (
+                <span className="shrink-0 text-[var(--noether-text-secondary)] flex items-center">
+                  {React.isValidElement(resolvedIcon)
+                    ? React.cloneElement(resolvedIcon as React.ReactElement<any>, {
+                        size: 13,
+                        className: 'shrink-0',
+                      })
+                    : resolvedIcon}
+                </span>
+              )}
+              <span className="truncate block min-w-0">{displayTitle}</span>
+            </div>
+          )}
+
+          {titleSuffixes.length > 0 && (
+            <div className="flex items-center gap-1 shrink-0">
+              {titleSuffixes}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right: Custom Actions, Dynamic Viewport Actions, Reading View, Bookmark, Search & More Options */}

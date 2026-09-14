@@ -390,3 +390,5 @@ export const useOmniboxProviders = (): OmniboxProvider[] => {
     () => app.omnibox.getProviders()
   );
 };
+
+

@@ -12,7 +12,7 @@
 
 import React from 'react';
 import { Extension } from '@/core/extensions/Extension';
-import { ExtensionManifest, McpToolResult } from '@/core/extensions/types';
+import { ExtensionManifest, McpToolResult, Disposable } from '@/core/extensions/types';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { DashboardSquare01Icon, DashboardSquareAddIcon } from '@/components/common/Icons';
 import { CanvasSettingsTab } from './CanvasSettingsTab';
@@ -31,6 +31,21 @@ import {
   CANVAS_EDGES_TABLE_DEF,
 } from './canvasDb';
 import { CanvasView } from './CanvasView';
+import {
+  canvasCardRegistry,
+  CanvasCardRegistry,
+  useCanvasCardRenderers,
+  type CanvasCardRendererDefinition,
+  type CanvasCardRenderContext,
+} from './registries/CanvasCardRegistry';
+
+export {
+  canvasCardRegistry,
+  CanvasCardRegistry,
+  useCanvasCardRenderers,
+  type CanvasCardRendererDefinition,
+  type CanvasCardRenderContext,
+};
 
 export const CANVAS_MANIFEST: ExtensionManifest = {
   ...(manifest as ExtensionManifest),
@@ -38,11 +53,30 @@ export const CANVAS_MANIFEST: ExtensionManifest = {
 };
 
 export class CanvasExtension extends Extension {
+  public cardRegistry: CanvasCardRegistry = canvasCardRegistry;
+
   constructor(app: NoetherApp, manifest: ExtensionManifest = CANVAS_MANIFEST) {
     super(app, manifest);
   }
 
+  /**
+   * Registers a custom canvas card renderer.
+   * Enables extensions to render specialized card content (e.g. Kanban boards,
+   * 3D models, Excalidraw, interactive charts, data widgets) based on node or document properties.
+   */
+  public registerCardRenderer(renderer: CanvasCardRendererDefinition): Disposable {
+    const d = this.cardRegistry.registerRenderer(renderer);
+    return this.registerDisposable(d);
+  }
+
   public onload(): void {
+    // Inter-extension EventBus subscription for decoupled card renderer registration
+    this.onEvent('canvas:register-card-renderer' as any, ((renderer: CanvasCardRendererDefinition) => {
+      if (renderer && typeof renderer.matches === 'function' && typeof renderer.render === 'function') {
+        this.registerCardRenderer(renderer);
+      }
+    }) as any);
+
     // 0. Register declarative SQLite tables
     this.defineTable(CANVAS_NODES_TABLE_DEF).catch((err) => {
       console.error('[CanvasExtension] Failed to define nodes table:', err);
