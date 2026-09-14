@@ -90,9 +90,12 @@ export class BookmarksExtension extends Extension {
       },
     });
 
-    // 5. Register Document Header Action Button (Sub-header star icon)
-    this.registerDocumentHeaderAction({
+    // 5. Register Viewport Action Button (Sub-header star icon)
+    this.registerViewportAction({
       id: 'toggle-bookmark',
+      corner: 'top-right',
+      direction: 'horizontal',
+      scope: 'document',
       title: (ctx) => (ctx.document?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'),
       icon: (ctx) => (
         <Bookmark01Icon
@@ -102,8 +105,8 @@ export class BookmarksExtension extends Extension {
       ),
       className: (ctx) =>
         ctx.document?.is_bookmarked
-          ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer'
-          : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-white/10 hover:[&_svg]:drop-shadow-none cursor-pointer',
+          ? '!text-[#f59e0b] hover:!text-[#fbbf24]'
+          : '',
       onClick: async (ctx) => {
         if (ctx.document) {
           const isNowBookmarked = await ctx.app.vault.toggleBookmark(ctx.document.id);

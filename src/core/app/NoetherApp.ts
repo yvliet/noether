@@ -28,7 +28,7 @@ import { DynamicHugeIcon } from '@/components/common/IconPicker';
 import { EmojiRenderer } from '@/components/common/emoji';
 import { ToolRegistry } from '../registries/ToolRegistry';
 import { SlotRegistry } from '../registries/SlotRegistry';
-import { DocumentHeaderActionRegistry, documentHeaderActionRegistry } from '../registries/DocumentHeaderActionRegistry';
+import { ViewportActionRegistry, viewportActionRegistry } from '../registries/ViewportActionRegistry';
 import { FileContextMenuRegistry, fileContextMenuRegistry } from '../registries/FileContextMenuRegistry';
 import { ExtensionDatabaseManager } from '../database/ExtensionDatabaseManager';
 import { ExtensionWorkerPool } from '../workers/ExtensionWorkerPool';
@@ -108,8 +108,8 @@ export class NoetherApp {
   public slots: SlotRegistry;
   /** Custom file type registry managing file extensions, view mappings, and badges. */
   public fileTypes: FileTypeRegistry;
-  /** Document header action registry managing extensible buttons in note sub-headers. */
-  public documentHeaderActions: DocumentHeaderActionRegistry;
+  /** Viewport action registry managing extensible buttons in viewport corners and sub-headers. */
+  public viewportActions: ViewportActionRegistry;
   /** File context menu registry managing contextual actions on files and folders. */
   public fileContextMenus: FileContextMenuRegistry;
   /** Relational database manager managing extension tables, migrations, and cascade teardown. */
@@ -147,7 +147,7 @@ export class NoetherApp {
     this.tools = new ToolRegistry(this);
     this.slots = new SlotRegistry();
     this.fileTypes = fileTypeRegistry;
-    this.documentHeaderActions = documentHeaderActionRegistry;
+    this.viewportActions = viewportActionRegistry;
     this.fileContextMenus = fileContextMenuRegistry;
 
     // Register Native Built-in Icon Providers

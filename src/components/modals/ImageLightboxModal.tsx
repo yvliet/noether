@@ -130,7 +130,7 @@ export const ImageLightboxModal: React.FC = () => {
         type="button"
         onClick={closeImageLightbox}
         title="Close (Esc)"
-        className="absolute top-2 right-3 z-30 p-2 text-[#888888] hover:text-white rounded hover:bg-white/10 transition-none cursor-pointer flex items-center justify-center pointer-events-auto"
+        className="absolute top-2 right-3 z-30 !p-2 noether-toolbar-btn pointer-events-auto"
       >
         <Cancel01Icon size={18} />
       </button>

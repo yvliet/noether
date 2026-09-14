@@ -55,6 +55,8 @@
   --noether-tab-corner-fill: #1c1c1c;
   --noether-tab-corner-hover-fill: #232323;
   --noether-bg-statusbar: #1f1f1f;
+  --noether-btn-hover-bg: rgba(255, 255, 255, 0.1);
+  --noether-btn-active-bg: rgba(255, 255, 255, 0.2);
 
   /* Border tokens */
   --noether-border-subtle: #202020;
@@ -276,6 +278,8 @@ textarea.bg-transparent {
 
 .theme-light {
   color-scheme: light;
+  --noether-btn-hover-bg: rgba(0, 0, 0, 0.08);
+  --noether-btn-active-bg: rgba(0, 0, 0, 0.15);
 }
 
 /* Light mode selection */
@@ -1772,6 +1776,42 @@ a.noether-btn::after {
   border-left: 1px solid rgba(255, 255, 255, 0.1);
   margin-left: 0.25rem;
   padding-left: 1.25rem;
+}
+
+/* Universal Toolbar & Viewport Icon Button (Headers, Corners, Rails, Extensions) */
+.noether-toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  color: var(--noether-text-muted, #888888);
+  background-color: transparent;
+  cursor: pointer;
+  user-select: none;
+  border: none;
+  outline: none !important;
+  transition: none;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.noether-toolbar-btn:hover:not(:disabled) {
+  color: var(--noether-text-primary, #ffffff);
+  background-color: var(--noether-btn-hover-bg, rgba(255, 255, 255, 0.1));
+}
+
+.noether-toolbar-btn.active,
+.noether-toolbar-btn[data-active="true"] {
+  color: var(--noether-text-primary, #ffffff);
+  background-color: var(--noether-btn-active-bg, rgba(255, 255, 255, 0.2));
+}
+
+.noether-toolbar-btn:disabled,
+.noether-toolbar-btn[disabled] {
+  opacity: 0.2;
+  cursor: default;
+  background-color: transparent !important;
 }
 
 /* Noether Native Desktop Button & Form Controls */

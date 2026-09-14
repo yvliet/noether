@@ -20,7 +20,6 @@ import sketchReadme from './readme.md?raw';
 import { initSketchDb, loadSketchFromDb, saveSketchToDb, deleteSketchFromDb, SKETCH_TABLE_DEFINITION } from './sketchDb';
 import { serializeSketchToComment, parseSketchFromComment, exportStrokesToSvg } from './sketchEngine';
 import { useSketchStore } from './sketchStore';
-import { SketchSubheaderButton } from './SketchSubheaderButton';
 import { SketchCanvasOverlay } from './SketchCanvasOverlay';
 import { SketchSettingsTab } from './SketchSettingsTab';
 import { PaintBoardIcon } from '@/components/common/Icons';
@@ -51,12 +50,45 @@ export class SketchExtension extends Extension {
       },
     });
 
-    // 3. Register Subheader Button Slot (Left of Editing view toggle)
-    this.registerPortalSlot({
-      id: 'sketch-subheader-btn',
-      slot: 'editor:subheader-actions',
-      order: 10,
-      render: (context) => <SketchSubheaderButton context={context} />,
+    // 3. Register Viewport Action Button (Left of Reading/Editing toggle in sub-header)
+    this.registerViewportAction({
+      id: 'sketch-toggle',
+      corner: 'top-right',
+      direction: 'horizontal',
+      scope: 'document',
+      order: 5,
+      title: () => {
+        const isSketchingActive = useSketchStore.getState().isSketchingActive;
+        const strokes = useSketchStore.getState().strokes;
+        const hasStrokes = strokes && strokes.length > 0;
+        return isSketchingActive
+          ? 'Close Sketch overlay (Ctrl+Shift+S)'
+          : hasStrokes
+          ? 'Sketch overlay active - Click to edit (Ctrl+Shift+S)'
+          : 'Draw on note (Ctrl+Shift+S)';
+      },
+      icon: () => {
+        const strokes = useSketchStore.getState().strokes;
+        const isSketchingActive = useSketchStore.getState().isSketchingActive;
+        const hasStrokes = strokes && strokes.length > 0;
+        return (
+          <div className="relative flex items-center justify-center">
+            <PaintBoardIcon size={14} />
+            {hasStrokes && !isSketchingActive && (
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-[#38bdf8] pointer-events-none" />
+            )}
+          </div>
+        );
+      },
+      isActive: () => useSketchStore.getState().isSketchingActive,
+      onClick: () => {
+        useSketchStore.getState().toggleSketching();
+      },
+      isVisible: (ctx) => Boolean(ctx.document),
+    });
+
+    this.onEvent('document:opened', async ({ id }) => {
+      await useSketchStore.getState().loadDocument(id);
     });
 
     // 3. Register Content Overlay Slot (Moves with text flow)

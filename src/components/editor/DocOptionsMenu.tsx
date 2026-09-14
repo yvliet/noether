@@ -1087,9 +1087,8 @@ export const DocOptionsMenu: React.FC<DocOptionsMenuProps> = React.memo(({ docum
         type="button"
         onClick={handleToggle}
         title="More options"
-        className={buttonClassName || `p-1 rounded hover:[&_svg]:drop-shadow-none hover:bg-white/10 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer ${
-          isOpen ? 'text-[var(--noether-text-primary)] bg-white/15' : ''
-        }`}
+        data-active={isOpen ? 'true' : undefined}
+        className={buttonClassName || `noether-toolbar-btn ${isOpen ? 'active' : ''}`}
       >
         <MoreVerticalIcon size={14} />
       </button>

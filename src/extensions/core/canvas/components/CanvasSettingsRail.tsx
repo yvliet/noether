@@ -9,6 +9,7 @@ import {
   CheckIcon,
 } from '@/components/common/Icons';
 import { Tooltip } from '@/components/common/Tooltip';
+import { ViewportActionSlotHost } from '@/components/layout/ViewportActionSlotHost';
 import { useCanvasSettings } from '../canvasSettings';
 
 export interface CanvasSettingsRailProps {
@@ -125,11 +126,8 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
           type="button"
           onClick={handleToggleMenu}
           title="Canvas settings"
-          className={`p-1 rounded cursor-pointer text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] ${
-            isMenuOpen
-              ? '!text-[var(--noether-text-primary)] !bg-[var(--noether-bg-card-hover)]'
-              : ''
-          }`}
+          data-active={isMenuOpen ? 'true' : undefined}
+          className={`noether-toolbar-btn ${isMenuOpen ? 'active' : ''}`}
         >
           <Settings02Icon size={14} />
         </button>
@@ -140,7 +138,7 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
             type="button"
             onClick={onUndo}
             disabled={!canUndo}
-            className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
+            className="noether-toolbar-btn"
           >
             <UndoIcon size={14} />
           </button>
@@ -152,11 +150,18 @@ export const CanvasSettingsRail: React.FC<CanvasSettingsRailProps> = React.memo(
             type="button"
             onClick={onRedo}
             disabled={!canRedo}
-            className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer disabled:opacity-20 disabled:hover:bg-transparent disabled:cursor-default"
+            className="noether-toolbar-btn"
           >
             <RedoIcon size={14} />
           </button>
         </Tooltip>
+
+        {/* Dynamic Extension Actions in Canvas Top-Right Rail */}
+        <ViewportActionSlotHost
+          corner="top-right"
+          direction="vertical"
+          context={{ viewType: 'canvas' }}
+        />
       </div>
 
       {/* Settings Popover Dropdown */}

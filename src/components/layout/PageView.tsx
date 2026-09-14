@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { PageSubHeader } from './PageSubHeader';
+import { ViewportActionSlotHost } from './ViewportActionSlotHost';
 import { useSettingsStore } from '@/store/settingsStore';
 import platform from '@/lib/platform/platformAdapter';
 import { DocumentItem } from '@/types';
@@ -231,6 +232,18 @@ export const PageView: React.FC<PageViewProps> = React.memo(({
           {children}
         </div>
       )}
+
+      {/* Bottom-Left Viewport Actions */}
+      <div className="absolute bottom-4 left-4 z-20 pointer-events-none select-none flex flex-col gap-1">
+        <ViewportActionSlotHost corner="bottom-left" direction="vertical" context={{ document, isSidebar: false }} />
+        <ViewportActionSlotHost corner="bottom-left" direction="horizontal" context={{ document, isSidebar: false }} />
+      </div>
+
+      {/* Bottom-Right Viewport Actions */}
+      <div className="absolute bottom-4 right-4 z-20 pointer-events-none select-none flex flex-col items-end gap-1">
+        <ViewportActionSlotHost corner="bottom-right" direction="vertical" context={{ document, isSidebar: false }} />
+        <ViewportActionSlotHost corner="bottom-right" direction="horizontal" context={{ document, isSidebar: false }} />
+      </div>
     </div>
   );
 });

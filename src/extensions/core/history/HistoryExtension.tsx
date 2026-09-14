@@ -36,14 +36,18 @@ export class HistoryExtension extends Extension {
       render: () => <HistoryView />,
     });
 
-    // 2. Register Document Header Action (Clock icon in note sub-header)
-    this.registerDocumentHeaderAction({
+    // 2. Register Viewport Action (Clock icon in note sub-header)
+    this.registerViewportAction({
       id: 'open-history',
+      corner: 'top-right',
+      direction: 'horizontal',
+      scope: 'document',
       title: 'Version history',
       icon: () => <HistoryIcon size={14} />,
       onClick: () => {
         this.app.workspace.setActiveSidebarTab('right', 'history');
       },
+      order: 30,
     });
 
     // 3. Register Command Palette Actions
