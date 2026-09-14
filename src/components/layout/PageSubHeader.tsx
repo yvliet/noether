@@ -248,7 +248,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             type="button"
             onClick={onToggleFind}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find (Ctrl+F)'}
-            className={`p-1.5 rounded-md ${
+            className={`p-1 rounded ${
               isFindOpen
                 ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]'
                 : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
@@ -280,7 +280,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
       {/* Left: Navigation History Arrows & Custom Left Actions */}
       <div
         className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
-          isTransparent ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+          isTransparent ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
         }`}
       >
         <button
@@ -289,7 +289,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canBack}
           data-tooltip="Navigate back"
           data-shortcuts={JSON.stringify(['Alt + Left', 'Alt + A'])}
-          className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
+          className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
         >
           <ArrowLeft01Icon size={14} />
         </button>
@@ -299,7 +299,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
           disabled={!canForward}
           data-tooltip="Navigate forward"
           data-shortcuts={JSON.stringify(['Alt + Right', 'Alt + D'])}
-          className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
+          className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] hover:[&_svg]:drop-shadow-none disabled:opacity-20 disabled:hover:bg-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer disabled:cursor-default"
         >
           <ArrowRight01Icon size={14} />
         </button>
@@ -338,7 +338,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
       {/* Right: Reading View, Bookmark, Search & Options */}
       <div
         className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
-          isTransparent ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : 'drop-shadow-none'
+          isTransparent ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
         }`}
       >
         {customRightActions}
@@ -358,7 +358,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
                 ? 'Reading view\n(Ctrl+Click to split)'
                 : 'Editing view\n(Ctrl+Click to split)'
             }
-            className={`p-1 rounded ${
+            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
               !onToggleReadingMode
                 ? 'opacity-20 cursor-default text-[var(--noether-text-muted)]'
                 : isLocked
@@ -384,7 +384,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
               onClick={() => action.onClick(actionContext)}
               disabled={!isEnabled}
               title={titleStr}
-              className={`p-1 rounded ${
+              className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
                 classNameStr ||
                 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
               }`}
@@ -400,7 +400,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             type="button"
             onClick={handleBookmarkClick}
             title={document?.is_bookmarked || isBookmarked ? 'Remove bookmark' : 'Bookmark note'}
-            className={`p-1 rounded ${
+            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
               document?.is_bookmarked || isBookmarked
                 ? 'text-[#f59e0b] hover:text-[#fbbf24] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
                 : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
@@ -420,7 +420,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
             onClick={onToggleFind}
             disabled={!onToggleFind}
             title={isFindOpen ? 'Close find (Ctrl+F)' : 'Find in document (Ctrl+F)'}
-            className={`p-1 rounded ${
+            className={`p-1 rounded hover:[&_svg]:drop-shadow-none ${
               onToggleFind
                 ? isFindOpen
                   ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] cursor-pointer'

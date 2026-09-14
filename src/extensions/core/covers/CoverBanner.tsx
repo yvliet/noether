@@ -185,7 +185,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
 
           {/* Normal Hover Action Controls */}
           {showControlsOnHover && !isRepositioning && (
-            <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-0.5 pointer-events-auto z-30 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
+            <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-0.5 pointer-events-auto z-30 [&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
               <button
                 type="button"
                 onClick={() => {
@@ -193,7 +193,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 }}
                 title="Change cover"
                 aria-label="Change cover"
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
+                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
               >
                 <FileImageIcon size={14} />
               </button>
@@ -203,7 +203,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 onClick={handleStartReposition}
                 title="Reposition cover"
                 aria-label="Reposition cover"
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
+                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
               >
                 <ArrowUpDownIcon size={14} />
               </button>
@@ -213,7 +213,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 onClick={handleRemoveCover}
                 title="Remove cover"
                 aria-label="Remove cover"
-                className="p-1 rounded text-[var(--noether-text-muted)] hover:text-rose-500 hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
+                className="p-1 rounded hover:[&_svg]:drop-shadow-none text-[var(--noether-text-muted)] hover:text-rose-500 hover:bg-[var(--noether-bg-card-hover)] cursor-pointer flex items-center justify-center"
               >
                 <Delete02Icon size={14} />
               </button>
