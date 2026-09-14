@@ -20,7 +20,7 @@ Noether eliminates this trade-off with a **Dual-Storage Engine**:
 - **Disk Markdown Files (`.md`)**: The authoritative source of truth.
 - **Relational SQLite Database (`.noether/noether.sqlite`)**: A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) acting as an instant metadata cache and query accelerator.
 
-If `.noether/noether.sqlite` is ever deleted or corrupted, Noether simply re-scans the Markdown files in the Vault using the differential `file_manifest` and rebuilds the relational cache in seconds.
+If `.noether/noether.sqlite` is ever deleted or corrupted, Noether simply re-scans the Markdown files in the Vault using the differential `file_manifest` and rebuilds the relational cache in seconds. Note that while note content, wikilinks, tags, and search indexes are 100% restored from disk, metadata unsupported by standard Markdown syntax (such as interactive table column widths) and extension-managed SQLite tables (such as Spaced Repetition card history) reside exclusively in SQLite and reset upon a complete database wipe.
 
 
 ## 2. Synchronization Pipeline

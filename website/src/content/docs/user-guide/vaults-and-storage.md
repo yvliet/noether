@@ -24,9 +24,14 @@ My-Knowledge-Base/             ← Vault Root Directory
 └── Index.md
 ```
 
-### Physical Ground Truth Invariant
-- **Your files are never trapped in a database**: All text, frontmatter, and embedded media live as standard plain-text files on your hard drive.
-- **The database is disposable**: If `noether.sqlite` is ever deleted or damaged, Noether automatically scans your markdown files on the next boot and reconstructs the relational index and search catalog in seconds.
+### Physical Ground Truth & The SQLite Cache
+- **Your notes are never trapped in a database**: All text, frontmatter, headings, links, and media live as standard plain-text Markdown files directly on your drive.
+- **Cache Rebuild Resilience**: If `noether.sqlite` is ever deleted or damaged, Noether automatically scans your Markdown files on boot and reconstructs your note catalog, backlinks, and FTS5 search index in seconds.
+- **What is tied to SQLite**: While your writing and files are indestructible, `.noether/noether.sqlite` also holds data that plain Markdown syntax cannot represent:
+  - Custom table column widths (rebuilding from `.md` resets tables to automatic column sizing).
+  - Extension relational states (such as Spaced Repetition flashcard review history or custom icon assignments).
+  - Trash bin recovery metadata.
+- **Best Practice**: You do not need to baby the database, but avoid proactively deleting `.noether/noether.sqlite` unless you specifically want to reset extension data and trigger a fresh index rebuild.
 
 ## 2. Multi-Vault Agility
 ---
@@ -83,7 +88,7 @@ Git is an ideal synchronization tool for Noether Vaults:
   .noether/*.tmp*
   .trash/
   ```
-  *(Noether will automatically regenerate `noether.sqlite` on other machines upon launch).*
+  *(Noether will automatically regenerate `noether.sqlite` on other machines upon launch. Note that extension SQLite data such as flashcard review schedules won't sync over Git unless you back up `.noether/noether.sqlite` or use Noether's built-in cloud sync extension).*
 
 ### Using Syncthing, iCloud Drive, or Dropbox
 - Set your Vault folder directly within your synchronized cloud directory.
