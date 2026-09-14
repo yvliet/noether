@@ -12,7 +12,7 @@ export interface WikilinkHoverPreviewProps {
   anchorRect: DOMRect;
   onClose: () => void;
   onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
+  onMouseLeave?: (e: React.MouseEvent) => void;
 }
 
 /**
@@ -84,6 +84,88 @@ export function resolveTargetDocument(
   };
 }
 
+/**
+ * Recursively inspects TipTap AST nodes to determine if any meaningful text,
+ * media, code, math, or interactive block content exists.
+ */
+function hasMeaningfulTipTapContent(nodes: any[]): boolean {
+  if (!Array.isArray(nodes) || nodes.length === 0) return false;
+
+  for (const node of nodes) {
+    if (!node || typeof node !== 'object') continue;
+
+    // Non-empty text node
+    if (node.type === 'text') {
+      if (typeof node.text === 'string' && node.text.trim().length > 0) {
+        return true;
+      }
+      continue;
+    }
+
+    // Media and block content elements that represent meaningful visual content
+    if (
+      node.type === 'image' ||
+      node.type === 'horizontalRule' ||
+      node.type === 'mathChip' ||
+      node.type === 'iconChip' ||
+      node.type === 'icon' ||
+      node.type === 'embed' ||
+      node.type === 'table' ||
+      node.type === 'drawio'
+    ) {
+      if (node.type === 'image' && !node.attrs?.src) continue;
+      if (node.type === 'mathChip' && !node.attrs?.latex?.trim()) continue;
+      return true;
+    }
+
+    // Recursive search in child content containers (e.g. headings, blockquotes, lists, tables)
+    if (Array.isArray(node.content) && node.content.length > 0) {
+      if (hasMeaningfulTipTapContent(node.content)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Checks whether a document's content is empty (contains no text, media, or visual elements).
+ */
+export function isDocumentContentEmpty(contentJson?: string | null, docType?: string): boolean {
+  if (!contentJson) return true;
+  const trimmed = contentJson.trim();
+  if (!trimmed || trimmed === '{}' || trimmed === '[]') return true;
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (!parsed || typeof parsed !== 'object') return true;
+
+    // 1. Canvas document check
+    if (docType === 'canvas' || Array.isArray(parsed.nodes)) {
+      return !Array.isArray(parsed.nodes) || parsed.nodes.length === 0;
+    }
+
+    // 2. TipTap AST doc check
+    if (parsed.type === 'doc') {
+      if (!Array.isArray(parsed.content) || parsed.content.length === 0) {
+        return true;
+      }
+      return !hasMeaningfulTipTapContent(parsed.content);
+    }
+
+    return Object.keys(parsed).length === 0;
+  } catch {
+    // 3. Raw markdown / plaintext fallback: strip frontmatter and check text length
+    let bodyText = trimmed;
+    if (bodyText.startsWith('---')) {
+      const match = bodyText.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?([\s\S]*)$/);
+      if (match) bodyText = match[1];
+    }
+    return bodyText.trim().length === 0;
+  }
+}
+
 export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.memo(({
   target,
   anchorRect,
@@ -97,17 +179,22 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
     [target, documents]
   );
 
-  const [fullContent, setFullContent] = useState<string>(doc?.content_json || '');
+  const [fullContent, setFullContent] = useState<string | null>(() => {
+    return doc?.content_json || null;
+  });
+  const [hasLoaded, setHasLoaded] = useState<boolean>(() => Boolean(doc?.content_json));
   const [placementStyle, setPlacementStyle] = useState<{
     top: string;
     bottom: string;
     left: string;
     maxHeight: string;
+    isBelow: boolean;
   }>({
     top: '0px',
     bottom: 'auto',
     left: '0px',
     maxHeight: '380px',
+    isBelow: true,
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -116,11 +203,13 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
     if (doc) {
       if (doc.content_json) {
         setFullContent(doc.content_json);
+        setHasLoaded(true);
       } else {
         let isCurrent = true;
         getDocumentById(doc.id).then((fullDoc) => {
-          if (isCurrent && fullDoc?.content_json) {
-            setFullContent(fullDoc.content_json);
+          if (isCurrent) {
+            setFullContent(fullDoc?.content_json || '');
+            setHasLoaded(true);
           }
         });
         return () => {
@@ -129,8 +218,23 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
       }
     } else {
       setFullContent('');
+      setHasLoaded(true);
     }
   }, [doc]);
+
+  // Determine if the linked note is completely empty
+  const isEmptyNote = useMemo(() => {
+    if (!doc) return false;
+    if (!hasLoaded) return false;
+    return isDocumentContentEmpty(fullContent, doc.doc_type);
+  }, [doc, hasLoaded, fullContent]);
+
+  // Automatically dismiss hover preview if the target note is empty
+  useEffect(() => {
+    if (isEmptyNote) {
+      onClose();
+    }
+  }, [isEmptyNote, onClose]);
 
   // Compute collision-free viewport placement that sits snug against the wikilink
   useLayoutEffect(() => {
@@ -159,6 +263,7 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
         bottom: 'auto',
         left: `${left}px`,
         maxHeight: `${Math.min(380, Math.max(120, spaceBelow))}px`,
+        isBelow: true,
       });
     } else {
       // Snug on top: anchor bottom edge of popover exactly margin pixels above anchorRect.top
@@ -167,6 +272,7 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
         bottom: `${Math.round(viewportHeight - anchorRect.top + margin)}px`,
         left: `${left}px`,
         maxHeight: `${Math.min(380, Math.max(120, spaceAbove))}px`,
+        isBelow: false,
       });
     }
   }, [anchorRect]);
@@ -206,6 +312,11 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
 
   const cleanDisplayTitle = targetTitle || 'Untitled';
 
+  // Suppress preview completely if target note is empty or still hydrating from SQLite
+  if (doc && (!hasLoaded || isEmptyNote)) {
+    return null;
+  }
+
   return createPortal(
     <div
       ref={containerRef}
@@ -220,54 +331,72 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
         maxHeight: placementStyle.maxHeight,
         width: 'min(480px, calc(100vw - 32px))',
       }}
-      className="z-[9999] pointer-events-auto flex flex-col rounded-xl border border-[var(--noether-border-base,#2e2e2e)] bg-[var(--noether-bg-card,#181818)] shadow-[0_16px_40px_rgba(0,0,0,0.65)] overflow-hidden text-left"
+      className="z-[9999] pointer-events-auto flex flex-col text-left"
     >
-      {/* Top-Right Quick Action: Chain Link Button */}
-      <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1">
-        <button
-          type="button"
-          onClick={handleOpenNote}
-          title={doc ? `Open ${doc.title}` : `Open ${cleanDisplayTitle}`}
-          className="p-1.5 rounded-md text-[var(--noether-text-muted,#888888)] hover:text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-bg-card-hover,#252525)] cursor-pointer"
-        >
-          <Link04Icon size={15} />
-        </button>
-      </div>
+      {/* Invisible bridging safe-zone spanning the 8px gap between the link and the popover */}
+      <div
+        data-wikilink-hover-bridge="true"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          height: '10px',
+          top: placementStyle.isBelow ? '-10px' : 'auto',
+          bottom: placementStyle.isBelow ? 'auto' : '-10px',
+          background: 'transparent',
+          pointerEvents: 'auto',
+        }}
+      />
 
-      {doc ? (
-        <div
-          className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pr-8 relative"
-          onClick={(e) => {
-            const link = (e.target as HTMLElement).closest('.md-link, .md-wikilink, a');
-            if (link) {
-              onClose();
-            }
-          }}
-        >
-          <DocumentView
-            documentId={doc.id}
-            content={fullContent}
-            isDocBacked={true}
-            editable={false}
-            compact={true}
-          />
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-[var(--noether-text-muted,#888888)]">
-          <div className="font-semibold text-sm text-[var(--noether-text-primary,#eeeeee)] mb-1">
-            {cleanDisplayTitle}
-          </div>
-          <div className="mb-4 text-xs opacity-75">Note not created yet</div>
+      {/* Visual popover card */}
+      <div className="relative flex flex-col w-full h-full rounded-xl border border-[var(--noether-border-base,#2e2e2e)] bg-[var(--noether-bg-card,#181818)] shadow-[0_16px_40px_rgba(0,0,0,0.65)] overflow-hidden">
+        {/* Top-Right Quick Action: Chain Link Button */}
+        <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1">
           <button
             type="button"
-            onClick={handleCreateNote}
-            className="noether-btn text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer"
+            onClick={handleOpenNote}
+            title={doc ? `Open ${doc.title}` : `Open ${cleanDisplayTitle}`}
+            className="p-1.5 rounded-md text-[var(--noether-text-muted,#888888)] hover:text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-bg-card-hover,#252525)] cursor-pointer"
           >
-            <FileAddIcon size={14} />
-            Create note
+            <Link04Icon size={15} />
           </button>
         </div>
-      )}
+
+        {doc ? (
+          <div
+            className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pr-8 relative"
+            onClick={(e) => {
+              const link = (e.target as HTMLElement).closest('.md-link, .md-wikilink, a');
+              if (link) {
+                onClose();
+              }
+            }}
+          >
+            <DocumentView
+              documentId={doc.id}
+              content={fullContent || ''}
+              isDocBacked={true}
+              editable={false}
+              compact={true}
+            />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center p-8 text-center text-xs text-[var(--noether-text-muted,#888888)]">
+            <div className="font-semibold text-sm text-[var(--noether-text-primary,#eeeeee)] mb-1">
+              {cleanDisplayTitle}
+            </div>
+            <div className="mb-4 text-xs opacity-75">Note not created yet</div>
+            <button
+              type="button"
+              onClick={handleCreateNote}
+              className="noether-btn text-xs px-3 py-1.5 flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileAddIcon size={14} />
+              Create note
+            </button>
+          </div>
+        )}
+      </div>
     </div>,
     document.body
   );
