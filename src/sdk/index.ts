@@ -45,6 +45,15 @@ export type {
 } from '../core/registries/ViewportActionRegistry';
 export { FileContextMenuRegistry, fileContextMenuRegistry } from '../core/registries/FileContextMenuRegistry';
 export type { FileContextMenuActionDefinition, FileContextMenuContext } from '../core/registries/FileContextMenuRegistry';
+export { TabContextMenuRegistry, tabContextMenuRegistry } from '../core/registries/TabContextMenuRegistry';
+export type { TabContextMenuActionDefinition, TabContextMenuContext } from '../core/registries/TabContextMenuRegistry';
+export { OmniboxProviderRegistry, omniboxProviderRegistry } from '../core/registries/OmniboxProviderRegistry';
+export type {
+  OmniboxProvider,
+  OmniboxItem,
+  OmniboxSearchContext,
+  OmniboxSearchResult,
+} from '../core/registries/OmniboxProviderRegistry';
 export { FileTypeRegistry, fileTypeRegistry } from '../core/registries/FileTypeRegistry';
 export { IconRegistry } from '../core/registries/IconRegistry';
 export type { IconPackProvider, IconDescriptor, IconRenderOptions } from '../core/registries/IconRegistry';
@@ -54,7 +63,13 @@ export { registerNativeTools } from '../core/mcp/NativeMcpTools';
 export { EventBus } from '../core/events/EventBus';
 export { z } from 'zod';
 export { zodToMcpJsonSchema, formatZodIssues } from '../lib/mcp/zodToJsonSchema';
-export { usePortalSlots, useEditorPlugins, useViewportActions } from '../core/app/AppContext';
+export {
+  usePortalSlots,
+  useEditorPlugins,
+  useViewportActions,
+  useTabContextMenuActions,
+  useOmniboxProviders,
+} from '../core/app/AppContext';
 export { ToolbarIconButton } from '../components/common/ToolbarIconButton';
 export { ViewportActionSlotHost } from '../components/layout/ViewportActionSlotHost';
 

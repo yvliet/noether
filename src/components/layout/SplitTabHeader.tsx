@@ -6,6 +6,10 @@ import { useNoetherApp, useTabDecorators } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { useTabReorder } from '@/hooks/useTabReorder';
 import { TabItem } from '@/types';
+import type {
+  TabContextMenuContext,
+  TabContextMenuActionDefinition,
+} from '@/core/registries/TabContextMenuRegistry';
 import { getDocumentPath } from '@/lib/db/documents';
 import { useContentScrolled } from '@/hooks/useContentScrolled';
 import {
@@ -164,10 +168,33 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
         (!tab.view_type || tab.view_type === 'document') &&
         (!tab.view_mode || tab.view_mode === 'document') &&
         Boolean(tab.document_id && !tab.document_id.startsWith('__'));
-      const doc = isDoc ? documents.find((d) => d.id === tab.document_id) : null;
+      const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
 
       const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
       const canCloseTab = splitTabs.length > 1 || !isTabEmpty;
+
+      const context: TabContextMenuContext = {
+        tab,
+        paneId: targetPaneId,
+        index,
+        totalTabs: splitTabs.length,
+        doc,
+        app,
+      };
+
+      const mapAction = (action: TabContextMenuActionDefinition): ContextMenuItem => ({
+        id: action.id,
+        title: typeof action.title === 'function' ? action.title(context) : action.title,
+        icon: typeof action.icon === 'function' ? action.icon(context) : action.icon,
+        disabled: action.isEnabled ? !action.isEnabled(context) : false,
+        isDanger: action.isDanger,
+        onClick: () => action.onClick(context),
+      });
+
+      const registeredTabActions = app.tabContextMenu.getActions(context, 'tabs');
+      const registeredSplitActions = app.tabContextMenu.getActions(context, 'split');
+      const registeredCustomActions = app.tabContextMenu.getActions(context, 'actions');
+      const registeredDangerActions = app.tabContextMenu.getActions(context, 'danger');
 
       const items: ContextMenuItem[] = [
         {
@@ -201,6 +228,18 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
             }
           },
         },
+        {
+          id: 'close-split-tabs-left',
+          title: 'Close tabs to the left',
+          disabled: index === 0,
+          onClick: () => {
+            const toClose = splitTabs.slice(0, index);
+            for (const other of toClose) {
+              closeTabInPane(targetPaneId, other.id);
+            }
+          },
+        },
+        ...registeredTabActions.map(mapAction),
         { type: 'separator' },
         {
           id: 'split-right',
@@ -239,6 +278,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
             });
           },
         },
+        ...registeredSplitActions.map(mapAction),
         { type: 'separator' },
         {
           id: 'close-split-view',
@@ -279,9 +319,19 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
         });
       }
 
+      if (registeredCustomActions.length > 0) {
+        items.push({ type: 'separator' });
+        items.push(...registeredCustomActions.map(mapAction));
+      }
+
+      if (registeredDangerActions.length > 0) {
+        items.push({ type: 'separator' });
+        items.push(...registeredDangerActions.map(mapAction));
+      }
+
       showContextMenu(e, items, { scope: 'tab', data: tab });
     },
-    [splitTabs, targetPaneId, closeTabInPane, closePane, splitPane, documents, vaultPath, showToast, showContextMenu]
+    [splitTabs, targetPaneId, closeTabInPane, closePane, splitPane, documents, vaultPath, showToast, showContextMenu, app]
   );
 
   const handleHeaderContextMenu = useCallback(
