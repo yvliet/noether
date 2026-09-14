@@ -260,29 +260,28 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
 
   // 1. Get Theme definition
   const rawThemeId = current.activeTheme || 'default';
-  const baseThemeDef = themeRegistry.getTheme(rawThemeId);
+  const themeDef = themeRegistry.getTheme(rawThemeId);
 
   // 2. Determine Dark vs Light mode:
-  // If user selected an explicit light theme (e.g. 'noether-light'), prioritize light.
-  // Otherwise, respect explicit themeMode ('light', 'dark', 'system').
-  let isDark = baseThemeDef.type === 'dark';
-  if (current.themeMode === 'light') {
+  // Respect explicit themeMode ('light', 'dark', 'system').
+  // If the theme is single-mode ('dark-only' or 'light-only'), respect that constraint.
+  const userMode = current.themeMode || 'dark';
+  let isDark = userMode === 'dark';
+  if (userMode === 'light') {
     isDark = false;
-  } else if (current.themeMode === 'dark') {
-    isDark = baseThemeDef.type === 'light' ? false : true;
-  } else if (current.themeMode === 'system') {
-    isDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? (baseThemeDef.type === 'dark');
+  } else if (userMode === 'system') {
+    isDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches ?? true;
   }
 
-  // 3. Resolve effective Theme definition
-  let themeDef = baseThemeDef;
-  if (!isDark && baseThemeDef.type === 'dark') {
-    themeDef = themeRegistry.getTheme('noether-light');
-  } else if (isDark && baseThemeDef.type === 'light') {
-    themeDef = themeRegistry.getTheme('default');
+  if (themeDef.modeSupport === 'dark-only') {
+    isDark = true;
+  } else if (themeDef.modeSupport === 'light-only') {
+    isDark = false;
   }
 
-  const themeModeKey = `${current.themeMode}_${isDark}`;
+  const effectiveMode: 'dark' | 'light' = isDark ? 'dark' : 'light';
+
+  const themeModeKey = `${current.themeMode}_${effectiveMode}`;
   if (appliedAppearanceCache.themeMode !== themeModeKey) {
     appliedAppearanceCache.themeMode = themeModeKey;
     if (isDark) {
@@ -296,22 +295,26 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
     }
   }
 
+  // 3. Resolve Effective Theme Tokens for Current Lighting Mode
+  const resolvedTokens = themeRegistry.resolveThemeTokens(themeDef, effectiveMode);
+
   // 4. Generate & Apply All Theme CSS Variables (only when theme, mode, or accent changed)
-  const themeKey = `${themeDef.id}_${isDark ? 'dark' : 'light'}_${current.accentColor}`;
+  const themeKey = `${themeDef.id}_${effectiveMode}_${current.accentColor}`;
   if (appliedAppearanceCache.themeId !== themeKey) {
     appliedAppearanceCache.themeId = themeKey;
-    const cssVars = themeRegistry.generateCssVariables(themeDef.variables, current.accentColor);
+    const cssVars = themeRegistry.generateCssVariables(resolvedTokens, current.accentColor, effectiveMode);
     Object.entries(cssVars).forEach(([prop, val]) => {
       if (val !== undefined) {
         root.style.setProperty(prop, val);
       }
     });
 
-    const effectiveAccent = current.accentColor || themeDef.variables.accent || '#eb584d';
+    const effectiveAccent = current.accentColor || resolvedTokens.accent || '#eb584d';
     platform.setAccentIcon(effectiveAccent);
 
     root.setAttribute('data-theme', themeDef.id);
-    root.setAttribute('data-theme-type', themeDef.type);
+    root.setAttribute('data-theme-mode', effectiveMode);
+    root.setAttribute('data-theme-type', effectiveMode);
     if (themeDef.hasGradient) {
       root.setAttribute('data-theme-gradient', 'true');
     } else {
@@ -481,18 +484,8 @@ export const useSettingsStore = create<SettingsState>()(
       },
 
       setThemeMode: (themeMode) => {
-        let activeTheme = get().activeTheme;
-        if (themeMode === 'light') {
-          if (!activeTheme || activeTheme === 'default' || themeRegistry.getTheme(activeTheme).type === 'dark') {
-            activeTheme = 'noether-light';
-          }
-        } else if (themeMode === 'dark') {
-          if (activeTheme === 'noether-light' || themeRegistry.getTheme(activeTheme).type === 'light') {
-            activeTheme = 'default';
-          }
-        }
-        set({ themeMode, activeTheme });
-        applyAppearanceDOM({ ...get(), themeMode, activeTheme });
+        set({ themeMode });
+        applyAppearanceDOM({ ...get(), themeMode });
       },
       setAccentColor: (accentColor) => {
         set({ accentColor });
@@ -509,10 +502,8 @@ export const useSettingsStore = create<SettingsState>()(
         set({ colorHistory: next });
       },
       setActiveTheme: (activeTheme) => {
-        const themeDef = themeRegistry.getTheme(activeTheme);
-        const nextMode: ThemeMode = themeDef.type === 'light' ? 'light' : 'dark';
-        set({ activeTheme, themeMode: nextMode });
-        applyAppearanceDOM({ ...get(), activeTheme, themeMode: nextMode });
+        set({ activeTheme });
+        applyAppearanceDOM({ ...get(), activeTheme });
       },
       setInterfaceFont: (interfaceFont) => {
         set({ interfaceFont });
