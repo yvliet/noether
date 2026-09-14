@@ -66,7 +66,7 @@ export const NOETHER_THEME: ThemeDefinition = {
       bgCard: '#ffffff',
       bgCardHover: '#f4f4f5',
       bgPopover: '#ffffff',
-      bgInput: '#ffffff',
+      bgInput: '#f0f0f2',
       bgInputFocus: '#ffffff',
       bgTabActive: '#ffffff',
       bgTabHover: '#f4f4f5',

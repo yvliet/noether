@@ -396,10 +396,10 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-xl bg-[#1e1e1e] border border-[#333333] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+        className="w-full max-w-xl bg-[var(--noether-bg-popover,#1e1e1e)] border border-[var(--noether-border-base,#333333)] rounded-xl shadow-2xl overflow-hidden flex flex-col"
       >
         {/* Top Search Input - Pure and clean without icons */}
-        <div className="relative flex items-center px-4 py-3 border-b border-[#2b2b2b]">
+        <div className="relative flex items-center px-4 py-3 border-b border-[var(--noether-border-subtle,#2b2b2b)]">
           <input
             ref={inputRef}
             type="text"
@@ -410,7 +410,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Type a command or search..."
-            className="w-full bg-transparent text-sm text-[#e0e0e0] placeholder-[#666666] outline-none font-normal"
+            className="w-full bg-transparent text-sm text-[var(--noether-text-primary)] placeholder-[var(--noether-text-muted)] outline-none font-normal"
           />
         </div>
 
@@ -435,15 +435,15 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                           data-selected={isSelected ? 'true' : undefined}
                           onClick={() => handleSelectNote(item.document_id, item.document_title)}
                           onMouseEnter={() => setSelectedIndex(index)}
-                          className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm ${
+                          className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm transition-none ${
                             isSelected
-                              ? 'bg-[#2b2b2b] text-[#ffffff]'
-                              : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0]'
+                              ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                              : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
                           }`}
                         >
                           <span
                             className={`shrink-0 mt-0.5 ${
-                              isSelected ? 'text-[#ffffff]' : 'text-[#777777]'
+                              isSelected ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted)]'
                             }`}
                           >
                             {item.is_canvas ? (
@@ -459,7 +459,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                             {item.content_text && (
                               <div
                                 className={`text-xs line-clamp-1 leading-relaxed mt-0.5 ${
-                                  isSelected ? 'text-[#cccccc]' : 'text-[#666666]'
+                                  isSelected ? 'text-[var(--noether-text-secondary)]' : 'text-[var(--noether-text-muted)]'
                                 }`}
                               >
                                 {item.content_text}
@@ -473,7 +473,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                 )}
 
                 {displayedNotes.length > 0 && filteredCommands.length > 0 && (
-                  <div className="my-1 border-t border-[#282828]" />
+                  <div className="my-1 border-t border-[var(--noether-border-subtle,#282828)]" />
                 )}
 
                 {filteredCommands.length > 0 && (
@@ -494,22 +494,22 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                           onMouseEnter={() => {
                             if (isEnabled) setSelectedIndex(overallIndex);
                           }}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg select-none text-sm ${
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg select-none text-sm transition-none ${
                             !isEnabled
-                              ? 'opacity-40 cursor-not-allowed text-[#666666]'
+                              ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)]'
                               : isSelected
-                              ? 'bg-[#2b2b2b] text-[#ffffff] cursor-pointer'
-                              : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0] cursor-pointer'
+                              ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] cursor-pointer'
+                              : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
                             <span
                               className={`shrink-0 ${
                                 !isEnabled
-                                  ? 'text-[#555555]'
+                                  ? 'text-[var(--noether-text-muted)]'
                                   : isSelected
-                                  ? 'text-[#ffffff]'
-                                  : 'text-[#777777]'
+                                  ? 'text-[var(--noether-text-primary)]'
+                                  : 'text-[var(--noether-text-muted)]'
                               }`}
                             >
                               {getCommandIcon(cmd, app) || <CommandIcon size={16} />}
@@ -521,7 +521,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                           {cmd.hotkey && (
                             <span
                               className={`text-xs shrink-0 ml-3 ${
-                                isSelected && isEnabled ? 'text-[#aaaaaa]' : 'text-[#666666]'
+                                isSelected && isEnabled ? 'text-[var(--noether-text-secondary)]' : 'text-[var(--noether-text-muted)]'
                               }`}
                             >
                               {cmd.hotkey}
@@ -534,7 +534,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                 )}
               </>
             ) : (
-              <div className="py-8 text-center text-xs text-[#666666]">
+              <div className="py-8 text-center text-xs text-[var(--noether-text-muted)]">
                 No matching notes or commands found
               </div>
             )
@@ -554,15 +554,15 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                         data-selected={isSelected ? 'true' : undefined}
                         onClick={() => handleSelectNote(item.document_id, item.document_title)}
                         onMouseEnter={() => setSelectedIndex(index)}
-                        className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm ${
+                        className={`flex items-start gap-2.5 px-3 py-2 rounded-lg cursor-pointer select-none text-sm transition-none ${
                           isSelected
-                            ? 'bg-[#2b2b2b] text-[#ffffff]'
-                            : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0]'
+                            ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                            : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
                         }`}
                       >
                         <span
                           className={`shrink-0 mt-0.5 ${
-                            isSelected ? 'text-[#ffffff]' : 'text-[#777777]'
+                            isSelected ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted)]'
                           }`}
                         >
                           {item.is_canvas ? (
@@ -583,7 +583,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
               )}
 
               {recentNotes.length > 0 && registeredCommands.length > 0 && (
-                <div className="my-1 border-t border-[#282828]" />
+                <div className="my-1 border-t border-[var(--noether-border-subtle,#282828)]" />
               )}
 
               {/* Commands */}
@@ -603,22 +603,22 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                     onMouseEnter={() => {
                       if (isEnabled) setSelectedIndex(overallIndex);
                     }}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg select-none text-sm ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-lg select-none text-sm transition-none ${
                       !isEnabled
-                        ? 'opacity-40 cursor-not-allowed text-[#666666]'
+                        ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)]'
                         : isSelected
-                        ? 'bg-[#2b2b2b] text-[#ffffff] cursor-pointer'
-                        : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0] cursor-pointer'
+                        ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] cursor-pointer'
+                        : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <span
                         className={`shrink-0 ${
                           !isEnabled
-                            ? 'text-[#555555]'
+                            ? 'text-[var(--noether-text-muted)]'
                             : isSelected
-                            ? 'text-[#ffffff]'
-                            : 'text-[#777777]'
+                            ? 'text-[var(--noether-text-primary)]'
+                            : 'text-[var(--noether-text-muted)]'
                         }`}
                       >
                         {getCommandIcon(cmd, app) || <CommandIcon size={16} />}
@@ -630,7 +630,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
                     {cmd.hotkey && (
                       <span
                         className={`text-xs shrink-0 ml-3 ${
-                          isSelected && isEnabled ? 'text-[#aaaaaa]' : 'text-[#666666]'
+                          isSelected && isEnabled ? 'text-[var(--noether-text-secondary)]' : 'text-[var(--noether-text-muted)]'
                         }`}
                       >
                         {cmd.hotkey}
@@ -644,15 +644,15 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         </div>
 
         {/* Keyboard Navigation Footer */}
-        <div className="px-4 py-2.5 border-t border-[#2a2a2a] flex items-center justify-center gap-4 text-[11px] text-[#777777] select-none">
+        <div className="px-4 py-2.5 border-t border-[var(--noether-border-subtle,#2a2a2a)] flex items-center justify-center gap-4 text-[11px] text-[var(--noether-text-muted,#777777)] select-none">
           <span>
-            <strong className="font-semibold text-[#aaaaaa]">↑↓</strong> to navigate
+            <strong className="font-semibold text-[var(--noether-text-primary,#aaaaaa)]">↑↓</strong> to navigate
           </span>
           <span>
-            <strong className="font-semibold text-[#aaaaaa]">↵</strong> to select
+            <strong className="font-semibold text-[var(--noether-text-primary,#aaaaaa)]">↵</strong> to select
           </span>
           <span>
-            <strong className="font-semibold text-[#aaaaaa]">esc</strong> to dismiss
+            <strong className="font-semibold text-[var(--noether-text-primary,#aaaaaa)]">esc</strong> to dismiss
           </span>
         </div>
       </div>

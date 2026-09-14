@@ -152,14 +152,14 @@ const SettingRow: React.FC<SettingRowProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`flex items-center justify-between p-4 ${onClick ? 'cursor-pointer hover:bg-[#242424]/40' : ''} ${className}`}
+      className={`flex items-center justify-between p-4 ${onClick ? 'cursor-pointer hover:bg-[var(--noether-btn-hover-bg)]' : ''} ${className}`}
     >
       <div className="flex flex-col pr-4 min-w-0 flex-1">
-        <span className="text-[13px] font-normal text-[#dcddde]">
+        <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">
           {highlightMatch(title, searchQuery)}
         </span>
         {description && (
-          <span className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+          <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5 leading-relaxed">
             {typeof description === 'string'
               ? highlightMatch(description, searchQuery)
               : description}
@@ -229,7 +229,7 @@ const SettingSection: React.FC<SettingSectionProps> = ({
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between px-4">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">
+            <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">
               {highlightMatch(tabName, searchQuery)}
             </h3>
             <p className="text-[11px] text-[var(--noether-text-muted)]">
@@ -237,7 +237,7 @@ const SettingSection: React.FC<SettingSectionProps> = ({
             </p>
           </div>
         </div>
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+        <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-subtle,#282828)]">
           {filteredChildren}
         </div>
       </div>
@@ -248,14 +248,14 @@ const SettingSection: React.FC<SettingSectionProps> = ({
     <div className="flex flex-col gap-2.5">
       {defaultHeading ? (
         <div className="px-4">
-          <h3 className="text-sm font-semibold text-white">{defaultHeading}</h3>
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)]">{defaultHeading}</h3>
         </div>
       ) : (
         <div className="flex items-center justify-between px-4">
           <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">{tabName}</h3>
+            <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">{tabName}</h3>
             {defaultDescription && (
-              <p className="text-[11px] text-[#777]">{defaultDescription}</p>
+              <p className="text-[11px] text-[var(--noether-text-muted)]">{defaultDescription}</p>
             )}
           </div>
           {isModified && onReset && (
@@ -270,7 +270,7 @@ const SettingSection: React.FC<SettingSectionProps> = ({
           )}
         </div>
       )}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-subtle,#282828)]">
         {children}
       </div>
     </div>
@@ -476,25 +476,25 @@ const FontPickerView: React.FC<FontPickerViewProps> = React.memo(({ mode, onClos
         </p>
       </div>
 
-      <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl overflow-hidden p-3 flex flex-col gap-2">
+      <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2c2c2c)] rounded-xl overflow-hidden p-3 flex flex-col gap-2">
         <div className="relative">
-          <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#666]" />
+          <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted)]" />
           <input
             type="text"
             value={fontSearchQuery}
             onChange={(e) => setFontSearchQuery(e.target.value)}
             placeholder="Enter font name..."
-            className="w-full bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-[var(--noether-text-faint)] outline-none"
+            className="w-full bg-[var(--noether-bg-input,#161616)] border border-[var(--noether-border-base,#2c2c2c)] focus:border-[var(--noether-border-strong)] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] outline-none"
           />
         </div>
 
-        <div className="max-h-[380px] overflow-y-auto custom-scrollbar flex flex-col divide-y divide-[#282828] mt-1">
+        <div className="max-h-[380px] overflow-y-auto custom-scrollbar flex flex-col divide-y divide-[var(--noether-border-subtle,#282828)] mt-1">
           {filteredFonts.map((font) => (
             <button
               key={font}
               onClick={() => handleSelectFont(font)}
               style={{ fontFamily: font }}
-              className="text-left px-3 py-2.5 text-sm text-[#ccc] hover:text-white hover:bg-[#262626] rounded-md cursor-pointer flex items-center justify-between"
+              className="text-left px-3 py-2.5 text-sm text-[var(--noether-text-secondary,#ccc)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded-md cursor-pointer flex items-center justify-between"
             >
               <span>{font}</span>
               {((mode === 'interface' && interfaceFont === font) ||
@@ -601,28 +601,28 @@ const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
         </p>
       </div>
 
-      <div className="bg-[#202020] border border-[#2c2c2c] rounded-xl overflow-hidden p-3 flex flex-col gap-2">
+      <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2c2c2c)] rounded-xl overflow-hidden p-3 flex flex-col gap-2">
         <div className="relative">
-          <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[#666]" />
+          <Search01Icon size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--noether-text-muted)]" />
           <input
             type="text"
             value={trashSearchQuery}
             onChange={(e) => setTrashSearchQuery(e.target.value)}
             placeholder="Search deleted files..."
-            className="w-full bg-[#161616] border border-[#2c2c2c] focus:border-[#444] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-[var(--noether-text-faint)] outline-none"
+            className="w-full bg-[var(--noether-bg-input,#161616)] border border-[var(--noether-border-base,#2c2c2c)] focus:border-[var(--noether-border-strong)] rounded-md pl-8 pr-2.5 py-1.5 text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] outline-none"
           />
         </div>
 
         {filteredTrashItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-center text-[#666]">
-            <Delete02Icon size={32} className="text-[#444] mb-2" />
-            <div className="text-xs text-[#aaa] font-medium">Trash is empty</div>
-            <div className="text-[11px] text-[#666] mt-1 max-w-xs">
+          <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--noether-text-muted)]">
+            <Delete02Icon size={32} className="text-[var(--noether-text-faint)] mb-2" />
+            <div className="text-xs text-[var(--noether-text-secondary)] font-medium">Trash is empty</div>
+            <div className="text-[11px] text-[var(--noether-text-muted)] mt-1 max-w-xs">
               Deleted files and folders will stay here for 48 hours before being automatically removed.
             </div>
           </div>
         ) : (
-          <div className="max-h-[420px] overflow-y-auto custom-scrollbar flex flex-col divide-y divide-[#282828] mt-1">
+          <div className="max-h-[420px] overflow-y-auto custom-scrollbar flex flex-col divide-y divide-[var(--noether-border-subtle,#282828)] mt-1">
             {filteredTrashItems.map((item) => {
               const elapsedMs = Date.now() - item.deleted_at;
               const remainingMs = Math.max(0, 48 * 60 * 60 * 1000 - elapsedMs);
@@ -999,8 +999,8 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-none ${
                     isSelected
-                      ? 'bg-[var(--noether-bg-card,#252525)] text-[var(--noether-text-primary,#ffffff)] shadow-xs'
-                      : 'text-[var(--noether-text-muted,#888888)] hover:text-[var(--noether-text-primary,#ffffff)]'
+                      ? 'bg-[var(--noether-bg-card,#252525)] text-[var(--noether-text-primary,#ffffff)] shadow-xs border border-[var(--noether-border-subtle,transparent)]'
+                      : 'text-[var(--noether-text-muted,#888888)] hover:text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-btn-hover-bg)]'
                   }`}
                 >
                   {opt.icon}
@@ -1135,7 +1135,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
         )}
 
         {/* Filter Tabs & Search Bar */}
-        <div className="flex items-center justify-between gap-3 bg-[#1e1e1e] p-1.5 rounded-lg border border-[#282828]">
+        <div className="flex items-center justify-between gap-3 bg-[var(--noether-bg-card,#1e1e1e)] p-1.5 rounded-lg border border-[var(--noether-border-base,#282828)]">
           <div className="flex items-center gap-1.5 flex-wrap">
             {[
               { id: 'all', label: `All (${allThemes.length})` },
@@ -1151,10 +1151,10 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 <button
                   key={tab.id}
                   onClick={() => setThemeFilter(tab.id as any)}
-                  className={`px-2.5 py-1 text-xs rounded-[5px] cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.35)] ${
+                  className={`px-2.5 py-1 text-xs rounded-[5px] cursor-pointer shadow-xs transition-none ${
                     isSelected
-                      ? 'bg-[#2a2a2a] text-white font-medium border border-[#383838]'
-                      : 'bg-[#181818] text-[#888] hover:text-[#dcddde] hover:bg-[#222222] border border-[#282828] hover:border-[#333]'
+                      ? 'bg-[var(--noether-bg-input,#2a2a2a)] text-[var(--noether-text-primary)] font-medium border border-[var(--noether-border-strong,#383838)]'
+                      : 'bg-[var(--noether-bg-card,#181818)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-base,#282828)]'
                   }`}
                 >
                   {tab.label}
@@ -1163,14 +1163,14 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
             })}
           </div>
 
-          <div className="flex items-center gap-1.5 bg-[#161616] px-2 py-1 rounded-md border border-[#282828] w-48">
-            <Search01Icon size={12} className="text-[#666] shrink-0" />
+          <div className="flex items-center gap-1.5 bg-[var(--noether-bg-input,#161616)] px-2 py-1 rounded-md border border-[var(--noether-border-base,#282828)] w-48">
+            <Search01Icon size={12} className="text-[var(--noether-text-muted,#666)] shrink-0" />
             <input
               type="text"
               value={themeSearchQuery}
               onChange={(e) => setThemeSearchQuery(e.target.value)}
               placeholder="Search themes..."
-              className="bg-transparent outline-none text-xs text-white placeholder-[var(--noether-text-faint)] w-full"
+              className="bg-transparent outline-none text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] w-full"
             />
           </div>
         </div>
@@ -1199,10 +1199,10 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                   setActiveTheme(theme.id);
                   showToast(`Applied "${theme.name}" theme`, 'info');
                 }}
-                className={`group relative flex flex-col rounded-xl overflow-hidden border cursor-pointer select-none ${
+                className={`group relative flex flex-col rounded-xl overflow-hidden border cursor-pointer select-none transition-none ${
                   isActive
-                    ? 'bg-[#242424] border-[var(--noether-accent)] ring-1 ring-[var(--noether-accent)] shadow-md'
-                    : 'bg-[#1e1e1e] border-[#2a2a2a] hover:border-[#3a3a3a] hover:bg-[#222222]'
+                    ? 'bg-[var(--noether-bg-card-hover,#242424)] border-[var(--noether-accent)] ring-1 ring-[var(--noether-accent)] shadow-md'
+                    : 'bg-[var(--noether-bg-card,#1e1e1e)] border-[var(--noether-border-base,#2a2a2a)] hover:border-[var(--noether-border-strong,#3a3a3a)] hover:bg-[var(--noether-bg-card-hover,#222222)]'
                 }`}
               >
                 {/* Top UI Preview Banner */}
@@ -1258,7 +1258,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                 <div className="p-3 flex flex-col justify-between flex-1 gap-2">
                   <div>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-white group-hover:text-[var(--noether-accent)]">
+                      <span className="text-xs font-semibold text-[var(--noether-text-primary)] group-hover:text-[var(--noether-accent)]">
                         {theme.name}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -1282,15 +1282,15 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                     </div>
 
                     {theme.description && (
-                      <p className="text-[11px] text-[#777] mt-0.5 line-clamp-1">
+                      <p className="text-[11px] text-[var(--noether-text-muted)] mt-0.5 line-clamp-1">
                         {theme.description}
                       </p>
                     )}
                   </div>
 
                   {/* Card Footer: Status & Actions */}
-                  <div className="flex items-center justify-between pt-1 border-t border-[#262626]">
-                    <span className="text-[10px] text-[#666]">
+                  <div className="flex items-center justify-between pt-1 border-t border-[var(--noether-border-subtle,#262626)]">
+                    <span className="text-[10px] text-[var(--noether-text-muted,#666)]">
                       By {theme.author || 'Noether'}
                     </span>
 
@@ -1307,7 +1307,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                             }
                           }}
                           title="Delete custom theme"
-                          className="p-1 text-[#777] hover:text-rose-400 hover:bg-[#2a2a2a] rounded cursor-pointer"
+                          className="p-1 text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-[var(--noether-btn-hover-bg)] rounded cursor-pointer"
                         >
                           <Delete02Icon size={13} />
                         </button>
@@ -1319,7 +1319,7 @@ const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenFontPick
                           <span>Active</span>
                         </span>
                       ) : (
-                        <span className="text-[11px] text-[#777] group-hover:text-[#ccc]">
+                        <span className="text-[11px] text-[var(--noether-text-muted,#777)] group-hover:text-[var(--noether-text-primary,#ccc)]">
                           Click to apply
                         </span>
                       )}
@@ -3072,7 +3072,7 @@ const HotkeysTab: React.FC = React.memo(() => {
         </div>
       )}
 
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-subtle,#282828)]">
         {filteredCommands.map((cmd) => {
           const cmdTitle = typeof cmd.title === 'function' ? cmd.title(app) : cmd.title;
           const activeHotkey = customHotkeys[cmd.id] !== undefined ? customHotkeys[cmd.id] : cmd.hotkey;
@@ -3082,14 +3082,14 @@ const HotkeysTab: React.FC = React.memo(() => {
           return (
             <div
               key={cmd.id}
-              className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
+              className="p-3.5 flex items-center justify-between hover:bg-[var(--noether-btn-hover-bg)]"
             >
               <div className="flex flex-col">
-                <span className="text-[13px] font-normal text-white">
+                <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">
                   {highlightMatch(cmdTitle, searchQuery)}
                 </span>
                 {cmd.section && (
-                  <span className="text-[10px] text-[#666] uppercase mt-0.5">
+                  <span className="text-[10px] text-[var(--noether-text-muted)] uppercase mt-0.5">
                     {highlightMatch(cmd.section, searchQuery)}
                   </span>
                 )}
@@ -3102,7 +3102,7 @@ const HotkeysTab: React.FC = React.memo(() => {
                       showToast(`Reset shortcut for "${cmdTitle}"`, 'info');
                     }}
                     title="Reset to default"
-                    className="text-[10px] text-[#777] hover:text-white p-1 hover:bg-[#282828] rounded-[4px] cursor-pointer"
+                    className="text-[10px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] p-1 hover:bg-[var(--noether-btn-hover-bg)] rounded-[4px] cursor-pointer"
                   >
                     <RotateCcwIcon size={12} />
                   </button>
@@ -4001,7 +4001,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         isModal
           ? 'relative w-[960px] h-[660px] max-w-[calc(100%-32px)] max-h-[calc(100%-32px)] rounded-xl border border-[var(--noether-border-subtle,#2c2c2c)] shadow-2xl'
           : 'w-full h-full'
-      } flex flex-col bg-[var(--noether-bg-main,#181818)] text-[var(--noether-text-secondary,#dcddde)] select-none font-sans overflow-hidden`}
+      } flex flex-col bg-[var(--noether-bg-app,#141414)] text-[var(--noether-text-primary,#dcddde)] select-none font-sans overflow-hidden`}
     >
       {/* 1. Obsidian Window Header Bar */}
       <header
@@ -4206,7 +4206,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
         {/* RIGHT COLUMN: Tab Content */}
         <main
           ref={mainScrollRef}
-          className="flex-1 bg-[var(--noether-bg-main,#181818)] h-full overflow-y-auto custom-scrollbar p-6"
+          className="flex-1 bg-[var(--noether-bg-app,#141414)] h-full overflow-y-auto custom-scrollbar p-6"
         >
           <div className="max-w-2xl mx-auto">
             <SettingsSearchContext.Provider value={{ searchQuery, showAllOccurrences }}>
@@ -4224,11 +4224,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                       <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
                     </>
                   ) : (
-                    <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 text-center mt-4 flex flex-col items-center justify-center">
+                    <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl p-8 text-center mt-4 flex flex-col items-center justify-center">
                       <div className="w-10 h-10 rounded-xl bg-[var(--noether-bg-card-hover)] flex items-center justify-center text-[var(--noether-text-muted)] mb-3">
                         <Search01Icon size={20} />
                       </div>
-                      <h4 className="text-sm font-semibold text-white mb-1">No settings found</h4>
+                      <h4 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-1">No settings found</h4>
                       <p className="text-xs text-[var(--noether-text-muted)] max-w-sm leading-relaxed">
                         No settings matching &ldquo;<span className="text-[var(--noether-accent)]">{searchQuery}</span>&rdquo; were found.
                       </p>
@@ -4396,8 +4396,8 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
                         {/* Extension Setting Content */}
                         {!isEnabled ? (
-                          <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
-                            <span className="text-xs text-[#888]">
+                          <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
+                            <span className="text-xs text-[var(--noether-text-muted)]">
                               {tabName} is currently disabled.
                             </span>
                             <button
@@ -4416,9 +4416,9 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                             {currentTab.render()}
                           </div>
                         ) : (
-                          <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-5 flex flex-col gap-2">
-                            <h4 className="text-sm font-semibold text-white">{tabName}</h4>
-                            <p className="text-xs text-[#888] leading-relaxed">
+                          <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl p-5 flex flex-col gap-2">
+                            <h4 className="text-sm font-semibold text-[var(--noether-text-primary)]">{tabName}</h4>
+                            <p className="text-xs text-[var(--noether-text-muted)] leading-relaxed">
                               {manifest?.description || `${tabName} is enabled and active.`}
                             </p>
                           </div>

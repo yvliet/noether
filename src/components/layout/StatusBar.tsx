@@ -42,7 +42,7 @@ const WordCharCountItem: React.FC = React.memo(() => {
   if (parts.length === 0) return null;
 
   return (
-    <span className="cursor-default select-none text-[#777777]">
+    <span className="cursor-default select-none text-[var(--noether-text-muted,#777777)]">
       {parts.join('  ')}
     </span>
   );
@@ -157,8 +157,10 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         title={isLocked ? 'Reading (Locked)' : currentMode}
-        className={`p-1 rounded-[4px] cursor-pointer flex items-center justify-center ${
-          isOpen ? 'bg-[#282828] text-white' : 'text-[#777] hover:text-[#dcddde] hover:bg-[#242424]'
+        className={`p-1 rounded-[4px] cursor-pointer flex items-center justify-center transition-none ${
+          isOpen
+            ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+            : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
         }`}
       >
         {renderIcon(12)}
@@ -175,58 +177,58 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
               right: menuPos.right !== undefined ? `${menuPos.right}px` : undefined,
               zIndex: 99999,
             }}
-            className="min-w-[160px] w-max bg-[#1e1e1e] border border-[#333333] rounded-[6px] shadow-[0_8px_24px_rgba(0,0,0,0.6),0_2px_6px_rgba(0,0,0,0.3)] p-1 text-xs flex flex-col gap-0.5 whitespace-nowrap select-none"
+            className="min-w-[160px] w-max bg-[var(--noether-bg-popover,#1e1e1e)] border border-[var(--noether-border-base,#333333)] rounded-[6px] shadow-xl p-1 text-xs flex flex-col gap-0.5 whitespace-nowrap select-none"
           >
             <button
               type="button"
               onClick={() => selectMode('Reading')}
-              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs cursor-pointer whitespace-nowrap ${
+              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs cursor-pointer whitespace-nowrap transition-none ${
                 currentMode === 'Reading'
-                  ? 'text-white font-medium bg-[#2a2a2a]'
-                  : 'text-[#c5c6c8] hover:bg-[#282828] hover:text-white'
+                  ? 'text-[var(--noether-text-primary)] font-medium bg-[var(--noether-btn-active-bg,#2a2a2a)]'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
               }`}
             >
               <div className="flex items-center gap-2.5 whitespace-nowrap">
-                <BookOpen01Icon size={14} className="text-[#888] shrink-0" />
+                <BookOpen01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="whitespace-nowrap">{isLocked ? 'Reading (Locked)' : 'Reading'}</span>
               </div>
-              {currentMode === 'Reading' && <CheckIcon size={14} className="text-white shrink-0 ml-3" />}
+              {currentMode === 'Reading' && <CheckIcon size={14} className="text-[var(--noether-text-primary)] shrink-0 ml-3" />}
             </button>
 
             <button
               type="button"
               onClick={() => selectMode('Source mode')}
-              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs whitespace-nowrap ${
+              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs whitespace-nowrap transition-none ${
                 isLocked
-                  ? 'opacity-40 cursor-not-allowed text-[#777] hover:bg-transparent'
+                  ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
                   : currentMode === 'Source mode'
-                  ? 'text-white font-medium bg-[#2a2a2a] cursor-pointer'
-                  : 'text-[#c5c6c8] hover:bg-[#282828] hover:text-white cursor-pointer'
+                  ? 'text-[var(--noether-text-primary)] font-medium bg-[var(--noether-btn-active-bg,#2a2a2a)] cursor-pointer'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer'
               }`}
             >
               <div className="flex items-center gap-2.5 whitespace-nowrap">
-                <SourceCodeIcon size={14} className="text-[#888] shrink-0" />
+                <SourceCodeIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="whitespace-nowrap">Source mode</span>
               </div>
-              {currentMode === 'Source mode' && <CheckIcon size={14} className="text-white shrink-0 ml-3" />}
+              {currentMode === 'Source mode' && <CheckIcon size={14} className="text-[var(--noether-text-primary)] shrink-0 ml-3" />}
             </button>
 
             <button
               type="button"
               onClick={() => selectMode('Live Preview')}
-              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs whitespace-nowrap ${
+              className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs whitespace-nowrap transition-none ${
                 isLocked
-                  ? 'opacity-40 cursor-not-allowed text-[#777] hover:bg-transparent'
+                  ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
                   : currentMode === 'Live Preview'
-                  ? 'text-white font-medium bg-[#2a2a2a] cursor-pointer'
-                  : 'text-[#c5c6c8] hover:bg-[#282828] hover:text-white cursor-pointer'
+                  ? 'text-[var(--noether-text-primary)] font-medium bg-[var(--noether-btn-active-bg,#2a2a2a)] cursor-pointer'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer'
               }`}
             >
               <div className="flex items-center gap-2.5 whitespace-nowrap">
-                <Edit02Icon size={14} className="text-[#888] shrink-0" />
+                <Edit02Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="whitespace-nowrap">Live Preview</span>
               </div>
-              {currentMode === 'Live Preview' && <CheckIcon size={14} className="text-white shrink-0 ml-3" />}
+              {currentMode === 'Live Preview' && <CheckIcon size={14} className="text-[var(--noether-text-primary)] shrink-0 ml-3" />}
             </button>
           </div>,
           document.body
