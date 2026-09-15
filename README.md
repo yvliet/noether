@@ -84,10 +84,10 @@ npm run tauri:build
 
 ## 5. Documentation & Help
 
-Online guides are available across two dedicated portals:
+Documentation is available across two portals:
 
-- **[Noether Help](https://yvliet.github.io/noether/#help/home)**: Practical user guide, note-taking workflows, wikilinks, graph view, and personal stories.
-- **[Noether Docs](https://yvliet.github.io/noether/#docs/home)**: The Story of Noether, 8 in-depth architecture blueprints, Extension SDK, and API reference.
+- **[Noether Help](https://yvliet.github.io/noether/#help/home)**: User guides, Markdown formatting, vault management, and core extensions.
+- **[Noether Docs](https://yvliet.github.io/noether/#docs/home)**: Architecture blueprints, Extension SDK, and API reference.
 
 Local guides are also available directly in the `docs/` folder:
 

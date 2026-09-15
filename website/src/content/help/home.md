@@ -1,38 +1,54 @@
 # Noether Help
 
-Welcome to the Noether user guide and documentation hub. Noether is a fast, clean, local-first note-taking app and modular Markdown workspace engineered for deep focus, long-term data durability, and native desktop performance.
+Welcome to the Noether user guide and documentation hub. Noether is a fast, local-first note-taking app and Markdown workspace built for deep focus, clean organization, and high-speed desktop performance.
 
-If you are looking for how Noether was built under the hood, how the micro-kernel works, or how to develop custom extensions, click **Noether Help** in the top-left corner anytime to switch over to **Noether Docs**.
+If you are looking for developer documentation, architecture specifications, or how to build custom extensions, click **Noether Help** in the top-left corner anytime to switch over to **Noether Docs**.
 
 ## 1. Getting Started
 ---
 
-If you are new to Noether, start here:
+If you are new to Noether, start with these guides:
 
-- **[[Introduction to Noether]]**: Why Noether was created, the story behind the name, how it compares to other tools, and how to get in touch.
-- **[[Installation & Setup]]**: Download pre-built desktop binaries for macOS, Windows, or Linux, and set up your first local Vault in seconds.
+- **[[Introduction to Noether]]**: Why Noether was created, the story behind the name, and the core design philosophy.
+- **[[Installation & Setup]]**: Download pre-compiled desktop packages for macOS, Windows, and Linux, or build from source.
 
-## 2. Core Feature Guides
+## 2. Core Features
 ---
 
-Detailed walkthroughs of everything built into Noether:
+Learn the foundational writing and organization tools in Noether:
 
-| Feature | Primary Guide | What It Covers |
-| :--- | :--- | :--- |
-| **Editor & Markdown** | [[Live Preview Editor & Markdown]] | TipTap live preview, slash commands, math equations ($KaTeX$), tables, and callouts. |
-| **Links & Graph View** | [[Links, Backlinks & Graph]] | Bidirectional wikilinks, backlinks pane, 2D force graph, and the floating graph mode. |
-| **Spatial Canvas** | [[Infinite 2D Spatial Canvas]] | Freeform visual thinking with note cards, stickies, groups, and connector arrows. |
-| **Spaced Repetition** | [[FSRS Spaced Repetition]] | Active recall flashcards, FSRS-4.5 scheduling algorithms, and study decks. |
-| **Tasks & Daily Journal** | [[Tasks Dashboard & Journal]] | Vault-wide task aggregation, kanban boards, and daily reflection scratchpads. |
-| **Vaults & Storage** | [[Vaults & Workspace Storage]] | Local-first file organization, instant search, backups, and syncing across devices. |
-| **Shortcuts & Commands** | [[Keyboard Shortcuts & Commands]] | Command Palette (`Ctrl+K`), editor split shortcuts, and navigation hotkeys. |
-| **AI Assistants & MCP** | [[AI Assistants & MCP Tools]] | Connecting Claude Desktop, Cursor, and Antigravity directly to your local notes. |
+| Guide | What It Covers |
+| :--- | :--- |
+| **[[Live Preview Editor & Markdown]]** | Live preview editing, slash commands, math formulas ($KaTeX$), tables, and callouts. |
+| **[[Vaults & Workspace Storage]]** | Organizing vault folders, fast search, file backups, and syncing across devices. |
+| **[[Keyboard Shortcuts & Commands]]** | Command Palette (`Ctrl+K`), window split hotkeys, and editing shortcuts. |
+| **[[AI Assistants & MCP Tools]]** | Connecting Claude Desktop, Cursor, and Antigravity to your local notes via MCP. |
 
-## 3. Workflows & Questions
+## 3. Core Extensions
 ---
 
-- **[[Workflows & Note Strategies]]**: Real-world setups for organizing your thoughts, big topic folders, study routines, and daily journaling.
-- **[[Frequently Asked Questions]]**: Common questions about local file safety, syncing across your devices, backups, and data privacy.
+Explore dedicated guides for all 15 built-in extensions:
+
+- **[[Backlinks]]**: View linked and unlinked mentions, and drag links into notes.
+- **[[Bookmarks]]**: Pin notes, canvas boards, and folders for fast access.
+- **[[Canvas]]**: Infinite 2D whiteboard for visual thinking, note cards, and arrows.
+- **[[Covers]]**: Custom banner headers with wallpaper search and gradients.
+- **[[Graph View]]**: Interactive 2D knowledge graph, local graph, and timelapse.
+- **[[Version History]]**: Local snapshots, side-by-side diff comparison, and recovery.
+- **[[Daily Journal]]**: Quick daily notes, scratchpads, and date navigation.
+- **[[Community Marketplace]]**: Install and manage extensions and themes.
+- **[[More Icons]]**: Custom icons and colors for files and folders.
+- **[[Outline]]**: Document heading outline and table of contents.
+- **[[Properties]]**: Frontmatter properties editor with typed inputs.
+- **[[Sketch]]**: Freehand vector drawing and handwriting.
+- **[[Sync]]**: Multi-device sync with Supabase, Turso, Cloudflare D1, or REST.
+- **[[Tags]]**: Tag pane, nested tags (`#work/project`), and tag filtering.
+- **[[Tasks]]**: Vault-wide checklist aggregation and kanban boards.
+
+## 4. Questions & Answers
+---
+
+- **[[Frequently Asked Questions]]**: Answers regarding local file safety, privacy, offline access, and mobile plans.
 
 > [!TIP]
-> You can switch between **Noether Help** (for users) and **Noether Docs** (for developers and contributors) at any time by clicking the brand lockup in the top-left corner of the sidebar.
+> You can switch between **Noether Help** (for daily note-taking) and **Noether Docs** (for developers and extension builders) at any time by clicking the brand logo in the top left of the sidebar.
