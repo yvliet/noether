@@ -27,7 +27,7 @@ let cachedDocsRef: any = null;
 let cachedDocIndex: Map<string, any> = new Map();
 const imageSrcCache = new Map<string, string>();
 
-function getDocIndex(documents: any[]): Map<string, any> {
+export function getDocIndex(documents: any[]): Map<string, any> {
   if (cachedDocsRef === documents) {
     return cachedDocIndex;
   }
@@ -47,6 +47,105 @@ function getDocIndex(documents: any[]): Map<string, any> {
     if (!cachedDocIndex.has(d.id)) cachedDocIndex.set(d.id, d);
   }
   return cachedDocIndex;
+}
+
+/**
+ * Synchronously retrieves cached image src (data URL, blob URL, or external URL) if loaded.
+ */
+export function getCachedImageSrc(target: string, docId?: string): string | null {
+  if (!target) return null;
+  if (/^(https?|data:image|blob|file):/i.test(target)) return target;
+
+  const cleanTgt = target.toLowerCase();
+  const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
+  const cached = imageSrcCache.get(cleanTgt) || imageSrcCache.get(cleanWithoutExt);
+  if (cached) return cached;
+
+  const ds = useDocumentStore.getState();
+  const docIndex = getDocIndex(ds.documents);
+  const matched =
+    (docId ? ds.documents.find((d) => d.id === docId) : null) ||
+    docIndex.get(cleanTgt) ||
+    docIndex.get(cleanWithoutExt) ||
+    docIndex.get(target);
+
+  if (matched?.content_json) {
+    try {
+      const parsed = JSON.parse(matched.content_json);
+      const firstText = parsed.content?.[0]?.content?.[0]?.text;
+      if (
+        firstText &&
+        (firstText.startsWith('data:image/') ||
+          firstText.startsWith('http') ||
+          firstText.startsWith('blob:'))
+      ) {
+        imageSrcCache.set(cleanTgt, firstText);
+        imageSrcCache.set(cleanWithoutExt, firstText);
+        return firstText;
+      }
+    } catch {}
+  } else if (
+    (matched as any)?.content &&
+    (String((matched as any).content).startsWith('data:image/') ||
+      String((matched as any).content).startsWith('http') ||
+      String((matched as any).content).startsWith('blob:'))
+  ) {
+    const rawContent = String((matched as any).content);
+    imageSrcCache.set(cleanTgt, rawContent);
+    imageSrcCache.set(cleanWithoutExt, rawContent);
+    return rawContent;
+  }
+  return null;
+}
+
+/**
+ * Asynchronously resolves the image src from memory or SQLite storage.
+ */
+export async function resolveImageSrcAsync(target: string, docId?: string): Promise<string | null> {
+  const syncHit = getCachedImageSrc(target, docId);
+  if (syncHit) return syncHit;
+
+  const ds = useDocumentStore.getState();
+  const docIndex = getDocIndex(ds.documents);
+  const cleanTgt = target.toLowerCase();
+  const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
+  const matched =
+    (docId ? ds.documents.find((d) => d.id === docId) : null) ||
+    docIndex.get(cleanTgt) ||
+    docIndex.get(cleanWithoutExt) ||
+    docIndex.get(target);
+
+  if (!matched) return null;
+
+  try {
+    const fullDoc = await getDocumentById(matched.id);
+    if (fullDoc?.content_json) {
+      const parsed = JSON.parse(fullDoc.content_json);
+      const firstText = parsed.content?.[0]?.content?.[0]?.text;
+      if (
+        firstText &&
+        (firstText.startsWith('data:image/') ||
+          firstText.startsWith('http') ||
+          firstText.startsWith('blob:'))
+      ) {
+        imageSrcCache.set(cleanTgt, firstText);
+        imageSrcCache.set(cleanWithoutExt, firstText);
+        return firstText;
+      }
+    } else if (
+      (fullDoc as any)?.content &&
+      (String((fullDoc as any).content).startsWith('data:image/') ||
+        String((fullDoc as any).content).startsWith('http') ||
+        String((fullDoc as any).content).startsWith('blob:'))
+    ) {
+      const rawContent = String((fullDoc as any).content);
+      imageSrcCache.set(cleanTgt, rawContent);
+      imageSrcCache.set(cleanWithoutExt, rawContent);
+      return rawContent;
+    }
+  } catch {}
+
+  return null;
 }
 
 /**

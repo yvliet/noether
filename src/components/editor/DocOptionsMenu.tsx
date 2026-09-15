@@ -539,6 +539,7 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
       subtext: 'It will be moved to trash and can be restored within 48 hours.',
       confirmText: 'Delete',
       isDanger: true,
+      skipSettingKey: 'skipDeleteConfirmation',
       onConfirm: async () => {
         await removeDocument(doc.id);
         showToast(`Moved "${doc.title}" to trash`, 'info');

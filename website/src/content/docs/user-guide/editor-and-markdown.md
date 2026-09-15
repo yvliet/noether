@@ -233,13 +233,25 @@ You can customize individual callout types or create custom types using CSS snip
 
 ---
 
-Noether supports embedding local attachments and cross-document transclusions using the `![[...]]` syntax:
+Noether supports embedding local attachments and cross-document transclusions using standard `![[...]]` syntax:
 
 - **Images**: `![[diagram.png]]` or `![Alt text](assets/diagram.png)`
 - **Audio**: `![[interview.mp3]]` renders an inline HTML5 audio player.
 - **Video**: `![[walkthrough.mp4]]` renders an interactive video player.
 - **PDF Documents**: `![[whitepaper.pdf]]` renders an embedded viewer pane.
 - **Note Transclusions**: `![[Architecture Overview]]` embeds the live content of another note directly inside the active document.
+
+### Drag & Drop Sidebar Insertion
+
+You can drag any note, media attachment, or folder directly from the navigation sidebar file tree into your note:
+
+1. **Grab items from the file tree**: Click and drag any file or multiple selected files from the sidebar.
+2. **Hover over the editor**: The drag preview displays a dynamic subtitle badge (`Embed "photo.png"` for media or `Link "Architecture"` for notes).
+3. **Drop at the desired position**: Release the mouse button over any line or character position in the editor. Noether calculates the exact text coordinates (`posAtCoords`) and inserts:
+   - **Notes and Documents**: `[[Note Title]]` WikiLink (file extensions like `.md` are cleanly stripped).
+   - **Media Attachments**: `![[image.png]]` or `![[clip.mp4]]` media embed token.
+   - **Folders**: `[[Folder Name]]` WikiLink reference.
+   - **Multi-Selection Drops**: Formatted cleanly on individual lines when dropped between paragraphs, or space-separated when dropped inline.
 
 
 ## 9. Intelligent Web Clip Cleaner

@@ -30,11 +30,13 @@ export const FILE_SORT_OPTIONS: SortOption<FileSortOrder>[] = [
 export function sortDocuments(docs: DocumentItem[], sortOrder: FileSortOrder): DocumentItem[] {
   return [...docs].sort((a, b) => {
     if (a.is_folder !== b.is_folder) return b.is_folder - a.is_folder;
+    const aTitle = a._sortTitle !== undefined ? a._sortTitle : a.title;
+    const bTitle = b._sortTitle !== undefined ? b._sortTitle : b.title;
     switch (sortOrder) {
       case 'alphabetical':
-        return a.title.localeCompare(b.title);
+        return aTitle.localeCompare(bTitle);
       case 'alphabetical-reverse':
-        return b.title.localeCompare(a.title);
+        return bTitle.localeCompare(aTitle);
       case 'byModifiedTime':
         return (b.updated_at || 0) - (a.updated_at || 0);
       case 'byModifiedTimeReverse':
@@ -44,7 +46,7 @@ export function sortDocuments(docs: DocumentItem[], sortOrder: FileSortOrder): D
       case 'byCreatedTimeReverse':
         return (a.created_at || 0) - (b.created_at || 0);
       default:
-        return a.title.localeCompare(b.title);
+        return aTitle.localeCompare(bTitle);
     }
   });
 }

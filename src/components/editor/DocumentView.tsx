@@ -402,9 +402,17 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
                 markLinkVisited(target);
                 const ds = useDocumentStore.getState();
                 const ws = useWorkspaceStore.getState();
-                const cleanTarget = target.trim().toLowerCase().replace(/\.md$/, '');
+                const cleanTarget = target.trim().toLowerCase();
+                const cleanWithoutExt = cleanTarget.replace(/\.md$/, '');
+                const targetBaseName = cleanWithoutExt.split('/').pop() || cleanWithoutExt;
                 const matched = ds.documents.find(
-                  (d) => !d.is_folder && (d.title.toLowerCase() === cleanTarget || d.id === target)
+                  (d) =>
+                    !d.is_folder &&
+                    (d.title.toLowerCase() === cleanTarget ||
+                     d.title.toLowerCase() === cleanWithoutExt ||
+                     d.title.toLowerCase() === targetBaseName ||
+                     `${d.title.toLowerCase()}.md` === cleanTarget ||
+                     d.id === target)
                 );
                 if (matched) {
                   ws.openTab(matched.id, matched.title);

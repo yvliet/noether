@@ -150,11 +150,14 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
       if (doc && !doc.is_folder) {
         const allDocs = await getCachedOrDbDocs();
         const relPath = getDocumentPath(doc, allDocs);
+        const customType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
+        const ext = customType ? customType.extension : 'md';
+        const targetRelPath = `${relPath}.${ext}`;
         const mdContent = jsonToMarkdown(doc.content_json, doc.title, propertiesJson);
-        await platform.saveMarkdownFile(doc.title, mdContent, relPath);
+        await platform.saveMarkdownFile(doc.title, mdContent, targetRelPath);
 
-        const normRel = (relPath || doc.title).replace(/\\/g, '/').toLowerCase();
-        const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+        const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+        const manifestKey = normRel;
         const contentHash = computeFastHash(mdContent);
         try {
           await dbAdapter.execute(
@@ -164,7 +167,7 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
         } catch (mErr) {}
 
         const isLocked = isDocumentLocked(propertiesJson);
-        await platform.setFileAttributes(relPath || doc.title, { readonly: isLocked, mtime: now });
+        await platform.setFileAttributes(targetRelPath, { readonly: isLocked, mtime: now });
       }
     } catch (e) {
       console.error('[Noether Docs] Failed to sync updated properties to disk:', e);
@@ -249,16 +252,13 @@ export async function createDocument(
       const allDocs = await getCachedOrDbDocs();
       const relPath = getDocumentPath({ id, title, parent_id: parentId }, allDocs);
       const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(title);
-      const targetRelPath = customType
-        ? (relPath.endsWith(`.${customType.extension}`) ? relPath : `${relPath}.${customType.extension}`)
-        : relPath;
+      const ext = customType ? customType.extension : 'md';
+      const targetRelPath = `${relPath}.${ext}`;
       const diskContent = customType?.isRawContent ? defaultContent : jsonToMarkdown(defaultContent, title);
       await platform.saveMarkdownFile(title, diskContent, targetRelPath);
 
-      const normRel = (targetRelPath || title).replace(/\\/g, '/').toLowerCase();
-      const manifestKey = customType
-        ? (normRel.endsWith(`.${customType.extension}`) ? normRel : `${normRel}.${customType.extension}`)
-        : (normRel.endsWith('.md') ? normRel : `${normRel}.md`);
+      const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel;
       const contentHash = computeFastHash(diskContent);
       try {
         await dbAdapter.execute(
@@ -336,11 +336,14 @@ export async function updateInternalLinksAcrossDocuments(oldTitle: string, newTi
         for (const item of changedDocs) {
           try {
             const relPath = getDocumentPath(item.doc as DocumentItem, allDocs);
+            const customType = fileTypeRegistry.getByDocType((item.doc as DocumentItem).doc_type) || fileTypeRegistry.getByPath(item.doc.title);
+            const ext = customType ? customType.extension : 'md';
+            const targetRelPath = `${relPath}.${ext}`;
             const mdContent = jsonToMarkdown(item.contentStr, item.doc.title);
-            await platform.saveMarkdownFile(item.doc.title, mdContent, relPath);
+            await platform.saveMarkdownFile(item.doc.title, mdContent, targetRelPath);
 
-            const normRel = (relPath || item.doc.title).replace(/\\/g, '/').toLowerCase();
-            const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+            const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+            const manifestKey = normRel;
             const contentHash = computeFastHash(mdContent);
             await dbAdapter.execute(
               `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
@@ -363,7 +366,9 @@ export async function updateDocumentTitle(id: string, newTitle: string): Promise
   const doc = await getDocumentById(id);
   const oldTitle = doc?.title;
   const customType = doc ? (fileTypeRegistry.getByDocType(doc.doc_type) || (oldTitle ? fileTypeRegistry.getByPath(oldTitle) : undefined)) : undefined;
-  const cleanNewTitle = customType ? fileTypeRegistry.cleanTitle(newTitle) : newTitle;
+  const cleanNewTitle = customType
+    ? fileTypeRegistry.cleanTitle(newTitle)
+    : newTitle.trim();
   const now = Date.now();
   await dbAdapter.execute(
     `UPDATE documents SET title = ?, updated_at = ? WHERE id = ?`,
@@ -374,18 +379,18 @@ export async function updateDocumentTitle(id: string, newTitle: string): Promise
       const allDocs = await getCachedOrDbDocs();
       const oldRelPath = getDocumentPath({ id, title: oldTitle, parent_id: doc.parent_id }, allDocs);
       const newRelPath = getDocumentPath({ id, title: cleanNewTitle, parent_id: doc.parent_id }, allDocs);
-      const oldFile = customType ? (oldRelPath.endsWith(`.${customType.extension}`) ? oldRelPath : `${oldRelPath}.${customType.extension}`) : oldRelPath;
-      const newFile = customType ? (newRelPath.endsWith(`.${customType.extension}`) ? newRelPath : `${newRelPath}.${customType.extension}`) : newRelPath;
+      const isFolder = Boolean(doc.is_folder);
+      const ext = customType ? customType.extension : 'md';
+      const oldFile = isFolder ? oldRelPath : `${oldRelPath}.${ext}`;
+      const newFile = isFolder ? newRelPath : `${newRelPath}.${ext}`;
       await platform.renameMarkdownFile(oldTitle, cleanNewTitle, oldFile, newFile);
 
-      const oldNorm = (oldFile || oldTitle).replace(/\\/g, '/').toLowerCase();
-      const oldKey = customType ? (oldNorm.endsWith(`.${customType.extension}`) ? oldNorm : `${oldNorm}.${customType.extension}`) : (oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`);
-      const newNorm = (newFile || cleanNewTitle).replace(/\\/g, '/').toLowerCase();
-      const newKey = customType ? (newNorm.endsWith(`.${customType.extension}`) ? newNorm : `${newNorm}.${customType.extension}`) : (newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`);
+      const oldNorm = oldFile.replace(/\\/g, '/').toLowerCase();
+      const newNorm = newFile.replace(/\\/g, '/').toLowerCase();
       try {
         await dbAdapter.execute(
           `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
-          [newKey, oldKey]
+          [newNorm, oldNorm]
         );
       } catch (mErr) {}
     } catch (e) {}
@@ -431,11 +436,14 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
     try {
       const allDocs = await getCachedOrDbDocs();
       const relPath = getDocumentPath({ id: newId, title: newTitle, parent_id: doc.parent_id }, allDocs);
+      const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(newTitle);
+      const ext = customType ? customType.extension : 'md';
+      const targetRelPath = `${relPath}.${ext}`;
       const md = jsonToMarkdown(doc.content_json, newTitle, doc.properties);
-      await platform.saveMarkdownFile(newTitle, md, relPath);
+      await platform.saveMarkdownFile(newTitle, md, targetRelPath);
 
-      const normRel = (relPath || newTitle).replace(/\\/g, '/').toLowerCase();
-      const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+      const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel;
       const contentHash = computeFastHash(md);
       try {
         await dbAdapter.execute(
@@ -725,7 +733,7 @@ export function jsonToMarkdown(
 
       if (node.type === 'blockquote') {
         const inner = (node.content || []).map(processNode).join('').trim();
-        return `> ${inner}\n`;
+        return inner.split('\n').map((l: string) => `> ${l}`).join('\n') + '\n';
       }
 
       if (node.type === 'codeBlock') {
@@ -898,58 +906,24 @@ function parseInlineMarkdownTokens(line: string): any[] {
   return inlineNodes.length > 0 ? inlineNodes : [{ type: 'text', text: line }];
 }
 
-interface ListItemParseResult {
-  listType: 'bulletList' | 'orderedList' | 'taskList';
-  itemType: 'listItem' | 'taskItem';
+interface TaskListParseResult {
   indent: number;
   checked: boolean;
   text: string;
-  marker?: string;
+  marker: string;
 }
 
-function matchListItemLine(line: string): ListItemParseResult | null {
-  // 1. Task list item: [indent]- [ ] or - [x] or 1. [ ] or 1. [x]
+function matchTaskListItemLine(line: string): TaskListParseResult | null {
+  // Task list item: [indent]- [ ] or - [x] or 1. [ ] or 1. [x]
   const taskMatch = line.match(/^([ \t]*)(?:([-*+])|\d+\.)\s+\[([ xX])\]\s+(.*)$/);
-  if (taskMatch) {
-    const indentStr = taskMatch[1].replace(/\t/g, '  ');
-    return {
-      listType: 'taskList',
-      itemType: 'taskItem',
-      indent: indentStr.length,
-      checked: taskMatch[3].toLowerCase() === 'x',
-      text: taskMatch[4],
-      marker: taskMatch[2] || '-',
-    };
-  }
-
-  // 2. Ordered list item: [indent]1. text
-  const olMatch = line.match(/^([ \t]*)(\d+)\.\s+(.*)$/);
-  if (olMatch) {
-    const indentStr = olMatch[1].replace(/\t/g, '  ');
-    return {
-      listType: 'orderedList',
-      itemType: 'listItem',
-      indent: indentStr.length,
-      checked: false,
-      text: olMatch[3],
-    };
-  }
-
-  // 3. Bullet list item: [indent]- text or * text or + text
-  const ulMatch = line.match(/^([ \t]*)([-*+])\s+(.*)$/);
-  if (ulMatch) {
-    const indentStr = ulMatch[1].replace(/\t/g, '  ');
-    return {
-      listType: 'bulletList',
-      itemType: 'listItem',
-      indent: indentStr.length,
-      checked: false,
-      text: ulMatch[3],
-      marker: ulMatch[2],
-    };
-  }
-
-  return null;
+  if (!taskMatch) return null;
+  const indentStr = taskMatch[1].replace(/\t/g, '  ');
+  return {
+    indent: indentStr.length,
+    checked: taskMatch[3].toLowerCase() === 'x',
+    text: taskMatch[4],
+    marker: taskMatch[2] || '-',
+  };
 }
 
 /**
@@ -1119,76 +1093,55 @@ export function markdownToTipTapJson(md: string): string {
       continue;
     }
 
-    // 6. Blockquote (> ...)
+    // 6. Blockquotes and Callouts (> ...)
+    // In Noether Live Preview, blockquotes and callouts are stored as plain paragraphs
+    // with their '>' markdown markers intact so that LivePreviewSyntax can decorate them with
+    // callout boxes, colored borders, icons, collapse toggles, and live syntax concealing.
     if (trimmed.startsWith('>')) {
-      const quoteLines: string[] = [];
-      while (i < lines.length && lines[i].trim().startsWith('>')) {
-        quoteLines.push(lines[i].trim().replace(/^>+\s?/, ''));
-        i++;
-      }
-      i--;
       content.push({
-        type: 'blockquote',
-        content: quoteLines.map((ql) => ({
-          type: 'paragraph',
-          content: parseInlineMarkdownTokens(ql),
-        })),
+        type: 'paragraph',
+        content: parseInlineMarkdownTokens(line),
       });
       continue;
     }
 
-    // 7. Lists (ordered lists, bullet lists, task lists with nested hierarchy)
-    const firstListMatch = matchListItemLine(line);
-    if (firstListMatch) {
-      interface ListStackEntry {
-        listType: 'bulletList' | 'orderedList' | 'taskList';
+    // 7. Task Lists (- [ ] / - [x] with nested hierarchy)
+    const firstTaskMatch = matchTaskListItemLine(line);
+    if (firstTaskMatch) {
+      interface TaskListStackEntry {
         indent: number;
         listNode: any;
         currentItem: any;
       }
-      const stack: ListStackEntry[] = [];
+      const stack: TaskListStackEntry[] = [];
 
       while (i < lines.length) {
         const currentLine = lines[i];
-        const item = matchListItemLine(currentLine);
+        const item = matchTaskListItemLine(currentLine);
         if (!item) break;
 
         while (stack.length > 0 && item.indent < stack[stack.length - 1].indent) {
           stack.pop();
         }
 
-        if (
-          stack.length > 0 &&
-          item.indent === stack[stack.length - 1].indent &&
-          stack[stack.length - 1].listType !== item.listType
-        ) {
-          stack.pop();
-        }
-
         const newListItem: any = {
-          type: item.itemType,
+          type: 'taskItem',
+          attrs: { checked: item.checked, marker: item.marker || '-' },
           content: [{ type: 'paragraph', content: item.text ? parseInlineMarkdownTokens(item.text) : [] }],
         };
-        if (item.listType === 'taskList') {
-          newListItem.attrs = { checked: item.checked, marker: item.marker || '-' };
-        } else if (item.marker) {
-          newListItem.attrs = { marker: item.marker };
-        }
 
         if (stack.length === 0) {
-          const newListNode = { type: item.listType, content: [newListItem] };
+          const newListNode = { type: 'taskList', content: [newListItem] };
           content.push(newListNode);
           stack.push({
-            listType: item.listType,
             indent: item.indent,
             listNode: newListNode,
             currentItem: newListItem,
           });
         } else if (item.indent > stack[stack.length - 1].indent) {
-          const newListNode = { type: item.listType, content: [newListItem] };
+          const newListNode = { type: 'taskList', content: [newListItem] };
           stack[stack.length - 1].currentItem.content.push(newListNode);
           stack.push({
-            listType: item.listType,
             indent: item.indent,
             listNode: newListNode,
             currentItem: newListItem,
@@ -1326,7 +1279,7 @@ export async function saveDocumentAndSynchronize(
               if (target.includes('|')) target = target.split('|')[0].trim();
             }
             if (target.includes('#')) target = target.split('#')[0].trim();
-            target = decodeURIComponent(target).replace(/\.md$/, '').trim();
+            target = decodeURIComponent(target).trim();
             if (target) {
               wikiLinks.push(target);
             }
@@ -1452,7 +1405,7 @@ export async function saveDocumentAndSynchronize(
 
   // 5. Auto-export to raw Markdown (.md) in Noether Vault on disk for 100% portability
   try {
-    const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string }>(`SELECT id, parent_id, title, properties FROM documents WHERE id = ?`, [documentId]))[0];
+    const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string; doc_type?: string }>(`SELECT id, parent_id, title, properties, doc_type FROM documents WHERE id = ?`, [documentId]))[0];
     const docTitle = title || docRecord?.title || 'Untitled';
     const docProps = docRecord?.properties || '{}';
     let mdContent = options?.rawMarkdownOverride !== undefined
@@ -1471,14 +1424,17 @@ export async function saveDocumentAndSynchronize(
     if (platform.isDesktop() && docRecord && !options?.skipDiskExport) {
       const allDocs = await getCachedOrDbDocs(options?.documents);
       const relPath = getDocumentPath({ id: documentId, title: docTitle, parent_id: docRecord.parent_id }, allDocs);
+      const customType = fileTypeRegistry.getByDocType(docRecord.doc_type) || fileTypeRegistry.getByPath(docTitle);
+      const ext = customType ? customType.extension : 'md';
+      const targetRelPath = `${relPath}.${ext}`;
 
-      const normRel = (relPath || docTitle).replace(/\\/g, '/').toLowerCase();
-      const manifestKey = normRel.endsWith('.md') ? normRel : `${normRel}.md`;
+      const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+      const manifestKey = normRel;
       const contentHash = computeFastHash(mdContent);
 
-      await platform.saveMarkdownFile(docTitle, mdContent, relPath);
+      await platform.saveMarkdownFile(docTitle, mdContent, targetRelPath);
       const isLocked = isDocumentLocked(docProps);
-      await platform.setFileAttributes(relPath || docTitle, { readonly: isLocked, mtime: now });
+      await platform.setFileAttributes(targetRelPath, { readonly: isLocked, mtime: now });
 
       try {
         await dbAdapter.execute(
@@ -1700,14 +1656,16 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
       for (const p of changedPaths) {
         const cleanP = p.replace(/\\/g, '/');
         const parts = cleanP.split('/');
-        const fileName = parts[parts.length - 1];
-        const ext = fileName.split('.').pop()?.toLowerCase();
+        const rawFileName = parts[parts.length - 1];
+        const ext = rawFileName.split('.').pop()?.toLowerCase();
         if (ext && (ext === 'md' || allowedExtensions.includes(ext))) {
           const readRes = await platform.readMarkdownFile(cleanP);
           if (readRes.success && readRes.content !== undefined) {
+            // Strip file extension to match what Rust scan_vault_files produces (file_stem)
+            const cleanStem = rawFileName.replace(/\.[^/.]+$/, '');
             diskItems.push({
               relativePath: cleanP,
-              name: fileName,
+              name: cleanStem,
               isFolder: false,
               mtime: readRes.mtime || Date.now(),
               content: readRes.content,
@@ -1826,8 +1784,7 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
       const parentId = parentRelPath ? folderMapByPath.get(parentRelPath.toLowerCase()) || null : null;
 
       const pathKey = (parentRelPath ? `${parentRelPath}/${fileName}` : fileName).toLowerCase();
-      const ext = customType ? customType.extension : 'md';
-      const normKey = pathKey.endsWith(`.${ext}`) ? pathKey : `${pathKey}.${ext}`;
+      const normKey = file.relativePath.replace(/\\/g, '/').toLowerCase();
 
       // If a file actively exists on disk, clean up any stale trash record referencing this path
       if (trashSet.has(pathKey) || trashSet.has(normKey)) {
@@ -1998,9 +1955,9 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
         const docCustomType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
         const ext = docCustomType ? docCustomType.extension : 'md';
         const docPath = getDocumentPath(doc, existingDocs).replace(/\\/g, '/').toLowerCase();
-        const docPathWithExt = docPath.endsWith(`.${ext}`) ? docPath : `${docPath}.${ext}`;
+        const docPathWithExt = `${docPath}.${ext}`;
 
-        const existsOnDisk = diskPathSet.has(docPath) || diskPathSet.has(docPathWithExt);
+        const existsOnDisk = diskPathSet.has(docPathWithExt) || diskPathSet.has(docPath);
         const isTrashed = trashSet.has(docPath) || trashSet.has(docPathWithExt);
 
         if (!existsOnDisk && !isTrashed) {

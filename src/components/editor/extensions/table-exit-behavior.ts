@@ -20,9 +20,12 @@
  */
 
 import { Extension } from '@tiptap/core';
-import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
+import { Plugin, PluginKey, TextSelection, AllSelection, type EditorState } from '@tiptap/pm/state';
+import { Decoration, DecorationSet } from '@tiptap/pm/view';
+import { columnResizingPluginKey, tableEditingKey } from '@tiptap/pm/tables';
 
 export const TableExitPluginKey = new PluginKey('tableExitBehavior');
+export const TableSelectionPluginKey = new PluginKey('tableSelectionDecoration');
 
 export const TableExitBehavior = Extension.create({
   name: 'tableExitBehavior',
@@ -208,8 +211,61 @@ export const TableExitBehavior = Extension.create({
       tablePos: number;
       widths: (number[] | null)[];
     } | null = null;
+    let isMouseDown = false;
+    let activeDragCell: { start: number; end: number } | null = null;
 
     return [
+      new Plugin({
+        key: TableSelectionPluginKey,
+        props: {
+          decorations(state) {
+            return getTableSelectionDecorations(state);
+          },
+          createSelectionBetween(view, $anchor, $head) {
+            const resizeState = columnResizingPluginKey.getState(view.state);
+            if (resizeState && (resizeState.dragging || resizeState.activeHandle > -1)) {
+              return null;
+            }
+            const editingAnchor = tableEditingKey.getState(view.state);
+            if (editingAnchor != null) {
+              return null;
+            }
+
+            let headCellDepth = -1;
+            for (let d = $head.depth; d > 0; d--) {
+              const name = $head.node(d).type.name.toLowerCase();
+              if (name.includes('cell') || name.includes('header')) {
+                headCellDepth = d;
+                break;
+              }
+            }
+
+            if (headCellDepth !== -1) {
+              let anchorCellDepth = -1;
+              for (let d = $anchor.depth; d > 0; d--) {
+                const name = $anchor.node(d).type.name.toLowerCase();
+                if (name.includes('cell') || name.includes('header')) {
+                  anchorCellDepth = d;
+                  break;
+                }
+              }
+
+              // Only snap when selection crosses between different cells or from outside the table
+              const isSameCell = anchorCellDepth !== -1 && $anchor.node(anchorCellDepth) === $head.node(headCellDepth);
+              if (!isSameCell) {
+                const cellStart = $head.start(headCellDepth);
+                const cellEnd = $head.end(headCellDepth);
+                if ($anchor.pos > cellEnd) {
+                  return TextSelection.create(view.state.doc, $anchor.pos, cellStart);
+                } else if ($anchor.pos < cellStart) {
+                  return TextSelection.create(view.state.doc, $anchor.pos, cellEnd);
+                }
+              }
+            }
+            return null;
+          },
+        },
+      }),
       new Plugin({
         key: TableExitPluginKey,
         props: {
@@ -252,37 +308,30 @@ export const TableExitBehavior = Extension.create({
               if (resizeSnapshot) {
                 const snap = resizeSnapshot;
                 resizeSnapshot = null;
-                try {
-                  const doc = view.state.doc;
-                  if (snap.tablePos < doc.content.size) {
-                    const currentTable = doc.nodeAt(snap.tablePos);
-                    if (currentTable && currentTable.type.name === 'table') {
-                      const currentWidths: (number[] | null)[] = [];
-                      currentTable.descendants((child) => {
-                        const name = child.type.name.toLowerCase();
-                        if (name.includes('cell') || name.includes('header')) {
-                          currentWidths.push(child.attrs.colwidth ? [...child.attrs.colwidth] : null);
-                        }
-                      });
-
-                      const hasChanged = JSON.stringify(currentWidths) !== JSON.stringify(snap.widths);
-                      if (hasChanged) {
-                        // Re-dispatch a history-tracked transaction so ProseMirror records this resize in the undo stack
-                        const tr = view.state.tr;
-                        tr.setMeta('addToHistory', true);
-                        const tPos = snap.tablePos;
-                        currentTable.descendants((child, offset) => {
+                requestAnimationFrame(() => {
+                  try {
+                    const doc = view.state.doc;
+                    if (snap.tablePos < doc.content.size) {
+                      const currentTable = doc.nodeAt(snap.tablePos);
+                      if (currentTable && currentTable.type.name === 'table') {
+                        const currentWidths: (number[] | null)[] = [];
+                        currentTable.descendants((child) => {
                           const name = child.type.name.toLowerCase();
                           if (name.includes('cell') || name.includes('header')) {
-                            const cellPos = tPos + 1 + offset;
-                            tr.setNodeMarkup(cellPos, undefined, { ...child.attrs });
+                            currentWidths.push(child.attrs.colwidth ? [...child.attrs.colwidth] : null);
                           }
                         });
-                        view.dispatch(tr);
+
+                        const hasChanged = JSON.stringify(currentWidths) !== JSON.stringify(snap.widths);
+                        if (hasChanged) {
+                          const tr = view.state.tr;
+                          tr.setMeta('addToHistory', true);
+                          view.dispatch(tr);
+                        }
                       }
                     }
-                  }
-                } catch {}
+                  } catch {}
+                });
               }
               return false;
             },
@@ -372,6 +421,90 @@ function clearCellSelectionToText(editor: any, targetPos: number): void {
   } catch {}
 }
 
+function getTableSelectionDecorations(state: EditorState): DecorationSet {
+  const { doc, selection } = state;
+
+  if (selection.empty) {
+    return DecorationSet.empty;
+  }
+
+  // If prosemirror-tables CellSelection is active, prosemirror-tables's own plugin draws decorations
+  const isCellSelection =
+    selection.constructor.name === 'CellSelection' ||
+    Boolean((selection as any).$anchorCell && (selection as any).$headCell) ||
+    typeof (selection as any).forEachCell === 'function';
+
+  if (isCellSelection) {
+    return DecorationSet.empty;
+  }
+
+  const { from, to, $from, $to } = selection;
+
+  // If selection is entirely inside the same single cell textblock (e.g. selecting a word in a cell),
+  // retain standard inline text selection so the user can edit/format text without selecting whole cell
+  let fromCellDepth = -1;
+  for (let d = $from.depth; d > 0; d--) {
+    const name = $from.node(d).type.name.toLowerCase();
+    if (name.includes('cell') || name.includes('header')) {
+      fromCellDepth = d;
+      break;
+    }
+  }
+
+  let toCellDepth = -1;
+  for (let d = $to.depth; d > 0; d--) {
+    const name = $to.node(d).type.name.toLowerCase();
+    if (name.includes('cell') || name.includes('header')) {
+      toCellDepth = d;
+      break;
+    }
+  }
+
+  // If both endpoints are inside the exact same cell node and in the same textblock parent
+  if (
+    fromCellDepth !== -1 &&
+    toCellDepth !== -1 &&
+    $from.node(fromCellDepth) === $to.node(toCellDepth) &&
+    $from.sameParent($to)
+  ) {
+    return DecorationSet.empty;
+  }
+
+  const decorations: Decoration[] = [];
+
+  doc.nodesBetween(from, to, (node, pos) => {
+    if (node.type.name === 'table') {
+      node.descendants((child, childOffset) => {
+        const typeName = child.type.name.toLowerCase();
+        if (
+          typeName === 'tablecell' ||
+          typeName === 'tableheader' ||
+          typeName === 'table_cell' ||
+          typeName === 'table_header' ||
+          typeName.includes('cell') ||
+          typeName.includes('header')
+        ) {
+          const cellPos = pos + 1 + childOffset;
+          const cellEnd = cellPos + child.nodeSize;
+
+          // Check if selection overlaps with this cell
+          if (from < cellEnd && to > cellPos) {
+            decorations.push(
+              Decoration.node(cellPos, cellEnd, {
+                class: 'selectedCell',
+              })
+            );
+          }
+        }
+      });
+      return false; // Prevent traversing inner nodes of table manually
+    }
+    return true;
+  });
+
+  return decorations.length > 0 ? DecorationSet.create(doc, decorations) : DecorationSet.empty;
+}
+
 function handleDeleteInTable(editor: any): boolean {
   const { state } = editor;
   const { selection } = state;
@@ -382,86 +515,124 @@ function handleDeleteInTable(editor: any): boolean {
     Boolean((selection as any).$anchorCell && (selection as any).$headCell) ||
     typeof (selection as any).forEachCell === 'function';
 
-  if (!isCellSelection) {
-    return false;
-  }
+  if (isCellSelection) {
+    const sel = selection as any;
+    const fallbackPos = selection.$from.pos;
 
-  const sel = selection as any;
-  const fallbackPos = selection.$from.pos;
+    // Check if whole columns are selected
+    if (typeof sel.isColSelection === 'function' && sel.isColSelection()) {
+      if (typeof sel.isRowSelection === 'function' && sel.isRowSelection()) {
+        return editor.commands.deleteTable();
+      }
+      const ok = editor.commands.deleteColumn();
+      if (ok) {
+        clearCellSelectionToText(editor, fallbackPos);
+        return true;
+      }
+      return false;
+    }
 
-  // 2. Check if whole columns are selected
-  if (typeof sel.isColSelection === 'function' && sel.isColSelection()) {
+    // Check if whole rows are selected
     if (typeof sel.isRowSelection === 'function' && sel.isRowSelection()) {
-      return editor.commands.deleteTable();
+      const ok = editor.commands.deleteRow();
+      if (ok) {
+        clearCellSelectionToText(editor, fallbackPos);
+        return true;
+      }
+      return false;
     }
-    const ok = editor.commands.deleteColumn();
-    if (ok) {
-      clearCellSelectionToText(editor, fallbackPos);
-      return true;
+
+    // Fallback inspection for rectangular CellSelection covering all rows in selected cols
+    const $from = selection.$from;
+    let tableDepth = -1;
+    for (let d = $from.depth; d > 0; d--) {
+      if ($from.node(d).type.name === 'table') {
+        tableDepth = d;
+        break;
+      }
+    }
+
+    if (tableDepth !== -1) {
+      const tableNode = $from.node(tableDepth);
+      const totalRows = tableNode.childCount;
+      const totalCols = tableNode.firstChild ? tableNode.firstChild.childCount : 0;
+
+      const selectedCellPositions: number[] = [];
+      if (typeof sel.forEachCell === 'function') {
+        sel.forEachCell((_node: any, pos: number) => {
+          selectedCellPositions.push(pos);
+        });
+      }
+
+      if (selectedCellPositions.length > 0) {
+        // If all cells in table are selected -> delete the entire table
+        if (selectedCellPositions.length >= totalRows * totalCols) {
+          return editor.commands.deleteTable();
+        }
+
+        // If selected cells cover entire columns (length is multiple of totalRows)
+        if (totalRows > 0 && selectedCellPositions.length % totalRows === 0) {
+          const ok = editor.commands.deleteColumn();
+          if (ok) {
+            clearCellSelectionToText(editor, fallbackPos);
+            return true;
+          }
+          return false;
+        }
+
+        // If selected cells cover entire rows (length is multiple of totalCols)
+        if (totalCols > 0 && selectedCellPositions.length % totalCols === 0) {
+          const ok = editor.commands.deleteRow();
+          if (ok) {
+            clearCellSelectionToText(editor, fallbackPos);
+            return true;
+          }
+          return false;
+        }
+      }
     }
     return false;
   }
 
-  // 3. Check if whole rows are selected
-  if (typeof sel.isRowSelection === 'function' && sel.isRowSelection()) {
-    const ok = editor.commands.deleteRow();
-    if (ok) {
-      clearCellSelectionToText(editor, fallbackPos);
+  // 2. Non-CellSelection (e.g. TextSelection / AllSelection covering tables or whole document)
+  if (!selection.empty) {
+    const { from, to } = selection;
+    const isAllSelection =
+      selection instanceof AllSelection ||
+      (from === 0 && to >= state.doc.content.size);
+
+    // If entire document is selected (e.g. Ctrl+A -> Backspace)
+    if (isAllSelection) {
+      const tr = state.tr.replaceWith(0, state.doc.content.size, state.schema.nodes.paragraph.create());
+      tr.setSelection(TextSelection.create(tr.doc, 1));
+      editor.view.dispatch(tr);
       return true;
     }
-    return false;
-  }
 
-  // 4. Fallback inspection for rectangular CellSelection covering all rows in selected cols
-  const $from = selection.$from;
-  let tableDepth = -1;
-  for (let d = $from.depth; d > 0; d--) {
-    if ($from.node(d).type.name === 'table') {
-      tableDepth = d;
-      break;
-    }
-  }
-
-  if (tableDepth === -1) return false;
-
-  const tableNode = $from.node(tableDepth);
-  const totalRows = tableNode.childCount;
-  const totalCols = tableNode.firstChild ? tableNode.firstChild.childCount : 0;
-
-  const selectedCellPositions: number[] = [];
-  if (typeof sel.forEachCell === 'function') {
-    sel.forEachCell((_node: any, pos: number) => {
-      selectedCellPositions.push(pos);
+    // Check if selection intersects or encloses any table
+    let intersectsTable = false;
+    state.doc.nodesBetween(from, to, (node: any) => {
+      if (node.type.name === 'table') {
+        intersectsTable = true;
+        return false;
+      }
+      return true;
     });
-  }
 
-  if (selectedCellPositions.length === 0) {
-    return false;
-  }
-
-  // If all cells in table are selected -> delete the entire table
-  if (selectedCellPositions.length >= totalRows * totalCols) {
-    return editor.commands.deleteTable();
-  }
-
-  // If selected cells cover entire columns (length is multiple of totalRows)
-  if (totalRows > 0 && selectedCellPositions.length % totalRows === 0) {
-    const ok = editor.commands.deleteColumn();
-    if (ok) {
-      clearCellSelectionToText(editor, fallbackPos);
-      return true;
+    if (intersectsTable) {
+      try {
+        const tr = state.tr.delete(from, to);
+        if (tr.doc.content.size === 0) {
+          tr.insert(0, state.schema.nodes.paragraph.create());
+          tr.setSelection(TextSelection.create(tr.doc, 1));
+        } else {
+          const safePos = Math.min(from, tr.doc.content.size);
+          tr.setSelection(TextSelection.near(tr.doc.resolve(Math.max(1, safePos))));
+        }
+        editor.view.dispatch(tr);
+        return true;
+      } catch {}
     }
-    return false;
-  }
-
-  // If selected cells cover entire rows (length is multiple of totalCols)
-  if (totalCols > 0 && selectedCellPositions.length % totalCols === 0) {
-    const ok = editor.commands.deleteRow();
-    if (ok) {
-      clearCellSelectionToText(editor, fallbackPos);
-      return true;
-    }
-    return false;
   }
 
   return false;

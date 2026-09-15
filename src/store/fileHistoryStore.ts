@@ -214,20 +214,7 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         const finalDocs = await getAllDocuments();
         useDocumentStore.setState({ documents: finalDocs });
       } else if (action.type === 'rename') {
-        await updateDocumentTitle(action.id, action.oldTitle);
-
-        const { autoUpdateLinks } = useSettingsStore.getState();
-        if (autoUpdateLinks) {
-          await updateInternalLinksAcrossDocuments(action.newTitle, action.oldTitle);
-        }
-
-        const docs = await getAllDocuments();
-        const active = useDocumentStore.getState().activeDocument;
-        useDocumentStore.setState({
-          documents: docs,
-          activeDocument: active && active.id === action.id ? { ...active, title: action.oldTitle } : active,
-        });
-        useWorkspaceStore.getState().updateTabTitle(action.id, action.oldTitle);
+        await useDocumentStore.getState().renameDocument(action.id, action.oldTitle, false);
         useWorkspaceStore.getState().showToast(`Restored name to "${action.oldTitle}"`, 'success');
       } else if (action.type === 'move') {
         const titleToRestore = action.oldTitle || action.title;
@@ -309,20 +296,7 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         const finalDocs = await getAllDocuments();
         useDocumentStore.setState({ documents: finalDocs });
       } else if (action.type === 'rename') {
-        await updateDocumentTitle(action.id, action.newTitle);
-
-        const { autoUpdateLinks } = useSettingsStore.getState();
-        if (autoUpdateLinks) {
-          await updateInternalLinksAcrossDocuments(action.oldTitle, action.newTitle);
-        }
-
-        const docs = await getAllDocuments();
-        const active = useDocumentStore.getState().activeDocument;
-        useDocumentStore.setState({
-          documents: docs,
-          activeDocument: active && active.id === action.id ? { ...active, title: action.newTitle } : active,
-        });
-        useWorkspaceStore.getState().updateTabTitle(action.id, action.newTitle);
+        await useDocumentStore.getState().renameDocument(action.id, action.newTitle, false);
         useWorkspaceStore.getState().showToast(`Renamed to "${action.newTitle}"`, 'success');
       } else if (action.type === 'move') {
         const titleToApply = action.newTitle || action.title;

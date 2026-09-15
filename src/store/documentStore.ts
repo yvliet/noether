@@ -731,16 +731,14 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           const allDocs = get().documents;
           const relPath = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, allDocs);
           const ext = customType ? customType.extension : (isCanvas ? 'canvas' : 'md');
-          const targetRelPath = (customType || isCanvas)
-            ? (relPath.endsWith(`.${ext}`) ? relPath : `${relPath}.${ext}`)
-            : relPath;
+          const targetRelPath = `${relPath}.${ext}`;
           const diskContent = (customType && customType.isRawContent) || isCanvas
             ? defaultContent
             : jsonToMarkdown(defaultContent, finalTitle);
           const saveRes = await platform.saveMarkdownFile(finalTitle, diskContent, targetRelPath);
 
-          const normRel = (targetRelPath || finalTitle).replace(/\\/g, '/').toLowerCase();
-          const manifestKey = normRel.endsWith(`.${ext}`) ? normRel : `${normRel}.${ext}`;
+          const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+          const manifestKey = normRel;
           const contentHash = computeFastHash(diskContent);
           const actualMtime = saveRes?.mtime ?? now;
           const actualSize = saveRes?.size ?? diskContent.length;
@@ -964,35 +962,63 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (customType) {
       cleanNewTitle = fileTypeRegistry.cleanTitle(cleanNewTitle) || 'Untitled';
     }
-    const { oldTitle } = await updateDocumentTitle(id, cleanNewTitle);
-    const prevTitle = oldTitle || (doc ? doc.title : '');
 
-    if (recordHistory && prevTitle && prevTitle !== cleanNewTitle) {
-      useFileHistoryStore.getState().recordRename(id, prevTitle, cleanNewTitle);
-    }
+    const prevTitle = doc ? (doc._sortTitle !== undefined ? doc._sortTitle : doc.title) : '';
+    if (prevTitle === cleanNewTitle && doc?.title === cleanNewTitle && doc?._sortTitle === undefined) return;
 
-    const { autoUpdateLinks } = useSettingsStore.getState();
-    const isMarkdownDoc = !customType || !customType.isRawContent;
-    if (autoUpdateLinks && prevTitle && prevTitle !== cleanNewTitle && !doc?.is_folder && isMarkdownDoc) {
-      await updateInternalLinksAcrossDocuments(prevTitle, cleanNewTitle);
-    }
-
+    // 1. Optimistically update in-memory state and tabs immediately for instant zero-flash UI,
+    // and clear _sortTitle so the file tree now sorts to the new title position on commit
     set((state) => ({
-      documents: state.documents.map((d) => (d.id === id ? { ...d, title: cleanNewTitle } : d)),
-      activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: cleanNewTitle } : state.activeDocument,
+      documents: state.documents.map((d) => (d.id === id ? { ...d, title: cleanNewTitle, _sortTitle: undefined } : d)),
+      activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: cleanNewTitle, _sortTitle: undefined } : state.activeDocument,
     }));
-
-    emitBridgeAppEvent('document:renamed', { id, oldTitle: prevTitle, newTitle: cleanNewTitle });
-
     useWorkspaceStore.getState().updateTabTitle(id, cleanNewTitle);
+
+    try {
+      const { oldTitle } = await updateDocumentTitle(id, cleanNewTitle);
+      const originalOldTitle = oldTitle || prevTitle;
+
+      if (recordHistory && originalOldTitle && originalOldTitle !== cleanNewTitle) {
+        useFileHistoryStore.getState().recordRename(id, originalOldTitle, cleanNewTitle);
+      }
+
+      const { autoUpdateLinks } = useSettingsStore.getState();
+      const isMarkdownDoc = !customType || !customType.isRawContent;
+      if (autoUpdateLinks && originalOldTitle && originalOldTitle !== cleanNewTitle && !doc?.is_folder && isMarkdownDoc) {
+        await updateInternalLinksAcrossDocuments(originalOldTitle, cleanNewTitle);
+      }
+
+      emitBridgeAppEvent('document:renamed', { id, oldTitle: originalOldTitle, newTitle: cleanNewTitle });
+    } catch (err) {
+      console.error('[Noether Docs] Failed to persist renamed document:', err);
+      // Roll back optimistic state on failure
+      set((state) => ({
+        documents: state.documents.map((d) => (d.id === id ? { ...d, title: prevTitle, _sortTitle: undefined } : d)),
+        activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: prevTitle, _sortTitle: undefined } : state.activeDocument,
+      }));
+      useWorkspaceStore.getState().updateTabTitle(id, prevTitle);
+      throw err;
+    }
   },
 
   updateDocumentTitleInMemory: (id: string, newTitle: string) => {
     set((state) => ({
-      documents: state.documents.map((d) => (d.id === id ? { ...d, title: newTitle } : d)),
-      activeDocument: state.activeDocument && state.activeDocument.id === id ? { ...state.activeDocument, title: newTitle } : state.activeDocument,
+      documents: state.documents.map((d) => {
+        if (d.id === id) {
+          const originalSortTitle = d._sortTitle !== undefined ? d._sortTitle : d.title;
+          return { ...d, title: newTitle, _sortTitle: originalSortTitle };
+        }
+        return d;
+      }),
+      activeDocument:
+        state.activeDocument && state.activeDocument.id === id
+          ? { ...state.activeDocument, title: newTitle }
+          : state.activeDocument,
     }));
-    useWorkspaceStore.getState().updateTabTitle(id, newTitle);
+    const trimmed = newTitle.trim();
+    if (trimmed) {
+      useWorkspaceStore.getState().updateTabTitle(id, trimmed);
+    }
   },
 
   toggleBookmark: async (id: string) => {
@@ -1083,10 +1109,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const oldRel = getDocumentPath(docToMove, docs);
     const newRel = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, docs);
 
+    const isFolder = Boolean(docToMove.is_folder);
+    const customType = !isFolder ? (fileTypeRegistry.getByDocType(docToMove.doc_type) || fileTypeRegistry.getByPath(oldTitle)) : undefined;
+    const ext = customType ? customType.extension : (docToMove.doc_type === 'canvas' ? 'canvas' : 'md');
+    const oldFile = isFolder ? oldRel : `${oldRel}.${ext}`;
+    const newFile = isFolder ? newRel : `${newRel}.${ext}`;
+
     let diskMoved = false;
     if (platform.isDesktop() && (oldRel !== newRel || wasRenamed)) {
       try {
-        await platform.renameMarkdownFile(oldTitle, finalTitle, oldRel, newRel);
+        await platform.renameMarkdownFile(oldTitle, finalTitle, oldFile, newFile);
         diskMoved = true;
       } catch (e) {
         console.error('[DocumentStore] Failed to move file on disk:', e);
@@ -1099,7 +1131,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (!success) {
       if (diskMoved) {
         try {
-          await platform.renameMarkdownFile(finalTitle, oldTitle, newRel, oldRel);
+          await platform.renameMarkdownFile(finalTitle, oldTitle, newFile, oldFile);
         } catch (rollbackErr) {
           console.error('[DocumentStore] Failed to rollback disk move:', rollbackErr);
         }
@@ -1109,14 +1141,12 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }
 
     if (diskMoved) {
-      const oldNorm = (oldRel || oldTitle).replace(/\\/g, '/').toLowerCase();
-      const oldKey = oldNorm.endsWith('.md') ? oldNorm : `${oldNorm}.md`;
-      const newNorm = (newRel || finalTitle).replace(/\\/g, '/').toLowerCase();
-      const newKey = newNorm.endsWith('.md') ? newNorm : `${newNorm}.md`;
+      const oldNorm = oldFile.replace(/\\/g, '/').toLowerCase();
+      const newNorm = newFile.replace(/\\/g, '/').toLowerCase();
       try {
         await dbAdapter.execute(
           `UPDATE file_manifest SET relative_path = ? WHERE LOWER(relative_path) = LOWER(?)`,
-          [newKey, oldKey]
+          [newNorm, oldNorm]
         );
       } catch (mErr) {}
     }
@@ -1301,23 +1331,9 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (!active) return;
     const docId = active.id;
     const currentTitle = title !== undefined ? title : active.title;
-
-    const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
-      docId,
-      contentJson,
-      title,
-      { documents: get().documents }
-    );
-
-    // Update word and character counts instantly in status bar
-    useWorkspaceStore.getState().setStatusMetrics({
-      wordCount,
-      charCount,
-    });
-
+    const isTitleChange = title !== undefined && title !== active.title;
     const currentActive = get().activeDocument;
     const isStillActive = currentActive && currentActive.id === docId;
-    const isTitleChange = title !== undefined && title !== active.title;
 
     if (isTitleChange) {
       const updatedDocs = get().documents.map((d) =>
@@ -1333,19 +1349,40 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         set({
           documents: updatedDocs,
           activeDocument: { ...currentActive, title: currentTitle, content_json: contentJson },
-          headings,
         });
       } else {
         set({ documents: updatedDocs });
       }
       useWorkspaceStore.getState().updateTabTitle(docId, title);
+    }
+
+    const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
+      docId,
+      contentJson,
+      title,
+      { documents: get().documents }
+    );
+
+    // Update word and character counts instantly in status bar
+    useWorkspaceStore.getState().setStatusMetrics({
+      wordCount,
+      charCount,
+    });
+
+    const activeAfterSync = get().activeDocument;
+    const isStillActiveAfterSync = activeAfterSync && activeAfterSync.id === docId;
+
+    if (isTitleChange) {
+      if (isStillActiveAfterSync) {
+        set({ headings });
+      }
     } else {
       const existing = get().documents.find((d) => d.id === docId);
       if (existing) {
         if (existing.doc_type === 'canvas') existing.content_json = contentJson;
       }
-      if (isStillActive) {
-        currentActive.content_json = contentJson;
+      if (isStillActiveAfterSync) {
+        activeAfterSync.content_json = contentJson;
         const prevHeadings = get().headings;
         const headingsChanged =
           prevHeadings.length !== headings.length ||
@@ -1366,12 +1403,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       await pendingCreation;
     }
 
-    const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
-      id,
-      contentJson,
-      title,
-      { rawMarkdownOverride, documents: get().documents }
-    );
     const currentActive = get().activeDocument;
     const existingDoc = get().documents.find((d) => d.id === id);
     const resolvedTitle =
@@ -1381,17 +1412,11 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
           existingDoc?.title ||
           'Untitled';
 
-    // 1. Instantly update word and character metrics without triggering layout re-renders
-    useWorkspaceStore.getState().setStatusMetrics({
-      wordCount,
-      charCount,
-    });
-
     const isTitleChange = title !== undefined && existingDoc && title !== existingDoc.title;
     const isCurrentActive = currentActive && currentActive.id === id;
 
     if (isTitleChange) {
-      // Title was renamed: update document catalog array and tab title
+      // Optimistically update document catalog array and tab title
       const updatedDocs = get().documents.map((d) =>
         d.id === id ? { ...d, title, content_json: contentJson } : d
       );
@@ -1399,7 +1424,6 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         set({
           documents: updatedDocs,
           activeDocument: { ...currentActive, title, content_json: contentJson },
-          headings,
         });
       } else {
         set({ documents: updatedDocs });
@@ -1407,20 +1431,42 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       if (title.trim()) {
         useWorkspaceStore.getState().updateTabTitle(id, title.trim());
       }
+    }
+
+    const { headings, wordCount, charCount } = await saveDocumentAndSynchronize(
+      id,
+      contentJson,
+      title,
+      { rawMarkdownOverride, documents: get().documents }
+    );
+
+    // 1. Instantly update word and character metrics without triggering layout re-renders
+    useWorkspaceStore.getState().setStatusMetrics({
+      wordCount,
+      charCount,
+    });
+
+    const activeAfterSync = get().activeDocument;
+    const isStillActiveAfterSync = activeAfterSync && activeAfterSync.id === id;
+
+    if (isTitleChange) {
+      if (isStillActiveAfterSync) {
+        set({ headings });
+      }
     } else {
       // Content-only typing update: keep documents array referentially stable to prevent
       // cascading re-renders across the file tree, sidebars, and breadcrumbs!
       if (existingDoc) {
         existingDoc.content_json = contentJson;
       }
-      if (isCurrentActive) {
+      if (isStillActiveAfterSync) {
         // Only emit new headings if heading count or structure actually changed
         const prevHeadings = get().headings;
         const headingsChanged =
           prevHeadings.length !== headings.length ||
           headings.some((h, idx) => h.text !== prevHeadings[idx]?.text || h.level !== prevHeadings[idx]?.level);
 
-        currentActive.content_json = contentJson;
+        activeAfterSync.content_json = contentJson;
         if (headingsChanged) {
           set({ headings });
         }
