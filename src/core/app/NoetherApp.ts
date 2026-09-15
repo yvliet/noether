@@ -401,7 +401,7 @@ export class NoetherApp {
         storeRefs.workspace?.getState()?.setIsCommandPaletteOpen(true);
       },
       openSettings: (tabId?: string): void => {
-        storeRefs.workspace?.getState()?.setIsSettingsOpen(true, tabId);
+        platform.openSettingsWindow(tabId);
       },
       openHelpModal: (): void => {
         storeRefs.workspace?.getState()?.setIsHelpModalOpen(true);
@@ -432,6 +432,9 @@ export class NoetherApp {
       },
       get backlinkCount(): number {
         return storeRefs.workspace?.getState()?.backlinkCount ?? 0;
+      },
+      getActiveDrag: () => {
+        return (storeRefs.dragDrop?.getState() as any)?.activeDrag ?? null;
       },
     };
   }
@@ -489,8 +492,8 @@ export class NoetherApp {
       openDocument: async (id: string): Promise<void> => {
         await storeRefs.document?.getState()?.setActiveDocumentById(id);
       },
-      saveDocument: async (id: string, contentJson: string, title?: string): Promise<void> => {
-        await storeRefs.document?.getState()?.saveDocumentById(id, contentJson, title);
+      saveDocument: async (id: string, contentJson: string, title?: string, rawMarkdownOverride?: string): Promise<void> => {
+        await storeRefs.document?.getState()?.saveDocumentById(id, contentJson, title, rawMarkdownOverride);
       },
       deleteDocument: async (id: string): Promise<void> => {
         await storeRefs.document?.getState()?.removeDocument(id);
@@ -662,6 +665,9 @@ export class NoetherApp {
       },
       get defaultEditingMode(): string {
         return storeRefs.settings?.getState()?.defaultEditingMode ?? 'Live Preview';
+      },
+      get tabSize(): string {
+        return storeRefs.settings?.getState()?.tabSize ?? '5';
       },
       setDefaultEditingMode(mode: string): void {
         storeRefs.settings?.getState()?.setDefaultEditingMode(mode);

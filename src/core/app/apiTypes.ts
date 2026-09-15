@@ -43,6 +43,10 @@ export interface ConfirmDialogConfig {
   cancelText?: string;
   /** If true, styles the confirmation action as dangerous/destructive (e.g. red button). */
   isDanger?: boolean;
+  /** Optional setting key in SettingsState that controls skipping this dialog (e.g. 'skipDeleteConfirmation' or 'skipRenameConfirmation'). */
+  skipSettingKey?: 'skipDeleteConfirmation' | 'skipRenameConfirmation';
+  /** If set to false, hides the 'Don't ask again' checkbox regardless of skip keys. */
+  showDontAskAgain?: boolean;
   /** Callback invoked when the user confirms the action. */
   onConfirm: () => void | Promise<void>;
   /** Optional callback invoked when the user cancels the dialog. */
@@ -87,6 +91,31 @@ export interface FolderPickerConfig {
   onSelect: (folderPath: string, folderItem?: DocumentItem | null) => void;
   /** Optional callback invoked when folder selection is cancelled. */
   onCancel?: () => void;
+}
+
+// ─── Drag & Drop Types ──────────────────────────────────────────
+
+/**
+ * Snapshot of an active drag-and-drop operation in the host application.
+ * Usable by any extension to inspect or react to dragged documents, tabs, or custom payloads.
+ * @since 0.5.0
+ */
+export interface ActiveDragData {
+  /** Whether a drag interaction is actively occurring. */
+  isDragging: boolean;
+  /** Primary document item being dragged (or null if not a document). */
+  item: DocumentItem | null;
+  /** Array of all document items involved in the drag (e.g. multi-selection). */
+  items: DocumentItem[];
+  /** IDs of all dragged documents. */
+  selectedIds: string[];
+  /** Origin surface of the drag (e.g. 'file-tree', 'tab', 'dock', 'custom'). */
+  source: 'file-tree' | 'tab' | 'dock' | 'custom' | string;
+  /** Current screen client coordinates of the cursor, if available. */
+  clientX: number;
+  clientY: number;
+  /** Nearest DOM element currently hovered beneath the cursor. */
+  targetEl?: HTMLElement | null;
 }
 
 // ─── Workspace API ──────────────────────────────────────────────
@@ -425,6 +454,16 @@ export interface WorkspaceAPI {
    * @since 0.2.0
    */
   readonly backlinkCount: number;
+
+  // ── Drag & Drop Inspection ──
+
+  /**
+   * Returns the currently active drag interaction across the application,
+   * or `null` if no drag is in progress.
+   * Usable by any extension (Canvas, Kanban, Graph, etc.) to inspect what the user is dragging.
+   * @since 0.5.0
+   */
+  getActiveDrag(): ActiveDragData | null;
 }
 
 // ─── Vault API (formerly Vault API) ────────────────────────────
@@ -549,9 +588,10 @@ export interface VaultAPI {
    * @param docId - The document's unique identifier.
    * @param contentJson - Serialized TipTap JSON content.
    * @param title - Optional updated title.
+   * @param rawMarkdownOverride - Optional raw markdown string for exact disk persistence.
    * @since 0.1.0
    */
-  saveDocument(docId: string, contentJson: string, title?: string): Promise<void>;
+  saveDocument(docId: string, contentJson: string, title?: string, rawMarkdownOverride?: string): Promise<void>;
 
   /**
    * Permanently deletes a document from the Vault.
@@ -778,6 +818,12 @@ export interface SettingsAPI {
    * @since 0.2.0
    */
   readonly defaultEditingMode: string;
+
+  /**
+   * The configured tab size in spaces ('2' - '8').
+   * @since 0.3.0
+   */
+  readonly tabSize: string;
 
   /**
    * Sets the default editing mode.

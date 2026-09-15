@@ -25,6 +25,7 @@ export class EventBus {
     'document:saved',
     'document:deleted',
     'document:renamed',
+    'editor:drop-ghost',
   ]);
 
   /**

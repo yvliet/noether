@@ -54,7 +54,13 @@ export type {
   OmniboxSearchContext,
   OmniboxSearchResult,
 } from '../core/registries/OmniboxProviderRegistry';
-export { FileTypeRegistry, fileTypeRegistry } from '../core/registries/FileTypeRegistry';
+export {
+  FileTypeRegistry,
+  fileTypeRegistry,
+  isMediaFileName,
+  isMediaExtension,
+  MEDIA_EXTENSIONS,
+} from '../core/registries/FileTypeRegistry';
 export { IconRegistry } from '../core/registries/IconRegistry';
 export type { IconPackProvider, IconDescriptor, IconRenderOptions } from '../core/registries/IconRegistry';
 export { ExtensionDatabaseManager } from '../core/database/ExtensionDatabaseManager';
@@ -92,6 +98,7 @@ export {
   useGlobalTasks,
   useDocumentProperties,
   useNoetherStore,
+  useCurrentDrag,
   useToast,
 } from './react';
 export { renderHugeIconSvg } from '../components/common/Icons';
@@ -145,6 +152,7 @@ export type { DocLayoutWrapperProps } from '../components/layout/DocLayoutWrappe
 
 // ── Public API Contracts ──
 export type {
+  ActiveDragData,
   WorkspaceAPI,
   VaultAPI,
   SettingsAPI,

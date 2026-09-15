@@ -7,6 +7,7 @@ import {
 } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { searchFullText, FTSResult } from '@/lib/db/fts';
 import { getDocumentPath } from '@/lib/db/documents';
 import { useNoetherApp, useCommands } from '@/core/app/AppContext';
@@ -26,6 +27,16 @@ export const CommandPalette: React.FC = React.memo(() => {
 
   const documents = useDocumentStore((s) => s.documents);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
+  const excludedFolders = useSettingsStore((s) => s.excludedFolders);
+
+  const isExcludedDoc = useCallback((doc: DocumentItem) => {
+    if (excludedFolders.length === 0) return false;
+    const path = getDocumentPath(doc, documents).toLowerCase();
+    return excludedFolders.some((f) => {
+      const folder = f.toLowerCase().replace(/^[\/\\]+|[\/\\]+$/g, '');
+      return path.startsWith(folder + '/') || path === folder;
+    });
+  }, [excludedFolders, documents]);
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<FTSResult[]>([]);
@@ -86,7 +97,7 @@ export const CommandPalette: React.FC = React.memo(() => {
   // Recent notes for initial state (when query is empty)
   const recentNotes = useMemo(() => {
     return documents
-      .filter((doc: DocumentItem) => !doc.is_folder)
+      .filter((doc: DocumentItem) => !doc.is_folder && !isExcludedDoc(doc))
       .sort((a, b) => (b.updated_at || b.created_at || 0) - (a.updated_at || a.created_at || 0))
       .slice(0, 5)
       .map((doc) => ({
@@ -94,7 +105,7 @@ export const CommandPalette: React.FC = React.memo(() => {
         document_title: doc.title || 'Untitled',
         is_canvas: doc.doc_type === 'canvas',
       }));
-  }, [documents]);
+  }, [documents, isExcludedDoc]);
 
   // Instant document matches by title or path
   const matchedDocs = useMemo(() => {
@@ -102,14 +113,14 @@ export const CommandPalette: React.FC = React.memo(() => {
     const q = query.toLowerCase().trim();
     return documents
       .filter((doc: DocumentItem) => {
-        if (doc.is_folder) return false;
+        if (doc.is_folder || isExcludedDoc(doc)) return false;
         const titleMatch = (doc.title || '').toLowerCase().includes(q);
         if (titleMatch) return true;
         const path = getDocumentPath(doc, documents).toLowerCase();
         return path.includes(q);
       })
       .slice(0, 15);
-  }, [query, activeSearchProvider, documents]);
+  }, [query, activeSearchProvider, documents, isExcludedDoc]);
 
   // Combined notes from title matches & FTS block matches
   const displayedNotes = useMemo(() => {
@@ -138,24 +149,25 @@ export const CommandPalette: React.FC = React.memo(() => {
     // FTS content matches
     for (const res of results) {
       if (!seenDocIds.has(res.document_id)) {
-        seenDocIds.add(res.document_id);
         const doc = documents.find((d) => d.id === res.document_id);
+        if (doc && isExcludedDoc(doc)) continue;
+        seenDocIds.add(res.document_id);
         combined.push({
           document_id: res.document_id,
           document_title: doc?.title || res.document_title || 'Untitled',
-          content_text: res.content_text,
+          content_text: res.snippet || undefined,
           is_canvas: doc?.doc_type === 'canvas',
         });
       } else {
         const existing = combined.find((c) => c.document_id === res.document_id);
-        if (existing && !existing.content_text && res.content_text) {
-          existing.content_text = res.content_text;
+        if (existing && !existing.content_text && res.snippet) {
+          existing.content_text = res.snippet;
         }
       }
     }
 
     return combined;
-  }, [query, activeSearchProvider, matchedDocs, results, documents]);
+  }, [query, activeSearchProvider, matchedDocs, results, documents, isExcludedDoc]);
 
 function getExtensionName(cmd: CommandItem, app: NoetherApp): string | null {
   if (!cmd.extensionId) {

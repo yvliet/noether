@@ -18,6 +18,7 @@ export interface DocumentItem {
   properties?: string; // JSON string of frontmatter / note properties
   created_at: number;
   updated_at: number;
+  _sortTitle?: string;
 }
 
 export type DocumentMetaItem = Omit<DocumentItem, 'content_json'>;

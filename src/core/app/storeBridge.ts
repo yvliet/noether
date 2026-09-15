@@ -19,6 +19,7 @@ export interface NoetherStoreRefs {
   contextMenu: StoreGetter | null;
   settings: StoreGetter | null;
   fileHistory: StoreGetter | null;
+  dragDrop: StoreGetter | null;
   appInstance: any | null;
 }
 
@@ -29,6 +30,7 @@ const internalStores: NoetherStoreRefs = {
   contextMenu: null,
   settings: null,
   fileHistory: null,
+  dragDrop: null,
   appInstance: null,
 };
 
@@ -39,6 +41,7 @@ const STORE_KEYS: Array<keyof NoetherStoreRefs> = [
   'contextMenu',
   'settings',
   'fileHistory',
+  'dragDrop',
   'appInstance',
 ];
 
@@ -98,6 +101,7 @@ export function bindNoetherStores(stores: {
   contextMenu?: StoreGetter;
   settings?: StoreGetter;
   fileHistory?: StoreGetter;
+  dragDrop?: StoreGetter;
 }): void {
   if (stores.workspace) storeRefs.workspace = stores.workspace;
   if (stores.sidebarDock) storeRefs.sidebarDock = stores.sidebarDock;
@@ -105,6 +109,7 @@ export function bindNoetherStores(stores: {
   if (stores.contextMenu) storeRefs.contextMenu = stores.contextMenu;
   if (stores.settings) storeRefs.settings = stores.settings;
   if (stores.fileHistory) storeRefs.fileHistory = stores.fileHistory;
+  if (stores.dragDrop) storeRefs.dragDrop = stores.dragDrop;
 }
 
 export function setAppInstanceBridge(app: any): void {

@@ -61,6 +61,8 @@ pub fn run() {
             vault::close_vault_window,
             vault::open_settings_window,
             vault::close_settings_window,
+            vault::save_app_settings,
+            vault::load_app_settings,
             vault::window_minimize,
             vault::window_maximize,
             vault::window_close,

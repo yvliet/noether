@@ -3,7 +3,9 @@
  * @description
  * Built-in core extension that manages bidirectional backlinks and unlinked mentions.
  * Registers a right sidebar tab, in-document footer widget, status bar metric,
- * and document menu actions.
+ * and document menu actions. Consumes drag-and-drop payloads from the navigation
+ * sidebar to automatically insert wikilinks for notes and embeds for media files
+ * at the exact drop coordinates in the active editor.
  *
  * Uses native NoetherApp APIs for sidebar activation, toasts, and settings.
  *
@@ -21,6 +23,7 @@ import {
   getUnlinkedMentionsForDocument,
   convertUnlinkedMentionToLink,
 } from '@/lib/db/links';
+import { isMediaFileName } from '@/core/registries/FileTypeRegistry';
 import { useBacklinksSettings } from './backlinksSettings';
 import manifest from './manifest.json';
 import backlinksReadme from './readme.md?raw';
@@ -172,9 +175,77 @@ export class BacklinksExtension extends Extension {
       },
     });
 
+    // 7. Register Drag & Drop Drop Listener (Wikilinks & Media Embeds)
+    this.registerEvent(
+      this.app.events.on('drag:drop', async (data) => {
+        const { item, items, clientX, clientY, dropTarget } = data;
+        if (!item && (!items || items.length === 0)) return;
+
+        // Verify that the drop occurred over an active editor surface
+        const editorEl = dropTarget?.closest(
+          '.tiptap.prose, [data-editor-canvas="true"], [data-editor-view="true"], .ProseMirror, .cm-editor'
+        );
+        if (!editorEl) return;
+
+        const activeEditor = this.app.editor.getActiveEditor() || (typeof window !== 'undefined' ? (window as any).__noetherEditor : null);
+        if (!activeEditor || !activeEditor.view || activeEditor.isDestroyed) return;
+
+        // Determine insertion position from drop client coordinates
+        let targetPos = activeEditor.state.doc.content.size;
+        if (typeof clientX === 'number' && typeof clientY === 'number') {
+          const posInfo = activeEditor.view.posAtCoords({ left: clientX, top: clientY });
+          if (posInfo && typeof posInfo.pos === 'number') {
+            targetPos = posInfo.pos;
+          }
+        }
+
+        const droppedList = items && items.length > 0 ? items : (item ? [item] : []);
+        if (droppedList.length === 0) return;
+
+        const formattedSegments = droppedList.map((doc) => {
+          if (isMediaFileName(doc.title)) {
+            return `![[${doc.title}]]`;
+          }
+          if (doc.is_folder) {
+            return `[[${doc.title}]]`;
+          }
+          const cleanTitle = doc.title.endsWith('.md') ? doc.title.slice(0, -3) : doc.title;
+          return `[[${cleanTitle}]]`;
+        });
+
+        // Determine spacing based on whether the drop is inline within text
+        const $pos = activeEditor.state.doc.resolve(targetPos);
+        const parentText = $pos.parent.textContent || '';
+        const parentOffset = $pos.parentOffset;
+        const isInlineInText = parentOffset > 0 && parentOffset < parentText.length;
+        const separator = isInlineInText ? ' ' : '\n';
+        const insertString = formattedSegments.join(separator);
+
+        // Perform the insertion at exact targetPos and focus editor
+        activeEditor.chain().focus().insertContentAt(targetPos, insertString).run();
+
+        const anyMedia = droppedList.some((d) => isMediaFileName(d.title));
+        const allMedia = droppedList.every((d) => isMediaFileName(d.title));
+        if (allMedia) {
+          this.app.workspace.showToast(
+            droppedList.length > 1 ? `Embedded ${droppedList.length} media files` : `Embedded “${droppedList[0].title}”`,
+            'success'
+          );
+        } else if (anyMedia) {
+          this.app.workspace.showToast(`Inserted ${droppedList.length} links & media embeds`, 'success');
+        } else {
+          const firstTitle = droppedList[0].title.replace(/\.md$/, '');
+          this.app.workspace.showToast(
+            droppedList.length > 1 ? `Inserted ${droppedList.length} links` : `Linked “${firstTitle}”`,
+            'success'
+          );
+        }
+      })
+    );
+
     // ── MCP Tools Registration ──
 
-    // 7. Tool: backlinks_get_incoming
+    // 8. Tool: backlinks_get_incoming
     this.registerTool({
       name: 'get_incoming',
       description: 'Get incoming backlinks that link to the specified document from other notes.',
@@ -211,7 +282,7 @@ export class BacklinksExtension extends Extension {
       },
     });
 
-    // 8. Tool: backlinks_get_outgoing
+    // 9. Tool: backlinks_get_outgoing
     this.registerTool({
       name: 'get_outgoing',
       description: 'Get all outgoing wikilinks and document references contained within a note.',
@@ -248,7 +319,7 @@ export class BacklinksExtension extends Extension {
       },
     });
 
-    // 9. Tool: backlinks_get_unlinked_mentions
+    // 10. Tool: backlinks_get_unlinked_mentions
     this.registerTool({
       name: 'get_unlinked_mentions',
       description: 'Find plain-text mentions of a document title in other notes that are not yet wikilinked.',
@@ -290,7 +361,7 @@ export class BacklinksExtension extends Extension {
       },
     });
 
-    // 10. Tool: backlinks_convert_mention
+    // 11. Tool: backlinks_convert_mention
     this.registerTool({
       name: 'convert_mention',
       description: 'Convert a plain-text mention in a source document into a formal [[wikilink]].',
@@ -323,6 +394,68 @@ export class BacklinksExtension extends Extension {
           const success = await convertUnlinkedMentionToLink(sourceDocumentId, title);
           return {
             content: [{ type: 'text', text: JSON.stringify({ success, sourceDocumentId, title }) }],
+          };
+        } catch (error) {
+          return {
+            isError: true,
+            content: [{ type: 'text', text: error instanceof Error ? error.message : String(error) }],
+          };
+        }
+      },
+    });
+
+    // 12. Tool: backlinks_insert_link
+    this.registerTool({
+      name: 'insert_link',
+      description: 'Insert a formatted [[wikilink]] or ![[media]] embed into the currently active note at a specific position.',
+      category: 'backlinks',
+      parameters: {
+        type: 'object',
+        properties: {
+          targetTitle: {
+            type: 'string',
+            description: 'Title or filename of the document or media asset to link/embed',
+          },
+          isEmbed: {
+            type: 'boolean',
+            description: 'Whether to format as a media embed (![[target]]) rather than standard link ([[target]])',
+          },
+          position: {
+            type: 'number',
+            description: 'Optional document character index to insert at (defaults to end of document)',
+          },
+        },
+        required: ['targetTitle'],
+      },
+      handler: async (args: Record<string, unknown>, _app: NoetherApp): Promise<McpToolResult> => {
+        try {
+          const targetTitle = args.targetTitle as string;
+          if (!targetTitle) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'targetTitle parameter is required' }],
+            };
+          }
+          const isEmbed = args.isEmbed !== undefined ? Boolean(args.isEmbed) : isMediaFileName(targetTitle);
+          const cleanTitle = (!isEmbed && targetTitle.endsWith('.md')) ? targetTitle.slice(0, -3) : targetTitle;
+          const formatted = isEmbed ? `![[${cleanTitle}]]` : `[[${cleanTitle}]]`;
+
+          const activeEditor = this.app.editor.getActiveEditor();
+          if (!activeEditor || !activeEditor.view || activeEditor.isDestroyed) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'No active editor document is currently open' }],
+            };
+          }
+
+          const docSize = activeEditor.state.doc.content.size;
+          const pos = typeof args.position === 'number' && args.position >= 0 && args.position <= docSize
+            ? args.position
+            : docSize;
+
+          activeEditor.chain().focus().insertContentAt(pos, formatted).run();
+          return {
+            content: [{ type: 'text', text: JSON.stringify({ success: true, inserted: formatted, position: pos }) }],
           };
         } catch (error) {
           return {

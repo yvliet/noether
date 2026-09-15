@@ -708,6 +708,11 @@ export interface OpenTabOptions {
    * The current tab and main view mode remain active.
    */
   background?: boolean;
+  /**
+   * Target index at which the tab should be inserted in the pane's tabs list.
+   * If omitted, the tab is appended to the end of the tabs list.
+   */
+  insertIndex?: number;
 }
 
 /**

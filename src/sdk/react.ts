@@ -24,6 +24,7 @@ import type {
   TagItem,
   GlobalTaskItem,
 } from '../types';
+import type { ActiveDragData } from '../core/app/apiTypes';
 
 /**
  * Accesses the central NoetherApp host application instance.
@@ -41,7 +42,7 @@ const EMPTY_OBJECT: Record<string, any> = Object.freeze({});
  * Subscribes to a slice of an internal host store with full reactivity.
  */
 function useStoreSlice<TStore, TSelected>(
-  storeKey: 'document' | 'workspace' | 'settings' | 'sidebarDock',
+  storeKey: 'document' | 'workspace' | 'settings' | 'sidebarDock' | 'dragDrop',
   selector: (state: TStore) => TSelected,
   fallback: TSelected
 ): TSelected {
@@ -240,10 +241,19 @@ export function useDocumentProperties(docId?: string): Record<string, any> {
  * @since 0.4.6
  */
 export function useNoetherStore<TSelected = any>(
-  storeKey: 'document' | 'workspace' | 'settings' | 'sidebarDock',
+  storeKey: 'document' | 'workspace' | 'settings' | 'sidebarDock' | 'dragDrop',
   selector: (state: any) => TSelected
 ): TSelected {
   return useStoreSlice(storeKey, selector, undefined as any);
+}
+
+/**
+ * Subscribes to the active drag-and-drop operation anywhere across the application.
+ * Returns null if no drag is currently active.
+ * @since 0.5.0
+ */
+export function useCurrentDrag(): ActiveDragData | null {
+  return useStoreSlice('dragDrop', (s: any) => s?.activeDrag ?? null, null);
 }
 
 /**

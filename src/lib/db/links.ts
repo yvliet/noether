@@ -1,6 +1,6 @@
 import { dbAdapter } from './adapter';
 import { BacklinkItem, OutgoingLinkItem, UnlinkedMentionItem, DocumentItem } from '@/types';
-import { getDocumentById, saveDocumentAndSynchronize } from './documents';
+import { getDocumentById, saveDocumentAndSynchronize, markdownToTipTapJson } from './documents';
 
 export async function getBacklinksForDocument(targetDocId: string): Promise<BacklinkItem[]> {
   try {
@@ -51,7 +51,17 @@ export async function getOutgoingLinksWithDetails(sourceDocId: string): Promise<
     const wikiRegex = /\[\[(.*?)\]\]/g;
     const foundLinks = new Set<string>();
 
-    const parsed = JSON.parse(doc.content_json);
+    let parsed: any = null;
+    try {
+      parsed = JSON.parse(doc.content_json);
+    } catch {
+      try {
+        parsed = JSON.parse(markdownToTipTapJson(doc.content_json));
+      } catch {
+        return [];
+      }
+    }
+    if (!parsed) return [];
     const traverse = (node: any) => {
       if (!node) return;
       if (node.type === 'text' && typeof node.text === 'string') {
@@ -84,7 +94,7 @@ export async function getOutgoingLinksWithDetails(sourceDocId: string): Promise<
               if (linkTarget.includes('|')) linkTarget = linkTarget.split('|')[0].trim();
             }
             if (linkTarget.includes('#')) linkTarget = linkTarget.split('#')[0].trim();
-            linkTarget = decodeURIComponent(linkTarget).replace(/\.md$/, '').trim();
+            linkTarget = decodeURIComponent(linkTarget).trim();
             if (linkTarget && !foundLinks.has(linkTarget.toLowerCase())) {
               foundLinks.add(linkTarget.toLowerCase());
               outgoingLinks.push({
@@ -109,17 +119,20 @@ export async function getOutgoingLinksWithDetails(sourceDocId: string): Promise<
     // Resolve target documents in a single batched query
     if (outgoingLinks.length > 0) {
       const linkTexts = outgoingLinks.map((item) => item.link_text);
-      const placeholders = linkTexts.map(() => '?').join(',');
+      const cleanTexts = linkTexts.map((t) => t.replace(/\.md$/i, ''));
+      const allCandidates = Array.from(new Set([...linkTexts, ...cleanTexts]));
+      const placeholders = allCandidates.map(() => '?').join(',');
       const matchDocs = await dbAdapter.query<{ id: string; title: string }>(
         `SELECT id, title FROM documents WHERE title IN (${placeholders}) AND is_folder = 0`,
-        linkTexts
+        allCandidates
       );
       const docMap = new Map<string, string>();
       for (const doc of matchDocs) {
         docMap.set(doc.title.toLowerCase(), doc.id);
       }
       for (const item of outgoingLinks) {
-        const targetId = docMap.get(item.link_text.toLowerCase());
+        const lower = item.link_text.toLowerCase();
+        const targetId = docMap.get(lower) || docMap.get(lower.replace(/\.md$/i, ''));
         if (targetId) {
           item.target_document_id = targetId;
           item.exists = true;
