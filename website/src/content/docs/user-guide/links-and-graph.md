@@ -35,6 +35,13 @@ Hovering over any internal wikilink (`[[Note Title]]`, `[[Note Title#Heading]]`,
 - **Ghost Note Support**: Hovering over an uncreated note displays a *"Create note"* button that instantiates the file on disk and opens it.
 - **Documentation Parity**: The exact same hover preview system powers all internal links across the Noether documentation website.
 
+### Drag & Drop Link Insertion
+You can drag notes, folders, and media assets directly from the navigation sidebar file tree into your note to insert WikiLinks and embeds with pinpoint coordinate precision:
+- **Notes & Folders**: Dropping a note or folder into the editor inserts a standard `[[Note Title]]` WikiLink (extensions like `.md` are stripped automatically).
+- **Media Assets**: Dropping images, audio, video, or PDF files inserts a standard `![[attachment.png]]` embed.
+- **Dynamic Pointer Cues**: As you hover over the editor surface, the drag tooltip dynamically indicates whether the dropped item will link (`Link "Title"`) or embed (`Embed "filename.png"`).
+- **Multi-Item Drops**: Dragging multiple selected items formats each entry on a new line or inline with smart whitespace separation.
+
 
 ## 2. Persistent Visited Link Tracking
 
