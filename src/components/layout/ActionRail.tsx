@@ -22,8 +22,8 @@ export const ActionRail: React.FC = React.memo(() => {
   const showToast = useWorkspaceStore((s) => s.showToast);
 
   const handleOpenSettings = useCallback(() => {
-    setIsSettingsOpen(true);
-  }, [setIsSettingsOpen]);
+    platform.openSettingsWindow();
+  }, []);
 
   const lastTriggerTimeRef = React.useRef<number>(0);
   const handleItemTrigger = useCallback(

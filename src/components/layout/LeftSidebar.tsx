@@ -801,12 +801,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           </button>
           <button
             onClick={() => {
-              const { openSettingsInNewWindow } = useSettingsStore.getState();
-              if (openSettingsInNewWindow && platform.isDesktop()) {
-                platform.openSettingsWindow();
-              } else {
-                setIsSettingsOpen(true);
-              }
+              platform.openSettingsWindow();
             }}
             title="Settings (Ctrl+,)"
             className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"

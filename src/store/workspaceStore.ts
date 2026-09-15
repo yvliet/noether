@@ -242,8 +242,12 @@ export interface ConfirmDialogConfig {
   message: string;
   subtext?: string;
   confirmText?: string;
+  cancelText?: string;
   isDanger?: boolean;
+  skipSettingKey?: 'skipDeleteConfirmation' | 'skipRenameConfirmation';
+  showDontAskAgain?: boolean;
   onConfirm: () => void;
+  onCancel?: () => void;
   onDontAskAgain?: () => void;
 }
 
@@ -1758,6 +1762,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     const shouldReplaceCurrent =
       options?.newTab !== true &&
+      options?.insertIndex === undefined &&
       (options?.replaceCurrentTab ?? true) &&
       Boolean(currentTab) &&
       !currentTab?.is_pinned &&
@@ -1793,7 +1798,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           icon: options?.icon,
           metadata,
         };
-        newTabs.push(newTab);
+        if (typeof options?.insertIndex === 'number' && options.insertIndex >= 0) {
+          const clampedIndex = Math.min(options.insertIndex, newTabs.length);
+          newTabs.splice(clampedIndex, 0, newTab);
+        } else {
+          newTabs.push(newTab);
+        }
         nextTabId = explicitTabId;
       }
     } else if (isCurrentTabEmpty && currentTab) {
@@ -1844,7 +1854,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         icon: options?.icon,
         metadata,
       };
-      newTabs.push(newTab);
+      if (typeof options?.insertIndex === 'number' && options.insertIndex >= 0) {
+        const clampedIndex = Math.min(options.insertIndex, newTabs.length);
+        newTabs.splice(clampedIndex, 0, newTab);
+      } else {
+        newTabs.push(newTab);
+      }
       nextTabId = newTab.id;
     }
 
@@ -2351,10 +2366,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
   confirmDialog: null,
   openConfirmDialog: (config) => {
-    const { skipDeleteConfirmation } = useSettingsStore.getState();
-    if (config.isDanger && skipDeleteConfirmation) {
-      config.onConfirm();
-      return;
+    if (config.skipSettingKey) {
+      const settings = useSettingsStore.getState();
+      if (settings[config.skipSettingKey]) {
+        config.onConfirm();
+        return;
+      }
     }
     set({ confirmDialog: { ...config, isOpen: true } });
   },

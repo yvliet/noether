@@ -1,41 +1,70 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { AppShell } from '@/components/layout/AppShell';
-import { SettingsWindow } from '@/components/settings/SettingsWindow';
 import { platform } from '@/lib/platform/platformAdapter';
+import noetherSpinGif from '@/assets/noether_spin.gif';
+
+const AppShell = React.lazy(() => import('@/components/layout/AppShell').then((m) => ({ default: m.AppShell })));
+const SettingsWindow = React.lazy(() => import('@/components/settings/SettingsWindow').then((m) => ({ default: m.SettingsWindow })));
+
+const LoadingSpinner = () => (
+  <div className="w-full h-full flex items-center justify-center bg-[#141414] select-none">
+    <img
+      src={noetherSpinGif}
+      alt="Loading Noether"
+      width={36}
+      height={36}
+      className="w-9 h-9 object-contain select-none pointer-events-none"
+      draggable={false}
+    />
+  </div>
+);
 
 export function App() {
   const [windowMode, setWindowMode] = useState<string>(() => {
-    if (typeof window === 'undefined') return 'main';
-    const params = new URLSearchParams(window.location.search);
-    return params.get('window') || 'main';
+    return platform.getCurrentWindowLabelSync() || 'main';
   });
 
-  const initialTab = useMemo(() => {
+  const [activeTab, setActiveTab] = useState<string | undefined>(() => {
     if (typeof window === 'undefined') return undefined;
     const params = new URLSearchParams(window.location.search);
     return params.get('tab') || undefined;
-  }, []);
+  });
 
   useEffect(() => {
-    platform.getCurrentWindowLabel().then((label) => {
-      if (label === 'settings') {
-        setWindowMode('settings');
-      }
-    }).catch(() => {});
-  }, []);
+    const label = platform.getCurrentWindowLabelSync();
+    if (label && label !== windowMode) {
+      setWindowMode(label);
+    }
+  }, [windowMode]);
+
+  useEffect(() => {
+    if (windowMode === 'settings') {
+      const unsub = platform.onNavigateSettingsTab((tabId) => {
+        if (tabId) {
+          setActiveTab(tabId);
+        }
+      });
+      return () => {
+        unsub();
+      };
+    }
+  }, [windowMode]);
 
   if (windowMode === 'settings') {
     return (
       <ErrorBoundary>
-        <SettingsWindow initialTab={initialTab} />
+        <Suspense fallback={<LoadingSpinner />}>
+          <SettingsWindow initialTab={activeTab} />
+        </Suspense>
       </ErrorBoundary>
     );
   }
 
   return (
     <ErrorBoundary>
-      <AppShell />
+      <Suspense fallback={<LoadingSpinner />}>
+        <AppShell />
+      </Suspense>
     </ErrorBoundary>
   );
 }
