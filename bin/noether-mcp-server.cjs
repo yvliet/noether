@@ -79,6 +79,303 @@ function getActiveVaultPath() {
   return defaultVault;
 }
 
+// ── User Preference Synchronization & Smart Markdown Normalization ──
+
+function detectVaultPrevailingTabSize(vaultPath) {
+  try {
+    const files = scanMarkdownFiles(vaultPath).filter((f) => !f.isFolder).slice(0, 10);
+    const indentCounts = { 2: 0, 4: 0, 5: 0 };
+    for (const f of files) {
+      try {
+        const content = fs.readFileSync(f.fullPath, 'utf8');
+        const lines = content.split('\n');
+        for (const line of lines) {
+          const match = line.match(/^([ ]+)([-*+]|\d+[\.\)])\s+/);
+          if (match) {
+            const len = match[1].length;
+            if (len === 2 || len === 4 || len === 5) {
+              indentCounts[len] = (indentCounts[len] || 0) + 1;
+            }
+          }
+        }
+      } catch (e) {}
+    }
+    if (indentCounts[4] > indentCounts[2] && indentCounts[4] > indentCounts[5]) return 4;
+    if (indentCounts[5] > indentCounts[2] && indentCounts[5] > indentCounts[4]) return 5;
+    if (indentCounts[2] > 0) return 2;
+  } catch (e) {}
+  return 2;
+}
+
+function loadUserPreferences(vaultPath) {
+  // 1. Try active vault .noether/settings.json
+  if (vaultPath) {
+    const vaultSettingsPath = path.join(vaultPath, '.noether', 'settings.json');
+    if (fs.existsSync(vaultSettingsPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(vaultSettingsPath, 'utf8'));
+        if (raw && (raw.tabSize !== undefined || raw.indentSize !== undefined)) {
+          return {
+            tabSize: parseInt(raw.tabSize || raw.indentSize || 2, 10) || 2,
+            indentStyle: raw.indentStyle || 'spaces',
+            strictLineBreaks: Boolean(raw.strictLineBreaks),
+          };
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 2. Try global app settings directory (%APPDATA%/noether/settings.json)
+  for (const configPath of getKnownConfigPaths()) {
+    const dir = path.dirname(configPath);
+    const globalSettingsPath = path.join(dir, 'settings.json');
+    if (fs.existsSync(globalSettingsPath)) {
+      try {
+        const raw = JSON.parse(fs.readFileSync(globalSettingsPath, 'utf8'));
+        if (raw && (raw.tabSize !== undefined || raw.indentSize !== undefined)) {
+          return {
+            tabSize: parseInt(raw.tabSize || raw.indentSize || 2, 10) || 2,
+            indentStyle: raw.indentStyle || 'spaces',
+            strictLineBreaks: Boolean(raw.strictLineBreaks),
+          };
+        }
+      } catch (e) {}
+    }
+  }
+
+  // 3. Fallback: detect prevailing indentation in vault files
+  if (vaultPath && fs.existsSync(vaultPath)) {
+    const detected = detectVaultPrevailingTabSize(vaultPath);
+    if (detected) {
+      return { tabSize: detected, indentStyle: 'spaces' };
+    }
+  }
+
+  return { tabSize: 2, indentStyle: 'spaces' };
+}
+
+function measureIndentSpaces(whitespace) {
+  let count = 0;
+  for (let i = 0; i < whitespace.length; i++) {
+    if (whitespace[i] === '\t') count += 4;
+    else if (whitespace[i] === ' ') count += 1;
+  }
+  return count;
+}
+
+function detectListIndentStep(lines) {
+  const indents = [];
+  let usesTabs = false;
+
+  for (const line of lines) {
+    if (/^\s*([-*+]|\d+[\.\)])\s+/.test(line)) {
+      const match = line.match(/^([ \t]+)/);
+      if (match) {
+        if (match[1].includes('\t')) usesTabs = true;
+        const spaces = measureIndentSpaces(match[1]);
+        if (spaces > 0) indents.push(spaces);
+      }
+    }
+  }
+
+  if (usesTabs) return 4;
+  if (indents.length === 0) return 2;
+
+  const allDivisibleBy4 = indents.every((n) => n % 4 === 0);
+  if (allDivisibleBy4 && Math.min(...indents) >= 4) return 4;
+
+  const allDivisibleBy2 = indents.every((n) => n % 2 === 0);
+  if (allDivisibleBy2 && Math.min(...indents) >= 2) return 2;
+
+  const minIndent = Math.min(...indents);
+  return minIndent >= 2 ? minIndent : 2;
+}
+
+function formatMarkdownToUserPreferences(rawMarkdown, options = {}) {
+  if (!rawMarkdown) return '';
+
+  const rawTabSize = options.tabSize !== undefined ? options.tabSize : 2;
+  const targetTabSize = Math.max(2, Math.min(8, typeof rawTabSize === 'number' ? rawTabSize : parseInt(String(rawTabSize), 10) || 2));
+  const indentStyle = options.indentStyle || 'spaces';
+  const normalizeSequentialLists = options.normalizeSequentialLists !== false;
+  const normalizeCallouts = options.normalizeCallouts !== false;
+
+  const normalizedEol = rawMarkdown.replace(/\r\n/g, '\n');
+  const lines = normalizedEol.split('\n');
+
+  let startIndex = 0;
+  const frontmatterLines = [];
+
+  if (lines.length > 0 && lines[0].trim() === '---') {
+    frontmatterLines.push(lines[0]);
+    let closed = false;
+    for (let i = 1; i < lines.length; i++) {
+      frontmatterLines.push(lines[i]);
+      if (lines[i].trim() === '---') {
+        startIndex = i + 1;
+        closed = true;
+        break;
+      }
+    }
+    if (!closed) {
+      frontmatterLines.length = 0;
+      startIndex = 0;
+    }
+  }
+
+  const bodyLines = lines.slice(startIndex);
+  const detectedStep = detectListIndentStep(bodyLines);
+
+  const formattedBodyLines = [];
+  let inCodeBlock = false;
+  let codeBlockToken = '';
+  let inMathBlock = false;
+
+  const listCounters = new Map();
+  let consecutiveBlankLines = 0;
+  let lastLineWasListItem = false;
+
+  for (let i = 0; i < bodyLines.length; i++) {
+    const line = bodyLines[i];
+    const trimmed = line.trim();
+
+    // Code fence check
+    const codeFenceMatch = line.match(/^([ \t]*)(`{3,}|~{3,})(.*)$/);
+    if (codeFenceMatch) {
+      const token = codeFenceMatch[2][0];
+      const tokenLen = codeFenceMatch[2].length;
+
+      if (!inCodeBlock) {
+        inCodeBlock = true;
+        codeBlockToken = token.repeat(tokenLen);
+        formattedBodyLines.push(line);
+        continue;
+      } else if (line.trim().startsWith(codeBlockToken)) {
+        inCodeBlock = false;
+        codeBlockToken = '';
+        formattedBodyLines.push(line);
+        continue;
+      }
+    }
+
+    if (inCodeBlock) {
+      formattedBodyLines.push(line);
+      continue;
+    }
+
+    // Display math fence
+    if (trimmed === '$$') {
+      inMathBlock = !inMathBlock;
+      formattedBodyLines.push(line);
+      continue;
+    }
+
+    if (inMathBlock) {
+      formattedBodyLines.push(line);
+      continue;
+    }
+
+    // Blank lines
+    if (!trimmed) {
+      consecutiveBlankLines++;
+      if (consecutiveBlankLines >= 2) {
+        listCounters.clear();
+        lastLineWasListItem = false;
+      }
+      formattedBodyLines.push('');
+      continue;
+    }
+
+    consecutiveBlankLines = 0;
+
+    // Reset counters on headings, horizontal rules, or tables
+    if (/^#{1,6}\s+/.test(trimmed) || /^(---|\*\*\*|___)\s*$/.test(trimmed) || /^\|.*\|\s*$/.test(trimmed)) {
+      listCounters.clear();
+      lastLineWasListItem = false;
+    }
+
+    // Callout normalization
+    if (normalizeCallouts) {
+      const calloutMatch = line.match(/^([ \t]*>(?:[ \t]*>)*)[ \t]*\[!([a-zA-Z0-9_\-]+)\]([+-]?)(?:[ \t]+(.*))?$/);
+      if (calloutMatch) {
+        const quotePrefix = calloutMatch[1].replace(/\s+/g, ' ').trim();
+        const calloutType = calloutMatch[2].toUpperCase();
+        const foldState = calloutMatch[3] || '';
+        const title = calloutMatch[4] ? calloutMatch[4].trim() : '';
+
+        const formattedCallout = title
+          ? `${quotePrefix} [!${calloutType}${foldState}] ${title}`
+          : `${quotePrefix} [!${calloutType}${foldState}]`;
+
+        formattedBodyLines.push(formattedCallout);
+        continue;
+      }
+    }
+
+    // List item check
+    const listMatch = line.match(/^([ \t]*)([-*+]|(\d+)([\.\)]))(\s+)(.*)$/);
+    if (listMatch) {
+      lastLineWasListItem = true;
+      const rawLeading = listMatch[1];
+      const marker = listMatch[2];
+      const orderNumStr = listMatch[3];
+      const orderDelimiter = listMatch[4];
+      const content = listMatch[6];
+      const isOrdered = Boolean(orderNumStr);
+
+      const rawIndentSpaces = measureIndentSpaces(rawLeading);
+      let indentLevel = 0;
+      if (rawIndentSpaces > 0) {
+        indentLevel = Math.max(1, Math.round(rawIndentSpaces / detectedStep));
+      }
+
+      const targetIndent =
+        indentStyle === 'tabs'
+          ? '\t'.repeat(indentLevel)
+          : ' '.repeat(indentLevel * targetTabSize);
+
+      let formattedMarker = marker;
+      if (isOrdered && normalizeSequentialLists) {
+        for (const [lvl] of listCounters.entries()) {
+          if (lvl > indentLevel) listCounters.delete(lvl);
+        }
+        const currentCount = (listCounters.get(indentLevel) || 0) + 1;
+        listCounters.set(indentLevel, currentCount);
+        const delim = orderDelimiter || '.';
+        formattedMarker = `${currentCount}${delim}`;
+      } else {
+        for (const [lvl] of listCounters.entries()) {
+          if (lvl >= indentLevel) listCounters.delete(lvl);
+        }
+      }
+
+      const formattedLine = `${targetIndent}${formattedMarker} ${content}`;
+      formattedBodyLines.push(formattedLine.trimEnd());
+      continue;
+    }
+
+    // Continuation line
+    if (lastLineWasListItem && /^[ \t]+/.test(line)) {
+      const rawIndentSpaces = measureIndentSpaces(line.match(/^[ \t]+/)[0]);
+      if (rawIndentSpaces >= detectedStep) {
+        const lineLevel = Math.max(1, Math.round(rawIndentSpaces / detectedStep));
+        const targetIndent =
+          indentStyle === 'tabs'
+            ? '\t'.repeat(lineLevel)
+            : ' '.repeat(lineLevel * targetTabSize);
+        const trimmedContent = line.trim();
+        formattedBodyLines.push(`${targetIndent}${trimmedContent}`.trimEnd());
+        continue;
+      }
+    }
+
+    lastLineWasListItem = false;
+    formattedBodyLines.push(line.trimEnd());
+  }
+
+  return [...frontmatterLines, ...formattedBodyLines].join('\n');
+}
+
 // ── File & Markdown Helpers ──
 
 function scanMarkdownFiles(dirPath, baseDir = dirPath) {
@@ -107,7 +404,7 @@ function scanMarkdownFiles(dirPath, baseDir = dirPath) {
         fullPath,
       });
       results.push(...scanMarkdownFiles(fullPath, baseDir));
-    } else if (entry.name.endsWith('.md')) {
+    } else if (entry.name.toLowerCase().endsWith('.md')) {
       results.push({
         id: relPath.replace(/\.md$/i, ''),
         title: entry.name.replace(/\.md$/i, ''),
@@ -185,11 +482,20 @@ function writeNoteFile(notePath, content, properties) {
     }
   }
 
-  // If content itself already has frontmatter, extract and merge it
-  const { properties: parsedProps, body } = parseFrontmatter(content);
+  // 1. Separate frontmatter from body first so YAML properties remain intact
+  const { properties: parsedProps, body } = parseFrontmatter(content || '');
   const mergedProps = { ...parsedProps, ...(properties || {}) };
 
-  const fullContent = Object.keys(mergedProps).length > 0 ? serializeFrontmatter(mergedProps, body) : body;
+  // 2. Format body according to active vault user preferences (tabSize, list renumbering, callout syntax)
+  const activeVault = getActiveVaultPath();
+  const userPrefs = loadUserPreferences(activeVault);
+  const formattedBody = formatMarkdownToUserPreferences(body, {
+    tabSize: userPrefs.tabSize,
+    indentStyle: userPrefs.indentStyle,
+  });
+
+  // 3. Serialize with YAML frontmatter if present
+  const fullContent = Object.keys(mergedProps).length > 0 ? serializeFrontmatter(mergedProps, formattedBody) : formattedBody;
   const dir = path.dirname(notePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   fs.writeFileSync(notePath, fullContent, 'utf8');
@@ -209,8 +515,24 @@ function resolveNoteFile(targetIdentifier, activePath) {
   const onlyNotes = allItems.filter((f) => !f.isFolder);
   const onlyFolders = allItems.filter((f) => f.isFolder);
 
-  // 1. Direct path check (e.g. '02 Projects/Noether.md' or 'Noether.md')
-  const directPath = path.isAbsolute(raw) ? raw : path.join(activePath, raw.endsWith('.md') ? raw : `${raw}.md`);
+  // 1. Primary check: check if note titled `raw` exists on disk as `${raw}.md`
+  const withMdPath = path.isAbsolute(raw) ? `${raw}.md` : path.join(activePath, `${raw}.md`);
+  if (fs.existsSync(withMdPath)) {
+    const stat = fs.statSync(withMdPath);
+    if (!stat.isDirectory()) {
+      const rel = path.relative(activePath, withMdPath).replace(/\\/g, '/');
+      return {
+        isFolder: false,
+        fullPath: withMdPath,
+        relativePath: rel,
+        title: path.basename(withMdPath).replace(/\.md$/i, ''),
+        id: rel.replace(/\.md$/i, ''),
+      };
+    }
+  }
+
+  // 2. Direct path check (e.g. if caller provided relativePath with extension like 'readme.md.md' or 'Noether Roadmap.md')
+  const directPath = path.isAbsolute(raw) ? raw : path.join(activePath, raw);
   if (fs.existsSync(directPath)) {
     const stat = fs.statSync(directPath);
     if (!stat.isDirectory()) {
@@ -219,17 +541,21 @@ function resolveNoteFile(targetIdentifier, activePath) {
         isFolder: false,
         fullPath: directPath,
         relativePath: rel,
-        title: path.basename(directPath, '.md'),
+        title: path.basename(directPath).replace(/\.md$/i, ''),
         id: rel.replace(/\.md$/i, ''),
       };
     }
   }
 
-  // 2. Exact match on relativePath or ID
+  // 2. Exact match on relativePath or ID or title
   const exactMatch = onlyNotes.find(
     (f) =>
+      f.id.toLowerCase() === normalized.toLowerCase() ||
       f.id.toLowerCase() === cleanId.toLowerCase() ||
+      f.title.toLowerCase() === raw.toLowerCase() ||
+      f.title.toLowerCase() === cleanId.toLowerCase() ||
       f.relativePath.toLowerCase() === normalized.toLowerCase() ||
+      f.relativePath.toLowerCase() === `${normalized}.md`.toLowerCase() ||
       f.relativePath.toLowerCase() === `${cleanId}.md`.toLowerCase()
   );
   if (exactMatch) return exactMatch;
@@ -237,7 +563,9 @@ function resolveNoteFile(targetIdentifier, activePath) {
   // 3. Match on note title (ignoring case)
   const titleMatch = onlyNotes.find(
     (f) =>
+      f.title.toLowerCase() === raw.toLowerCase() ||
       f.title.toLowerCase() === cleanId.toLowerCase() ||
+      f.title.toLowerCase() === path.basename(raw).toLowerCase() ||
       f.title.toLowerCase() === path.basename(cleanId).toLowerCase()
   );
   if (titleMatch) return titleMatch;
@@ -816,7 +1144,7 @@ const TOOLS = [
     },
     handler: async ({ title, content = '', properties = {}, folder = '' }) => {
       const activePath = getActiveVaultPath();
-      let rawTitle = String(title).trim().replace(/\.md$/i, '');
+      let rawTitle = String(title).trim();
 
       // Check if title has a folder component in it
       if (rawTitle.includes('/') || rawTitle.includes('\\')) {
@@ -839,11 +1167,18 @@ const TOOLS = [
       const existing = resolveNoteFile(folder ? `${folder}/${rawTitle}` : rawTitle, activePath);
       let finalPath = targetPath;
       let existingProps = {};
+      let isUpdated = false;
 
-      if (existing && !existing.isFolder) {
+      if (
+        existing &&
+        !existing.isFolder &&
+        (existing.title.toLowerCase() === rawTitle.toLowerCase() ||
+         existing.fullPath.toLowerCase() === targetPath.toLowerCase())
+      ) {
         finalPath = existing.fullPath;
         const read = readNoteFile(finalPath);
         if (read) existingProps = read.properties || {};
+        isUpdated = true;
       }
 
       const mergedProps = { ...existingProps, ...properties };
@@ -851,7 +1186,7 @@ const TOOLS = [
 
       const relPath = path.relative(activePath, finalPath).replace(/\\/g, '/');
       return {
-        message: existing ? `Updated existing note "${rawTitle}" successfully.` : `Created note "${rawTitle}" successfully.`,
+        message: isUpdated ? `Updated existing note "${rawTitle}" successfully.` : `Created note "${rawTitle}" successfully.`,
         title: rawTitle,
         relativePath: relPath,
       };
@@ -881,8 +1216,8 @@ const TOOLS = [
 
       if (!resolved) {
         // If not found, create it safely at root or path specified
-        const cleanName = String(documentId).replace(/\.md$/i, '');
-        const targetPath = path.join(activePath, `${cleanName}.md`);
+        const noteName = String(documentId).trim();
+        const targetPath = path.join(activePath, `${noteName}.md`);
         writeNoteFile(targetPath, content, properties || {});
         return {
           message: `Note "${documentId}" did not exist, created new note at "${path.relative(activePath, targetPath).replace(/\\/g, '/')}".`,

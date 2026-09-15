@@ -168,6 +168,15 @@ export abstract class Extension {
   }
 
   /**
+   * Registers an application event subscription with automatic cleanup when the extension unloads.
+   * Convenient alias for `registerDisposable(this.app.events.on(...))`.
+   * @since 0.5.0
+   */
+  public registerEvent(disposable: Disposable): Disposable {
+    return this.registerDisposable(disposable);
+  }
+
+  /**
    * Registers a DOM event listener with automatic removal when the extension unloads.
    * @since 0.4.6
    */

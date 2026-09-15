@@ -1,6 +1,6 @@
 [package]
 name = "noether-desktop"
-version = "0.4.6"
+version = "0.5.5"
 description = "Noether Local-First Hybrid Document and Knowledge Engine"
 authors = ["Yuliet Li"]
 edition = "2021"

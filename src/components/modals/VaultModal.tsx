@@ -26,6 +26,7 @@ export const VaultModal: React.FC = React.memo(() => {
   const removeRecentVault = useWorkspaceStore((state) => state.removeRecentVault);
   const switchVault = useWorkspaceStore((state) => state.switchVault);
   const openVaultInExplorer = useWorkspaceStore((state) => state.openVaultInExplorer);
+  const openConfirmDialog = useWorkspaceStore((state) => state.openConfirmDialog);
   const showToast = useWorkspaceStore((state) => state.showToast);
 
   const { showContextMenu } = useAppContextMenu();
@@ -132,7 +133,17 @@ export const VaultModal: React.FC = React.memo(() => {
       icon: <Cancel01Icon size={14} />,
       isDanger: true,
       onClick: () => {
-        removeRecentVault(rv.path);
+        openConfirmDialog({
+          title: 'Remove Vault from List',
+          message: `Remove "${rv.name}" from your recent vaults list?`,
+          subtext: 'The vault folder on your disk will remain untouched and can be reopened anytime.',
+          confirmText: 'Remove from list',
+          isDanger: true,
+          showDontAskAgain: false,
+          onConfirm: () => {
+            removeRecentVault(rv.path);
+          },
+        });
       },
     },
   ];

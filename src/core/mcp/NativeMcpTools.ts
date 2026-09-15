@@ -21,6 +21,8 @@ import type { NoetherApp } from '../app/NoetherApp';
 import type { McpToolResult, McpToolDefinition, McpPromptDefinition } from '../extensions/types';
 import type { DocumentItem, RecentVaultItem } from '@/types';
 import { platform } from '@/lib/platform/platformAdapter';
+import { formatMarkdownToUserPreferences } from '@/lib/editor/smartMarkdownFormatter';
+import { markdownToTipTapJson } from '@/lib/db/documents';
 
 /**
  * Helper to construct the relative hierarchical path for a document within the vault.
@@ -204,7 +206,18 @@ export function registerNativeTools(app: NoetherApp): void {
           }
 
           if (content !== undefined) {
-            hostApp.vault.saveDocument(newDoc.id, content, title);
+            const tabSize = parseInt(hostApp.settings.tabSize || '5', 10) || 5;
+            let isAlreadyJson = false;
+            try {
+              const parsed = JSON.parse(content);
+              if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
+                isAlreadyJson = true;
+              }
+            } catch {}
+
+            const formattedMd = isAlreadyJson ? '' : formatMarkdownToUserPreferences(content, { tabSize });
+            const finalJson = isAlreadyJson ? content : markdownToTipTapJson(formattedMd);
+            await hostApp.vault.saveDocument(newDoc.id, finalJson, title, isAlreadyJson ? undefined : formattedMd);
           }
 
           return {
@@ -268,7 +281,18 @@ export function registerNativeTools(app: NoetherApp): void {
             };
           }
 
-          hostApp.vault.saveDocument(docId, content);
+          const tabSize = parseInt(hostApp.settings.tabSize || '5', 10) || 5;
+          let isAlreadyJson = false;
+          try {
+            const parsed = JSON.parse(content);
+            if (parsed && typeof parsed === 'object' && parsed.type === 'doc') {
+              isAlreadyJson = true;
+            }
+          } catch {}
+
+          const formattedMd = isAlreadyJson ? '' : formatMarkdownToUserPreferences(content, { tabSize });
+          const finalJson = isAlreadyJson ? content : markdownToTipTapJson(formattedMd);
+          await hostApp.vault.saveDocument(docId, finalJson, undefined, isAlreadyJson ? undefined : formattedMd);
 
           return {
             content: [
@@ -1141,7 +1165,7 @@ export function registerNativeTools(app: NoetherApp): void {
 
                   if (nameMatch || pathMatch) {
                     matches.push({
-                      title: item.name.replace(/\.md$/i, ''),
+                      title: item.name,
                       relative_path: item.relativePath,
                     });
                     if (matches.length >= limitPerVault) break;

@@ -177,6 +177,13 @@ export class FileTypeRegistry {
     this.cachedList = Array.from(this.fileTypesByExtension.values());
   }
 
+  /**
+   * Checks whether a filename or title has a known media extension (image, audio, video, PDF).
+   */
+  public isMedia(pathOrTitle?: string | null): boolean {
+    return isMediaFileName(pathOrTitle);
+  }
+
   private notify(): void {
     this.listeners.forEach((l) => {
       try {
@@ -186,6 +193,37 @@ export class FileTypeRegistry {
       }
     });
   }
+}
+
+/** Known image, audio, video, and document media file extensions recognized across Noether. */
+export const MEDIA_EXTENSIONS = new Set([
+  // Images
+  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif', 'tiff',
+  // Audio
+  'mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus', 'wma',
+  // Video
+  'mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi', 'm4v',
+  // Documents
+  'pdf',
+]);
+
+/**
+ * Checks whether an extension string represents a media asset.
+ */
+export function isMediaExtension(ext?: string | null): boolean {
+  if (!ext) return false;
+  return MEDIA_EXTENSIONS.has(ext.toLowerCase().replace(/^\./, '').trim());
+}
+
+/**
+ * Checks whether a filename or path ends with a recognized media extension.
+ */
+export function isMediaFileName(filenameOrPath?: string | null): boolean {
+  if (!filenameOrPath) return false;
+  const parts = filenameOrPath.trim().split('.');
+  if (parts.length < 2) return false;
+  const ext = parts.pop()?.toLowerCase() || '';
+  return MEDIA_EXTENSIONS.has(ext);
 }
 
 export const fileTypeRegistry = new FileTypeRegistry();

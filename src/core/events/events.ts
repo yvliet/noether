@@ -8,6 +8,8 @@
  * @since 0.1.0
  */
 
+import type { ActiveDragData } from '../app/apiTypes';
+
 export interface WorkspaceEvents {
   // ── Vault Lifecycle ──
   /** Emitted after a vault is loaded and indexed. */
@@ -41,7 +43,6 @@ export interface WorkspaceEvents {
   /** Emitted when an extension is disabled. */
   'extension:disabled': { extensionId: string };
 
-  // ── Editor & Inter-Plugin Actions ──
   /**
    * Generic editor action event. Allows plugins to trigger editor-level
    * operations (like inserting blocks or navigating headings) without
@@ -51,10 +52,39 @@ export interface WorkspaceEvents {
   'editor:action': { action: string; payload?: Record<string, unknown> };
 
   /**
+   * Emitted when dragging items over an active editor to display a live ghost preview widget.
+   * Passing `ghost: null` immediately clears any active preview decorations.
+   * @since 0.4.7
+   */
+  'editor:drop-ghost': {
+    ghost: {
+      pos: number;
+      previewTokens?: string[];
+      items?: Array<{
+        token: string;
+        display: string;
+        isImage?: boolean;
+        imageSrc?: string | null;
+      }>;
+      totalCount: number;
+    } | null;
+  };
+
+  /**
    * File tree drag-and-drop or custom drop action event.
    * @since 0.2.0
    */
   'file-tree:drop': { sourceId: string; targetId: string; position?: 'inside' | 'before' | 'after' };
+
+  // ── Drag & Drop Lifecycle ──
+  /** Emitted when a drag operation begins anywhere in the host application. */
+  'drag:start': ActiveDragData;
+  /** Emitted as the drag pointer moves across the application window. */
+  'drag:move': ActiveDragData;
+  /** Emitted when a drag operation drops on a target or concludes. */
+  'drag:drop': ActiveDragData & { handled?: boolean; dropTarget?: HTMLElement | null };
+  /** Emitted when a drag operation is completed or cancelled. */
+  'drag:end': { source: string; cancelled: boolean };
 
   // ── MCP Tool Lifecycle ──
   /** Emitted when an MCP tool is invoked by an agent or external client. */

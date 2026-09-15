@@ -1,7 +1,7 @@
 {
   "name": "noether",
   "private": true,
-  "version": "0.4.6",
+  "version": "0.5.5",
   "type": "module",
   "bin": {
     "noether-mcp-server": "./bin/noether-mcp-server.cjs"
