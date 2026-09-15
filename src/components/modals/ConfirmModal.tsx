@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Cancel01Icon } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
@@ -7,53 +7,61 @@ export const ConfirmModal: React.FC = React.memo(() => {
   const confirmDialog = useWorkspaceStore((state) => state.confirmDialog);
   const closeConfirmDialog = useWorkspaceStore((state) => state.closeConfirmDialog);
   const setSkipDeleteConfirmation = useSettingsStore((state) => state.setSkipDeleteConfirmation);
+  const setSkipRenameConfirmation = useSettingsStore((state) => state.setSkipRenameConfirmation);
   const [dontAskAgain, setDontAskAgain] = useState(false);
 
   useEffect(() => {
     setDontAskAgain(false);
   }, [confirmDialog]);
 
+  const shouldShowDontAskAgain = Boolean(
+    confirmDialog?.showDontAskAgain !== false &&
+    (confirmDialog?.onDontAskAgain || confirmDialog?.skipSettingKey)
+  );
+
+  const applyDontAskAgain = useCallback(() => {
+    if (!dontAskAgain || !confirmDialog) return;
+    if (confirmDialog.onDontAskAgain) {
+      confirmDialog.onDontAskAgain();
+    } else if (confirmDialog.skipSettingKey === 'skipDeleteConfirmation') {
+      setSkipDeleteConfirmation(true);
+    } else if (confirmDialog.skipSettingKey === 'skipRenameConfirmation') {
+      setSkipRenameConfirmation(true);
+    }
+  }, [dontAskAgain, confirmDialog, setSkipDeleteConfirmation, setSkipRenameConfirmation]);
+
+  const handleConfirm = useCallback(() => {
+    if (!confirmDialog) return;
+    applyDontAskAgain();
+    confirmDialog.onConfirm();
+    closeConfirmDialog();
+  }, [confirmDialog, applyDontAskAgain, closeConfirmDialog]);
+
   useEffect(() => {
     if (!confirmDialog?.isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (confirmDialog.onCancel) confirmDialog.onCancel();
         closeConfirmDialog();
       } else if (e.key === 'Enter') {
-        if (dontAskAgain) {
-          if (confirmDialog.onDontAskAgain) {
-            confirmDialog.onDontAskAgain();
-          } else {
-            setSkipDeleteConfirmation(true);
-          }
-        }
-        confirmDialog.onConfirm();
-        closeConfirmDialog();
+        handleConfirm();
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [confirmDialog, closeConfirmDialog, dontAskAgain, setSkipDeleteConfirmation]);
+  }, [confirmDialog, closeConfirmDialog, handleConfirm]);
 
   if (!confirmDialog?.isOpen) return null;
 
-  const handleConfirm = () => {
-    if (dontAskAgain) {
-      if (confirmDialog.onDontAskAgain) {
-        confirmDialog.onDontAskAgain();
-      } else {
-        setSkipDeleteConfirmation(true);
-      }
-    }
-    confirmDialog.onConfirm();
-    closeConfirmDialog();
-  };
-
   return (
     <div
-      onClick={closeConfirmDialog}
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 select-none"
+      onClick={() => {
+        if (confirmDialog.onCancel) confirmDialog.onCancel();
+        closeConfirmDialog();
+      }}
+      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 select-none"
     >
       <div
         data-card="true"
@@ -66,7 +74,10 @@ export const ConfirmModal: React.FC = React.memo(() => {
             {confirmDialog.title || 'Confirmation'}
           </h3>
           <button
-            onClick={closeConfirmDialog}
+            onClick={() => {
+              if (confirmDialog.onCancel) confirmDialog.onCancel();
+              closeConfirmDialog();
+            }}
             className="p-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <Cancel01Icon size={14} />
@@ -83,22 +94,29 @@ export const ConfirmModal: React.FC = React.memo(() => {
 
         {/* Footer with Optional Checkbox and Action Buttons */}
         <div className="flex items-center justify-between pt-2">
-          <label className="flex items-center gap-2 text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-secondary)] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={dontAskAgain}
-              onChange={(e) => setDontAskAgain(e.target.checked)}
-              className="accent-[var(--noether-accent)] rounded"
-            />
-            <span>Don't ask again</span>
-          </label>
+          {shouldShowDontAskAgain ? (
+            <label className="flex items-center gap-2 text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-secondary)] cursor-pointer">
+              <input
+                type="checkbox"
+                checked={dontAskAgain}
+                onChange={(e) => setDontAskAgain(e.target.checked)}
+                className="accent-[var(--noether-accent)] rounded"
+              />
+              <span>Don't ask again</span>
+            </label>
+          ) : (
+            <div />
+          )}
 
           <div className="flex items-center gap-2">
             <button
-              onClick={closeConfirmDialog}
+              onClick={() => {
+                if (confirmDialog.onCancel) confirmDialog.onCancel();
+                closeConfirmDialog();
+              }}
               className="noether-btn"
             >
-              Cancel
+              {confirmDialog.cancelText || 'Cancel'}
             </button>
             <button
               onClick={handleConfirm}

@@ -29,9 +29,9 @@ export const TagsSettingsTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Tags</h3>
-          <p className="text-[11px] text-[#777]">Configure tag frequency counts, hierarchy, and sorting order.</p>
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Tag Frequency & Hierarchy</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">Configure tag frequency counts, nested hierarchy, and sorting order.</p>
         </div>
         {isModified && (
           <button

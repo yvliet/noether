@@ -44,9 +44,9 @@ export const JournalSettingsTab: React.FC = () => {
     headingFormat !== DEFAULT_JOURNAL_SETTINGS.headingFormat;
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <SettingCard
-        title="Journal"
+        title="Daily Notes & Formatting"
         description="Configure formatting, automation, and storage for daily journal entries."
         action={
           isModified ? (

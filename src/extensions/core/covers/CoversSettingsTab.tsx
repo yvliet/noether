@@ -73,9 +73,9 @@ export const CoversSettingsTab: React.FC = () => {
     <div className="flex flex-col gap-2.5">
       {/* Top Header */}
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Covers</h3>
-          <p className="text-[11px] text-[#777]">
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Banner Display & Wallhaven</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
             Configure note cover banners, top-to-bottom fade effects, and Wallhaven search integration.
           </p>
         </div>
@@ -101,7 +101,7 @@ export const CoversSettingsTab: React.FC = () => {
           <div className="flex flex-col pr-4">
             <span className="text-xs font-medium text-[#dcddde]">Banner height</span>
             <span className="text-[11px] text-[#777] mt-0.5">
-              Default height of note cover images in pixels (160px – 450px).
+              Default height of note cover images in pixels (160px - 450px).
             </span>
           </div>
           <div className="flex items-center gap-3 shrink-0">

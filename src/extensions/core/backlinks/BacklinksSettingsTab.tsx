@@ -28,9 +28,9 @@ export const BacklinksSettingsTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Backlinks</h3>
-          <p className="text-[11px] text-[#777]">
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Display & Mentions</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
             Configure how linked and unlinked mentions are displayed in notes and sidebars.
           </p>
         </div>
@@ -63,7 +63,7 @@ export const BacklinksSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setShowBacklinksInDoc(DEFAULT_BACKLINKS_SETTINGS.showBacklinksInDoc)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -97,7 +97,7 @@ export const BacklinksSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setShowBacklinksSearch(DEFAULT_BACKLINKS_SETTINGS.showBacklinksSearch)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>

@@ -10,15 +10,14 @@ export const SettingsModal: React.FC = React.memo(() => {
   if (!isSettingsOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-hidden"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          setIsSettingsOpen(false);
-        }
-      }}
-    >
-      <SettingsWindowContent isModal initialTab={settingsInitialTab || undefined} onClose={() => setIsSettingsOpen(false)} />
+    <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-4 overflow-hidden">
+      <div className="pointer-events-auto">
+        <SettingsWindowContent
+          isModal
+          initialTab={settingsInitialTab || undefined}
+          onClose={() => setIsSettingsOpen(false)}
+        />
+      </div>
     </div>
   );
 });

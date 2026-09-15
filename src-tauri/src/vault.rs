@@ -422,6 +422,30 @@ pub fn save_config(cfg: &NoetherConfig) {
 }
 
 #[tauri::command]
+pub fn save_app_settings(settings_json: String) -> Value {
+    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+    let noether_config_dir = config_dir.join("noether");
+    let _ = fs::create_dir_all(&noether_config_dir);
+    let settings_path = noether_config_dir.join("settings.json");
+    match fs::write(&settings_path, settings_json) {
+        Ok(_) => json!({ "success": true, "path": settings_path.to_string_lossy() }),
+        Err(e) => json!({ "success": false, "error": e.to_string() }),
+    }
+}
+
+#[tauri::command]
+pub fn load_app_settings() -> Value {
+    let config_dir = dirs::config_dir().unwrap_or_else(|| PathBuf::from("."));
+    let settings_path = config_dir.join("noether").join("settings.json");
+    if settings_path.exists() {
+        if let Ok(content) = fs::read_to_string(&settings_path) {
+            return json!({ "success": true, "content": content });
+        }
+    }
+    json!({ "success": false })
+}
+
+#[tauri::command]
 pub fn get_current_vault(state: tauri::State<AppState>) -> Value {
     let cfg = state.config.lock();
     let vault_name = Path::new(&cfg.current_vault_path)
@@ -893,11 +917,7 @@ pub fn save_markdown_file(
         }
         _ => {
             let safe_name = filename.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'], "_");
-            if Path::new(&safe_name).extension().is_some() {
-                target_vault.join(safe_name)
-            } else {
-                target_vault.join(format!("{}.md", safe_name))
-            }
+            target_vault.join(format!("{}.md", safe_name))
         }
     };
 
@@ -995,12 +1015,11 @@ pub fn read_markdown_file(
     let target_vault = PathBuf::from(&cfg.current_vault_path);
 
     let clean = filename_or_path.replace('\\', "/");
-    let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
-    let mut file_path = target_vault.join(&file_with_ext);
+    let mut file_path = target_vault.join(&clean);
     if !file_path.exists() {
-        let alt = target_vault.join(&clean);
-        if alt.exists() {
-            file_path = alt;
+        let with_md = target_vault.join(format!("{}.md", clean));
+        if with_md.exists() {
+            file_path = with_md;
         }
     }
 
@@ -1039,12 +1058,11 @@ pub fn set_file_attributes(
 
     let clean = filename_or_path.replace('\\', "/");
     let trimmed = clean.trim_matches(|c| c == '.' || c == '/' || c == '\\');
-    let file_with_ext = if clean.to_lowercase().ends_with(".md") { clean.clone() } else { format!("{}.md", clean) };
-    let mut file_path = target_vault.join(&file_with_ext);
+    let mut file_path = target_vault.join(&clean);
     if !file_path.exists() {
-        let alt = target_vault.join(&clean);
-        if alt.exists() {
-            file_path = alt;
+        let with_md = target_vault.join(format!("{}.md", clean));
+        if with_md.exists() {
+            file_path = with_md;
         }
     }
 
@@ -1090,12 +1108,14 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
         return json!({ "success": false, "error": "Cannot delete vault root directory" });
     }
 
-    let file_with_ext = if Path::new(&clean).extension().is_some() {
-        clean.clone()
-    } else {
-        format!("{}.md", clean)
-    };
-    let file_path = target_vault.join(&file_with_ext);
+    let direct_path = target_vault.join(&clean);
+    let mut file_path = direct_path.clone();
+    if !file_path.exists() {
+        let with_md = target_vault.join(format!("{}.md", clean));
+        if with_md.exists() {
+            file_path = with_md;
+        }
+    }
     let normalized_file = normalize_path(&file_path);
 
     if normalized_file == normalized_vault {
@@ -1147,20 +1167,18 @@ pub fn rename_markdown_file(
             let new_clean = new_rel.replace('\\', "/");
 
             let old_dir = target_vault.join(&old_clean);
-            let old_file = target_vault.join(if Path::new(&old_clean).extension().is_some() {
-                old_clean.clone()
-            } else {
-                format!("{}.md", old_clean)
-            });
-
             if old_dir.exists() && old_dir.is_dir() {
                 (old_dir, target_vault.join(&new_clean))
             } else {
-                let new_file = target_vault.join(if Path::new(&new_clean).extension().is_some() {
-                    new_clean
-                } else {
-                    format!("{}.md", new_clean)
-                });
+                let mut old_file = target_vault.join(&old_clean);
+                let mut new_file = target_vault.join(&new_clean);
+                if !old_file.exists() {
+                    let alt_old = target_vault.join(format!("{}.md", old_clean));
+                    if alt_old.exists() {
+                        old_file = alt_old;
+                        new_file = target_vault.join(format!("{}.md", new_clean));
+                    }
+                }
                 (old_file, new_file)
             }
         }
@@ -1171,12 +1189,20 @@ pub fn rename_markdown_file(
             let new_safe = new_f.replace(['/', '\\', '?', '%', '*', ':', '|', '"', '<', '>'], "_");
 
             let old_dir = target_vault.join(&old_safe);
-            let old_file = target_vault.join(if Path::new(&old_safe).extension().is_some() { old_safe.clone() } else { format!("{}.md", old_safe) });
-
             if old_dir.exists() && old_dir.is_dir() {
                 (old_dir, target_vault.join(&new_safe))
             } else {
-                let new_file = target_vault.join(if Path::new(&new_safe).extension().is_some() { new_safe } else { format!("{}.md", new_safe) });
+                let mut old_file = target_vault.join(format!("{}.md", old_safe));
+                let mut new_file = target_vault.join(format!("{}.md", new_safe));
+                if !old_file.exists() {
+                    let direct_old = target_vault.join(&old_safe);
+                    if direct_old.exists() {
+                        old_file = direct_old;
+                        if Path::new(&new_safe).extension().is_some() {
+                            new_file = target_vault.join(&new_safe);
+                        }
+                    }
+                }
                 (old_file, new_file)
             }
         }
@@ -1309,7 +1335,13 @@ pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String
     } else {
         format!("{}.md", clean)
     };
-    let file_path = trash_dir.join(&file_with_ext);
+    let mut file_path = trash_dir.join(&file_with_ext);
+    if !file_path.exists() {
+        let with_md = trash_dir.join(format!("{}.md", clean));
+        if with_md.exists() {
+            file_path = with_md;
+        }
+    }
     let normalized_file = normalize_path(&file_path);
 
     if normalized_file == normalized_trash {
@@ -1565,12 +1597,55 @@ pub fn close_vault_window() -> Value {
 }
 
 #[tauri::command]
-pub fn open_settings_window() -> Value {
+pub fn open_settings_window(app: AppHandle, tab: Option<String>) -> Value {
+    if let Some(win) = app.get_webview_window("settings") {
+        let _ = win.show();
+        let _ = win.unminimize();
+        let _ = win.set_focus();
+        if let Some(ref tab_id) = tab {
+            let _ = win.emit("navigate-settings-tab", tab_id.clone());
+        }
+        return json!({ "success": true });
+    }
+
+    let app_handle = app.clone();
+    let tab_clone = tab.clone();
+    let _ = app.run_on_main_thread(move || {
+        let builder = tauri::WebviewWindowBuilder::new(
+            &app_handle,
+            "settings",
+            tauri::WebviewUrl::App("index.html".into()),
+        )
+        .title("Settings")
+        .inner_size(980.0, 680.0)
+        .min_inner_size(720.0, 480.0)
+        .decorations(false)
+        .transparent(false)
+        .devtools(true)
+        .center();
+
+        if let Ok(win) = builder.build() {
+            let _ = win.show();
+            let _ = win.set_focus();
+            if let Some(ref tab_id) = tab_clone {
+                let tid = tab_id.clone();
+                let w = win.clone();
+                std::thread::spawn(move || {
+                    std::thread::sleep(std::time::Duration::from_millis(150));
+                    let _ = w.emit("navigate-settings-tab", tid);
+                });
+            }
+        }
+    });
+
     json!({ "success": true })
 }
 
 #[tauri::command]
-pub fn close_settings_window() -> Value {
+pub fn close_settings_window(app: AppHandle) -> Value {
+    if let Some(win) = app.get_webview_window("settings") {
+        let _ = win.hide();
+    }
     json!({ "success": true })
 }
 
@@ -1594,8 +1669,14 @@ pub fn window_maximize(window: tauri::Window) {
 
 #[tauri::command]
 pub fn window_close(window: tauri::Window) {
-    if window.label() == "settings" || window.label() == "vault-switcher" || window.label() == "spark" {
+    if window.label() == "settings" {
         let _ = window.hide();
+    } else if window.label() == "vault-switcher" || window.label() == "spark" {
+        let _ = window.hide();
+    } else if window.label() == "main" {
+        let app = window.app_handle().clone();
+        let _ = window.destroy();
+        app.exit(0);
     } else {
         let _ = window.destroy();
     }

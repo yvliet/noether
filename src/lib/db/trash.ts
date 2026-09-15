@@ -172,7 +172,7 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
     const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(path || item.title);
     const ext = customType ? customType.extension : 'md';
     const norm = (path || item.title).replace(/\\/g, '/').toLowerCase();
-    const key = norm.endsWith(`.${ext}`) ? norm : `${norm}.${ext}`;
+    const key = item.is_folder ? norm : `${norm}.${ext}`;
     queries.push({
       sql: `DELETE FROM file_manifest WHERE relative_path = ?`,
       params: [key],
@@ -194,9 +194,9 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
           const path = getDocumentPath(item, allDocs);
           const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(path || item.title);
           const ext = customType ? customType.extension : 'md';
-          const targetPath = customType
-            ? (path.endsWith(`.${ext}`) ? path : `${path}.${ext}`)
-            : (path || item.title);
+          const targetPath = item.is_folder
+            ? (path || item.title)
+            : `${path || item.title}.${ext}`;
           if (!item.is_folder && item.content_json) {
             const fileContent = customType && customType.isRawContent
               ? item.content_json
@@ -370,7 +370,11 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
         try {
           await saveDocumentAndSynchronize(item.original_id, item.content_json, item.title);
           if (platform.isDesktop()) {
-            await platform.deleteTrashFile(item.original_path || item.title);
+            const relPath = item.original_path || item.title;
+            const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(relPath);
+            const ext = customType ? customType.extension : 'md';
+            const trashFile = item.is_folder ? relPath : `${relPath}.${ext}`;
+            await platform.deleteTrashFile(trashFile);
           }
         } catch (e) {
           console.error('[Noether Trash] Error synchronizing restored document:', e);

@@ -122,10 +122,10 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
       <div className="flex flex-col gap-2.5">
         {/* Header */}
         <div className="flex items-center justify-between px-4">
-          <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">Sync</h3>
-            <p className="text-[11px] text-[#777]">
-              Synchronize your notes bidirectionally across desktop and mobile devices using your own cloud database.
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Cloud Connection & Status</h3>
+            <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+              Remote database connectivity, real-time sync state, and manual synchronization trigger.
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -200,10 +200,13 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
       </div>
 
       {/* Provider Selector */}
-      <div className="space-y-3">
-        <label className="text-xs font-semibold text-[#dcddde] block">
-          Select Sync Storage Provider
-        </label>
+      <div className="flex flex-col gap-2.5">
+        <div className="px-4">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Sync Storage Provider</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+            Select the cloud or serverless database backend to synchronize your notes.
+          </p>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
           {[
             { id: 'supabase', label: 'Supabase', desc: 'PostgreSQL Free Tier' },
@@ -476,7 +479,14 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
       )}
 
       {/* Sync Behavior Preferences */}
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <div className="flex flex-col gap-2.5">
+        <div className="px-4">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Sync Automation & Conflicts</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+            Auto-sync on save, background polling intervals, and multi-device merge strategy.
+          </p>
+        </div>
+        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {/* Auto Sync on Save */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
@@ -544,6 +554,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
             {localConfig.deviceId}
           </span>
         </div>
+      </div>
       </div>
     </div>
   );

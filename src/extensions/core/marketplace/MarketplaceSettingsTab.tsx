@@ -31,9 +31,9 @@ export const MarketplaceSettingsTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Community Extensions</h3>
-          <p className="text-[11px] text-[#777]">Explore, install, and manage community extensions.</p>
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Registry & Discovery</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">Explore, install, and manage community extensions directly from the registry.</p>
         </div>
       </div>
 
