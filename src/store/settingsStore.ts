@@ -76,6 +76,7 @@ export interface SettingsState {
   autoUpdateLinks: boolean;
   attachmentFolder: string;
   showBrokenEmbedIndicators: boolean;
+  excludedFolders: string[];
 
   // Hotkeys
   customHotkeys: Record<string, string>;
@@ -142,6 +143,9 @@ export interface SettingsState {
   setAutoUpdateLinks: (val: boolean) => void;
   setAttachmentFolder: (folder: string) => void;
   setShowBrokenEmbedIndicators: (val: boolean) => void;
+  setExcludedFolders: (folders: string[]) => void;
+  addExcludedFolder: (folder: string) => void;
+  removeExcludedFolder: (folder: string) => void;
   setCustomHotkey: (commandId: string, hotkey: string) => void;
   resetCustomHotkey: (commandId: string) => void;
   resetAllHotkeys: () => void;
@@ -228,9 +232,46 @@ export const DEFAULT_SETTINGS = {
   autoUpdateLinks: true,
   attachmentFolder: '',
   showBrokenEmbedIndicators: true,
+  excludedFolders: [] as string[],
 
   customHotkeys: {} as Record<string, string>,
 };
+
+let syncDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+export function syncSettingsToDisk(customState?: Partial<SettingsState>): void {
+  if (typeof window === 'undefined') return;
+  if (syncDebounceTimer) clearTimeout(syncDebounceTimer);
+  syncDebounceTimer = setTimeout(async () => {
+    try {
+      const state = customState || useSettingsStore.getState();
+      const tabSize = state.tabSize || DEFAULT_SETTINGS.tabSize;
+      const payload = {
+        tabSize,
+        indentSize: parseInt(String(tabSize), 10) || 5,
+        strictLineBreaks: Boolean(state.strictLineBreaks),
+        newNoteLocation: state.newNoteLocation || 'root',
+        attachmentFolder: state.attachmentFolder || '',
+        updatedAt: Date.now(),
+      };
+      const jsonStr = JSON.stringify(payload, null, 2);
+
+      if (platform.isDesktop()) {
+        // 1. Persist to active vault .noether/settings.json
+        try {
+          await platform.saveMarkdownFile('settings.json', jsonStr, '.noether/settings.json');
+        } catch {}
+
+        // 2. Persist to global %APPDATA%/noether/settings.json
+        try {
+          await platform.saveAppSettings(jsonStr);
+        } catch {}
+      }
+    } catch (e) {
+      console.warn('[SettingsStore] Failed to sync settings to disk:', e);
+    }
+  }, 250);
+}
 
 let appearanceRaf: number | null = null;
 let pendingAppearanceSettings: Partial<SettingsState> | undefined = undefined;
@@ -558,7 +599,10 @@ export const useSettingsStore = create<SettingsState>()(
       setShowReadingTimeInStatusBar: (showReadingTimeInStatusBar) => set({ showReadingTimeInStatusBar }),
       setInlineTitle: (inlineTitle) => set({ inlineTitle }),
       setReadableLineLength: (readableLineLength) => set({ readableLineLength }),
-      setStrictLineBreaks: (strictLineBreaks) => set({ strictLineBreaks }),
+      setStrictLineBreaks: (strictLineBreaks) => {
+        set({ strictLineBreaks });
+        syncSettingsToDisk({ ...get(), strictLineBreaks });
+      },
       setPropertiesInDoc: (propertiesInDoc) => set({ propertiesInDoc }),
       setFoldHeading: (foldHeading) => set({ foldHeading }),
       setFoldIndent: (foldIndent) => set({ foldIndent }),
@@ -567,7 +611,10 @@ export const useSettingsStore = create<SettingsState>()(
       setAccentListPrefixes: (accentListPrefixes) => set({ accentListPrefixes }),
       setAutoPairing: (autoPairing) => set({ autoPairing }),
       setAutoPairMath: (autoPairMath) => set({ autoPairMath }),
-      setTabSize: (tabSize) => set({ tabSize }),
+      setTabSize: (tabSize) => {
+        set({ tabSize });
+        syncSettingsToDisk({ ...get(), tabSize });
+      },
       setShowExternalLinkIcon: (showExternalLinkIcon) => set({ showExternalLinkIcon }),
       setSpellcheck: (spellcheck) => set({ spellcheck }),
       setColorLinksWithAccent: (colorLinksWithAccent) => {
@@ -604,11 +651,31 @@ export const useSettingsStore = create<SettingsState>()(
         set({ skipRenameConfirmation });
       },
       setCloseTabsOnDelete: (closeTabsOnDelete) => set({ closeTabsOnDelete }),
-      setNewNoteLocation: (newNoteLocation) => set({ newNoteLocation }),
+      setNewNoteLocation: (newNoteLocation) => {
+        set({ newNoteLocation });
+        syncSettingsToDisk({ ...get(), newNoteLocation });
+      },
       setLinkFormat: (linkFormat) => set({ linkFormat }),
       setAutoUpdateLinks: (autoUpdateLinks) => set({ autoUpdateLinks }),
-      setAttachmentFolder: (attachmentFolder) => set({ attachmentFolder }),
+      setAttachmentFolder: (attachmentFolder) => {
+        set({ attachmentFolder });
+        syncSettingsToDisk({ ...get(), attachmentFolder });
+      },
       setShowBrokenEmbedIndicators: (showBrokenEmbedIndicators) => set({ showBrokenEmbedIndicators }),
+      setExcludedFolders: (excludedFolders) => set({ excludedFolders }),
+      addExcludedFolder: (folder) => {
+        const clean = folder.trim().replace(/^[\/\\]+|[\/\\]+$/g, '');
+        if (!clean) return;
+        set((state) => {
+          if (state.excludedFolders.includes(clean)) return state;
+          return { excludedFolders: [...state.excludedFolders, clean] };
+        });
+      },
+      removeExcludedFolder: (folder) => {
+        set((state) => ({
+          excludedFolders: state.excludedFolders.filter((f) => f !== folder),
+        }));
+      },
 
       setCustomHotkey: (commandId, hotkey) =>
         set((state) => ({
@@ -718,6 +785,7 @@ export const useSettingsStore = create<SettingsState>()(
             linkFormat: DEFAULT_SETTINGS.linkFormat,
             autoUpdateLinks: DEFAULT_SETTINGS.autoUpdateLinks,
             showBrokenEmbedIndicators: DEFAULT_SETTINGS.showBrokenEmbedIndicators,
+            excludedFolders: DEFAULT_SETTINGS.excludedFolders,
           });
         } else if (tabId === 'hotkeys') {
           set({ customHotkeys: {} });
@@ -741,6 +809,7 @@ export const useSettingsStore = create<SettingsState>()(
             localStorage.setItem('noether_skip_delete_confirmation', skipDel ? 'true' : 'false');
             localStorage.setItem('noether_skip_rename_confirmation', skipRen ? 'true' : 'false');
           }
+          syncSettingsToDisk(state);
         }
       },
     }

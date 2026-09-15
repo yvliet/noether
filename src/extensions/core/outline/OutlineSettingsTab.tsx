@@ -26,9 +26,9 @@ export const OutlineSettingsTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Outline</h3>
-          <p className="text-[11px] text-[#777]">Configure table of contents heading hierarchy and display.</p>
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Heading Hierarchy & Depth</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">Configure table of contents heading hierarchy, numbering, and default depth.</p>
         </div>
         {isModified && (
           <button

@@ -38,10 +38,10 @@ export const BookmarksSettingsTab: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <SettingCard
-        title="Bookmarks"
-        description="Manage bookmarked notes and quick access shortcuts."
+        title="Display & Sorting"
+        description="Manage bookmarked notes and quick access shortcuts in the sidebar."
         action={
           isModified ? (
             <Button

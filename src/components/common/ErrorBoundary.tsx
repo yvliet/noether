@@ -1,4 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { platform } from '@/lib/platform/platformAdapter';
 
 interface Props {
   children: ReactNode;
@@ -40,12 +41,20 @@ export class ErrorBoundary extends Component<Props, State> {
                 {this.state.error.stack}
               </pre>
             )}
-            <button
-              onClick={() => window.location.reload()}
-              className="noether-btn"
-            >
-              Reload Application
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => window.location.reload()}
+                className="noether-btn"
+              >
+                Reload Application
+              </button>
+              <button
+                onClick={() => platform.close()}
+                className="noether-btn noether-btn-danger"
+              >
+                Close Window
+              </button>
+            </div>
           </div>
         </div>
       );

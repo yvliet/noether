@@ -46,10 +46,10 @@ export const SketchSettingsTab: React.FC = () => {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between px-4">
-          <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">Sketch</h3>
-            <p className="text-[11px] text-[#777]">
-              Lightweight freehand vector drawing and markup overlay for notes and documents.
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Drawing Tools & Colors</h3>
+            <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+              Configure default stroke width, ink color, and markup overlay behavior.
             </p>
           </div>
           {isModified && (

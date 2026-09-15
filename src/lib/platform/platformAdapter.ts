@@ -25,12 +25,14 @@ export interface IPlatformAdapter {
   isMinimized(): Promise<boolean>;
   onMinimizedChange(callback: (isMinimized: boolean) => void): () => void;
   getCurrentWindowLabel(): Promise<string | null>;
+  getCurrentWindowLabelSync(): string | null;
 
   // Multi-window / Modals
   openVaultWindow(): Promise<{ success: boolean }>;
   closeVaultWindow(): Promise<{ success: boolean }>;
-  openSettingsWindow(): Promise<{ success: boolean }>;
+  openSettingsWindow(tab?: string): Promise<{ success: boolean }>;
   closeSettingsWindow(): Promise<{ success: boolean }>;
+  onNavigateSettingsTab(callback: (tabId: string) => void): () => void;
 
   // Global hotkeys and focus
   registerGlobalShortcut(id: string, shortcut: string): Promise<{ success: boolean; error?: string }>;
@@ -99,6 +101,10 @@ export interface IPlatformAdapter {
   setAccentIcon(accentColor: string): Promise<void>;
   setWindowTitle(title: string): Promise<void>;
   notifyUserActivity(): Promise<void>;
+
+  // App Settings Persistence
+  saveAppSettings(settingsJson: string): Promise<{ success: boolean; path?: string; error?: string }>;
+  loadAppSettings(): Promise<{ success: boolean; content?: string }>;
 
   // External URLs
   openUrl(url: string): Promise<{ success: boolean; error?: string }>;
@@ -307,7 +313,21 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async getCurrentWindowLabel(): Promise<string | null> {
+    return this.getCurrentWindowLabelSync();
+  }
+
+  public getCurrentWindowLabelSync(): string | null {
     if (typeof window !== 'undefined') {
+      try {
+        const internals = (window as any).__TAURI_INTERNALS__;
+        const label = internals?.metadata?.currentWindow?.label || internals?.metadata?.currentWebview?.label;
+        if (label) return label;
+      } catch {}
+
+      if ((window as any).__NOETHER_WINDOW_MODE__) {
+        return (window as any).__NOETHER_WINDOW_MODE__;
+      }
+
       const params = new URLSearchParams(window.location.search);
       const urlWindow = params.get('window');
       if (urlWindow) return urlWindow;
@@ -317,12 +337,6 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       try {
         const currentWin = getCurrentWindow();
         if (currentWin?.label) return currentWin.label;
-      } catch {}
-
-      try {
-        const internals = (window as any).__TAURI_INTERNALS__;
-        const label = internals?.metadata?.currentWindow?.label;
-        if (label) return label;
       } catch {}
     }
 
@@ -340,14 +354,52 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: true };
   }
 
-  public async openSettingsWindow(): Promise<{ success: boolean }> {
-    useWorkspaceStore.getState().setIsSettingsOpen(true);
+  public async openSettingsWindow(tab?: string): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      try {
+        const res = await invoke<{ success: boolean; error?: string }>('open_settings_window', { tab: tab || null });
+        if (res && res.success) {
+          return { success: true };
+        }
+      } catch (err) {
+        console.warn('[PlatformAdapter] tauri invoke open_settings_window failed, falling back to in-app window:', err);
+      }
+    }
+    useWorkspaceStore.getState().setIsSettingsOpen(true, tab);
     return { success: true };
   }
 
   public async closeSettingsWindow(): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      try {
+        await invoke('close_settings_window');
+        return { success: true };
+      } catch (err) {
+        console.warn('[PlatformAdapter] tauri invoke close_settings_window failed:', err);
+      }
+    }
     useWorkspaceStore.getState().setIsSettingsOpen(false);
     return { success: true };
+  }
+
+  public onNavigateSettingsTab(callback: (tabId: string) => void): () => void {
+    if (this.isTauri()) {
+      let unlisten: (() => void) | null = null;
+      listen<string>('navigate-settings-tab', (event) => {
+        if (event.payload) {
+          callback(event.payload);
+        }
+      }).then((fn) => {
+        unlisten = fn;
+      }).catch((err) => {
+        console.warn('[PlatformAdapter] Failed to listen to navigate-settings-tab:', err);
+      });
+
+      return () => {
+        if (unlisten) unlisten();
+      };
+    }
+    return () => {};
   }
 
   // General-Purpose Global Hotkeys & Window Focus
@@ -980,6 +1032,28 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       }
     }
     return { success: true, content: '# Restored content' };
+  }
+
+  public async saveAppSettings(settingsJson: string): Promise<{ success: boolean; path?: string; error?: string }> {
+    if (this.isTauri()) {
+      try {
+        return (await invoke('save_app_settings', { settingsJson })) || { success: true };
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public async loadAppSettings(): Promise<{ success: boolean; content?: string }> {
+    if (this.isTauri()) {
+      try {
+        return (await invoke('load_app_settings')) || { success: false };
+      } catch {
+        return { success: false };
+      }
+    }
+    return { success: false };
   }
 }
 

@@ -123,10 +123,10 @@ export const MoreIconsSettingsTab: React.FC = () => {
       <div className="flex flex-col gap-2.5">
         {/* Header section */}
         <div className="flex items-center justify-between px-4">
-          <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">More icons</h3>
-            <p className="text-[11px] text-[#777]">
-              Let icons live in all of Noether. Customize folders, files, tabs, and documents with persistent SQLite storage.
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Icon Visibility & Styles</h3>
+            <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+              Customize folder icons, file icons, and emoji rendering styles across your vault.
             </p>
           </div>
           {isModified && (

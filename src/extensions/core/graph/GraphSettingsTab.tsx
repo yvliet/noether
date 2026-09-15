@@ -131,12 +131,14 @@ export const GraphSettingsTab: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Header */}
+      {/* SECTION 1: ANIMATION & TIME-LAPSE */}
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center justify-between px-4">
-          <div>
-            <h3 className="text-sm font-semibold text-white mb-0.5">Graph view</h3>
-            <p className="text-[11px] text-[#777]">Customize time-lapse animations, physics forces, and visual rendering.</p>
+          <div className="flex flex-col">
+            <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Animation & Time-Lapse</h3>
+            <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+              Camera tracking dynamics, playback appearance rate, and node pop spawn scale.
+            </p>
           </div>
           {isModified && (
             <button
@@ -152,7 +154,6 @@ export const GraphSettingsTab: React.FC = () => {
           )}
         </div>
 
-        {/* SECTION 1: ANIMATION & CAMERA (Directly below Graph view header) */}
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
         {/* Focus Camera (For both Time-lapse and Float) */}
         <div className="flex items-center justify-between p-4">
@@ -251,7 +252,10 @@ export const GraphSettingsTab: React.FC = () => {
       {/* SECTION 2: FORCES & PHYSICS */}
       <div className="flex flex-col gap-2.5">
         <div className="px-4">
-          <h3 className="text-sm font-semibold text-white">Forces and physics</h3>
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Forces & Physics</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+            Repulsion force, spring tension, and gravitational pull centering clusters.
+          </p>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
           {/* Node Repulsion Force */}
@@ -383,7 +387,10 @@ export const GraphSettingsTab: React.FC = () => {
       {/* SECTION 3: DISPLAY & FILTERS */}
       <div className="flex flex-col gap-2.5">
         <div className="px-4">
-          <h3 className="text-sm font-semibold text-white">Display and filters</h3>
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Display & Filters</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+            Node sizes, line thickness, title labels, directional arrows, and orphan filters.
+          </p>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
           {/* Default Docked Graph Mode */}
@@ -537,10 +544,13 @@ export const GraphSettingsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION 4: COLORING */}
+      {/* SECTION 4: COLORING & PALETTES */}
       <div className="flex flex-col gap-2.5">
         <div className="px-4">
-          <h3 className="text-sm font-semibold text-white">Coloring</h3>
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Colors & Palettes</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+            Node tinting schemes, harmonious curated palettes, and custom file type colors.
+          </p>
         </div>
         <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
           {/* Master Toggle: Color graph nodes */}

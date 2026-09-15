@@ -59,10 +59,10 @@ export const HistorySettingsTab: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-6">
       <SettingCard
-        title="Version History"
-        description="Travel back in time to inspect earlier drafts, compare changes, and safely restore past versions."
+        title="Snapshots & Timeline"
+        description="Capture version snapshots, adjust typing pause delays, and manage history retention."
         action={
           isModified ? (
             <Button

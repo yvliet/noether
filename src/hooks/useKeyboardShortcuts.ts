@@ -275,7 +275,7 @@ export function useKeyboardShortcuts() {
       // 12. Settings: Ctrl + ,
       if (isMatch('workspace:settings', ['Ctrl+,'])) {
         e.preventDefault();
-        ws.setIsSettingsOpen(true);
+        platform.openSettingsWindow();
         return;
       }
 

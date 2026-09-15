@@ -33,10 +33,10 @@ export const PropertiesSettingsTab: React.FC = () => {
     <div className="flex flex-col gap-2.5">
       {/* Top Header */}
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Properties</h3>
-          <p className="text-[11px] text-[#777]">
-            Configure how frontmatter and metadata properties are displayed, sorted, and styled in Noether.
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Frontmatter Display & Sorting</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
+            Configure how metadata properties are displayed, folded, and sorted in notes.
           </p>
         </div>
         {isModified && (

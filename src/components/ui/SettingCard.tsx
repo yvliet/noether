@@ -30,9 +30,9 @@ export const SettingCard: React.FC<SettingCardProps> = ({
     <div className={`flex flex-col gap-2.5 ${className}`}>
       {hasHeader && (
         <div className="flex items-center justify-between px-4">
-          <div>
+          <div className="flex flex-col">
             {title && <h3 className="text-sm font-semibold text-[var(--noether-text-primary,#ffffff)] mb-0.5">{title}</h3>}
-            {description && <p className="text-[11px] text-[var(--noether-text-muted,#777777)]">{description}</p>}
+            {description && <p className="text-[11px] text-[var(--noether-text-muted,#777777)] leading-relaxed">{description}</p>}
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>

@@ -29,9 +29,9 @@ export const TasksSettingsTab: React.FC = () => {
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between px-4">
-        <div>
-          <h3 className="text-sm font-semibold text-white mb-0.5">Tasks</h3>
-          <p className="text-[11px] text-[#777]">Configure task aggregation, completion behavior, and presentation.</p>
+        <div className="flex flex-col">
+          <h3 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-0.5">Task Completion & Cascading</h3>
+          <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">Configure task aggregation, completion cascading, and styling.</p>
         </div>
         {isModified && (
           <button
