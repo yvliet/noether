@@ -489,6 +489,41 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const timelapseTimerRef = useRef<any>(null);
   const timelapseEndTimerRef = useRef<any>(null);
   const savedTimelapseAlphaRef = useRef(0.5);
+  const timelapseSequenceRef = useRef<GraphNode[]>([]);
+  const timelapseSettlingRef = useRef(false);
+  const settlingFrameRef = useRef(0);
+
+  // Helper to clear all active timelapse timers
+  const clearTimelapseTimers = useCallback(() => {
+    if (timelapseTimerRef.current) {
+      clearInterval(timelapseTimerRef.current);
+      timelapseTimerRef.current = null;
+    }
+    if (timelapseEndTimerRef.current) {
+      clearTimeout(timelapseEndTimerRef.current);
+      timelapseEndTimerRef.current = null;
+    }
+    timelapseSettlingRef.current = false;
+    settlingFrameRef.current = 0;
+  }, []);
+
+  // Cleanly abort timelapse and ensure all nodes are visible and interactive
+  const abortTimelapse = useCallback(() => {
+    clearTimelapseTimers();
+    setIsTimelapseActive(false);
+    setIsTimelapsePaused(false);
+    isTimelapseActiveRef.current = false;
+    isTimelapsePausedRef.current = false;
+    timelapseSettlingRef.current = false;
+    settlingFrameRef.current = 0;
+    nodesRef.current.forEach((n) => {
+      n.popScale = 1;
+      n.popAlpha = 1;
+      delete (n as any)._tlIndex;
+      delete (n as any)._savedVx;
+      delete (n as any)._savedVy;
+    });
+  }, [clearTimelapseTimers]);
 
   // Float Mode State (zero-gravity continuous ambient hovering motion per graph instance)
   const [isFloatActive, setIsFloatActive] = useState(() => isTabFloating(resolvedTabId, vaultPath));
@@ -682,7 +717,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   }, []);
 
   // Dynamic Focus Camera for Time-lapse (Cinematic growth-following auto framing)
-  const updateTimelapseFocusCamera = useCallback((stepCount: number, immediate = false) => {
+  const updateTimelapseFocusCamera = useCallback((nodesOrStep: GraphNode[] | number, immediate = false) => {
     const canvas = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
@@ -691,12 +726,22 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     const width = (rect.width > 0 ? rect.width : container.clientWidth) || 800;
     const height = (rect.height > 0 ? rect.height : (container.clientHeight ? container.clientHeight - 32 : 600)) || 600;
 
-    const currentNodes = nodesRef.current;
-    const count = Math.min(Math.max(1, stepCount), currentNodes.length);
-    if (count === 0 || currentNodes.length === 0) return;
+    let targetNodes: GraphNode[] = [];
+    if (Array.isArray(nodesOrStep)) {
+      targetNodes = nodesOrStep;
+    } else {
+      const source = isTimelapseActiveRef.current && timelapseSequenceRef.current.length > 0
+        ? timelapseSequenceRef.current
+        : nodesRef.current;
+      const count = Math.min(Math.max(1, nodesOrStep), source.length);
+      targetNodes = source.slice(0, count);
+    }
+
+    const count = targetNodes.length;
+    if (count === 0) return;
 
     if (count === 1) {
-      const n0 = currentNodes[0];
+      const n0 = targetNodes[0];
       if (!Number.isFinite(n0.x) || !Number.isFinite(n0.y)) return;
       const targetScale = 1.35;
       const tx = width / 2 - n0.x * targetScale;
@@ -709,8 +754,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     }
 
     if (count === 2) {
-      const n0 = currentNodes[0];
-      const n1 = currentNodes[1];
+      const n0 = targetNodes[0];
+      const n1 = targetNodes[1];
       if (!Number.isFinite(n0.x) || !Number.isFinite(n0.y) || !Number.isFinite(n1.x) || !Number.isFinite(n1.y)) return;
       const midX = (n0.x + n1.x) / 2;
       const midY = (n0.y + n1.y) / 2;
@@ -735,7 +780,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     let valid = 0;
 
     for (let i = 0; i < count; i++) {
-      const n = currentNodes[i];
+      const n = targetNodes[i];
       if (!Number.isFinite(n.x) || !Number.isFinite(n.y)) continue;
       if (n.x < minX) minX = n.x;
       if (n.x > maxX) maxX = n.x;
@@ -807,6 +852,11 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
   const getVisibleNodes = useCallback(() => {
     const currentNodes = nodesRef.current;
+    if (isTimelapseActiveRef.current) {
+      const seq = timelapseSequenceRef.current;
+      const visibleCount = Math.min(seq.length, Math.max(0, timelapseStepRef.current));
+      return seq.slice(0, visibleCount);
+    }
     if (effectiveModeRef.current === 'local') {
       const targetId = targetDocIdRef.current;
       if (!targetId) return [];
@@ -818,12 +868,10 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       return currentNodes.filter((n) => connectedIds.has(n.id));
     }
     const showOrphansSetting = useGraphSettings.getState().showOrphans;
-    const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-    const baseSlice = currentNodes.slice(0, visibleCount);
-    return showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
+    return showOrphansSetting ? currentNodes : currentNodes.filter((n) => n.linkCount > 0);
   }, []);
 
-  // Arrange nodes for Local Graph mode: active document at (0, 0), neighbors radially around it
+  // Arrange nodes for Local Graph mode: active document at center, neighbors organically dispersed around it
   const layoutLocalGraph = useCallback((targetId: string | null) => {
     if (!targetId || nodesRef.current.length === 0) return;
 
@@ -855,15 +903,21 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     const neighborNodes = nodesRef.current.filter((n) => connectedIds.has(n.id) && n.id !== targetId);
     const count = neighborNodes.length;
     if (count > 0) {
-      const radius = Math.min(180, Math.max(95, 65 + count * 14));
+      const goldenAngle = 2.399963;
       neighborNodes.forEach((node, i) => {
-        const angle = (i / count) * 2 * Math.PI - Math.PI / 2;
-        node.x = Math.round(Math.cos(angle) * radius);
-        node.y = Math.round(Math.sin(angle) * radius);
-        node.vx = 0;
-        node.vy = 0;
+        const hashAngle = (hashStringToUnit(node.id + ':localAngle') - 0.5) * 0.9;
+        const hashDist = (hashStringToUnit(node.id + ':localDist') - 0.5) * 50;
+        const angle = i * goldenAngle + hashAngle;
+        const dist = 100 + Math.sqrt(i + 1) * 35 + hashDist;
+        node.x = Math.round(Math.cos(angle) * dist);
+        node.y = Math.round(Math.sin(angle) * dist);
+        node.vx = Math.cos(angle) * 1.5;
+        node.vy = Math.sin(angle) * 1.5;
       });
     }
+
+    alphaRef.current = 0.8;
+    startAnimationRef.current();
   }, []);
 
   // Restore nodes to their saved global positions when leaving Local mode
@@ -890,7 +944,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     if (resolvedTabId) {
       activeTabTransforms.set(resolvedTabId, { ...targetTransformRef.current });
     }
-    alphaRef.current = effectiveModeRef.current === 'local' ? 0.05 : 0.15;
+    alphaRef.current = 0.65;
     if (animFrameRef.current) {
       cancelAnimationFrame(animFrameRef.current);
       animFrameRef.current = null;
@@ -899,6 +953,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   }, [resizeCanvas, getVisibleNodes, centerGraph, persistTransform, resolvedTabId]);
 
   const handleToggleDockMode = useCallback(() => {
+    abortTimelapse();
     const next = dockGraphMode === 'global' ? 'local' : 'global';
     setDockGraphMode(next);
     effectiveModeRef.current = next;
@@ -909,7 +964,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       restoreGlobalGraph();
     }
     handleResetView();
-  }, [dockGraphMode, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
+  }, [dockGraphMode, abortTimelapse, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
 
   const moreOptionsActions = useMemo<DocMenuActionDefinition[] | undefined>(() => {
     if (isSidebar || !splitNote) return undefined;
@@ -933,6 +988,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         group: 'universal',
         requiresDoc: false,
         onClick: () => {
+          abortTimelapse();
           const next = pageGraphMode === 'global' ? 'local' : 'global';
           setPageGraphMode(next);
           effectiveModeRef.current = next;
@@ -945,7 +1001,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         },
       },
     ];
-  }, [isSidebar, splitNote, pageGraphMode, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
+  }, [isSidebar, splitNote, pageGraphMode, abortTimelapse, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
 
   // Auto fit to center when docking or when sidebar mode is detected
   const prevIsSidebarRef = useRef<boolean | null>(null);
@@ -967,6 +1023,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
   const prevEffectiveModeRef = useRef(effectiveMode);
   useEffect(() => {
     if (prevEffectiveModeRef.current !== effectiveMode) {
+      abortTimelapse();
       prevEffectiveModeRef.current = effectiveMode;
       effectiveModeRef.current = effectiveMode;
       if (effectiveMode === 'local') {
@@ -976,19 +1033,20 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       }
       handleResetView();
     }
-  }, [effectiveMode, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
+  }, [effectiveMode, abortTimelapse, layoutLocalGraph, restoreGlobalGraph, handleResetView]);
 
   // In Local mode: update layout and fit to center when active note changes
   const prevTargetDocIdRef = useRef<string | null>(targetDocId);
   useEffect(() => {
     if (effectiveMode === 'local' && prevTargetDocIdRef.current !== targetDocId) {
+      abortTimelapse();
       prevTargetDocIdRef.current = targetDocId;
       targetDocIdRef.current = targetDocId;
       layoutLocalGraph(targetDocId);
       handleResetView();
     }
     prevTargetDocIdRef.current = targetDocId;
-  }, [effectiveMode, targetDocId, layoutLocalGraph, handleResetView]);
+  }, [effectiveMode, targetDocId, abortTimelapse, layoutLocalGraph, handleResetView]);
 
   // Toggle Float Mode: ambient zero-gravity hovering motion where nodes move around themselves
   const toggleFloatMode = useCallback(() => {
@@ -1343,7 +1401,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                   },
                   graphSettings
                 );
+                (newNode as any)._tlIndex = timelapseSequenceRef.current.length;
                 nodesRef.current.push(newNode);
+                timelapseSequenceRef.current.push(newNode);
                 existingNodeMap.set(d.id, newNode);
 
                 if (!preTimelapseLayoutRef.current.has(d.id)) {
@@ -1666,7 +1726,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           }
         }
 
-        alphaRef.current = effectiveModeRef.current === 'local' ? 0.05 : 0.65;
+        alphaRef.current = 0.65;
 
         if (animFrameRef.current) {
           cancelAnimationFrame(animFrameRef.current);
@@ -1731,25 +1791,22 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     const currentAlpha = alphaRef.current;
 
     const graphSettings = useGraphSettings.getState();
-    const isLocalMode = effectiveModeRef.current === 'local';
-    const targetId = targetDocIdRef.current;
-    let visibleNodes: GraphNode[] = [];
-
-    if (isLocalMode) {
-      if (!targetId) return;
-      const connectedIds = new Set<string>([targetId]);
-      for (const l of currentLinks) {
-        if (l.source === targetId) connectedIds.add(l.target);
-        if (l.target === targetId) connectedIds.add(l.source);
-      }
-      visibleNodes = currentNodes.filter((n) => connectedIds.has(n.id));
-    } else {
-      const showOrphansSetting = graphSettings.showOrphans;
-      const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-      const baseSlice = currentNodes.slice(0, visibleCount);
-      visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
-    }
+    const visibleNodes = getVisibleNodes();
     if (visibleNodes.length === 0) return;
+
+    // Time-lapse Settling Phase: smoothly blends out competing forces while guiding nodes into exact targets
+    const isSettling = isTimelapseActiveRef.current && timelapseSettlingRef.current;
+    let settlingProgress = 0;
+    let settlingSmoothT = 0;
+    let forceFade = 1.0;
+
+    if (isSettling) {
+      settlingFrameRef.current++;
+      const SETTLING_FRAMES = 150; // ~2.5 seconds at 60fps
+      settlingProgress = Math.min(1.0, settlingFrameRef.current / SETTLING_FRAMES);
+      settlingSmoothT = settlingProgress * settlingProgress * (3 - 2 * settlingProgress);
+      forceFade = 1.0 - settlingSmoothT;
+    }
 
     const progress = visibleNodes.length / Math.max(1, currentNodes.length);
     const easeProgress = Math.pow(progress, 3);
@@ -1784,7 +1841,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const dist = Math.sqrt(distSq + 1.0);
         if (dist < targetSpacing) {
           const overlap = (targetSpacing - dist) / targetSpacing;
-          const force = overlap * overlap * 18.0 * repulsionMult * currentAlpha;
+          const force = overlap * overlap * 18.0 * repulsionMult * currentAlpha * forceFade;
 
           const fx = (dx / dist) * force;
           const fy = (dy / dist) * force;
@@ -1818,7 +1875,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const delta = dist - targetSpacing;
 
         const stretchBonus = delta > 25 ? Math.min(10.0, Math.pow((delta - 25) / 40, 1.35) * 0.5) : 0;
-        const force = (delta * springK + stretchBonus) * currentAlpha;
+        const force = (delta * springK + stretchBonus) * currentAlpha * forceFade;
 
         const fx = (dx / dist) * force;
         const fy = (dy / dist) * force;
@@ -1827,7 +1884,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const perpX = -dy / dist;
         const perpY = dx / dist;
         const pairHash = (hashStringToUnit(link.source + link.target + ':torque') - 0.5) * 2;
-        const torqueForce = pairHash * 0.55 * currentAlpha;
+        const torqueForce = pairHash * 0.55 * currentAlpha * forceFade;
 
         if (s !== dragNodeRef.current) {
           s.vx = (Number.isFinite(s.vx) ? s.vx : 0) + fx + perpX * torqueForce;
@@ -1890,7 +1947,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         if (distSq < minClearanceSq) {
           const dist = Math.sqrt(distSq + 1.0);
           const overlap = (minClearance - dist) / minClearance;
-          const forceMag = overlap * overlap * 16.0 * currentAlpha;
+          const forceMag = overlap * overlap * 16.0 * currentAlpha * forceFade;
 
           const fx = (diffX / dist) * forceMag;
           const fy = (diffY / dist) * forceMag;
@@ -1926,8 +1983,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     }
     const centroidX = validCount > 0 ? sumX / validCount : 0;
     const centroidY = validCount > 0 ? sumY / validCount : 0;
-    const centroidCorrectionX = (0 - centroidX) * 0.03 * currentAlpha;
-    const centroidCorrectionY = (0 - centroidY) * 0.03 * currentAlpha;
+    const centroidCorrectionX = (0 - centroidX) * 0.03 * currentAlpha * forceFade;
+    const centroidCorrectionY = (0 - centroidY) * 0.03 * currentAlpha * forceFade;
 
     // Natural compact cluster radius (scales with ~160px node spacing)
     const clusterRadius = 90 + Math.sqrt(visibleNodes.length) * 80;
@@ -1943,14 +2000,14 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       const distCent = Math.sqrt(distCentSq + 0.001);
 
       // 4a. Inward Centripetal Pressure: gently compresses all nodes together so they fill internal gaps
-      const inwardPressure = Math.min(3.5, distCent * 0.0025) * currentAlpha;
+      const inwardPressure = Math.min(3.5, distCent * 0.0025) * currentAlpha * forceFade;
       n.vx -= (dxCent / distCent) * inwardPressure;
       n.vy -= (dyCent / distCent) * inwardPressure;
 
       // 4b. Cluster boundary clamp: strong pull if dropped or pushed far away
       if (distCent > clusterRadius) {
         const excess = distCent - clusterRadius;
-        const pullMag = (excess * 0.055 + Math.min(14.0, Math.pow(excess / 45, 1.35) * 0.6)) * currentAlpha;
+        const pullMag = (excess * 0.055 + Math.min(14.0, Math.pow(excess / 45, 1.35) * 0.6)) * currentAlpha * forceFade;
         n.vx -= (dxCent / distCent) * pullMag;
         n.vy -= (dyCent / distCent) * pullMag;
       }
@@ -1993,21 +2050,21 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           if (d1 !== Infinity && d1 > maxGapSq) {
             const dist1 = Math.sqrt(d1);
             const excess = dist1 - maxGap;
-            const pull = (excess * 0.045 + Math.min(9.0, Math.pow(excess / 35, 1.35) * 0.5)) * currentAlpha;
+            const pull = (excess * 0.045 + Math.min(9.0, Math.pow(excess / 35, 1.35) * 0.5)) * currentAlpha * forceFade;
             n.vx += (dx1 / dist1) * (pull / countToCheck);
             n.vy += (dy1 / dist1) * (pull / countToCheck);
           }
           if (d2 !== Infinity && d2 > maxGapSq) {
             const dist2 = Math.sqrt(d2);
             const excess = dist2 - maxGap;
-            const pull = (excess * 0.045 + Math.min(9.0, Math.pow(excess / 35, 1.35) * 0.5)) * currentAlpha;
+            const pull = (excess * 0.045 + Math.min(9.0, Math.pow(excess / 35, 1.35) * 0.5)) * currentAlpha * forceFade;
             n.vx += (dx2 / dist2) * (pull / countToCheck);
             n.vy += (dy2 / dist2) * (pull / countToCheck);
           }
           if (d3 !== Infinity && d3 > maxGapSq) {
             const dist3 = Math.sqrt(d3);
             const excess = dist3 - maxGap;
-            const pull = (excess * 0.045 + Math.min(9.0, Math.pow(excess / 35, 1.35) * 0.5)) * currentAlpha;
+            const pull = (excess * 0.045 + Math.min(9.0, Math.pow(excess / 35, 1.35) * 0.5)) * currentAlpha * forceFade;
             n.vx += (dx3 / dist3) * (pull / countToCheck);
             n.vy += (dy3 / dist3) * (pull / countToCheck);
           }
@@ -2029,8 +2086,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       if (!Number.isFinite(node.vy)) node.vy = 0;
 
       // Soft center gravity towards (0, 0)
-      node.vx += (0 - node.x) * softCenterGravity * currentAlpha;
-      node.vy += (0 - node.y) * softCenterGravity * currentAlpha;
+      node.vx += (0 - node.x) * softCenterGravity * currentAlpha * forceFade;
+      node.vy += (0 - node.y) * softCenterGravity * currentAlpha * forceFade;
 
       // Group centroid balancing
       node.vx += centroidCorrectionX;
@@ -2044,12 +2101,12 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       node.vx *= friction * easeDamping;
       node.vy *= friction * easeDamping;
 
-      // Float Mode & Timelapse Zero-Gravity Motion: Nodes gently float and move organically around themselves
-      if ((isFloatActiveRef.current || isTimelapseActiveRef.current) && !isTimelapsePausedRef.current) {
+      // Float Mode Zero-Gravity Motion: Nodes gently float and move organically around themselves (disabled during timelapse to ensure clean convergence)
+      if (isFloatActiveRef.current && !isTimelapseActiveRef.current && !isTimelapsePausedRef.current) {
         const perfNow = performance.now() - totalPausedDurationRef.current;
         const floatElapsed = Math.max(0, perfNow - floatStartTimeRef.current);
         // Smoothstep acceleration curve from 0.15 (slow) to 1.0 (normal) over 1.4 seconds
-        const rawT = isTimelapseActiveRef.current ? 1.0 : Math.min(1.0, floatElapsed / 1400);
+        const rawT = Math.min(1.0, floatElapsed / 1400);
         const floatRamp = rawT * rawT * (3 - 2 * rawT);
         const speedScale = 0.15 + 0.85 * floatRamp;
 
@@ -2064,23 +2121,53 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         node.vy += waveY;
       }
 
-      // Time-lapse Guided Organic Trajectory: Smooth laminar flow towards pre-timelapse locations
+      // Time-lapse Trajectory & Organic Settling:
+      // Spawning Phase: nodes pop at center (0, 0), repulsion expands them, and aging nodes gently orient towards targets
+      // Settling Phase: smooth continuous glide into exact pre-timelapse positions with zero teleportation snaps
       if (isTimelapseActiveRef.current && !isTimelapsePausedRef.current) {
         const targetPos = preTimelapseLayoutRef.current.get(node.id);
         if (targetPos && Number.isFinite(targetPos.x) && Number.isFinite(targetPos.y)) {
-          const dx = targetPos.x - node.x;
-          const dy = targetPos.y - node.y;
-          const distSq = dx * dx + dy * dy;
-          const dist = Math.sqrt(distSq + 0.001);
-          const progress = Math.min(1.0, visibleNodes.length / Math.max(1, currentNodes.length));
+          if (isSettling) {
+            // Settling Phase: Smooth, direct exponential convergence
+            const lerpRate = 0.02 + settlingSmoothT * 0.12;
+            node.x += (targetPos.x - node.x) * lerpRate;
+            node.y += (targetPos.y - node.y) * lerpRate;
 
-          // Progressive laminar attractor: starts very soft (0.005) so center pop repulsion pushes freely,
-          // then smoothly eases (0.030) as graph matures, guiding nodes into their exact pre-timelapse positions
-          const homingK = (0.005 + Math.pow(progress, 2.0) * 0.028) * currentAlpha;
-          const pullMag = Math.min(6.5, dist * homingK);
-          if (dist > 0.05) {
-            node.vx += (dx / dist) * pullMag;
-            node.vy += (dy / dist) * pullMag;
+            // Dampen velocity to prevent kinetic overshoot
+            const velDamp = 1.0 - settlingSmoothT * 0.65;
+            node.vx *= velDamp;
+            node.vy *= velDamp;
+          } else {
+            // Spawning Phase:
+            const dx = targetPos.x - node.x;
+            const dy = targetPos.y - node.y;
+            const distSq = dx * dx + dy * dy;
+            const dist = Math.sqrt(distSq + 0.001);
+
+            const totalSeq = Math.max(1, timelapseSequenceRef.current.length);
+            const currentStep = timelapseStepRef.current;
+            const overallProgress = Math.min(1.0, currentStep / totalSeq);
+            const tlIdx = (node as any)._tlIndex ?? 0;
+            const nodeAgeInSteps = Math.max(0, currentStep - tlIdx);
+            const maxPossibleAge = Math.max(1, totalSeq - tlIdx);
+            const individualMaturity = Math.min(1.0, nodeAgeInSteps / maxPossibleAge);
+
+            // Blended maturity: young nodes freely repel from center; mature nodes gently drift toward target
+            const blendedMaturity = 0.25 * overallProgress + 0.75 * individualMaturity;
+            const easeCurve = Math.pow(blendedMaturity, 1.6);
+            const homingK = (0.001 + easeCurve * 0.035) * currentAlpha;
+            const pullMag = Math.min(6.0, dist * homingK);
+            if (dist > 0.02) {
+              node.vx += (dx / dist) * pullMag;
+              node.vy += (dy / dist) * pullMag;
+            }
+
+            // Directional velocity damping near target
+            if (easeCurve > 0.4 && dist < 30) {
+              const settleFactor = 1.0 - Math.min(0.25, ((30 - dist) / 30) * 0.25 * easeCurve);
+              node.vx *= settleFactor;
+              node.vy *= settleFactor;
+            }
           }
         }
       }
@@ -2092,21 +2179,56 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       }
 
       // Dynamic position step
-      if (isLocalMode && targetId && node.id === targetId && node !== dragNodeRef.current) {
-        node.x = 0;
-        node.y = 0;
-        node.vx = 0;
-        node.vy = 0;
-      } else {
-        node.x += node.vx;
-        node.y += node.vy;
+      node.x += node.vx;
+      node.y += node.vy;
+    }
+
+    // Check if timelapse settling has completed
+    if (isSettling) {
+      let maxDistSq = 0;
+      for (let i = 0; i < visibleNodes.length; i++) {
+        const n = visibleNodes[i];
+        const tPos = preTimelapseLayoutRef.current.get(n.id);
+        if (tPos && Number.isFinite(tPos.x) && Number.isFinite(tPos.y)) {
+          const ddx = tPos.x - n.x;
+          const ddy = tPos.y - n.y;
+          const dSq = ddx * ddx + ddy * ddy;
+          if (dSq > maxDistSq) maxDistSq = dSq;
+        }
+      }
+
+      const isComplete = settlingProgress >= 1.0 || (settlingProgress >= 0.7 && maxDistSq < 0.25);
+      if (isComplete) {
+        setIsTimelapseActive(false);
+        setIsTimelapsePaused(false);
+        isTimelapseActiveRef.current = false;
+        isTimelapsePausedRef.current = false;
+        timelapseSettlingRef.current = false;
+        settlingFrameRef.current = 0;
+
+        for (let i = 0; i < visibleNodes.length; i++) {
+          const n = visibleNodes[i];
+          delete (n as any)._tlIndex;
+          delete (n as any)._savedVx;
+          delete (n as any)._savedVy;
+          n.popScale = 1;
+          n.popAlpha = 1;
+          const tPos = preTimelapseLayoutRef.current.get(n.id);
+          if (tPos && Number.isFinite(tPos.x) && Number.isFinite(tPos.y)) {
+            n.x = tPos.x;
+            n.y = tPos.y;
+          }
+          n.vx = 0;
+          n.vy = 0;
+        }
+        alphaRef.current = 0.15;
       }
     }
 
     if (isTimelapseActiveRef.current && !isTimelapsePausedRef.current && graphFocusCameraRef.current) {
-      updateTimelapseFocusCamera(timelapseStepRef.current);
+      updateTimelapseFocusCamera(visibleNodes);
     } else if (isFloatActiveRef.current && graphFocusCameraRef.current && !dragNodeRef.current && !isDraggingRef.current) {
-      centerGraph(nodesRef.current);
+      centerGraph(visibleNodes);
     }
 
     // Cooling curve: smooth settling and floaty sleep
@@ -2120,6 +2242,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         alphaRef.current = Math.max(alphaRef.current * 0.992, targetMinAlpha);
       } else {
         alphaRef.current *= isTimelapseActiveRef.current ? 0.985 : 0.978;
+        if (isSettling) {
+          alphaRef.current = Math.max(alphaRef.current, 0.35 * (1.0 - settlingSmoothT) + 0.12);
+        }
         if (alphaRef.current < 0.002) {
           alphaRef.current = 0;
           if (!isTimelapseActiveRef.current) {
@@ -2200,27 +2325,11 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
       const isLocalMode = effectiveModeRef.current === 'local';
       const targetId = targetDocIdRef.current;
-      let visibleNodes: GraphNode[] = [];
-
-      if (isLocalMode) {
-        if (targetId) {
-          const connectedIds = new Set<string>([targetId]);
-          for (const l of currentLinks) {
-            if (l.source === targetId) connectedIds.add(l.target);
-            if (l.target === targetId) connectedIds.add(l.source);
-          }
-          visibleNodes = currentNodes.filter((n) => connectedIds.has(n.id));
-        }
-      } else {
-        const showOrphansSetting = useGraphSettings.getState().showOrphans;
-        const visibleCount = isTimelapseActiveRef.current ? timelapseStepRef.current : currentNodes.length;
-        const baseSlice = currentNodes.slice(0, visibleCount);
-        visibleNodes = showOrphansSetting ? baseSlice : baseSlice.filter((n) => n.linkCount > 0);
-      }
+      const visibleNodes = getVisibleNodes();
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      if (visibleNodes.length === 0 && isLocalMode) {
+      if (visibleNodes.length === 0 && isLocalMode && !isTimelapseActiveRef.current) {
         ctx.save();
         ctx.scale(dpr, dpr);
         ctx.font = '12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
@@ -2539,7 +2648,12 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           (isFilterActive && !isMatch)
             ? 1
             : 0;
-        const defaultTextOffset = 13;
+
+        // Label vertical offset: base gap below node + smooth ease shift down on hover
+        const baseTextOffset = 7;
+        const hoverT = node.hoverAlpha ?? 0;
+        const easeHover = hoverT * hoverT * (3 - 2 * hoverT); // Smoothstep curve
+        const textOffset = baseTextOffset + easeHover * 5; // Gently eases down 5px on hover, eases back up on leave
 
         const curHoverAlpha = node.hoverAlpha ?? 0;
         const curConnectAlpha = node.connectAlpha ?? 0;
@@ -2604,6 +2718,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           ctx.font = isFilterActive && isMatch
             ? '600 11.5px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             : '11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
 
           const tr = Math.min(255, Math.max(0, Math.round(220 * (1 - node.dimAlpha) * (1 - node.hoverAlpha) + 255 * node.hoverAlpha + 60 * node.dimAlpha)));
           const tg = Math.min(255, Math.max(0, Math.round(221 * (1 - node.dimAlpha) * (1 - node.hoverAlpha) + 255 * node.hoverAlpha + 60 * node.dimAlpha)));
@@ -2614,7 +2730,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           if (!node.isTag) {
             displayTitle = fileTypeRegistry.ensureExtension(displayTitle, node.docType);
           }
-          ctx.fillText(displayTitle, node.x, node.y + radius + defaultTextOffset);
+          ctx.fillText(displayTitle, node.x, node.y + radius + textOffset);
         }
       };
 
@@ -2671,75 +2787,63 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     startAnimationRef.current();
   }, []);
 
-  // Helper to clear all active timelapse timers
-  const clearTimelapseTimers = useCallback(() => {
-    if (timelapseTimerRef.current) {
-      clearInterval(timelapseTimerRef.current);
-      timelapseTimerRef.current = null;
-    }
-    if (timelapseEndTimerRef.current) {
-      clearTimeout(timelapseEndTimerRef.current);
-      timelapseEndTimerRef.current = null;
-    }
-  }, []);
 
-  // Spawns a node in a random position within an invisible circle in the center.
-  // Initial velocity is 0 (does NOT fly off); its presence and repulsion naturally push nearby nodes outward.
-  const spawnTimelapseNode = useCallback((idx: number) => {
-    const currentNodes = nodesRef.current;
-    if (idx < 0 || idx >= currentNodes.length) return;
-    const node = currentNodes[idx];
+  // Spawns a node at the center (0, 0) with a slight dispersion radius (~20px).
+  // Initial velocity is 0; repulsive forces naturally push existing nodes outward.
+  const spawnTimelapseNode = useCallback((node: GraphNode) => {
     if (!node) return;
 
-    if (idx === 0) {
-      node.x = 0;
-      node.y = 0;
-      node.popScale = 1;
-      node.popAlpha = 1;
-      node.vx = 0;
-      node.vy = 0;
-      return;
-    }
-
-    // Calculate cluster centroid of currently visible nodes
-    let sumX = 0;
-    let sumY = 0;
-    let validCount = 0;
-    for (let i = 0; i < idx; i++) {
-      const vn = currentNodes[i];
-      if (Number.isFinite(vn.x) && Number.isFinite(vn.y)) {
-        sumX += vn.x;
-        sumY += vn.y;
-        validCount++;
-      }
-    }
-    const centroidX = validCount > 0 ? sumX / validCount : 0;
-    const centroidY = validCount > 0 ? sumY / validCount : 0;
-
-    // Spawn at a random position inside an invisible circle at the center (radius ~32px)
-    const spawnRadius = 32;
+    const spawnRadius = 20;
     const randAngle = hashStringToUnit(node.id + ':tAngle') * Math.PI * 2;
     const randR = Math.sqrt(hashStringToUnit(node.id + ':tRadius')) * spawnRadius;
 
-    node.x = centroidX + Math.cos(randAngle) * randR;
-    node.y = centroidY + Math.sin(randAngle) * randR;
-
-    // ZERO initial launch velocity: does NOT fly off!
+    node.x = Math.cos(randAngle) * randR;
+    node.y = Math.sin(randAngle) * randR;
     node.vx = 0;
     node.vy = 0;
-
     node.popScale = 0.05;
     node.popAlpha = 0.2;
   }, []);
 
   // Timelapse Player: Start from beginning
   const startTimelapse = useCallback(() => {
-    if (nodesRef.current.length === 0) return;
     clearTimelapseTimers();
+
+    const isLocalMode = effectiveModeRef.current === 'local';
+    const targetId = targetDocIdRef.current;
+    let sequence: GraphNode[] = [];
+
+    if (isLocalMode) {
+      if (!targetId) return;
+      const targetNode = nodesRef.current.find((n) => n.id === targetId);
+      if (!targetNode) return;
+
+      const connectedIds = new Set<string>();
+      for (const l of linksRef.current) {
+        if (l.source === targetId) connectedIds.add(l.target);
+        if (l.target === targetId) connectedIds.add(l.source);
+      }
+
+      const neighbors = nodesRef.current
+        .filter((n) => connectedIds.has(n.id) && n.id !== targetId)
+        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+
+      sequence = [targetNode, ...neighbors];
+    } else {
+      const showOrphansSetting = useGraphSettings.getState().showOrphans;
+      const pool = showOrphansSetting
+        ? nodesRef.current
+        : nodesRef.current.filter((n) => n.linkCount > 0);
+      sequence = [...pool].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    }
+
+    if (sequence.length === 0) return;
+
+    timelapseSequenceRef.current = sequence;
 
     // Capture exact pre-timelapse layout snapshot
     preTimelapseLayoutRef.current.clear();
-    for (const n of nodesRef.current) {
+    for (const n of sequence) {
       if (Number.isFinite(n.x) && Number.isFinite(n.y)) {
         preTimelapseLayoutRef.current.set(n.id, { x: n.x, y: n.y });
       }
@@ -2749,61 +2853,74 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     setIsTimelapsePaused(false);
     isTimelapseActiveRef.current = true;
     isTimelapsePausedRef.current = false;
+    timelapseSettlingRef.current = false;
+    settlingFrameRef.current = 0;
     timelapseStepRef.current = 1;
 
     // Reset physics pop scales and velocities
-    nodesRef.current.forEach((n, idx) => {
+    sequence.forEach((n, idx) => {
       delete (n as any)._savedVx;
       delete (n as any)._savedVy;
-      n.popScale = idx === 0 ? 1 : 0.01;
-      n.popAlpha = idx === 0 ? 1 : 0.01;
-      n.vx = 0;
-      n.vy = 0;
+      (n as any)._tlIndex = idx;
+      if (idx === 0) {
+        n.x = 0;
+        n.y = 0;
+        n.vx = 0;
+        n.vy = 0;
+        n.popScale = 1;
+        n.popAlpha = 1;
+      } else {
+        n.x = 0;
+        n.y = 0;
+        n.popScale = 0.01;
+        n.popAlpha = 0.01;
+        n.vx = 0;
+        n.vy = 0;
+      }
     });
 
     if (graphFocusCameraRef.current) {
-      updateTimelapseFocusCamera(1, false);
+      updateTimelapseFocusCamera([sequence[0]], false);
     }
 
     alphaRef.current = 0.8;
     startAnimation();
 
-    const speed = 120;
+    if (sequence.length <= 1) {
+      timelapseSettlingRef.current = true;
+      settlingFrameRef.current = 0;
+      alphaRef.current = Math.max(alphaRef.current, 0.4);
+      startAnimation();
+      return;
+    }
+
+    const speed = Math.max(20, useGraphSettings.getState().timelapseSpeed || 120);
     timelapseTimerRef.current = setInterval(() => {
       const nextIdx = timelapseStepRef.current;
-      if (nextIdx < nodesRef.current.length) {
-        spawnTimelapseNode(nextIdx);
+      const currentSeq = timelapseSequenceRef.current;
+      if (nextIdx < currentSeq.length) {
+        spawnTimelapseNode(currentSeq[nextIdx]);
       }
       timelapseStepRef.current += 1;
+      const currentVisible = currentSeq.slice(0, timelapseStepRef.current);
       if (graphFocusCameraRef.current) {
-        updateTimelapseFocusCamera(timelapseStepRef.current);
+        updateTimelapseFocusCamera(currentVisible);
       }
-      alphaRef.current = Math.max(alphaRef.current, 0.45);
+      alphaRef.current = Math.max(alphaRef.current, 0.55);
       startAnimation();
 
-      if (timelapseStepRef.current >= nodesRef.current.length) {
+      if (timelapseStepRef.current >= currentSeq.length) {
         if (timelapseTimerRef.current) {
           clearInterval(timelapseTimerRef.current);
           timelapseTimerRef.current = null;
         }
-        timelapseEndTimerRef.current = setTimeout(() => {
-          setIsTimelapseActive(false);
-          setIsTimelapsePaused(false);
-          isTimelapseActiveRef.current = false;
-          isTimelapsePausedRef.current = false;
-          nodesRef.current.forEach((n) => {
-            n.popScale = 1;
-            n.popAlpha = 1;
-          });
-          if (graphFocusCameraRef.current) {
-            centerGraph(nodesRef.current);
-          }
-          alphaRef.current = 0.15;
-          startAnimation();
-        }, 1200);
+        timelapseSettlingRef.current = true;
+        settlingFrameRef.current = 0;
+        alphaRef.current = Math.max(alphaRef.current, 0.45);
+        startAnimation();
       }
     }, speed);
-  }, [clearTimelapseTimers, spawnTimelapseNode, updateTimelapseFocusCamera, centerGraph, startAnimation]);
+  }, [clearTimelapseTimers, spawnTimelapseNode, updateTimelapseFocusCamera, startAnimation]);
 
   // Timelapse Player: Pause EXACTLY as it is (freeze all motion, physics, and pop transitions)
   const pauseTimelapse = useCallback(() => {
@@ -2812,8 +2929,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     setIsTimelapsePaused(true);
     isTimelapsePausedRef.current = true;
 
-    // Freeze all node velocities completely so no physics can occur
-    nodesRef.current.forEach((n) => {
+    const currentSeq = timelapseSequenceRef.current;
+    currentSeq.forEach((n) => {
       (n as any)._savedVx = n.vx;
       (n as any)._savedVy = n.vy;
       n.vx = 0;
@@ -2830,8 +2947,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     setIsTimelapsePaused(false);
     isTimelapsePausedRef.current = false;
 
-    // Restore saved node velocities
-    nodesRef.current.forEach((n) => {
+    const currentSeq = timelapseSequenceRef.current;
+    currentSeq.forEach((n, idx) => {
+      (n as any)._tlIndex = idx;
       if ((n as any)._savedVx !== undefined) {
         n.vx = (n as any)._savedVx;
         n.vy = (n as any)._savedVy;
@@ -2840,76 +2958,49 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       }
     });
 
+    const currentVisible = currentSeq.slice(0, timelapseStepRef.current);
     if (graphFocusCameraRef.current) {
-      updateTimelapseFocusCamera(timelapseStepRef.current);
+      updateTimelapseFocusCamera(currentVisible);
     }
 
     alphaRef.current = Math.max(0.45, savedTimelapseAlphaRef.current || 0.45);
     startAnimation();
 
-    // If already at or beyond max nodes, conclude smoothly
-    if (timelapseStepRef.current >= nodesRef.current.length) {
-      timelapseEndTimerRef.current = setTimeout(() => {
-        setIsTimelapseActive(false);
-        setIsTimelapsePaused(false);
-        isTimelapseActiveRef.current = false;
-        isTimelapsePausedRef.current = false;
-        nodesRef.current.forEach((n) => {
-          const targetPos = preTimelapseLayoutRef.current.get(n.id);
-          if (targetPos) {
-            n.x = targetPos.x;
-            n.y = targetPos.y;
-          }
-          n.vx = 0;
-          n.vy = 0;
-          n.popScale = 1;
-          n.popAlpha = 1;
-        });
-        if (graphFocusCameraRef.current) {
-          centerGraph(nodesRef.current);
-        }
-        alphaRef.current = 0.2;
-        startAnimation();
-      }, 500);
+    if (timelapseStepRef.current >= currentSeq.length) {
+      timelapseSettlingRef.current = true;
+      settlingFrameRef.current = 0;
+      alphaRef.current = Math.max(alphaRef.current, 0.45);
+      startAnimation();
       return;
     }
 
     const speed = Math.max(20, useGraphSettings.getState().timelapseSpeed || 120);
     timelapseTimerRef.current = setInterval(() => {
       const nextIdx = timelapseStepRef.current;
-      if (nextIdx < nodesRef.current.length) {
-        spawnTimelapseNode(nextIdx);
+      const seq = timelapseSequenceRef.current;
+      if (nextIdx < seq.length) {
+        spawnTimelapseNode(seq[nextIdx]);
       }
       timelapseStepRef.current += 1;
+      const vis = seq.slice(0, timelapseStepRef.current);
       if (graphFocusCameraRef.current) {
-        updateTimelapseFocusCamera(timelapseStepRef.current);
+        updateTimelapseFocusCamera(vis);
       }
       alphaRef.current = Math.max(alphaRef.current, 0.45);
       startAnimation();
 
-      if (timelapseStepRef.current >= nodesRef.current.length) {
+      if (timelapseStepRef.current >= seq.length) {
         if (timelapseTimerRef.current) {
           clearInterval(timelapseTimerRef.current);
           timelapseTimerRef.current = null;
         }
-        timelapseEndTimerRef.current = setTimeout(() => {
-          setIsTimelapseActive(false);
-          setIsTimelapsePaused(false);
-          isTimelapseActiveRef.current = false;
-          isTimelapsePausedRef.current = false;
-          nodesRef.current.forEach((n) => {
-            n.popScale = 1;
-            n.popAlpha = 1;
-          });
-          if (graphFocusCameraRef.current) {
-            centerGraph(nodesRef.current);
-          }
-          alphaRef.current = 0.15;
-          startAnimation();
-        }, 1200);
+        timelapseSettlingRef.current = true;
+        settlingFrameRef.current = 0;
+        alphaRef.current = Math.max(alphaRef.current, 0.45);
+        startAnimation();
       }
     }, speed);
-  }, [clearTimelapseTimers, spawnTimelapseNode, updateTimelapseFocusCamera, centerGraph, startAnimation]);
+  }, [clearTimelapseTimers, spawnTimelapseNode, updateTimelapseFocusCamera, startAnimation]);
 
   // Toggle Timelapse (Play / Pause / Resume)
   const handleToggleTimelapse = useCallback(() => {
@@ -2931,13 +3022,18 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     setIsTimelapsePaused(false);
     isTimelapseActiveRef.current = false;
     isTimelapsePausedRef.current = false;
-    timelapseStepRef.current = nodesRef.current.length;
+    timelapseSettlingRef.current = false;
+    settlingFrameRef.current = 0;
 
-    nodesRef.current.forEach((n) => {
+    const seq = timelapseSequenceRef.current.length > 0 ? timelapseSequenceRef.current : nodesRef.current;
+    timelapseStepRef.current = seq.length;
+
+    seq.forEach((n) => {
       delete (n as any)._savedVx;
       delete (n as any)._savedVy;
+      delete (n as any)._tlIndex;
       const targetPos = preTimelapseLayoutRef.current.get(n.id);
-      if (targetPos) {
+      if (targetPos && Number.isFinite(targetPos.x) && Number.isFinite(targetPos.y)) {
         n.x = targetPos.x;
         n.y = targetPos.y;
       }
@@ -2947,13 +3043,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       n.vy = 0;
     });
 
-    if (graphFocusCameraRef.current) {
-      centerGraph(nodesRef.current);
-    }
-
-    alphaRef.current = 0.35;
+    alphaRef.current = 0.2;
     startAnimation();
-  }, [isTimelapseActive, clearTimelapseTimers, centerGraph, startAnimation]);
+  }, [isTimelapseActive, clearTimelapseTimers, startAnimation]);
 
   // Window minimize, tab visibility, and IntersectionObserver lifecycle suspension
   const suspendAnimation = useCallback(() => {
@@ -3280,47 +3372,13 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
       if (e.ctrlKey || e.metaKey) {
         // Trackpad pinch-to-zoom (Windows Precision Touchpad sends WheelEvent with ctrlKey=true) OR Ctrl + Wheel.
-        // Uses a continuous exponential curve Math.exp(-dy * 0.012) for silky, responsive zoom scaling.
-        const zoomFactor = Math.exp(-dy * 0.012);
-        const newScale = Math.min(4.0, Math.max(0.1, currentScale * zoomFactor));
-
-        if (Math.abs(newScale - currentScale) > 0.0001) {
-          targetTransformRef.current = {
-            x: mouseX - ((mouseX - currentX) * (newScale / currentScale)),
-            y: mouseY - ((mouseY - currentY) * (newScale / currentScale)),
-            scale: newScale,
-          };
-          persistTransform();
-          startAnimation();
-        }
-      } else if (e.shiftKey) {
-        // Shift + Wheel -> Horizontal Pan
-        targetTransformRef.current = {
-          x: currentX - (Math.abs(dy) > 0 ? dy : dx),
-          y: currentY,
-          scale: currentScale,
-        };
-        persistTransform();
-        startAnimation();
-      } else if (Math.abs(dx) > 0) {
-        // Trackpad 2-Finger Horizontal / Diagonal Pan
-        targetTransformRef.current = {
-          x: currentX - dx,
-          y: currentY - dy,
-          scale: currentScale,
-        };
-        persistTransform();
-        startAnimation();
-      } else {
-        // Mouse Wheel Scroll (without Ctrl) OR Trackpad Vertical Scroll -> Zoom centered at mouse cursor
-        // Note: targetTransformRef is updated here while currentTransformRef lerps smoothly via render loop easing.
+        // Silky exponential zoom scaling centered at mouse cursor position.
         let zoomFactor: number;
         if (Math.abs(dy) < 30 && e.deltaMode === 0) {
-          zoomFactor = Math.exp(-dy * 0.008);
+          zoomFactor = Math.exp(-dy * 0.012);
         } else {
           zoomFactor = dy < 0 ? 1.18 : 0.84;
         }
-
         const newScale = Math.min(4.0, Math.max(0.1, currentScale * zoomFactor));
 
         if (Math.abs(newScale - currentScale) > 0.0001) {
@@ -3332,6 +3390,28 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           persistTransform();
           startAnimation();
         }
+      } else {
+        // Directional Canvas Panning (Vertical dy, Horizontal dx, or Shift + Wheel) matching Canvas View
+        let scrollX = dx;
+        let scrollY = dy;
+
+        // Standard desktop modifier: Shift + Vertical Wheel scrolls horizontally
+        if (e.shiftKey && Math.abs(dy) > 0 && Math.abs(dx) === 0) {
+          scrollX = dy;
+          scrollY = 0;
+        }
+
+        const nextX = currentX - scrollX;
+        const nextY = currentY - scrollY;
+
+        // Instant 1:1 direct pan response (zero lag, crisp 144Hz desktop feel matching Canvas View)
+        targetTransformRef.current.x = nextX;
+        targetTransformRef.current.y = nextY;
+        currentTransformRef.current.x = nextX;
+        currentTransformRef.current.y = nextY;
+
+        persistTransform();
+        startAnimation();
       }
     };
 

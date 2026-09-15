@@ -18,7 +18,7 @@ The **Interactive Graph View** renders your entire vault as a living, dynamic 2D
 ## 2. Features & Step-by-Step Guide
 
 ### 1. Navigating the Graph
-- **Pan & Zoom**: Click and drag empty space to pan; scroll with your mouse wheel or trackpad pinch to zoom.
+- **Pan & Zoom**: Click and drag empty space or scroll your mouse wheel / trackpad to pan; hold `Ctrl` (`Cmd` on macOS) while scrolling or pinch on your trackpad to zoom.
 - **Auto Fit to Center**: Opening graph view automatically centers and fits all visible nodes into the frame.
 - **Node Interaction**: Hover over any note node to highlight its direct connections and dim unrelated clusters.
 - **Open Note**: Click any node to open the corresponding note directly in the editor tab. Hold `Ctrl` while clicking to open in a split pane.
