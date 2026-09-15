@@ -31,6 +31,7 @@ import {
   Delete02Icon,
   SparklesIcon,
   DashboardSquare01Icon,
+  StickyNote02Icon,
   StickyNote03Icon,
   FileEmpty01Icon,
   FileImageIcon,
@@ -52,6 +53,7 @@ import {
   isAudioDocument,
   isVideoDocument,
   isPdfDocument,
+  resolveMediaSrc,
   IMAGE_EXTS,
   AUDIO_EXTS,
   VIDEO_EXTS,
@@ -238,6 +240,49 @@ export function computeFitTransform(
   };
 }
 
+/**
+ * In-memory cache of natural image dimensions and aspect ratios by document ID.
+ * Persists across drag gestures and canvas reloads so previews immediately match end-result dimensions.
+ */
+export const imageDimensionsCache = new Map<string, { width: number; height: number; aspect: number }>();
+
+/**
+ * Computes canonical card dimensions for an image given its natural dimensions.
+ * Preserves natural aspect ratio with sensible minimum and maximum bounds.
+ */
+export function computeImageCardDimensions(
+  naturalWidth: number,
+  naturalHeight: number,
+  baseWidth = 340
+): { width: number; height: number } {
+  if (!naturalWidth || !naturalHeight || naturalWidth <= 0 || naturalHeight <= 0) {
+    return { width: 340, height: 260 };
+  }
+  const aspect = naturalWidth / naturalHeight;
+
+  let width = baseWidth;
+  if (aspect >= 1.8) {
+    width = 420;
+  } else if (aspect >= 1.4) {
+    width = 380;
+  } else if (aspect <= 0.6) {
+    width = 300;
+  }
+
+  let height = Math.round(width / aspect);
+
+  // Clamp height between reasonable bounds (min 120px, max 640px)
+  if (height < 120) {
+    height = 120;
+    width = Math.round(height * aspect);
+  } else if (height > 640) {
+    height = 640;
+    width = Math.round(height * aspect);
+  }
+
+  return { width, height };
+}
+
 export interface CanvasViewProps {
   boardId?: string;
   tabId?: string;
@@ -254,24 +299,49 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const canvasReadOnly = useCanvasSettings((s: any) => s.canvasReadOnly);
   const setCanvasReadOnly = useCanvasSettings((s: any) => s.setCanvasReadOnly);
   const gridSize = useCanvasSettings((s: any) => s.gridSize);
+  const gridStyle = useCanvasSettings((s: any) => s.gridStyle || 'dots');
+  const wheelBehavior = useCanvasSettings((s: any) => s.wheelBehavior || 'pan');
+  const doubleClickAction = useCanvasSettings((s: any) => s.doubleClickAction || 'card');
+  const zoomSensitivity = useCanvasSettings((s: any) => s.zoomSensitivity || 'standard');
+  const shiftVerticalResizeDirection = useCanvasSettings((s: any) => s.shiftVerticalResizeDirection || 'up-expand');
+  const shiftHorizontalResizeDirection = useCanvasSettings((s: any) => s.shiftHorizontalResizeDirection || 'right-expand');
+  const shiftResizeMode = useCanvasSettings((s: any) => s.shiftResizeMode || 'axis-locked');
   const defaultEdgeStyle = useCanvasSettings((s: any) => s.defaultEdgeStyle || 'bezier');
+  const defaultArrowDirection = useCanvasSettings((s: any) => s.defaultArrowDirection || 'unidirectional');
+  const defaultEdgeColor = useCanvasSettings((s: any) => s.defaultEdgeColor || '#888888');
+  const defaultNodeColor = useCanvasSettings((s: any) => s.defaultNodeColor || '#2a2a2a');
+  const showBottomDock = useCanvasSettings((s: any) => s.showBottomDock ?? true);
   const [isShiftHeld, setIsShiftHeld] = useState(false);
+  const isShiftHeldRef = useRef(false);
   const isAltHeldRef = useRef(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setIsShiftHeld(true);
+      if (e.key === 'Shift') {
+        setIsShiftHeld(true);
+        isShiftHeldRef.current = true;
+      }
       if (e.key === 'Alt') isAltHeldRef.current = true;
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Shift') setIsShiftHeld(false);
-      if (e.key === 'Alt') isAltHeldRef.current = false;
+      if (e.key === 'Shift' || !e.shiftKey) {
+        setIsShiftHeld(false);
+        isShiftHeldRef.current = false;
+      }
+      if (e.key === 'Alt' || !e.altKey) isAltHeldRef.current = false;
+    };
+    const handleBlur = () => {
+      setIsShiftHeld(false);
+      isShiftHeldRef.current = false;
+      isAltHeldRef.current = false;
     };
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    window.addEventListener('blur', handleBlur);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
     };
   }, []);
 
@@ -352,6 +422,10 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
     return map;
   });
+  const docContentMapRef = useRef(docContentMap);
+  useEffect(() => {
+    docContentMapRef.current = docContentMap;
+  }, [docContentMap]);
   const [activeGuides, setActiveGuides] = useState<AlignmentGuide[]>([]);
   const [dragGhost, setDragGhost] = useState<{
     type: CanvasDockActionType;
@@ -361,6 +435,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     canvasY: number;
     width?: number;
     height?: number;
+    title?: string;
+    docId?: string;
+    isDocument?: boolean;
   } | null>(null);
   const [searchModalState, setSearchModalState] = useState<{
     isOpen: boolean;
@@ -408,6 +485,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const isDroppingIntoModalRef = useRef(false);
   const isCompletingUnconnectedDropRef = useRef(false);
   const ghostLeaveTimeoutRef = useRef<any>(null);
+  const activeNavDragNodeIdRef = useRef<string | null>(null);
+  const [activeNavDragBadge, setActiveNavDragBadge] = useState<{ x: number; y: number; text: string } | null>(null);
 
   useEffect(() => { nodesRef.current = nodes; }, [nodes]);
   useEffect(() => { edgesRef.current = edges; }, [edges]);
@@ -419,12 +498,36 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         document.body.style.cursor = '';
       };
     }
-  }, [Boolean(draftEdge), draftEdge?.mode]);
+  }, [draftEdge]);
   useEffect(() => { selectedEdgeIdRef.current = selectedEdgeId; }, [selectedEdgeId]);
   useEffect(() => { canvasSnapGridRef.current = canvasSnapGrid; }, [canvasSnapGrid]);
   useEffect(() => { canvasSnapObjectsRef.current = canvasSnapObjects; }, [canvasSnapObjects]);
   useEffect(() => { canvasReadOnlyRef.current = canvasReadOnly; }, [canvasReadOnly]);
   useEffect(() => { gridSizeRef.current = gridSize; }, [gridSize]);
+
+  const gridStyleRef = useRef(gridStyle);
+  const wheelBehaviorRef = useRef(wheelBehavior);
+  const doubleClickActionRef = useRef(doubleClickAction);
+  const zoomSensitivityRef = useRef(zoomSensitivity);
+  const shiftVerticalResizeDirectionRef = useRef(shiftVerticalResizeDirection);
+  const shiftHorizontalResizeDirectionRef = useRef(shiftHorizontalResizeDirection);
+  const shiftResizeModeRef = useRef(shiftResizeMode);
+  const defaultEdgeStyleRef = useRef(defaultEdgeStyle);
+  const defaultArrowDirectionRef = useRef(defaultArrowDirection);
+  const defaultEdgeColorRef = useRef(defaultEdgeColor);
+  const defaultNodeColorRef = useRef(defaultNodeColor);
+
+  useEffect(() => { gridStyleRef.current = gridStyle; }, [gridStyle]);
+  useEffect(() => { wheelBehaviorRef.current = wheelBehavior; }, [wheelBehavior]);
+  useEffect(() => { doubleClickActionRef.current = doubleClickAction; }, [doubleClickAction]);
+  useEffect(() => { zoomSensitivityRef.current = zoomSensitivity; }, [zoomSensitivity]);
+  useEffect(() => { shiftVerticalResizeDirectionRef.current = shiftVerticalResizeDirection; }, [shiftVerticalResizeDirection]);
+  useEffect(() => { shiftHorizontalResizeDirectionRef.current = shiftHorizontalResizeDirection; }, [shiftHorizontalResizeDirection]);
+  useEffect(() => { shiftResizeModeRef.current = shiftResizeMode; }, [shiftResizeMode]);
+  useEffect(() => { defaultEdgeStyleRef.current = defaultEdgeStyle; }, [defaultEdgeStyle]);
+  useEffect(() => { defaultArrowDirectionRef.current = defaultArrowDirection; }, [defaultArrowDirection]);
+  useEffect(() => { defaultEdgeColorRef.current = defaultEdgeColor; }, [defaultEdgeColor]);
+  useEffect(() => { defaultNodeColorRef.current = defaultNodeColor; }, [defaultNodeColor]);
 
   // Concurrently load note content into memory cache for cards that need it
   useEffect(() => {
@@ -640,9 +743,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0 });
   const panCanvasAnchorRef = useRef<{ x: number; y: number } | null>(null);
-  const lastMouseMoveEventRef = useRef<{ clientX: number; clientY: number } | null>(null);
+  const lastMouseMoveEventRef = useRef<{ clientX: number; clientY: number; shiftKey?: boolean } | null>(null);
 
-  // Pan modifier mode state and refs (Space or Ctrl/Cmd)
+  // Pan modifier mode state and refs (Space or Ctrl/Cmd, plus Shift and Alt tracking)
   const [isPanModifierState, setIsPanModifierState] = useState(false);
   const isPanModifierRef = useRef(false);
   const isSpaceHeldRef = useRef(false);
@@ -680,6 +783,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        isShiftHeldRef.current = true;
+      }
+      if (e.key === 'Alt') {
+        isAltHeldRef.current = true;
+      }
+
       const isSpace = e.code === 'Space';
       const isCtrl = isCtrlOrMetaKey(e);
 
@@ -700,6 +810,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift' || !e.shiftKey) {
+        isShiftHeldRef.current = false;
+      }
+      if (e.key === 'Alt' || !e.altKey) {
+        isAltHeldRef.current = false;
+      }
+
       const isSpace = e.code === 'Space';
       const isCtrl = isCtrlOrMetaKey(e);
 
@@ -717,6 +834,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       isSpaceHeldRef.current = false;
       isCtrlHeldRef.current = false;
       isAltHeldRef.current = false;
+      isShiftHeldRef.current = false;
       isPanModifierRef.current = false;
       setIsPanModifierState(false);
     };
@@ -917,6 +1035,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const handleFitToCenterRef = useRef<() => void>(() => {});
   const handleZoomInRef = useRef<() => void>(() => {});
   const handleZoomOutRef = useRef<() => void>(() => {});
+  const handleAltCardShortcutRef = useRef<(type: 'card' | 'note' | 'media') => void>(() => {});
 
   // Synchronize grabbing cursor on document.body during node dragging or canvas panning
   useEffect(() => {
@@ -1213,13 +1332,17 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     }
     const targetDoc = documents.find((d: DocumentItem) => d.id === docId);
     const isImg = isImageDocument(targetDoc);
-    const initialW = isImg ? 340 : 320;
-    const initialH = isImg ? 260 : 280;
+    const cachedDim = isImg && docId ? imageDimensionsCache.get(docId) : null;
+    const dims = isImg
+      ? (cachedDim ? computeImageCardDimensions(cachedDim.width, cachedDim.height) : { width: 340, height: 260 })
+      : { width: 320, height: 280 };
+    const initialW = dims.width;
+    const initialH = dims.height;
 
     const newNode: CanvasNode = {
       id: `node-${Date.now()}`,
       board_id: effectiveBoardId,
-      type: 'note',
+      type: isImg ? 'image' : 'note',
       x: initialX,
       y: initialY,
       width: initialW,
@@ -2171,6 +2294,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         from_side: fromSide,
         to_node_id: toNodeId,
         to_side: toSide,
+        style: defaultEdgeStyleRef.current || 'bezier',
+        direction: defaultArrowDirectionRef.current || 'unidirectional',
+        color: defaultEdgeColorRef.current !== '#888888' ? defaultEdgeColorRef.current : undefined,
       };
 
       setEdges((prev) => [...prev, newEdge]);
@@ -2573,7 +2699,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           width: dims.width,
           height: dims.height,
           text_content: '',
-          color: '',
+          color: defaultNodeColorRef.current && defaultNodeColorRef.current !== '#2a2a2a' ? defaultNodeColorRef.current : '',
         };
 
         // 1. Immediately update nodes in memory and refs
@@ -2607,6 +2733,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             from_side: activeDraft.fromSide,
             to_node_id: newNode.id,
             to_side: cardSide,
+            style: defaultEdgeStyleRef.current || 'bezier',
+            direction: defaultArrowDirectionRef.current || 'unidirectional',
+            color: defaultEdgeColorRef.current !== '#888888' ? defaultEdgeColorRef.current : undefined,
           };
           edgesRef.current = [...edgesRef.current, newEdge];
           setEdges(edgesRef.current);
@@ -3213,6 +3342,48 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         return;
       }
 
+      // Alt+1: Add a new text/sticky card immediately centered at cursor (or viewport center fallback)
+      if (
+        e.altKey &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        (e.key === '1' || e.code === 'Digit1')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAltCardShortcutRef.current('card');
+        return;
+      }
+
+      // Alt+2: Add a note card at cursor (opens search modal targeted at cursor)
+      if (
+        e.altKey &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        (e.key === '2' || e.code === 'Digit2')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAltCardShortcutRef.current('note');
+        return;
+      }
+
+      // Alt+3: Add a media card at cursor (opens media search modal targeted at cursor)
+      if (
+        e.altKey &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.shiftKey &&
+        (e.key === '3' || e.code === 'Digit3')
+      ) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAltCardShortcutRef.current('media');
+        return;
+      }
+
       // Shift+1 or Ctrl+1 / Cmd+1: Zoom to fit all cards
       if (
         ((e.shiftKey && !e.ctrlKey && !e.metaKey) || ((e.ctrlKey || e.metaKey) && !e.shiftKey)) &&
@@ -3367,6 +3538,22 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               deleteCanvasNode(cid);
             }
             triggerDiskSyncRef.current(effectiveBoardId);
+          } else if (isShiftDragResizeRef.current && shiftDragResizeStartMapRef.current.size > 0) {
+            const startMap = shiftDragResizeStartMapRef.current;
+            setNodes((prev) => {
+              const updated = prev.map((n) => {
+                const s = startMap.get(n.id);
+                return s ? { ...n, x: s.x, y: s.y, width: s.width, height: s.height } : n;
+              });
+              nodesRef.current = updated;
+              for (const n of updated) {
+                if (startMap.has(n.id)) {
+                  saveCanvasNode(n);
+                }
+              }
+              return updated;
+            });
+            triggerDiskSyncRef.current(effectiveBoardId);
           } else if (dragDidMoveRef.current && multiDragInitialPositionsRef.current.size > 0) {
             const initPosMap = multiDragInitialPositionsRef.current;
             setNodes((prev) => {
@@ -3386,6 +3573,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           }
           isAltDragRef.current = false;
           altDragClonedRef.current = false;
+          isShiftDragResizeRef.current = false;
+          shiftDragLockedAxisRef.current = null;
+          shiftDragResizeStartMapRef.current.clear();
           dragCandidateNodeIdRef.current = null;
           draggingNodeIdRef.current = null;
           dragDidMoveRef.current = false;
@@ -3398,7 +3588,24 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           e.preventDefault();
           e.stopPropagation();
           stopEdgeAutoScroll();
-          if (resizeStartDimsRef.current) {
+          if (multiResizeStartDimsRef.current.size > 0) {
+            const dimsMap = multiResizeStartDimsRef.current;
+            setNodes((prev) => {
+              const updated = prev.map((n) => {
+                const dims = dimsMap.get(n.id);
+                return dims
+                  ? { ...n, x: dims.x, y: dims.y, width: dims.width, height: dims.height }
+                  : n;
+              });
+              nodesRef.current = updated;
+              for (const n of updated) {
+                if (dimsMap.has(n.id)) saveCanvasNode(n);
+              }
+              return updated;
+            });
+            triggerDiskSyncRef.current(effectiveBoardId);
+            multiResizeStartDimsRef.current.clear();
+          } else if (resizeStartDimsRef.current) {
             const dims = resizeStartDimsRef.current;
             const resizeId = resizingNodeIdRef.current;
             setNodes((prev) => {
@@ -3818,13 +4025,19 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     if (!node) return;
 
     if (e.shiftKey) {
-      setSelectedNodeIds((prev) => {
-        const next = prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id];
-        selectedNodeIdsRef.current = next;
-        setSelectedNodeId(next[next.length - 1] || null);
-        return next;
-      });
+      if (selectedNodeIdsRef.current.includes(id)) {
+        shiftClickToggleCandidateIdRef.current = id;
+      } else {
+        shiftClickToggleCandidateIdRef.current = null;
+        setSelectedNodeIds((prev) => {
+          const next = [...prev, id];
+          selectedNodeIdsRef.current = next;
+          setSelectedNodeId(id);
+          return next;
+        });
+      }
     } else {
+      shiftClickToggleCandidateIdRef.current = null;
       if (!selectedNodeIdsRef.current.includes(id)) {
         setSelectedNodeIds([node.id]);
         selectedNodeIdsRef.current = [node.id];
@@ -3853,6 +4066,36 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const currentSelected = selectedNodeIdsRef.current.includes(node.id)
       ? selectedNodeIdsRef.current
       : [node.id];
+
+    // Populate shiftDragResizeStartMapRef and start canvas position for Shift-drag radial resizing
+    const shiftDimsMap = new Map<
+      string,
+      {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        centerX: number;
+        centerY: number;
+      }
+    >();
+    for (const sid of currentSelected) {
+      const sn = nodesRef.current.find((n) => n.id === sid);
+      if (sn) {
+        shiftDimsMap.set(sid, {
+          x: sn.x,
+          y: sn.y,
+          width: sn.width,
+          height: sn.height,
+          centerX: sn.x + sn.width / 2,
+          centerY: sn.y + sn.height / 2,
+        });
+      }
+    }
+    shiftDragResizeStartMapRef.current = shiftDimsMap;
+    shiftDragStartCanvasPosRef.current = { x: mouseCanvasX, y: mouseCanvasY };
+    isShiftDragResizeRef.current = false;
+    shiftDragLockedAxisRef.current = null;
 
     // If dragging a group, include all enclosed member nodes (and nested smaller groups) so they drag together in lockstep
     const allDraggedIds = new Set(currentSelected);
@@ -3891,6 +4134,38 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     aspectRatio?: number;
   }>({ x: 0, y: 0, width: 0, height: 0, startX: 0, startY: 0 });
 
+  const multiResizeStartDimsRef = useRef<
+    Map<
+      string,
+      {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        isImage?: boolean;
+        aspectRatio?: number;
+      }
+    >
+  >(new Map());
+
+  const shiftDragResizeStartMapRef = useRef<
+    Map<
+      string,
+      {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+        centerX: number;
+        centerY: number;
+      }
+    >
+  >(new Map());
+  const shiftDragStartCanvasPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isShiftDragResizeRef = useRef(false);
+  const shiftDragLockedAxisRef = useRef<'x' | 'y' | null>(null);
+  const shiftClickToggleCandidateIdRef = useRef<string | null>(null);
+
   const imageAspectMapRef = useRef<Record<string, number>>({});
 
   const handleImageDimensions = useCallback(
@@ -3899,15 +4174,28 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const aspect = naturalWidth / naturalHeight;
       imageAspectMapRef.current[id] = aspect;
 
-      // Automatically adjust card height to fit the natural aspect ratio if currently using initial default height
+      const node = nodesRef.current.find((n) => n.id === id);
+      if (node?.document_id) {
+        imageDimensionsCache.set(node.document_id, { width: naturalWidth, height: naturalHeight, aspect });
+      }
+
+      const targetDims = computeImageCardDimensions(naturalWidth, naturalHeight, node?.width || 340);
+
+      // Automatically adjust card dimensions to fit the natural aspect ratio if currently using initial default height
       setNodes((prev) => {
-        const node = prev.find((n) => n.id === id);
-        if (!node) return prev;
-        const targetH = Math.round(node.width / aspect);
-        if (Math.abs(node.height - targetH) > 4 && node.height === 260) {
-          const updated = prev.map((n) => (n.id === id ? { ...n, height: targetH } : n));
+        const targetNode = prev.find((n) => n.id === id);
+        if (!targetNode) return prev;
+        const isInitialDefault = targetNode.height === 260 && (targetNode.width === 340 || targetNode.width === 260);
+        if (
+          isInitialDefault &&
+          (targetNode.width !== targetDims.width || Math.abs(targetNode.height - targetDims.height) > 4)
+        ) {
+          const updated = prev.map((n) =>
+            n.id === id ? { ...n, width: targetDims.width, height: targetDims.height } : n
+          );
+          nodesRef.current = updated;
           const updatedNode = updated.find((n) => n.id === id);
-          if (updatedNode) {
+          if (updatedNode && id !== activeNavDragNodeIdRef.current) {
             saveCanvasNode(updatedNode);
             triggerDiskSyncRef.current(updatedNode.board_id);
           }
@@ -3951,6 +4239,41 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         isImage,
         aspectRatio: aspect,
       };
+
+      const selectedIds = selectedNodeIdsRef.current.includes(id)
+        ? selectedNodeIdsRef.current
+        : [id];
+      const dimsMap = new Map<
+        string,
+        {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+          isImage?: boolean;
+          aspectRatio?: number;
+        }
+      >();
+      for (const sid of selectedIds) {
+        const sn = nodesRef.current.find((n) => n.id === sid);
+        if (sn) {
+          const sDoc = sn.document_id ? documents.find((d: DocumentItem) => d.id === sn.document_id) : null;
+          const sIsImage = isImageDocument(sDoc);
+          const sAspect =
+            imageAspectMapRef.current[sn.id] ||
+            (sn.width > 0 && sn.height > 0 ? sn.width / sn.height : 1.33);
+          dimsMap.set(sid, {
+            x: sn.x,
+            y: sn.y,
+            width: sn.width,
+            height: sn.height,
+            isImage: sIsImage,
+            aspectRatio: sAspect,
+          });
+        }
+      }
+      multiResizeStartDimsRef.current = dimsMap;
+
       try {
         (e.currentTarget as HTMLElement)?.setPointerCapture?.(e.pointerId);
       } catch {}
@@ -4051,79 +4374,205 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const minCardW = 4 * minGridStep;
     const minCardH = 4 * minGridStep;
 
-    setNodes((prev) => {
-      return prev.map((n) => {
-        if (n.id !== resizeId) return n;
-        let newX = start.x;
-        let newY = start.y;
-        let newW = start.width;
-        let newH = start.height;
+    const isShiftActive = Boolean(lastMouseMoveEventRef.current?.shiftKey) || isShiftHeldRef.current;
+    const centerX = start.x + start.width / 2;
+    const centerY = start.y + start.height / 2;
 
-        if (isImage) {
-          if (handle === 'se') {
-            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
-            newW = Math.max(minCardW, start.width + dominant);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newH = Math.max(minCardH, Math.round(newW / aspect));
-          } else if (handle === 'sw') {
-            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
-            newW = Math.max(minCardW, start.width + dominant);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newH = Math.max(minCardH, Math.round(newW / aspect));
-            newX = start.x + (start.width - newW);
-          } else if (handle === 'ne') {
-            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
-            newW = Math.max(minCardW, start.width + dominant);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newH = Math.max(minCardH, Math.round(newW / aspect));
-            newY = start.y + (start.height - newH);
-          } else if (handle === 'nw') {
-            const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
-            newW = Math.max(minCardW, start.width + dominant);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newH = Math.max(minCardH, Math.round(newW / aspect));
-            newX = start.x + (start.width - newW);
-            newY = start.y + (start.height - newH);
-          } else if (handle === 'e') {
-            newW = Math.max(minCardW, start.width + deltaX);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newH = Math.max(minCardH, Math.round(newW / aspect));
-          } else if (handle === 'w') {
-            newW = Math.max(minCardW, start.width - deltaX);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newX = start.x + (start.width - newW);
-          } else if (handle === 's') {
-            newH = Math.max(minCardH, start.height + deltaY);
-            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-            newW = Math.max(minCardW, Math.round(newH * aspect));
-          } else if (handle === 'n') {
-            newH = Math.max(minCardH, start.height - deltaY);
-            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-            newW = Math.max(minCardW, Math.round(newH * aspect));
-            newY = start.y + (start.height - newH);
-          }
-        } else {
-          if (handle === 'e' || handle === 'se' || handle === 'ne') {
-            newW = Math.max(minCardW, start.width + deltaX);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-          } else if (handle === 'w' || handle === 'sw' || handle === 'nw') {
-            newW = Math.max(minCardW, start.width - deltaX);
-            if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
-            newX = start.x + (start.width - newW);
-          }
+    let newX = start.x;
+    let newY = start.y;
+    let newW = start.width;
+    let newH = start.height;
 
-          if (handle === 's' || handle === 'se' || handle === 'sw') {
-            newH = Math.max(minCardH, start.height + deltaY);
-            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-          } else if (handle === 'n' || handle === 'ne' || handle === 'nw') {
-            newH = Math.max(minCardH, start.height - deltaY);
-            if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
-            newY = start.y + (start.height - newH);
+    if (isShiftActive) {
+      // 1:1 symmetric mirror: size delta is mirrored on opposite side while pinned to center
+      if (isImage) {
+        if (handle === 'se') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
+          newW = Math.max(minCardW, start.width + 2 * dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'sw') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
+          newW = Math.max(minCardW, start.width + 2 * dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'ne') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
+          newW = Math.max(minCardW, start.width + 2 * dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'nw') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
+          newW = Math.max(minCardW, start.width + 2 * dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'e') {
+          newW = Math.max(minCardW, start.width + 2 * deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'w') {
+          newW = Math.max(minCardW, start.width - 2 * deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 's') {
+          newH = Math.max(minCardH, start.height + 2 * deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newW = Math.max(minCardW, Math.round(newH * aspect));
+        } else if (handle === 'n') {
+          newH = Math.max(minCardH, start.height - 2 * deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newW = Math.max(minCardW, Math.round(newH * aspect));
+        }
+        newX = Math.round(centerX - newW / 2);
+        newY = Math.round(centerY - newH / 2);
+      } else {
+        if (handle === 'e') {
+          newW = Math.max(minCardW, start.width + 2 * deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newX = Math.round(centerX - newW / 2);
+        } else if (handle === 'w') {
+          newW = Math.max(minCardW, start.width - 2 * deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newX = Math.round(centerX - newW / 2);
+        } else if (handle === 's') {
+          newH = Math.max(minCardH, start.height + 2 * deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newY = Math.round(centerY - newH / 2);
+        } else if (handle === 'n') {
+          newH = Math.max(minCardH, start.height - 2 * deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newY = Math.round(centerY - newH / 2);
+        } else if (handle === 'se') {
+          newW = Math.max(minCardW, start.width + 2 * deltaX);
+          newH = Math.max(minCardH, start.height + 2 * deltaY);
+          if (canvasSnapGridRef.current) {
+            newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newH / step) * step);
           }
+          newX = Math.round(centerX - newW / 2);
+          newY = Math.round(centerY - newH / 2);
+        } else if (handle === 'sw') {
+          newW = Math.max(minCardW, start.width - 2 * deltaX);
+          newH = Math.max(minCardH, start.height + 2 * deltaY);
+          if (canvasSnapGridRef.current) {
+            newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newH / step) * step);
+          }
+          newX = Math.round(centerX - newW / 2);
+          newY = Math.round(centerY - newH / 2);
+        } else if (handle === 'ne') {
+          newW = Math.max(minCardW, start.width + 2 * deltaX);
+          newH = Math.max(minCardH, start.height - 2 * deltaY);
+          if (canvasSnapGridRef.current) {
+            newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newH / step) * step);
+          }
+          newX = Math.round(centerX - newW / 2);
+          newY = Math.round(centerY - newH / 2);
+        } else if (handle === 'nw') {
+          newW = Math.max(minCardW, start.width - 2 * deltaX);
+          newH = Math.max(minCardH, start.height - 2 * deltaY);
+          if (canvasSnapGridRef.current) {
+            newW = Math.max(minCardW, Math.round(newW / step) * step);
+            newH = Math.max(minCardH, Math.round(newH / step) * step);
+          }
+          newX = Math.round(centerX - newW / 2);
+          newY = Math.round(centerY - newH / 2);
+        }
+      }
+    } else {
+      // Standard asymmetric corner/edge resize (anchor opposite edge)
+      if (isImage) {
+        if (handle === 'se') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : deltaY * aspect;
+          newW = Math.max(minCardW, start.width + dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'sw') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : deltaY * aspect;
+          newW = Math.max(minCardW, start.width + dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+          newX = start.x + (start.width - newW);
+        } else if (handle === 'ne') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? deltaX : -deltaY * aspect;
+          newW = Math.max(minCardW, start.width + dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+          newY = start.y + (start.height - newH);
+        } else if (handle === 'nw') {
+          const dominant = Math.abs(deltaX) >= Math.abs(deltaY * aspect) ? -deltaX : -deltaY * aspect;
+          newW = Math.max(minCardW, start.width + dominant);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+          newX = start.x + (start.width - newW);
+          newY = start.y + (start.height - newH);
+        } else if (handle === 'e') {
+          newW = Math.max(minCardW, start.width + deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newH = Math.max(minCardH, Math.round(newW / aspect));
+        } else if (handle === 'w') {
+          newW = Math.max(minCardW, start.width - deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newX = start.x + (start.width - newW);
+        } else if (handle === 's') {
+          newH = Math.max(minCardH, start.height + deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newW = Math.max(minCardW, Math.round(newH * aspect));
+        } else if (handle === 'n') {
+          newH = Math.max(minCardH, start.height - deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newW = Math.max(minCardW, Math.round(newH * aspect));
+          newY = start.y + (start.height - newH);
+        }
+      } else {
+        if (handle === 'e' || handle === 'se' || handle === 'ne') {
+          newW = Math.max(minCardW, start.width + deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+        } else if (handle === 'w' || handle === 'sw' || handle === 'nw') {
+          newW = Math.max(minCardW, start.width - deltaX);
+          if (canvasSnapGridRef.current) newW = Math.max(minCardW, Math.round(newW / step) * step);
+          newX = start.x + (start.width - newW);
         }
 
-        return { ...n, x: newX, y: newY, width: newW, height: newH };
+        if (handle === 's' || handle === 'se' || handle === 'sw') {
+          newH = Math.max(minCardH, start.height + deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+        } else if (handle === 'n' || handle === 'ne' || handle === 'nw') {
+          newH = Math.max(minCardH, start.height - deltaY);
+          if (canvasSnapGridRef.current) newH = Math.max(minCardH, Math.round(newH / step) * step);
+          newY = start.y + (start.height - newH);
+        }
+      }
+    }
+
+    const deltaWPrimary = newW - start.width;
+    const deltaHPrimary = newH - start.height;
+    const multiDims = multiResizeStartDimsRef.current;
+
+    setNodes((prev) => {
+      const updated = prev.map((n) => {
+        if (n.id === resizeId) {
+          return { ...n, x: newX, y: newY, width: newW, height: newH };
+        }
+        if (isShiftActive && multiDims.size > 1 && multiDims.has(n.id)) {
+          const s = multiDims.get(n.id)!;
+          const sCenterX = s.x + s.width / 2;
+          const sCenterY = s.y + s.height / 2;
+          let sNewW = Math.max(minCardW, s.width + deltaWPrimary);
+          let sNewH = Math.max(minCardH, s.height + deltaHPrimary);
+          if (canvasSnapGridRef.current) {
+            sNewW = Math.max(minCardW, Math.round(sNewW / step) * step);
+            sNewH = Math.max(minCardH, Math.round(sNewH / step) * step);
+          }
+          const sNewX = Math.round(sCenterX - sNewW / 2);
+          const sNewY = Math.round(sCenterY - sNewH / 2);
+          return { ...n, x: sNewX, y: sNewY, width: sNewW, height: sNewH };
+        }
+        return n;
       });
+      nodesRef.current = updated;
+      return updated;
     });
   }, [recordSnapshot]);
 
@@ -4189,6 +4638,83 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         }
       }
     }
+
+    const isShiftActive = Boolean(lastMouseMoveEventRef.current?.shiftKey) || isShiftHeldRef.current;
+    if (isShiftActive || isShiftDragResizeRef.current) {
+      isShiftDragResizeRef.current = true;
+      const startMap = shiftDragResizeStartMapRef.current;
+      const primaryStart = startMap.get(activeDragId);
+      if (!primaryStart) return;
+
+      const curCanvasX = (clientX - panRef.current.x) / zoomRef.current;
+      const curCanvasY = (clientY - panRef.current.y) / zoomRef.current;
+      const startPos = shiftDragStartCanvasPosRef.current;
+
+      const rawDeltaX = curCanvasX - startPos.x;
+      const rawDeltaY = curCanvasY - startPos.y;
+      const dragDx = Math.abs(rawDeltaX);
+      const dragDy = Math.abs(rawDeltaY);
+
+      const effectiveDeltaX = shiftHorizontalResizeDirectionRef.current === 'left-expand' ? -rawDeltaX : rawDeltaX;
+      const effectiveDeltaY = shiftVerticalResizeDirectionRef.current === 'down-expand' ? rawDeltaY : -rawDeltaY;
+
+      const resizeMode = shiftResizeModeRef.current || 'axis-locked';
+
+      // Lock to one dominant direction (X or Y) once the gesture moves if in axis-locked mode
+      if (resizeMode === 'axis-locked') {
+        if (!shiftDragLockedAxisRef.current && (dragDx > 2 || dragDy > 2)) {
+          shiftDragLockedAxisRef.current = dragDx >= dragDy ? 'x' : 'y';
+        }
+      }
+
+      const lockedAxis =
+        resizeMode === 'axis-locked'
+          ? shiftDragLockedAxisRef.current || (dragDx >= dragDy ? 'x' : 'y')
+          : 'both';
+
+      const step = canvasSnapGridRef.current ? (gridSizeRef.current || 20) : 1;
+      const minGridStep = gridSizeRef.current || 20;
+      const minCardW = 4 * minGridStep;
+      const minCardH = 4 * minGridStep;
+
+      setNodes((prev) => {
+        const updated = prev.map((n) => {
+          const s = startMap.get(n.id);
+          if (!s) return n;
+
+          if (lockedAxis === 'x') {
+            let newW = Math.max(minCardW, s.width + 2 * effectiveDeltaX);
+            if (canvasSnapGridRef.current) {
+              newW = Math.max(minCardW, Math.round(newW / step) * step);
+            }
+            const newX = Math.round(s.centerX - newW / 2);
+            return { ...n, x: newX, y: s.y, width: newW, height: s.height };
+          } else if (lockedAxis === 'y') {
+            let newH = Math.max(minCardH, s.height + 2 * effectiveDeltaY);
+            if (canvasSnapGridRef.current) {
+              newH = Math.max(minCardH, Math.round(newH / step) * step);
+            }
+            const newY = Math.round(s.centerY - newH / 2);
+            return { ...n, x: s.x, y: newY, width: s.width, height: newH };
+          } else {
+            // Dual-axis mode: resize both width and height simultaneously
+            let newW = Math.max(minCardW, s.width + 2 * effectiveDeltaX);
+            let newH = Math.max(minCardH, s.height + 2 * effectiveDeltaY);
+            if (canvasSnapGridRef.current) {
+              newW = Math.max(minCardW, Math.round(newW / step) * step);
+              newH = Math.max(minCardH, Math.round(newH / step) * step);
+            }
+            const newX = Math.round(s.centerX - newW / 2);
+            const newY = Math.round(s.centerY - newH / 2);
+            return { ...n, x: newX, y: newY, width: newW, height: newH };
+          }
+        });
+        nodesRef.current = updated;
+        return updated;
+      });
+      return;
+    }
+
     const currentNodes = nodesRef.current;
     const node = currentNodes.find((n) => n.id === activeDragId);
     if (!node) return;
@@ -4373,7 +4899,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const handleGlobalPointerMove = (e: PointerEvent) => {
       if (isLightboxOpen) return;
 
-      lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY };
+      lastMouseMoveEventRef.current = { clientX: e.clientX, clientY: e.clientY, shiftKey: e.shiftKey };
 
       if (isCtrlHeldRef.current && !e.ctrlKey && !e.metaKey) {
         isCtrlHeldRef.current = false;
@@ -4469,36 +4995,67 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         mouseMoveRafRef.current = null;
       }
       if (draggingNodeIdRef.current && dragDidMoveRef.current) {
-        const initialPosMap = multiDragInitialPositionsRef.current;
-        const dragId = draggingNodeIdRef.current;
-        if (initialPosMap.size > 1 && initialPosMap.has(dragId)) {
-          for (const sid of initialPosMap.keys()) {
+        if (isShiftDragResizeRef.current && shiftDragResizeStartMapRef.current.size > 0) {
+          for (const sid of shiftDragResizeStartMapRef.current.keys()) {
             const sn = nodesRef.current.find((n) => n.id === sid);
             if (sn) {
               saveCanvasNode(sn);
             }
           }
-          const primaryNode = nodesRef.current.find((n) => n.id === dragId);
+          const primaryNode = nodesRef.current.find((n) => n.id === draggingNodeIdRef.current);
           if (primaryNode) {
             triggerDiskSyncRef.current(primaryNode.board_id);
           }
         } else {
-          const node = nodesRef.current.find((n) => n.id === dragId);
+          const initialPosMap = multiDragInitialPositionsRef.current;
+          const dragId = draggingNodeIdRef.current;
+          if (initialPosMap.size > 1 && initialPosMap.has(dragId)) {
+            for (const sid of initialPosMap.keys()) {
+              const sn = nodesRef.current.find((n) => n.id === sid);
+              if (sn) {
+                saveCanvasNode(sn);
+              }
+            }
+            const primaryNode = nodesRef.current.find((n) => n.id === dragId);
+            if (primaryNode) {
+              triggerDiskSyncRef.current(primaryNode.board_id);
+            }
+          } else {
+            const node = nodesRef.current.find((n) => n.id === dragId);
+            if (node) {
+              saveCanvasNode(node);
+              triggerDiskSyncRef.current(node.board_id);
+            }
+          }
+        }
+      }
+      isShiftDragResizeRef.current = false;
+      shiftDragLockedAxisRef.current = null;
+      shiftDragResizeStartMapRef.current.clear();
+
+      if (resizingNodeIdRef.current) {
+        const resizeId = resizingNodeIdRef.current;
+        if (multiResizeStartDimsRef.current.size > 1) {
+          for (const sid of multiResizeStartDimsRef.current.keys()) {
+            const sn = nodesRef.current.find((n) => n.id === sid);
+            if (sn) {
+              saveCanvasNode(sn);
+            }
+          }
+          const primaryNode = nodesRef.current.find((n) => n.id === resizeId);
+          if (primaryNode) {
+            triggerDiskSyncRef.current(primaryNode.board_id);
+          }
+        } else {
+          const node = nodesRef.current.find((n) => n.id === resizeId);
           if (node) {
             saveCanvasNode(node);
             triggerDiskSyncRef.current(node.board_id);
           }
         }
-      }
-      if (resizingNodeIdRef.current) {
-        const resizeId = resizingNodeIdRef.current;
-        const node = nodesRef.current.find((n) => n.id === resizeId);
-        if (node) {
-          saveCanvasNode(node);
-          triggerDiskSyncRef.current(node.board_id);
-        }
         resizingNodeIdRef.current = null;
         resizeHandleRef.current = null;
+        multiResizeStartDimsRef.current.clear();
       }
       if (e && isCtrlHeldRef.current && !e.ctrlKey && !e.metaKey) {
         isCtrlHeldRef.current = false;
@@ -4526,14 +5083,24 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         marqueeStartRef.current = null;
       }
 
-      if (dragCandidateNodeIdRef.current && !dragDidMoveRef.current && (!e || !e.shiftKey)) {
+      if (dragCandidateNodeIdRef.current && !dragDidMoveRef.current) {
         const clickedId = dragCandidateNodeIdRef.current;
-        if (selectedNodeIdsRef.current.length > 1 && selectedNodeIdsRef.current.includes(clickedId)) {
-          setSelectedNodeIds([clickedId]);
-          selectedNodeIdsRef.current = [clickedId];
-          setSelectedNodeId(clickedId);
+        if (e && e.shiftKey && shiftClickToggleCandidateIdRef.current === clickedId) {
+          setSelectedNodeIds((prev) => {
+            const next = prev.filter((i) => i !== clickedId);
+            selectedNodeIdsRef.current = next;
+            setSelectedNodeId(next[next.length - 1] || null);
+            return next;
+          });
+        } else if (!e || !e.shiftKey) {
+          if (selectedNodeIdsRef.current.length > 1 && selectedNodeIdsRef.current.includes(clickedId)) {
+            setSelectedNodeIds([clickedId]);
+            selectedNodeIdsRef.current = [clickedId];
+            setSelectedNodeId(clickedId);
+          }
         }
       }
+      shiftClickToggleCandidateIdRef.current = null;
 
       setActiveGuides([]);
       dragCandidateNodeIdRef.current = null;
@@ -4682,8 +5249,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     const bottom = (-pan.y + containerSize.height) / zoom + overscan;
 
     return nodes.filter((node) => {
-      // Never cull selected or actively editing nodes so focus & selection are preserved
-      if (node.id === selectedNodeId || selectedNodeIds.includes(node.id) || node.id === autoEditingNodeId) return true;
+      // Never cull selected, actively editing, or in-flight dragged nodes so focus & selection are preserved
+      if (
+        node.id === selectedNodeId ||
+        selectedNodeIds.includes(node.id) ||
+        node.id === autoEditingNodeId ||
+        node.id === activeNavDragNodeIdRef.current
+      ) return true;
 
       const nodeWidth = node.width || 260;
       const nodeHeight = node.height || 180;
@@ -4711,7 +5283,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     const currentTarget = targetTransformRef.current;
     const currentScale = currentTarget.scale;
-    const newScale = Math.min(3.0, currentScale * 1.25);
+    const zoomStep = zoomSensitivityRef.current === 'smooth' ? 1.10 : zoomSensitivityRef.current === 'fast' ? 1.50 : 1.25;
+    const newScale = Math.min(3.0, currentScale * zoomStep);
 
     if (Math.abs(newScale - currentScale) > 0.0001) {
       targetTransformRef.current = {
@@ -4734,7 +5307,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
     const currentTarget = targetTransformRef.current;
     const currentScale = currentTarget.scale;
-    const newScale = Math.max(0.15, currentScale / 1.25);
+    const zoomStep = zoomSensitivityRef.current === 'smooth' ? 1.10 : zoomSensitivityRef.current === 'fast' ? 1.50 : 1.25;
+    const newScale = Math.max(0.15, currentScale / zoomStep);
 
     if (Math.abs(newScale - currentScale) > 0.0001) {
       targetTransformRef.current = {
@@ -4912,9 +5486,20 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     runCameraEasing();
   }, [multiSelectBounds, containerSize.width, containerSize.height, runCameraEasing]);
 
-  // Double-click on empty canvas to quickly place a new text card at cursor
+  // Double-click on canvas: create card, reset zoom, fit center, or do nothing based on preference
   const handleCanvasDoubleClick = useCallback(
     async (e: React.MouseEvent) => {
+      const action = doubleClickActionRef.current || 'card';
+      if (action === 'none') return;
+      if (action === 'reset-zoom') {
+        handleResetZoom();
+        return;
+      }
+      if (action === 'fit-center') {
+        handleFitToCenter();
+        return;
+      }
+
       if (canvasReadOnlyRef.current) return;
       if ((e.target as HTMLElement).closest('.canvas-card, button, input, textarea, a, .canvas-edge-label, .canvas-edge, [data-edge-id]')) return;
       commitActiveEdgeLabel();
@@ -4943,7 +5528,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         width: cardWidth,
         height: cardHeight,
         text_content: '',
-        color: '',
+        color: defaultNodeColorRef.current && defaultNodeColorRef.current !== '#2a2a2a' ? defaultNodeColorRef.current : '',
       };
       await saveCanvasNode(newNode);
       triggerDiskSync(effectiveBoardId);
@@ -4951,75 +5536,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setSelectedNodeId(newNode.id);
       setAutoEditingNodeId(newNode.id);
     },
-    [commitActiveEdgeLabel, effectiveBoardId, triggerDiskSync, recordSnapshot]
+    [handleResetZoom, handleFitToCenter, commitActiveEdgeLabel, effectiveBoardId, triggerDiskSync, recordSnapshot]
   );
-
-  // Drag and drop documents from navigation tree directly onto canvas
-  useEffect(() => {
-    const handleCustomDrop = async (e: Event) => {
-      if (canvasReadOnlyRef.current) return;
-      const customEvent = e as CustomEvent;
-      const { item, selectedIds, targetEl, clientX, clientY } = customEvent.detail || {};
-      const el = containerRef.current;
-      if (!el || !targetEl || !el.contains(targetEl)) return;
-
-      customEvent.detail.handled = true;
-      const rect = el.getBoundingClientRect();
-      const ct = currentTransformRef.current;
-      let canvasX = (clientX - rect.left - ct.x) / ct.scale;
-      let canvasY = (clientY - rect.top - ct.y) / ct.scale;
-      const step = gridSizeRef.current || 20;
-      if (canvasSnapGridRef.current) {
-        canvasX = Math.round(canvasX / step) * step;
-        canvasY = Math.round(canvasY / step) * step;
-      }
-
-      const idsToInsert: string[] =
-        selectedIds && selectedIds.length > 0 ? selectedIds : item?.id ? [item.id] : [];
-      const newNodes: CanvasNode[] = [];
-
-      let offset = 0;
-      for (const docId of idsToInsert) {
-        const targetDoc = documents.find((d: DocumentItem) => d.id === docId);
-        if (!targetDoc || targetDoc.is_folder || targetDoc.id === effectiveBoardId || targetDoc.doc_type === 'canvas') {
-          continue;
-        }
-        const isImg = isImageDocument(targetDoc);
-        const node: CanvasNode = {
-          id: `node-${Date.now()}-${offset}`,
-          board_id: effectiveBoardId,
-          type: 'note',
-          x: Math.round(canvasX + offset * 24),
-          y: Math.round(canvasY + offset * 24),
-          width: isImg ? 340 : 320,
-          height: isImg ? 260 : 280,
-          document_id: docId,
-          color: '',
-        };
-        newNodes.push(node);
-        offset++;
-      }
-
-      if (newNodes.length > 0) {
-        recordSnapshot();
-        for (const node of newNodes) {
-          await saveCanvasNode(node);
-        }
-        triggerDiskSync(effectiveBoardId);
-        setNodes((prev) => [...prev, ...newNodes]);
-        showToast(
-          newNodes.length === 1 ? 'Added document to canvas' : `Added ${newNodes.length} documents to canvas`,
-          'success'
-        );
-      }
-    };
-
-    window.addEventListener('noether:custom-drop', handleCustomDrop);
-    return () => {
-      window.removeEventListener('noether:custom-drop', handleCustomDrop);
-    };
-  }, [documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot]);
-
 
   const getCanvasCoordsForScreenPoint = useCallback(
     (screenX: number, screenY: number, width: number, height: number) => {
@@ -5058,6 +5576,140 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [containerSize]
   );
 
+  const computeGhostPlacement = useCallback(
+    (
+      type: CanvasDockActionType,
+      screenX: number,
+      screenY: number,
+      customDims?: { width: number; height: number }
+    ) => {
+      const defaultDims = getCardDimensions(type);
+      const dims = customDims || defaultDims;
+      const el = containerRef.current;
+      if (!el) {
+        return { canvasX: 0, canvasY: 0, guides: [] as AlignmentGuide[] };
+      }
+
+      const rect = el.getBoundingClientRect();
+      const curPan = panRef.current;
+      const curZoom = zoomRef.current;
+
+      const rawX = (screenX - rect.left - curPan.x) / curZoom - dims.width / 2;
+      const rawY = (screenY - rect.top - curPan.y) / curZoom - dims.height / 2;
+
+      const step = gridSizeRef.current || 20;
+      const gridX = canvasSnapGridRef.current ? Math.round(rawX / step) * step : rawX;
+      const gridY = canvasSnapGridRef.current ? Math.round(rawY / step) * step : rawY;
+
+      let finalX = gridX;
+      let finalY = gridY;
+      let guides: AlignmentGuide[] = [];
+
+      if (canvasSnapObjectsRef.current) {
+        const threshold = 8 / Math.max(0.2, curZoom);
+        const cWidth = el.clientWidth || window.innerWidth;
+        const cHeight = el.clientHeight || window.innerHeight;
+
+        const viewport = {
+          left: -curPan.x / curZoom,
+          top: -curPan.y / curZoom,
+          right: (-curPan.x + cWidth) / curZoom,
+          bottom: (-curPan.y + cHeight) / curZoom,
+        };
+
+        const snapResult = calculateObjectSnap(
+          activeNavDragNodeIdRef.current || '__ghost__',
+          rawX,
+          rawY,
+          gridX,
+          gridY,
+          dims.width,
+          dims.height,
+          nodesRef.current,
+          threshold,
+          viewport
+        );
+
+        finalX = snapResult.x;
+        finalY = snapResult.y;
+        guides = snapResult.guides;
+      }
+
+      return {
+        canvasX: Math.round(finalX),
+        canvasY: Math.round(finalY),
+        guides,
+      };
+    },
+    [getCardDimensions]
+  );
+
+  const getCursorCanvasCoords = useCallback(
+    (width: number, height: number) => {
+      const el = containerRef.current;
+      const rect = el?.getBoundingClientRect();
+      const ct = currentTransformRef.current;
+      const step = gridSizeRef.current || 20;
+
+      let rawX: number;
+      let rawY: number;
+
+      if (lastMouseMoveEventRef.current && rect) {
+        const mouseX = lastMouseMoveEventRef.current.clientX - rect.left;
+        const mouseY = lastMouseMoveEventRef.current.clientY - rect.top;
+        if (mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
+          rawX = (mouseX - ct.x) / ct.scale - width / 2;
+          rawY = (mouseY - ct.y) / ct.scale - height / 2;
+        } else {
+          rawX = (rect.width / 2 - ct.x) / ct.scale - width / 2;
+          rawY = (rect.height / 2 - ct.y) / ct.scale - height / 2;
+        }
+      } else {
+        const w = rect && rect.width > 0 ? rect.width : (containerSize.width || window.innerWidth);
+        const h = rect && rect.height > 0 ? rect.height : (containerSize.height || window.innerHeight);
+        rawX = (w / 2 - ct.x) / ct.scale - width / 2;
+        rawY = (h / 2 - ct.y) / ct.scale - height / 2;
+      }
+
+      let finalX = rawX;
+      let finalY = rawY;
+
+      if (canvasSnapGridRef.current) {
+        finalX = Math.round(rawX / step) * step;
+        finalY = Math.round(rawY / step) * step;
+      }
+
+      if (canvasSnapObjectsRef.current && el) {
+        const threshold = 8 / Math.max(0.2, ct.scale);
+        const cWidth = el.clientWidth || window.innerWidth;
+        const cHeight = el.clientHeight || window.innerHeight;
+        const viewport = {
+          left: -ct.x / ct.scale,
+          top: -ct.y / ct.scale,
+          right: (-ct.x + cWidth) / ct.scale,
+          bottom: (-ct.y + cHeight) / ct.scale,
+        };
+        const snapResult = calculateObjectSnap(
+          '__shortcut__',
+          rawX,
+          rawY,
+          finalX,
+          finalY,
+          width,
+          height,
+          nodesRef.current,
+          threshold,
+          viewport
+        );
+        finalX = snapResult.x;
+        finalY = snapResult.y;
+      }
+
+      return { x: Math.round(finalX), y: Math.round(finalY) };
+    },
+    [containerSize]
+  );
+
   const handleAddStickyCard = useCallback(
     async (x: number, y: number) => {
       if (canvasReadOnlyRef.current) {
@@ -5076,7 +5728,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         width: 260,
         height: cardHeight,
         text_content: '',
-        color: '',
+        color: defaultNodeColorRef.current && defaultNodeColorRef.current !== '#2a2a2a' ? defaultNodeColorRef.current : '',
       };
       nodesRef.current = [...nodesRef.current, newNode];
       setNodes(nodesRef.current);
@@ -5088,6 +5740,393 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     },
     [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
   );
+
+  handleAltCardShortcutRef.current = (type: 'card' | 'note' | 'media') => {
+    if (canvasReadOnlyRef.current) {
+      showToast('Canvas is in read-only mode', 'warning');
+      return;
+    }
+    const dims = getCardDimensions(type);
+    const coords = getCursorCanvasCoords(dims.width, dims.height);
+    if (type === 'card') {
+      handleAddStickyCard(coords.x, coords.y);
+    } else {
+      setDragGhost({
+        type,
+        screenX: 0,
+        screenY: 0,
+        canvasX: coords.x,
+        canvasY: coords.y,
+      });
+      setSearchModalState({
+        isOpen: true,
+        mode: type,
+        targetCanvasX: coords.x,
+        targetCanvasY: coords.y,
+      });
+    }
+  };
+
+  // Listen to host drag & drop operations (e.g. dragging notes from sidebar tree)
+  useEffect(() => {
+    const handleDragMove = (data: any) => {
+      if (canvasReadOnlyRef.current) return;
+      const el = containerRef.current;
+      if (!el || !data.isDragging || !data.item) {
+        if (activeNavDragNodeIdRef.current) {
+          const dragId = activeNavDragNodeIdRef.current;
+          activeNavDragNodeIdRef.current = null;
+          nodesRef.current = nodesRef.current.filter((n) => n.id !== dragId);
+          setNodes(nodesRef.current);
+        }
+        setActiveNavDragBadge(null);
+        setDragGhost((prev) => (prev?.isDocument ? null : prev));
+        setActiveGuides([]);
+        return;
+      }
+
+      const hoveredEl = (
+        data.targetEl ||
+        (typeof document !== 'undefined' ? document.elementFromPoint(data.clientX, data.clientY) : null)
+      ) as HTMLElement | null;
+
+      const isOverExternalHeaderOrOverlay = Boolean(
+        hoveredEl?.closest(
+          'header, [data-noether-header], [data-split-tab-header], [data-dock-zone], [data-sidebar-side], aside, [data-breadcrumbs], [data-window-control], .noether-modal-host, .noether-quicknote-host, .tiptap, [data-editor-view="true"], [data-settings-rail="true"]'
+        )
+      );
+
+      const rect = el.getBoundingClientRect();
+      const isWithinRect =
+        data.clientX >= rect.left &&
+        data.clientX <= rect.right &&
+        data.clientY >= rect.top &&
+        data.clientY <= rect.bottom;
+
+      const isOverTopWindowHeader = data.clientY <= 41;
+      const isDirectlyOverCanvas = Boolean(
+        (el === hoveredEl || el.contains(hoveredEl)) && !isOverExternalHeaderOrOverlay && !isOverTopWindowHeader
+      );
+
+      if (!isWithinRect || !isDirectlyOverCanvas || isOverExternalHeaderOrOverlay || isOverTopWindowHeader) {
+        if (activeNavDragNodeIdRef.current) {
+          const dragId = activeNavDragNodeIdRef.current;
+          activeNavDragNodeIdRef.current = null;
+          nodesRef.current = nodesRef.current.filter((n) => n.id !== dragId);
+          setNodes(nodesRef.current);
+        }
+        setActiveNavDragBadge(null);
+        setDragGhost((prev) => (prev?.isDocument ? null : prev));
+        setActiveGuides([]);
+        return;
+      }
+
+      // Reject folder items or dropping the canvas file onto itself
+      if (data.item.is_folder || data.item.doc_type === 'canvas' || data.item.id === effectiveBoardId) {
+        if (activeNavDragNodeIdRef.current) {
+          const dragId = activeNavDragNodeIdRef.current;
+          activeNavDragNodeIdRef.current = null;
+          nodesRef.current = nodesRef.current.filter((n) => n.id !== dragId);
+          setNodes(nodesRef.current);
+        }
+        setActiveNavDragBadge(null);
+        setDragGhost((prev) => (prev?.isDocument ? null : prev));
+        setActiveGuides([]);
+        return;
+      }
+
+      const isImg = isImageDocument(data.item);
+      const cachedDim = data.item?.id ? imageDimensionsCache.get(data.item.id) : null;
+      const dims = isImg
+        ? (cachedDim ? computeImageCardDimensions(cachedDim.width, cachedDim.height) : { width: 340, height: 260 })
+        : { width: 320, height: 280 };
+      const cardWidth = dims.width;
+      const cardHeight = dims.height;
+
+      const placement = computeGhostPlacement(isImg ? 'media' : 'note', data.clientX, data.clientY, {
+        width: cardWidth,
+        height: cardHeight,
+      });
+
+      // Pre-fetch document content into docContentMap cache so the live card renders instantaneously
+      if (data.item?.id && docContentMapRef.current[data.item.id] === undefined) {
+        app.vault.readDocument(data.item.id).then((d) => {
+          if (d?.content_json) {
+            setDocContentMap((prev) => (prev[data.item.id] ? prev : { ...prev, [data.item.id]: d.content_json }));
+            if (isImg && !imageDimensionsCache.has(data.item.id)) {
+              const src = resolveMediaSrc(d.content_json, d.title);
+              if (src) {
+                const img = new Image();
+                img.onload = () => {
+                  if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                    const aspect = img.naturalWidth / img.naturalHeight;
+                    imageDimensionsCache.set(data.item.id, { width: img.naturalWidth, height: img.naturalHeight, aspect });
+                    if (activeNavDragNodeIdRef.current) {
+                      const newDims = computeImageCardDimensions(img.naturalWidth, img.naturalHeight);
+                      nodesRef.current = nodesRef.current.map((n) =>
+                        n.id === activeNavDragNodeIdRef.current
+                          ? { ...n, width: newDims.width, height: newDims.height }
+                          : n
+                      );
+                      setNodes(nodesRef.current);
+                    }
+                  }
+                };
+                img.src = src;
+              }
+            }
+          }
+        }).catch(() => {});
+      }
+
+      // Synchronize in-flight node in nodesRef / nodes state so it is already mounted and rendered
+      if (!activeNavDragNodeIdRef.current) {
+        const newId = `node-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        activeNavDragNodeIdRef.current = newId;
+        const dragNode: CanvasNode = {
+          id: newId,
+          board_id: effectiveBoardId,
+          type: isImg ? 'image' : 'note',
+          x: Math.round(placement.canvasX),
+          y: Math.round(placement.canvasY),
+          width: cardWidth,
+          height: cardHeight,
+          document_id: data.item.id,
+          color: '',
+        };
+        nodesRef.current = [...nodesRef.current, dragNode];
+        setNodes(nodesRef.current);
+      } else {
+        const dragId = activeNavDragNodeIdRef.current;
+        nodesRef.current = nodesRef.current.map((n) =>
+          n.id === dragId
+            ? {
+                ...n,
+                x: Math.round(placement.canvasX),
+                y: Math.round(placement.canvasY),
+                width: cardWidth,
+                height: cardHeight,
+              }
+            : n
+        );
+        setNodes(nodesRef.current);
+      }
+
+      const isMulti = Boolean(data.items && data.items.length > 1);
+      if (isMulti) {
+        setActiveNavDragBadge({
+          x: Math.round(placement.canvasX + cardWidth - 8),
+          y: Math.round(placement.canvasY - 10),
+          text: `+${data.items.length - 1}`,
+        });
+      } else {
+        setActiveNavDragBadge(null);
+      }
+
+      setActiveGuides(placement.guides);
+    };
+
+    const handleDragStart = (data: any) => {
+      const docId = data?.item?.id || data?.id;
+      if (docId) {
+        if (docContentMapRef.current[docId] === undefined) {
+          app.vault.readDocument(docId).then((d) => {
+            if (d?.content_json) {
+              setDocContentMap((prev) => (prev[docId] ? prev : { ...prev, [docId]: d.content_json }));
+              const isImg = isImageDocument(d);
+              if (isImg && !imageDimensionsCache.has(docId)) {
+                const src = resolveMediaSrc(d.content_json, d.title);
+                if (src) {
+                  const img = new Image();
+                  img.onload = () => {
+                    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                      const aspect = img.naturalWidth / img.naturalHeight;
+                      imageDimensionsCache.set(docId, { width: img.naturalWidth, height: img.naturalHeight, aspect });
+                    }
+                  };
+                  img.src = src;
+                }
+              }
+            }
+          }).catch(() => {});
+        } else if (!imageDimensionsCache.has(docId)) {
+          const allDocs = useDocumentStore.getState().documents;
+          const targetDoc = allDocs.find((doc: DocumentItem) => doc.id === docId);
+          if (isImageDocument(targetDoc)) {
+            const content = docContentMapRef.current[docId];
+            const src = resolveMediaSrc(content, targetDoc?.title);
+            if (src) {
+              const img = new Image();
+              img.onload = () => {
+                if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+                  const aspect = img.naturalWidth / img.naturalHeight;
+                  imageDimensionsCache.set(docId, { width: img.naturalWidth, height: img.naturalHeight, aspect });
+                }
+              };
+              img.src = src;
+            }
+          }
+        }
+      }
+    };
+
+    const handleDragEnd = () => {
+      if (activeNavDragNodeIdRef.current) {
+        const dragId = activeNavDragNodeIdRef.current;
+        activeNavDragNodeIdRef.current = null;
+        nodesRef.current = nodesRef.current.filter((n) => n.id !== dragId);
+        setNodes(nodesRef.current);
+      }
+      setActiveNavDragBadge(null);
+      setDragGhost((prev) => (prev?.isDocument ? null : prev));
+      setActiveGuides([]);
+    };
+
+    const unsubStart = app.events.on('drag:start', handleDragStart);
+    const unsubMove = app.events.on('drag:move', handleDragMove);
+    const unsubEnd = app.events.on('drag:end', handleDragEnd);
+
+    const handleCustomDrop = async (e: Event) => {
+      if (canvasReadOnlyRef.current) return;
+      const customEvent = e as CustomEvent;
+      const { item, selectedIds, targetEl, clientX, clientY } = customEvent.detail || {};
+      const el = containerRef.current;
+      if (!el) return;
+
+      const hoveredEl = (
+        targetEl ||
+        (typeof document !== 'undefined' ? document.elementFromPoint(clientX, clientY) : null)
+      ) as HTMLElement | null;
+
+      const isOverExternalHeaderOrOverlay = Boolean(
+        hoveredEl?.closest(
+          'header, [data-noether-header], [data-split-tab-header], [data-dock-zone], [data-sidebar-side], aside, [data-breadcrumbs], [data-window-control], .noether-modal-host, .noether-quicknote-host, .tiptap, [data-editor-view="true"], [data-settings-rail="true"]'
+        )
+      );
+
+      const rect = el.getBoundingClientRect();
+      const isWithinRect =
+        clientX >= rect.left &&
+        clientX <= rect.right &&
+        clientY >= rect.top &&
+        clientY <= rect.bottom;
+
+      const isOverTopWindowHeader = clientY <= 41;
+      const isDirectlyOverCanvas = Boolean(
+        (el === hoveredEl || el.contains(hoveredEl)) && !isOverExternalHeaderOrOverlay && !isOverTopWindowHeader
+      );
+
+      if (!isWithinRect || !isDirectlyOverCanvas || isOverExternalHeaderOrOverlay || isOverTopWindowHeader) return;
+
+      customEvent.detail.handled = true;
+      setDragGhost(null);
+      setActiveGuides([]);
+      setActiveNavDragBadge(null);
+
+      const inFlightId = activeNavDragNodeIdRef.current;
+      activeNavDragNodeIdRef.current = null;
+
+      const allDocs = useDocumentStore.getState().documents;
+      const idsToInsert: string[] =
+        selectedIds && selectedIds.length > 0 ? selectedIds : item?.id ? [item.id] : [];
+
+      let primaryNode = inFlightId ? nodesRef.current.find((n) => n.id === inFlightId) : null;
+      const additionalNodes: CanvasNode[] = [];
+
+      // Fallback if inFlightNode did not exist
+      if (!primaryNode && idsToInsert.length > 0) {
+        const firstDocId = idsToInsert[0];
+        const targetDoc =
+          allDocs.find((d: DocumentItem) => d.id === firstDocId) ||
+          documents.find((d: DocumentItem) => d.id === firstDocId);
+        if (targetDoc && !targetDoc.is_folder && targetDoc.id !== effectiveBoardId && targetDoc.doc_type !== 'canvas') {
+          const isImg = isImageDocument(targetDoc);
+          const cachedDim = isImg ? imageDimensionsCache.get(firstDocId) : null;
+          const dims = isImg
+            ? (cachedDim ? computeImageCardDimensions(cachedDim.width, cachedDim.height) : { width: 340, height: 260 })
+            : { width: 320, height: 280 };
+          const placement = computeGhostPlacement(isImg ? 'media' : 'note', clientX, clientY, dims);
+          primaryNode = {
+            id: `node-${Date.now()}-0`,
+            board_id: effectiveBoardId,
+            type: isImg ? 'image' : 'note',
+            x: Math.round(placement.canvasX),
+            y: Math.round(placement.canvasY),
+            width: dims.width,
+            height: dims.height,
+            document_id: firstDocId,
+            color: '',
+          };
+          nodesRef.current = [...nodesRef.current, primaryNode];
+        }
+      }
+
+      // Handle additional items if multiple were dragged
+      const remainingDocIds = idsToInsert.filter((id) => id !== primaryNode?.document_id);
+      let offset = 1;
+      for (const docId of remainingDocIds) {
+        const targetDoc =
+          allDocs.find((d: DocumentItem) => d.id === docId) ||
+          documents.find((d: DocumentItem) => d.id === docId);
+        if (!targetDoc || targetDoc.is_folder || targetDoc.id === effectiveBoardId || targetDoc.doc_type === 'canvas') {
+          continue;
+        }
+        const isImg = isImageDocument(targetDoc);
+        const cachedDim = isImg ? imageDimensionsCache.get(docId) : null;
+        const dims = isImg
+          ? (cachedDim ? computeImageCardDimensions(cachedDim.width, cachedDim.height) : { width: 340, height: 260 })
+          : { width: 320, height: 280 };
+        const baseX = primaryNode ? primaryNode.x : 0;
+        const baseY = primaryNode ? primaryNode.y : 0;
+        const additionalNode: CanvasNode = {
+          id: `node-${Date.now()}-${offset}`,
+          board_id: effectiveBoardId,
+          type: isImg ? 'image' : 'note',
+          x: Math.round(baseX + offset * 24),
+          y: Math.round(baseY + offset * 24),
+          width: dims.width,
+          height: dims.height,
+          document_id: docId,
+          color: '',
+        };
+        additionalNodes.push(additionalNode);
+        offset++;
+      }
+
+      const allPlacedNodes = [
+        ...(primaryNode ? [primaryNode] : []),
+        ...additionalNodes,
+      ];
+
+      if (allPlacedNodes.length > 0) {
+        recordSnapshot();
+        if (additionalNodes.length > 0) {
+          nodesRef.current = [...nodesRef.current, ...additionalNodes];
+        }
+        // Force synchronous state update so isNavDraggingThisNode becomes false without unmounting the card!
+        setNodes([...nodesRef.current]);
+        setSelectedNodeIds(allPlacedNodes.map((n) => n.id));
+        setSelectedNodeId(allPlacedNodes[allPlacedNodes.length - 1]?.id || null);
+
+        for (const node of allPlacedNodes) {
+          saveCanvasNode(node);
+        }
+        triggerDiskSync(effectiveBoardId);
+        showToast(
+          allPlacedNodes.length === 1 ? 'Added note to canvas' : `Added ${allPlacedNodes.length} notes to canvas`,
+          'success'
+        );
+      }
+    };
+
+    window.addEventListener('noether:custom-drop', handleCustomDrop);
+    return () => {
+      unsubStart.dispose();
+      unsubMove.dispose();
+      unsubEnd.dispose();
+      window.removeEventListener('noether:custom-drop', handleCustomDrop);
+    };
+  }, [app.events, documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot, computeGhostPlacement]);
 
   const handleAddDocumentCard = useCallback(
     async (docId: string, x: number, y: number): Promise<CanvasNode | null> => {
@@ -5102,14 +6141,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       if (!targetDoc) return null;
 
       const isImg = isImageDocument(targetDoc);
-      const nodeWidth = isImg ? 340 : 320;
-      const nodeHeight = isImg ? 260 : 280;
+      const cachedDim = isImg ? imageDimensionsCache.get(docId) : null;
+      const dims = isImg
+        ? (cachedDim ? computeImageCardDimensions(cachedDim.width, cachedDim.height) : { width: 340, height: 260 })
+        : { width: 320, height: 280 };
+      const nodeWidth = dims.width;
+      const nodeHeight = dims.height;
 
       recordSnapshot();
       const newNode: CanvasNode = {
         id: `node-${Date.now()}`,
         board_id: effectiveBoardId,
-        type: 'note',
+        type: isImg ? 'image' : 'note',
         x,
         y,
         width: nodeWidth,
@@ -5760,68 +6803,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     [getCardDimensions, getCanvasViewportCenter, handleAddStickyCard]
   );
 
-  const computeGhostPlacement = useCallback(
-    (type: CanvasDockActionType, screenX: number, screenY: number) => {
-      const dims = getCardDimensions(type);
-      const el = containerRef.current;
-      if (!el) {
-        return { canvasX: 0, canvasY: 0, guides: [] as AlignmentGuide[] };
-      }
-
-      const rect = el.getBoundingClientRect();
-      const curPan = panRef.current;
-      const curZoom = zoomRef.current;
-
-      const rawX = (screenX - rect.left - curPan.x) / curZoom - dims.width / 2;
-      const rawY = (screenY - rect.top - curPan.y) / curZoom - dims.height / 2;
-
-      const step = gridSizeRef.current || 20;
-      const gridX = canvasSnapGridRef.current ? Math.round(rawX / step) * step : rawX;
-      const gridY = canvasSnapGridRef.current ? Math.round(rawY / step) * step : rawY;
-
-      let finalX = gridX;
-      let finalY = gridY;
-      let guides: AlignmentGuide[] = [];
-
-      if (canvasSnapObjectsRef.current) {
-        const threshold = 8 / Math.max(0.2, curZoom);
-        const cWidth = el.clientWidth || window.innerWidth;
-        const cHeight = el.clientHeight || window.innerHeight;
-
-        const viewport = {
-          left: -curPan.x / curZoom,
-          top: -curPan.y / curZoom,
-          right: (-curPan.x + cWidth) / curZoom,
-          bottom: (-curPan.y + cHeight) / curZoom,
-        };
-
-        const snapResult = calculateObjectSnap(
-          '__ghost__',
-          rawX,
-          rawY,
-          gridX,
-          gridY,
-          dims.width,
-          dims.height,
-          nodesRef.current,
-          threshold,
-          viewport
-        );
-
-        finalX = snapResult.x;
-        finalY = snapResult.y;
-        guides = snapResult.guides;
-      }
-
-      return {
-        canvasX: Math.round(finalX),
-        canvasY: Math.round(finalY),
-        guides,
-      };
-    },
-    [getCardDimensions]
-  );
-
   const handleDockDragStart = useCallback(
     (type: CanvasDockActionType, screenX: number, screenY: number) => {
       const { canvasX, canvasY, guides } = computeGhostPlacement(type, screenX, screenY);
@@ -5833,6 +6814,39 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   const handleDockDragMove = useCallback(
     (screenX: number, screenY: number) => {
+      const el = containerRef.current;
+      if (!el) {
+        setActiveGuides([]);
+        return;
+      }
+
+      const hoveredEl = (
+        typeof document !== 'undefined' ? document.elementFromPoint(screenX, screenY) : null
+      ) as HTMLElement | null;
+
+      const isOverExternalHeaderOrOverlay = Boolean(
+        hoveredEl?.closest(
+          'header, [data-noether-header], [data-split-tab-header], [data-dock-zone], [data-sidebar-side], aside, [data-breadcrumbs], [data-window-control], .noether-modal-host, .noether-quicknote-host, .tiptap, [data-editor-view="true"], [data-settings-rail="true"]'
+        )
+      );
+
+      const rect = el.getBoundingClientRect();
+      const isWithinRect =
+        screenX >= rect.left &&
+        screenX <= rect.right &&
+        screenY >= rect.top &&
+        screenY <= rect.bottom;
+
+      const isOverTopWindowHeader = screenY <= 41;
+      const isDirectlyOverCanvas = Boolean(
+        (el === hoveredEl || el.contains(hoveredEl)) && !isOverExternalHeaderOrOverlay && !isOverTopWindowHeader
+      );
+
+      if (!isWithinRect || !isDirectlyOverCanvas || isOverExternalHeaderOrOverlay || isOverTopWindowHeader) {
+        setActiveGuides([]);
+        return;
+      }
+
       setDragGhost((prev) => {
         if (!prev) return null;
         const { canvasX, canvasY, guides } = computeGhostPlacement(prev.type, screenX, screenY);
@@ -5847,6 +6861,35 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     (type: CanvasDockActionType, screenX: number, screenY: number, didDrag: boolean) => {
       setActiveGuides([]);
       if (!didDrag) {
+        setDragGhost(null);
+        return;
+      }
+
+      const el = containerRef.current;
+      const hoveredEl = (
+        typeof document !== 'undefined' ? document.elementFromPoint(screenX, screenY) : null
+      ) as HTMLElement | null;
+
+      const isOverExternalHeaderOrOverlay = Boolean(
+        hoveredEl?.closest(
+          'header, [data-noether-header], [data-split-tab-header], [data-dock-zone], [data-sidebar-side], aside, [data-breadcrumbs], [data-window-control], .noether-modal-host, .noether-quicknote-host, .tiptap, [data-editor-view="true"], [data-settings-rail="true"]'
+        )
+      );
+
+      const rect = el ? el.getBoundingClientRect() : null;
+      const isWithinRect =
+        rect &&
+        screenX >= rect.left &&
+        screenX <= rect.right &&
+        screenY >= rect.top &&
+        screenY <= rect.bottom;
+
+      const isOverTopWindowHeader = screenY <= 41;
+      const isDirectlyOverCanvas = Boolean(
+        el && (el === hoveredEl || el.contains(hoveredEl)) && !isOverExternalHeaderOrOverlay && !isOverTopWindowHeader
+      );
+
+      if (!isWithinRect || !isDirectlyOverCanvas || isOverExternalHeaderOrOverlay || isOverTopWindowHeader) {
         setDragGhost(null);
         return;
       }
@@ -5914,8 +6957,43 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         wheelOriginWasCanvasRef.current = !isOverScrollable;
       }
 
-      // 1. Zoom with Ctrl / Meta or Trackpad Pinch (getBoundingClientRect evaluated only when zooming)
-      if (e.ctrlKey || e.metaKey) {
+      // 1. Strict Scrollable Card Isolation (Do NOT scroll canvas when hovering inside a scrollable card)
+      // Only inspect DOM if gesture originated over a card (skips 100% of queries during canvas navigation!)
+      if (!isPanModifierRef.current && !wheelOriginWasCanvasRef.current) {
+        const scrollTarget = (e.target as HTMLElement | null)?.closest(
+          '.custom-scrollbar, [data-scrollable="true"], pre, table'
+        ) as HTMLElement | null;
+
+        if (scrollTarget) {
+          const isScrollableY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
+          const isScrollableX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
+
+          if (isScrollableY || isScrollableX) {
+            const canScrollDown = dy > 0 && scrollTarget.scrollTop + scrollTarget.clientHeight < scrollTarget.scrollHeight - 1;
+            const canScrollUp = dy < 0 && scrollTarget.scrollTop > 0;
+            const canScrollRight = dx > 0 && scrollTarget.scrollLeft + scrollTarget.clientWidth < scrollTarget.scrollWidth - 1;
+            const canScrollLeft = dx < 0 && scrollTarget.scrollLeft > 0;
+
+            if (canScrollDown || canScrollUp || canScrollRight || canScrollLeft) {
+              // Still has scroll room: permit native element scroll inside note card
+              return;
+            }
+
+            // Reached scroll boundary (top, bottom, or sides): absorb event completely so canvas never pans
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
+      }
+
+      // 2. Zoom handling (Respects wheelBehavior preference and zoomSensitivity)
+      const isZoomTrigger =
+        wheelBehaviorRef.current === 'zoom'
+          ? !(e.ctrlKey || e.metaKey)
+          : Boolean(e.ctrlKey || e.metaKey);
+
+      if (isZoomTrigger) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -5923,11 +7001,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
 
+        const sens = zoomSensitivityRef.current || 'standard';
+        const expMultiplier = sens === 'smooth' ? 0.006 : sens === 'fast' ? 0.018 : 0.01;
+        const discreteStep = sens === 'smooth' ? 1.10 : sens === 'fast' ? 1.30 : 1.15;
+        const discreteStepOut = sens === 'smooth' ? 0.90 : sens === 'fast' ? 0.70 : 0.85;
+
         let zoomFactor: number;
         if (Math.abs(dy) < 30 && e.deltaMode === 0) {
-          zoomFactor = Math.exp(-dy * 0.01);
+          zoomFactor = Math.exp(-dy * expMultiplier);
         } else {
-          zoomFactor = dy < 0 ? 1.15 : 0.85;
+          zoomFactor = dy < 0 ? discreteStep : discreteStepOut;
         }
 
         const newScale = Math.min(3.0, Math.max(0.15, currentScale * zoomFactor));
@@ -5958,36 +7041,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           runCameraEasing();
         }
         return;
-      }
-
-      // 2. Strict Scrollable Card Isolation (Do NOT scroll canvas when hovering inside a scrollable card)
-      // Only inspect DOM if gesture originated over a card (skips 100% of queries during canvas navigation!)
-      if (!isPanModifierRef.current && !wheelOriginWasCanvasRef.current) {
-        const scrollTarget = (e.target as HTMLElement | null)?.closest(
-          '.custom-scrollbar, [data-scrollable="true"], pre, table'
-        ) as HTMLElement | null;
-
-        if (scrollTarget) {
-          const isScrollableY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
-          const isScrollableX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
-
-          if (isScrollableY || isScrollableX) {
-            const canScrollDown = dy > 0 && scrollTarget.scrollTop + scrollTarget.clientHeight < scrollTarget.scrollHeight - 1;
-            const canScrollUp = dy < 0 && scrollTarget.scrollTop > 0;
-            const canScrollRight = dx > 0 && scrollTarget.scrollLeft + scrollTarget.clientWidth < scrollTarget.scrollWidth - 1;
-            const canScrollLeft = dx < 0 && scrollTarget.scrollLeft > 0;
-
-            if (canScrollDown || canScrollUp || canScrollRight || canScrollLeft) {
-              // Still has scroll room: permit native element scroll inside note card
-              return;
-            }
-
-            // Reached scroll boundary (top, bottom, or sides): absorb event completely so canvas never pans
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-        }
       }
 
       // 3. Directional Canvas Panning (Vertical dy, Horizontal dx, or Shift + Wheel)
@@ -6209,34 +7262,52 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             : 'cursor-default'
         }`}
       >
-        {/* Crisp Lightweight Vector Spatial Dot Grid */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
-          <defs>
-            <pattern
-              ref={dotPatternRef}
-              id="noether-canvas-dots"
-              width={step}
-              height={step}
-              patternUnits="userSpaceOnUse"
-              patternTransform={`translate(${pan.x - (step / 2) * zoom}, ${pan.y - (step / 2) * zoom}) scale(${zoom})`}
-            >
-              <circle
-                ref={dotCircleRef}
-                cx={step / 2}
-                cy={step / 2}
-                r={Math.max(0.6, Math.min(1.8, 1 / zoom))}
-                fill="rgba(255, 255, 255, 0.055)"
-              />
-            </pattern>
-          </defs>
-          <rect
-            ref={dotGridRectRef}
-            width="100%"
-            height="100%"
-            fill="url(#noether-canvas-dots)"
-            style={{ opacity: Math.min(1, Math.max(0, (zoom - 0.18) / 0.22)) }}
-          />
-        </svg>
+        {/* Crisp Lightweight Vector Spatial Grid */}
+        {gridStyle !== 'blank' && (
+          <svg className="absolute inset-0 w-full h-full pointer-events-none select-none z-0">
+            <defs>
+              <pattern
+                ref={dotPatternRef}
+                id="noether-canvas-dots"
+                width={step}
+                height={step}
+                patternUnits="userSpaceOnUse"
+                patternTransform={`translate(${pan.x - (step / 2) * zoom}, ${pan.y - (step / 2) * zoom}) scale(${zoom})`}
+              >
+                {gridStyle === 'lines' ? (
+                  <path
+                    d={`M ${step} 0 L 0 0 0 ${step}`}
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.04)"
+                    strokeWidth={Math.max(0.5, Math.min(1.5, 1 / zoom))}
+                  />
+                ) : gridStyle === 'crosshairs' ? (
+                  <path
+                    d={`M ${step / 2 - 3} ${step / 2} L ${step / 2 + 3} ${step / 2} M ${step / 2} ${step / 2 - 3} L ${step / 2} ${step / 2 + 3}`}
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.08)"
+                    strokeWidth={Math.max(0.5, Math.min(1.5, 1 / zoom))}
+                  />
+                ) : (
+                  <circle
+                    ref={dotCircleRef}
+                    cx={step / 2}
+                    cy={step / 2}
+                    r={Math.max(0.6, Math.min(1.8, 1 / zoom))}
+                    fill="rgba(255, 255, 255, 0.055)"
+                  />
+                )}
+              </pattern>
+            </defs>
+            <rect
+              ref={dotGridRectRef}
+              width="100%"
+              height="100%"
+              fill="url(#noether-canvas-dots)"
+              style={{ opacity: Math.min(1, Math.max(0, (zoom - 0.18) / 0.22)) }}
+            />
+          </svg>
+        )}
 
         {/* Infinite Canvas Content Plane */}
         <div
@@ -6619,7 +7690,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               );
             }
 
-            const doc = node.document_id ? docMap.get(node.document_id) || null : null;
+            const isNavDraggingThisNode = activeNavDragNodeIdRef.current === node.id;
+            const doc = node.document_id
+              ? docMap.get(node.document_id) ||
+                documents.find((d: DocumentItem) => d.id === node.document_id) ||
+                (useDocumentStore.getState().documents.find((d: DocumentItem) => d.id === node.document_id) || null)
+              : null;
             const contentJson = node.document_id ? docContentMap[node.document_id] : undefined;
 
             return (
@@ -6628,13 +7704,16 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 node={node}
                 doc={doc}
                 contentJson={contentJson}
-                isSelected={isSelected}
+                isSelected={isNavDraggingThisNode || isSelected}
                 isMultiSelected={isMultiSelected}
                 isSpacePressed={isPanModifierState}
                 isPanModifier={isPanModifierState}
                 isPanning={isPanningState}
-                isDragging={isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id)}
-                isReadOnly={canvasReadOnly}
+                isDragging={
+                  isNavDraggingThisNode ||
+                  (isDraggingNodeState && (draggingNodeIdRef.current === node.id || dragCandidateNodeIdRef.current === node.id))
+                }
+                isReadOnly={isNavDraggingThisNode ? true : canvasReadOnly}
                 zoom={zoom}
                 autoFocus={autoEditingNodeId === node.id}
                 onAutoFocusConsumed={() => setAutoEditingNodeId((current) => (current === node.id ? null : current))}
@@ -6655,6 +7734,19 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
               />
             );
           })}
+
+        {/* Nav Drag Multi-Item Count Badge */}
+        {activeNavDragBadge && (
+          <div
+            className="absolute z-40 px-1.5 py-0.5 text-[10px] font-medium bg-[#2e2e2e] border border-[#555555] text-white/90 rounded-full select-none pointer-events-none transition-none shadow-sm"
+            style={{
+              left: `${activeNavDragBadge.x}px`,
+              top: `${activeNavDragBadge.y}px`,
+            }}
+          >
+            {activeNavDragBadge.text}
+          </div>
+        )}
 
         {/* Arrowhead / Endpoint Retarget Grab Handles Layer */}
         <svg
@@ -6807,11 +7899,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           </div>
         )}
 
-          {/* Snapped Drag Ghost Preview in Spatial Canvas Coordinate Plane */}
+          {/* Snapped Drag Ghost for Bottom Dock Actions in Spatial Canvas Coordinate Plane */}
           {dragGhost && (() => {
             const dims = getCardDimensions(dragGhost.type);
             const w = dragGhost.width || dims.width;
             const h = dragGhost.height || dims.height;
+
             return (
               <div
                 className="absolute pointer-events-none z-30 rounded-md border-2 border-dashed border-[#888888] bg-[#1e1e1e]/85 backdrop-blur-[2px] select-none transition-none flex items-center justify-center gap-2"
@@ -6847,12 +7940,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       </div>
 
       {/* Floating Bottom Center Dock (Card, Note, Media) */}
-      <CanvasBottomDock
-        onActionClick={handleDockActionClick}
-        onDragStart={handleDockDragStart}
-        onDragMove={handleDockDragMove}
-        onDragEnd={handleDockDragEnd}
-      />
+      {showBottomDock && (
+        <CanvasBottomDock
+          onActionClick={handleDockActionClick}
+          onDragStart={handleDockDragStart}
+          onDragMove={handleDockDragMove}
+          onDragEnd={handleDockDragEnd}
+        />
+      )}
 
       {/* Search Modal for Note & Media */}
       <CanvasItemSearchModal
@@ -6915,14 +8010,18 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           }
 
           const isImg = isImageDocument(targetDoc);
-          const nodeWidth = isImg ? 340 : 320;
-          const nodeHeight = isImg ? 260 : 280;
+          const cachedDim = isImg ? imageDimensionsCache.get(docId) : null;
+          const dims = isImg
+            ? (cachedDim ? computeImageCardDimensions(cachedDim.width, cachedDim.height) : { width: 340, height: 260 })
+            : { width: 320, height: 280 };
+          const nodeWidth = dims.width;
+          const nodeHeight = dims.height;
 
           recordSnapshot();
           const newNode: CanvasNode = {
             id: `node-${Date.now()}`,
             board_id: effectiveBoardId,
-            type: 'note',
+            type: isImg ? 'image' : 'note',
             x: searchModalState.targetCanvasX,
             y: searchModalState.targetCanvasY,
             width: nodeWidth,
@@ -6962,6 +8061,9 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 from_side: pending.fromSide,
                 to_node_id: newNode.id,
                 to_side: pending.incomingSide,
+                style: defaultEdgeStyleRef.current || 'bezier',
+                direction: defaultArrowDirectionRef.current || 'unidirectional',
+                color: defaultEdgeColorRef.current !== '#888888' ? defaultEdgeColorRef.current : undefined,
               };
               edgesRef.current = [...edgesRef.current, newEdge];
               setEdges(edgesRef.current);

@@ -25,10 +25,11 @@ The **Infinite Canvas** extension gives you an unbounded 2D visual playground. P
 4. **Reset Zoom**: Double-click the zoom indicator in the canvas bottom dock to reset zoom to 100%.
 
 ### 2. Adding Cards & Nodes
-- **Note Cards**: Drag any Markdown note from the left file explorer directly onto the canvas. The note renders as an interactive card displaying its title and content. Double-click the card header to jump directly into the full note editor.
-- **Text & Sticky Notes**: Double-click anywhere on the empty canvas to create a fresh text card. Type quick thoughts, reminders, or headings.
+- **Note Cards**: Drag any Markdown note or media file from the left sidebar file explorer directly onto the canvas. A real-time snapped ghost preview card tracks your cursor across the grid dots with alignment guides. Releasing the mouse button immediately places the note card at that exact location. Double-click the card header to jump directly into the full note editor.
+- **Dock Quick Shortcuts**: Press `Alt+1` anywhere over the canvas to spawn a new text/sticky card centered at your cursor, `Alt+2` to place a note card via document search, or `Alt+3` to place a media card.
+- **Text & Sticky Notes**: Double-click anywhere on the empty canvas or press `Alt+1` to create a fresh text card. Type quick thoughts, reminders, or headings.
 - **Visual Group Containers**: Select multiple cards and press `Ctrl+G` or click **Create group** on the ActionPill. Enclosed cards move in lockstep with the group container. Supports nested hierarchies, 8-direction perimeter resizing, and connection anchor points. Ungroup with `Ctrl+Shift+G`.
-- **Resizing & Moving**: Click any card to select it. Drag the card header to move it, or drag its corner resize handles to expand its dimensions.
+- **Resizing & Moving**: Click any card to select it. Drag the card header to move it, or drag its perimeter and corner resize handles to expand its dimensions. Hold `Shift` while dragging any resize handle to resize symmetrically from both sides around the center. Hold `Shift` and drag directly on any card body to scale the card along the dominant axis (width or height) symmetrically from its center without translating its position.
 
 ### 3. Connection Lines & Interactive Edge Bending
 1. Hover over any card edge to reveal connection handles (top, right, bottom, left).
@@ -40,8 +41,13 @@ The **Infinite Canvas** extension gives you an unbounded 2D visual playground. P
 
 | Action | Shortcut | Description |
 | :--- | :--- | :--- |
+| **Add Card at Cursor** | `Alt+1` | Spawns a sticky text card centered at your cursor and focuses edit mode. |
+| **Add Note at Cursor** | `Alt+2` | Opens note search modal targeted at cursor with live ghost preview. |
+| **Add Media at Cursor** | `Alt+3` | Opens media search modal targeted at cursor with live ghost preview. |
 | **Pan Canvas** | `Spacebar + Drag` / `Middle Click + Drag` | Translates viewport across the infinite plane. |
 | **Zoom In / Out** | `Ctrl + Scroll` / Trackpad Pinch | Smoothly scales canvas between 10% and 300%. |
+| **Symmetric Handle Resize** | `Shift + Drag Handle` | Mirrors expansion across opposite side while keeping center pinned. |
+| **Symmetric Card Resize** | `Shift + Drag Card` | Symmetrically expands or shrinks card along dominant axis (width or height) from its center without moving it. |
 | **Group Selected** | `Ctrl+G` | Encases selected cards in a visual group container. |
 | **Ungroup Selected** | `Ctrl+Shift+G` | Dissolves group boundary while preserving cards. |
 | **Bend Edge** | `Shift + Drag on Edge` | Fluidly bends curve or repositions orthogonal step. |

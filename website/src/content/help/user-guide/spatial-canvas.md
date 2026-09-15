@@ -25,13 +25,16 @@ You can place four fundamental node types onto the spatial plane:
 
 ### 1. Note Cards
 Drag any document from your sidebar file tree directly onto the canvas, or press the **+ Note** button in the canvas floating toolbar:
+- Dragging a note from the file tree renders a live, semi-transparent ghost preview card snapped to the grid showing the note's title and exact placement footprint.
+- Dropping the item instantly instantiates the note card centered exactly where the preview ghost was positioned.
+- Press `Alt + 2` anywhere over the canvas to open the note picker and drop a note card centered immediately at your mouse cursor.
 - Renders an interactive live preview of the note's markdown content directly on the card surface.
 - Double-clicking the card header navigates directly to the full document in a split editor tab.
 - Modifications made in the note editor automatically update the card in real time.
 
 ### 2. Sticky Text Nodes
 Quick, lightweight notes for fleeting ideas, task checklists, or annotations:
-- Click **+ Text** or double-click anywhere on the canvas background.
+- Click **+ Text**, double-click anywhere on the canvas background, or press `Alt + 1` to immediately spawn a sticky text card centered directly at your mouse cursor.
 - Adding a card defaults to a 4-grid-unit height and focuses the cursor immediately for quick typing.
 - Minimum card resizing is clamped to a $4 \times 4$ grid boundary.
 - Supports full inline markdown, bullet points, checklists, and code snippets.
@@ -55,7 +58,7 @@ Organize clusters of related nodes into bounded regions:
   - **Delete** (`Delete` / `Backspace` or Delete button): Deletes the group container together with all cards, nested groups, and edges enclosed within it.
 
 ### 4. Media & Web Cards
-- Drop local images, audio clips, or PDF documents onto the canvas for visual reference boards.
+- Drop local images, audio clips, or PDF documents onto the canvas for visual reference boards, or press `Alt + 3` to open the media insert modal centered directly at your mouse cursor.
 - Embed external web links with automatic metadata cards.
 
 ---
@@ -90,6 +93,10 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 | **Scroll Card Content** | Hover over scrollable note cards and scroll mouse wheel |
 | **Reset Zoom (100%)** | `Ctrl + 0` or Reset View button |
 | **Zoom to Fit All** | `Shift + 1`, `Ctrl + 1`, or Fit View button |
+| **Add Sticky Card at Cursor** | `Alt + 1` |
+| **Add Note Card at Cursor** | `Alt + 2` |
+| **Add Media Card at Cursor** | `Alt + 3` |
+| **Drag Note from Sidebar** | Drag item from file tree onto canvas with snapped ghost card preview |
 | **Multi-Select Nodes** | `Shift + Drag` marquee selection box, or `Shift + Click` |
 | **Select All Nodes** | `Ctrl + A` |
 | **Copy / Paste Cards** | `Ctrl + C` / `Ctrl + V` (pastes centered at cursor) |

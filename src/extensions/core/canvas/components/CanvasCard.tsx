@@ -269,8 +269,10 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
             ? colorTheme.borderHover
             : colorTheme.borderIdle,
         }}
-        className={`canvas-card absolute pointer-events-auto rounded-md flex flex-col border transition-none ${
-          isSelected ? 'z-20' : 'z-10'
+        className={`canvas-card absolute ${
+          isDragging ? 'pointer-events-none' : 'pointer-events-auto'
+        } rounded-md flex flex-col border transition-none ${
+          isSelected || isDragging ? 'z-30' : 'z-10'
         } ${
           isPanning || isDragging
             ? '!cursor-grabbing [&_*]:!cursor-grabbing'

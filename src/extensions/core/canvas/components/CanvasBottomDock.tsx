@@ -27,19 +27,19 @@ const DOCK_BUTTONS: DockButtonDef[] = [
   {
     type: 'card',
     title: 'Card',
-    shortcuts: ['Click to add', 'Drag to place'],
+    shortcuts: ['Alt + 1', 'Click to add', 'Drag to place'],
     icon: <StickyNote03Icon size={26} />,
   },
   {
     type: 'note',
     title: 'Note',
-    shortcuts: ['Click to search', 'Drag to place'],
+    shortcuts: ['Alt + 2', 'Click to search', 'Drag to place'],
     icon: <FileEmpty01Icon size={26} />,
   },
   {
     type: 'media',
     title: 'Media',
-    shortcuts: ['Click to search', 'Drag to place'],
+    shortcuts: ['Alt + 3', 'Click to search', 'Drag to place'],
     icon: <FileImageIcon size={26} />,
   },
 ];
