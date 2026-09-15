@@ -5,15 +5,26 @@ import introRaw from '../content/help/getting-started/introduction.md?raw';
 import installRaw from '../content/help/getting-started/installation.md?raw';
 
 import editorMarkdownRaw from '../content/help/user-guide/editor-and-markdown.md?raw';
-import linksGraphRaw from '../content/help/user-guide/links-and-graph.md?raw';
-import spatialCanvasRaw from '../content/help/user-guide/spatial-canvas.md?raw';
-import spacedRepetitionRaw from '../content/help/user-guide/spaced-repetition.md?raw';
-import tasksJournalRaw from '../content/help/user-guide/tasks-and-journal.md?raw';
 import vaultsStorageRaw from '../content/help/user-guide/vaults-and-storage.md?raw';
 import shortcutsCommandsRaw from '../content/help/user-guide/shortcuts-and-commands.md?raw';
 import aiMcpRaw from '../content/help/user-guide/ai-and-mcp.md?raw';
 
-import workflowsRaw from '../content/help/workflows/workflows-and-strategies.md?raw';
+import backlinksRaw from '../content/help/core-extensions/backlinks.md?raw';
+import bookmarksRaw from '../content/help/core-extensions/bookmarks.md?raw';
+import canvasRaw from '../content/help/core-extensions/canvas.md?raw';
+import coversRaw from '../content/help/core-extensions/covers.md?raw';
+import graphRaw from '../content/help/core-extensions/graph.md?raw';
+import historyRaw from '../content/help/core-extensions/history.md?raw';
+import journalRaw from '../content/help/core-extensions/journal.md?raw';
+import marketplaceRaw from '../content/help/core-extensions/marketplace.md?raw';
+import moreIconsRaw from '../content/help/core-extensions/more-icons.md?raw';
+import outlineRaw from '../content/help/core-extensions/outline.md?raw';
+import propertiesRaw from '../content/help/core-extensions/properties.md?raw';
+import sketchRaw from '../content/help/core-extensions/sketch.md?raw';
+import syncRaw from '../content/help/core-extensions/sync.md?raw';
+import tagsRaw from '../content/help/core-extensions/tags.md?raw';
+import tasksRaw from '../content/help/core-extensions/tasks.md?raw';
+
 import faqRaw from '../content/help/faq/user-faq.md?raw';
 
 export const HELP_TREE: DocNode[] = [
@@ -52,7 +63,7 @@ export const HELP_TREE: DocNode[] = [
   },
   {
     id: 'user-guide',
-    title: 'User Guide',
+    title: 'Core Features',
     slug: 'user-guide',
     portal: 'help',
     isFolder: true,
@@ -66,42 +77,10 @@ export const HELP_TREE: DocNode[] = [
         content: editorMarkdownRaw,
       },
       {
-        id: 'links-and-graph',
-        title: 'Links, Backlinks & Graph',
-        slug: 'links-and-graph',
-        aliases: ['Wikilinks', 'Backlinks', 'Graph View', 'Knowledge Graph', 'Floating Graph', 'Float'],
-        portal: 'help',
-        content: linksGraphRaw,
-      },
-      {
-        id: 'spatial-canvas',
-        title: 'Infinite 2D Spatial Canvas',
-        slug: 'spatial-canvas',
-        aliases: ['Canvas', 'Whiteboard', 'Spatial Canvas', 'Mindmap', 'Visual Notes'],
-        portal: 'help',
-        content: spatialCanvasRaw,
-      },
-      {
-        id: 'spaced-repetition',
-        title: 'FSRS Spaced Repetition',
-        slug: 'spaced-repetition',
-        aliases: ['Spaced Repetition', 'FSRS', 'Flashcards', 'Active Recall', 'Review Deck'],
-        portal: 'help',
-        content: spacedRepetitionRaw,
-      },
-      {
-        id: 'tasks-and-journal',
-        title: 'Tasks Dashboard & Journal',
-        slug: 'tasks-and-journal',
-        aliases: ['Tasks', 'Kanban', 'Journal', 'Daily Notes', 'Checklists'],
-        portal: 'help',
-        content: tasksJournalRaw,
-      },
-      {
         id: 'vaults-and-storage',
         title: 'Vaults & Workspace Storage',
         slug: 'vaults-and-storage',
-        aliases: ['Vaults', 'Workspaces', 'Full-Text Search', 'FTS5', 'Trash Bin', 'Sync'],
+        aliases: ['Vaults', 'Workspaces', 'Full-Text Search', 'FTS5', 'Trash Bin', 'Sync', 'Organization', 'Folder Structure'],
         portal: 'help',
         content: vaultsStorageRaw,
       },
@@ -124,18 +103,139 @@ export const HELP_TREE: DocNode[] = [
     ],
   },
   {
-    id: 'workflows',
-    title: 'Workflows & Strategies',
-    slug: 'workflows-and-strategies',
-    aliases: ['Workflows', 'Strategies', 'Topic Folders', 'Life Folder'],
+    id: 'core-extensions',
+    title: 'Core Extensions',
+    slug: 'core-extensions',
     portal: 'help',
-    content: workflowsRaw,
+    isFolder: true,
+    children: [
+      {
+        id: 'backlinks',
+        title: 'Backlinks',
+        slug: 'backlinks',
+        aliases: ['Backlinks', 'Linked Mentions', 'Unlinked Mentions', 'Incoming Links'],
+        portal: 'help',
+        content: backlinksRaw,
+      },
+      {
+        id: 'bookmarks',
+        title: 'Bookmarks',
+        slug: 'bookmarks',
+        aliases: ['Bookmarks', 'Pinned Notes', 'Favorites'],
+        portal: 'help',
+        content: bookmarksRaw,
+      },
+      {
+        id: 'canvas',
+        title: 'Canvas',
+        slug: 'canvas',
+        aliases: ['Canvas', 'Whiteboard', 'Spatial Canvas', 'Visual Notes', 'Cards'],
+        portal: 'help',
+        content: canvasRaw,
+      },
+      {
+        id: 'covers',
+        title: 'Covers',
+        slug: 'covers',
+        aliases: ['Covers', 'Header Banners', 'Wallhaven', 'Banner Images'],
+        portal: 'help',
+        content: coversRaw,
+      },
+      {
+        id: 'graph',
+        title: 'Graph View',
+        slug: 'graph',
+        aliases: ['Graph View', 'Graph', 'Knowledge Graph', 'Floating Graph', 'Local Graph', 'Timelapse'],
+        portal: 'help',
+        content: graphRaw,
+      },
+      {
+        id: 'history',
+        title: 'Version History',
+        slug: 'history',
+        aliases: ['Version History', 'Snapshots', 'Revisions', 'Diff Viewer'],
+        portal: 'help',
+        content: historyRaw,
+      },
+      {
+        id: 'journal',
+        title: 'Daily Journal',
+        slug: 'journal',
+        aliases: ['Daily Journal', 'Journal', 'Daily Notes', 'Scratchpad'],
+        portal: 'help',
+        content: journalRaw,
+      },
+      {
+        id: 'marketplace',
+        title: 'Community Marketplace',
+        slug: 'marketplace',
+        aliases: ['Marketplace', 'Community Extensions', 'Community Themes', 'Registry'],
+        portal: 'help',
+        content: marketplaceRaw,
+      },
+      {
+        id: 'more-icons',
+        title: 'More Icons',
+        slug: 'more-icons',
+        aliases: ['More Icons', 'File Icons', 'Folder Icons', 'Hugeicons', 'Lucide'],
+        portal: 'help',
+        content: moreIconsRaw,
+      },
+      {
+        id: 'outline',
+        title: 'Outline',
+        slug: 'outline',
+        aliases: ['Outline', 'Table of Contents', 'Headings'],
+        portal: 'help',
+        content: outlineRaw,
+      },
+      {
+        id: 'properties',
+        title: 'Properties',
+        slug: 'properties',
+        aliases: ['Properties', 'Frontmatter', 'YAML', 'Metadata'],
+        portal: 'help',
+        content: propertiesRaw,
+      },
+      {
+        id: 'sketch',
+        title: 'Sketch',
+        slug: 'sketch',
+        aliases: ['Sketch', 'Drawing', 'Handwriting', 'Vector Sketch'],
+        portal: 'help',
+        content: sketchRaw,
+      },
+      {
+        id: 'sync',
+        title: 'Sync',
+        slug: 'sync',
+        aliases: ['Sync', 'Cloud Sync', 'Turso', 'Supabase', 'Cloudflare D1', 'E2EE'],
+        portal: 'help',
+        content: syncRaw,
+      },
+      {
+        id: 'tags',
+        title: 'Tags',
+        slug: 'tags',
+        aliases: ['Tags', 'Tag Pane', 'Nested Tags', '#tag'],
+        portal: 'help',
+        content: tagsRaw,
+      },
+      {
+        id: 'tasks',
+        title: 'Tasks',
+        slug: 'tasks',
+        aliases: ['Tasks', 'Task Dashboard', 'Kanban', 'Checklists', '- [ ]'],
+        portal: 'help',
+        content: tasksRaw,
+      },
+    ],
   },
   {
     id: 'faq',
     title: 'Frequently Asked Questions',
     slug: 'faq',
-    aliases: ['FAQ', 'Questions', 'Privacy', 'Offline'],
+    aliases: ['FAQ', 'Questions', 'Privacy', 'Offline', 'Mobile'],
     portal: 'help',
     content: faqRaw,
   },

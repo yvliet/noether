@@ -1,121 +1,67 @@
 # Installation & Setup
 
-Noether is distributed as a lightweight, cross-platform native desktop application built with Rust and Tauri. You can install pre-compiled binaries or build directly from source.
+Learn how to install Noether on macOS, Windows, and Linux, or compile the application from source.
 
-
-## 1. Availability & Version 1.0.0 Roadmap
-
+## 1. System Requirements
 ---
 
-Official pre-compiled desktop binaries and one-click installers will be available once **version 1.0.0** reaches stable release status.
+- **Windows**: Windows 10 or Windows 11 (64-bit or ARM64)
+- **macOS**: macOS 11 (Big Sur) or higher (Apple Silicon and Intel)
+- **Linux**: Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch Linux, or any distribution with `webkit2gtk-4.1`
 
-Until pre-built binaries are published, you can compile and run Noether locally from source (see [Building From Source](#3-building-from-source)).
-
-### Upcoming Platform Support for v1.0.0
-
-When version 1.0.0 launches, standalone installers and packages will be released for all major platforms:
-
-- **Windows**: `.msi` Windows Installer and `.exe` standalone packages (x64, ARM64)
-- **macOS**: `.dmg` package (Universal binary for Apple Silicon and Intel)
-- **Linux**: `.AppImage` portable package and `.deb` Debian/Ubuntu package (x86_64, ARM64)
-
+## 2. Desktop Installers
 ---
 
-## 2. System Requirements
+Official desktop packages will be published when version `1.0.0` reaches stable status:
 
+- **Windows**: Download the `.msi` installer or `.exe` standalone binary.
+- **macOS**: Download the `.dmg` package and drag Noether into your Applications folder.
+- **Linux**: Download the `.AppImage` (make executable with `chmod +x`) or the `.deb` package.
+
+## 3. Build from Source
 ---
 
-| Operating System | Supported Versions | Architecture |
-| :--- | :--- | :--- |
-| **macOS** | macOS 12 Monterey or newer | Apple Silicon (M1/M2/M3/M4) & Intel (x64) |
-| **Windows** | Windows 10 (1809+) and Windows 11 | x64, ARM64 |
-| **Linux** | Ubuntu 22.04+, Fedora 38+, Arch Linux | x64, ARM64 (WebKitGTK 4.1) |
-
----
-
-## 3. Building From Source
-
----
-
-Developers wishing to contribute to Noether core or test unreleased features can compile the desktop application from source.
+You can compile and run Noether locally at any time:
 
 ### Prerequisites
 
-1. **Node.js**: Version `20.0.0` or higher (`v22` LTS or `v24` recommended).
-2. **Rust & Cargo**: Version `1.78.0` or higher. Install via [rustup.rs](https://rustup.rs/):
-   ```bash
-   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-   ```
-3. **Platform Build Dependencies**:
-   - **Windows**: [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (select "Desktop development with C++").
-   - **macOS**: Xcode Command Line Tools (`xcode-select --install`).
-   - **Linux (Debian/Ubuntu)**:
-     ```bash
-     sudo apt install -y build-essential curl wget file libssl-dev libgtk-3-dev \
-       libayatana-appindicator3-dev librsvg2-dev libwebkit2gtk-4.1-dev
-     ```
+1. **Node.js**: Version 18.0.0 or higher.
+2. **Rust & Cargo**: Version 1.75 or higher (install via [rustup.rs](https://rustup.rs)).
+3. **C++ Build Tools**:
+   - On Windows: Visual Studio C++ Build Tools.
+   - On Linux: `build-essential`, `libwebkit2gtk-4.1-dev`, `libssl-dev`.
+   - On macOS: Xcode Command Line Tools (`xcode-select --install`).
 
----
+### Build Steps
 
-### Step-by-Step Build Instructions
-
-#### Step 1: Clone the Repository
 ```bash
+# 1. Clone the repository
 git clone https://github.com/yvliet/Noether.git
 cd noether
-```
 
-#### Step 2: Install Frontend Dependencies
-```bash
+# 2. Install dependencies
 npm install
+
+# 3. Launch the desktop application
+npm run app
 ```
 
-#### Step 3: Launch in Development Mode
-To run the live development environment with hot module replacement (HMR) for both the React frontend and Tauri Rust backend:
+### Production Build
+
 ```bash
-npm run tauri dev
-```
-Noether's Vite dev server will start at `http://localhost:1420`, and Tauri will spawn the native desktop window.
-
-#### Step 4: Run Frontend Development Server
-To work on the frontend UI in your browser without compiling the Rust desktop container:
-```bash
-npm run dev
-```
-Open `http://localhost:5173` in your browser. This mode uses mock platform adapters for rapid UI layout iteration.
-
-#### Step 5: Compile Production Binary
-To generate an optimized, stripped standalone installer for your current operating system:
-```bash
-npm run tauri build
-```
-The resulting installers and standalone binaries will be placed in:
-```
-src-tauri/target/release/bundle/
+# Compile native desktop binary for your current OS
+npm run tauri:build
 ```
 
+The resulting binary is generated in `src-tauri/target/release/bundle/`.
 
-## 4. Verification & Type Checking
-
+## 4. First Run & Creating a Vault
 ---
 
-Ensure that all TypeScript types and Rust components pass static analysis:
+1. Launch Noether.
+2. When prompted, select **Open Folder as Vault** or **Create New Vault**.
+3. Choose any folder on your computer.
+4. Noether initializes the workspace and opens your new note canvas immediately.
 
-```bash
-# Verify TypeScript typing across all core modules
-npx tsc --noEmit
-
-# Verify Rust compilation and linting
-cd src-tauri && cargo check
-```
-
-
-## 5. Next Steps
-
----
-
-Once your environment is set up:
-- Read [[Introduction to Noether]] to understand the Vault model and data sovereignty.
-- Check [[Dual-Storage Architecture]] to explore disk sync and SQLite caching.
-- Build your first custom extension with [[Extension Quick Start]].
-- Learn how to customize colors with [[Build Your First Theme]] and [[CSS Variables & Design Tokens]].
+> [!TIP]
+> You can open existing folders containing `.md` files (such as an existing Obsidian vault or Git repository). Noether reads your Markdown notes without modifying their structure.

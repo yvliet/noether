@@ -1,18 +1,18 @@
 # Noether Developer Documentation
 
-Welcome to the Noether Developer Documentation. This portal is dedicated to engineers, systems architects, extension builders, and open-source contributors who want to understand how Noether is engineered under the hood and how to build on top of it.
+Welcome to the Noether Developer Documentation. This portal is for engineers, extension developers, and contributors who want to understand how Noether works under the hood and how to build on top of it.
 
-If you are looking for user guides, feature walkthroughs, or getting started tips, click **Noether Docs** in the top-left corner anytime to switch over to **Noether Help**.
+If you are looking for user guides and feature walkthroughs, click **Noether Docs** in the top-left corner anytime to switch over to **Noether Help**.
 
-## 1. Core Architectural Invariants
+## 1. Core Architecture Principles
 ---
 
-Noether is engineered around four core systems principles:
+Noether is engineered around four core principles:
 
-- **Local-First Ground Truth**: Every note is a plain-text CommonMark `.md` file stored directly on disk. An embedded native SQLite database running via Rust acts as a high-speed relational and full-text search accelerator without altering the raw text files.
-- **Strict Micro-Kernel Core Isolation**: Native directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import extension code or types. Extensions integrate exclusively through the [[Noether SDK API Reference]] and the typed [[Reactive EventBus & State Pipeline]].
-- **Zero Micro-Interaction Animations**: UI controls (menus, toggles, buttons, trees) operate with zero decorative delays or artificial CSS transitions, preserving an instantaneous native desktop feel.
-- **Native Model Context Protocol (MCP)**: Every extension can register structured tools and prompts via the Model Context Protocol, allowing local AI agents (Claude Desktop, Cursor, Antigravity) to query notes and perform actions safely.
+- **Local Markdown Files**: Notes live as plain `.md` files on your disk. An embedded SQLite database running via Rust indexes full-text search, tags, and backlinks in the background.
+- **Strict Micro-Kernel Core Isolation**: Native application directories (`src/core`, `src/lib`, `src/store`, `src/components`, `src/types`, `src/sdk`) never import extension code or types. Extensions integrate exclusively through the [[Noether SDK API Reference]] and the typed [[Reactive EventBus & State Pipeline]].
+- **Zero Animation Delays**: Menus, toggles, buttons, and file trees render immediately with zero CSS transition delays, preserving a snappy native desktop feel.
+- **Model Context Protocol (MCP)**: Every extension can register structured tools and prompts via the Model Context Protocol, allowing local AI agents (Claude Desktop, Cursor, Antigravity) to query notes and perform actions safely.
 
 ## 2. Developer Portal Map
 ---
@@ -26,11 +26,11 @@ Noether is engineered around four core systems principles:
 | **Reference** | [[CSS Variables & Design Tokens]]<br>[[Noether UI Components]]<br>[[Noether SDK API Reference]]<br>[[Database Schema Reference]]<br>[[TypeScript API Reference]] | Exhaustive API signatures, database schemas, and design token catalogs. |
 | **Community Directory** | [[Community Directory Overview]]<br>[[Developer Policies & Guidelines]]<br>[[Extension Submission Requirements]]<br>[[Developer FAQ]] | Extension distribution policies, namespace claims, and registry guidelines. |
 
-## 3. Contributing & Codebase Standards
+## 3. Contributing & Community
 ---
 
 Noether is fully open source under the GPLv3 license:
 
 - **GitHub Repository**: [github.com/yvliet/Noether](https://github.com/yvliet/Noether)
-- **Issue Tracker & Discussions**: [GitHub Issues](https://github.com/yvliet/Noether/issues)
-- **Discord Community**: Connect directly with creator **[@yvliet](https://discord.com/users/1271415962909933680)** on Discord for architectural discussions and extension requests.
+- **Issue Tracker**: [GitHub Issues](https://github.com/yvliet/Noether/issues)
+- **Discord Community**: Connect directly with **[@yvliet](https://discord.com/users/1271415962909933680)** on Discord for architectural discussions and extension development.

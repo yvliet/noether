@@ -1,95 +1,73 @@
-# Vaults & Workspace Management
+# Vaults & Workspace Storage
 
-In Noether, individual workspaces or note vaults are called **Vaults**. This document covers how Vaults work, multi-workspace switching, full-text search with SQLite FTS5, file safety in the `.trash/` folder, and cloud/Git synchronization best practices.
+Learn how Noether manages your files on disk, organizes folders, indexes content with SQLite, and protects your data.
 
-## 1. The "Vault" Structure
+## 1. What is a Vault?
 ---
 
-A Vault is simply any standard folder on your computer that contains Markdown files. When opened in Noether, an internal `.noether/` directory is established at the root:
+A Vault is simply any standard folder on your computer that you open in Noether.
+
+Inside your vault folder, Noether creates a hidden `.noether/` directory to store local settings and the SQLite search index. All your notes are saved as ordinary CommonMark `.md` files directly on your filesystem.
+
+## 2. Organizing Folders and Notes
+---
+
+You have total flexibility over your file hierarchy. Here is a practical, tested folder structure for keeping your vault organized:
 
 ```
-My-Knowledge-Base/             ← Vault Root Directory
-├── .noether/                   ← Local Workspace Metadata & Cache
-│   ├── noether.sqlite          ← Native Rust SQLite database (WAL mode)
-│   ├── noether.sqlite-wal      ← SQLite Write-Ahead Log
-│   ├── settings.json           ← Vault-specific settings & toggles
-│   ├── canvas/                 ← Spatial canvas JSON definitions
-│   └── extensions/             ← Locally installed community extensions
-├── .trash/                   ← Soft-delete safety folder
-├── Projects/
-│   ├── Architecture.md
-│   └── Roadmap.md
-├── Journal/
-│   └── 2026-09-12.md
-└── Index.md
+My-Vault/
+├── Life/                       ← Broad personal domains
+│   ├── Personal/
+│   │   └── Goals.md
+│   └── Finances/
+├── Projects/                   ← Active projects with clear end goals
+│   ├── Website Redesign/
+│   │   ├── Tasks.md
+│   │   └── Research.md
+│   └── Book Launch/
+├── Areas/                      ← Long-term areas of responsibility
+│   ├── Engineering/
+│   └── Design/
+├── Resources/                  ← Reference material, cheat sheets, bookmarks
+│   └── Linux Commands.md
+└── Journal/                    ← Daily reflection notes
+    └── 2026-09-16.md
 ```
 
-### Physical Ground Truth & The SQLite Cache
-- **Your notes are never trapped in a database**: All text, frontmatter, headings, links, and media live as standard plain-text Markdown files directly on your drive.
-- **Cache Rebuild Resilience**: If `noether.sqlite` is ever deleted or damaged, Noether automatically scans your Markdown files on boot and reconstructs your note catalog, backlinks, and FTS5 search index in seconds.
-- **What is tied to SQLite**: While your writing and files are indestructible, `.noether/noether.sqlite` also holds data that plain Markdown syntax cannot represent:
-  - Custom table column widths (rebuilding from `.md` resets tables to automatic column sizing).
-  - Extension relational states (such as Spaced Repetition flashcard review history or custom icon assignments).
-  - Trash bin recovery metadata.
-- **Best Practice**: You do not need to baby the database, but avoid proactively deleting `.noether/noether.sqlite` unless you specifically want to reset extension data and trigger a fresh index rebuild.
+### Tips for Clean Organization
 
-## 2. Multi-Vault Agility
+- **Limit Root Files**: Keep your vault root directory clean by grouping notes into broad top-level topic folders (such as `Life/`, `Projects/`, `Resources/`).
+- **Use Wikilinks over Deep Nesting**: Instead of nesting folders five levels deep, keep folders shallow (1 to 2 levels) and connect related notes using `[[Wikilinks]]`.
+- **Use Properties for Metadata**: Use note properties (`status: in-progress`, `priority: high`) instead of moving files between status folders.
+
+## 3. Fast Full-Text Search (FTS5)
 ---
 
-Noether is engineered for seamless multi-workspace management:
+Noether runs an embedded SQLite database using FTS5 (Full-Text Search) to index your notes as you type:
 
-- **Vault Switcher (`Ctrl+Shift+O`)**: Press `Ctrl+Shift+O` or click the workspace name in the top titlebar to open the Vault Switcher modal.
-- **Instant Context Switching**: Switch between *Work*, *Personal*, *Research*, or *Client* vaults in milliseconds without restarting the desktop application.
-- **Cross-Vault Auto-Discovery**: Noether maintains a system-wide registry of recently opened vaults. External AI tools and the built-in MCP server can discover and search across all known Vaults automatically.
+- **Open Search**: Press `Ctrl+Shift+F` or click the search icon in the sidebar.
+- **Search Operators**:
+  - `tag:#physics`: Search for notes containing a specific tag.
+  - `path:Projects/`: Restrict search to notes inside a specific folder.
+  - `"exact phrase"`: Search for exact word sequences.
+  - `[status:active]`: Search for notes with specific property keys and values.
 
-### Multi-Tab Document Navigation
-Noether supports opening multiple tabs for the same note across different split editor panes or columns. When clicking notes in the sidebar navigation or file tree, Noether cleanly updates the active tab buffer in place rather than forcing focus onto an existing tab in another split column.
+Search results highlight matching sentences and open the exact paragraph when clicked.
 
-## 3. High-Performance Full-Text Search (SQLite FTS5 + BM25)
+## 4. Atomic Saves & Trash Bin
 ---
 
-Finding notes across a library of thousands of documents is instantaneous in Noether.
+Noether protects your files against data corruption:
 
-### Quick Open & File Switching (`Ctrl+K` or `Ctrl+O`)
-Press `Ctrl+K` to open the Command Palette and Note Search. Start typing to filter notes instantly by title, folder path, or excerpt matches. When opened with an empty query, it surfaces your 5 most recently modified notes.
+- **Atomic File Writes**: Saves write to a temporary file first before executing an atomic OS rename. If your computer shuts down or power cuts out mid-save, your notes are never left half-written.
+- **Local Trash Bin**: When you delete a note, Noether moves it to `.trash/` inside your vault instead of permanently destroying it. You can inspect or restore deleted files anytime in **Settings (`Ctrl+,`) → Trash**.
 
-### Full-Text Deep Search (`Ctrl+Shift+F`)
-Click the **Search** icon in the sidebar or press `Ctrl+Shift+F` for deep body text search across your entire vault.
-
-- **Statistical BM25 Ranking**: Search results are scored using the industry-standard Okapi BM25 ranking algorithm, matching term frequency and inverse document frequency.
-- **Diacritics Removal**: Searching for `resume` finds `résumé` automatically via SQLite's `unicode61 remove_diacritics 1` tokenizer.
-- **Syntax Filters**:
-  - `tag:#architecture`: Restricts results to documents with the specified tag.
-  - `path:Projects/`: Restricts search to a specific directory subtree.
-  - `"exact phrase"`: Matches literal multi-word strings.
-
-## 4. File Safety & Soft-Delete Recovery (`.trash/`)
+## 5. Backups and Synchronization
 ---
 
-Accidental file deletion should never result in permanent data loss. Noether implements a **safe soft-delete pipeline**:
+Because your vault consists of plain files on disk, backing up and syncing your notes is simple:
 
-1. **Confirmation Prompt**: Triggering note deletion prompts a confirmation dialog explaining where the file will be placed, with a "Don't ask again" choice for instant deletion workflows.
-2. **Trash Folder Relocation**: When confirmed, Noether moves the physical `.md` file into the hidden `.trash/` directory inside your Vault.
-3. **Metadata Preservation**: Original file paths, timestamps, and document IDs are recorded in the `trash_items` SQLite table.
-4. **Restoration**: Deleted notes can be inspected and restored to their original location with a single click in *Settings → File Safety → Trash Bin*.
-
-## 5. Synchronization & Backup Best Practices
----
-
-Because Noether stores plain CommonMark files alongside lightweight SQLite journals, you have complete freedom to choose your synchronization tool:
-
-### Using Git
-Git is an ideal synchronization tool for Noether Vaults:
-- Notes remain human-readable diffs in commit histories.
-- Create a `.gitignore` inside your Vault root:
-  ```gitignore
-  # Ignore temporary SQLite cache and WAL logs
-  .noether/noether.sqlite*
-  .noether/*.tmp*
-  .trash/
-  ```
-  *(Noether will automatically regenerate `noether.sqlite` on other machines upon launch. Note that extension SQLite data such as flashcard review schedules won't sync over Git unless you back up `.noether/noether.sqlite` or use Noether's built-in cloud sync extension).*
-
-### Using Syncthing, iCloud Drive, or Dropbox
-- Set your Vault folder directly within your synchronized cloud directory.
-- Noether's **atomic temp-and-rename writes** and **echo suppression signatures** prevent file-watcher conflict loops during remote sync updates.
+- **Git Versioning**: Initialize a Git repository inside your vault folder to version all changes with `git commit`.
+- **Cloud Drives**: You can store your vault in Dropbox, Google Drive, OneDrive, or iCloud Drive.
+- **Syncthing**: For private peer-to-peer syncing across computers without third-party servers, point Syncthing at your vault directory.
+- **Noether Sync**: Use the built-in [[Sync]] extension to synchronize notes to free cloud databases (Turso, Supabase, Cloudflare D1) with optional end-to-end encryption.
