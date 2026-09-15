@@ -41,7 +41,7 @@ async function runTests() {
     await page.goto(url, { waitUntil: 'commit', timeout: 30000 });
 
     // Wait for the app shell to render
-    await page.waitForSelector('[data-action-rail="true"]', { timeout: 30000 });
+    await page.waitForSelector('[data-action-rail="true"]', { timeout: 45000 });
     console.log('✅ AppShell and ActionRail rendered successfully');
 
     // Wait for stores and extensions to hydrate

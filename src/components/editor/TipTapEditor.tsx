@@ -13,11 +13,35 @@ import TaskItem from '@tiptap/extension-task-item';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
 import Table from '@tiptap/extension-table';
+import { columnResizing, tableEditing } from '@tiptap/pm/tables';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { TableEdgeControls } from './TableEdgeControls';
 import { getLineEdgeInfo, getLineEdgePos } from './editorCoords';
+
+// Ensure columnResizing plugin is always included so resizing is active in both reading and editing views
+const ResizableTable = Table.extend({
+  addProseMirrorPlugins() {
+    const isResizable = Boolean(this.options.resizable);
+    return [
+      ...(isResizable
+        ? [
+            columnResizing({
+              handleWidth: this.options.handleWidth,
+              cellMinWidth: this.options.cellMinWidth,
+              defaultCellMinWidth: this.options.cellMinWidth,
+              View: this.options.View,
+              lastColumnResizable: this.options.lastColumnResizable,
+            }),
+          ]
+        : []),
+      tableEditing({
+        allowTableNodeSelection: this.options.allowTableNodeSelection,
+      }),
+    ];
+  },
+});
 
 import { SlashCommands, SlashItem } from './extensions/slash-command';
 import { WikiLinks, WikiLinkItem } from './extensions/wikilink';
@@ -31,6 +55,7 @@ import { NumberedListBehavior } from './extensions/numbered-list-behavior';
 import { Fold, FoldPluginKey } from './extensions/fold';
 import { SearchAndReplace } from './extensions/search-and-replace';
 import { SmartTabIndent } from './extensions/smart-tab-indent';
+import { DropGhost } from './extensions/drop-ghost';
 import { TableExitBehavior } from './extensions/table-exit-behavior';
 import { transformPastedHtmlToMarkdown } from './paste-markdown';
 import { SlashMenu } from './SlashMenu';
@@ -42,7 +67,7 @@ import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { platform } from '@/lib/platform/platformAdapter';
 import { markLinkVisited } from '@/lib/visitedLinks';
-import { getDocumentPath } from '@/lib/db/documents';
+import { getDocumentPath, markdownToTipTapJson } from '@/lib/db/documents';
 import { useNoetherApp, useExtensionList, usePlaceholderHints } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { ColorPicker, InlineColorPicker } from '@/components/common/ColorPicker';
@@ -317,7 +342,7 @@ function extractLinkTargetFromEvent(
         if (inner.includes('|')) inner = inner.split('|')[0].trim();
         if (inner) wikiTarget = inner;
       } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
-        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        const decoded = decodeURIComponent(trimmed).trim();
         if (decoded) wikiTarget = decoded;
       }
 
@@ -708,11 +733,97 @@ const createCommunityEditorBridge = (app: NoetherApp, documentId?: string) => {
  * (`# `, `## `, etc.) into native heading nodes with the appropriate level attribute,
  * ensuring proper styling, outline navigation, and code folding.
  */
+/**
+ * Normalizes TipTap JSON document to conform with Noether's editor schema.
+ * 1. Converts bulletList and orderedList AST nodes into standard paragraph blocks with `- ` or `1. ` prefixes,
+ *    allowing NumberedListBehavior and LivePreviewSyntax to format them without schema RangeErrors.
+ * 2. Converts plain paragraph blocks starting with markdown headings (`# ...`) into native heading nodes.
+ * 3. Recursively handles nested lists, blockquotes, and converts any unrecognized block types to paragraphs.
+ */
 function normalizeTipTapContent(doc: any): any {
   if (!doc || typeof doc !== 'object' || !Array.isArray(doc.content)) return doc;
 
-  const newContent = doc.content.map((node: any) => {
-    if (node && node.type === 'paragraph' && Array.isArray(node.content) && node.content.length > 0) {
+  const normalizeNode = (node: any, indent = 0): any[] => {
+    if (!node || typeof node !== 'object') return [];
+
+    // 1. Convert bulletList and orderedList into paragraph blocks
+    if (node.type === 'bulletList' || node.type === 'orderedList') {
+      const isOrdered = node.type === 'orderedList';
+      const startNum = (isOrdered && node.attrs && typeof node.attrs.start === 'number') ? node.attrs.start : 1;
+      const result: any[] = [];
+      const items = Array.isArray(node.content) ? node.content : [];
+
+      items.forEach((item: any, index: number) => {
+        const prefix = ' '.repeat(indent) + (isOrdered ? `${startNum + index}. ` : '- ');
+        if (item && item.type === 'listItem' && Array.isArray(item.content)) {
+          let isFirstPara = true;
+          item.content.forEach((child: any) => {
+            if (child.type === 'bulletList' || child.type === 'orderedList') {
+              result.push(...normalizeNode(child, indent + 2));
+            } else if (child.type === 'paragraph') {
+              const childContent = Array.isArray(child.content) ? [...child.content] : [];
+              if (isFirstPara) {
+                isFirstPara = false;
+                if (childContent.length > 0 && childContent[0].type === 'text') {
+                  const firstText = childContent[0].text || '';
+                  if (!/^(\s*[-*+]|\s*\d+\.)\s/.test(firstText)) {
+                    childContent[0] = { ...childContent[0], text: prefix + firstText };
+                  }
+                } else {
+                  childContent.unshift({ type: 'text', text: prefix });
+                }
+              }
+              result.push({ ...child, content: childContent });
+            } else {
+              result.push(...normalizeNode(child, indent));
+            }
+          });
+        } else {
+          result.push(...normalizeNode(item, indent));
+        }
+      });
+      return result;
+    }
+
+    // 2. Convert raw listItem into paragraphs
+    if (node.type === 'listItem' && Array.isArray(node.content)) {
+      const result: any[] = [];
+      for (const child of node.content) {
+        result.push(...normalizeNode(child, indent));
+      }
+      return result;
+    }
+
+    // 3. Convert legacy blockquote nodes into paragraph blocks with > prefixes
+    if (node.type === 'blockquote') {
+      const result: any[] = [];
+      const items = Array.isArray(node.content) ? node.content : [];
+      items.forEach((child: any) => {
+        const normalizedChildren = normalizeNode(child, indent);
+        normalizedChildren.forEach((normChild: any) => {
+          if (normChild.type === 'paragraph') {
+            const childContent = Array.isArray(normChild.content) ? [...normChild.content] : [];
+            if (childContent.length > 0 && childContent[0].type === 'text') {
+              const firstText = childContent[0].text || '';
+              if (/^[ \t]*>/.test(firstText)) {
+                childContent[0] = { ...childContent[0], text: firstText.replace(/^([ \t]*)(>+)/, '$1>$2') };
+              } else {
+                childContent[0] = { ...childContent[0], text: `> ${firstText}` };
+              }
+            } else {
+              childContent.unshift({ type: 'text', text: '> ' });
+            }
+            result.push({ ...normChild, content: childContent });
+          } else {
+            result.push(normChild);
+          }
+        });
+      });
+      return result;
+    }
+
+    // 4. Handle heading markdown inside paragraphs
+    if (node.type === 'paragraph' && Array.isArray(node.content) && node.content.length > 0) {
       const firstChild = node.content[0];
       if (firstChild && firstChild.type === 'text' && typeof firstChild.text === 'string') {
         const match = firstChild.text.match(/^([ ]{0,3})(#{1,6})(?:[ \t]+(.*))?$/);
@@ -725,17 +836,33 @@ function normalizeTipTapContent(doc: any): any {
             newInlineContent.push({ ...firstChild, text: restOfFirstText });
           }
           newInlineContent.push(...remainingContent);
-          return {
-            type: 'heading',
-            attrs: { level },
-            content: newInlineContent,
-          };
+          return [
+            {
+              type: 'heading',
+              attrs: { level },
+              content: newInlineContent,
+            },
+          ];
         }
       }
     }
-    return node;
-  });
 
+    // 4. Recursively normalize children for containers (blockquote, etc.)
+    if (Array.isArray(node.content) && node.type !== 'table' && node.type !== 'taskList') {
+      const newContent: any[] = [];
+      for (const child of node.content) {
+        newContent.push(...normalizeNode(child, indent));
+      }
+      return [{ ...node, content: newContent }];
+    }
+
+    return [node];
+  };
+
+  const newContent: any[] = [];
+  for (const child of doc.content) {
+    newContent.push(...normalizeNode(child, 0));
+  }
   return { ...doc, content: newContent };
 }
 
@@ -938,20 +1065,34 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         ],
       };
     }
+    // 1. Try parsing as TipTap JSON AST
     try {
       const parsed = typeof content === 'string' ? JSON.parse(content) : content;
-      return normalizeTipTapContent(parsed);
-    } catch (e) {
-      return {
-        type: 'doc',
-        content: [
-          {
-            type: 'paragraph',
-            content: [],
-          },
-        ],
-      };
-    }
+      if (parsed && parsed.type === 'doc' && Array.isArray(parsed.content)) {
+        return normalizeTipTapContent(parsed);
+      }
+    } catch (e) {}
+
+    // 2. Fall back to converting raw markdown string
+    try {
+      if (typeof content === 'string') {
+        const jsonStr = markdownToTipTapJson(content);
+        const parsed = JSON.parse(jsonStr);
+        if (parsed && parsed.type === 'doc' && Array.isArray(parsed.content)) {
+          return normalizeTipTapContent(parsed);
+        }
+      }
+    } catch (e) {}
+
+    return {
+      type: 'doc',
+      content: [
+        {
+          type: 'paragraph',
+          content: [],
+        },
+      ],
+    };
   }, []);
 
   const extensions = useMemo(
@@ -1205,6 +1346,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       MathChip,
       SmartMathNavigation,
       SearchAndReplace,
+      DropGhost.configure({ app }),
       StarterKit.configure({
         heading: { levels: [1, 2, 3, 4, 5, 6] },
         // Enable hardBreak so that Shift-Enter inserts inline <br> breaks with normal line-height
@@ -1222,6 +1364,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         code: false,
         orderedList: false,
         bulletList: false,
+        blockquote: false,
       }),
       Placeholder.configure({
         placeholder: ({ node }) => {
@@ -1237,7 +1380,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       TaskItem.configure({
         nested: true,
       }),
-      Table.configure({
+      ResizableTable.configure({
         resizable: useSettingsStore.getState().tableEnableColumnResizing ?? true,
         HTMLAttributes: {
           class: 'noether-table',
@@ -1327,7 +1470,33 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                     cleanup();
                     return;
                   }
-                  const headPos = getLineEdgePos(ed.view, moveEv.clientX, moveEv.clientY);
+                  let headPos: number | null = null;
+                  const targetEl = document.elementFromPoint(moveEv.clientX, moveEv.clientY) as HTMLElement | null;
+                  const cellEl = targetEl?.closest('td, th') as HTMLTableCellElement | null;
+
+                  if (cellEl && ed.view.dom.contains(cellEl)) {
+                    try {
+                      const cellDomPos = ed.view.posAtDOM(cellEl, 0);
+                      const $pos = ed.view.state.doc.resolve(cellDomPos);
+                      let cellDepth = -1;
+                      for (let d = $pos.depth; d > 0; d--) {
+                        const name = $pos.node(d).type.name.toLowerCase();
+                        if (name.includes('cell') || name.includes('header')) {
+                          cellDepth = d;
+                          break;
+                        }
+                      }
+                      if (cellDepth !== -1) {
+                        const cellStart = $pos.start(cellDepth);
+                        const cellEnd = $pos.end(cellDepth);
+                        headPos = anchorPos > cellEnd ? cellStart : cellEnd;
+                      }
+                    } catch {}
+                  }
+
+                  if (headPos === null) {
+                    headPos = getLineEdgePos(ed.view, moveEv.clientX, moveEv.clientY);
+                  }
                   if (headPos === null) return;
                   try {
                     const tr = ed.view.state.tr.setSelection(TextSelection.create(ed.view.state.doc, anchorPos, headPos));
@@ -2193,7 +2362,10 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
   // Keep editor content in sync when active document switches or updates externally
   useEffect(() => {
     if (!editor || !content) return;
-    if (content === lastEmittedJsonRef.current) {
+    const docChanged = prevDocIdRef.current !== documentId;
+    prevDocIdRef.current = documentId;
+
+    if (!docChanged && content === lastEmittedJsonRef.current) {
       return;
     }
     if (isInternalUpdateRef.current) {
@@ -2202,8 +2374,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     }
     try {
       const currentJson = JSON.stringify(editor.getJSON());
-      const docChanged = prevDocIdRef.current !== documentId;
-      prevDocIdRef.current = documentId;
 
       if (currentJson !== content || docChanged) {
         // ProseMirror Authority Invariant:
@@ -2216,10 +2386,18 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           return;
         }
         lastEmittedJsonRef.current = typeof content === 'string' ? content : JSON.stringify(content);
-        const parsed = typeof content === 'string' ? JSON.parse(content) : content;
-        editor.commands.setContent(normalizeTipTapContent(parsed), false);
-        if (editor.view && !editor.isDestroyed) {
-          editor.view.dispatch(editor.state.tr.setMeta('forceRebuildDecorations', true));
+        let parsed: any;
+        try {
+          parsed = typeof content === 'string' ? JSON.parse(content) : content;
+        } catch {
+          const jsonStr = markdownToTipTapJson(content);
+          parsed = JSON.parse(jsonStr);
+        }
+        if (parsed && parsed.type === 'doc' && Array.isArray(parsed.content)) {
+          editor.commands.setContent(normalizeTipTapContent(parsed), false);
+          if (editor.view && !editor.isDestroyed) {
+            editor.view.dispatch(editor.state.tr.setMeta('forceRebuildDecorations', true));
+          }
         }
       }
     } catch (e) {}
@@ -2554,6 +2732,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         }
       }}
       onContextMenu={(e) => handleEditorContextMenu(e)}
+      data-editor-view="true"
+      data-editor-canvas="true"
       className={`relative w-full flex-1 flex flex-col ${editable ? 'cursor-text' : 'cursor-default tiptap-reading-view'}`}
     >
       <EditorContent editor={editor} className="flex-1 w-full flex flex-col text-left" />

@@ -82,7 +82,7 @@ function extractWikilinkFromTarget(rawTarget: EventTarget | null): { element: HT
         if (inner.includes('|')) inner = inner.split('|')[0].trim();
         if (inner) return { element: mdLinkElem, target: inner };
       } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
-        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        const decoded = decodeURIComponent(trimmed).trim();
         if (decoded) return { element: mdLinkElem, target: decoded };
       }
     }
@@ -991,6 +991,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       }
       return;
     }
+    if (currentDoc && currentDoc.id === docId) {
+      setTitle(trimmed);
+      titleRef.current = trimmed;
+    }
     await renameDocument(docId, trimmed);
     if (isSidebarMode) {
       useSidebarDockStore.setState((s) => ({
@@ -1061,7 +1065,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         }
       } else {
         // Same document updated (e.g. from background auto-save or edit from another pane)
-        if (!isEditingSubheader && !isMainTitleFocused) {
+        if (!isEditingSubheader && !isMainTitleFocused && !isEditingTitleRef.current) {
           setTitle(currentDoc.title);
           titleRef.current = currentDoc.title;
         }
@@ -1149,12 +1153,9 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     isEditingTitleRef.current = true;
     if (currentDoc) {
       pendingTitleEditRef.current = { docId: currentDoc.id, title: val };
-      const trimmed = val.trim();
-      if (trimmed) {
-        updateTabTitle(currentDoc.id, trimmed);
-      }
+      updateDocumentTitleInMemory(currentDoc.id, val);
     }
-  }, [isLocked, currentDoc, updateTabTitle]);
+  }, [isLocked, currentDoc, updateDocumentTitleInMemory]);
 
   const handleContentChange = useCallback(
     (newJson: string, sourceDocId?: string) => {
@@ -1462,7 +1463,10 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                               } else if (e.key === 'Escape') {
                                 e.preventDefault();
                                 if (currentDoc) {
-                                  setTitle(currentDoc.title);
+                                  const orig = currentDoc._sortTitle !== undefined ? currentDoc._sortTitle : currentDoc.title;
+                                  setTitle(orig);
+                                  titleRef.current = orig;
+                                  updateDocumentTitleInMemory(currentDoc.id, orig);
                                 }
                                 setIsEditingSubheader(false);
                               }
@@ -1733,12 +1737,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
               />
               {isImageDoc ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-4 select-none my-auto">
-                  <div className="max-w-full flex items-center justify-center rounded-lg overflow-hidden border border-[#2a2a2a] bg-[#141414] shadow-md p-2">
+                  <div className="max-w-full flex items-center justify-center">
                     <img
                       src={mediaSrc}
                       alt={currentDoc.title}
                       onClick={() => useWorkspaceStore.getState().openImageLightbox(mediaSrc, currentDoc.title)}
-                      className="max-w-full max-h-[calc(100vh-140px)] object-contain rounded cursor-zoom-in"
+                      className="max-w-full max-h-[calc(100vh-140px)] object-contain cursor-zoom-in"
                     />
                   </div>
                 </div>
@@ -1783,7 +1787,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   <div className="relative group/title">
                     {/* Document Title Header */}
                     {inlineTitle && (
-                      <div className={`${hasActiveHeaders ? 'mb-3' : 'mb-4'} relative select-none`}>
+                      <div className={`${hasActiveHeaders ? 'mb-3' : 'mb-4'} relative select-none -ml-1`}>
                         {/* Fold button on Document Title Header */}
                         {foldHeading && hasActiveHeaders && currentDoc && (
                           <button
@@ -1835,13 +1839,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                       (e.target as HTMLInputElement).blur();
                                     } else if (e.key === 'Escape') {
                                       e.preventDefault();
-                                      if (currentDoc) setTitle(currentDoc.title);
+                                      if (currentDoc) {
+                                        const orig = currentDoc._sortTitle !== undefined ? currentDoc._sortTitle : currentDoc.title;
+                                        setTitle(orig);
+                                        titleRef.current = orig;
+                                        updateDocumentTitleInMemory(currentDoc.id, orig);
+                                      }
                                       setIsMainTitleFocused(false);
                                       (e.target as HTMLInputElement).blur();
                                     }
                                   }}
                                   placeholder="Untitled"
-                                  className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none font-text tracking-tight leading-tight"
+                                  className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none p-0 font-text tracking-tight leading-tight"
                                 />
 
                                 {/* Duplicate Name Warning Tooltip */}
@@ -1887,13 +1896,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                   (e.target as HTMLInputElement).blur();
                                 } else if (e.key === 'Escape') {
                                   e.preventDefault();
-                                  if (currentDoc) setTitle(currentDoc.title);
+                                  if (currentDoc) {
+                                    const orig = currentDoc._sortTitle !== undefined ? currentDoc._sortTitle : currentDoc.title;
+                                    setTitle(orig);
+                                    titleRef.current = orig;
+                                    updateDocumentTitleInMemory(currentDoc.id, orig);
+                                  }
                                   setIsMainTitleFocused(false);
                                   (e.target as HTMLInputElement).blur();
                                 }
                               }}
                               placeholder="Untitled"
-                              className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none pb-2 font-text tracking-tight leading-tight"
+                              className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none p-0 pb-2 font-text tracking-tight leading-tight"
                             />
 
                             {/* Duplicate Name Warning Tooltip */}
@@ -1932,6 +1946,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   {/* TipTap Editor Prose Canvas */}
                   <div
                     ref={editorWrapperRef}
+                    data-editor-view="true"
+                    data-editor-canvas="true"
                     style={editorMinHeight ? { minHeight: `${editorMinHeight}px` } : undefined}
                     className={`flex-1 w-full flex flex-col ${
                       lineNumbers ? 'noether-line-numbers' : ''

@@ -575,7 +575,7 @@ function renderInlineMarkdown(text: string): string {
         if (inner.includes('|')) inner = inner.split('|')[0].trim();
         if (inner) wikiTarget = inner;
       } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
-        const decoded = decodeURIComponent(trimmed).replace(/\.md$/, '').trim();
+        const decoded = decodeURIComponent(trimmed).trim();
         if (decoded) wikiTarget = decoded;
       }
 

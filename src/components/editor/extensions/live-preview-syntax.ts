@@ -376,7 +376,7 @@ function scanBlockDecorations(
       if (!headerMeta.title) {
         const badgeSpan = document.createElement('span');
         badgeSpan.className = 'noether-callout-badge';
-        badgeSpan.textContent = typeInfo.title;
+        badgeSpan.textContent = typeInfo.title.toUpperCase();
         dom.appendChild(badgeSpan);
       }
 
@@ -838,7 +838,7 @@ function scanBlockDecorations(
         if (raw.includes('|')) raw = raw.split('|')[0].trim();
         if (raw) internalWikiTarget = raw;
       } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmedUrl) && !trimmedUrl.startsWith('#')) {
-        const decoded = decodeURIComponent(trimmedUrl).replace(/\.md$/, '').trim();
+        const decoded = decodeURIComponent(trimmedUrl).trim();
         if (decoded) internalWikiTarget = decoded;
       }
 
