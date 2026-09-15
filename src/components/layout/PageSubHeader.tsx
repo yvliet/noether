@@ -373,11 +373,17 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
         }
       }
 
+      const isCurrentPage = index === total - 1;
+
       return (
         <span
           key={item.id || index}
           onClick={(e) => item.onClick?.(app, e)}
           className={`inline-flex items-center gap-1 truncate ${
+            isCurrentPage
+              ? 'text-[var(--noether-text-secondary,#dcddde)] font-normal'
+              : 'text-[#666] hover:text-[#999]'
+          } ${
             item.onClick ? 'cursor-pointer hover:text-[var(--noether-text-primary)] transition-none' : ''
           } ${item.className || ''}`}
         >
@@ -489,7 +495,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
               {centerContent}
             </div>
           ) : matchedBreadcrumbs && matchedBreadcrumbs.length > 0 ? (
-            <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1 font-sans min-w-0 text-[var(--noether-text-secondary,#888)]">
+            <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1 font-sans min-w-0 text-[var(--noether-text-secondary,#dcddde)]">
               {matchedBreadcrumbs.map((crumb, idx) => (
                 <React.Fragment key={crumb.id || idx}>
                   {idx > 0 && <span className="text-[#555] select-none mx-0.5">/</span>}
@@ -498,18 +504,18 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
               ))}
             </div>
           ) : (
-            <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans min-w-0">
+            <div className="text-[12px] font-normal text-[var(--noether-text-secondary,#dcddde)] truncate max-w-sm px-1.5 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans min-w-0">
               {resolvedIcon && (
-                <span className="shrink-0 text-[var(--noether-text-secondary)] flex items-center">
+                <span className="shrink-0 text-[var(--noether-text-secondary,#dcddde)] flex items-center">
                   {React.isValidElement(resolvedIcon)
                     ? React.cloneElement(resolvedIcon as React.ReactElement<any>, {
                         size: 13,
-                        className: 'shrink-0',
+                        className: `shrink-0 ${(resolvedIcon.props as any)?.className || ''}`.trim(),
                       })
                     : resolvedIcon}
                 </span>
               )}
-              <span className="truncate block min-w-0">{displayTitle}</span>
+              <span className="truncate block min-w-0 text-[var(--noether-text-secondary,#dcddde)]">{displayTitle}</span>
             </div>
           )}
 

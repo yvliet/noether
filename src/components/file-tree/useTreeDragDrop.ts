@@ -6,8 +6,10 @@ import { useDragDropStore } from '@/store/dragDropStore';
 import { useSidebarDockStore, DockZone } from '@/store/sidebarDockStore';
 import { computeDragTargets, broadcastDragState } from '@/hooks/useTabReorder';
 import { isDescendant } from '@/lib/db/documents';
-import { dragTooltipManager, STICKY_NOTE_02_SVG, FOLDER_SVG } from '@/lib/dragTooltip';
-import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
+import { dragTooltipManager, NOTE_ICON_SVG, STICKY_NOTE_02_SVG, FOLDER_SVG } from '@/lib/dragTooltip';
+import { fileTypeRegistry, isMediaFileName } from '@/core/registries/FileTypeRegistry';
+import { getCachedImageSrc, resolveImageSrcAsync } from '@/components/editor/embed-renderer';
+import { useNoetherApp } from '@/core/app/AppContext';
 
 export interface UseTreeDragDropOptions {
   item: DocumentItem | { id: string; title: string; is_folder?: boolean; parent_id?: string | null; doc_type?: string };
@@ -30,6 +32,7 @@ export function useTreeDragDrop({
   onCustomDrop,
   onStandardDrop,
 }: UseTreeDragDropOptions) {
+  const app = useNoetherApp();
   const selectedDocIds = useDocumentStore((s) => s.selectedDocIds);
   const moveDocuments = useDocumentStore((s) => s.moveDocuments);
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -42,6 +45,7 @@ export function useTreeDragDrop({
 
   const [isDragHovered, setIsDragHovered] = useState(false);
   const hoverTimeoutRef = useRef<any>(null);
+  const justDraggedRef = useRef(false);
 
   const isFolder = !!item.is_folder;
   const isBeingDragged = Boolean(
@@ -87,15 +91,29 @@ export function useTreeDragDrop({
         if (!hasStartedDrag) {
           if (dist > 5) {
             hasStartedDrag = true;
+            justDraggedRef.current = true;
             const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(item.title);
             const displayTitle = getDisplayTitle
               ? getDisplayTitle()
               : customType
               ? fileTypeRegistry.cleanTitle(item.title)
               : item.title || 'Untitled';
-            const iconSvg = getIconSvg ? getIconSvg() : isFolder ? FOLDER_SVG : STICKY_NOTE_02_SVG;
+            const iconSvg = getIconSvg ? getIconSvg() : isFolder ? FOLDER_SVG : NOTE_ICON_SVG;
 
-            setDraggedItem(item as DocumentItem);
+            const allDocs = useDocumentStore.getState().documents;
+            const allItems = isMultiDrag
+              ? allDocs.filter((d) => currentSelectedIds.includes(d.id))
+              : [item as DocumentItem];
+
+            useDragDropStore.getState().startDrag({
+              item: item as DocumentItem,
+              items: allItems,
+              selectedIds: isMultiDrag ? currentSelectedIds : [item.id],
+              source: 'file-tree',
+              clientX: moveEvent.clientX,
+              clientY: moveEvent.clientY,
+            });
+
             dragTooltipManager.show(
               displayTitle,
               isMultiDrag ? `+${currentSelectedIds.length - 1} items` : null,
@@ -113,6 +131,7 @@ export function useTreeDragDrop({
           dragTooltipManager.updatePosition(moveEvent.clientX, moveEvent.clientY);
 
           const hoveredEl = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY) as HTMLElement | null;
+          useDragDropStore.getState().updatePosition(moveEvent.clientX, moveEvent.clientY, hoveredEl);
 
           // 1. Custom Hover Hook Check
           if (onCustomHover) {
@@ -125,8 +144,62 @@ export function useTreeDragDrop({
             }
           }
 
-          // 2. Generic Custom Drop Target DOM Check
-          const customDropTarget = hoveredEl?.closest('[data-custom-drop-target="true"]') as HTMLElement | null;
+          const isOverHeaderOrDock = Boolean(
+            hoveredEl?.closest(
+              'header, [data-noether-header], [data-split-tab-header], [data-dock-zone]'
+            )
+          );
+
+          // 2. Tab Bar & Sidebar Dock Zone Check (Always prioritize header/dock targets)
+          if (!item.is_folder) {
+            const docItemForReorder = { ...item, type: 'document' };
+            const targets = computeDragTargets(moveEvent.clientX, moveEvent.clientY, docItemForReorder);
+            if (targets.targetDockZone || targets.targetPaneId) {
+              broadcastDragState({
+                sourceType: 'tree',
+                ...targets,
+              });
+              setDragOverFolder(null, true);
+              app.events.emit('editor:drop-ghost', { ghost: null });
+              let subtitle: string | null = null;
+              if (targets.targetDockZone) {
+                if (targets.targetDockZone.endsWith('bottom')) {
+                  subtitle = isMultiDrag ? 'Dock to bottom split' : 'Dock to bottom split';
+                } else if (targets.targetDockZone === 'left-top') {
+                  subtitle = isMultiDrag ? 'Dock to left sidebar' : 'Dock to left sidebar';
+                } else {
+                  subtitle = isMultiDrag ? 'Dock to right sidebar' : 'Dock to right sidebar';
+                }
+              } else if (targets.targetPaneId) {
+                subtitle = isMultiDrag ? `Open ${currentSelectedIds.length} tabs` : 'Open in tab';
+              }
+              dragTooltipManager.updateSubtitle(subtitle);
+              return;
+            }
+          }
+          broadcastDragState(null);
+
+          // 3. Spatial Canvas Surface Check (only when not over header/dock)
+          const canvasEl = !isOverHeaderOrDock
+            ? (hoveredEl?.closest('[data-canvas-view="true"]') as HTMLElement | null)
+            : null;
+          if (canvasEl) {
+            setDragOverFolder(null, true);
+            app.events.emit('editor:drop-ghost', { ghost: null });
+            if (item.is_folder || item.doc_type === 'canvas') {
+              dragTooltipManager.updateSubtitle('Cannot add to canvas');
+            } else {
+              dragTooltipManager.updateSubtitle(
+                isMultiDrag ? `Add ${currentSelectedIds.length} notes to canvas` : 'Add note to canvas'
+              );
+            }
+            return;
+          }
+
+          // 4. Generic Custom Drop Target DOM Check (only when not over header/dock)
+          const customDropTarget = !isOverHeaderOrDock
+            ? (hoveredEl?.closest('[data-custom-drop-target="true"]') as HTMLElement | null)
+            : null;
           if (customDropTarget) {
             const dropSubtitle = customDropTarget.getAttribute('data-drop-subtitle');
             const targetId =
@@ -134,36 +207,125 @@ export function useTreeDragDrop({
               customDropTarget.getAttribute('data-custom-drop-target-id') ||
               null;
             setDragOverFolder(targetId, true);
-            broadcastDragState(null);
+            app.events.emit('editor:drop-ghost', { ghost: null });
             dragTooltipManager.updateSubtitle(dropSubtitle || null);
             return;
           }
 
-          // 3. Tab Bar & Sidebar Dock Zone Check - uses the exact same indicator like everything does
-          if (!item.is_folder) {
-            const docItemForReorder = { ...item, type: 'document' };
-            const targets = computeDragTargets(moveEvent.clientX, moveEvent.clientY, docItemForReorder);
-            // Architecture Rationale ("Why This, Not That"):
-            // Prevent dragging folders/files from nav into docking zones that exist in the nav sidebar
-            // ('left-top', 'left-bottom'). Tree reorganization in the nav sidebar must remain snappy
-            // and never accidentally trigger nav sidebar docking. Tabs (from editor tab headers) and dock
-            // items (from secondary icon bars) are handled via useTabReorder and remain fully dockable.
-            if (targets.targetDockZone && targets.targetDockZone.startsWith('left')) {
-              targets.targetDockZone = null;
-            }
-            if (targets.targetDockZone || targets.targetPaneId) {
-              broadcastDragState({
-                sourceType: 'tree',
-                ...targets,
-              });
-              setDragOverFolder(null, true);
-              dragTooltipManager.updateSubtitle(isMultiDrag ? `+${currentSelectedIds.length - 1} items` : null);
-              return;
-            }
-          }
-          broadcastDragState(null);
+          // 5. Editor Surface Check (Wikilink & Media Embed Insertion + Live Drop Ghost, only when not over header/dock)
+          const editorEl = !isOverHeaderOrDock
+            ? (hoveredEl?.closest(
+                '.tiptap.prose, [data-editor-canvas="true"], [data-editor-view="true"], .ProseMirror, .cm-editor'
+              ) as HTMLElement | null)
+            : null;
+          if (editorEl) {
+            setDragOverFolder(null, true);
+            const isMedia = isMediaFileName(item.title);
+            const selectedDocs = allDocs.filter((d) => currentSelectedIds.includes(d.id));
+            const droppedDocs = isMultiDrag
+              ? selectedDocs.length > 0
+                ? selectedDocs
+                : [item as DocumentItem]
+              : [item as DocumentItem];
 
-          // 4. File Tree Node & Root Check
+            if (isMultiDrag) {
+              const allMedia = droppedDocs.every((d) => isMediaFileName(d.title));
+              const anyMedia = droppedDocs.some((d) => isMediaFileName(d.title));
+              if (allMedia) {
+                dragTooltipManager.updateSubtitle(`Embed ${droppedDocs.length} media files`);
+              } else if (anyMedia) {
+                dragTooltipManager.updateSubtitle(`Insert ${droppedDocs.length} links & embeds`);
+              } else {
+                dragTooltipManager.updateSubtitle(`Link ${droppedDocs.length} notes`);
+              }
+            } else {
+              if (isMedia) {
+                dragTooltipManager.updateSubtitle(`Embed “${item.title}”`);
+              } else if (item.is_folder) {
+                dragTooltipManager.updateSubtitle(`Link folder “${item.title}”`);
+              } else {
+                const clean = fileTypeRegistry.cleanTitle(item.title) || item.title.replace(/\.md$/, '');
+                dragTooltipManager.updateSubtitle(`Link “${clean}”`);
+              }
+            }
+
+            // Calculate character insertion coordinates and emit live drop ghost preview
+            const activeEditor =
+              app.editor.getActiveEditor() ||
+              (typeof window !== 'undefined' ? (window as any).__noetherEditor : null);
+            if (activeEditor && activeEditor.view && !activeEditor.isDestroyed) {
+              const docSize = activeEditor.state.doc.content.size;
+              let targetPos = Math.max(0, docSize > 1 ? docSize - 1 : docSize);
+
+              const posInfo = activeEditor.view.posAtCoords({
+                left: moveEvent.clientX,
+                top: moveEvent.clientY,
+              });
+              if (posInfo && typeof posInfo.pos === 'number') {
+                targetPos = posInfo.pos;
+              }
+
+              const items = droppedDocs.map((doc) => {
+                const isImage = isMediaFileName(doc.title);
+                const clean =
+                  fileTypeRegistry.cleanTitle(doc.title) || doc.title.replace(/\.md$/, '');
+                const token = isImage ? `![[${doc.title}]]` : `[[${clean}]]`;
+                const imageSrc = isImage ? getCachedImageSrc(doc.title, doc.id) : null;
+                return {
+                  token,
+                  display: isImage ? doc.title : clean,
+                  isImage,
+                  imageSrc,
+                };
+              });
+
+              const previewTokens = items.map((it) => it.token);
+
+              app.events.emit('editor:drop-ghost', {
+                ghost: {
+                  pos: targetPos,
+                  previewTokens,
+                  items,
+                  totalCount: droppedDocs.length,
+                },
+              });
+
+              // Pre-fetch any image that isn't cached in memory yet and re-emit when ready
+              for (const doc of droppedDocs) {
+                if (isMediaFileName(doc.title) && !getCachedImageSrc(doc.title, doc.id)) {
+                  resolveImageSrcAsync(doc.title, doc.id).then((src) => {
+                    if (src && useDragDropStore.getState().draggedItem) {
+                      const updatedItems = droppedDocs.map((d) => {
+                        const isImg = isMediaFileName(d.title);
+                        const cln =
+                          fileTypeRegistry.cleanTitle(d.title) || d.title.replace(/\.md$/, '');
+                        return {
+                          token: isImg ? `![[${d.title}]]` : `[[${cln}]]`,
+                          display: isImg ? d.title : cln,
+                          isImage: isImg,
+                          imageSrc: isImg ? getCachedImageSrc(d.title, d.id) : null,
+                        };
+                      });
+                      app.events.emit('editor:drop-ghost', {
+                        ghost: {
+                          pos: targetPos,
+                          previewTokens,
+                          items: updatedItems,
+                          totalCount: droppedDocs.length,
+                        },
+                      });
+                    }
+                  });
+                }
+              }
+            }
+            return;
+          }
+
+          // If not over an editor, clear active drop ghost immediately
+          app.events.emit('editor:drop-ghost', { ghost: null });
+
+          // 5. File Tree Node & Root Check
           const targetNode = hoveredEl?.closest('[data-tree-item-id], [data-sidebar-root]');
           if (targetNode) {
             if (targetNode.hasAttribute('data-sidebar-root') && !targetNode.hasAttribute('data-tree-item-id')) {
@@ -273,8 +435,14 @@ export function useTreeDragDrop({
 
         document.body.style.cursor = '';
         document.body.style.userSelect = '';
+        app.events.emit('editor:drop-ghost', { ghost: null });
 
         if (hasStartedDrag) {
+          justDraggedRef.current = true;
+          setTimeout(() => {
+            justDraggedRef.current = false;
+          }, 120);
+
           const allDocs = useDocumentStore.getState().documents;
           dragTooltipManager.hide();
 
@@ -282,13 +450,10 @@ export function useTreeDragDrop({
           const currentSelectedIds = useDocumentStore.getState().selectedDocIds;
           const isMultiDrag = currentSelectedIds.includes(item.id) && currentSelectedIds.length > 1;
 
-          // 1. Sidebar Dock Zone & Tab Bar Drop Execution
+          // 1. Sidebar Dock Zone & Tab Bar Drop Execution (Always check first)
           if (!item.is_folder) {
             const docItemForReorder = { ...item, type: 'document' };
             const targets = computeDragTargets(upEvent.clientX, upEvent.clientY, docItemForReorder);
-            if (targets.targetDockZone && targets.targetDockZone.startsWith('left')) {
-              targets.targetDockZone = null;
-            }
             broadcastDragState(null);
 
             if (targets.targetDockZone && targets.targetSlotIndex !== -1) {
@@ -340,8 +505,12 @@ export function useTreeDragDrop({
                 ? allDocs.filter((d) => currentSelectedIds.includes(d.id) && !d.is_folder)
                 : [item as DocumentItem];
 
-              for (const doc of docsToOpen) {
-                useWorkspaceStore.getState().openTabInPane(targetPaneId, doc.id, doc.title, { newTab: true });
+              for (let i = 0; i < docsToOpen.length; i++) {
+                const doc = docsToOpen[i];
+                useWorkspaceStore.getState().openTabInPane(targetPaneId, doc.id, doc.title, {
+                  newTab: true,
+                  insertIndex: targets.targetSlotIndex + i,
+                });
               }
               useWorkspaceStore.getState().setFocusedPane(targetPaneId);
               resetDragState();
@@ -351,30 +520,58 @@ export function useTreeDragDrop({
 
           broadcastDragState(null);
 
-          // 2. Custom Drop Handler
-          if (onCustomDrop) {
-            const handled = await onCustomDrop(hoveredEl, upEvent);
-            if (handled) {
-              resetDragState();
-              return;
+          const isOverHeaderOrDock = Boolean(
+            hoveredEl?.closest(
+              'header, [data-noether-header], [data-split-tab-header], [data-dock-zone]'
+            )
+          );
+
+          // 2. Spatial Canvas Surface & Custom Drop Target Execution (only when not over header/dock)
+          const canvasEl = !isOverHeaderOrDock
+            ? (hoveredEl?.closest('[data-canvas-view="true"]') as HTMLElement | null)
+            : null;
+          const customDropTarget = !isOverHeaderOrDock
+            ? (hoveredEl?.closest('[data-custom-drop-target="true"]') as HTMLElement | null)
+            : null;
+
+          if (canvasEl || customDropTarget) {
+            broadcastDragState(null);
+            if (onCustomDrop) {
+              const handled = await onCustomDrop(hoveredEl, upEvent);
+              if (handled) {
+                resetDragState();
+                return;
+              }
             }
+
+            const customDropEvent = new CustomEvent('noether:custom-drop', {
+              detail: {
+                item,
+                selectedIds: isMultiDrag ? currentSelectedIds : [item.id],
+                targetEl: hoveredEl,
+                clientX: upEvent.clientX,
+                clientY: upEvent.clientY,
+                handled: false,
+              },
+              cancelable: true,
+            });
+            window.dispatchEvent(customDropEvent);
+
+            // Never fall through to opening a new tab when dropping onto canvas or a custom drop surface
+            resetDragState();
+            return;
           }
 
-          // 3. Generic Custom Drop Event
-          const customDropEvent = new CustomEvent('noether:custom-drop', {
-            detail: {
-              item,
-              selectedIds: isMultiDrag ? currentSelectedIds : [item.id],
-              targetEl: hoveredEl,
-              clientX: upEvent.clientX,
-              clientY: upEvent.clientY,
-              handled: false,
-            },
-            cancelable: true,
-          });
-          window.dispatchEvent(customDropEvent);
+          // 3. Editor Surface Drop Execution (Wikilink & Media Embed Insertion, only when not over header/dock)
+          const editorEl = !isOverHeaderOrDock
+            ? (hoveredEl?.closest(
+                '.tiptap.prose, [data-editor-canvas="true"], [data-editor-view="true"], .ProseMirror, .cm-editor'
+              ) as HTMLElement | null)
+            : null;
 
-          if (customDropEvent.defaultPrevented || (customDropEvent.detail && customDropEvent.detail.handled)) {
+          if (editorEl) {
+            broadcastDragState(null);
+            useDragDropStore.getState().endDrag({ dropTarget: editorEl });
             resetDragState();
             return;
           }
@@ -435,5 +632,6 @@ export function useTreeDragDrop({
     isBeingDragged,
     isDropTarget,
     isDragHovered,
+    hasJustDragged: useCallback(() => justDraggedRef.current, []),
   };
 }

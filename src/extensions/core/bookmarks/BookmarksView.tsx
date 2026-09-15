@@ -17,6 +17,68 @@ import {
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
 import { getDocumentPath } from '@/lib/db/documents';
 import { useBookmarksSettings } from './bookmarksSettings';
+import { useTreeDragDrop } from '@/components/file-tree/useTreeDragDrop';
+
+interface BookmarkRowProps {
+  doc: any;
+  isActive: boolean;
+  showBookmarkPath: boolean;
+  documents: any[];
+  onOpen: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  onUnbookmark: () => void;
+}
+
+const BookmarkRow: React.FC<BookmarkRowProps> = React.memo(({
+  doc,
+  isActive,
+  showBookmarkPath,
+  documents,
+  onOpen,
+  onContextMenu,
+  onUnbookmark,
+}) => {
+  const dragDrop = useTreeDragDrop({ item: doc });
+  const fullPath = showBookmarkPath ? getDocumentPath(doc, documents) : '';
+  const parentPath = fullPath.includes('/') ? fullPath.substring(0, fullPath.lastIndexOf('/')) : '';
+
+  return (
+    <div
+      onPointerDown={dragDrop.handlePointerDown}
+      onClick={() => {
+        if (dragDrop.hasJustDragged()) return;
+        onOpen();
+      }}
+      onContextMenu={onContextMenu}
+      className={`group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer select-none ${
+        isActive
+          ? 'bg-[#2a2a2a] text-white font-normal'
+          : 'text-[#9ca3af] hover:bg-[#202020] hover:text-[#dcddde] font-normal'
+      }`}
+    >
+      <div className="flex items-center gap-2 min-w-0 flex-1">
+        <File01Icon size={14} className={isActive ? 'text-white' : 'text-[#777] shrink-0'} />
+        <span className="truncate">{doc.title}</span>
+        {showBookmarkPath && parentPath && (
+          <span className="text-[10px] text-[#666] font-mono truncate max-w-[120px] bg-[#1a1a1a] px-1 py-0.5 rounded shrink-0">
+            {parentPath}
+          </span>
+        )}
+      </div>
+
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onUnbookmark();
+        }}
+        title="Remove bookmark"
+        className="opacity-0 group-hover:opacity-100 p-1 text-[#777] hover:text-white"
+      >
+        <Cancel01Icon size={11} />
+      </button>
+    </div>
+  );
+});
 
 export const BookmarksView: React.FC = React.memo(() => {
   const app = useNoetherApp();
@@ -136,13 +198,15 @@ export const BookmarksView: React.FC = React.memo(() => {
             (isSplitView && activePane === 'split'
               ? (currentTab ? currentTab.document_id === doc.id : splitActiveDocumentId === doc.id)
               : (currentTab ? currentTab.document_id === doc.id : activeDocument?.id === doc.id));
-          const fullPath = showBookmarkPath ? getDocumentPath(doc, documents) : '';
-          const parentPath = fullPath.includes('/') ? fullPath.substring(0, fullPath.lastIndexOf('/')) : '';
 
           return (
-            <div
+            <BookmarkRow
               key={doc.id}
-              onClick={() => {
+              doc={doc}
+              isActive={isActive}
+              showBookmarkPath={showBookmarkPath}
+              documents={documents}
+              onOpen={() => {
                 if (isSplitView && activePane === 'split') {
                   openSplitTab(doc.id, doc.title);
                 } else {
@@ -151,33 +215,11 @@ export const BookmarksView: React.FC = React.memo(() => {
                 }
               }}
               onContextMenu={(e) => handleBookmarkContextMenu(e, doc)}
-              className={`group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer ${
-                isActive
-                  ? 'bg-[#2a2a2a] text-white font-normal'
-                  : 'text-[#9ca3af] hover:bg-[#202020] hover:text-[#dcddde] font-normal'
-              }`}
-            >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <File01Icon size={14} className={isActive ? 'text-white' : 'text-[#777] shrink-0'} />
-                <span className="truncate">{doc.title}</span>
-                {showBookmarkPath && parentPath && (
-                  <span className="text-[10px] text-[#666] font-mono truncate max-w-[120px] bg-[#1a1a1a] px-1 py-0.5 rounded shrink-0">
-                    {parentPath}
-                  </span>
-                )}
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleBookmark(doc.id);
-                }}
-                title="Remove bookmark"
-                className="opacity-0 group-hover:opacity-100 p-1 text-[#777] hover:text-white transition-all"
-              >
-                <Cancel01Icon size={11} />
-              </button>
-            </div>
+              onUnbookmark={() => {
+                toggleBookmark(doc.id);
+                showToast(`Removed bookmark for "${doc.title}"`, 'info');
+              }}
+            />
           );
         })
       )}

@@ -78,6 +78,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const createNewFolder = useDocumentStore((s) => s.createNewFolder);
   const renameDocument = useDocumentStore((s) => s.renameDocument);
+  const updateDocumentTitleInMemory = useDocumentStore((s) => s.updateDocumentTitleInMemory);
   const moveDocument = useDocumentStore((s) => s.moveDocument);
   const moveDocuments = useDocumentStore((s) => s.moveDocuments);
   const removeDocument = useDocumentStore((s) => s.removeDocument);
@@ -409,33 +410,44 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     }
 
     if (isDuplicateName) {
+      const orig = originalTitleRef.current;
       if (isStoreEditing) setEditingDocId(null);
       setLocalIsEditing(false);
-      setEditTitle(originalTitleRef.current);
+      setEditTitle(orig);
+      updateDocumentTitleInMemory(item.id, orig);
+      renameDocument(item.id, orig, false);
       return;
     }
 
     const trimmed = editTitle.trim();
-    if (isStoreEditing) setEditingDocId(null);
-    setLocalIsEditing(false);
-
     if (trimmed && trimmed !== originalTitleRef.current) {
       originalTitleRef.current = trimmed;
+      setEditTitle(trimmed);
+      if (isStoreEditing) setEditingDocId(null);
+      setLocalIsEditing(false);
       await renameDocument(item.id, trimmed);
     } else {
-      setEditTitle(originalTitleRef.current);
+      const orig = originalTitleRef.current;
+      if (isStoreEditing) setEditingDocId(null);
+      setLocalIsEditing(false);
+      setEditTitle(orig);
+      updateDocumentTitleInMemory(item.id, orig);
+      renameDocument(item.id, orig, false);
     }
-  }, [isDuplicateName, editTitle, isStoreEditing, item.id, renameDocument, setEditingDocId]);
+  }, [isDuplicateName, editTitle, isStoreEditing, item.id, renameDocument, updateDocumentTitleInMemory, setEditingDocId]);
 
   const handleCancelRename = useCallback(() => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
       saveTimerRef.current = null;
     }
+    const orig = originalTitleRef.current;
     if (isStoreEditing) setEditingDocId(null);
     setLocalIsEditing(false);
-    setEditTitle(originalTitleRef.current);
-  }, [isStoreEditing, setEditingDocId]);
+    setEditTitle(orig);
+    updateDocumentTitleInMemory(item.id, orig);
+    renameDocument(item.id, orig, false);
+  }, [isStoreEditing, item.id, renameDocument, updateDocumentTitleInMemory, setEditingDocId]);
 
   const handleDelete = useCallback(
     (e: React.MouseEvent) => {
@@ -445,22 +457,26 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
       if (isMulti) {
         openConfirmDialog({
-          title: `Delete ${currentSelectedIds.length} items?`,
-          message: `Are you sure you want to delete these ${currentSelectedIds.length} items? They will be permanently deleted from your Vault.`,
-          confirmText: 'Delete all',
+          title: `Move ${currentSelectedIds.length} items to trash?`,
+          message: `Are you sure you want to move these ${currentSelectedIds.length} items to trash?`,
+          subtext: 'They can be restored from the trash within 48 hours.',
+          confirmText: 'Move to trash',
           isDanger: true,
+          skipSettingKey: 'skipDeleteConfirmation',
           onConfirm: async () => {
             await removeDocuments(currentSelectedIds);
           },
         });
       } else {
         openConfirmDialog({
-          title: `Delete ${isFolder ? 'Folder' : 'File'}`,
-          message: `Are you sure you want to delete "${item.title}"? ${
-            isFolder ? 'All contents inside this folder will also be deleted.' : 'It will be permanently deleted from your Vault.'
+          title: `Move ${isFolder ? 'folder' : 'file'} to trash`,
+          message: `Are you sure you want to move "${item.title}" to trash? ${
+            isFolder ? 'All contents inside this folder will also be moved to trash.' : ''
           }`,
-          confirmText: 'Delete',
+          subtext: 'It can be restored from the trash within 48 hours.',
+          confirmText: 'Move to trash',
           isDanger: true,
+          skipSettingKey: 'skipDeleteConfirmation',
           onConfirm: async () => {
             await removeDocument(item.id);
           },
@@ -699,15 +715,17 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           { type: 'separator' },
           {
             id: 'multi-delete',
-            title: `Delete ${currentSelectedIds.length} items`,
+            title: `Move ${currentSelectedIds.length} items to trash`,
             icon: <Delete02Icon size={14} />,
             isDanger: true,
             onClick: () => {
               openConfirmDialog({
-                title: `Delete ${currentSelectedIds.length} items?`,
-                message: `Are you sure you want to delete these ${currentSelectedIds.length} items? They will be permanently deleted from your Vault.`,
-                confirmText: 'Delete all',
+                title: `Move ${currentSelectedIds.length} items to trash?`,
+                message: `Are you sure you want to move these ${currentSelectedIds.length} items to trash?`,
+                subtext: 'They can be restored from the trash within 48 hours.',
+                confirmText: 'Move to trash',
                 isDanger: true,
+                skipSettingKey: 'skipDeleteConfirmation',
                 onConfirm: async () => {
                   await removeDocuments(currentSelectedIds);
                 },
@@ -913,6 +931,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           value={editTitle}
           onChange={(val) => {
             setEditTitle(val);
+            updateDocumentTitleInMemory(item.id, val);
           }}
           onSubmit={handleSaveRename}
           onCancel={handleCancelRename}

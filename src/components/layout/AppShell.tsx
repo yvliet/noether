@@ -409,6 +409,19 @@ export const AppShell: React.FC = React.memo(() => {
     window.addEventListener('keydown', reportUserActivity, { passive: true });
     window.addEventListener('pointerdown', reportUserActivity, { passive: true });
 
+    // 6. Pre-warm Settings bundle during idle time so first open is instant
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
+        import('@/components/settings/SettingsWindow');
+        import('@/components/modals/SettingsModal');
+      });
+    } else {
+      setTimeout(() => {
+        import('@/components/settings/SettingsWindow');
+        import('@/components/modals/SettingsModal');
+      }, 1000);
+    }
+
     return () => {
       unsubDb();
       if (unsubFiles) unsubFiles();
