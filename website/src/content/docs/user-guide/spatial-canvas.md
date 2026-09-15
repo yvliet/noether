@@ -25,13 +25,16 @@ You can place four fundamental node types onto the spatial plane:
 
 ### 1. Note Cards
 Drag any document from your sidebar file tree directly onto the canvas, or press the **+ Note** button in the canvas floating toolbar:
+- Dragging a note from the file tree renders a live, semi-transparent ghost preview card snapped to the grid showing the note's title and exact placement footprint.
+- Dropping the item instantly instantiates the note card centered exactly where the preview ghost was positioned.
+- Press `Alt + 2` anywhere over the canvas to open the note picker and drop a note card centered immediately at your mouse cursor.
 - Renders an interactive live preview of the note's markdown content directly on the card surface.
 - Double-clicking the card header navigates directly to the full document in a split editor tab.
 - Modifications made in the note editor automatically update the card in real time.
 
 ### 2. Sticky Text Nodes
 Quick, lightweight notes for fleeting ideas, task checklists, or annotations:
-- Click **+ Text** or double-click anywhere on the canvas background.
+- Click **+ Text**, double-click anywhere on the canvas background, or press `Alt + 1` to immediately spawn a sticky text card centered directly at your mouse cursor.
 - Adding a card defaults to a 4-grid-unit height and focuses the cursor immediately for quick typing.
 - Minimum card resizing is clamped to a $4 \times 4$ grid boundary.
 - Supports full inline markdown, bullet points, checklists, and code snippets.
@@ -55,7 +58,7 @@ Organize clusters of related nodes into bounded regions:
   - **Delete** (`Delete` / `Backspace` or Delete button): Deletes the group container together with all cards, nested groups, and edges enclosed within it.
 
 ### 4. Media & Web Cards
-- Drop local images, audio clips, or PDF documents onto the canvas for visual reference boards.
+- Drop local images, audio clips, or PDF documents onto the canvas for visual reference boards, or press `Alt + 3` to open the media insert modal centered directly at your mouse cursor.
 - Embed external web links with automatic metadata cards.
 
 ---
@@ -90,7 +93,13 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 | **Scroll Card Content** | Hover over scrollable note cards and scroll mouse wheel |
 | **Reset Zoom (100%)** | `Ctrl + 0` or Reset View button |
 | **Zoom to Fit All** | `Shift + 1`, `Ctrl + 1`, or Fit View button |
+| **Add Sticky Card at Cursor** | `Alt + 1` |
+| **Add Note Card at Cursor** | `Alt + 2` |
+| **Add Media Card at Cursor** | `Alt + 3` |
+| **Drag Note from Sidebar** | Drag item from file tree onto canvas with snapped ghost card preview |
 | **Multi-Select Nodes** | `Shift + Drag` marquee selection box, or `Shift + Click` |
+| **Symmetric Handle Resize** | Hold `Shift` + Drag any resize handle (mirrors growth on opposite side) |
+| **Symmetric Card Drag Resize** | Hold `Shift` + Drag card body (axis-locks to width or height based on dominant drag direction, expanding or shrinking symmetrically from center) |
 | **Select All Nodes** | `Ctrl + A` |
 | **Copy / Paste Cards** | `Ctrl + C` / `Ctrl + V` (pastes centered at cursor) |
 | **Duplicate Node** | `Alt + Drag` or `Ctrl + D` |
@@ -107,7 +116,35 @@ Connect thoughts visually using flexible relationship arrows between cards (**No
 
 ---
 
-## 5. Performance Engineering on Large Canvases
+## 5. Canvas Preferences & Customization
+---
+
+You can tailor canvas interactions and visual rendering in **Settings** (`Ctrl+,`) → **Canvas**:
+
+- **Gestures & Resizing**:
+  - **Shift vertical resize direction**: Configure vertical expansion polarity (`Drag up expands` or `Drag down expands`).
+  - **Shift horizontal resize direction**: Configure horizontal expansion polarity (`Drag right expands` or `Drag left expands`).
+  - **Shift drag resize mode**: Choose between `Single-axis locked` (locks to the dominant drag axis) and `Dual-axis` (expands width and height simultaneously).
+- **Navigation & Camera**:
+  - **Scroll wheel behavior**: Toggle default wheel action between `Pan canvas (Hold Ctrl to zoom)` and `Zoom in / out (Hold Ctrl to pan)`.
+  - **Double-click canvas background**: Configure background double-click shortcut (`Create text card`, `Reset zoom (100%)`, `Fit all to center`, or `Do nothing`).
+  - **Zoom sensitivity**: Adjust scaling steps (`Smooth (1.10x)`, `Standard (1.25x)`, or `Fast (1.50x)`).
+- **Grid & Snapping**:
+  - **Snap to grid**: Toggle magnetic grid snapping.
+  - **Grid snap cell size**: Choose snap interval (`16px`, `20px`, `24px`, or `32px`).
+  - **Grid pattern style**: Pick background motif (`Dot grid`, `Grid lines`, `Crosshairs`, or `Blank canvas`).
+  - **Snap to nearby objects**: Toggle magnetic edge and center alignment with adjacent cards.
+- **Connection Lines & Arrows**:
+  - **Default edge routing**: Choose initial geometry (`Curved`, `Step`, or `Straight`).
+  - **Default arrow direction**: Set initial directionality (`Unidirectional (A → B)`, `Bidirectional (A ↔ B)`, or `Nondirectional (A - B)`).
+  - **Default line color**: Custom initial stroke color for newly drawn connectors.
+- **Card Defaults & Layout**:
+  - **Default card color**: Custom background color applied to newly placed cards.
+  - **Bottom quick dock**: Toggle visibility of the floating bottom shortcut dock.
+
+---
+
+## 6. Performance Engineering on Large Canvases
 ---
 
 To guarantee steady 60 FPS performance when building massive mindmaps with hundreds of nodes:
@@ -115,3 +152,4 @@ To guarantee steady 60 FPS performance when building massive mindmaps with hundr
 1. **Frustum Culling**: Nodes and connector edges located outside the active viewport bounding box skip DOM layout computations.
 2. **Simplified Level-of-Detail (LOD)**: When zooming far out to inspect the overall macro layout, detailed Markdown typography switches to optimized schematic representations, saving GPU rasterization cycles.
 3. **Hardware Acceleration**: Canvas translation and scaling execute via GPU-accelerated CSS `transform: translate3d(...) scale(...)`.
+
