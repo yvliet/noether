@@ -6944,50 +6944,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       const currentX = target.x;
       const currentY = target.y;
 
-      // Fast timestamp-based continuous scroll stream tracking (zero timers, zero GC overhead)
-      const now = performance.now();
-      const isNewStream = now - lastWheelTimeRef.current > 200;
-      lastWheelTimeRef.current = now;
-
-      if (isNewStream) {
-        const targetEl = e.target as HTMLElement | null;
-        const isOverScrollable = Boolean(
-          targetEl && targetEl.closest('.custom-scrollbar, [data-scrollable="true"], pre, table')
-        );
-        wheelOriginWasCanvasRef.current = !isOverScrollable;
-      }
-
-      // 1. Strict Scrollable Card Isolation (Do NOT scroll canvas when hovering inside a scrollable card)
-      // Only inspect DOM if gesture originated over a card (skips 100% of queries during canvas navigation!)
-      if (!isPanModifierRef.current && !wheelOriginWasCanvasRef.current) {
-        const scrollTarget = (e.target as HTMLElement | null)?.closest(
-          '.custom-scrollbar, [data-scrollable="true"], pre, table'
-        ) as HTMLElement | null;
-
-        if (scrollTarget) {
-          const isScrollableY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
-          const isScrollableX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
-
-          if (isScrollableY || isScrollableX) {
-            const canScrollDown = dy > 0 && scrollTarget.scrollTop + scrollTarget.clientHeight < scrollTarget.scrollHeight - 1;
-            const canScrollUp = dy < 0 && scrollTarget.scrollTop > 0;
-            const canScrollRight = dx > 0 && scrollTarget.scrollLeft + scrollTarget.clientWidth < scrollTarget.scrollWidth - 1;
-            const canScrollLeft = dx < 0 && scrollTarget.scrollLeft > 0;
-
-            if (canScrollDown || canScrollUp || canScrollRight || canScrollLeft) {
-              // Still has scroll room: permit native element scroll inside note card
-              return;
-            }
-
-            // Reached scroll boundary (top, bottom, or sides): absorb event completely so canvas never pans
-            e.preventDefault();
-            e.stopPropagation();
-            return;
-          }
-        }
-      }
-
-      // 2. Zoom handling (Respects wheelBehavior preference and zoomSensitivity)
+      // 1. Zoom handling (Respects wheelBehavior preference and zoomSensitivity)
       const isZoomTrigger =
         wheelBehaviorRef.current === 'zoom'
           ? !(e.ctrlKey || e.metaKey)
@@ -7041,6 +6998,48 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           runCameraEasing();
         }
         return;
+      }
+
+      // Fast timestamp-based continuous scroll stream tracking (zero timers, zero GC overhead)
+      const now = performance.now();
+      const isNewStream = now - lastWheelTimeRef.current > 200;
+      lastWheelTimeRef.current = now;
+
+      if (isNewStream) {
+        const targetEl = e.target as HTMLElement | null;
+        const isOverScrollable = Boolean(
+          targetEl && targetEl.closest('.custom-scrollbar, [data-scrollable="true"], pre, table')
+        );
+        wheelOriginWasCanvasRef.current = !isOverScrollable;
+      }
+
+      // 2. Strict Scrollable Card / Menu Isolation (Do NOT scroll canvas when hovering inside a scrollable card)
+      if (!isPanModifierRef.current && !wheelOriginWasCanvasRef.current) {
+        const scrollTarget = (e.target as HTMLElement | null)?.closest(
+          '.custom-scrollbar, [data-scrollable="true"], pre, table'
+        ) as HTMLElement | null;
+
+        if (scrollTarget) {
+          const isScrollableY = scrollTarget.scrollHeight > scrollTarget.clientHeight;
+          const isScrollableX = scrollTarget.scrollWidth > scrollTarget.clientWidth;
+
+          if (isScrollableY || isScrollableX) {
+            const canScrollDown = dy > 0 && scrollTarget.scrollTop + scrollTarget.clientHeight < scrollTarget.scrollHeight - 1;
+            const canScrollUp = dy < 0 && scrollTarget.scrollTop > 0;
+            const canScrollRight = dx > 0 && scrollTarget.scrollLeft + scrollTarget.clientWidth < scrollTarget.scrollWidth - 1;
+            const canScrollLeft = dx < 0 && scrollTarget.scrollLeft > 0;
+
+            if (canScrollDown || canScrollUp || canScrollRight || canScrollLeft) {
+              // Still has scroll room: permit native element scroll inside note card
+              return;
+            }
+
+            // Reached scroll boundary (top, bottom, or sides): absorb event completely so canvas never pans
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
+        }
       }
 
       // 3. Directional Canvas Panning (Vertical dy, Horizontal dx, or Shift + Wheel)
@@ -7167,6 +7166,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
   return (
     <div
+      ref={containerRef}
       data-pinchable="true"
       data-canvas-view="true"
       data-main="true"
@@ -7241,7 +7241,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       {/* Interactive Spatial Canvas Plane */}
       <div
-        ref={containerRef}
         tabIndex={0}
         data-pinchable="true"
         data-canvas-view="true"

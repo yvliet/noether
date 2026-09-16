@@ -70,6 +70,17 @@ if (typeof window !== 'undefined') {
   window.addEventListener('contextmenu', (e: MouseEvent) => {
     e.preventDefault();
   });
+
+  // Suppress default browser / webview Ctrl+Wheel whole-app zoom globally
+  window.addEventListener(
+    'wheel',
+    (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+      }
+    },
+    { passive: false }
+  );
 }
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
