@@ -13,26 +13,26 @@ import TaskItem from '@tiptap/extension-task-item';
 import Highlight from '@tiptap/extension-highlight';
 import Link from '@tiptap/extension-link';
 import Table from '@tiptap/extension-table';
-import { columnResizing, tableEditing } from '@tiptap/pm/tables';
+import { tableEditing } from '@tiptap/pm/tables';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { TableEdgeControls } from './TableEdgeControls';
 import { getLineEdgeInfo, getLineEdgePos } from './editorCoords';
+import { tableColumnResizing, CustomTableView } from './extensions/table-column-resizing';
 
-// Ensure columnResizing plugin is always included so resizing is active in both reading and editing views
+// Ensure table column resizing is active with isolated column sizing and highlight-free cursors
 const ResizableTable = Table.extend({
   addProseMirrorPlugins() {
     const isResizable = Boolean(this.options.resizable);
     return [
       ...(isResizable
         ? [
-            columnResizing({
-              handleWidth: this.options.handleWidth,
-              cellMinWidth: this.options.cellMinWidth,
-              defaultCellMinWidth: this.options.cellMinWidth,
-              View: this.options.View,
-              lastColumnResizable: this.options.lastColumnResizable,
+            tableColumnResizing({
+              handleWidth: this.options.handleWidth || 6,
+              cellMinWidth: this.options.cellMinWidth || 40,
+              View: CustomTableView,
+              lastColumnResizable: this.options.lastColumnResizable ?? true,
             }),
           ]
         : []),

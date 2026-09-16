@@ -2441,29 +2441,23 @@ a.noether-btn::after {
 }
 
 .ProseMirror table .column-resize-handle,
-.noether-table .column-resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: var(--noether-accent, #eb584d) !important;
-  pointer-events: none;
-  opacity: 1 !important;
-  z-index: 20;
-}
-
+.noether-table .column-resize-handle,
 .ProseMirror table th:hover .column-resize-handle,
 .ProseMirror table td:hover .column-resize-handle,
 .noether-table th:hover .column-resize-handle,
 .noether-table td:hover .column-resize-handle {
-  opacity: 1 !important;
-  background-color: var(--noether-accent, #eb584d) !important;
+  display: none !important;
+  opacity: 0 !important;
+  width: 0 !important;
+  pointer-events: none !important;
+  background-color: transparent !important;
 }
 
 .resize-cursor,
 .ProseMirror.resize-cursor,
-.ProseMirror.resize-cursor * {
+.ProseMirror.resize-cursor *,
+.ProseMirror.resize-cursor table,
+.ProseMirror.resize-cursor table * {
   cursor: col-resize !important;
 }
 
