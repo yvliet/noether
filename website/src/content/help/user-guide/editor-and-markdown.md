@@ -50,8 +50,19 @@ $$
 $$
 ```
 
-> [!TIP]
-> To type a literal dollar sign without triggering math mode, type `\$` or use prices like `$100` normally. Single dollar auto-pairing can be configured in Editor Settings.
+<details>
+<summary><b>LaTeX Math Cheat Sheet & Common Formulas</b></summary>
+
+| Mathematical Expression | LaTeX Syntax | Rendered Output |
+| :--- | :--- | :--- |
+| **Fractions** | `\frac{a}{b}` | $\frac{a}{b}$ |
+| **Square Root** | `\sqrt{x^2 + y^2}` | $\sqrt{x^2 + y^2}$ |
+| **Summation** | `\sum_{i=1}^n i` | $\sum_{i=1}^n i$ |
+| **Limits** | `\lim_{x \to 0} \frac{\sin x}{x} = 1` | $\lim_{x \to 0} \frac{\sin x}{x} = 1$ |
+| **Greek Letters** | `\alpha, \beta, \gamma, \theta, \lambda` | $\alpha, \beta, \gamma, \theta, \lambda$ |
+| **Matrices** | `\begin{pmatrix} a & b \\ c & d \end{pmatrix}` | $\begin{pmatrix} a & b \\ c & d \end{pmatrix}$ |
+
+</details>
 
 ## 4. Tables & Column Resizing
 ---
@@ -85,7 +96,43 @@ Highlight notes, tips, warnings, and quotes using callout badges:
 > Deleting a vault folder permanently removes files from disk.
 ```
 
-Supported callout types include: `NOTE`, `TIP`, `IMPORTANT`, `WARNING`, `CAUTION`, `INFO`, `QUESTION`, `TODO`, `EXAMPLE`, `QUOTE`, and `BUG`.
+<details>
+<summary><b>Visual Callout Badges Reference (All 11 Types)</b></summary>
+
+> [!NOTE]
+> **NOTE**: General information and helpful background details.
+
+> [!TIP]
+> **TIP**: Best practices, efficiency suggestions, and useful tricks.
+
+> [!IMPORTANT]
+> **IMPORTANT**: Crucial instructions that require user attention.
+
+> [!WARNING]
+> **WARNING**: Breaking changes, caution notices, and potential pitfalls.
+
+> [!CAUTION]
+> **CAUTION**: High-risk actions that could cause data loss.
+
+> [!INFO]
+> **INFO**: Factual notifications and status summaries.
+
+> [!QUESTION]
+> **QUESTION**: Frequently asked questions and clarification items.
+
+> [!TODO]
+> **TODO**: Outstanding action items and planned tasks.
+
+> [!EXAMPLE]
+> **EXAMPLE**: Code demonstrations and sample workflows.
+
+> [!QUOTE]
+> **QUOTE**: Attributed citations and memorable quotations.
+
+> [!BUG]
+> **BUG**: Known defects, error codes, and troubleshooting advice.
+
+</details>
 
 ## 6. Slash Commands
 ---

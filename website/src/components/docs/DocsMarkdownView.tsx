@@ -92,6 +92,67 @@ const DocsCalloutItem: React.FC<DocsCalloutItemProps> = ({
   );
 };
 
+interface DocsAccordionItemProps {
+  title: string;
+  isOpenDefault?: boolean;
+  contentLines: string[];
+  compact?: boolean;
+  portal?: string;
+  docId?: string;
+  docSlug?: string;
+}
+
+const DocsAccordionItem: React.FC<DocsAccordionItemProps> = ({
+  title,
+  isOpenDefault = false,
+  contentLines,
+  compact = false,
+  portal,
+  docId,
+  docSlug,
+}) => {
+  const [isOpen, setIsOpen] = useState(isOpenDefault);
+
+  return (
+    <div
+      className={`${
+        compact ? 'my-2' : 'my-3'
+      } rounded-lg border border-[#2e2e2e] bg-[#161616] overflow-hidden`}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[#1a1a1a] hover:bg-[#222222] text-left cursor-pointer transition-none select-none border-none outline-none"
+      >
+        <span
+          className={`font-medium ${
+            compact ? 'text-[13px]' : 'text-[14.5px]'
+          } text-white flex items-center gap-2`}
+          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(title) }}
+        />
+        <span className="text-[#888888] shrink-0 ml-2">
+          {isOpen ? <ChevronDownIcon size={15} /> : <ChevronRightIcon size={15} />}
+        </span>
+      </button>
+      {isOpen && (
+        <div
+          className={`${
+            compact ? 'p-2.5 text-[13px]' : 'p-3.5 sm:p-4 text-[14.5px]'
+          } border-t border-[#262626] bg-[#131313]`}
+        >
+          <DocsMarkdownView
+            content={contentLines.join('\n')}
+            compact={compact}
+            portal={portal}
+            docId={docId}
+            docSlug={docSlug}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 export interface DocsMarkdownViewProps {
   content: string;
   docId?: string;
@@ -528,6 +589,66 @@ export const DocsMarkdownView: React.FC<DocsMarkdownViewProps> = React.memo(({
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+
+      // Accordion Details Blocks <details> ... </details>
+      if (line.trim().startsWith('<details')) {
+        flushList(i);
+        flushTable(i);
+        flushHtmlTable(i);
+        flushQuote(i);
+
+        const isOpenDefault = line.trim().includes('open');
+        const detailLines: string[] = [];
+        let summaryText = 'Details';
+        let j = i;
+        let foundClosing = false;
+
+        // Check if summary is on the same line
+        const sameLineSummary = line.match(/<summary>([\s\S]*?)<\/summary>/i);
+        if (sameLineSummary) {
+          summaryText = sameLineSummary[1].trim();
+        }
+
+        while (j < lines.length) {
+          const curLine = lines[j];
+          if (j > i) {
+            // Check for summary tag if not yet found
+            if (!sameLineSummary && summaryText === 'Details') {
+              const sumMatch = curLine.match(/<summary>([\s\S]*?)<\/summary>/i);
+              if (sumMatch) {
+                summaryText = sumMatch[1].trim();
+                j++;
+                continue;
+              }
+            }
+
+            if (curLine.trim().includes('</details>')) {
+              foundClosing = true;
+              break;
+            }
+            detailLines.push(curLine);
+          }
+          j++;
+        }
+
+        nodes.push(
+          <DocsAccordionItem
+            key={`accordion-${i}`}
+            title={summaryText}
+            isOpenDefault={isOpenDefault}
+            contentLines={detailLines}
+            compact={compact}
+            portal={portal}
+            docId={docId}
+            docSlug={docSlug}
+          />
+        );
+
+        if (foundClosing) {
+          i = j;
+        }
+        continue;
+      }
 
       // Code blocks ```
       if (line.trim().startsWith('```')) {
