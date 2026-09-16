@@ -21,7 +21,7 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '../common/Icons';
-import { slugify, renderInlineMarkdown } from './DocsReader';
+import { slugify, renderInlineMarkdown, splitTableRow } from './DocsReader';
 
 interface DocsCalloutItemProps {
   calloutType: string;
@@ -127,7 +127,7 @@ export const DocsAccordionItem: React.FC<DocsAccordionItemProps> = ({
         <span
           className={`font-medium ${
             compact ? 'text-[13px]' : 'text-[14.5px]'
-          } text-white flex items-center gap-2 group-hover:text-[#eb584d] transition-none`}
+          } text-white flex items-center gap-2 transition-none`}
           dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(title) }}
         />
         <span className="text-[#888888] group-hover:text-white shrink-0 ml-2 transition-none">
@@ -267,12 +267,8 @@ export const DocsMarkdownView: React.FC<DocsMarkdownViewProps> = React.memo(({
 
     const flushTable = (key: number) => {
       if (tableBuffer.length > 0) {
-        const rawRows = tableBuffer.map((line) =>
-          line
-            .split(/(?<!\\)\|/)
-            .map((c) => c.trim().replace(/\\\|/g, '|'))
-            .filter((c, idx, arr) => (idx > 0 && idx < arr.length - 1) || c !== '')
-        );
+        // Split raw rows with protected inline code, math, and escaped pipes
+        const rawRows = tableBuffer.map((line) => splitTableRow(line)).filter((row) => row.length > 0);
 
         if (rawRows.length >= 1) {
           let separatorIdx = -1;

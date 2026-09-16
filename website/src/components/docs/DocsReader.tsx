@@ -48,6 +48,54 @@ export function slugify(text: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
+// Split markdown table rows while preserving pipes inside inline code `...`, math $...$, and escaped \|
+export function splitTableRow(line: string): string[] {
+  const placeholders: string[] = [];
+  const placeholder = (idx: number) => `\x00PIPE_${idx}\x00`;
+
+  // 1. Protect escaped pipes \|
+  let protectedLine = line.replace(/\\\|/g, () => {
+    const token = placeholder(placeholders.length);
+    placeholders.push('|');
+    return token;
+  });
+
+  // 2. Protect code spans (`...` or ``...``)
+  protectedLine = protectedLine.replace(/(`+)([\s\S]*?)\1/g, (match) => {
+    const token = placeholder(placeholders.length);
+    placeholders.push(match);
+    return token;
+  });
+
+  // 3. Protect math spans ($...$)
+  protectedLine = protectedLine.replace(/(?<!\\)\$(?!\s)([^\$\r\n]+?)(?<!\s)(?<!\\)\$/g, (match) => {
+    const token = placeholder(placeholders.length);
+    placeholders.push(match);
+    return token;
+  });
+
+  // 4. Split on remaining structural table pipes
+  const rawCells = protectedLine.split('|');
+
+  // 5. Strip leading and trailing empty cells created by leading/trailing pipes (e.g. | col1 | col2 |)
+  let startIndex = 0;
+  let endIndex = rawCells.length;
+  if (rawCells.length > 0 && rawCells[0].trim() === '') {
+    startIndex = 1;
+  }
+  if (rawCells.length > startIndex && rawCells[rawCells.length - 1].trim() === '') {
+    endIndex = rawCells.length - 1;
+  }
+
+  return rawCells.slice(startIndex, endIndex).map((cell) => {
+    let restored = cell.trim();
+    for (let i = 0; i < placeholders.length; i++) {
+      restored = restored.replace(new RegExp(`\x00PIPE_${i}\x00`, 'g'), () => placeholders[i]);
+    }
+    return restored;
+  });
+}
+
 // Extract Table of Contents items from markdown content
 export function extractTocItems(content: string): TableOfContentItem[] {
   if (!content) return [];
@@ -696,13 +744,8 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
 
     const flushTable = (key: number) => {
       if (tableBuffer.length > 0) {
-        // 1. Split raw rows
-        const rawRows = tableBuffer.map((line) =>
-          line
-            .split(/(?<!\\)\|/)
-            .map((c) => c.trim().replace(/\\\|/g, '|'))
-            .filter((c, idx, arr) => (idx > 0 && idx < arr.length - 1) || c !== '')
-        );
+        // 1. Split raw rows with protected inline code, math, and escaped pipes
+        const rawRows = tableBuffer.map((line) => splitTableRow(line)).filter((row) => row.length > 0);
 
         if (rawRows.length >= 1) {
           // Detect separator row
