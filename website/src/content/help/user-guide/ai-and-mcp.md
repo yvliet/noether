@@ -2,26 +2,31 @@
 
 Connect external AI assistants like Claude Desktop, Cursor, Windsurf, or Google Antigravity directly to your local notes using the Model Context Protocol (MCP).
 
-## 1. What is MCP? (The USB Port for AI)
+## 1. What is Model Context Protocol (MCP)?
+
 ---
 
-Think of the **Model Context Protocol (MCP)** like a universal USB plug for AI assistants.
+Normally, an AI assistant running in your browser or terminal is completely blind to what is on your hard drive. If you want it to know about your notes, you have to copy-paste text back and forth, upload files to third-party cloud servers, or re-explain your project context from scratch every conversation.
 
-Normally, if you want an AI assistant to know about your notes, you have to copy-paste text back and forth, upload entire files to the cloud, or re-explain your life and project context every single time.
+The **Model Context Protocol (MCP)** changes this. Noether includes an embedded local MCP server that gives external AI assistants direct, tool-based access to your vault over standard input/output (`stdio`).
 
-With Noether's built-in MCP server, AI assistants can connect directly to your local vault. They can search your notes, read relevant context, generate draft notes, and query checklist tasks in real time while keeping all your raw Markdown files safely on your own computer.
+Instead of sending your entire vault to the cloud, your AI assistant simply calls fast local tools (like `noether_search_notes` or `noether_get_backlinks`) whenever it needs specific information to answer your questions.
+
+---
 
 ## 2. How Local AI Reasoning Works
+
 ---
 
 When an AI assistant connects to Noether:
 
-- **Private & Local**: The AI queries your local SQLite index through standard input/output (stdio). No notes are uploaded to Noether servers because Noether has no servers.
-- **On-Demand Search**: The AI only reads notes relevant to your current prompt using full-text search (FTS5) and backlink lookups.
-- **Preference-Aware Formatting**: When the AI creates or updates notes, Noether automatically formats the text according to your editor preferences (such as indentation size, list numbering, and callouts).
-- **Atomic Safety & Trash Bin**: File writes are atomic, and any note deleted by an AI is safely moved to `.trash/` rather than permanently destroyed.
+- **100% Private & Local**: The AI communicates over local `stdio`. No notes or queries are ever sent to external Noether servers because Noether has no cloud servers.
+- **On-Demand Precision**: The assistant does not ingest your whole disk. It runs targeted SQLite queries (FTS5 BM25 search and indexed link lookups) to pull only the exact paragraphs relevant to your prompt.
+- **Preference-Aware Formatting**: When an assistant creates or edits notes, Noether formats the output according to your active editor preferences (indentation width, bullet marker style, and callout casing).
+- **Safety First**: File mutations are atomic, and any note deleted by an AI is moved to the `.trash/` folder rather than permanently removed.
 
 ## 3. Connect Your AI Assistant
+
 ---
 
 Choose your preferred AI client below to view quick setup instructions:
@@ -180,6 +185,7 @@ The server listens on `stdin` and writes JSON-RPC 2.0 responses to `stdout`.
 </details>
 
 ## 4. Built-in MCP Tools Reference
+
 ---
 
 Noether exposes 18 tools for AI assistants:

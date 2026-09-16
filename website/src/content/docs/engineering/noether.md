@@ -40,7 +40,7 @@ Many note-taking apps either lock notes inside proprietary databases or scan fil
 
 1. **Markdown Files on Disk**: Every note is a standard `.md` file. If Noether stops running, your notes remain completely readable in VS Code, Vim, or any terminal tool.
 2. **Native SQLite Index (`rusqlite`)**: Note metadata (frontmatter, tags, backlinks, headings) is indexed directly into an embedded SQLite database (`.noether/noether.sqlite`).
-3. **Write-Ahead Logging (WAL)**: Transactions commit using WAL mode with memory mapping, enabling sub-millisecond writes and instant full-text search (FTS5) without UI lag.
+3. **Write-Ahead Logging (WAL)**: Transactions commit using WAL mode with memory mapping, enabling fast disk writes and instant full-text search (FTS5) without UI lag.
 
 ## 4. Snappy Desktop Feel
 ---
@@ -49,7 +49,7 @@ Many modern applications add decorative animations: sliding panels, bouncing but
 
 In Noether, micro-interaction animations are eliminated:
 - Context menus, dialogs, and tooltips render on the immediate next frame.
-- Sidebars toggle in zero milliseconds.
+- Sidebars toggle instantly.
 - Tree folders expand instantly.
 - Form controls switch with zero transition lag.
 

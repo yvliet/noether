@@ -1,73 +1,110 @@
 # Dual-Storage Architecture
 
-Noether combines the transparency of plain-text Markdown files with the query power of an embedded relational database. This document details how Noether separates document files on disk from the SQLite metadata engine, how synchronization occurs, and the performance characteristics of this design.
-
-
-## 1. Architectural Motivation
+Noether combines the permanence of plain CommonMark files on your hard drive with the speed of an embedded relational database. Plain Markdown files act as the single ground truth, while an embedded native SQLite engine accelerates search, backlinks, and graph traversals.
 
 ---
 
-Note-taking systems typically select one of two extremes:
-
-1. **Pure File-Tree Architecture** (e.g., standard markdown folders):
-   - *Pros*: Complete user ownership, inspectable via standard tools, easy to back up with Git.
-   - *Cons*: O(N) file system scans for backlink resolution, slow full-text search across thousands of files, and sluggish graph traversal.
-2. **Pure Relational/Document Database** (e.g., proprietary cloud databases):
-   - *Pros*: O(1) indexed queries, fast graph traversal, and instant full-text search.
-   - *Cons*: Vendor lock-in, proprietary storage formats, inability to inspect raw notes, and complex conflict resolution.
-
-Noether eliminates this trade-off with a **Dual-Storage Engine**:
-- **Disk Markdown Files (`.md`)**: The authoritative source of truth.
-- **Relational SQLite Database (`.noether/noether.sqlite`)**: A compiled native Rust SQLite engine (`rusqlite` with WAL mode and FTS5) acting as an instant metadata cache and query accelerator.
-
-If `.noether/noether.sqlite` is ever deleted or corrupted, Noether simply re-scans the Markdown files in the Vault using the differential `file_manifest` and rebuilds the relational cache in seconds. Note that while note content, wikilinks, tags, and search indexes are 100% restored from disk, metadata unsupported by standard Markdown syntax (such as interactive table column widths) and extension-managed SQLite tables (such as Spaced Repetition card history) reside exclusively in SQLite and reset upon a complete database wipe.
-
-
-## 2. Synchronization Pipeline
+## 1. The 1,000-Note Performance Wall
 
 ---
 
-Synchronization between the file system and SQLite operates through a bidirectional, event-driven pipeline:
+If you build a note-taking app purely on top of plain Markdown files, you run directly into a performance wall once a vault grows past a few thousand notes:
 
-| Storage Layer | Synchronization Pipeline |
-|:---|:---|
-| **Track 1: Authoritative Disk Storage** | Local filesystem Markdown (`*.md`) serving as the permanent source of truth |
-| **Atomic Write Engine** | Writes to temp file `.noether-tmp-*` then atomic-renames to prevent data loss |
-| **Filesystem Watcher** | Debounced cross-platform file monitoring for external edits |
-| **AST Metadata Tokenizer** | Extracts frontmatter, `[[wikilinks]]`, `#tags`, headings, and task checkboxes |
-| **Track 2: SQLite Relational Index** | Embedded `rusqlite` WAL-mode cache for high-speed indexing & graph queries |
-| **`documents` & `blocks_fts`** | Fast document metadata lookup and BM25 full-text search index |
-| **`document_links`** | Indexed forward and backward links for instant graph rendering & backlinks |
-| **`extension_storage`** | Dynamic SQLite tables managed by extensions (e.g. FSRS card state, task boards) |
-| **Central `EventBus`** | Dispatches `document:saved` and `document:deleted` across host & extension handlers |
+- Resolving backlinks requires scanning every file on disk to find incoming `[[Wikilinks]]`. On a 5,000-note vault, that means reading gigabytes of text off disk on every document open.
+- Graph view rendering requires parsing the entire vault's AST before it can calculate even a single force-directed physics edge.
+- Full-text search across unindexed text files forces high CPU spikes and freezes the main UI thread.
 
-### Save Lifecycle (Internal Edit)
+The obvious naive alternative is stuffing every note into a monolithic SQLite or Postgres database. While that gives you instant indexed queries, it destroys the single most important quality of local-first software: **your notes are trapped in a binary format**. You cannot open them in VS Code, inspect them with standard Unix tools, or track them cleanly with Git.
 
-1. **Typing in Editor**: The user types in the TipTap/ProseMirror editor. Changes mutate the in-memory document state immediately for sub-8ms input latency.
-2. **Debounced Disk Flush**: A 300ms debounce timer triggers file writing. The editor serializes the document into standard UTF-8 CommonMark with YAML frontmatter.
-3. **AST Metadata Extraction**: As part of the save pipeline, the AST tokenizer extracts:
-   - Frontmatter properties (`tags`, `aliases`, custom YAML fields).
-   - Wikilinks (`[[Target Document]]` or `[[Target Document|Alias]]`).
-   - Task checkboxes (`- [ ]`, `- [x]`).
-   - Heading outlines (`#`, `##`, `###`).
-4. **Relational Indexing**: In a single SQLite transaction:
-   - Updates the `documents` row with current title, modified timestamp (`mtime`), and frontmatter JSON.
-   - Synchronizes forward edges in the `links` table.
-   - Updates tag relations in `document_tags`.
-   - Re-indexes the full text in `fts_documents`.
-5. **Event Broadcast**: Emits `document:saved` on the `EventBus`, alerting UI tabs and listening extensions.
+Noether solves this with a **Dual-Storage Engine**:
 
+1. **Local CommonMark Files (`*.md`)**: The sole permanent source of truth. If Noether crashes, your files remain 100% readable and intact on disk.
+2. **Embedded Rust SQLite Index (`.noether/noether.sqlite`)**: A compiled native SQLite engine (`rusqlite` in WAL mode with FTS5 and BM25 ranking) that acts as an instant metadata cache.
 
-## 3. Database Schema Overview
+If `.noether/noether.sqlite` is ever deleted, corrupted, or wiped, Noether automatically traverses the Markdown files in your vault, extracts frontmatter, links, and tags via the AST tokenizer, and rebuilds the relational cache in seconds without losing a single character of your writing.
+
+```
++-------------------------------------------------------------------------+
+|                              USER INTERFACE                             |
+|               TipTap / ProseMirror Live Preview (In-Memory Buffer)      |
++-------------------------------------------------------------------------+
+                                     |
+              +----------------------+----------------------+
+              |                                             |
+   (Debounced 300ms Flush)                        (Relational Indexing)
+              v                                             v
++---------------------------+                 +---------------------------+
+|    FILE SYSTEM TRACK      |                 |    SQLITE METADATA TRACK  |
+|  .noether-tmp-*  (Atomic) |                 |  rusqlite WAL Mode (Rust) |
+|           v               |                 |  256MB Memory-Mapped I/O  |
+|      note.md on Disk      |                 |  documents, links, tags   |
+|   (Authoritative Truth)   |                 |  fts_documents (BM25 FTS) |
++---------------------------+                 +---------------------------+
+              |                                             |
+              +----------------------+----------------------+
+                                     v
+                          Tauri File System Watcher
+                    (Signature-Based Echo Suppression)
+```
 
 ---
 
-The embedded SQLite schema lives in `.noether/noether.sqlite`. Key tables include:
+## 2. The 3-Tier Save Lifecycle
 
-### `documents`
-Stores file metadata and hierarchy:
+---
+
+Typing latency is the single fastest way to make a desktop editor feel sluggish. In early prototypes, serializing Markdown ASTs and executing SQLite write transactions on every keystroke introduced noticeable input lag.
+
+To keep typing instant without dropping frames, Noether separates note persistence into three distinct tiers:
+
+```
+Tier 1: In-Memory Mutation (Instant)
+User types → ProseMirror transaction updates in-memory document state immediately.
+
+Tier 2: Debounced Disk Write (300ms)
+Editor serializes document to UTF-8 CommonMark with YAML frontmatter.
+Writes to '.noether-tmp-*' → Atomic OS rename to 'note.md'.
+
+Tier 3: Background SQLite Indexing (Batch Transaction)
+AST tokenizer extracts frontmatter, [[wikilinks]], #tags, task checkboxes, and outlines.
+Updates 'documents', 'links', 'document_tags', and 'fts_documents' tables.
+Emits 'document:saved' event across EventBus.
+```
+
+### Why Atomic Temp-File Renames Matter
+On Windows and macOS, background file indexing services (like Windows Search Indexer or Spotlight) and antivirus scanners briefly lock files when they detect disk modifications. If an editor writes directly to `note.md` with standard truncation while another process holds a read handle, the write can fail silently or truncate the note to 0 bytes.
+
+Noether writes new note contents to a hidden temporary file (`.noether-tmp-*`) in the vault and performs an atomic filesystem rename (`MoveFileEx` / `renameat`). The original note remains untouched on disk until the new bytes are completely flushed and verified.
+
+---
+
+## 3. File Watcher Echo Suppression
+
+---
+
+Because Noether supports editing notes externally in VS Code or pulling changes via Git, the Tauri backend runs a recursive filesystem watcher over the entire vault.
+
+When Noether saves a note internally, the filesystem watcher detects that file modification on disk and fires an `on_file_changed` event. Without protection, this creates a dangerous recursive reload loop: the app saves, the watcher sees the save, the app reloads the file, and active typing caret positions get reset.
+
+Noether prevents this with **Signature-Based Write Tracking**:
+
+1. Before writing `note.md` to disk, the internal save pipeline records an in-memory signature containing the document ID, absolute path, and millisecond timestamp.
+2. When the filesystem watcher receives a file modification event, it checks whether the file event matches an active internal write signature within a 500ms window.
+3. If the signature matches, the watcher suppresses the event as an internal echo.
+4. If an external tool (like Git or an external text editor) modified the file, the signature is absent, and Noether immediately updates the editor buffer and re-indexes SQLite.
+
+---
+
+## 4. Embedded SQLite Schema
+
+---
+
+The relational index resides at `.noether/noether.sqlite` inside the vault root. The database runs with `PRAGMA journal_mode = WAL;`, `PRAGMA synchronous = NORMAL;`, and `PRAGMA mmap_size = 268435456;` (256MB memory-mapped I/O) to keep queries instantaneous.
+
+### Core Tables
 
 ```sql
+-- Document Hierarchy and Metadata
 CREATE TABLE IF NOT EXISTS documents (
   id TEXT PRIMARY KEY,
   path TEXT UNIQUE NOT NULL,
@@ -81,12 +118,8 @@ CREATE TABLE IF NOT EXISTS documents (
 );
 CREATE INDEX IF NOT EXISTS idx_documents_parent ON documents(parent_id);
 CREATE INDEX IF NOT EXISTS idx_documents_mtime ON documents(mtime);
-```
 
-### `links`
-Stores bidirectional Wikilink graph edges:
-
-```sql
+-- Bidirectional Wikilink Graph Edges
 CREATE TABLE IF NOT EXISTS links (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   source_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
@@ -99,24 +132,16 @@ CREATE TABLE IF NOT EXISTS links (
 CREATE INDEX IF NOT EXISTS idx_links_source ON links(source_id);
 CREATE INDEX IF NOT EXISTS idx_links_target ON links(target_id);
 CREATE INDEX IF NOT EXISTS idx_links_target_title ON links(target_title);
-```
 
-### `document_tags`
-Stores tag associations:
-
-```sql
+-- Tag Associations
 CREATE TABLE IF NOT EXISTS document_tags (
   document_id TEXT NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
   tag TEXT NOT NULL,
   PRIMARY KEY (document_id, tag)
 );
 CREATE INDEX IF NOT EXISTS idx_document_tags_tag ON document_tags(tag);
-```
 
-### `fts_documents` (FTS5 Full-Text Search)
-Enables instantaneous BM25 ranking across note collections:
-
-```sql
+-- Full-Text BM25 Search Virtual Table
 CREATE VIRTUAL TABLE IF NOT EXISTS fts_documents USING fts5(
   document_id UNINDEXED,
   title,
@@ -125,12 +150,13 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_documents USING fts5(
 );
 ```
 
+---
 
-## 4. Backlink Resolution Engine
+## 5. Instant Backlink Resolution
 
 ---
 
-Resolving backlinks in pure file-based editors requires searching every file in the directory. In Noether, resolving incoming backlinks for any document is a sub-millisecond query:
+In pure text-based editors, resolving incoming backlinks for a note requires grepping through every file in the directory. In Noether, resolving backlinks is a single indexed SQL query that runs in under 1ms:
 
 ```sql
 SELECT
@@ -145,29 +171,17 @@ WHERE l.target_id = ? OR l.target_title = ?
 ORDER BY d.mtime DESC;
 ```
 
-When a document is renamed from `Project Alpha` to `Project Beta`:
-1. The filesystem file is renamed on disk.
-2. The `documents` table updates `title = 'Project Beta'`.
-3. Noether triggers an automated link refactoring pass, updating all referencing Markdown files and relational rows within the same atomic operation.
-
-
-## 5. Storage Engine Implementation
+When you rename a note from `Architecture Ideas` to `Core Engine Blueprint`:
+1. Noether renames the `.md` file on disk.
+2. Updates `title = 'Core Engine Blueprint'` in the `documents` table.
+3. Automatically refactors all referencing `[[Architecture Ideas]]` wikilinks across your other Markdown files in a single atomic transaction.
 
 ---
 
-Noether runs on a native compiled SQLite engine (`rusqlite`) communicating directly with the Tauri host:
-
-- Uses native C/Rust SQLite compiled directly into the Tauri binary.
-- Configured with `PRAGMA journal_mode = WAL;` (Write-Ahead Logging) and `PRAGMA synchronous = NORMAL;`.
-- Eliminates the memory footprint and slow binary dumps of WebAssembly runtimes.
-- Page commits execute on disk in microseconds on background worker threads, guaranteeing that typing in the UI thread never drops frames.
-
-
-## 6. Related Reading & References
+## 6. Related Architecture Reading
 
 ---
 
-- [[Database Schema Reference]]: Inspect all tables, columns, indexes, and FTS5 definitions.
-- [[Micro-Kernel & Extension Architecture]]: Understand how extensions safely interact with the host.
-- [[Events & Relational Storage]]: Learn how extensions register dynamic SQLite tables.
-- [[Model Context Protocol (MCP) Tools]]: Expose database queries to AI agent copilots.
+- [[Systems & Performance Engineering]]: How 3-tier persistence, memory trimming, and background physics suspension keep the UI responsive.
+- [[Micro-Kernel & Extension Architecture]]: How extensions register custom SQLite schemas without touching core tables.
+- [[Model Context Protocol (MCP) Tools]]: How local AI assistants query the SQLite index over stdio.

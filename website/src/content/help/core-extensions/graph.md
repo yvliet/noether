@@ -17,12 +17,14 @@ Every note in your vault becomes a node, and every wikilink (`[[Note Name]]`) be
 ## 3. Filters and Visual Controls
 ---
 
-Open the **Filters & Display** panel inside Graph view to customize your simulation:
-
 - **Tags**: Toggle whether tags appear as distinct colored nodes.
 - **Orphans**: Show or hide notes that have zero incoming or outgoing connections.
 - **Node Size**: Scale node circles based on their total number of incoming backlinks.
 - **Link Distance & Repulsion**: Adjust physics forces to spread nodes out or pull clusters tighter.
+- **Adaptive Zoom Scaling**: When zooming far out, node circles scale adaptively so they remain visible circles rather than disappearing into sub-pixel specks. Hovered nodes and their connected neighbors keep their labels legible, and click hit-testing automatically widens so you can select nodes easily from a high bird's-eye view.
+
+> [!NOTE]
+> Physics calculations are automatically paused when the graph tab is hidden or the window is minimized, preventing unnecessary background CPU and battery drain.
 
 ## 4. Progressive Timelapse Engine
 ---

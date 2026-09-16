@@ -68,4 +68,4 @@ export default class TaskExtension extends Extension {
 
 - **Prefixing**: Tool names are automatically namespaced with the extension ID (e.g. `tasks_get_pending_tasks`) to prevent name collisions across extensions.
 - **Safety Flags**: Destructive actions (deleting notes, clearing tables) must be declared with `isDestructive: true` to trigger client-side safety confirmations.
-- **Sub-Millisecond Execution**: Queries run directly against the local SQLite database and in-memory caches, returning responses in under 2ms without blocking the desktop UI.
+- **Fast Local Execution**: Queries run directly against the local SQLite database and in-memory caches without blocking the desktop UI or waiting on network roundtrips.

@@ -46,7 +46,7 @@ Every Noether extension must include a valid `manifest.json` file in its root di
 ### Icon & Background Customization
 The `icon` property is fully dynamic and manifest-driven. Noether automatically resolves any icon without requiring host code changes:
 
-- **HugeIcon String**: Specify any name from the 14,000+ HugeIcons library (e.g., `"clock-01"`, `"git-branch"`, `"cpu"`, `"sparkles"`, `"shield"`). The glyph loads on demand and caches for instant 0ms subsequent renders.
+- **HugeIcon String**: Specify any name from the 14,000+ HugeIcons library (e.g., `"clock-01"`, `"git-branch"`, `"cpu"`, `"sparkles"`, `"shield"`). The glyph loads on demand and caches in memory for subsequent renders.
 - **Custom Gradients**: Provide an object with `gradientColors` and an optional `gradientDirection`:
   ```json
   "icon": {

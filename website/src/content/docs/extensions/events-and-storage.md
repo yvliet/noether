@@ -187,7 +187,7 @@ export default class SpacedRepetitionExtension extends Extension {
 
 ---
 
-For computationally heavy tasks (such as semantic vector embeddings, image hashing, or large graph layout computations), Noether provides an off-thread Web Worker pool to preserve 60 FPS typing performance.
+For computationally heavy tasks (such as semantic vector embeddings, image hashing, or large graph layout computations), Noether provides an off-thread Web Worker pool so heavy algorithms never block the UI or typing thread.
 
 ```typescript
 // 1. Register the task in onload()

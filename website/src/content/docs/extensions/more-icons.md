@@ -11,7 +11,7 @@ Visual cues dramatically speed up workspace navigation. When scanning a vault wi
 
 More icons integrates with Noether through four foundational capabilities:
 
-- **Local SQLite Persistence**: Custom icon assignments are stored in the local SQLite table `ext_more_icons`. When opening a vault, icon mappings are loaded into an in-memory cache, ensuring 0ms layout shift.
+- **Local SQLite Persistence**: Custom icon assignments are stored in the local SQLite table `ext_more_icons`. When opening a vault, icon mappings are loaded into an in-memory cache, avoiding layout shift when rendering the file tree.
 - **Unified Multi-Pack Catalog**: Access 6,700+ curated HugeIcons and universal Unicode emoji through a unified selector interface.
 - **Universal Decorators**: Icons attach to the file tree, tab headers, sub-header breadcrumbs, and document titles.
 - **In-Document Rich-Text Chips**: The `/icon` slash command allows you to insert clickable icon chips directly into document prose.

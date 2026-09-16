@@ -35,9 +35,9 @@ The frontend interfaces with the operating system through strongly typed Tauri I
 A primary risk in local-first note-taking software is data corruption if power cuts out or the OS crashes during a write operation, paired with UI micro-stutters when persisting large documents. Noether eliminates both risks through a **temp-and-rename atomic save pipeline** combined with a **3-tier asynchronous state separation**:
 
 ### 3-Tier Asynchronous Pipeline
-To guarantee sub-8ms typing latency (matching native desktop editors like Notepad and Sublime Text), document mutations are split across three decoupled tiers:
+To keep typing responsive and prevent UI stutter, document mutations are split across three decoupled tiers:
 
-1. **Tier 1 (Instant In-Memory Keystroke, 0ms)**: Keystrokes mutate the local ProseMirror document state synchronously. Primitive status metrics (character count, word count) update immediately without touching secondary stores or triggering parent component re-renders.
+1. **Tier 1 (Instant In-Memory Keystroke)**: Keystrokes mutate the local ProseMirror document state synchronously. Primitive status metrics (character count, word count) update immediately without touching secondary stores or triggering parent component re-renders.
 2. **Tier 2 (Debounced Disk Flush & Content Cache, 400ms)**: When the user pauses typing for 400ms, the active buffer flushes to disk.
    - **Atomic Write to Temp**: Rust writes the serialized CommonMark content to a unique temporary file in the same directory: `<filename>.tmp.<pid>`.
    - **Atomic Rename (`fs::rename`)**: Once the write completes, the OS atomically replaces the destination file with the temp file. On POSIX and Windows filesystems, atomic renames guarantee that notes are never left truncated or corrupt.
@@ -47,7 +47,7 @@ To guarantee sub-8ms typing latency (matching native desktop editors like Notepa
 ### Selector Decoupling for Native Responsiveness
 In typical React state architectures, top-level components inadvertently subscribe to active document objects, re-rendering the entire viewport whenever a single character is typed. Noether eliminates these bottlenecks using strict primitive selectors:
 - **AppShell & Window Title**: Subscribes exclusively to primitive strings (`activeDocId` and `activeDocTitle`) rather than the active document object. Typing inside the editor never triggers re-rendering of the application frame or navigation headers.
-- **Status Bar**: Subscribes to boolean flags (`isLocked`, `hasActiveDoc`) and decoupled metric slices, preserving 120+ FPS typing performance.
+- **Status Bar**: Subscribes to boolean flags (`isLocked`, `hasActiveDoc`) and decoupled metric slices so typing never re-renders unrelated UI chrome.
 - **Document Options Menu**: Extracted into an inert trigger button while closed. Store subscriptions, plugin action evaluations, and positioning calculations execute only when the menu dropdown is explicitly opened by the user.
 
 ## 3. Atomic File Saves & Echo Suppression
@@ -66,7 +66,7 @@ Noether prevents this through signature-based echo suppression:
 
 Electron applications frequently consume 1GB to 2GB of RAM because Chromium holds onto cached garbage collection heaps indefinitely.
 
-In Noether, after 120 seconds of user inactivity, the native Rust backend calls the operating system's memory management API (`SetProcessWorkingSetSize` on Windows). This flushes non-essential working set pages from physical RAM back to the operating system's standby pool, consistently keeping Noether's idle memory footprint under **150MB**. The moment you resume typing, the OS pages the required buffers back into memory in sub-millisecond time.
+In Noether, after 120 seconds of user inactivity, the native Rust backend calls the operating system's memory management API (`SetProcessWorkingSetSize` on Windows). This flushes non-essential working set pages from physical RAM back to the operating system's standby pool, consistently keeping Noether's idle memory footprint under **150MB**. The moment you interact with the app again, the OS pages the required buffers back into memory smoothly.
 
 ## 5. Lossless Markdown Round-Trip & Source Mode Fidelity
 ---

@@ -186,7 +186,7 @@ this.registerPortalSlot({
 ## 5. Background Web Worker Pool (`ExtensionWorkerPool`)
 ---
 
-To ensure the UI thread remains completely fluid (sub-8ms input latency), heavy computational tasks (such as large-scale natural language processing, vector embeddings, or dense PDF parsing) can be offloaded to the worker pool:
+To keep the UI responsive, heavy computational tasks (such as vector embeddings or dense PDF parsing) can be offloaded to the worker pool:
 
 ```typescript
 const result = await this.app.workerPool.runTask({

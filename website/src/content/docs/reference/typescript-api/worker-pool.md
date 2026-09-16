@@ -1,6 +1,6 @@
 # TypeScript API: Web Worker Task Pool
 
-To preserve sub-8ms typing latency on massive documents, CPU-intensive algorithms (syntax clustering, geometry triangulation, AST parsing) can execute in background Web Workers.
+To prevent long-running tasks from freezing the UI, CPU-intensive calculations can execute in background Web Workers.
 
 
 ## 1. Registering a Worker Task

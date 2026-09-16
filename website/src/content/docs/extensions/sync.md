@@ -81,8 +81,8 @@ CREATE POLICY "Allow Noether Sync CRUD" ON noether_sync_documents
 
 | Provider | Transport Protocol | Ideal Use Case |
 | :--- | :--- | :--- |
-| **Supabase** | PostgREST HTTP REST (`/rest/v1/noether_sync_documents`) | Zero-cost permanent free tier with 500 MB storage |
-| **Turso libSQL** | Hrana v2 HTTP Pipeline (`/v2/pipeline`) | Sub-10ms global distributed edge SQLite replicas |
+| **Supabase** | PostgREST HTTP REST (`/rest/v1/noether_sync_documents`) | Permanent free tier with 500 MB storage |
+| **Turso libSQL** | Hrana v2 HTTP Pipeline (`/v2/pipeline`) | Global distributed edge SQLite replicas |
 | **Cloudflare D1** | Cloudflare v4 REST API (`/d1/database/.../query`) | Serverless edge SQL integrated with Cloudflare accounts |
 | **Custom REST** | Standard JSON REST (`/pull`, `/push`, `/health`) | Private VPS, self-hosted Docker container, or internal proxy |
 
@@ -126,7 +126,7 @@ CREATE POLICY "Allow Noether Sync CRUD" ON noether_sync_documents
 
 ---
 
-- **Debounced Auto-Sync**: When you edit notes, changes are debounced by 2.5 seconds before uploading to ensure fluid 60 FPS typing with zero UI interruptions.
+- **Debounced Auto-Sync**: When you edit notes, changes are debounced by 2.5 seconds before uploading so network calls don't fire continuously while you write.
 - **Tombstone Deletion Propagation**: When you delete a note, a tombstone record is created with a `deleted_at` timestamp. This propagates to all other devices, ensuring deleted notes never resurrect on future sync cycles. Old tombstones are pruned automatically after 30 days.
 - **Conflict Strategies**:
   - `Newer Timestamp (Last Write Wins)`: Automatically keeps whichever version has the latest timestamp.

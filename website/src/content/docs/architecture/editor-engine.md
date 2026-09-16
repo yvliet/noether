@@ -13,12 +13,10 @@ Noether implements a **Live Preview Architecture**:
 - When your cursor is outside a formatted block, it renders as rich typography, live math, interactive checkboxes, and callout containers.
 - When your cursor moves inside a formatted element, the underlying Markdown tokens (`**bold**`, `[[wikilink]]`, `$E=mc^2$`) dynamically unveil themselves right under your cursor for instant editing.
 
-## 2. $O(1)$ Transaction Decoration Mapping
+## 2. Incremental Decoration Mapping
 ---
 
-A major failure mode in Electron and web-based editors is typing latency on long documents (50,000+ words). If an editor re-scans the entire document AST on every keystroke, typing latency degrades to 80ms+, causing perceptible visual stutter.
-
-To maintain sub-8ms input latency on 100,000+ word notes, Noether employs **incremental transaction decoration mapping**:
+On long documents, re-scanning the entire document AST on every keystroke causes noticeable typing lag. To keep typing responsive, Noether employs **incremental transaction decoration mapping**:
 
 ```
 [ User Keystroke at Pos 1,420 ]
@@ -39,7 +37,7 @@ Rather than re-parsing the entire document, ProseMirror updates the integer posi
 
 Mathematical equations rendered via $KaTeX$ can be computationally expensive to tokenize and render into DOM elements on every frame.
 
-Noether memoizes rendered equation DOM nodes in an in-memory LRU cache keyed by equation source string and display mode (`inline` vs `display`). When you type in a paragraph at the top of a research paper, hundreds of complex mathematical formulas further down the page are retrieved from memory in zero milliseconds without re-invoking the $KaTeX$ compilation parser.
+Noether memoizes rendered equation DOM nodes in an in-memory LRU cache keyed by equation source string and display mode (`inline` vs `display`). When you type in a paragraph at the top of a research paper, hundreds of complex mathematical formulas further down the page are retrieved directly from the cache without re-invoking the $KaTeX$ compiler.
 
 ## 4. Bounded Undo Stack Memory Hygiene
 ---
@@ -55,6 +53,6 @@ To inspect referenced notes without context switching, the editor canvas impleme
 
 - **Target Extraction & Debouncing**: Mouse events across the editor canvas are delegated to detect internal `.md-wikilink` spans and wikilink attributes with a 250ms activation debounce, avoiding spurious popups during rapid cursor transit.
 - **Snug Viewport Anchoring**: The preview popover uses dynamic CSS `bottom` anchoring when placed above the link and `top` anchoring when placed below with an 8px collision margin, guaranteeing the preview sits snug against the link text regardless of whether the note card contains a single sentence or multiple paragraphs.
-- **In-Memory AST Parity**: The preview card renders through the identical `DocumentView` engine with `compact={true}`, retaining full markdown formatting fidelity (callouts, LaTeX formulas, code highlighting, tables, and task items) with sub-frame render times.
+- **In-Memory AST Parity**: The preview card renders through the identical `DocumentView` engine with `compact={true}`, retaining full markdown formatting fidelity (callouts, LaTeX formulas, code highlighting, tables, and task items) with cached in-memory ASTs.
 - **Navigation Continuity**: Hovering over the popover card maintains visibility via a 300ms mouse grace period and isolates scroll events, allowing you to scroll through long documents or click internal links without closing the preview.
 

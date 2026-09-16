@@ -24,8 +24,8 @@ this.registerEditorPlugin({
 ```
 
 
-## 2. $O(1)$ Transaction Decoration Mapping
+## 2. Transaction Decoration Mapping
 
 ---
 
-Noether maps editor decorations through ProseMirror transaction steps (`mapping.map(decorations)`), running in $O(K)$ time over active decorations rather than rescanning the whole document, preserving sub-8ms typing latency on documents with over 100,000 words.
+When creating custom editor decorations, avoid re-scanning the entire document on every keystroke. Noether maps existing decorations through ProseMirror transaction steps (`mapping.map(decorations)`), which updates active decorations rather than reparsing the whole note. Only the dirty range being edited needs to be inspected for new tokens, keeping the editor responsive even on long documents.

@@ -1,33 +1,57 @@
-# Systems & Performance Engineering
+# Systems & Performance Architecture
 
-Noether is engineered with explicit performance invariants designed to maintain fluid 60 FPS rendering, sub-8ms typing latency, and sub-150MB memory footprint even across vaults containing tens of thousands of notes. Plain Markdown files on your local drive act as the single source of truth, backed by an embedded SQLite relational index for instant search, backlinks, and graph traversals.
-
-## 1. Performance Invariants Matrix
+Noether is designed to handle vaults with thousands of notes without stuttering, high CPU usage, or runaway memory growth. Rather than adding complex caching layers after the fact, performance comes from a few straightforward architecture decisions: keeping the UI thread decoupled from disk I/O, streaming metadata on launch instead of whole files, and stopping background loops when they aren't visible.
 
 ---
 
-| Subsystem | Optimization Strategy | Implementation Details |
-| :--- | :--- | :--- |
-| **Relational Indexing** | Compiled Native `rusqlite` | Direct Tauri IPC invocation to Rust SQLite; zero WASM overhead, zero whole-db exports, WAL journaling with 256MB memory-mapped I/O (`PRAGMA mmap_size = 268435456`). |
-| **Full-Text Retrieval** | SQLite FTS5 Virtual Tables + BM25 | Block-level tokenization with `unicode61 remove_diacritics 1` and statistical BM25 ranking. |
-| **Covering Indexing** | Composite Index `idx_blocks_doc_order` | `(document_id, order_index)` covering index enables single-pass, zero-sort block streaming during note open and export. |
-| **Tree Traversal** | $O(1)$ Parent-Keyed Child Bucketing | Replaces $O(N \times F)$ linear filtering with pre-grouped `Map<string | null, DocumentItem[]>` lookups. |
-| **Modal Lifecycle** | Conditional Deferred Mounting | `GlobalModalHost` mounts heavy dialogs (Command Palette, Settings, Lightbox) only when opened, freeing 100% of idle hook compute. |
-| **Live Preview Editor** | Incremental Decoration Mapping | $O(1)$ transaction mapping (`DecorationSet.map`) rescans only dirty textblocks. KaTeX formulas memoize in RAM. Undo history is bounded to 50 snapshots. |
-| **Hardware Compositing** | Native DirectX / DirectComposition | Dedicated GPU pipeline for tear-free 60 FPS workspace rendering and Canvas pan/zoom. |
-| **Working Set Trimming** | Win32 Memory Trimming | Windows API `SetProcessWorkingSetSize` trims physical working set memory after 120s of idle time. |
-| **Startup Differential Sync** | Manifest Tracking | `file_manifest` compares timestamps and hashes to skip AST re-indexing on untouched notes. |
-| **Echo Suppression** | Signature-Based Write Tracking | Records internal save signatures to prevent file watchers from triggering recursive reload loops. |
-| **Native Desktop Feel** | Zero Decorative Delays | UI controls (menus, toggles, buttons, breadcrumbs) respond immediately without sluggish fade or slide transitions. |
-
-## 2. React Lifecycle & Virtual DOM Optimization
+## 1. The 3-Tier Persistence Pipeline
 
 ---
 
-### Conditional Modal Mounting (`GlobalModalHost`)
-Desktop productivity apps frequently include numerous complex overlays: the Command Palette, Settings dialog, Vault Switcher, Image Lightbox, and Confirmation prompts. In standard React architectures, mounting these components continuously inside a static `<Suspense>` tree forces them to register Zustand store subscriptions, initialize input references, and evaluate filter pipelines even when closed.
+Typing latency is the quickest way to make a text editor feel sluggish. If an editor serializes Markdown ASTs and writes to disk or SQLite on every single keystroke, the UI thread will inevitably drop frames.
 
-Noether isolates all global dialogs within a specialized `GlobalModalHost`. Each modal is gated by its boolean activation flag:
+Noether separates typing from persistence into three tiers:
+
+1. **In-Memory Mutation (Instant)**: Keystrokes mutate the in-memory document state immediately. No disk operations or database queries run while you are actively typing.
+2. **Debounced Disk Write (300ms)**: When you stop typing for 300ms, the editor serializes the active note to CommonMark and writes it to disk using an atomic temp-file rename (`.noether-tmp-*` → `note.md`).
+3. **Background SQLite Indexing**: After the file is on disk, an AST tokenizer extracts frontmatter, `[[wikilinks]]`, tags, and headings, updating the SQLite relational index in a single background transaction.
+
+---
+
+## 2. Cold Boot & Startup IPC Streaming
+
+---
+
+When opening a large vault, reading every single note off disk and sending it across the Tauri IPC bridge causes significant startup lag.
+
+Noether splits startup into two stages:
+
+1. **Metadata-Only Boot**: On launch, the backend only queries note headers (`id`, `title`, `path`, `parent_id`, `mtime`, `is_folder`). This payload is small and loads in a few milliseconds.
+2. **On-Demand Note Bodies**: The full content of a note is read from disk only when you actually click or switch to that tab. Notes you haven't opened yet consume zero memory in the UI.
+
+---
+
+## 3. SQLite Relational Cache & WAL Mode
+
+---
+
+Instead of running SQLite inside WebAssembly (which requires exporting the entire database to a binary blob on save), Noether compiles `rusqlite` directly into the native Rust desktop binary.
+
+Key database configurations include:
+- **Write-Ahead Logging (`PRAGMA journal_mode = WAL;`)**: Reads and writes never block each other. Background indexing never stalls active search queries.
+- **Memory-Mapped I/O (`PRAGMA mmap_size = 268435456;`)**: 256MB of the database file is mapped directly into memory, allowing the operating system to handle page caching with zero user-space copying.
+- **FTS5 with BM25 Ranking**: Search queries run against an inverted full-text index rather than executing unindexed `LIKE '%query%'` wildcard scans across every file.
+
+---
+
+## 4. Virtual DOM & Hook Isolation
+
+---
+
+### Conditional Dialog Mounting (`GlobalModalHost`)
+In typical React apps, complex overlays like the Settings dialog, Command Palette, and Vault Switcher remain mounted continuously in the component tree, evaluating hooks and state subscriptions even while hidden.
+
+In Noether, all global dialogs are wrapped in `GlobalModalHost` and only mount when their visibility flag is `true`. When closed, zero hooks run, zero DOM nodes exist, and zero state updates are dispatched to them:
 
 ```tsx
 const GlobalModalHost: React.FC = React.memo(() => {
@@ -56,16 +80,10 @@ const GlobalModalHost: React.FC = React.memo(() => {
 });
 ```
 
-When closed, zero React hooks execute, zero DOM nodes are generated, and zero state subscriptions receive update dispatches.
+### File Tree Child Bucketing
+Iterating over an entire vault's file list to find the children of each folder has $O(N \times F)$ complexity (where $N$ is notes and $F$ is folders). In a large vault, that means hundreds of thousands of comparisons on every tree render.
 
-### File Tree Child Bucketing & Tab Decoupling
-In large knowledge bases, hierarchical navigation trees can easily become performance bottlenecks. Naive tree rendering filters the entire document list repeatedly for every directory node:
-
-$$\text{Time Complexity} = O(N \times F)$$
-
-Where $N$ is total documents and $F$ is folder count. For a vault with 5,000 files across 200 folders, every state update triggers 1,000,000 comparison operations.
-
-Noether eliminates this scaling bottleneck by bucketing child nodes into a parent-keyed hash map at the sidebar root:
+The sidebar groups documents into a parent-keyed `Map<string | null, DocumentItem[]>` once at the root:
 
 ```ts
 const childrenMap = useMemo(() => {
@@ -83,62 +101,26 @@ const childrenMap = useMemo(() => {
 }, [documents]);
 ```
 
-Each `FileTreeNode` queries its immediate children with a single $O(1)$ lookup (`childrenMap.get(item.id)`). Furthermore, tree nodes decouple from workspace-level `tabs` arrays, subscribing solely to their own activation state to prevent whole-tree re-renders on tab switching.
-
-## 3. Relational Query Optimization & IPC Safety
+Each folder node performs a single $O(1)$ map lookup (`childrenMap.get(folderId)`) to retrieve its immediate children.
 
 ---
 
-### Eliminating Full-Table Scans on Zero Matches
-When calculating unlinked mentions across documents, full-text search indexes provide sub-millisecond candidate lookup. However, an unindexed fallback scan over the raw `blocks` table (`WHERE content_text LIKE '%' || ? || '%'`) introduces a severe performance trap: whenever a note has zero unlinked mentions (the most common scenario), SQLite executes an exhaustive substring search across every block in the vault.
-
-Noether enforces strict index discipline: candidate mentions rely entirely on the FTS5 tokenizer and Porter/Unicode stemmers. Unindexed wildcard scans are prohibited, guaranteeing predictable query latency regardless of database volume.
-
-### In-Memory Document Resolution for Path Operations
-Document mutations such as title updates, parent folder moves, and trash batching require computing filesystem paths and descendant relationships. Rather than querying `SELECT id, parent_id, title FROM documents` across the Tauri IPC bridge for every file modification, Noether queries the in-memory Zustand store first:
-
-```ts
-async function getCachedOrDbDocs(providedDocs?: DocumentItem[]) {
-  if (providedDocs && providedDocs.length > 0) return providedDocs;
-  try {
-    const { useDocumentStore } = await import('@/store/documentStore');
-    const storeDocs = useDocumentStore.getState().documents;
-    if (storeDocs && storeDocs.length > 0) return storeDocs;
-  } catch {}
-  return await dbAdapter.query<DocumentItem>(`SELECT id, parent_id, title, is_folder FROM documents`);
-}
-```
-
-This strategy reduces IPC overhead for common filesystem operations from multiple IPC round-trips to zero.
-
-### Composite Covering Indexes
-For block reading and streaming during note open, Noether uses a composite covering index:
-
-```sql
-CREATE INDEX IF NOT EXISTS idx_blocks_doc_order ON blocks(document_id, order_index);
-```
-
-Because both `document_id` and `order_index` are covered directly in the B-Tree index, queries of the form `SELECT * FROM blocks WHERE document_id = ? ORDER BY order_index ASC` bypass table sorting entirely, returning rows in native index order.
-
-## 4. Native Desktop Responsiveness Invariant
+## 5. Background Loop Suspension
 
 ---
 
-Modern web applications frequently apply CSS transitions (`transition: all 150ms ease`, `fade-in`, `zoom-in`) to common desktop controls like buttons, dropdowns, modal dialogs, and tree nodes. While visually forgiving on sluggish web pages, artificial animation delays introduce perceptible input latency that makes a desktop application feel heavy and unresponsive.
+Continuous visual simulations like the 2D force-directed Graph View run an animation loop. If left running in the background when the user switches to a note tab or minimizes the window, the physics loop continues burning CPU cycles and battery.
 
-Noether strictly forbids decorative transitions on interactive controls:
-- **Instant Toggles**: Checkboxes, switches, and radio controls change state immediately upon click.
-- **Immediate Menus**: Context menus and dropdowns mount and display on the exact frame the mouse button is pressed.
-- **Snappy Hovers**: Hover highlights apply instantly without color fade smoothing.
-- **Continuous Physics Exemption**: High-framerate physics simulations (such as Graph View force-directed layout and Canvas infinite canvas navigation) retain mathematical kinematic easing where continuous spatial interpolation is required.
-
-## 5. Verification & Benchmark Targets
+Noether tracks tab visibility and window state:
+- When a Graph View tab is not actively focused or the window is minimized, the physics tick loop is paused immediately.
+- Resuming focus restarts the tick loop smoothly from the last calculated node positions.
 
 ---
 
-Every release candidate is tested against strict automated performance gates:
+## 6. Memory Trimming
 
-- **Input Latency**: Sub-8ms keydown-to-render turnaround during sustained continuous typing.
-- **Idle Memory**: Sub-150MB working set on launch, settling below 100MB after Win32 memory trimming.
-- **Vault Indexing**: Less than 1.5 seconds to scan and differential-sync a 10,000-note vault on cold start.
-- **Type Safety**: Clean compilation with zero warnings via `npx tsc --noEmit` and `cargo check`.
+---
+
+On Windows, long-running desktop processes often retain memory pages in their working set long after large operations (like initial vault indexing) have finished.
+
+Noether calls the Win32 `SetProcessWorkingSetSize` API after 120 seconds of idle time, prompting the operating system to page out unused memory and return it to the system.

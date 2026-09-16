@@ -15,7 +15,7 @@ Open **Settings (`Ctrl+,`) → Sync**, enable **Sync**, and choose your provider
 <details open>
 <summary><b>Turso / LibSQL (Recommended)</b></summary>
 
-Turso provides distributed SQLite at edge locations worldwide with sub-20ms latency and a generous free tier.
+Turso provides distributed SQLite at edge locations worldwide with a generous free tier.
 
 ### Setup Instructions
 

@@ -1,6 +1,6 @@
 # Optimizing Extension Load Time
 
-Noether prioritizes an instant desktop feel with sub-50ms cold startup times. Heavy extensions that block the main thread during initialization degrade application performance. Follow these optimization techniques to keep your extensions light and responsive.
+Noether prioritizes an instant, snappy desktop feel on launch. Extensions that block the main thread during initialization make the app feel sluggish. Follow these optimization techniques to keep your extensions light and responsive.
 
 
 ## 1. Lazy-Loading Heavy Dependencies
@@ -60,7 +60,7 @@ const result = await this.app.workerPool.runTask({
 });
 ```
 
-This prevents frame drops and keeps editor input latency under 8ms. Learn more in [[Noether SDK API Reference]].
+This keeps heavy computation off the main thread so typing and navigation remain smooth. Learn more in [[Noether SDK API Reference]].
 
 
 ## 3. Debouncing Database Writes
@@ -93,7 +93,7 @@ export default class WordCounterExtension extends Extension {
 ```
 
 
-## 4. Measuring Activation Latency
+## 4. Measuring Load Time
 
 ---
 

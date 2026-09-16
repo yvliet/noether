@@ -7,7 +7,7 @@ Noether implements a high-performance, embedded SQLite relational engine (`.noet
 
 In Noether's [[Dual-Storage Architecture]], the physical CommonMark files on your storage drive are the primary source of truth. The SQLite database is an embedded metadata cache:
 
-- **Sub-Millisecond Graph Traversal**: Bidirectional Wikilink resolution across thousands of notes executes in less than 2ms.
+- **Fast Graph Traversal**: Bidirectional wikilink resolution across thousands of notes executes with indexed SQL joins instead of recursive disk scans.
 - **Hierarchical Taxonomies**: Tags and folder trees are indexed for instant search and filtering.
 - **FTS5 Full-Text Search**: Note bodies are tokenized into an SQLite FTS5 virtual table for instant BM25-ranked searches without scanning files.
 - **Disposability**: If the database file is ever deleted, Noether scans the Vault's markdown files and reconstructs the entire database automatically.

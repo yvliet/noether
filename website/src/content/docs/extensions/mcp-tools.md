@@ -235,5 +235,5 @@ Noether supports two distinct modalities for custom MCP tools:
 
 - [[Noether SDK API Reference]]: Complete MCP interfaces, Zod helpers, and tool definitions.
 - [[Events & Relational Storage]]: Coordinate AI actions with database transactions.
-- [[Dual-Storage Architecture]]: How AI tools query SQLite indexes with sub-millisecond latency.
+- [[Dual-Storage Architecture]]: How AI tools query SQLite indexes without full disk scans.
 - [[Database Schema Reference]]: Inspect tables exposed to AI query handlers.

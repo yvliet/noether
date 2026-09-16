@@ -1,36 +1,38 @@
 # Extension Quick Start
 
-Create and run your first Noether extension in under 5 minutes. This tutorial guides you through building a real-time word counter extension with a status bar widget, command palette action, and action rail button.
+Building an extension in Noether doesn't require complex boilerplate or boilerplate generators. An extension is just a single folder in your vault containing a `manifest.json` metadata file and a compiled `main.js` script.
 
+---
 
 ## 1. Directory Structure
 
 ---
 
-Extensions live within the active Vault's `.noether/extensions/` directory:
+Extensions live inside your vault's hidden `.noether/extensions/` directory:
 
 ```
 <My-Vault>/
 └── .noether/
     └── extensions/
         └── word-counter/
-            ├── manifest.json   # Extension metadata
-            └── main.js         # Compiled JavaScript entry point
+            ├── manifest.json   # Extension metadata & identity
+            └── main.js         # JavaScript entry point
 ```
 
-Create a new directory named `word-counter` inside your Vault's `.noether/extensions/` folder:
+Create a new directory inside your active vault:
 
 ```bash
 mkdir -p .noether/extensions/word-counter
 cd .noether/extensions/word-counter
 ```
 
+---
 
-## 2. Writing the Manifest (`manifest.json`)
+## 2. The Manifest (`manifest.json`)
 
 ---
 
-The manifest file defines your extension's identity, version, author, and description.
+The manifest tells Noether your extension's ID, display name, version, and entry point.
 
 Create `manifest.json`:
 
@@ -47,14 +49,34 @@ Create `manifest.json`:
 }
 ```
 
+---
 
-## 3. Writing the Extension Logic (`main.js`)
+## 3. Progressive Code Walkthrough
 
 ---
 
-Extensions extend the `Extension` base class and implement the `onload()` lifecycle hook.
+Let's build the extension step by step.
 
-Create `main.js`:
+### Step 1: The 3-Line Minimum
+Create `main.js`. At its simplest, an extension subclasses `Extension` and defines an `onload()` lifecycle method:
+
+```javascript
+const { Extension } = require('noether');
+
+module.exports = class WordCounterExtension extends Extension {
+  async onload() {
+    this.addActionRailIcon('word-counter-btn', 'clock-01', 'Calculate Reading Stats', (app) => {
+      const doc = app.workspace.activeDocument;
+      app.workspace.showToast(`Active Note: ${doc?.title || 'None'}`, 'info');
+    });
+  }
+};
+```
+
+This immediately registers a button in the left Action Rail.
+
+### Step 2: The Real-World Need (Live Statistics)
+A static button click is fine, but you usually want continuous feedback in the status bar at the bottom of the window. Let's add a live status bar widget:
 
 ```javascript
 const { Extension } = require('noether');
@@ -62,42 +84,13 @@ const React = require('react');
 
 module.exports = class WordCounterExtension extends Extension {
   async onload() {
-    console.log(`[${this.manifest.name}] Loaded successfully.`);
-
-    // 1. Register Action Rail Icon (Left Toolbar)
-    this.addActionRailIcon(
-      'count-words-btn',
-      '⏱️',
-      'Calculate Reading Stats',
-      (app) => {
-        const title = app.workspace.activeDocument?.title || 'No active note';
-        app.workspace.showToast(`Analyzing: ${title}`, 'info');
-      }
-    );
-
-    // 2. Register Command in Command Palette (Ctrl+K / Cmd+K)
-    this.addCommand({
-      id: 'show-stats',
-      title: 'Word Counter: Show Document Statistics',
-      hotkey: 'Ctrl+Shift+U',
-      action: (app) => {
-        const doc = app.workspace.activeDocument;
-        if (!doc) {
-          app.workspace.showToast('No active document open.', 'warning');
-          return;
-        }
-
-        const words = (doc.content || '').trim().split(/\s+/).filter(Boolean).length;
-        const readTime = Math.ceil(words / 200);
-
-        app.workspace.showToast(
-          `"${doc.title}": ${words} words (approx. ${readTime} min read)`,
-          'success'
-        );
-      },
+    // Register Action Rail button
+    this.addActionRailIcon('word-counter-btn', 'clock-01', 'Calculate Reading Stats', (app) => {
+      const doc = app.workspace.activeDocument;
+      app.workspace.showToast(`Active Note: ${doc?.title || 'None'}`, 'info');
     });
 
-    // 3. Register Live Status Bar Widget (Bottom Bar)
+    // Add Live Status Bar Widget
     this.addStatusBarItem({
       id: 'stats-widget',
       alignment: 'right',
@@ -109,46 +102,52 @@ module.exports = class WordCounterExtension extends Extension {
 
         return React.createElement(
           'span',
-          { className: 'text-neutral-400 text-xs font-mono select-none' },
-          `📝 ${words} words • ~${readTime} min`
+          { className: 'text-[#888888] text-xs font-mono select-none' },
+          `${words} words • ~${readTime} min`
         );
       },
     });
-
-    // 4. Listen to Document Save Events
-    this.onEvent('document:saved', ({ id, title }) => {
-      console.log(`[WordCounter] Document "${title}" (${id}) was saved.`);
-    });
-  }
-
-  onunload() {
-    console.log(`[${this.manifest.name}] Unloaded.`);
-    // All UI elements, commands, status widgets, and event listeners
-    // registered with this.add* or this.onEvent are cleaned up automatically!
   }
 };
 ```
 
+### Step 3: Event Subscriptions & Auto-Cleanup
+When you need to react to file changes or save operations, subscribe directly to the `EventBus`.
+
+```diff
+  async onload() {
+    // ... previous action rail and status bar setup ...
+
++   // Listen for document save events across the vault
++   this.onEvent('document:saved', ({ id, title }) => {
++     console.log(`[WordCounter] Document "${title}" (${id}) saved.`);
++   });
+  }
+
++ onunload() {
++   // All UI buttons, status widgets, hotkeys, and EventBus listeners
++   // registered with this.add* or this.onEvent are torn down automatically!
++ }
+```
+
+---
 
 ## 4. Testing Your Extension
 
 ---
 
 1. Open Noether.
-2. Open the Vault containing your `.noether/extensions/word-counter/` directory.
-3. Open **Settings** (`Ctrl + ,` / `Cmd + ,`) and navigate to the **Extensions** tab.
-4. Locate **Word & Reading Time Counter** in the list of installed extensions and toggle it **On**.
-5. Observe:
-   - A new action icon appears in the left Action Rail.
-   - The status bar at the bottom displays real-time word and reading time stats.
-   - Pressing `Ctrl+Shift+U` executes the custom command and triggers a toast notification.
-
-
-## 5. Development with TypeScript & Bundlers
+2. Open **Settings** (`Ctrl+,`) and navigate to the **Extensions** tab.
+3. Locate **Word & Reading Time Counter** in the list of installed extensions and toggle it **On**.
+4. Observe the new icon in the left toolbar and the real-time word counter in the bottom status bar.
 
 ---
 
-For larger extensions, I strongly recommend authoring in TypeScript and compiling with **Vite** or **esbuild**.
+## 5. Building with TypeScript & Bundlers
+
+---
+
+For production extensions with multiple source files or custom UI components, author in TypeScript and compile with **esbuild** or **Vite**.
 
 ### Minimal `package.json`
 ```json
@@ -165,37 +164,14 @@ For larger extensions, I strongly recommend authoring in TypeScript and compilin
 }
 ```
 
-Noether's runtime sandbox exposes `react`, `react-dom`, `zod`, `clsx`, `tailwind-merge`, `zustand`, and `@hugeicons` directly, so you can mark them external to keep your extension bundle lightweight.
-
-### TypeScript Source (`src/index.ts`)
-```typescript
-import { Extension, NoetherApp } from 'noether';
-import React from 'react';
-
-export default class WordCounterExtension extends Extension {
-  async onload(): Promise<void> {
-    this.addCommand({
-      id: 'show-stats',
-      title: 'Word Counter: Show Document Statistics',
-      action: (app: NoetherApp) => {
-        app.workspace.showToast('Statistics calculated!', 'info');
-      },
-    });
-  }
-}
-```
-
-Build your bundle:
-```bash
-npm run build
-```
-Copy `manifest.json` and the resulting `main.js` into your Vault's extension directory.
-
-
-## 6. Next Steps
+Noether's runtime sandbox forwards host dependencies directly (`react`, `react-dom`, `zustand`, `zod`, `clsx`, `tailwind-merge`, `@hugeicons`), so you should mark them external to keep your compiled bundle tiny (typically under 10KB).
 
 ---
 
-- Explore full copyable project boilerplates in [[Starter Templates & Boilerplates]].
-- Discover all available ribbons, commands, and status bar hooks in [[UI Extension Points]].
-- Browse interactive UI primitives in [[Noether UI Components]].
+## 6. Related Developer Guides
+
+---
+
+- [[UI Extension Points]]: Discover all available action rails, tab context menus, and status bar hooks.
+- [[Events & Relational Storage]]: Learn how to create custom SQLite tables and subscribe to vault events.
+- [[Model Context Protocol (MCP) Tools]]: Expose custom extension tools to AI copilots.

@@ -59,7 +59,7 @@ export default class WordCounterExtension extends Extension {
 }
 ```
 
-The `registerEvent()` method registers the listener with the extension's internal disposables registry. When the extension is uninstalled, disabled, or the vault switches, `onunload()` automatically unsubscribes all listeners in zero milliseconds without memory leaks.
+The `registerEvent()` method registers the listener with the extension's internal disposables registry. When the extension is uninstalled, disabled, or the vault switches, `onunload()` automatically unsubscribes all listeners cleanly without memory leaks.
 
 ## 3. Zustand Store Partitioning
 ---
