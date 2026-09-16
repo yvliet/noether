@@ -661,16 +661,12 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                     type="button"
                     data-tauri-drag-region="false"
                     data-no-drag="true"
-                    style={{
-                      WebkitAppRegion: 'no-drag',
-                      filter: hasElementsBehind ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.9))' : 'none',
-                      transition: 'filter 150ms ease',
-                    } as React.CSSProperties}
+                    style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
                     onClick={(e) => {
                       e.stopPropagation();
                       closeTabInPane(paneId, tab.id);
                     }}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-md flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]"
                   >
                     <Cancel01Icon size={13} />
                   </button>
