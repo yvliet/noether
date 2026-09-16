@@ -1533,162 +1533,6 @@ function buildAllDecorations(
   return DecorationSet.create(doc, decorations);
 }
 
-/**
- * Incrementally updates decorations for massive documents (100k+ words) to guarantee sub-8ms keystroke latency.
- * Maps existing decorations forward and only rescans modified or caret-activated textblocks.
- */
-function updateDecorationsIncrementally(
-  tr: any,
-  oldPluginState: LivePreviewPluginState,
-  oldState: any,
-  newState: any,
-  isFocused: boolean,
-  targetHeadingIndex: number | null,
-  editor: any,
-  focusChanged: boolean = false
-): DecorationSet {
-  const { doc, selection } = newState;
-  const { from: selFrom, to: selTo } = selection;
-
-  // Perform incremental dirty range updates for zero keystroke latency
-  let currentDecos = oldPluginState.decorations.map(tr.mapping, doc);
-
-  if (tr.docChanged) {
-    // 1. Calculate dirty range in new document
-    let minNewPos = doc.content.size;
-    let maxNewPos = 0;
-
-    tr.mapping.maps.forEach((stepMap: any) => {
-      stepMap.forEach((_oldStart: number, _oldEnd: number, newStart: number, newEnd: number) => {
-        minNewPos = Math.min(minNewPos, newStart);
-        maxNewPos = Math.max(maxNewPos, newEnd);
-      });
-    });
-
-    if (minNewPos > maxNewPos) {
-      return currentDecos;
-    }
-
-    // Expand to textblock boundaries
-    const safeMin = Math.max(0, Math.min(minNewPos, doc.content.size));
-    const safeMax = Math.max(safeMin, Math.min(maxNewPos, doc.content.size));
-
-    const $from = doc.resolve(safeMin);
-    const $to = doc.resolve(safeMax);
-
-    // Expand to top-level block bounds
-    const dirtyStart = $from.depth > 0 ? $from.before(1) : 0;
-    const dirtyEnd = $to.depth > 0 ? $to.after(1) : doc.content.size;
-
-    // Remove existing decorations in the dirty range
-    const oldInRange = currentDecos.find(dirtyStart, dirtyEnd);
-    currentDecos = currentDecos.remove(oldInRange);
-
-    // Rescan only textblocks intersecting the dirty range
-    const newDecos: Decoration[] = [];
-    doc.nodesBetween(dirtyStart, dirtyEnd, (node: any, pos: number) => {
-      if (!node.isTextblock) return true;
-      const decos = scanBlockDecorations(
-        node,
-        pos,
-        isFocused,
-        selFrom,
-        selTo,
-        false,
-        0,
-        null,
-        0,
-        null,
-        editor
-      );
-      for (let i = 0; i < decos.length; i++) {
-        newDecos.push(decos[i]);
-      }
-      return false;
-    });
-
-    if (newDecos.length > 0) {
-      currentDecos = currentDecos.add(doc, newDecos);
-    }
-
-    return currentDecos;
-  }
-
-  // 2. Selection-only or focus-only changes:
-  if (oldState || focusChanged) {
-    const oldFrom = oldState ? oldState.selection.from : selFrom;
-    const oldTo = oldState ? oldState.selection.to : selTo;
-
-    if (oldFrom === selFrom && oldTo === selTo && !focusChanged) {
-      return currentDecos;
-    }
-
-    const safeOldFrom = Math.max(0, Math.min(oldFrom, doc.content.size));
-    const safeOldTo = Math.max(safeOldFrom, Math.min(oldTo, doc.content.size));
-    const $oldFrom = doc.resolve(safeOldFrom);
-    const $oldTo = doc.resolve(safeOldTo);
-    const oldDirtyStart = $oldFrom.depth > 0 ? $oldFrom.before(1) : 0;
-    const oldDirtyEnd = $oldTo.depth > 0 ? $oldTo.after(1) : doc.content.size;
-
-    const safeNewFrom = Math.max(0, Math.min(selFrom, doc.content.size));
-    const safeNewTo = Math.max(safeNewFrom, Math.min(selTo, doc.content.size));
-    const $newFrom = doc.resolve(safeNewFrom);
-    const $newTo = doc.resolve(safeNewTo);
-    const newDirtyStart = $newFrom.depth > 0 ? $newFrom.before(1) : 0;
-    const newDirtyEnd = $newTo.depth > 0 ? $newTo.after(1) : doc.content.size;
-
-    // Merge ranges if overlapping or adjacent
-    const ranges: { start: number; end: number }[] = [];
-    if (oldDirtyStart <= newDirtyEnd && newDirtyStart <= oldDirtyEnd) {
-      ranges.push({
-        start: Math.min(oldDirtyStart, newDirtyStart),
-        end: Math.max(oldDirtyEnd, newDirtyEnd),
-      });
-    } else {
-      if (oldDirtyStart < newDirtyStart) {
-        ranges.push({ start: oldDirtyStart, end: oldDirtyEnd });
-        ranges.push({ start: newDirtyStart, end: newDirtyEnd });
-      } else {
-        ranges.push({ start: newDirtyStart, end: newDirtyEnd });
-        ranges.push({ start: oldDirtyStart, end: oldDirtyEnd });
-      }
-    }
-
-    for (const r of ranges) {
-      const oldInRange = currentDecos.find(r.start, r.end);
-      currentDecos = currentDecos.remove(oldInRange);
-
-      const newDecos: Decoration[] = [];
-      doc.nodesBetween(r.start, r.end, (node: any, pos: number) => {
-        if (!node.isTextblock) return true;
-        const decos = scanBlockDecorations(
-          node,
-          pos,
-          isFocused,
-          selFrom,
-          selTo,
-          false,
-          0,
-          null,
-          0,
-          null,
-          editor
-        );
-        for (let i = 0; i < decos.length; i++) {
-          newDecos.push(decos[i]);
-        }
-        return false;
-      });
-      if (newDecos.length > 0) {
-        currentDecos = currentDecos.add(doc, newDecos);
-      }
-    }
-
-    return currentDecos;
-  }
-
-  return buildAllDecorations(doc, isFocused, selFrom, selTo, targetHeadingIndex, editor);
-}
 
 export const LivePreviewSyntax = Extension.create({
   name: 'livePreviewSyntax',
@@ -1769,31 +1613,31 @@ export const LivePreviewSyntax = Extension.create({
               hasNoDecorations ||
               isFullDocDirty ||
               targetHeadingChanged ||
-              tr.getMeta('forceRebuildDecorations')
+              tr.getMeta('forceRebuildDecorations') ||
+              tr.docChanged ||
+              selectionChanged ||
+              tr.selectionSet ||
+              focusChanged
             ) {
               return {
-                decorations: buildAllDecorations(doc, isFocused, selFrom, selTo, targetHeadingIndex, extensionThis.editor),
-                focused: isFocused,
-                targetHeadingIndex,
-              };
-            }
-
-            if (tr.docChanged || selectionChanged || tr.selectionSet || focusChanged) {
-              return {
-                decorations: updateDecorationsIncrementally(
-                  tr,
-                  oldPluginState,
-                  oldState,
-                  newState,
+                decorations: buildAllDecorations(
+                  doc,
                   isFocused,
+                  selFrom,
+                  selTo,
                   targetHeadingIndex,
-                  extensionThis.editor,
-                  focusChanged
+                  extensionThis.editor
                 ),
                 focused: isFocused,
                 targetHeadingIndex,
               };
             }
+
+            return {
+              decorations: oldPluginState.decorations.map(tr.mapping, doc),
+              focused: isFocused,
+              targetHeadingIndex,
+            };
 
             return {
               decorations: oldPluginState.decorations.map(tr.mapping, doc),
