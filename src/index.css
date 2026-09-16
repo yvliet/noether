@@ -461,51 +461,6 @@ textarea::selection {
 }
 
 /* Custom Obsidian Scrollbar (Lightweight Overlay & Zero-Shift) */
-:root {
-  --noether-scrollbar-thumb: transparent;
-  --noether-scrollbar-thumb-hover: transparent;
-}
-
-.custom-scrollbar,
-.overflow-y-auto,
-.overflow-auto {
-  overflow-y: auto;
-  overflow-y: overlay;
-  --noether-scrollbar-thumb: transparent;
-  --noether-scrollbar-thumb-hover: transparent;
-}
-
-.overflow-x-auto {
-  overflow-x: auto;
-  overflow-x: overlay;
-  --noether-scrollbar-thumb: transparent;
-  --noether-scrollbar-thumb-hover: transparent;
-}
-
-/* On Container Hover: Activate CSS Variable for Scrollbar Thumb */
-.custom-scrollbar:hover,
-.custom-scrollbar:focus-within,
-.overflow-y-auto:hover,
-.overflow-y-auto:focus-within,
-.overflow-auto:hover,
-.overflow-auto:focus-within,
-.overflow-x-auto:hover,
-.overflow-x-auto:focus-within,
-.document-view-root:hover,
-.document-view-root:focus-within,
-[data-doc-view]:hover,
-[data-doc-view]:focus-within,
-div:hover,
-main:hover,
-aside:hover,
-section:hover,
-article:hover,
-pre:hover,
-textarea:hover {
-  --noether-scrollbar-thumb: rgba(255, 255, 255, 0.22);
-  --noether-scrollbar-thumb-hover: rgba(255, 255, 255, 0.38);
-}
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -513,141 +468,42 @@ textarea:hover {
 
 ::-webkit-scrollbar-track {
   background: transparent;
-  margin-top: 6px;
-  margin-bottom: 6px;
-}
-
-.scrollbar-track-offset-subheader::-webkit-scrollbar-track {
-  margin-top: calc(var(--noether-header-offset, 0px) + 38px);
-  margin-bottom: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: var(--noether-scrollbar-thumb, transparent);
+  background: rgba(255, 255, 255, 0.10);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--noether-scrollbar-thumb-hover, var(--noether-scrollbar-thumb, transparent));
-}
-
-/* Reveal scrollbar thumb when hovering anywhere over the container */
-.custom-scrollbar:hover::-webkit-scrollbar-thumb,
-.custom-scrollbar:focus-within::-webkit-scrollbar-thumb,
-.overflow-y-auto:hover::-webkit-scrollbar-thumb,
-.overflow-y-auto:focus-within::-webkit-scrollbar-thumb,
-.overflow-x-auto:hover::-webkit-scrollbar-thumb,
-.overflow-x-auto:focus-within::-webkit-scrollbar-thumb,
-.overflow-auto:hover::-webkit-scrollbar-thumb,
-.overflow-auto:focus-within::-webkit-scrollbar-thumb,
-.document-view-root:hover::-webkit-scrollbar-thumb,
-.document-view-root:focus-within::-webkit-scrollbar-thumb,
-[data-doc-view]:hover::-webkit-scrollbar-thumb,
-[data-doc-view]:focus-within::-webkit-scrollbar-thumb,
-div:hover::-webkit-scrollbar-thumb,
-main:hover::-webkit-scrollbar-thumb,
-aside:hover::-webkit-scrollbar-thumb,
-section:hover::-webkit-scrollbar-thumb,
-article:hover::-webkit-scrollbar-thumb,
-pre:hover::-webkit-scrollbar-thumb,
-textarea:hover::-webkit-scrollbar-thumb,
-*:hover::-webkit-scrollbar-thumb {
-  background-color: var(--noether-scrollbar-thumb, rgba(255, 255, 255, 0.22));
-}
-
-/* Lighten thumb when hovering directly over the thumb */
-.custom-scrollbar::-webkit-scrollbar-thumb:hover,
-.overflow-y-auto::-webkit-scrollbar-thumb:hover,
-.overflow-x-auto::-webkit-scrollbar-thumb:hover,
-.overflow-auto::-webkit-scrollbar-thumb:hover,
-div::-webkit-scrollbar-thumb:hover,
-main::-webkit-scrollbar-thumb:hover,
-aside::-webkit-scrollbar-thumb:hover,
-pre::-webkit-scrollbar-thumb:hover,
-textarea::-webkit-scrollbar-thumb:hover,
-::-webkit-scrollbar-thumb:hover {
-  background-color: var(--noether-scrollbar-thumb-hover, rgba(255, 255, 255, 0.38));
+  background: rgba(255, 255, 255, 0.22);
 }
 
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
 
-/* Strictly hide and eliminate top/bottom arrow stepper buttons */
-::-webkit-scrollbar-button,
-*::-webkit-scrollbar-button,
-::-webkit-scrollbar-button:single-button,
-::-webkit-scrollbar-button:vertical:decrement,
-::-webkit-scrollbar-button:vertical:increment,
-::-webkit-scrollbar-button:horizontal:decrement,
-::-webkit-scrollbar-button:horizontal:increment {
+::-webkit-scrollbar-button {
   display: none !important;
   width: 0 !important;
   height: 0 !important;
 }
 
-/* Light Theme */
-.theme-light .custom-scrollbar:hover,
-.theme-light .custom-scrollbar:focus-within,
-.theme-light .overflow-y-auto:hover,
-.theme-light .overflow-y-auto:focus-within,
-.theme-light .overflow-auto:hover,
-.theme-light .overflow-auto:focus-within,
-.theme-light .overflow-x-auto:hover,
-.theme-light .overflow-x-auto:focus-within,
-.theme-light .document-view-root:hover,
-.theme-light .document-view-root:focus-within,
-.theme-light [data-doc-view]:hover,
-.theme-light [data-doc-view]:focus-within,
-.theme-light div:hover,
-.theme-light main:hover,
-.theme-light aside:hover,
-.theme-light section:hover,
-.theme-light article:hover,
-.theme-light pre:hover,
-.theme-light textarea:hover {
-  --noether-scrollbar-thumb: rgba(0, 0, 0, 0.22);
-  --noether-scrollbar-thumb-hover: rgba(0, 0, 0, 0.38);
+.custom-scrollbar {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+.scrollbar-track-offset-subheader::-webkit-scrollbar-track {
+  margin-top: calc(var(--noether-header-offset, 0px) + 32px);
 }
 
 .theme-light ::-webkit-scrollbar-thumb {
-  background-color: var(--noether-scrollbar-thumb, transparent);
+  background: rgba(0, 0, 0, 0.22);
 }
 
-.theme-light .custom-scrollbar:hover::-webkit-scrollbar-thumb,
-.theme-light .custom-scrollbar:focus-within::-webkit-scrollbar-thumb,
-.theme-light .overflow-y-auto:hover::-webkit-scrollbar-thumb,
-.theme-light .overflow-y-auto:focus-within::-webkit-scrollbar-thumb,
-.theme-light .overflow-x-auto:hover::-webkit-scrollbar-thumb,
-.theme-light .overflow-x-auto:focus-within::-webkit-scrollbar-thumb,
-.theme-light .overflow-auto:hover::-webkit-scrollbar-thumb,
-.theme-light .overflow-auto:focus-within::-webkit-scrollbar-thumb,
-.theme-light .document-view-root:hover::-webkit-scrollbar-thumb,
-.theme-light .document-view-root:focus-within::-webkit-scrollbar-thumb,
-.theme-light [data-doc-view]:hover::-webkit-scrollbar-thumb,
-.theme-light [data-doc-view]:focus-within::-webkit-scrollbar-thumb,
-.theme-light div:hover::-webkit-scrollbar-thumb,
-.theme-light main:hover::-webkit-scrollbar-thumb,
-.theme-light aside:hover::-webkit-scrollbar-thumb,
-.theme-light section:hover::-webkit-scrollbar-thumb,
-.theme-light article:hover::-webkit-scrollbar-thumb,
-.theme-light pre:hover::-webkit-scrollbar-thumb,
-.theme-light textarea:hover::-webkit-scrollbar-thumb,
-.theme-light *:hover::-webkit-scrollbar-thumb {
-  background-color: var(--noether-scrollbar-thumb, rgba(0, 0, 0, 0.22));
-}
-
-.theme-light .custom-scrollbar::-webkit-scrollbar-thumb:hover,
-.theme-light .overflow-y-auto::-webkit-scrollbar-thumb:hover,
-.theme-light .overflow-x-auto::-webkit-scrollbar-thumb:hover,
-.theme-light .overflow-auto::-webkit-scrollbar-thumb:hover,
-.theme-light div::-webkit-scrollbar-thumb:hover,
-.theme-light main::-webkit-scrollbar-thumb:hover,
-.theme-light aside::-webkit-scrollbar-thumb:hover,
-.theme-light pre::-webkit-scrollbar-thumb:hover,
-.theme-light textarea::-webkit-scrollbar-thumb:hover,
 .theme-light ::-webkit-scrollbar-thumb:hover {
-  background-color: var(--noether-scrollbar-thumb-hover, rgba(0, 0, 0, 0.38));
+  background: rgba(0, 0, 0, 0.42);
 }
 
 .custom-scrollbar-none::-webkit-scrollbar {

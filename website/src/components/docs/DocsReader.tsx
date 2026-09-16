@@ -27,6 +27,7 @@ import {
 } from '../common/Icons';
 import { ComponentPreviewMap } from './ComponentPreview';
 import { WikilinkHoverPreview } from './WikilinkHoverPreview';
+import { DocsAccordionItem } from './DocsMarkdownView';
 
 
 export interface DocsReaderProps {
@@ -184,7 +185,14 @@ export function renderInlineMarkdown(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    // Restore HTML line break tags
+    // Restore safe inline HTML tags (bold, italic, code, span, kbd, line break)
+    .replace(/&lt;(\/?)b&gt;/gi, '<$1b>')
+    .replace(/&lt;(\/?)strong&gt;/gi, '<$1strong>')
+    .replace(/&lt;(\/?)i&gt;/gi, '<$1i>')
+    .replace(/&lt;(\/?)em&gt;/gi, '<$1em>')
+    .replace(/&lt;(\/?)code&gt;/gi, '<$1code>')
+    .replace(/&lt;(\/?)kbd&gt;/gi, '<$1kbd>')
+    .replace(/&lt;(\/?)span([^&]*)&gt;/gi, '<$1span$2>')
     .replace(/&lt;br\s*\/?&gt;/gi, '<br />');
 
   // 4. Obsidian Wikilinks: [[Target|Label]] or [[Target]] with Noether orange accent
@@ -1050,6 +1058,97 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
 
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+
+      // Accordion Details Blocks (<details> ... </details>)
+      const detailsMatch = line.trim().match(/^<details(\s+[^>]*)?>/i);
+      if (detailsMatch && !inCodeBlock) {
+        flushList(i);
+        flushTable(i);
+        flushHtmlTable(i);
+        flushQuote(i);
+
+        const isOpenDefault = /\bopen\b/i.test(detailsMatch[1] || '') || line.includes('open');
+        const detailLines: string[] = [];
+        let summaryText = 'Details';
+        let j = i;
+        let foundClosing = false;
+
+        // Check if summary is on the same line as <details>
+        const sameLineSummary = line.match(/<summary(?:\s+[^>]*)?>([\s\S]*?)<\/summary>/i);
+        if (sameLineSummary) {
+          summaryText = sameLineSummary[1].trim();
+        }
+
+        // Also check if <details> and </details> are on the exact same single line
+        if (line.includes('</details>')) {
+          foundClosing = true;
+          const singleLineContent = line.replace(/^<details[^>]*>/i, '').replace(/<\/details>$/i, '');
+          const innerWithoutSummary = singleLineContent.replace(/<summary(?:\s+[^>]*)?>[\s\S]*?<\/summary>/i, '').trim();
+          if (innerWithoutSummary) {
+            detailLines.push(innerWithoutSummary);
+          }
+        } else {
+          j = i + 1;
+          while (j < lines.length) {
+            const curLine = lines[j];
+
+            // Check for summary tag if not yet extracted
+            if (summaryText === 'Details' && /<summary/i.test(curLine)) {
+              const sumMatch = curLine.match(/<summary(?:\s+[^>]*)?>([\s\S]*?)<\/summary>/i);
+              if (sumMatch) {
+                summaryText = sumMatch[1].trim();
+                j++;
+                continue;
+              } else {
+                let sumContent = curLine.replace(/^.*?<summary(?:\s+[^>]*)?>/i, '');
+                while (j < lines.length && !sumContent.includes('</summary>')) {
+                  j++;
+                  if (j < lines.length) {
+                    sumContent += ' ' + lines[j];
+                  }
+                }
+                const sumEndMatch = sumContent.match(/([\s\S]*?)<\/summary>/i);
+                if (sumEndMatch) {
+                  summaryText = sumEndMatch[1].trim();
+                }
+                j++;
+                continue;
+              }
+            }
+
+            if (/<\/details>/i.test(curLine)) {
+              foundClosing = true;
+              const beforeClosing = curLine.replace(/<\/details>[\s\S]*$/i, '').trim();
+              if (beforeClosing && !/<summary/i.test(beforeClosing)) {
+                detailLines.push(beforeClosing);
+              }
+              break;
+            }
+
+            detailLines.push(curLine);
+            j++;
+          }
+        }
+
+        nodes.push(
+          <DocsAccordionItem
+            key={`accordion-${i}`}
+            title={summaryText}
+            isOpenDefault={isOpenDefault}
+            contentLines={detailLines}
+            compact={false}
+            portal={doc.portal || portal}
+            docId={doc.id}
+            docSlug={doc.slug}
+          />
+        );
+
+        if (foundClosing) {
+          i = j;
+        }
+        lastWasHeading = false;
+        continue;
+      }
 
       // Interactive Component Preview Directives (:::preview button, :::preview textinput, etc.)
       const previewMatch = line.trim().match(/^:::preview\s+([a-zA-Z0-9_-]+)/i) || line.trim().match(/^<!--\s*preview:\s*([a-zA-Z0-9_-]+)\s*-->/i);

@@ -92,7 +92,7 @@ const DocsCalloutItem: React.FC<DocsCalloutItemProps> = ({
   );
 };
 
-interface DocsAccordionItemProps {
+export interface DocsAccordionItemProps {
   title: string;
   isOpenDefault?: boolean;
   contentLines: string[];
@@ -102,7 +102,7 @@ interface DocsAccordionItemProps {
   docSlug?: string;
 }
 
-const DocsAccordionItem: React.FC<DocsAccordionItemProps> = ({
+export const DocsAccordionItem: React.FC<DocsAccordionItemProps> = ({
   title,
   isOpenDefault = false,
   contentLines,
@@ -122,15 +122,15 @@ const DocsAccordionItem: React.FC<DocsAccordionItemProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[#1a1a1a] hover:bg-[#222222] text-left cursor-pointer transition-none select-none border-none outline-none"
+        className="w-full flex items-center justify-between px-3.5 py-2.5 sm:px-4 sm:py-3 bg-[#1a1a1a] hover:bg-[#222222] text-left cursor-pointer transition-none select-none border-none outline-none group"
       >
         <span
           className={`font-medium ${
             compact ? 'text-[13px]' : 'text-[14.5px]'
-          } text-white flex items-center gap-2`}
+          } text-white flex items-center gap-2 group-hover:text-[#eb584d] transition-none`}
           dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(title) }}
         />
-        <span className="text-[#888888] shrink-0 ml-2">
+        <span className="text-[#888888] group-hover:text-white shrink-0 ml-2 transition-none">
           {isOpen ? <ChevronDownIcon size={15} /> : <ChevronRightIcon size={15} />}
         </span>
       </button>
@@ -590,45 +590,75 @@ export const DocsMarkdownView: React.FC<DocsMarkdownViewProps> = React.memo(({
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
 
-      // Accordion Details Blocks <details> ... </details>
-      if (line.trim().startsWith('<details')) {
+      // Accordion Details Blocks (<details> ... </details>)
+      const detailsMatch = line.trim().match(/^<details(\s+[^>]*)?>/i);
+      if (detailsMatch) {
         flushList(i);
         flushTable(i);
         flushHtmlTable(i);
         flushQuote(i);
 
-        const isOpenDefault = line.trim().includes('open');
+        const isOpenDefault = /\bopen\b/i.test(detailsMatch[1] || '') || line.includes('open');
         const detailLines: string[] = [];
         let summaryText = 'Details';
         let j = i;
         let foundClosing = false;
 
-        // Check if summary is on the same line
-        const sameLineSummary = line.match(/<summary>([\s\S]*?)<\/summary>/i);
+        // Check if summary is on the same line as <details>
+        const sameLineSummary = line.match(/<summary(?:\s+[^>]*)?>([\s\S]*?)<\/summary>/i);
         if (sameLineSummary) {
           summaryText = sameLineSummary[1].trim();
         }
 
-        while (j < lines.length) {
-          const curLine = lines[j];
-          if (j > i) {
-            // Check for summary tag if not yet found
-            if (!sameLineSummary && summaryText === 'Details') {
-              const sumMatch = curLine.match(/<summary>([\s\S]*?)<\/summary>/i);
+        // Also check if <details> and </details> are on the exact same single line
+        if (line.includes('</details>')) {
+          foundClosing = true;
+          const singleLineContent = line.replace(/^<details[^>]*>/i, '').replace(/<\/details>$/i, '');
+          const innerWithoutSummary = singleLineContent.replace(/<summary(?:\s+[^>]*)?>[\s\S]*?<\/summary>/i, '').trim();
+          if (innerWithoutSummary) {
+            detailLines.push(innerWithoutSummary);
+          }
+        } else {
+          j = i + 1;
+          while (j < lines.length) {
+            const curLine = lines[j];
+
+            // Check for summary tag if not yet extracted
+            if (summaryText === 'Details' && /<summary/i.test(curLine)) {
+              const sumMatch = curLine.match(/<summary(?:\s+[^>]*)?>([\s\S]*?)<\/summary>/i);
               if (sumMatch) {
                 summaryText = sumMatch[1].trim();
+                j++;
+                continue;
+              } else {
+                let sumContent = curLine.replace(/^.*?<summary(?:\s+[^>]*)?>/i, '');
+                while (j < lines.length && !sumContent.includes('</summary>')) {
+                  j++;
+                  if (j < lines.length) {
+                    sumContent += ' ' + lines[j];
+                  }
+                }
+                const sumEndMatch = sumContent.match(/([\s\S]*?)<\/summary>/i);
+                if (sumEndMatch) {
+                  summaryText = sumEndMatch[1].trim();
+                }
                 j++;
                 continue;
               }
             }
 
-            if (curLine.trim().includes('</details>')) {
+            if (/<\/details>/i.test(curLine)) {
               foundClosing = true;
+              const beforeClosing = curLine.replace(/<\/details>[\s\S]*$/i, '').trim();
+              if (beforeClosing && !/<summary/i.test(beforeClosing)) {
+                detailLines.push(beforeClosing);
+              }
               break;
             }
+
             detailLines.push(curLine);
+            j++;
           }
-          j++;
         }
 
         nodes.push(
@@ -647,6 +677,7 @@ export const DocsMarkdownView: React.FC<DocsMarkdownViewProps> = React.memo(({
         if (foundClosing) {
           i = j;
         }
+        lastWasHeading = false;
         continue;
       }
 
