@@ -2372,7 +2372,12 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       const viewTop = -safeY / safeScale;
       const viewRight = viewLeft + viewW / safeScale;
       const viewBottom = viewTop + viewH / safeScale;
-      const cullMargin = 60; // Cushion so node circles & text don't pop abruptly
+
+      // Smooth sub-linear compensation: as camera zooms out (scale < 1.0),
+      // node world radius expands gently so nodes remain visible, distinct dots
+      // without crowding or overlapping heavily.
+      const zoomCompFactor = safeScale < 1.0 ? Math.pow(1 / safeScale, 0.38) : 1.0;
+      const cullMargin = Math.max(80, 40 * zoomCompFactor); // Cushion so node circles & text don't pop abruptly
 
       // Zoom-Aware Text Opacity: Smoothly starts fading earlier (1.12 scale down to 0.52 baseline cutoff)
       const zoomTextOpacity = Math.min(1, Math.max(0, (safeScale - 0.52) / 0.60));
@@ -2455,7 +2460,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const dx = targetNode.x - sourceNode.x;
         const dy = targetNode.y - sourceNode.y;
         const dist = Math.hypot(dx, dy);
-        const targetR = Math.max(3.5, (targetNode.radius || 5.5) * (targetNode.popScale || 1) * nodeSizeMult);
+        const targetR = Math.max(3.5, (targetNode.radius || 5.5) * (targetNode.popScale || 1) * nodeSizeMult * zoomCompFactor);
         if (dist < targetR + 10) return;
 
         const ux = dx / dist;
@@ -2688,15 +2693,15 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const ng = Math.min(255, Math.max(0, Math.round(baseG * (1 - node.dimAlpha) * (1 - node.hoverAlpha) + 255 * node.hoverAlpha + 45 * node.dimAlpha)));
         const nb = Math.min(255, Math.max(0, Math.round(baseB * (1 - node.dimAlpha) * (1 - node.hoverAlpha) + 255 * node.hoverAlpha + 45 * node.dimAlpha)));
 
-        // Constant radius scaled by nodeSize setting (exact constant size, no enlargement on hover)
+        // Adaptive radius scaled by nodeSize setting and sub-linear zoom-out compensation
         const nodeSizeMult = useGraphSettings.getState().nodeSize || 1.0;
-        const radius = Math.max(3.5, (node.radius || 5.5) * (node.popScale || 1) * nodeSizeMult);
+        const radius = Math.max(3.5, (node.radius || 5.5) * (node.popScale || 1) * nodeSizeMult * zoomCompFactor);
         const nodeAlpha = Number.isFinite(node.popAlpha) && node.popAlpha! > 0.05 ? node.popAlpha! : 1;
 
         // Glowing outline for search matched nodes
         if (isFilterActive && isMatch) {
           ctx.beginPath();
-          ctx.arc(node.x, node.y, radius + 4, 0, 2 * Math.PI);
+          ctx.arc(node.x, node.y, radius + 4 * Math.min(1.5, zoomCompFactor), 0, 2 * Math.PI);
           ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
           ctx.lineWidth = 1.5;
           ctx.stroke();
@@ -2715,9 +2720,12 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         const shouldRenderLabel = showLabelsSetting && labelAlpha > 0.01 && (!isHighDensity || isPriorityLabel || safeScale >= 0.75);
 
         if (shouldRenderLabel) {
-          ctx.font = isFilterActive && isMatch
-            ? '600 11.5px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-            : '11px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+          const isFocusedLabel = isHovered || (isConnected && isAnyHovered);
+          const fontScale = isFocusedLabel && safeScale < 1.0 ? 1 / safeScale : 1.0;
+          const baseFontSize = 11;
+          const effectiveFontSize = baseFontSize * fontScale;
+
+          ctx.font = `${effectiveFontSize.toFixed(1)}px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'top';
 
@@ -2730,7 +2738,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
           if (!node.isTag) {
             displayTitle = fileTypeRegistry.ensureExtension(displayTitle, node.docType);
           }
-          ctx.fillText(displayTitle, node.x, node.y + radius + textOffset);
+          const effectiveTextOffset = isFocusedLabel && safeScale < 1.0 ? textOffset / safeScale : textOffset;
+          ctx.fillText(displayTitle, node.x, node.y + radius + effectiveTextOffset);
         }
       };
 
@@ -3531,6 +3540,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
 
     const rect = canvas.getBoundingClientRect();
     const safeScale = Number.isFinite(currentTransformRef.current.scale) && currentTransformRef.current.scale > 0 ? currentTransformRef.current.scale : 1;
+    const zoomCompFactor = safeScale < 1.0 ? Math.pow(1 / safeScale, 0.38) : 1.0;
+    const nodeSizeMult = useGraphSettings.getState().nodeSize || 1.0;
     const mouseX = (e.clientX - rect.left - (currentTransformRef.current.x || 0)) / safeScale;
     const mouseY = (e.clientY - rect.top - (currentTransformRef.current.y || 0)) / safeScale;
 
@@ -3542,7 +3553,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
       if (!visibleNodeIdsRef.current.has(n.id)) return false;
       const dx = n.x - mouseX;
       const dy = n.y - mouseY;
-      return Math.sqrt(dx * dx + dy * dy) <= (n.radius || 6) + 6;
+      const effectiveRadius = Math.max(3.5, (n.radius || 5.5) * (n.popScale || 1) * nodeSizeMult * zoomCompFactor);
+      const hitTolerance = effectiveRadius + Math.max(6, 6 / safeScale);
+      return Math.hypot(dx, dy) <= hitTolerance;
     });
 
     if (clickedNode) {
@@ -3599,6 +3612,8 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
     // Single Pointer Interactions
     const rect = canvas.getBoundingClientRect();
     const safeScale = Number.isFinite(currentTransformRef.current.scale) && currentTransformRef.current.scale > 0 ? currentTransformRef.current.scale : 1;
+    const zoomCompFactor = safeScale < 1.0 ? Math.pow(1 / safeScale, 0.38) : 1.0;
+    const nodeSizeMult = useGraphSettings.getState().nodeSize || 1.0;
     const mouseX = (e.clientX - rect.left - (currentTransformRef.current.x || 0)) / safeScale;
     const mouseY = (e.clientY - rect.top - (currentTransformRef.current.y || 0)) / safeScale;
 
@@ -3636,7 +3651,9 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
         if (!visibleNodeIdsRef.current.has(n.id)) return false;
         const dx = n.x - mouseX;
         const dy = n.y - mouseY;
-        return Math.sqrt(dx * dx + dy * dy) <= (n.radius || 6) + 6;
+        const effectiveRadius = Math.max(3.5, (n.radius || 5.5) * (n.popScale || 1) * nodeSizeMult * zoomCompFactor);
+        const hitTolerance = effectiveRadius + Math.max(6, 6 / safeScale);
+        return Math.hypot(dx, dy) <= hitTolerance;
       }) || null;
       const nextHoveredId = hovered?.id || null;
 
