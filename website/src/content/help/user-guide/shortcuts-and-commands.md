@@ -23,6 +23,7 @@ The Command Palette is your central command launcher:
 | **Toggle Left Sidebar** | `Ctrl+\` | `Cmd+\` |
 | **Toggle Right Sidebar** | `Ctrl+Shift+\` | `Cmd+Shift+\` |
 | **Vault-Wide Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` |
+| **Open Help Window** | `F1` | `F1` |
 | **Open Settings Window** | `Ctrl+,` | `Cmd+,` |
 | **Switch Vault** | `Ctrl+Shift+O` | `Cmd+Shift+O` |
 | **Toggle Fullscreen** | `F11` | `F11` |

@@ -282,7 +282,7 @@ export function useKeyboardShortcuts() {
       // 14. Help & Shortcuts: F1 or Ctrl + /
       if (isMatch('workspace:help', ['F1', 'Ctrl+/'])) {
         e.preventDefault();
-        ws.setIsHelpModalOpen(true);
+        platform.openHelpWindow();
         return;
       }
 

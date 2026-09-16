@@ -5,6 +5,7 @@ import noetherSpinGif from '@/assets/noether_spin.gif';
 
 const AppShell = React.lazy(() => import('@/components/layout/AppShell').then((m) => ({ default: m.AppShell })));
 const SettingsWindow = React.lazy(() => import('@/components/settings/SettingsWindow').then((m) => ({ default: m.SettingsWindow })));
+const HelpWindow = React.lazy(() => import('@/components/help/HelpWindow').then((m) => ({ default: m.HelpWindow })));
 
 const LoadingSpinner = () => (
   <div className="w-full h-full flex items-center justify-center bg-[#141414] select-none">
@@ -55,6 +56,16 @@ export function App() {
       <ErrorBoundary>
         <Suspense fallback={<LoadingSpinner />}>
           <SettingsWindow initialTab={activeTab} />
+        </Suspense>
+      </ErrorBoundary>
+    );
+  }
+
+  if (windowMode === 'help') {
+    return (
+      <ErrorBoundary>
+        <Suspense fallback={<LoadingSpinner />}>
+          <HelpWindow />
         </Suspense>
       </ErrorBoundary>
     );

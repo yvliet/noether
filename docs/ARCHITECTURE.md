@@ -90,6 +90,9 @@ Typing in a note should always feel instantaneous. To keep input latency under 8
 Noether runs as a lightweight native desktop app via Tauri v2, using the OS webview rather than bundling a full copy of Chromium:
 
 - **Hardware acceleration**: GPU acceleration is enabled for smooth canvas panning and graph physics.
+- **Single-process startup**: Auxiliary windows (Settings and Help) are never pre-spawned at cold boot. Only the primary workspace window is created on launch, keeping initial idle memory below 110MB.
+- **On-demand window lifecycle**: Settings and Help windows are instantiated dynamically when requested (`WebviewWindowBuilder::new`). When dismissed, their underlying webview processes are closed and destroyed (`win.close()`), returning memory immediately to the operating system.
+- **Embedded modal fallback**: Users who prefer ultra-low resource footprints can toggle "Open settings in new window" off, running settings inside an in-app overlay modal that consumes zero extra webview processes.
 - **Idle memory cleanup**: When Noether sits idle for two minutes, Rust triggers an OS-level working set trim on the webview process tree, releasing standby RAM back to your system.
 
 ## 7. Built-in MCP Server for AI Assistants

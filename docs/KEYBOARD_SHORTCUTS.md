@@ -10,7 +10,7 @@ The Command Palette is the universal launcher in Noether for file switching, vie
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
 | **Command Palette / Quick Open** | `Ctrl+K` or `Ctrl+O` | `Cmd+K` or `Cmd+O` |
-| **Open Help & Shortcuts Guide** | `F1` | `F1` |
+| **Open Help Window** | `F1` | `F1` |
 | **Open Settings Window** | `Ctrl+,` | `Cmd+,` |
 | **Switch Active Vault Workspace** | `Ctrl+Shift+O` | `Cmd+Shift+O` |
 | **Vault-Wide Full-Text Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` |

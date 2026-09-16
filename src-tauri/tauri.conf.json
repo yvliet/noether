@@ -31,20 +31,6 @@
           "x": 16,
           "y": 14
         }
-      },
-      {
-        "label": "settings",
-        "title": "Settings",
-        "width": 980,
-        "height": 680,
-        "minWidth": 720,
-        "minHeight": 480,
-        "decorations": false,
-        "transparent": false,
-        "backgroundColor": "#181818",
-        "center": true,
-        "visible": false,
-        "devtools": true
       }
     ],
     "security": {

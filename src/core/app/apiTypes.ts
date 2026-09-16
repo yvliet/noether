@@ -404,6 +404,12 @@ export interface WorkspaceAPI {
   openHelpModal(): void;
 
   /**
+   * Opens the help window or modal.
+   * @since 0.5.5
+   */
+  openHelp(): void;
+
+  /**
    * Opens the vault switcher and management modal.
    * @since 0.4.7
    */

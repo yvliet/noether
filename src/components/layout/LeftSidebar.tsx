@@ -51,7 +51,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
   const vaultName = useWorkspaceStore((s) => s.vaultName);
   const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
-  const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsVaultModalOpen = useWorkspaceStore((s) => s.setIsVaultModalOpen);
   const triggerCollapseAll = useWorkspaceStore((s) => s.triggerCollapseAll);
   const collapseAllFolders = useWorkspaceStore((s) => s.collapseAllFolders);
@@ -793,8 +792,8 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
         <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={() => setIsHelpModalOpen(true)}
-            title="Help & shortcuts (F1)"
+            onClick={() => platform.openHelpWindow()}
+            title="Help (F1)"
             className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <HelpCircleIcon size={16} />

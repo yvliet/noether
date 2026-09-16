@@ -17,7 +17,6 @@ export const ActionRail: React.FC = React.memo(() => {
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
   const setIsSettingsOpen = useWorkspaceStore((s) => s.setIsSettingsOpen);
-  const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const setIsVaultModalOpen = useWorkspaceStore((s) => s.setIsVaultModalOpen);
   const showToast = useWorkspaceStore((s) => s.showToast);
 
@@ -119,14 +118,14 @@ export const ActionRail: React.FC = React.memo(() => {
             <ArrowUpDownIcon size={15} />
           </button>
 
-          {/* Help & Hotkeys */}
+          {/* Help */}
           <button
             data-action-rail-id="core:help"
             data-no-drag="true"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            onClick={() => setIsHelpModalOpen(true)}
-            title="Help & shortcuts (F1)"
-            data-tooltip="Help & shortcuts (F1)"
+            onClick={() => platform.openHelpWindow()}
+            title="Help (F1)"
+            data-tooltip="Help (F1)"
             className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
           >
             <HelpCircleIcon size={16} />

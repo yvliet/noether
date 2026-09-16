@@ -5,6 +5,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useNoetherApp, useSidebarTabs, useViews, useExtensionList } from '@/core/app/AppContext';
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 import { Cancel01Icon } from '@/components/common/Icons';
+import { platform } from '@/lib/platform/platformAdapter';
 
 const LazyDisabledExtensionView = React.lazy(() =>
   import('@/components/extension-viewer/DisabledExtensionView').then((m) => ({ default: m.DisabledExtensionView }))
@@ -22,7 +23,6 @@ interface DockEmptyViewProps {
 const DockEmptyView: React.FC<DockEmptyViewProps> = React.memo(({ zone, activeItemId }) => {
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
-  const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const undockItem = useSidebarDockStore((s) => s.undockItem);
 
   const handleCreateNewNote = useCallback(async () => {
@@ -79,7 +79,7 @@ const DockEmptyView: React.FC<DockEmptyViewProps> = React.memo(({ zone, activeIt
       </button>
 
       <button
-        onClick={() => setIsHelpModalOpen(true)}
+        onClick={() => platform.openHelpWindow()}
         className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
       >
         Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>

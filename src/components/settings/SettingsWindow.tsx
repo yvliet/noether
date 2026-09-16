@@ -162,6 +162,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
     if (isModal && onClose) {
       onClose();
     } else if (platform.isDesktop()) {
+      platform.close();
       platform.closeSettingsWindow();
     } else if (onClose) {
       onClose();
@@ -459,32 +460,42 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Escape') {
       if (searchQuery) {
+        e.preventDefault();
         e.stopPropagation();
         handleClearSearch();
+      } else {
+        e.preventDefault();
+        e.stopPropagation();
+        handleClose();
       }
     }
-  }, [searchQuery, handleClearSearch]);
+  }, [searchQuery, handleClearSearch, handleClose]);
 
   useEffect(() => {
+    window.focus();
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (fontPickerMode) {
           e.preventDefault();
+          e.stopPropagation();
           handleCloseFontPicker();
         } else if (isTrashViewOpen) {
           e.preventDefault();
+          e.stopPropagation();
           handleCloseTrash();
         } else if (searchQuery) {
           e.preventDefault();
+          e.stopPropagation();
           handleClearSearch();
         } else {
           e.preventDefault();
+          e.stopPropagation();
           handleClose();
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [fontPickerMode, isTrashViewOpen, searchQuery, handleCloseFontPicker, handleCloseTrash, handleClearSearch, handleClose]);
 
   return (

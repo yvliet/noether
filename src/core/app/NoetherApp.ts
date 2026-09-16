@@ -404,7 +404,10 @@ export class NoetherApp {
         platform.openSettingsWindow(tabId);
       },
       openHelpModal: (): void => {
-        storeRefs.workspace?.getState()?.setIsHelpModalOpen(true);
+        platform.openHelpWindow();
+      },
+      openHelp: (): void => {
+        platform.openHelpWindow();
       },
       openVaultModal: (): void => {
         storeRefs.workspace?.getState()?.setIsVaultModalOpen(true);

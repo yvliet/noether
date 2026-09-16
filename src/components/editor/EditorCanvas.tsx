@@ -186,7 +186,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const openTabInPane = useWorkspaceStore((s) => s.openTabInPane);
   const closeTabInPane = useWorkspaceStore((s) => s.closeTabInPane);
   const setIsCommandPaletteOpen = useWorkspaceStore((s) => s.setIsCommandPaletteOpen);
-  const setIsHelpModalOpen = useWorkspaceStore((s) => s.setIsHelpModalOpen);
   const activeTabId = useWorkspaceStore((s) => s.activeTabId);
   const tabs = useWorkspaceStore((s) => s.tabs);
   const splitTabs = useWorkspaceStore((s) => s.splitTabs);
@@ -1635,7 +1634,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
           <button
             type="button"
-            onClick={() => setIsHelpModalOpen(true)}
+            onClick={() => platform.openHelpWindow()}
             className="text-[13px] text-[#888888] hover:text-[#dcddde] cursor-pointer"
           >
             Syntax & Help Guide <span className="text-[#555] ml-1">F1</span>

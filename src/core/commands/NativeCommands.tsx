@@ -371,15 +371,15 @@ export function registerNativeCommands(app: NoetherApp): void {
       },
     },
 
-    // ── 15. Open Help Modal ──
+    // ── 15. Open Help Window ──
     {
       id: 'cmd-open-help',
-      title: 'Open Help & Shortcuts Guide',
+      title: 'Open Help',
       section: 'System',
       icon: <HelpCircleIcon size={16} />,
       hotkey: 'F1',
       action: (appInstance) => {
-        appInstance.workspace.openHelpModal();
+        appInstance.workspace.openHelp();
       },
     },
 

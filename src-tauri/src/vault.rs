@@ -1597,54 +1597,100 @@ pub fn close_vault_window() -> Value {
 }
 
 #[tauri::command]
-pub fn open_settings_window(app: AppHandle, tab: Option<String>) -> Value {
+pub async fn open_settings_window(app: AppHandle, tab: Option<String>) -> Value {
     if let Some(win) = app.get_webview_window("settings") {
-        let _ = win.show();
-        let _ = win.unminimize();
-        let _ = win.set_focus();
-        if let Some(ref tab_id) = tab {
-            let _ = win.emit("navigate-settings-tab", tab_id.clone());
-        }
-        return json!({ "success": true });
+        let _ = win.close();
+        return json!({ "success": true, "closed": true });
     }
 
-    let app_handle = app.clone();
-    let tab_clone = tab.clone();
-    let _ = app.run_on_main_thread(move || {
-        let builder = tauri::WebviewWindowBuilder::new(
-            &app_handle,
-            "settings",
-            tauri::WebviewUrl::App("index.html".into()),
-        )
-        .title("Settings")
-        .inner_size(980.0, 680.0)
-        .min_inner_size(720.0, 480.0)
-        .decorations(false)
-        .transparent(false)
-        .devtools(true)
-        .center();
+    let url_str = match tab {
+        Some(ref t) => format!("index.html?window=settings&tab={}", t),
+        None => "index.html?window=settings".to_string(),
+    };
 
-        if let Ok(win) = builder.build() {
+    let builder = tauri::WebviewWindowBuilder::new(
+        &app,
+        "settings",
+        tauri::WebviewUrl::App(url_str.into()),
+    )
+    .title("Settings")
+    .inner_size(980.0, 680.0)
+    .min_inner_size(720.0, 480.0)
+    .decorations(false)
+    .transparent(false)
+    .background_color(tauri::window::Color(24, 24, 24, 255))
+    .theme(Some(tauri::Theme::Dark))
+    .devtools(true)
+    .center();
+
+    match builder.build() {
+        Ok(win) => {
             let _ = win.show();
             let _ = win.set_focus();
-            if let Some(ref tab_id) = tab_clone {
+            if let Some(ref tab_id) = tab {
                 let tid = tab_id.clone();
                 let w = win.clone();
                 std::thread::spawn(move || {
-                    std::thread::sleep(std::time::Duration::from_millis(150));
+                    std::thread::sleep(std::time::Duration::from_millis(200));
                     let _ = w.emit("navigate-settings-tab", tid);
                 });
             }
+            json!({ "success": true })
         }
-    });
-
-    json!({ "success": true })
+        Err(e) => {
+            eprintln!("[Noether] Failed to build settings window: {:?}", e);
+            json!({ "success": false, "error": e.to_string() })
+        }
+    }
 }
 
 #[tauri::command]
 pub fn close_settings_window(app: AppHandle) -> Value {
     if let Some(win) = app.get_webview_window("settings") {
-        let _ = win.hide();
+        let _ = win.close();
+    }
+    json!({ "success": true })
+}
+
+#[tauri::command]
+pub async fn open_help_window(app: AppHandle) -> Value {
+    if let Some(win) = app.get_webview_window("help") {
+        let _ = win.close();
+        return json!({ "success": true, "closed": true });
+    }
+
+    let builder = tauri::WebviewWindowBuilder::new(
+        &app,
+        "help",
+        tauri::WebviewUrl::App("index.html?window=help".into()),
+    )
+    .title("Help")
+    .inner_size(560.0, 620.0)
+    .min_inner_size(480.0, 520.0)
+    .decorations(false)
+    .transparent(false)
+    .background_color(tauri::window::Color(24, 24, 24, 255))
+    .theme(Some(tauri::Theme::Dark))
+    .devtools(true)
+    .center();
+
+    match builder.build() {
+        Ok(win) => {
+            let _ = win.show();
+            let _ = win.set_focus();
+            json!({ "success": true })
+        }
+        Err(e) => {
+            eprintln!("[Noether] Failed to build help window: {:?}", e);
+            json!({ "success": false, "error": e.to_string() })
+        }
+    }
+}
+
+#[tauri::command]
+pub fn close_help_window(app: AppHandle) -> Value {
+    if let Some(win) = app.get_webview_window("help") {
+        let _ = win.close();
     }
     json!({ "success": true })
 }
@@ -1669,9 +1715,7 @@ pub fn window_maximize(window: tauri::Window) {
 
 #[tauri::command]
 pub fn window_close(window: tauri::Window) {
-    if window.label() == "settings" {
-        let _ = window.hide();
-    } else if window.label() == "vault-switcher" || window.label() == "spark" {
+    if window.label() == "vault-switcher" || window.label() == "spark" {
         let _ = window.hide();
     } else if window.label() == "main" {
         let app = window.app_handle().clone();

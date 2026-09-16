@@ -24,23 +24,38 @@ bindNoetherStores({
 // Apply theme tokens and appearance settings to DOM root across all window modes
 applyAppearanceDOM();
 
-const isSettingsWindow = typeof window !== 'undefined' && (
+const isAuxiliaryWindow = typeof window !== 'undefined' && (
   (window as any).__TAURI_INTERNALS__?.metadata?.currentWindow?.label === 'settings' ||
   (window as any).__TAURI_INTERNALS__?.metadata?.currentWebview?.label === 'settings' ||
+  (window as any).__TAURI_INTERNALS__?.metadata?.currentWindow?.label === 'help' ||
+  (window as any).__TAURI_INTERNALS__?.metadata?.currentWebview?.label === 'help' ||
   (window as any).__NOETHER_WINDOW_MODE__ === 'settings' ||
+  (window as any).__NOETHER_WINDOW_MODE__ === 'help' ||
   window.location.search.includes('window=settings') ||
-  window.location.hash.includes('window=settings')
+  window.location.search.includes('window=help') ||
+  window.location.hash.includes('window=settings') ||
+  window.location.hash.includes('window=help')
 );
 
 // Pre-warm native SQLite connection and Vault info only for main workspace window
-if (!isSettingsWindow) {
+if (!isAuxiliaryWindow) {
   dbAdapter.init().catch((err) => console.error('[Main] Pre-warm DB error:', err));
   useWorkspaceStore.getState().initVaultInfo().catch((err) => console.error('[Main] Pre-warm Vault info error:', err));
 }
 
-// Register and initialize core extensions across all window modes
-registerAllCoreExtensions(appInstance);
-appInstance.extensions.init();
+const isHelpWindow = typeof window !== 'undefined' && (
+  (window as any).__TAURI_INTERNALS__?.metadata?.currentWindow?.label === 'help' ||
+  (window as any).__TAURI_INTERNALS__?.metadata?.currentWebview?.label === 'help' ||
+  (window as any).__NOETHER_WINDOW_MODE__ === 'help' ||
+  window.location.search.includes('window=help') ||
+  window.location.hash.includes('window=help')
+);
+
+// Register and initialize core extensions (bypassed in lightweight Help window)
+if (!isHelpWindow) {
+  registerAllCoreExtensions(appInstance);
+  appInstance.extensions.init();
+}
 
 if (typeof window !== 'undefined') {
   (window as any).appInstance = appInstance;

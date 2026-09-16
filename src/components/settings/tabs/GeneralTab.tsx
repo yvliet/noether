@@ -6,6 +6,7 @@ import { useSettingsStore, DEFAULT_SETTINGS } from '@/store/settingsStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useAutoUpdater } from '@/hooks/useAutoUpdater';
 import { APP_VERSION } from '@/version';
+import { platform } from '@/lib/platform/platformAdapter';
 import {
   SettingRow,
   SettingSection,
@@ -130,7 +131,7 @@ export const GeneralTab: React.FC = React.memo(() => {
           keywords={['help', 'community', 'documentation', 'guide']}
         >
           <button
-            onClick={() => useWorkspaceStore.getState().setIsHelpModalOpen(true)}
+            onClick={() => platform.openHelpWindow()}
             className="noether-btn"
           >
             Open

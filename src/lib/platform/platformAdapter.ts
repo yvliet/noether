@@ -32,6 +32,8 @@ export interface IPlatformAdapter {
   closeVaultWindow(): Promise<{ success: boolean }>;
   openSettingsWindow(tab?: string): Promise<{ success: boolean }>;
   closeSettingsWindow(): Promise<{ success: boolean }>;
+  openHelpWindow(): Promise<{ success: boolean }>;
+  closeHelpWindow(): Promise<{ success: boolean }>;
   onNavigateSettingsTab(callback: (tabId: string) => void): () => void;
 
   // Global hotkeys and focus
@@ -355,9 +357,12 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public async openSettingsWindow(tab?: string): Promise<{ success: boolean }> {
-    if (this.isTauri()) {
+    const shouldOpenInNewWindow =
+      ((window as any).__noetherStores?.settingsStore?.getState?.()?.openSettingsInNewWindow) ?? true;
+
+    if (this.isTauri() && shouldOpenInNewWindow) {
       try {
-        const res = await invoke<{ success: boolean; error?: string }>('open_settings_window', { tab: tab || null });
+        const res = await invoke<{ success: boolean; closed?: boolean; error?: string }>('open_settings_window', { tab: tab || null });
         if (res && res.success) {
           return { success: true };
         }
@@ -365,7 +370,8 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         console.warn('[PlatformAdapter] tauri invoke open_settings_window failed, falling back to in-app window:', err);
       }
     }
-    useWorkspaceStore.getState().setIsSettingsOpen(true, tab);
+    const current = useWorkspaceStore.getState().isSettingsOpen;
+    useWorkspaceStore.getState().setIsSettingsOpen(!current, tab);
     return { success: true };
   }
 
@@ -379,6 +385,35 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       }
     }
     useWorkspaceStore.getState().setIsSettingsOpen(false);
+    return { success: true };
+  }
+
+  public async openHelpWindow(): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      try {
+        const res = await invoke<{ success: boolean; closed?: boolean; error?: string }>('open_help_window');
+        if (res && res.success) {
+          return { success: true };
+        }
+      } catch (err) {
+        console.warn('[PlatformAdapter] tauri invoke open_help_window failed, falling back to in-app modal:', err);
+      }
+    }
+    const current = useWorkspaceStore.getState().isHelpModalOpen;
+    useWorkspaceStore.getState().setIsHelpModalOpen(!current);
+    return { success: true };
+  }
+
+  public async closeHelpWindow(): Promise<{ success: boolean }> {
+    if (this.isTauri()) {
+      try {
+        await invoke('close_help_window');
+        return { success: true };
+      } catch (err) {
+        console.warn('[PlatformAdapter] tauri invoke close_help_window failed:', err);
+      }
+    }
+    useWorkspaceStore.getState().setIsHelpModalOpen(false);
     return { success: true };
   }
 
