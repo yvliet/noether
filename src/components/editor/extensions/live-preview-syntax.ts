@@ -472,7 +472,7 @@ function scanBlockDecorations(
               // Only draw if this column is rooted in a list-marker ancestor
               if (lineGuideMap !== null && !lineGuideMap.has(i)) continue;
               if (listGuideColumns instanceof Set && !listGuideColumns.has(i)) continue;
-              const isActive = Boolean(lineActiveGuides && lineActiveGuides.has(i));
+              const isActive = isFocused && Boolean(lineActiveGuides && lineActiveGuides.has(i));
               const isTerminal = Array.isArray(listGuideColumns)
                 ? !listGuideColumns[globalLineIdx + 1]?.has(i)
                 : i >= nextLineLeading;
@@ -502,7 +502,7 @@ function scanBlockDecorations(
               // Only draw if this column is rooted in a list-marker ancestor
               if (lineGuideMap !== null && !lineGuideMap.has(s)) continue;
               if (listGuideColumns instanceof Set && !listGuideColumns.has(s)) continue;
-              const isActive = Boolean(lineActiveGuides && lineActiveGuides.has(s));
+              const isActive = isFocused && Boolean(lineActiveGuides && lineActiveGuides.has(s));
               const isTerminal = Array.isArray(listGuideColumns)
                 ? !listGuideColumns[globalLineIdx + 1]?.has(s)
                 : s >= nextLineLeading;
@@ -1194,7 +1194,7 @@ function buildAllDecorations(
     const split = text.split('\n');
     const blockStart = pos + 1;
     const blockEnd = pos + node.nodeSize;
-    const isBlockActive = selFrom >= pos && selFrom <= blockEnd;
+    const isBlockActive = isFocused && selFrom >= pos && selFrom <= blockEnd;
 
     // Calculate line index inside multi-line textblocks
     let lineInBlockActive = 0;
@@ -1237,7 +1237,7 @@ function buildAllDecorations(
 
   // 2. Compute active guide columns (strictly highlights own guide line below the active list item)
   const activeLineGuides = new Map<number, Set<number>>();
-  if (activeLineIdx >= 0 && activeLineIdx < allLines.length) {
+  if (isFocused && activeLineIdx >= 0 && activeLineIdx < allLines.length) {
     const curLine = allLines[activeLineIdx];
 
     if (curLine.listMarkerIndent !== null) {

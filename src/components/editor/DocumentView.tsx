@@ -457,12 +457,20 @@ export const DocumentView: React.FC<DocumentViewProps> = React.memo(
           saveTimerRef.current = null;
         }, 250);
       },
-      onBlur: () => {
+      onFocus: ({ editor: ed }) => {
+        if (ed && !ed.isDestroyed && ed.isEditable) {
+          ed.view.dispatch(ed.state.tr.setMeta('livePreviewFocus', true));
+        }
+      },
+      onBlur: ({ editor: ed }) => {
         if (saveTimerRef.current) {
           clearTimeout(saveTimerRef.current);
           saveTimerRef.current = null;
         }
-        emitSave(editor);
+        emitSave(ed);
+        if (ed && !ed.isDestroyed) {
+          ed.view.dispatch(ed.state.tr.setMeta('livePreviewFocus', false));
+        }
         onBlurRef.current?.();
       },
     });
