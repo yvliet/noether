@@ -1839,6 +1839,50 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
   editorRef.current = editor;
 
+  useEffect(() => {
+    if (editor && !editor.isDestroyed) {
+      onEditorReady?.(editor);
+    }
+  }, [editor, onEditorReady]);
+
+  // Synchronize external content changes (e.g. SQLite hydration or note switching) into ProseMirror
+  useEffect(() => {
+    if (!editor || editor.isDestroyed) return;
+    if (isInternalUpdateRef.current) {
+      isInternalUpdateRef.current = false;
+      return;
+    }
+
+    let nextParsed: any = null;
+    try {
+      if (typeof content === 'string' && content.trim()) {
+        nextParsed = JSON.parse(content);
+      } else if (typeof content === 'object' && content !== null) {
+        nextParsed = content;
+      }
+    } catch {
+      try {
+        if (typeof content === 'string') {
+          nextParsed = JSON.parse(markdownToTipTapJson(content));
+        }
+      } catch {}
+    }
+
+    if (!nextParsed || typeof nextParsed !== 'object' || nextParsed.type !== 'doc') {
+      return;
+    }
+
+    const normalized = normalizeTipTapContent(nextParsed);
+    const normalizedStr = JSON.stringify(normalized);
+    const currentJson = editor.getJSON();
+    const currentStr = JSON.stringify(currentJson);
+
+    if (normalizedStr !== currentStr && normalizedStr !== lastEmittedJsonRef.current) {
+      lastEmittedJsonRef.current = normalizedStr;
+      editor.commands.setContent(normalized, false);
+    }
+  }, [content, editor]);
+
   const handleEditorContextMenu = useCallback(
     (e: MouseEvent | React.MouseEvent) => {
       if (!editor) return;

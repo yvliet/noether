@@ -60,6 +60,7 @@ function createGhostElement(data: DropGhostState): HTMLElement {
   container.className = 'noether-drop-ghost-wrapper inline select-none pointer-events-none align-baseline';
   container.style.userSelect = 'none';
   container.style.pointerEvents = 'none';
+  container.setAttribute('data-drop-ghost', 'true');
 
   const items: DropGhostItem[] =
     data.items && data.items.length > 0
@@ -85,7 +86,8 @@ function createGhostElement(data: DropGhostState): HTMLElement {
       if (item.imageSrc) {
         const imgWrapper = document.createElement('span');
         imgWrapper.className =
-          'noether-drop-ghost-image-wrapper inline-block max-w-full my-0.5 leading-none align-middle';
+          'noether-drop-ghost-image-wrapper inline-block max-w-full my-0.5 leading-none align-middle pointer-events-none';
+        imgWrapper.setAttribute('data-drop-ghost', 'true');
 
         const img = document.createElement('img');
         img.src = item.imageSrc;
@@ -93,20 +95,23 @@ function createGhostElement(data: DropGhostState): HTMLElement {
         img.className =
           'noether-drop-ghost-image rounded-md border border-[#2a2a2a] max-h-[160px] max-w-[280px] object-contain inline-block select-none pointer-events-none shadow-sm';
         img.draggable = false;
+        img.setAttribute('data-drop-ghost', 'true');
 
         imgWrapper.appendChild(img);
         container.appendChild(imgWrapper);
       } else {
         const chip = document.createElement('span');
         chip.className =
-          'inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#1c1c1c] border border-[#2d2d2d] text-xs text-[#cccccc] align-middle';
+          'inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#1c1c1c] border border-[#2d2d2d] text-xs text-[#cccccc] align-middle pointer-events-none';
+        chip.setAttribute('data-drop-ghost', 'true');
         chip.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-[var(--noether-accent)] shrink-0"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span class="truncate max-w-[200px]">${item.display}</span>`;
         container.appendChild(chip);
       }
     } else {
       const linkSpan = document.createElement('span');
       linkSpan.className =
-        'md-wikilink text-[var(--noether-link-color)] inline cursor-pointer select-none';
+        'md-wikilink text-[var(--noether-link-color)] inline select-none pointer-events-none';
+      linkSpan.setAttribute('data-drop-ghost', 'true');
       linkSpan.style.color = 'var(--noether-link-color)';
       linkSpan.style.textDecoration = 'underline';
       linkSpan.style.textDecorationColor =
@@ -115,6 +120,7 @@ function createGhostElement(data: DropGhostState): HTMLElement {
       linkSpan.style.fontFamily = 'inherit';
       linkSpan.style.fontSize = 'inherit';
       linkSpan.style.lineHeight = 'inherit';
+      linkSpan.style.pointerEvents = 'none';
       linkSpan.textContent = item.display;
 
       container.appendChild(linkSpan);

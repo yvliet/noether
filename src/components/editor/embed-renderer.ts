@@ -1,6 +1,8 @@
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { getDocumentById } from '@/lib/db/documents';
+import { dbAdapter } from '@/lib/db/adapter';
+import { DocumentItem } from '@/types';
 import katex from 'katex';
 
 export type EmbedKind = 'note' | 'image' | 'audio' | 'video' | 'pdf' | 'youtube' | 'web';
@@ -27,6 +29,36 @@ let cachedDocsRef: any = null;
 let cachedDocIndex: Map<string, any> = new Map();
 const imageSrcCache = new Map<string, string>();
 
+/**
+ * Normalizes target string into all possible canonical match keys (lowercase, without ext, basenames, URL decoded).
+ */
+export function normalizeTargetKeys(target: string): string[] {
+  if (!target) return [];
+  const keys = new Set<string>();
+  const candidates = [target.trim()];
+  try {
+    const decoded = decodeURIComponent(target.trim());
+    if (decoded !== target.trim()) candidates.push(decoded);
+  } catch {}
+
+  for (const raw of candidates) {
+    const lower = raw.toLowerCase();
+    keys.add(lower);
+    const withoutExt = lower.replace(/\.[a-zA-Z0-9]+$/, '');
+    keys.add(withoutExt);
+    const slashBase = withoutExt.split('/').pop() || withoutExt;
+    keys.add(slashBase);
+    const slashBaseWithExt = lower.split('/').pop() || lower;
+    keys.add(slashBaseWithExt);
+    const backslashBase = withoutExt.split('\\').pop() || withoutExt;
+    keys.add(backslashBase);
+    const backslashBaseWithExt = lower.split('\\').pop() || lower;
+    keys.add(backslashBaseWithExt);
+  }
+
+  return Array.from(keys);
+}
+
 export function getDocIndex(documents: any[]): Map<string, any> {
   if (cachedDocsRef === documents) {
     return cachedDocIndex;
@@ -39,10 +71,16 @@ export function getDocIndex(documents: any[]): Map<string, any> {
     const titleLower = d.title.toLowerCase();
     const cleanWithoutExt = titleLower.replace(/\.[a-zA-Z0-9]+$/, '');
     const targetBaseName = cleanWithoutExt.split('/').pop() || cleanWithoutExt;
+    const targetBaseNameWithExt = titleLower.split('/').pop() || titleLower;
+    const backslashBase = cleanWithoutExt.split('\\').pop() || cleanWithoutExt;
+    const backslashBaseWithExt = titleLower.split('\\').pop() || titleLower;
 
     if (!cachedDocIndex.has(titleLower)) cachedDocIndex.set(titleLower, d);
     if (!cachedDocIndex.has(cleanWithoutExt)) cachedDocIndex.set(cleanWithoutExt, d);
     if (!cachedDocIndex.has(targetBaseName)) cachedDocIndex.set(targetBaseName, d);
+    if (!cachedDocIndex.has(targetBaseNameWithExt)) cachedDocIndex.set(targetBaseNameWithExt, d);
+    if (!cachedDocIndex.has(backslashBase)) cachedDocIndex.set(backslashBase, d);
+    if (!cachedDocIndex.has(backslashBaseWithExt)) cachedDocIndex.set(backslashBaseWithExt, d);
     if (!cachedDocIndex.has(`${titleLower}.md`)) cachedDocIndex.set(`${titleLower}.md`, d);
     if (!cachedDocIndex.has(d.id)) cachedDocIndex.set(d.id, d);
   }
@@ -54,20 +92,23 @@ export function getDocIndex(documents: any[]): Map<string, any> {
  */
 export function getCachedImageSrc(target: string, docId?: string): string | null {
   if (!target) return null;
-  if (/^(https?|data:image|blob|file):/i.test(target)) return target;
+  if (/^(https?|data:image|data:audio|data:video|blob|file):/i.test(target)) return target;
 
-  const cleanTgt = target.toLowerCase();
-  const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
-  const cached = imageSrcCache.get(cleanTgt) || imageSrcCache.get(cleanWithoutExt);
-  if (cached) return cached;
+  const keys = normalizeTargetKeys(target);
+  for (const k of keys) {
+    const cached = imageSrcCache.get(k);
+    if (cached) return cached;
+  }
 
   const ds = useDocumentStore.getState();
   const docIndex = getDocIndex(ds.documents);
-  const matched =
-    (docId ? ds.documents.find((d) => d.id === docId) : null) ||
-    docIndex.get(cleanTgt) ||
-    docIndex.get(cleanWithoutExt) ||
-    docIndex.get(target);
+  let matched: any = docId ? ds.documents.find((d) => d.id === docId) : null;
+  if (!matched) {
+    for (const k of keys) {
+      matched = docIndex.get(k);
+      if (matched) break;
+    }
+  }
 
   if (matched?.content_json) {
     try {
@@ -76,71 +117,106 @@ export function getCachedImageSrc(target: string, docId?: string): string | null
       if (
         firstText &&
         (firstText.startsWith('data:image/') ||
+          firstText.startsWith('data:audio/') ||
+          firstText.startsWith('data:video/') ||
           firstText.startsWith('http') ||
-          firstText.startsWith('blob:'))
+          firstText.startsWith('blob:') ||
+          firstText.startsWith('file:'))
       ) {
-        imageSrcCache.set(cleanTgt, firstText);
-        imageSrcCache.set(cleanWithoutExt, firstText);
+        for (const k of keys) {
+          imageSrcCache.set(k, firstText);
+        }
         return firstText;
       }
     } catch {}
   } else if (
     (matched as any)?.content &&
     (String((matched as any).content).startsWith('data:image/') ||
+      String((matched as any).content).startsWith('data:audio/') ||
+      String((matched as any).content).startsWith('data:video/') ||
       String((matched as any).content).startsWith('http') ||
-      String((matched as any).content).startsWith('blob:'))
+      String((matched as any).content).startsWith('blob:') ||
+      String((matched as any).content).startsWith('file:'))
   ) {
     const rawContent = String((matched as any).content);
-    imageSrcCache.set(cleanTgt, rawContent);
-    imageSrcCache.set(cleanWithoutExt, rawContent);
+    for (const k of keys) {
+      imageSrcCache.set(k, rawContent);
+    }
     return rawContent;
   }
   return null;
 }
 
 /**
- * Asynchronously resolves the image src from memory or SQLite storage.
+ * Asynchronously resolves the image/media src from memory or SQLite storage.
  */
 export async function resolveImageSrcAsync(target: string, docId?: string): Promise<string | null> {
   const syncHit = getCachedImageSrc(target, docId);
   if (syncHit) return syncHit;
 
+  const keys = normalizeTargetKeys(target);
   const ds = useDocumentStore.getState();
-  const docIndex = getDocIndex(ds.documents);
-  const cleanTgt = target.toLowerCase();
-  const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
-  const matched =
-    (docId ? ds.documents.find((d) => d.id === docId) : null) ||
-    docIndex.get(cleanTgt) ||
-    docIndex.get(cleanWithoutExt) ||
-    docIndex.get(target);
+  let matched: any = docId ? ds.documents.find((d) => d.id === docId) : null;
+
+  if (!matched) {
+    const docIndex = getDocIndex(ds.documents);
+    for (const k of keys) {
+      matched = docIndex.get(k);
+      if (matched) break;
+    }
+  }
+
+  // Fallback: If not found in memory store, query SQLite directly
+  if (!matched) {
+    try {
+      const placeholders = keys.map(() => '?').join(' OR LOWER(title) = ');
+      const dbDocs = await dbAdapter.query<DocumentItem>(
+        `SELECT id, title, content_json FROM documents WHERE LOWER(title) = ${placeholders} OR id = ? LIMIT 1`,
+        [...keys, target]
+      );
+      if (dbDocs && dbDocs.length > 0) {
+        matched = dbDocs[0];
+      }
+    } catch {}
+  }
 
   if (!matched) return null;
 
   try {
-    const fullDoc = await getDocumentById(matched.id);
+    let fullDoc = matched;
+    if (!fullDoc.content_json || fullDoc.content_json === '{}' || fullDoc.content_json === '') {
+      fullDoc = await getDocumentById(matched.id);
+    }
     if (fullDoc?.content_json) {
       const parsed = JSON.parse(fullDoc.content_json);
       const firstText = parsed.content?.[0]?.content?.[0]?.text;
       if (
         firstText &&
         (firstText.startsWith('data:image/') ||
+          firstText.startsWith('data:audio/') ||
+          firstText.startsWith('data:video/') ||
           firstText.startsWith('http') ||
-          firstText.startsWith('blob:'))
+          firstText.startsWith('blob:') ||
+          firstText.startsWith('file:'))
       ) {
-        imageSrcCache.set(cleanTgt, firstText);
-        imageSrcCache.set(cleanWithoutExt, firstText);
+        for (const k of keys) {
+          imageSrcCache.set(k, firstText);
+        }
         return firstText;
       }
     } else if (
       (fullDoc as any)?.content &&
       (String((fullDoc as any).content).startsWith('data:image/') ||
+        String((fullDoc as any).content).startsWith('data:audio/') ||
+        String((fullDoc as any).content).startsWith('data:video/') ||
         String((fullDoc as any).content).startsWith('http') ||
-        String((fullDoc as any).content).startsWith('blob:'))
+        String((fullDoc as any).content).startsWith('blob:') ||
+        String((fullDoc as any).content).startsWith('file:'))
     ) {
       const rawContent = String((fullDoc as any).content);
-      imageSrcCache.set(cleanTgt, rawContent);
-      imageSrcCache.set(cleanWithoutExt, rawContent);
+      for (const k of keys) {
+        imageSrcCache.set(k, rawContent);
+      }
       return rawContent;
     }
   } catch {}
@@ -579,30 +655,48 @@ export function renderEmbedWidget(
     const imgWrapper = document.createElement('div');
     imgWrapper.className = 'noether-embed-media noether-image-embed relative group my-0.5 inline-block max-w-full leading-none';
 
-    let resolvedSrc = embed.url;
+    const keys = normalizeTargetKeys(embed.target);
+    let resolvedSrc: string | null = embed.isExternalUrl ? embed.url : null;
     let pendingFetchDocId: string | null = null;
+
     if (!embed.isExternalUrl) {
-      const cleanTgt = embed.target.toLowerCase();
-      const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
-      const cached = imageSrcCache.get(cleanTgt) || imageSrcCache.get(cleanWithoutExt);
-      if (cached) {
-        resolvedSrc = cached;
-      } else {
+      for (const k of keys) {
+        const cached = imageSrcCache.get(k);
+        if (cached) {
+          resolvedSrc = cached;
+          break;
+        }
+      }
+
+      if (!resolvedSrc) {
         const ds = useDocumentStore.getState();
         const docIndex = getDocIndex(ds.documents);
-        const matched = docIndex.get(cleanTgt) || docIndex.get(cleanWithoutExt) || docIndex.get(embed.target);
+        let matched: any = null;
+        for (const k of keys) {
+          matched = docIndex.get(k);
+          if (matched) break;
+        }
+
         if (matched) {
           if (matched.content_json) {
             try {
               const parsed = JSON.parse(matched.content_json);
               const firstText = parsed.content?.[0]?.content?.[0]?.text;
-              if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
+              if (
+                firstText &&
+                (firstText.startsWith('data:image/') ||
+                  firstText.startsWith('http') ||
+                  firstText.startsWith('blob:') ||
+                  firstText.startsWith('file:'))
+              ) {
                 resolvedSrc = firstText;
-                imageSrcCache.set(cleanTgt, firstText);
-                imageSrcCache.set(cleanWithoutExt, firstText);
+                for (const k of keys) {
+                  imageSrcCache.set(k, firstText);
+                }
               }
             } catch {}
-          } else {
+          }
+          if (!resolvedSrc) {
             pendingFetchDocId = matched.id;
           }
         }
@@ -625,7 +719,10 @@ export function renderEmbedWidget(
     zoomBtn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      useWorkspaceStore.getState().openImageLightbox(resolvedSrc || embed.url, embed.aliasOrDimensions || altText || embed.target || '');
+      useWorkspaceStore.getState().openImageLightbox(
+        resolvedSrc || img.src || embed.url,
+        embed.aliasOrDimensions || altText || embed.target || ''
+      );
     };
 
     const codeBtn = document.createElement('button');
@@ -651,40 +748,124 @@ export function renderEmbedWidget(
     imgWrapper.appendChild(actionsOverlay);
 
     const img = document.createElement('img');
-    img.src = resolvedSrc;
     img.alt = embed.aliasOrDimensions || altText || embed.target;
     img.className = 'noether-media-image rounded-md border border-[#2a2a2a] max-w-full h-auto object-contain cursor-text select-none';
     img.loading = 'lazy';
     img.draggable = false;
     img.ondragstart = (e) => e.preventDefault();
 
-    if (pendingFetchDocId) {
-      const docIdToFetch = pendingFetchDocId;
-      const cleanTgt = embed.target.toLowerCase();
-      const cleanWithoutExt = cleanTgt.replace(/\.[a-zA-Z0-9]+$/, '');
-      getDocumentById(docIdToFetch).then((fullDoc) => {
-        if (fullDoc?.content_json) {
-          try {
-            const parsed = JSON.parse(fullDoc.content_json);
-            const firstText = parsed.content?.[0]?.content?.[0]?.text;
-            if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
-              imageSrcCache.set(cleanTgt, firstText);
-              imageSrcCache.set(cleanWithoutExt, firstText);
-              resolvedSrc = firstText;
-              img.src = firstText;
-            }
-          } catch {}
-        }
-      });
+    if (embed.width) {
+      img.style.width = `${embed.width}px`;
     }
+    if (embed.height) {
+      img.style.height = `${embed.height}px`;
+    }
+
+    let fallbackEl: HTMLElement | null = null;
+    const showFallback = () => {
+      if (fallbackEl) return;
+      img.style.display = 'none';
+      actionsOverlay.style.display = 'none';
+      fallbackEl = document.createElement('div');
+      fallbackEl.className =
+        'flex items-center gap-2 px-3 py-2 rounded-md border border-[#333333] bg-[#1a1a1a] text-xs text-[#888888]';
+      fallbackEl.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span>Image not found: ${embed.target}</span>`;
+      imgWrapper.appendChild(fallbackEl);
+    };
+
+    const hideFallback = () => {
+      if (fallbackEl && fallbackEl.parentNode) {
+        fallbackEl.parentNode.removeChild(fallbackEl);
+        fallbackEl = null;
+      }
+      img.style.display = '';
+      actionsOverlay.style.display = '';
+    };
+
+    if (resolvedSrc) {
+      img.src = resolvedSrc;
+    } else {
+      // Keep img hidden while asynchronously fetching to prevent browser 404 network errors on relative target path
+      img.style.display = 'none';
+      actionsOverlay.style.display = 'none';
+
+      const applyResolvedImage = (src: string | null) => {
+        if (src) {
+          for (const k of keys) {
+            imageSrcCache.set(k, src);
+          }
+          resolvedSrc = src;
+          img.src = src;
+          hideFallback();
+        } else {
+          showFallback();
+        }
+      };
+
+      if (pendingFetchDocId) {
+        getDocumentById(pendingFetchDocId)
+          .then((fullDoc) => {
+            let found: string | null = null;
+            if (fullDoc?.content_json) {
+              try {
+                const parsed = JSON.parse(fullDoc.content_json);
+                const firstText = parsed.content?.[0]?.content?.[0]?.text;
+                if (
+                  firstText &&
+                  (firstText.startsWith('data:image/') ||
+                    firstText.startsWith('http') ||
+                    firstText.startsWith('blob:') ||
+                    firstText.startsWith('file:'))
+                ) {
+                  found = firstText;
+                }
+              } catch {}
+            } else if ((fullDoc as any)?.content) {
+              const raw = String((fullDoc as any).content);
+              if (
+                raw.startsWith('data:image/') ||
+                raw.startsWith('http') ||
+                raw.startsWith('blob:') ||
+                raw.startsWith('file:')
+              ) {
+                found = raw;
+              }
+            }
+
+            if (found) {
+              applyResolvedImage(found);
+            } else {
+              resolveImageSrcAsync(embed.target, pendingFetchDocId).then(applyResolvedImage).catch(() => showFallback());
+            }
+          })
+          .catch(() => {
+            resolveImageSrcAsync(embed.target).then(applyResolvedImage).catch(() => showFallback());
+          });
+      } else {
+        resolveImageSrcAsync(embed.target).then(applyResolvedImage).catch(() => showFallback());
+      }
+    }
+
+    img.onerror = () => {
+      if (img.src && !img.src.endsWith('/')) {
+        showFallback();
+      }
+    };
+
+    img.onload = () => {
+      hideFallback();
+    };
 
     const triggerLightbox = (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      useWorkspaceStore.getState().openImageLightbox(
-        resolvedSrc || embed.url,
-        embed.aliasOrDimensions || altText || embed.target || ''
-      );
+      const currentSrc = resolvedSrc || img.src || embed.url;
+      if (currentSrc) {
+        useWorkspaceStore.getState().openImageLightbox(
+          currentSrc,
+          embed.aliasOrDimensions || altText || embed.target || ''
+        );
+      }
     };
 
     img.ondblclick = (e: MouseEvent) => {
@@ -707,22 +888,6 @@ export function renderEmbedWidget(
       );
     };
 
-    if (embed.width) {
-      img.style.width = `${embed.width}px`;
-    }
-    if (embed.height) {
-      img.style.height = `${embed.height}px`;
-    }
-
-    img.onerror = () => {
-      img.style.display = 'none';
-      actionsOverlay.style.display = 'none';
-      const fallback = document.createElement('div');
-      fallback.className = 'flex items-center gap-2 px-3 py-2 rounded-md border border-[#333333] bg-[#1a1a1a] text-xs text-[#888888]';
-      fallback.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg><span>Image not found: ${embed.target}</span>`;
-      imgWrapper.appendChild(fallback);
-    };
-
     imgWrapper.appendChild(img);
     container.appendChild(imgWrapper);
     return container;
@@ -740,8 +905,15 @@ export function renderEmbedWidget(
 
     const audio = document.createElement('audio');
     audio.controls = true;
-    audio.src = embed.url;
     audio.className = 'w-full h-8';
+    
+    if (embed.isExternalUrl) {
+      audio.src = embed.url;
+    } else {
+      resolveImageSrcAsync(embed.target).then((src) => {
+        if (src) audio.src = src;
+      }).catch(() => {});
+    }
     audioCard.appendChild(audio);
 
     container.appendChild(audioCard);
@@ -755,10 +927,17 @@ export function renderEmbedWidget(
 
     const video = document.createElement('video');
     video.controls = true;
-    video.src = embed.url;
     video.className = 'w-full max-h-[460px] object-contain bg-black';
     if (embed.width) video.style.width = `${embed.width}px`;
     if (embed.height) video.style.height = `${embed.height}px`;
+
+    if (embed.isExternalUrl) {
+      video.src = embed.url;
+    } else {
+      resolveImageSrcAsync(embed.target).then((src) => {
+        if (src) video.src = src;
+      }).catch(() => {});
+    }
 
     videoCard.appendChild(video);
     container.appendChild(videoCard);

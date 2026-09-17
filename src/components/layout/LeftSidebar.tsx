@@ -678,7 +678,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
           ) : (
             <div data-tree-section="search-results" className="flex-1 flex flex-col gap-0.5">
               {searchFilteredDocs.map((doc) => (
-                <FileTreeNode key={doc.id} item={doc} childrenMap={childrenMap} sortOrder={sortOrder} />
+                <FileTreeNode key={doc.id} item={doc} allDocs={documents} childrenMap={childrenMap} sortOrder={sortOrder} />
               ))}
             </div>
           )
@@ -694,7 +694,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             {/* Standard Vault Root Documents & Folders */}
             <div data-tree-section="vault-files" className="flex flex-col gap-0.5">
               {rootDocs.map((doc) => (
-                <FileTreeNode key={doc.id} item={doc} childrenMap={childrenMap} sortOrder={sortOrder} />
+                <FileTreeNode key={doc.id} item={doc} allDocs={documents} childrenMap={childrenMap} sortOrder={sortOrder} />
               ))}
             </div>
             {rootDocs.length === 0 && fileTreeSections.length === 0 && (

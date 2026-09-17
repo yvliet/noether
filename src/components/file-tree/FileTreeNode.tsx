@@ -103,14 +103,15 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const { showContextMenu } = useAppContextMenu();
 
   const isOpen = useWorkspaceStore((s) => (isFolder ? (s.folderOpenState[item.id] !== undefined ? s.folderOpenState[item.id] : true) : true));
-  const setFolderOpen = useWorkspaceStore((s) => s.setFolderOpen);
 
   const setIsOpen = useCallback(
     (openOrUpdater: boolean | ((prev: boolean) => boolean)) => {
-      const nextVal = typeof openOrUpdater === 'function' ? openOrUpdater(isOpen) : openOrUpdater;
-      setFolderOpen(item.id, nextVal);
+      const currentState = useWorkspaceStore.getState().folderOpenState[item.id];
+      const currentVal = currentState !== undefined ? currentState : true;
+      const nextVal = typeof openOrUpdater === 'function' ? openOrUpdater(currentVal) : openOrUpdater;
+      useWorkspaceStore.getState().setFolderOpen(item.id, nextVal);
     },
-    [item.id, isOpen, setFolderOpen]
+    [item.id]
   );
 
   const [localIsEditing, setLocalIsEditing] = useState(false);
@@ -315,19 +316,9 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const prevActiveDocIdRef = useRef<string | null>(activeDocId || null);
   useEffect(() => {
     if (!isFolder) return;
-    const checkDescendant = (docId: string | null | undefined): boolean => {
-      if (!docId) return false;
-      let curr = allDocs.find((d) => d.id === docId);
-      while (curr) {
-        if (curr.parent_id === item.id) return true;
-        curr = allDocs.find((d) => d.id === curr?.parent_id);
-      }
-      return false;
-    };
-
     if (prevActiveDocIdRef.current !== activeDocId) {
       prevActiveDocIdRef.current = activeDocId || null;
-      if (activeDocId && checkDescendant(activeDocId)) {
+      if (activeDocId && isDescendant(activeDocId, item.id, allDocs)) {
         setIsOpen(true);
       }
     }

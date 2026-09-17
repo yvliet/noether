@@ -1607,7 +1607,8 @@ export async function moveDocument(
 /**
  * Ultra-fast deterministic non-cryptographic content hash (cyrb53-based)
  */
-export function computeFastHash(str: string): string {
+export function computeFastHash(str?: string | null): string {
+  if (!str || typeof str !== 'string') return '';
   let h1 = 0xdeadbeef ^ 0;
   let h2 = 0x41c6ce57 ^ 0;
   for (let i = 0, ch; i < str.length; i++) {
@@ -1826,9 +1827,9 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
 
       // If untouched check failed, now read disk content if needed
       let fileContent = file.content;
-      if (fileContent === undefined) {
+      if (fileContent === undefined || fileContent === null) {
         const readRes = await platform.readMarkdownFile(file.relativePath);
-        if (!readRes.success || readRes.content === undefined) {
+        if (!readRes.success || readRes.content === undefined || readRes.content === null) {
           continue;
         }
         fileContent = readRes.content;
@@ -1846,7 +1847,7 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
         continue;
       }
 
-      let cleanFileContent = fileContent;
+      let cleanFileContent = fileContent ?? '';
       if (!customType || !customType.isRawContent) {
         try {
           const { appInstance } = await import('@/core/app/NoetherApp');
@@ -1856,7 +1857,7 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
               title: fileName,
               markdown: cleanFileContent,
             });
-            cleanFileContent = transformed.markdown;
+            cleanFileContent = transformed.markdown ?? cleanFileContent;
           }
         } catch (tErr) {}
       }

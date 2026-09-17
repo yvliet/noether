@@ -11,6 +11,24 @@ interface HeadingAction {
   stripLen?: number;
 }
 
+function getOldNodeAtPos(transactions: readonly any[], oldState: any, posInNewDoc: number): any {
+  try {
+    let oldPos = posInNewDoc;
+    for (let i = transactions.length - 1; i >= 0; i--) {
+      const tr = transactions[i];
+      if (tr.mapping) {
+        oldPos = tr.mapping.invert().map(oldPos, -1);
+      }
+    }
+    if (oldPos >= 0 && oldPos < oldState.doc.content.size) {
+      return oldState.doc.nodeAt(oldPos);
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
 export const LivePreviewHeading = Heading.extend({
   // Disable default TipTap input rules so typing '# ' preserves raw characters in the buffer
   addInputRules() {
@@ -63,7 +81,7 @@ export const LivePreviewHeading = Heading.extend({
             } else if (node.type.name === 'heading') {
               const match = text.match(/^(#{1,6})([ \t]|$)/);
               if (!match) {
-                const oldNode = oldState.doc.nodeAt(pos);
+                const oldNode = getOldNodeAtPos(transactions, oldState, pos);
                 if (oldNode && oldNode.type.name === 'paragraph') {
                   // Command converted paragraph to heading: prepend `#{level} `
                   const level = node.attrs.level || 1;
@@ -81,7 +99,7 @@ export const LivePreviewHeading = Heading.extend({
                 }
               } else {
                 const detectedLevel = match[1].length;
-                const oldNode = oldState.doc.nodeAt(pos);
+                const oldNode = getOldNodeAtPos(transactions, oldState, pos);
                 if (
                   oldNode &&
                   oldNode.type.name === 'heading' &&

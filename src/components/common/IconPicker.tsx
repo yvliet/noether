@@ -262,7 +262,7 @@ export const DynamicHugeIcon: React.FC<{
     let isMounted = true;
     const current = getCachedIconDef(iconId);
     if (current) {
-      setIconDef(current);
+      setIconDef((prev: any) => (prev === current ? prev : current));
       return;
     }
 
@@ -271,14 +271,14 @@ export const DynamicHugeIcon: React.FC<{
       if (isMounted) {
         const found = getCachedIconDef(iconId);
         if (found) {
-          setIconDef(found);
+          setIconDef((prev: any) => (prev === found ? prev : found));
         }
       }
     });
 
     loadDynamicIcon(iconId).then((def) => {
       if (isMounted && def) {
-        setIconDef(def);
+        setIconDef((prev: any) => (prev === def ? prev : def));
       }
     });
 
