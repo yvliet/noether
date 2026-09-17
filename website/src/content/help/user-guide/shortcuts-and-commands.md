@@ -13,13 +13,26 @@ The Command Palette is your central command launcher:
 - **Execute Actions**: Type action names (e.g. `New canvas`, `Open settings`, `Toggle split pane`) and press `Enter`.
 - Use `↑` and `↓` arrow keys to navigate the list.
 
-## 2. Navigation Shortcuts
+## 2. Navigation & File Tree Shortcuts
 ---
+
+Manage files and folders in the left sidebar with instant keyboard controls:
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
 | **Command Palette / Quick Open** | `Ctrl+K` or `Ctrl+O` | `Cmd+K` or `Cmd+O` |
 | **New Note** | `Ctrl+N` | `Cmd+N` |
+| **Copy Selected File(s) or Folder(s)** | `Ctrl+C` | `Cmd+C` |
+| **Cut Selected File(s) or Folder(s)** | `Ctrl+X` | `Cmd+X` |
+| **Paste Item(s) or Ingest OS Files** | `Ctrl+V` | `Cmd+V` |
+| **Duplicate Note or Folder** | `Ctrl+D` | `Cmd+D` |
+| **Inline Rename Selected Item** | `F2` | `F2` or `Enter` |
+| **Open Note / Toggle Folder Expand** | `Enter` | `Enter` |
+| **Expand Folder / Jump to First Child** | `ArrowRight` (`→`) | `ArrowRight` (`→`) |
+| **Collapse Folder / Jump to Parent** | `ArrowLeft` (`←`) | `ArrowLeft` (`←`) |
+| **Jump to First / Last Visible Item** | `Home` / `End` | `Home` / `End` |
+| **Multi-Select Contiguous Range** | `Shift+ArrowUp` / `Shift+ArrowDown` | `Shift+ArrowUp` / `Shift+ArrowDown` |
+| **Move Selected Item(s) to Trash** | `Delete` or `Backspace` | `Backspace` |
 | **Toggle Left Sidebar** | `Ctrl+\` | `Cmd+\` |
 | **Toggle Right Sidebar** | `Ctrl+Shift+\` | `Cmd+Shift+\` |
 | **Vault-Wide Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` |
@@ -30,6 +43,8 @@ The Command Palette is your central command launcher:
 
 ## 3. Tabs & Split Panes
 ---
+
+Manage your open workspaces, panes, and note buffers:
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
@@ -43,11 +58,28 @@ The Command Palette is your central command launcher:
 | **Back in History** | `Alt+←` | `Cmd+[` |
 | **Forward in History** | `Alt+→` | `Cmd+]` |
 
+### Tab Context Menu Actions (Right-Click Tab)
+
+| Action | Description |
+| :--- | :--- |
+| **Pin tab / Unpin tab** | Locks the tab to the left edge of the tab strip, hiding the close button and shielding it from bulk close actions. |
+| **Duplicate tab** | Clones the note buffer directly into an adjacent tab in the current pane strip. |
+| **Close tab** | Closes the clicked tab buffer (`Ctrl+W`). |
+| **Close tabs to the right** | Closes all unpinned tabs positioned to the right of the active tab. |
+| **Close tabs to the left** | Closes all unpinned tabs positioned to the left of the active tab. |
+| **Close other tabs** | Closes all unpinned tabs in the current pane except the active tab. |
+| **Close all tabs** | Closes all unpinned tabs in the current pane. |
+| **Split right / Split down** | Splits the current workspace pane horizontally or vertically with the active note. |
+| **Copy relative path** | Copies the vault-relative path to your clipboard (e.g. `Research/Notes.md`). |
+| **Copy absolute path** | Copies the full filesystem path to your clipboard. |
+| **Copy note link (Wikilink)** | Copies `[[Note Title]]` link to your clipboard for instant pasting. |
+
 ## 4. Editing & Text Formatting
 ---
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
+| **Duplicate Active Note** | `Ctrl+D` | `Cmd+D` |
 | **Bold** | `Ctrl+B` | `Cmd+B` |
 | **Italic** | `Ctrl+I` | `Cmd+I` |
 | **Strikethrough** | `Ctrl+Shift+X` | `Cmd+Shift+X` |
@@ -68,7 +100,7 @@ The Command Palette is your central command launcher:
 | **Graph View** | `Ctrl+G` | Open global knowledge graph |
 | **Daily Journal** | `Alt+J` | Open or create today's journal note |
 | **Tasks Dashboard** | `Alt+T` | Open vault tasks dashboard |
-| **Bookmarks** | `Ctrl+D` | Bookmark active note |
+| **Bookmarks** | `Ctrl+Shift+B` | Toggle Bookmarks panel |
 | **Backlinks** | `Ctrl+Shift+B` | Toggle Backlinks pane |
 | **Outline** | `Ctrl+Shift+O` | Toggle Outline pane |
 | **Tags** | `Ctrl+Shift+T` | Toggle Tags pane |

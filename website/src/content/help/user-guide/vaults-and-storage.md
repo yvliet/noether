@@ -40,7 +40,18 @@ My-Vault/
 - **Use Wikilinks over Deep Nesting**: Instead of nesting folders five levels deep, keep folders shallow (1 to 2 levels) and connect related notes using `[[Wikilinks]]`.
 - **Use Properties for Metadata**: Use note properties (`status: in-progress`, `priority: high`) instead of moving files between status folders.
 
-## 3. Fast Full-Text Search (FTS5)
+## 3. Desktop Filesystem Integration & Ingestion
+---
+
+Noether provides seamless, two-way integration between your operating system's desktop shell and your vault:
+
+- **Drag and Drop from Operating System**: Drag Markdown notes (`.md`), Whiteboard Canvas files (`.canvas`), plain text files (`.txt`), images, PDFs, or audio/video files directly from Windows File Explorer or macOS Finder into the left sidebar. Dropping onto a folder imports files into that folder; dropping onto the root background imports directly into the vault root.
+- **System Clipboard File Paste**: Copy files in your operating system and press `Ctrl+V` while focusing the left sidebar to ingest them into the selected folder or vault root. Markdown frontmatter and body text are parsed automatically into native notes.
+- **Reveal in System Explorer**: Right-click any file or folder in the tree (or choose from the editor options menu) and select **Show in system explorer** to open your OS file manager with the target file highlighted.
+- **Open in Default App**: Choose **Open in default app** from the file context menu or document options dropdown to launch your computer's registered default application for that file type.
+- **File Tree Clipboard & Duplication**: Cut (`Ctrl+X`), Copy (`Ctrl+C`), Paste (`Ctrl+V`), and Duplicate (`Ctrl+D`) operate across files, folders, and multi-selected ranges with instant visual cut dimming and zero UI lag.
+
+## 4. Fast Full-Text Search (FTS5)
 ---
 
 Noether runs an embedded SQLite database using FTS5 (Full-Text Search) to index your notes as you type:
@@ -54,7 +65,7 @@ Noether runs an embedded SQLite database using FTS5 (Full-Text Search) to index 
 
 Search results highlight matching sentences and open the exact paragraph when clicked.
 
-## 4. Atomic Saves & Trash Bin
+## 5. Atomic Saves & Trash Bin
 ---
 
 Noether protects your files against data corruption:
@@ -62,7 +73,7 @@ Noether protects your files against data corruption:
 - **Atomic File Writes**: Saves write to a temporary file first before executing an atomic OS rename. If your computer shuts down or power cuts out mid-save, your notes are never left half-written.
 - **Local Trash Bin**: When you delete a note, Noether moves it to `.trash/` inside your vault instead of permanently destroying it. You can inspect or restore deleted files anytime in **Settings (`Ctrl+,`) → Trash**.
 
-## 5. Backups and Synchronization
+## 6. Backups and Synchronization
 ---
 
 Because your vault consists of plain files on disk, backing up and syncing your notes is simple:

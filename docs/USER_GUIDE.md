@@ -52,11 +52,20 @@ Noether supports opening multiple tabs for the same note across different panes 
 
 ### Tab Context Menu Actions
 Right-clicking any tab header in the workspace opens a comprehensive context menu with instant actions:
-- **Tab Closing**: Close tab, Close other tabs, Close tabs to the right, Close tabs to the left.
+- **Tab Pinning**: Pin tab / Unpin tab locks the tab to the left edge of the strip, hiding the close button and shielding it from batch close operations.
+- **Tab Closing**: Close tab (`Ctrl+W`), Close other tabs, Close tabs to the right, Close tabs to the left, Close all tabs (all automatically skip pinned tabs).
 - **Split Layouts**: Split right, Split down, Close pane.
-- **Duplication**: Duplicate tab (re-opens the active note or view in an adjacent horizontal split).
+- **Duplication**: Duplicate tab (clones the active tab into an adjacent tab in the current pane strip).
 - **Path & Wikilinks**: Copy relative path (e.g. `Research/Notes.md`), Copy absolute filesystem path, or Copy note link (`[[Note Title]]`).
 - **Extension Contributions**: Community extensions can contribute specialized tab actions via `this.registerTabContextMenuAction()`.
+
+### Navigation Sidebar & File Tree Controls
+The left sidebar provides full keyboard and context menu controls:
+- **Clipboard Operations**: Cut (`Ctrl+X`), Copy (`Ctrl+C`), Paste (`Ctrl+V`), and Duplicate (`Ctrl+D`) for files and folders with instant visual cut dimming.
+- **Desktop Drag and Drop**: Drag Markdown notes, Whiteboard Canvases, images, PDFs, or media directly from your operating system's file manager into target folders or the vault root.
+- **Clipboard Ingestion**: Copy files in OS File Explorer and press `Ctrl+V` while focusing the sidebar to ingest them into the selected folder or root.
+- **System Explorer & External App Integration**: "Show in system explorer" highlights the file or folder in Windows Explorer or macOS Finder. "Open in default app" launches your computer's registered application for that file.
+- **Instant Keyboard Navigation**: `ArrowUp` / `ArrowDown` to navigate, `Enter` to open notes or toggle folders, `ArrowRight` (`→`) to expand folders or jump to first child, `ArrowLeft` (`←`) to collapse or jump to parent, `Home` / `End` to jump to bounds, and `F2` for inline renaming.
 
 ## 3. Live Preview Editor & Markdown
 ---
@@ -320,6 +329,7 @@ Noether features an integrated updater that monitors official GitHub releases:
 | **Collapse / Expand Right Sidebar** | `Ctrl+Shift+\` | `Cmd+Shift+\` |
 | **Switch Vault Workspace** | `Ctrl+Shift+O` | `Cmd+Shift+O` |
 | **Create New Note** | `Ctrl+N` | `Cmd+N` |
+| **Duplicate Active Note** | `Ctrl+D` | `Cmd+D` |
 | **Split / Close Split Editor Pane** | `Ctrl+Alt+\` | `Cmd+Alt+\` |
 | **New Tab / Close Tab** | `Ctrl+T` / `Ctrl+W` | `Cmd+T` / `Cmd+W` |
 | **Next / Previous Tab** | `Ctrl+Tab` / `Ctrl+Shift+Tab` | `Ctrl+Tab` / `Ctrl+Shift+Tab` |

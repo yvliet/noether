@@ -44,7 +44,24 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 | **Reading View Toggle** | `Switch to editing view` ↔ `Switch to reading view` | `Ctrl+E` | `Cmd+E` |
 | **Source Mode Toggle** | `Switch to live preview` ↔ `Switch to source mode` | `Ctrl+Alt+S` | `Cmd+Alt+S` |
 
-## 3. Tabs Navigation & Context Actions
+## 3. Navigation & File Tree Shortcuts
+---
+
+| Action | Windows / Linux | macOS |
+| :--- | :--- | :--- |
+| **Copy Selected Item(s)** | `Ctrl+C` | `Cmd+C` |
+| **Cut Selected Item(s)** | `Ctrl+X` | `Cmd+X` |
+| **Paste Item(s) or Ingest OS Files** | `Ctrl+V` | `Cmd+V` |
+| **Duplicate Selected Note or Folder** | `Ctrl+D` | `Cmd+D` |
+| **Inline Rename Selected Item** | `F2` | `F2` or `Enter` |
+| **Open Note / Toggle Folder Expand** | `Enter` | `Enter` |
+| **Expand Folder / Jump to First Child** | `ArrowRight` (`→`) | `ArrowRight` (`→`) |
+| **Collapse Folder / Jump to Parent** | `ArrowLeft` (`←`) | `ArrowLeft` (`←`) |
+| **Jump to First / Last Visible Item** | `Home` / `End` | `Home` / `End` |
+| **Multi-Select Contiguous Range** | `Shift+ArrowUp` / `Shift+ArrowDown` | `Shift+ArrowUp` / `Shift+ArrowDown` |
+| **Move Selected Item(s) to Trash** | `Delete` or `Backspace` | `Backspace` |
+
+## 4. Tabs Navigation & Context Actions
 ---
 
 | Action | Windows / Linux | macOS |
@@ -62,24 +79,28 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 
 | Action | Description |
 | :--- | :--- |
+| **Pin tab / Unpin tab** | Locks the tab to the left edge of the tab strip, hiding the close button and shielding it from batch close operations. |
+| **Duplicate tab** | Clones the note buffer directly into an adjacent tab in the current pane strip. |
 | **Close tab** | Closes the clicked tab buffer (`Ctrl+W`). |
-| **Close other tabs** | Closes all open tabs in the current pane except the clicked tab. |
-| **Close tabs to the right** | Closes all tabs positioned to the right of the active tab. |
-| **Close tabs to the left** | Closes all tabs positioned to the left of the active tab. |
+| **Close tabs to the right** | Closes all unpinned tabs positioned to the right of the active tab. |
+| **Close tabs to the left** | Closes all unpinned tabs positioned to the left of the active tab. |
+| **Close other tabs** | Closes all unpinned tabs in the current pane except the active tab. |
+| **Close all tabs** | Closes all unpinned tabs in the current pane. |
 | **Split right / Split down** | Splits the current workspace pane horizontally or vertically with the active note. |
-| **Duplicate tab** | Duplicates the active tab into an adjacent horizontal split. |
 | **Copy relative path** | Copies the vault-relative path to your clipboard (e.g. `Guides/Setup.md`). |
 | **Copy absolute path** | Copies the full filesystem path to your clipboard. |
+| **Copy note link (Wikilink)** | Copies `[[Note Title]]` link to your clipboard for instant pasting. |
 
 > [!NOTE]
 > Noether allows opening multiple tabs for the same note across different split panes. Selecting a note from the left sidebar or quick open replaces the active tab buffer in place rather than forcing focus onto an existing tab elsewhere.
 
-## 4. Note Creation & Editing
+## 5. Note Creation & Editing
 ---
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
 | **Create New Note** | `Ctrl+N` | `Cmd+N` |
+| **Duplicate Active Note** | `Ctrl+D` | `Cmd+D` |
 | **Save Document Immediately** | `Ctrl+S` *(auto-saved)* | `Cmd+S` *(auto-saved)* |
 | **Trigger Slash Commands Menu** | `/` | `/` |
 | **Trigger Wikilink Autocomplete** | `[[` | `[[` |
@@ -96,7 +117,7 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 | **Indent List Item** | `Tab` | `Tab` |
 | **Unindent List Item** | `Shift+Tab` | `Shift+Tab` |
 
-## 5. File Operations History
+## 6. File Operations History
 ---
 
 These shortcuts manage file-level mutations across your vault separate from in-editor text undo.
@@ -106,7 +127,7 @@ These shortcuts manage file-level mutations across your vault separate from in-e
 | **Undo File Action** *(restore deleted or renamed file)* | `Ctrl+Alt+Z` | `Cmd+Alt+Z` |
 | **Redo File Action** | `Ctrl+Alt+Y` | `Cmd+Alt+Y` |
 
-## 6. Extension Shortcuts & Launchers
+## 7. Extension Shortcuts & Launchers
 ---
 
 | Action | Windows / Linux | macOS |
@@ -119,7 +140,7 @@ These shortcuts manage file-level mutations across your vault separate from in-e
 | **Open Tasks Dashboard** | Command Palette | Command Palette |
 | **Browse Extension Marketplace** | Command Palette | Command Palette |
 
-## 7. Window Zoom & Display Controls
+## 8. Window Zoom & Display Controls
 ---
 
 | Action | Windows / Linux | macOS |
@@ -128,7 +149,7 @@ These shortcuts manage file-level mutations across your vault separate from in-e
 | **Zoom Out** | `Ctrl+-` | `Cmd+-` |
 | **Reset Zoom to 100%** | `Ctrl+0` | `Cmd+0` |
 
-## 8. Hotkeys Management & Settings Deep Search
+## 9. Hotkeys Management & Settings Deep Search
 ---
 
 All shortcuts can be remapped and managed in **Settings** (`Ctrl+,` or `Cmd+,`):
