@@ -32,6 +32,7 @@ import { appInstance } from '@/core/app/NoetherApp';
 import { AppProvider, useNoetherApp, useViews, useModals, useExtensionList } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
 import { platform } from '@/lib/platform/platformAdapter';
+import { ExtensionViewHost } from './ExtensionViewHost';
 
 const LazyDisabledExtensionView = React.lazy(() =>
   import('@/components/extension-viewer/DisabledExtensionView').then((m) => ({ default: m.DisabledExtensionView }))
@@ -106,12 +107,13 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
 
   if (extensionState.state === 'active') {
     return (
-      <div
-        className="flex-1 h-full flex flex-col min-w-0 overflow-hidden"
+      <ExtensionViewHost
+        view={extensionState.view}
+        tabId={currentTab?.id}
+        documentId={currentTab?.document_id}
+        app={app}
         onClick={() => setFocusedPane(paneId)}
-      >
-        {extensionState.view.render({ tabId: currentTab?.id, documentId: currentTab?.document_id, app })}
-      </div>
+      />
     );
   }
 
@@ -432,6 +434,52 @@ export const AppShell: React.FC = React.memo(() => {
       window.removeEventListener('pointerdown', reportUserActivity);
     };
   }, [initVaultInfo, loadInitialData]);
+
+  // 7. Global Application Suspension Monitor
+  // Pauses CSS keyframe animations and marks document root when minimized or backgrounded
+  useEffect(() => {
+    const handleSuspension = (isSuspended: boolean) => {
+      if (typeof document !== 'undefined') {
+        if (isSuspended) {
+          document.documentElement.setAttribute('data-app-suspended', 'true');
+        } else {
+          document.documentElement.removeAttribute('data-app-suspended');
+        }
+      }
+    };
+
+    const unsubMin = platform.onMinimizedChange(handleSuspension);
+
+    const handleFocus = () => {
+      if (typeof document !== 'undefined') {
+        const isDocHidden = document.hidden;
+        const isFocused = document.hasFocus();
+        if (!isDocHidden && isFocused) {
+          handleSuspension(false);
+        }
+      }
+    };
+
+    const handleBlur = () => {
+      if (typeof document !== 'undefined') {
+        if (!document.hasFocus() || document.hidden) {
+          handleSuspension(true);
+        }
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      unsubMin();
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('blur', handleBlur);
+      if (typeof document !== 'undefined') {
+        document.documentElement.removeAttribute('data-app-suspended');
+      }
+    };
+  }, []);
 
   const folderPickerPrompt = useWorkspaceStore((s) => s.folderPickerPrompt);
   const cancelFolderSelection = useWorkspaceStore((s) => s.cancelFolderSelection);

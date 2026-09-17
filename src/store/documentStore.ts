@@ -164,6 +164,17 @@ function scheduleIdleSecondaryIndexing(id: string, resolvedTitle: string): void 
   }
   idleIndexingTimeout = setTimeout(async () => {
     idleIndexingTimeout = null;
+
+    // Defer heavy secondary indexing if document is hidden or window is minimized
+    if (typeof document !== 'undefined' && document.hidden) {
+      const onVisible = () => {
+        document.removeEventListener('visibilitychange', onVisible);
+        scheduleIdleSecondaryIndexing(id, resolvedTitle);
+      };
+      document.addEventListener('visibilitychange', onVisible, { once: true });
+      return;
+    }
+
     const store = useDocumentStore.getState();
     const currentActive = store.activeDocument;
     if (!currentActive || currentActive.id !== id) return;

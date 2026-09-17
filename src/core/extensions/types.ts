@@ -222,6 +222,14 @@ export interface ViewDefinition {
   extensionId?: string;
   /** Optional behavioral policies for workspace interactions. */
   behavior?: ViewBehaviorPolicy;
+  /**
+   * Whether this view should automatically be suspended and frozen when out of view,
+   * hidden behind inactive tabs, minimized, or when the window loses focus.
+   * Defaults to `true` for all views. Extension developers can set this to `false`
+   * if their view requires continuous background execution (e.g. streaming, timers).
+   * @default true
+   */
+  suspendOnInactive?: boolean;
   /** Render function for the view content. */
   render: (props: { tabId?: string; documentId?: string; app: NoetherApp }) => React.ReactNode;
 }

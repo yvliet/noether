@@ -3,6 +3,7 @@
 The Noether Extension SDK (`src/sdk/index.ts`) is the official public programming interface for building extensions and themes. It exposes base classes, typed service registries, event subscribers, and data models while maintaining strict separation from host application internals.
 
 ## 1. The `Extension` Base Class
+
 ---
 
 Every Noether extension extends the `Extension` base class. It provides automated resource tracking so that all commands, event listeners, status bar widgets, and tools registered through its methods are automatically disposed of when the extension is disabled or reloaded.
@@ -67,6 +68,7 @@ export interface CommandItem {
 ```
 
 ## 2. The `NoetherApp` Container
+
 ---
 
 Extensions access host capabilities through the `NoetherApp` instance (`this.app`).
@@ -117,6 +119,7 @@ export interface NoetherApp {
 - `app.vault.readDocument(id: string): Promise<DocumentItem | null>`: Retrieves full note content and metadata from the SQLite index.
 
 ## 3. The `EventBus`
+
 ---
 
 The `EventBus` enables loosely coupled communication between the Noether core and extensions. Always subscribe through `this.registerEvent(this.app.events.on(...))` to prevent memory leaks:
@@ -156,6 +159,7 @@ this.registerEvent(
 | `tag:renamed` | `{ oldTag, newTag }` | A tag taxonomy is refactored across notes. |
 
 ## 4. Inversion of Control: `SlotRegistry`
+
 ---
 
 Noether provides dynamic React portal slots that allow extensions to mount UI components directly into native application shell regions:
@@ -184,6 +188,7 @@ this.registerPortalSlot({
 - `sidebar:right:bottom`: Docked below the backlinks outline panel.
 
 ## 5. Background Web Worker Pool (`ExtensionWorkerPool`)
+
 ---
 
 To keep the UI responsive, heavy computational tasks (such as vector embeddings or dense PDF parsing) can be offloaded to the worker pool:
@@ -197,6 +202,7 @@ const result = await this.app.workerPool.runTask({
 ```
 
 ## 6. Reactive React Hooks (`@noether/react` and `noether`)
+
 ---
 
 Extensions rendering React components can import reactive hooks directly from `noether` or `@noether/react`. These hooks subscribe directly to host state changes using React 18 external store synchronization with zero state leakage:
@@ -256,8 +262,11 @@ export const MyExtensionView: React.FC = () => {
 | `useDocumentProperties(docId?)` | `Record<string, any>` | Subscribes to frontmatter properties of a note. |
 | `useNoetherStore(key, selector)` | `TSelected` | Subscribes to host store slices with a selector function. |
 | `useToast()` | `(msg, type?) => void` | Returns a toast notification dispatcher. |
+| `useViewSuspension(ref?, opts?)` | `ViewSuspensionState` | Subscribes to window blur, focus, OS minimize, tab switching, and container intersection to freeze animation loops and physics when inactive. |
+| `useViewSuspensionContext()` | `ViewSuspensionState` | Consumes the ambient view suspension state provided by the enclosing host container. |
 
 ## 7. Inversion of Control Registries
+
 ---
 
 Noether decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:
@@ -268,6 +277,7 @@ Noether decouples native UI shells from extensions using singleton Inversion of 
 - **`SlotRegistry`**: Injects arbitrary React components into high-level shell slots.
 
 ## 8. View Layout Components
+
 ---
 
 The SDK exports unified layout wrappers that guarantee custom views match Noether's native desktop geometry and theming:

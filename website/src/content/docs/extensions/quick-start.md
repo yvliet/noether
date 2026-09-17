@@ -2,8 +2,6 @@
 
 Building an extension in Noether doesn't require complex boilerplate or boilerplate generators. An extension is just a single folder in your vault containing a `manifest.json` metadata file and a compiled `main.js` script.
 
----
-
 ## 1. Directory Structure
 
 ---
@@ -26,8 +24,6 @@ mkdir -p .noether/extensions/word-counter
 cd .noether/extensions/word-counter
 ```
 
----
-
 ## 2. The Manifest (`manifest.json`)
 
 ---
@@ -48,8 +44,6 @@ Create `manifest.json`:
   "tags": ["productivity", "writing"]
 }
 ```
-
----
 
 ## 3. Progressive Code Walkthrough
 
@@ -130,8 +124,6 @@ When you need to react to file changes or save operations, subscribe directly to
 + }
 ```
 
----
-
 ## 4. Testing Your Extension
 
 ---
@@ -140,8 +132,6 @@ When you need to react to file changes or save operations, subscribe directly to
 2. Open **Settings** (`Ctrl+,`) and navigate to the **Extensions** tab.
 3. Locate **Word & Reading Time Counter** in the list of installed extensions and toggle it **On**.
 4. Observe the new icon in the left toolbar and the real-time word counter in the bottom status bar.
-
----
 
 ## 5. Building with TypeScript & Bundlers
 
@@ -165,8 +155,6 @@ For production extensions with multiple source files or custom UI components, au
 ```
 
 Noether's runtime sandbox forwards host dependencies directly (`react`, `react-dom`, `zustand`, `zod`, `clsx`, `tailwind-merge`, `@hugeicons`), so you should mark them external to keep your compiled bundle tiny (typically under 10KB).
-
----
 
 ## 6. Related Developer Guides
 

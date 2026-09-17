@@ -12,8 +12,6 @@ The **Model Context Protocol (MCP)** changes this. Noether includes an embedded 
 
 Instead of sending your entire vault to the cloud, your AI assistant simply calls fast local tools (like `noether_search_notes` or `noether_get_backlinks`) whenever it needs specific information to answer your questions.
 
----
-
 ## 2. How Local AI Reasoning Works
 
 ---

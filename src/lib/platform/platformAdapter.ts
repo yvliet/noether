@@ -104,6 +104,11 @@ export interface IPlatformAdapter {
   setWindowTitle(title: string): Promise<void>;
   notifyUserActivity(): Promise<void>;
 
+  // Background Efficiency & Memory Management
+  trimMemory(): Promise<void>;
+  scheduleTrimMemory(delayMs?: number): void;
+  cancelTrimMemory(): void;
+
   // App Settings Persistence
   saveAppSettings(settingsJson: string): Promise<{ success: boolean; path?: string; error?: string }>;
   loadAppSettings(): Promise<{ success: boolean; content?: string }>;
@@ -190,6 +195,33 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public isLinux(): boolean {
     if (typeof navigator === 'undefined') return false;
     return /Linux/.test(navigator.platform || navigator.userAgent);
+  }
+
+  private trimMemoryDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
+  public async trimMemory(): Promise<void> {
+    if (this.isTauri()) {
+      try {
+        await invoke('window_trim_memory');
+      } catch {
+        // Platform memory trim unsupported or running in web
+      }
+    }
+  }
+
+  public scheduleTrimMemory(delayMs = 5000): void {
+    this.cancelTrimMemory();
+    this.trimMemoryDebounceTimer = setTimeout(() => {
+      this.trimMemory();
+      this.trimMemoryDebounceTimer = null;
+    }, delayMs);
+  }
+
+  public cancelTrimMemory(): void {
+    if (this.trimMemoryDebounceTimer !== null) {
+      clearTimeout(this.trimMemoryDebounceTimer);
+      this.trimMemoryDebounceTimer = null;
+    }
   }
 
   // Window Controls
@@ -284,33 +316,112 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   }
 
   public onMinimizedChange(callback: (isMinimized: boolean) => void): () => void {
+    let unlistenTauriEvent: (() => void) | null = null;
     let unlistenResize: (() => void) | null = null;
+    let unlistenFocus: (() => void) | null = null;
     let unlistenVis: (() => void) | null = null;
+    let unlistenBlur: (() => void) | null = null;
+    let unlistenDomFocus: (() => void) | null = null;
     let disposed = false;
 
-    if (this.isTauri()) {
-      const current = getCurrentWindow();
-      current.onResized(() => {
-        current.isMinimized().then((min) => callback(Boolean(min)));
-      }).then((fn) => {
-        if (disposed) {
-          fn();
-        } else {
-          unlistenResize = fn;
+    const checkState = async () => {
+      if (disposed) return;
+      let isSuspended = false;
+      if (this.isTauri()) {
+        try {
+          const isMin = await invoke<boolean>('window_is_minimized');
+          const isDocHidden = typeof document !== 'undefined' ? document.hidden : false;
+          isSuspended = Boolean(isMin || isDocHidden);
+        } catch {
+          isSuspended = typeof document !== 'undefined' ? document.hidden : false;
         }
-      });
+      } else {
+        isSuspended = typeof document !== 'undefined' ? document.hidden : false;
+      }
+
+      if (isSuspended) {
+        this.scheduleTrimMemory(5000);
+      } else {
+        this.cancelTrimMemory();
+      }
+
+      callback(isSuspended);
+    };
+
+    if (this.isTauri()) {
+      listen<boolean>('window-minimized-change', (event) => {
+        if (!disposed) {
+          const isMin = Boolean(event.payload);
+          if (isMin) {
+            this.scheduleTrimMemory(5000);
+          } else {
+            this.cancelTrimMemory();
+          }
+          callback(isMin);
+        }
+      })
+        .then((fn) => {
+          if (disposed) {
+            fn();
+          } else {
+            unlistenTauriEvent = fn;
+          }
+        })
+        .catch(() => {});
+
+      try {
+        const current = getCurrentWindow();
+        current
+          .onResized(() => {
+            checkState();
+          })
+          .then((fn) => {
+            if (disposed) {
+              fn();
+            } else {
+              unlistenResize = fn;
+            }
+          })
+          .catch(() => {});
+
+        current
+          .onFocusChanged(() => {
+            checkState();
+          })
+          .then((fn) => {
+            if (disposed) {
+              fn();
+            } else {
+              unlistenFocus = fn;
+            }
+          })
+          .catch(() => {});
+      } catch {
+        // Tauri window API unavailable
+      }
     }
 
-    const handleVis = () => callback(document.hidden);
+    const handleVis = () => checkState();
     if (typeof document !== 'undefined') {
       document.addEventListener('visibilitychange', handleVis);
       unlistenVis = () => document.removeEventListener('visibilitychange', handleVis);
     }
 
+    if (typeof window !== 'undefined') {
+      window.addEventListener('blur', handleVis);
+      window.addEventListener('focus', handleVis);
+      unlistenBlur = () => window.removeEventListener('blur', handleVis);
+      unlistenDomFocus = () => window.removeEventListener('focus', handleVis);
+    }
+
     return () => {
       disposed = true;
+      if (unlistenTauriEvent) unlistenTauriEvent();
       if (unlistenResize) unlistenResize();
+      if (unlistenFocus) unlistenFocus();
       if (unlistenVis) unlistenVis();
+      if (unlistenBlur) unlistenBlur();
+      if (unlistenDomFocus) unlistenDomFocus();
     };
   }
 

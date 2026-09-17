@@ -362,6 +362,45 @@ this.addCommand({
 });
 ```
 
+### Automatic Lifecycle Suspension & Zero-CPU Inactive Freezing
+
+All views registered via `this.registerView()` are automatically wrapped in host-level suspension boundaries. When the application window is minimized, loses OS focus (e.g. user switched to another app), or when the view container is scrolled out of view or hidden behind inactive tabs, Noether sets `data-view-suspended="true"`.
+
+If your view runs animation loops, continuous simulations, or canvas rendering, you can tap into this lifecycle directly using the `useViewSuspension` hook:
+
+```typescript
+import React, { useRef } from 'react';
+import { useViewSuspension } from 'noether';
+
+export const MyCanvasView: React.FC = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Automatically halts RAF loops and physics when minimized, blurred, or tab-switched
+  const { isSuspended } = useViewSuspension(containerRef, {
+    onSuspend: () => stopSimulation(),
+    onResume: () => startSimulation(),
+  });
+
+  return (
+    <div ref={containerRef} className="flex-1 h-full">
+      <canvas id="my-canvas" />
+    </div>
+  );
+};
+```
+
+#### Opting Out of Suspension
+
+If your extension requires continuous execution while in the background (such as real-time audio playback, continuous network streaming, or background timers), explicitly set `suspendOnInactive: false` when registering the view:
+
+```typescript
+this.registerView({
+  type: 'live-audio-stream',
+  title: 'Audio Streamer',
+  suspendOnInactive: false, // Prevents the host from pausing this view when in the background
+  render: ({ app }) => <AudioStreamView />,
+});
+```
 
 ## 11. Custom Sidebar Tabs (`registerSidebarTab`)
 

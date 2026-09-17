@@ -126,25 +126,53 @@ export class SyncEngine {
     }, 2500);
   }
 
+  private handleVisibilityChange = (): void => {
+    if (typeof document !== 'undefined' && !document.hidden) {
+      const intervalSec = this.config.periodicIntervalSeconds || 0;
+      if (intervalSec > 0 && this.telemetry.lastSyncedAt) {
+        const elapsedSec = (Date.now() - this.telemetry.lastSyncedAt) / 1000;
+        if (elapsedSec >= intervalSec) {
+          this.syncNow().catch((err) => {
+            console.warn('[Sync] Catch-up sync failed:', err);
+          });
+        }
+      }
+    }
+  };
+
   private setupPeriodicSync(): void {
     if (this.periodicTimer) {
       clearInterval(this.periodicTimer);
       this.periodicTimer = null;
     }
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
 
     const intervalSec = this.config.periodicIntervalSeconds || 0;
     if (intervalSec > 0) {
       this.periodicTimer = setInterval(() => {
+        // Skip background sync cycles while window is hidden to eliminate CPU and network wakeups
+        if (typeof document !== 'undefined' && document.hidden) {
+          return;
+        }
         this.syncNow().catch((err) => {
           console.warn('[Sync] Periodic sync failed:', err);
         });
       }, intervalSec * 1000);
+
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      }
     }
   }
 
   public destroy(): void {
     if (this.debounceTimer) clearTimeout(this.debounceTimer);
     if (this.periodicTimer) clearInterval(this.periodicTimer);
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    }
   }
 
   private setTelemetry(patch: Partial<SyncTelemetry>): void {

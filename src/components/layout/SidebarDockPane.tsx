@@ -6,6 +6,7 @@ import { useNoetherApp, useSidebarTabs, useViews, useExtensionList } from '@/cor
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 import { Cancel01Icon } from '@/components/common/Icons';
 import { platform } from '@/lib/platform/platformAdapter';
+import { ExtensionViewHost } from './ExtensionViewHost';
 
 const LazyDisabledExtensionView = React.lazy(() =>
   import('@/components/extension-viewer/DisabledExtensionView').then((m) => ({ default: m.DisabledExtensionView }))
@@ -243,14 +244,15 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
     const extState = app.extensions.getViewExtensionState(viewType);
     if (extState.state === 'active') {
       return (
-        <div data-sidebar-dock-pane="true" className="flex-1 flex flex-col h-full overflow-hidden relative">
-          {extState.view.render({
-            tabId: activeItem.id,
-            documentId: activeItem.documentId || `__${viewType}__`,
-            app,
-            isSidebar: true,
-          } as any)}
-        </div>
+        <ExtensionViewHost
+          view={extState.view}
+          tabId={activeItem.id}
+          documentId={activeItem.documentId || `__${viewType}__`}
+          app={app}
+          isSidebar={true}
+          data-sidebar-dock-pane="true"
+          className="flex-1 flex flex-col h-full overflow-hidden relative"
+        />
       );
     }
     if (extState.state === 'disabled') {
@@ -271,14 +273,15 @@ export const SidebarDockPane: React.FC<SidebarDockPaneProps> = React.memo(({ zon
     const regView = app.views.getView(viewType);
     if (regView) {
       return (
-        <div data-sidebar-dock-pane="true" className="flex-1 flex flex-col h-full overflow-hidden relative">
-          {regView.render({
-            tabId: activeItem.id,
-            documentId: activeItem.documentId || `__${viewType}__`,
-            app,
-            isSidebar: true,
-          } as any)}
-        </div>
+        <ExtensionViewHost
+          view={regView}
+          tabId={activeItem.id}
+          documentId={activeItem.documentId || `__${viewType}__`}
+          app={app}
+          isSidebar={true}
+          data-sidebar-dock-pane="true"
+          className="flex-1 flex flex-col h-full overflow-hidden relative"
+        />
       );
     }
   }

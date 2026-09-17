@@ -1695,9 +1695,26 @@ pub fn close_help_window(app: AppHandle) -> Value {
     json!({ "success": true })
 }
 
+#[cfg(target_os = "windows")]
+extern "system" {
+    fn GetCurrentProcess() -> isize;
+    fn SetProcessWorkingSetSize(hProcess: isize, dwMinimumWorkingSetSize: usize, dwMaximumWorkingSetSize: usize) -> i32;
+}
+
+#[tauri::command]
+pub fn window_trim_memory() {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        // Flushes idle working set memory pages to the OS standby list on minimize or deep idle
+        let _ = SetProcessWorkingSetSize(GetCurrentProcess(), usize::MAX, usize::MAX);
+    }
+}
+
 #[tauri::command]
 pub fn window_minimize(window: tauri::Window) {
     let _ = window.minimize();
+    let _ = window.emit("window-minimized-change", true);
+    window_trim_memory();
 }
 
 #[tauri::command]

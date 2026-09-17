@@ -2,8 +2,6 @@
 
 Noether combines the permanence of plain CommonMark files on your hard drive with the speed of an embedded relational database. Plain Markdown files act as the single ground truth, while an embedded native SQLite engine accelerates search, backlinks, and graph traversals.
 
----
-
 ## 1. The 1,000-Note Performance Wall
 
 ---
@@ -47,8 +45,6 @@ If `.noether/noether.sqlite` is ever deleted, corrupted, or wiped, Noether autom
                     (Signature-Based Echo Suppression)
 ```
 
----
-
 ## 2. The 3-Tier Save Lifecycle
 
 ---
@@ -76,8 +72,6 @@ On Windows and macOS, background file indexing services (like Windows Search Ind
 
 Noether writes new note contents to a hidden temporary file (`.noether-tmp-*`) in the vault and performs an atomic filesystem rename (`MoveFileEx` / `renameat`). The original note remains untouched on disk until the new bytes are completely flushed and verified.
 
----
-
 ## 3. File Watcher Echo Suppression
 
 ---
@@ -92,8 +86,6 @@ Noether prevents this with **Signature-Based Write Tracking**:
 2. When the filesystem watcher receives a file modification event, it checks whether the file event matches an active internal write signature within a 500ms window.
 3. If the signature matches, the watcher suppresses the event as an internal echo.
 4. If an external tool (like Git or an external text editor) modified the file, the signature is absent, and Noether immediately updates the editor buffer and re-indexes SQLite.
-
----
 
 ## 4. Embedded SQLite Schema
 
@@ -150,8 +142,6 @@ CREATE VIRTUAL TABLE IF NOT EXISTS fts_documents USING fts5(
 );
 ```
 
----
-
 ## 5. Instant Backlink Resolution
 
 ---
@@ -175,8 +165,6 @@ When you rename a note from `Architecture Ideas` to `Core Engine Blueprint`:
 1. Noether renames the `.md` file on disk.
 2. Updates `title = 'Core Engine Blueprint'` in the `documents` table.
 3. Automatically refactors all referencing `[[Architecture Ideas]]` wikilinks across your other Markdown files in a single atomic transaction.
-
----
 
 ## 6. Related Architecture Reading
 

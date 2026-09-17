@@ -2,8 +2,6 @@
 
 Synchronize your Noether notes, knowledge graph, and canvases across desktop and mobile machines using your own free cloud database, with zero user tracking and zero recurring subscriptions.
 
----
-
 ## 1. Why Sync?
 
 ---
@@ -15,8 +13,6 @@ The Sync extension connects your local Vault to your own free cloud database:
 - **Turso libSQL**: Edge SQLite databases running over the Hrana v2 HTTP pipeline.
 - **Cloudflare D1**: Serverless SQL databases running on Cloudflare Workers edge nodes.
 - **Self-Hosted REST**: Generic JSON sync server or private webhook.
-
----
 
 ## 2. Quick Start: Supabase Free Tier (2-Minute Setup)
 
@@ -73,8 +69,6 @@ CREATE POLICY "Allow Noether Sync CRUD" ON noether_sync_documents
 5. Paste the Project URL and Anon Key into the guided wizard.
 6. Click **Test Connection** to verify database connectivity, then click **Sync Now**.
 
----
-
 ## 3. Alternative Database Providers
 
 ---
@@ -120,8 +114,6 @@ CREATE POLICY "Allow Noether Sync CRUD" ON noether_sync_documents
    ```
 4. Enter the database URL (`libsql://...`) and auth token in Noether Settings.
 
----
-
 ## 4. Conflict Resolution & Sync Mechanics
 
 ---
@@ -133,8 +125,6 @@ CREATE POLICY "Allow Noether Sync CRUD" ON noether_sync_documents
   - `Keep Both (Create Conflict Copy)`: Creates a duplicate note titled `[Conflict Copy] Note Title` so no edits are ever lost.
   - `Local Always Wins`: Retains local changes and ignores conflicting remote changes.
   - `Remote Always Wins`: Overwrites local modifications with incoming remote changes.
-
----
 
 ## 5. Keyboard Shortcuts & MCP Tools
 
@@ -150,8 +140,6 @@ The extension exposes the following tools to in-app AI copilots and external des
 - `sync_sync_now`: Triggers an immediate sync cycle and returns telemetry.
 - `sync_get_sync_status`: Inspects telemetry, database status, and pending change counts.
 - `sync_test_connection`: Verifies database reachability and table readiness.
-
----
 
 ## 6. Related Reading & References
 

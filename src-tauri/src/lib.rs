@@ -72,6 +72,7 @@ pub fn run() {
             vault::window_is_minimized,
             vault::window_start_dragging,
             vault::window_set_title,
+            vault::window_trim_memory,
             vault::notify_user_activity,
             vault::focus_main_window,
             vault::register_global_shortcut,
@@ -91,6 +92,18 @@ pub fn run() {
             vcs::vcs_get_historical_content,
             vcs::vcs_restore_file,
         ])
+        .on_window_event(|window, event| match event {
+            tauri::WindowEvent::Resized(_)
+            | tauri::WindowEvent::Focused(_)
+            | tauri::WindowEvent::Moved(_) => {
+                let is_min = window.is_minimized().unwrap_or(false);
+                let _ = window.emit("window-minimized-change", is_min);
+                if is_min {
+                    vault::window_trim_memory();
+                }
+            }
+            _ => {}
+        })
         .setup(move |app| {
             let handle = app.handle().clone();
             let vault_to_watch = initial_vault.clone();

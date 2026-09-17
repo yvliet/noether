@@ -2,15 +2,11 @@
 
 How to connect AI assistants like Claude Desktop, Cursor, and Antigravity directly to your Noether notes and tasks.
 
----
-
 ## 1. What is MCP?
 
 ---
 
 Model Context Protocol (MCP) is an open standard that allows AI agents to discover and call tools exposed by applications. Noether implements a native MCP tool registry that lets AI assistants interact directly with your notes, tasks, flashcards, graph, and more.
-
----
 
 ## 2. Architecture & Tool Scopes
 
@@ -20,8 +16,6 @@ Noether exposes tools at two levels:
 
 1. **Native Core Tools** (`noether_*`): Always available to search, read, create, update, delete notes, manage properties, bookmarks, tags, and backlinks.
 2. **Extension Tools** (`{extensionId}_*`): Available when the extension is enabled (tasks, flashcards, canvas, journal, cascade, etc.). Disabling an extension removes its tools automatically.
-
----
 
 ## 3. In-App Agent Usage
 
@@ -44,8 +38,6 @@ console.log(result.content);
 const schemas = appInstance.tools.getMcpToolSchemas();
 ```
 
----
-
 ## 4. Automatic Vault Discovery
 
 ---
@@ -57,8 +49,6 @@ When an AI agent connects to Noether:
 2. It can call `noether_list_vaults` to discover all other known Vaults on your computer.
 3. It can switch workspaces via `noether_switch_vault` without restarting the connection.
 4. It can search across all workspaces via `noether_search_across_vaults`.
-
----
 
 ## 5. External Agent Setup (Claude Desktop / Cursor / Antigravity)
 
@@ -100,8 +90,6 @@ Add to `.cursor/mcp.json` in your project or home directory:
 
 Noether tools are auto-discovered when the MCP server is configured in your agent workspace settings.
 
----
-
 ## 6. Available Core Tools
 
 ---
@@ -130,8 +118,6 @@ Noether tools are auto-discovered when the MCP server is configured in your agen
 | `noether_toggle_split_view` | Toggle split editor pane |
 | `noether_insert_table` | Insert an interactive table grid |
 
----
-
 ## 7. Built-in MCP Prompts
 
 ---
@@ -143,8 +129,6 @@ Noether includes ready-to-use prompts to help AI models understand your notes an
 | `noether_system_instructions` | Teaches the AI model about Noether's formatting, wikilink syntax, and flashcards | `mode?: "concise" \| "comprehensive"` |
 | `noether_daily_review` | Pulls together today's journal entry, open tasks, and due flashcards for a morning or evening review | `date?: string` (YYYY-MM-DD) |
 | `noether_synthesize_topic` | Collects relevant notes and backlinks on a subject to provide context for summaries or research | `topic: string` (required) |
-
----
 
 ## 8. Extension Tools & Custom Registration
 
@@ -177,8 +161,6 @@ this.registerTool({
   },
 });
 ```
-
----
 
 ## 9. Dynamic Script Execution & Custom Agent Tools
 

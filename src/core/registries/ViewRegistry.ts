@@ -176,6 +176,16 @@ export class ViewRegistry {
   }
 
   /**
+   * Checks whether a registered view should automatically suspend when inactive.
+   * Defaults to true unless explicitly configured with `suspendOnInactive: false`.
+   * @since 0.5.6
+   */
+  public shouldSuspendViewOnInactive(type: string): boolean {
+    const view = this.getView(type);
+    return view?.suspendOnInactive !== false;
+  }
+
+  /**
    * Returns a snapshot array of all currently registered active views.
    * @since 0.1.0
    */

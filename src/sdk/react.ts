@@ -266,3 +266,15 @@ export function useToast(): (message: string, type?: 'info' | 'success' | 'warni
   };
 }
 
+// Re-export universal view suspension hooks & context
+export {
+  useViewSuspension,
+  useViewSuspensionContext,
+  ViewSuspensionContext,
+} from './useViewSuspension';
+export type {
+  ViewSuspensionState,
+  UseViewSuspensionOptions,
+} from './useViewSuspension';
+
+

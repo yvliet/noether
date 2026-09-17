@@ -112,6 +112,13 @@ export {
   useNoetherStore,
   useCurrentDrag,
   useToast,
+  useViewSuspension,
+  useViewSuspensionContext,
+  ViewSuspensionContext,
+} from './react';
+export type {
+  ViewSuspensionState,
+  UseViewSuspensionOptions,
 } from './react';
 export { renderHugeIconSvg } from '../components/common/Icons';
 export type { IconProps, RenderHugeIconSvgOptions } from '../components/common/Icons';

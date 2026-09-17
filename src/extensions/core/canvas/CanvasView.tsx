@@ -39,7 +39,7 @@ import {
 } from '@/components/common/Icons';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
 import { Tooltip } from '@/components/common/Tooltip';
-import { useNoetherApp, useVaultDocuments, useActiveDocument, useToast } from 'noether';
+import { useNoetherApp, useVaultDocuments, useActiveDocument, useToast, useViewSuspension } from 'noether';
 import type { DocumentItem } from '@/types';
 import { CanvasCard, ResizeHandleType } from './components/CanvasCard';
 import { CanvasGroup } from './components/CanvasGroup';
@@ -1052,6 +1052,30 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       }
     };
   }, [sessionKey]);
+
+  // Reusable SDK view suspension: automatically freezes camera easing, auto scroll, and mouse move
+  useViewSuspension(containerRef, {
+    onSuspend: () => {
+      if (cameraRafRef.current !== null) {
+        cancelAnimationFrame(cameraRafRef.current);
+        cameraRafRef.current = null;
+        currentTransformRef.current = { ...targetTransformRef.current };
+        syncDomTransform(
+          targetTransformRef.current.x,
+          targetTransformRef.current.y,
+          targetTransformRef.current.scale
+        );
+      }
+      if (autoScrollRafRef.current !== null) {
+        cancelAnimationFrame(autoScrollRafRef.current);
+        autoScrollRafRef.current = null;
+      }
+      if (mouseMoveRafRef.current !== null) {
+        cancelAnimationFrame(mouseMoveRafRef.current);
+        mouseMoveRafRef.current = null;
+      }
+    },
+  });
 
   // Dragging node
   const [isDraggingNodeState, setIsDraggingNodeState] = useState(false);

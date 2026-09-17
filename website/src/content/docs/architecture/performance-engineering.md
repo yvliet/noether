@@ -2,8 +2,6 @@
 
 Noether is designed to handle vaults with thousands of notes without stuttering, high CPU usage, or runaway memory growth. Rather than adding complex caching layers after the fact, performance comes from a few straightforward architecture decisions: keeping the UI thread decoupled from disk I/O, streaming metadata on launch instead of whole files, and stopping background loops when they aren't visible.
 
----
-
 ## 1. The 3-Tier Persistence Pipeline
 
 ---
@@ -16,8 +14,6 @@ Noether separates typing from persistence into three tiers:
 2. **Debounced Disk Write (300ms)**: When you stop typing for 300ms, the editor serializes the active note to CommonMark and writes it to disk using an atomic temp-file rename (`.noether-tmp-*` → `note.md`).
 3. **Background SQLite Indexing**: After the file is on disk, an AST tokenizer extracts frontmatter, `[[wikilinks]]`, tags, and headings, updating the SQLite relational index in a single background transaction.
 
----
-
 ## 2. Cold Boot & Startup IPC Streaming
 
 ---
@@ -29,8 +25,6 @@ Noether splits startup into two stages:
 1. **Metadata-Only Boot**: On launch, the backend only queries note headers (`id`, `title`, `path`, `parent_id`, `mtime`, `is_folder`). This payload is small and loads in a few milliseconds.
 2. **On-Demand Note Bodies**: The full content of a note is read from disk only when you actually click or switch to that tab. Notes you haven't opened yet consume zero memory in the UI.
 
----
-
 ## 3. SQLite Relational Cache & WAL Mode
 
 ---
@@ -41,8 +35,6 @@ Key database configurations include:
 - **Write-Ahead Logging (`PRAGMA journal_mode = WAL;`)**: Reads and writes never block each other. Background indexing never stalls active search queries.
 - **Memory-Mapped I/O (`PRAGMA mmap_size = 268435456;`)**: 256MB of the database file is mapped directly into memory, allowing the operating system to handle page caching with zero user-space copying.
 - **FTS5 with BM25 Ranking**: Search queries run against an inverted full-text index rather than executing unindexed `LIKE '%query%'` wildcard scans across every file.
-
----
 
 ## 4. Virtual DOM & Hook Isolation
 
@@ -103,24 +95,27 @@ const childrenMap = useMemo(() => {
 
 Each folder node performs a single $O(1)$ map lookup (`childrenMap.get(folderId)`) to retrieve its immediate children.
 
----
-
-## 5. Background Loop Suspension
+## 5. Universal View Suspension & Zero-CPU Backgrounding
 
 ---
 
-Continuous visual simulations like the 2D force-directed Graph View run an animation loop. If left running in the background when the user switches to a note tab or minimizes the window, the physics loop continues burning CPU cycles and battery.
+Continuous visual simulations like the 2D force-directed Graph View, infinite Canvas, or custom WebGL extensions can quickly drain battery and burn GPU cycles if left running in background tabs or minimized windows.
 
-Noether tracks tab visibility and window state:
-- When a Graph View tab is not actively focused or the window is minimized, the physics tick loop is paused immediately.
-- Resuming focus restarts the tick loop smoothly from the last calculated node positions.
+Rather than relying on ad-hoc timers in each individual component, Noether coordinates background efficiency through a unified system:
+
+- **Universal `useViewSuspension` Hook**: Monitors 5 distinct lifecycle channels simultaneously (Tauri native window minimize, document visibility, OS blur and focus via `document.hasFocus()`, `IntersectionObserver` viewport culling, and workspace pane switching).
+- **GPU Containment & Paint Isolation**: Suspended containers receive `contain: content`, instructing Chromium to skip reflow and repaint passes while preserving the static rasterized backing store required for crisp Windows DWM taskbar hover previews.
+- **Global CSS Animation Freezing**: When the app is minimized or backgrounded, `data-app-suspended="true"` pauses all CSS keyframe animations (`animation-play-state: paused !important`), eliminating compositor thread wakeups.
+- **Single-Click Window Activation**: Mouse hit-testing remains active so clicking an unfocused window immediately activates and registers the clicked target without needing an extra focus click.
+- **Background Sync Throttling**: The sync engine skips periodic background polling cycles while the window is hidden, triggering an instant catch-up sync the moment the window is restored.
+
+## 6. Native Win32 Working Set Memory Reclamation
 
 ---
 
-## 6. Memory Trimming
+On Windows, Chromium-based desktop applications tend to retain memory pages in their working set long after intensive tasks (such as cold-boot vault scanning or full-text indexing) have completed.
 
----
+To maintain a lightweight desktop footprint without causing UI stalls, Noether uses a two-tier memory reclamation strategy:
 
-On Windows, long-running desktop processes often retain memory pages in their working set long after large operations (like initial vault indexing) have finished.
-
-Noether calls the Win32 `SetProcessWorkingSetSize` API after 120 seconds of idle time, prompting the operating system to page out unused memory and return it to the system.
+1. **Instant Minimize Reclamation**: When the native window is minimized, the Rust backend invokes `SetProcessWorkingSetSize(GetCurrentProcess(), usize::MAX, usize::MAX)`, prompting the OS to flush unreferenced working set pages to the standby pool.
+2. **Debounced 5-Second Idle Reclamation**: When the application loses focus or transitions to the background, the platform adapter starts a 5-second debounce timer before calling memory trimming. If you Alt-Tab back or glance at the app before 5 seconds elapse, the timer cancels immediately, completely preventing memory paging churn.

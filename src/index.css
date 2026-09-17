@@ -3243,3 +3243,15 @@ math-field::part(content) {
   color: #52525b;
 }
 
+/* Deep Inactive & Background Efficiency (GPU Containment, Zero Repaints & Paused CSS Animations) */
+[data-view-suspended="true"] {
+  /* Isolate layout and paint passes so Chromium compositor skips repainting and reflow */
+  contain: content;
+}
+
+[data-view-suspended="true"] *,
+[data-app-suspended="true"] * {
+  /* Freeze all CSS keyframe animations to eliminate compositor thread wakeups */
+  animation-play-state: paused !important;
+}
+
