@@ -1114,6 +1114,11 @@ pub fn delete_markdown_file(state: tauri::State<AppState>, filename_or_path: Str
         let with_md = target_vault.join(format!("{}.md", clean));
         if with_md.exists() {
             file_path = with_md;
+        } else if clean.to_lowercase().ends_with(".md") {
+            let without_md = target_vault.join(&clean[..clean.len() - 3]);
+            if without_md.exists() {
+                file_path = without_md;
+            }
         }
     }
     let normalized_file = normalize_path(&file_path);
@@ -1340,6 +1345,11 @@ pub fn delete_trash_file(state: tauri::State<AppState>, filename_or_path: String
         let with_md = trash_dir.join(format!("{}.md", clean));
         if with_md.exists() {
             file_path = with_md;
+        } else if clean.to_lowercase().ends_with(".md") {
+            let without_md = trash_dir.join(&clean[..clean.len() - 3]);
+            if without_md.exists() {
+                file_path = without_md;
+            }
         }
     }
     let normalized_file = normalize_path(&file_path);

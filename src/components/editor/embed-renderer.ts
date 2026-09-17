@@ -30,6 +30,33 @@ let cachedDocIndex: Map<string, any> = new Map();
 const imageSrcCache = new Map<string, string>();
 
 /**
+ * Evicts cached image source strings for a deleted or renamed document/target.
+ * If called without arguments, flushes the entire image source cache.
+ */
+export function evictImageSrcCache(targetOrTitleOrId?: string): void {
+  if (!targetOrTitleOrId) {
+    imageSrcCache.clear();
+    return;
+  }
+  const keys = normalizeTargetKeys(targetOrTitleOrId);
+  for (const k of keys) {
+    imageSrcCache.delete(k);
+  }
+  imageSrcCache.delete(targetOrTitleOrId.trim().toLowerCase());
+}
+
+if (typeof window !== 'undefined') {
+  import('@/core/app/NoetherApp')
+    .then(({ appInstance }) => {
+      appInstance?.events?.on('document:deleted', ({ id, title }) => {
+        evictImageSrcCache(id);
+        if (title) evictImageSrcCache(title);
+      });
+    })
+    .catch(() => {});
+}
+
+/**
  * Normalizes target string into all possible canonical match keys (lowercase, without ext, basenames, URL decoded).
  */
 export function normalizeTargetKeys(target: string): string[] {

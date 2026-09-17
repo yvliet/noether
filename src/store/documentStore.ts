@@ -31,6 +31,7 @@ import {
   moveDocument as dbMoveDocument,
   getUniqueTitleForMove,
   getDocumentPath,
+  getDocumentDiskPath,
   computeFastHash,
   isDescendant,
   syncVaultDiskToSQLite,
@@ -1159,10 +1160,8 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     const newRel = getDocumentPath({ id, title: finalTitle, parent_id: targetParentId }, docs);
 
     const isFolder = Boolean(docToMove.is_folder);
-    const customType = !isFolder ? (fileTypeRegistry.getByDocType(docToMove.doc_type) || fileTypeRegistry.getByPath(oldTitle)) : undefined;
-    const ext = customType ? customType.extension : (docToMove.doc_type === 'canvas' ? 'canvas' : 'md');
-    const oldFile = isFolder ? oldRel : `${oldRel}.${ext}`;
-    const newFile = isFolder ? newRel : `${newRel}.${ext}`;
+    const oldFile = isFolder ? oldRel : getDocumentDiskPath(docToMove, oldRel);
+    const newFile = isFolder ? newRel : getDocumentDiskPath({ ...docToMove, title: finalTitle }, newRel);
 
     let diskMoved = false;
     if (platform.isDesktop() && (oldRel !== newRel || wasRenamed)) {
@@ -1360,13 +1359,19 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
     // 5. Asynchronously persist to SQLite and physical disk in background without blocking UI
     try {
-      const deletedItems = await deleteDocuments(Array.from(deletedIds));
+      const deletedItems = await deleteDocuments(Array.from(deletedIds), prevDocs);
       if (recordHistory && deletedItems && deletedItems.length > 0) {
         useFileHistoryStore.getState().recordDelete(deletedItems, activeIdBefore);
       }
-      deletedIds.forEach((deletedId) => {
-        emitBridgeAppEvent('document:deleted', { id: deletedId });
-      });
+      if (deletedItems && deletedItems.length > 0) {
+        deletedItems.forEach((item) => {
+          emitBridgeAppEvent('document:deleted', { id: item.id, title: item.title });
+        });
+      } else {
+        deletedIds.forEach((deletedId) => {
+          emitBridgeAppEvent('document:deleted', { id: deletedId });
+        });
+      }
       const trash = await getTrashItems(true);
       set({ trashItems: trash });
       get().recomputeBrokenEmbeds();

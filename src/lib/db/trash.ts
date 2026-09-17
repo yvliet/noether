@@ -1,9 +1,11 @@
 import { dbAdapter } from './adapter';
 import { DocumentItem, TrashItem } from '@/types';
-import { jsonToMarkdown, getDocumentPath, saveDocumentAndSynchronize } from './documents';
+import { jsonToMarkdown, getDocumentPath, getDocumentDiskPath, saveDocumentAndSynchronize } from './documents';
 import { platform } from '@/lib/platform/platformAdapter';
 import { appInstance } from '@/core/app/NoetherApp';
-import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
+import { fileTypeRegistry, isMediaFileName } from '@/core/registries/FileTypeRegistry';
+import { evictImageSrcCache } from '@/components/editor/embed-renderer';
+import { evictCoverCache } from '@/extensions/core/covers/coverPreloader';
 
 // 48 hours in milliseconds = 172,800,000 ms
 export const TRASH_RETENTION_MS = 48 * 60 * 60 * 1000;
@@ -22,7 +24,8 @@ export async function cleanExpiredTrash(): Promise<number> {
       if (platform.isDesktop()) {
         for (const item of expired) {
           try {
-            await platform.deleteTrashFile(item.original_path || item.title);
+            const trashFile = getDocumentDiskPath(item, item.original_path || item.title);
+            await platform.deleteTrashFile(trashFile);
           } catch (e) {
             console.error('[Noether Trash] Failed to delete expired trash file:', e);
           }
@@ -33,7 +36,11 @@ export async function cleanExpiredTrash(): Promise<number> {
       for (const item of expired) {
         if (item.original_id) {
           try {
-            appInstance?.events?.emit('document:deleted', { id: item.original_id });
+            evictImageSrcCache(item.title);
+            evictImageSrcCache(item.original_id);
+            evictCoverCache(item.title);
+            evictCoverCache(item.original_id);
+            appInstance?.events?.emit('document:deleted', { id: item.original_id, title: item.title });
           } catch (e) {}
         }
       }
@@ -65,22 +72,45 @@ export async function cleanExpiredTrash(): Promise<number> {
 /**
  * Moves multiple documents or folders (and their descendants) to Trash in a single batch
  */
-export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentItem[]> {
+export async function moveDocumentsToTrash(
+  docIds: string[],
+  fallbackDocs?: DocumentItem[]
+): Promise<DocumentItem[]> {
   if (!docIds || docIds.length === 0) return [];
 
-  // Get documents to compute tree, paths, and descendants, prioritizing in-memory store
+  // Gather documents to compute tree, paths, and descendants.
+  // 1. Prioritize fallbackDocs (e.g. from store snapshot before optimistic deletion)
   let allDocs: DocumentItem[] = [];
-  try {
-    const { useDocumentStore } = await import('@/store/documentStore');
-    allDocs = useDocumentStore.getState().documents;
-  } catch {}
-  if (!allDocs || allDocs.length === 0) {
-    allDocs = await dbAdapter.query<DocumentItem>(
-      `SELECT id, parent_id, title, is_daily_note, is_folder, is_bookmarked, doc_type, properties, content_json, created_at, updated_at FROM documents`
-    );
+  if (fallbackDocs && fallbackDocs.length > 0) {
+    allDocs = [...fallbackDocs];
+  } else {
+    try {
+      const { useDocumentStore } = await import('@/store/documentStore');
+      allDocs = [...(useDocumentStore.getState().documents || [])];
+    } catch {}
   }
 
-  const docMap = new Map(allDocs.map((d) => [d.id, d]));
+  // 2. Ensure all requested docIds are present. If any requested id is missing from memory,
+  // query SQLite directly to populate docMap and allDocs so deletions are never skipped.
+  const docMap = new Map<string, DocumentItem>(allDocs.map((d) => [d.id, d]));
+  const missingIds = docIds.filter((id) => !docMap.has(id));
+
+  if (missingIds.length > 0 || allDocs.length === 0) {
+    try {
+      const dbDocs = await dbAdapter.query<DocumentItem>(
+        `SELECT id, parent_id, title, is_daily_note, is_folder, is_bookmarked, doc_type, properties, content_json, created_at, updated_at FROM documents`
+      );
+      for (const d of dbDocs) {
+        if (!docMap.has(d.id)) {
+          docMap.set(d.id, d);
+          allDocs.push(d);
+        }
+      }
+    } catch (err) {
+      console.error('[Noether Trash] Failed to query documents from database:', err);
+    }
+  }
+
   const childrenByParent = new Map<string | null, DocumentItem[]>();
   for (const d of allDocs) {
     const p = d.parent_id || null;
@@ -169,21 +199,28 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
     });
 
     const path = getDocumentPath(item, allDocs);
-    const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(path || item.title);
-    const ext = customType ? customType.extension : 'md';
-    const norm = (path || item.title).replace(/\\/g, '/').toLowerCase();
-    const key = item.is_folder ? norm : `${norm}.${ext}`;
+    const targetDiskPath = getDocumentDiskPath(item, path);
+    const normKey = targetDiskPath.toLowerCase();
     queries.push({
-      sql: `DELETE FROM file_manifest WHERE relative_path = ?`,
-      params: [key],
+      sql: `DELETE FROM file_manifest WHERE LOWER(relative_path) = ? OR LOWER(relative_path) = ?`,
+      params: [normKey, `${normKey}.md`],
     });
   }
 
   try {
     await dbAdapter.transaction(queries);
+    await dbAdapter.persist();
   } catch (err) {
     console.error('[Noether Trash] Failed to move items to trash in transaction:', err);
     throw err;
+  }
+
+  // Evict in-memory image and cover caches immediately
+  for (const item of itemsToTrash) {
+    evictImageSrcCache(item.title);
+    evictImageSrcCache(item.id);
+    evictCoverCache(item.title);
+    evictCoverCache(item.id);
   }
 
   // Move physical files to .trash folder and clean from vault folder in parallel
@@ -192,12 +229,10 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
       itemsToTrash.map(async (item) => {
         try {
           const path = getDocumentPath(item, allDocs);
+          const targetPath = getDocumentDiskPath(item, path);
           const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(path || item.title);
-          const ext = customType ? customType.extension : 'md';
-          const targetPath = item.is_folder
-            ? (path || item.title)
-            : `${path || item.title}.${ext}`;
-          if (!item.is_folder && item.content_json) {
+          const isMedia = isMediaFileName(targetPath) || isMediaFileName(item.title);
+          if (!item.is_folder && item.content_json && !isMedia) {
             const fileContent = customType && customType.isRawContent
               ? item.content_json
               : jsonToMarkdown(item.content_json, item.title);
@@ -217,8 +252,8 @@ export async function moveDocumentsToTrash(docIds: string[]): Promise<DocumentIt
 /**
  * Moves a document or folder (and its descendants) to Trash
  */
-export async function moveToTrash(docId: string): Promise<DocumentItem[]> {
-  return await moveDocumentsToTrash([docId]);
+export async function moveToTrash(docId: string, fallbackDocs?: DocumentItem[]): Promise<DocumentItem[]> {
+  return await moveDocumentsToTrash([docId], fallbackDocs);
 }
 
 /**
@@ -362,6 +397,7 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
 
   // Execute all SQL statements in a single fast WASM transaction
   await dbAdapter.transaction(queries);
+  await dbAdapter.persist();
 
   // Background non-blocking disk writes and full index synchronization
   (async () => {
@@ -371,9 +407,7 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
           await saveDocumentAndSynchronize(item.original_id, item.content_json, item.title);
           if (platform.isDesktop()) {
             const relPath = item.original_path || item.title;
-            const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(relPath);
-            const ext = customType ? customType.extension : 'md';
-            const trashFile = item.is_folder ? relPath : `${relPath}.${ext}`;
+            const trashFile = getDocumentDiskPath(item, relPath);
             await platform.deleteTrashFile(trashFile);
           }
         } catch (e) {
@@ -418,14 +452,20 @@ export async function permanentlyDeleteTrashItem(trashOrOriginalId: string): Pro
   for (const item of itemsToDelete) {
     if (platform.isDesktop()) {
       try {
-        await platform.deleteTrashFile(item.original_path || item.title);
+        const relPath = item.original_path || item.title;
+        const trashFile = getDocumentDiskPath(item, relPath);
+        await platform.deleteTrashFile(trashFile);
       } catch (e) {
         console.error('[Noether Trash] Failed to delete trash file:', e);
       }
     }
     await dbAdapter.execute(`DELETE FROM trash_items WHERE id = ?`, [item.id]);
     try {
-      appInstance.events.emit('document:deleted', { id: item.original_id });
+      evictImageSrcCache(item.title);
+      evictImageSrcCache(item.original_id);
+      evictCoverCache(item.title);
+      evictCoverCache(item.original_id);
+      appInstance.events.emit('document:deleted', { id: item.original_id, title: item.title });
     } catch (e) {}
   }
 
@@ -436,7 +476,7 @@ export async function permanentlyDeleteTrashItem(trashOrOriginalId: string): Pro
  * Empties all items from the Trash
  */
 export async function emptyTrash(): Promise<void> {
-  const allTrash = await dbAdapter.query<TrashItem>(`SELECT original_id FROM trash_items`);
+  const allTrash = await dbAdapter.query<TrashItem>(`SELECT original_id, title FROM trash_items`);
   if (platform.isDesktop()) {
     try {
       await platform.emptyTrashFolder();
@@ -447,9 +487,12 @@ export async function emptyTrash(): Promise<void> {
   await dbAdapter.execute(`DELETE FROM trash_items`);
   await dbAdapter.persist();
 
+  evictImageSrcCache();
+  evictCoverCache();
+
   for (const item of allTrash) {
     try {
-      appInstance.events.emit('document:deleted', { id: item.original_id });
+      appInstance.events.emit('document:deleted', { id: item.original_id, title: item.title });
     } catch (e) {}
   }
 }

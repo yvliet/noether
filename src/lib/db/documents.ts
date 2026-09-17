@@ -2,7 +2,7 @@ import { dbAdapter } from './adapter';
 import { DocumentItem, BlockItem, HeadingItem, GlobalTaskItem, DocumentProperties } from '@/types';
 import { moveToTrash, moveDocumentsToTrash } from './trash';
 import { platform } from '@/lib/platform/platformAdapter';
-import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
+import { fileTypeRegistry, isMediaFileName } from '@/core/registries/FileTypeRegistry';
 
 
 export async function getAllDocuments(options?: { includeContent?: boolean }): Promise<DocumentItem[]> {
@@ -150,9 +150,7 @@ export async function updateDocumentProperties(id: string, propertiesJson: strin
       if (doc && !doc.is_folder) {
         const allDocs = await getCachedOrDbDocs();
         const relPath = getDocumentPath(doc, allDocs);
-        const customType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
-        const ext = customType ? customType.extension : 'md';
-        const targetRelPath = `${relPath}.${ext}`;
+        const targetRelPath = getDocumentDiskPath(doc, relPath);
         const mdContent = jsonToMarkdown(doc.content_json, doc.title, propertiesJson);
         await platform.saveMarkdownFile(doc.title, mdContent, targetRelPath);
 
@@ -252,8 +250,7 @@ export async function createDocument(
       const allDocs = await getCachedOrDbDocs();
       const relPath = getDocumentPath({ id, title, parent_id: parentId }, allDocs);
       const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(title);
-      const ext = customType ? customType.extension : 'md';
-      const targetRelPath = `${relPath}.${ext}`;
+      const targetRelPath = getDocumentDiskPath({ id, title, doc_type: docType, is_folder: false }, relPath);
       const diskContent = customType?.isRawContent ? defaultContent : jsonToMarkdown(defaultContent, title);
       await platform.saveMarkdownFile(title, diskContent, targetRelPath);
 
@@ -380,9 +377,8 @@ export async function updateDocumentTitle(id: string, newTitle: string): Promise
       const oldRelPath = getDocumentPath({ id, title: oldTitle, parent_id: doc.parent_id }, allDocs);
       const newRelPath = getDocumentPath({ id, title: cleanNewTitle, parent_id: doc.parent_id }, allDocs);
       const isFolder = Boolean(doc.is_folder);
-      const ext = customType ? customType.extension : 'md';
-      const oldFile = isFolder ? oldRelPath : `${oldRelPath}.${ext}`;
-      const newFile = isFolder ? newRelPath : `${newRelPath}.${ext}`;
+      const oldFile = isFolder ? oldRelPath : getDocumentDiskPath(doc, oldRelPath);
+      const newFile = isFolder ? newRelPath : getDocumentDiskPath({ ...doc, title: cleanNewTitle }, newRelPath);
       await platform.renameMarkdownFile(oldTitle, cleanNewTitle, oldFile, newFile);
 
       const oldNorm = oldFile.replace(/\\/g, '/').toLowerCase();
@@ -436,9 +432,7 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
     try {
       const allDocs = await getCachedOrDbDocs();
       const relPath = getDocumentPath({ id: newId, title: newTitle, parent_id: doc.parent_id }, allDocs);
-      const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(newTitle);
-      const ext = customType ? customType.extension : 'md';
-      const targetRelPath = `${relPath}.${ext}`;
+      const targetRelPath = getDocumentDiskPath({ id: newId, title: newTitle, doc_type: docType, is_folder: doc.is_folder }, relPath);
       const md = jsonToMarkdown(doc.content_json, newTitle, doc.properties);
       await platform.saveMarkdownFile(newTitle, md, targetRelPath);
 
@@ -465,12 +459,12 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
   };
 }
 
-export async function deleteDocument(id: string): Promise<DocumentItem[]> {
-  return await moveToTrash(id);
+export async function deleteDocument(id: string, fallbackDocs?: DocumentItem[]): Promise<DocumentItem[]> {
+  return await moveToTrash(id, fallbackDocs);
 }
 
-export async function deleteDocuments(ids: string[]): Promise<DocumentItem[]> {
-  return await moveDocumentsToTrash(ids);
+export async function deleteDocuments(ids: string[], fallbackDocs?: DocumentItem[]): Promise<DocumentItem[]> {
+  return await moveDocumentsToTrash(ids, fallbackDocs);
 }
 
 /**
@@ -1462,6 +1456,44 @@ export function getDocumentPath(
   return getDocumentPathParts(doc, allDocs).join('/');
 }
 
+/**
+ * Computes the exact relative physical disk path for a document or folder,
+ * taking into account custom file extensions (.canvas, .sheet), media attachments (.png, .jpg, .pdf, .mp3),
+ * and standard Markdown notes (.md).
+ *
+ * @param item - Document or folder descriptor
+ * @param relPath - Optional precomputed hierarchical document path (folder/subfolder/title)
+ */
+export function getDocumentDiskPath(
+  item: { id?: string; title?: string; doc_type?: string; is_folder?: boolean | number } | null | undefined,
+  relPath?: string | null
+): string {
+  if (!item && !relPath) return 'Untitled.md';
+  const raw = (relPath || item?.title || 'Untitled').replace(/\\/g, '/').trim();
+  if (!raw) return 'Untitled.md';
+  if (item?.is_folder) return raw;
+
+  const docType = item?.doc_type;
+  const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(raw);
+  if (customType) {
+    if (raw.toLowerCase().endsWith(`.${customType.extension.toLowerCase()}`)) {
+      return raw;
+    }
+    return `${raw}.${customType.extension}`;
+  }
+
+  // Preserve media and already-extended files
+  if (isMediaFileName(raw) || /\.[a-zA-Z0-9_-]+$/i.test(raw)) {
+    return raw;
+  }
+
+  // Standard markdown note
+  if (raw.toLowerCase().endsWith('.md')) {
+    return raw;
+  }
+  return `${raw}.md`;
+}
+
 export interface BreadcrumbPart {
   id: string;
   title: string;
@@ -1961,9 +1993,8 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
         const docPathWithExt = `${docPath}.${ext}`;
 
         const existsOnDisk = diskPathSet.has(docPathWithExt) || diskPathSet.has(docPath);
-        const isTrashed = trashSet.has(docPath) || trashSet.has(docPathWithExt);
 
-        if (!existsOnDisk && !isTrashed) {
+        if (!existsOnDisk) {
           removedDocIds.push(doc.id);
           removedPaths.push(docPathWithExt);
         }

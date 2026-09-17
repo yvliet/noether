@@ -23,7 +23,7 @@ export interface WorkspaceEvents {
   /** Emitted synchronously after a document is saved to storage. */
   'document:saved': { id: string; title: string };
   /** Emitted synchronously after a document is deleted. */
-  'document:deleted': { id: string };
+  'document:deleted': { id: string; title?: string };
   /** Emitted synchronously when a document title is renamed. */
   'document:renamed': { id: string; oldTitle: string; newTitle: string };
 

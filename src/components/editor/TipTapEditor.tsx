@@ -2830,6 +2830,22 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       }
     });
 
+    const delSub = app.events.on('document:deleted', () => {
+      if (!editor || editor.isDestroyed) return;
+      try {
+        const tr = editor.state.tr.setMeta('forceRebuildDecorations', true);
+        editor.view.dispatch(tr);
+      } catch {}
+    });
+
+    const renameSub = app.events.on('document:renamed', () => {
+      if (!editor || editor.isDestroyed) return;
+      try {
+        const tr = editor.state.tr.setMeta('forceRebuildDecorations', true);
+        editor.view.dispatch(tr);
+      } catch {}
+    });
+
     const onCustomEvent = (e: any) => {
       handleInsertTable(e.detail);
     };
@@ -2841,6 +2857,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     window.addEventListener('noether:insert-table-command', onCustomEvent);
     return () => {
       d.dispose();
+      delSub.dispose();
+      renameSub.dispose();
       window.removeEventListener('noether:insert-table-command', onCustomEvent);
     };
   }, [editor, app]);

@@ -99,6 +99,30 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     };
   }, [rawCover, syncSrc, app]);
 
+  // Reactive eviction: when the underlying cover document is deleted, immediately clear display and show fallback
+  useEffect(() => {
+    if (!app?.events || !rawCover) return;
+    const sub = app.events.on('document:deleted', ({ id, title }: { id: string; title?: string }) => {
+      const clean = cleanCoverTarget(rawCover).toLowerCase();
+      const idMatch = Boolean(id && (id === rawCover || id.toLowerCase() === clean));
+      const titleMatch = Boolean(
+        title &&
+          (title === rawCover ||
+            title.toLowerCase() === clean ||
+            clean.endsWith(title.toLowerCase()) ||
+            title.toLowerCase().endsWith(clean))
+      );
+      if (idMatch || titleMatch) {
+        setAsyncSrc(null);
+        setHasLoadError(true);
+      }
+    });
+
+    return () => {
+      sub.dispose();
+    };
+  }, [app, rawCover]);
+
   // Handle setting a new cover
   const handleSelectCover = useCallback(
     async (newUrl: string) => {
@@ -201,27 +225,35 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
         >
           {/* Cover Image Element or Error Fallback */}
           {hasLoadError || (!activeSrc && !rawCover.startsWith('http')) ? (
-            <div className="w-full h-full rounded-2xl border border-amber-500/20 bg-[#161616] flex flex-col items-center justify-center gap-2 p-4 text-center">
-              <div className="w-8 h-8 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center">
-                <FileImageIcon size={18} />
+            <div
+              style={{
+                ...(fadeEffect
+                  ? {
+                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)',
+                      WebkitMaskImage:
+                        'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)',
+                    }
+                  : {}),
+              }}
+              className="w-full h-full rounded-2xl bg-[var(--noether-bg-card,#202020)] flex flex-col items-center justify-center gap-2.5 p-4 text-center select-none"
+            >
+              <div className="text-xs text-[var(--noether-text-muted)] font-normal">
+                Cover not found
               </div>
-              <div className="text-xs text-[#999]">
-                <span>Cover not found: <strong className="text-[#ccc]">{cleanCoverTarget(rawCover)}</strong></span>
-              </div>
-              <div className="flex items-center gap-2 mt-1 pointer-events-auto">
+              <div className="flex items-center gap-2 pointer-events-auto">
                 <button
                   type="button"
                   onClick={() => {
                     if (doc?.id) useCoverModalStore.getState().open(doc.id);
                   }}
-                  className="px-2.5 py-1 rounded bg-[#252525] hover:bg-[#303030] text-[11px] text-[#ddd] border border-[#383838] cursor-pointer"
+                  className="noether-btn text-xs !py-1 !px-2.5"
                 >
                   Change cover
                 </button>
                 <button
                   type="button"
                   onClick={handleRemoveCover}
-                  className="px-2.5 py-1 rounded bg-transparent hover:bg-rose-500/10 text-[11px] text-rose-400 cursor-pointer"
+                  className="noether-btn noether-btn-danger text-xs !py-1 !px-2.5"
                 >
                   Remove
                 </button>
@@ -231,6 +263,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
             <img
               src={activeSrc}
               alt="Note Cover"
+              referrerPolicy="no-referrer"
               draggable={false}
               loading="eager"
               decoding="async"
@@ -252,7 +285,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
               className="w-full h-full object-cover select-none pointer-events-none"
             />
           ) : (
-            <div className="w-full h-full rounded-2xl bg-[#141414]" />
+            <div className="w-full h-full rounded-2xl bg-[var(--noether-bg-main)]" />
           )}
 
           {/* Normal Hover Action Controls */}
@@ -294,8 +327,8 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
 
           {/* Interactive Reposition Mode Overlay */}
           {isRepositioning && (
-            <div className="absolute inset-0 bg-black/30 pointer-events-none flex flex-col items-center justify-between p-3 z-30">
-              <div className="bg-[#181818]/95 border border-emerald-500/40 text-emerald-300 text-[11px] font-medium px-3 py-1 rounded-full shadow-lg pointer-events-auto">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-xs pointer-events-none flex flex-col items-center justify-between p-3 z-30">
+              <div className="bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-strong)] text-[var(--noether-text-primary)] text-[11px] font-medium px-3.5 py-1 rounded-full shadow-lg pointer-events-auto">
                 ↕ Drag image up or down to reposition
               </div>
 
@@ -303,7 +336,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 <button
                   type="button"
                   onClick={handleSaveReposition}
-                  className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-[12px] font-medium shadow-md cursor-pointer flex items-center gap-1.5"
+                  className="noether-btn noether-btn-primary text-xs !py-1.5 !px-3.5 shadow-md flex items-center gap-1.5"
                 >
                   <CheckIcon size={13} />
                   <span>Save position</span>
@@ -312,7 +345,7 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
                 <button
                   type="button"
                   onClick={handleCancelReposition}
-                  className="px-3 py-1.5 rounded-md bg-[#242424] hover:bg-[#303030] border border-[#3a3a3a] text-[#bbb] hover:text-white text-[12px] font-medium shadow-md cursor-pointer flex items-center gap-1"
+                  className="noether-btn text-xs !py-1.5 !px-3.5 shadow-md flex items-center gap-1"
                 >
                   <Cancel01Icon size={13} />
                   <span>Cancel</span>

@@ -30,6 +30,32 @@ const imageElementCache = new Map<string, HTMLImageElement>();
 const decodedUrlSet = new Set<string>();
 
 /**
+ * Evicts preloaded cover image elements and decoded flags from cache.
+ * If called without arguments, flushes the entire cover cache.
+ */
+export function evictCoverCache(urlOrKey?: string): void {
+  if (!urlOrKey) {
+    imageElementCache.clear();
+    decodedUrlSet.clear();
+    return;
+  }
+  const trimmed = urlOrKey.trim();
+  imageElementCache.delete(trimmed);
+  decodedUrlSet.delete(trimmed);
+}
+
+if (typeof window !== 'undefined') {
+  import('@/core/app/NoetherApp')
+    .then(({ appInstance }) => {
+      appInstance?.events?.on('document:deleted', ({ id, title }) => {
+        evictCoverCache(id);
+        if (title) evictCoverCache(title);
+      });
+    })
+    .catch(() => {});
+}
+
+/**
  * Preload and decode a cover image in the background without blocking the UI thread.
  *
  * @param url - Image URL, data URI, or asset path to preload.
@@ -47,6 +73,7 @@ export function preloadCoverImage(url: string | null | undefined): void {
 
   try {
     const img = new Image();
+    img.referrerPolicy = 'no-referrer';
     img.src = trimmed;
 
     // Utilize the browser's native off-thread decoding pipeline
