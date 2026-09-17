@@ -650,8 +650,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     nodesRef.current = previousState.nodes;
     edgesRef.current = previousState.edges;
     updateUndoRedoState();
-    showToast('Undo', 'info');
-  }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState, showToast]);
+  }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState]);
 
   const handleRedo = useCallback(async () => {
     if (canvasReadOnlyRef.current || redoStackRef.current.length === 0) return;
@@ -691,8 +690,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     nodesRef.current = nextState.nodes;
     edgesRef.current = nextState.edges;
     updateUndoRedoState();
-    showToast('Redo', 'info');
-  }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState, showToast]);
+  }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState]);
 
   // Debounced save for card text edits with flush on unmount
   const textPendingNodesRef = useRef<Map<string, { timer: any; node: CanvasNode }>>(new Map());
@@ -1314,8 +1312,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     setNodes((prev) => [...prev, newNode]);
     setSelectedNodeId(newNode.id);
     setAutoEditingNodeId(newNode.id);
-    showToast('Added note card', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, recordSnapshot]);
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, effectiveBoardId, triggerDiskSync, recordSnapshot]);
 
   const handleAddDocCard = useCallback(async (docId: string) => {
     if (canvasReadOnlyRef.current) {
@@ -1353,8 +1350,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     await saveCanvasNode(newNode);
     triggerDiskSync(effectiveBoardId);
     setNodes((prev) => [...prev, newNode]);
-    showToast(isImg ? 'Added image to canvas' : 'Added document to canvas', 'success');
-  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, showToast, effectiveBoardId, triggerDiskSync, documents, recordSnapshot]);
+  }, [pan.x, pan.y, zoom, canvasSnapGrid, gridSize, effectiveBoardId, triggerDiskSync, documents, recordSnapshot]);
 
   const handleColorChange = useCallback(
     (id: string, color: string) => {
@@ -1486,18 +1482,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     });
     setSelectedNodeIds((prev) => prev.filter((i) => !idSet.has(i)));
     setSelectedNodeId((prev) => (prev && idSet.has(prev) ? null : prev));
-
-    if (isGroup) {
-      const containedCount = idsToDelete.length - 1;
-      if (containedCount > 0) {
-        showToast(`Deleted group and ${containedCount} ${containedCount === 1 ? 'item' : 'items'}`, 'info');
-      } else {
-        showToast('Deleted group', 'info');
-      }
-    } else {
-      showToast('Removed card', 'info');
-    }
-  }, [effectiveBoardId, getGroupContainedNodeIds, showToast, triggerDiskSync, recordSnapshot]);
+  }, [effectiveBoardId, getGroupContainedNodeIds, triggerDiskSync, recordSnapshot]);
 
   const handleUngroup = useCallback(async (groupId: string) => {
     if (canvasReadOnlyRef.current) {
@@ -1520,7 +1505,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     });
     setSelectedNodeIds((prev) => prev.filter((i) => i !== groupId));
     setSelectedNodeId((prev) => (prev === groupId ? null : prev));
-    showToast('Ungrouped items', 'info');
   }, [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]);
 
   const handleUngroupSelected = useCallback(async () => {
@@ -1555,8 +1539,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     });
     setSelectedNodeIds((prev) => prev.filter((i) => !groupSet.has(i)));
     setSelectedNodeId((prev) => (prev && groupSet.has(prev) ? null : prev));
-    showToast('Ungrouped items', 'info');
-  }, [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]);
+  }, [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]);
 
   const handleDeleteSelectedNodes = useCallback(async () => {
     if (canvasReadOnlyRef.current) {
@@ -1603,7 +1586,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     setSelectedNodeId(null);
     setSelectedEdgeId(null);
     selectedEdgeIdRef.current = null;
-    showToast(idSet.size > 1 ? `Removed ${idSet.size} items` : 'Removed card', 'info');
   }, [effectiveBoardId, getGroupContainedNodeIds, selectedNodeId, showToast, triggerDiskSync, recordSnapshot]);
 
   const handleBatchColorChange = useCallback(
@@ -1700,8 +1682,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     setSelectedNodeId(newGroup.id);
     setSelectedNodeIds([newGroup.id]);
     selectedNodeIdsRef.current = [newGroup.id];
-    showToast('Created group', 'success');
-  }, [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]);
+  }, [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]);
 
   const handleGroupLabelChange = useCallback(
     async (groupId: string, newLabel: string) => {
@@ -1751,9 +1732,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         await saveCanvasNode(item);
       }
       triggerDiskSync(effectiveBoardId);
-      showToast('Aligned selected cards', 'success');
     },
-    [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]
+    [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]
   );
 
   const handleAlignGroupItems = useCallback(
@@ -1764,7 +1744,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
       const containedIds = new Set(getGroupContainedNodeIds(groupNode, nodesRef.current));
       if (containedIds.size < 2) {
-        showToast('At least 2 items inside group needed to align', 'info');
         return;
       }
 
@@ -1797,7 +1776,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       });
 
       if (directNodes.length < 2) {
-        showToast('At least 2 items inside group needed to align', 'info');
         return;
       }
 
@@ -1862,7 +1840,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         await saveCanvasNode(item);
       }
       triggerDiskSync(effectiveBoardId);
-      showToast('Aligned group items', 'success');
     },
     [effectiveBoardId, getGroupContainedNodeIds, recordSnapshot, showToast, triggerDiskSync]
   );
@@ -1942,12 +1919,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setSelectedNodeIds(newIds);
       selectedNodeIdsRef.current = newIds;
       setSelectedNodeId(newIds[newIds.length - 1] || null);
-      showToast(
-        newNodes.length > 1 ? `Duplicated ${newNodes.length} cards` : 'Duplicated card',
-        'info'
-      );
     },
-    [effectiveBoardId, recordSnapshot, selectedNodeId, showToast, triggerDiskSync]
+    [effectiveBoardId, recordSnapshot, selectedNodeId, triggerDiskSync]
   );
 
   const handleCopyCards = useCallback(
@@ -1989,13 +1962,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       } catch {
         // Fallback to canvasClipboardRef
       }
-
-      showToast(
-        toCopyNodes.length > 1 ? `Copied ${toCopyNodes.length} cards` : 'Copied card',
-        'info'
-      );
     },
-    [selectedNodeId, showToast]
+    [selectedNodeId]
   );
 
   const handlePasteAtCoordinates = useCallback(
@@ -2029,54 +1997,40 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             };
           }
         } catch {
-          // Not JSON or not Noether canvas format
+          // Not a JSON canvas payload
         }
       }
 
-      // Fallback to internal ref if clipboard text was inaccessible or empty, but internal ref has cards
-      if (!canvasPayload && !clipboardText.trim() && canvasClipboardRef.current?.nodes?.length) {
+      if (!canvasPayload && canvasClipboardRef.current) {
         canvasPayload = canvasClipboardRef.current;
       }
 
       const step = gridSizeRef.current || 20;
 
-      // If we have canvas card(s) to paste:
+      // If we have valid canvas payload, duplicate and paste them offset to target coords
       if (canvasPayload && canvasPayload.nodes.length > 0) {
         recordSnapshot();
-        const sourceNodes = canvasPayload.nodes;
-        const sourceEdges = canvasPayload.edges || [];
+        const srcNodes = canvasPayload.nodes;
+        const srcEdges = canvasPayload.edges || [];
 
-        // Calculate bounding box of source nodes to center them around (canvasX, canvasY)
         let minX = Infinity;
         let minY = Infinity;
-        let maxX = -Infinity;
-        let maxY = -Infinity;
-
-        for (const n of sourceNodes) {
+        for (const n of srcNodes) {
           if (n.x < minX) minX = n.x;
           if (n.y < minY) minY = n.y;
-          if (n.x + n.width > maxX) maxX = n.x + n.width;
-          if (n.y + n.height > maxY) maxY = n.y + n.height;
         }
 
-        const groupCenterX = (minX + maxX) / 2;
-        const groupCenterY = (minY + maxY) / 2;
-        let deltaX = canvasX - groupCenterX;
-        let deltaY = canvasY - groupCenterY;
-
-        if (canvasSnapGridRef.current) {
-          deltaX = Math.round(deltaX / step) * step;
-          deltaY = Math.round(deltaY / step) * step;
-        }
+        const deltaX = canvasX - minX;
+        const deltaY = canvasY - minY;
 
         const newNodes: CanvasNode[] = [];
         const newIds: string[] = [];
-        const oldToNewIdMap = new Map<string, string>();
+        const oldToNewMap = new Map<string, string>();
 
-        for (let i = 0; i < sourceNodes.length; i++) {
-          const src = sourceNodes[i];
+        for (let i = 0; i < srcNodes.length; i++) {
+          const src = srcNodes[i];
           const newId = `node-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
-          oldToNewIdMap.set(src.id, newId);
+          oldToNewMap.set(src.id, newId);
 
           let finalX = src.x + deltaX;
           let finalY = src.y + deltaY;
@@ -2085,31 +2039,30 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             finalY = Math.round(finalY / step) * step;
           }
 
-          const clone: CanvasNode = {
+          const newNode: CanvasNode = {
             ...src,
             id: newId,
             board_id: effectiveBoardId,
             x: Math.round(finalX),
             y: Math.round(finalY),
           };
-          newNodes.push(clone);
+          newNodes.push(newNode);
           newIds.push(newId);
-          await saveCanvasNode(clone);
+          await saveCanvasNode(newNode);
         }
 
-        // Reconnect any internal edges
         const newEdges: CanvasEdge[] = [];
-        for (const edge of sourceEdges) {
-          if (oldToNewIdMap.has(edge.from_node_id) && oldToNewIdMap.has(edge.to_node_id)) {
-            const clonedEdge: CanvasEdge = {
+        for (const edge of srcEdges) {
+          if (oldToNewMap.has(edge.from_node_id) && oldToNewMap.has(edge.to_node_id)) {
+            const newEdge: CanvasEdge = {
               ...edge,
               id: `edge-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
               board_id: effectiveBoardId,
-              from_node_id: oldToNewIdMap.get(edge.from_node_id)!,
-              to_node_id: oldToNewIdMap.get(edge.to_node_id)!,
+              from_node_id: oldToNewMap.get(edge.from_node_id)!,
+              to_node_id: oldToNewMap.get(edge.to_node_id)!,
             };
-            newEdges.push(clonedEdge);
-            await saveCanvasEdge(clonedEdge);
+            newEdges.push(newEdge);
+            await saveCanvasEdge(newEdge);
           }
         }
 
@@ -2129,16 +2082,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         setSelectedNodeIds(newIds);
         selectedNodeIdsRef.current = newIds;
         setSelectedNodeId(newIds[newIds.length - 1] || null);
-        showToast(
-          newNodes.length > 1 ? `Pasted ${newNodes.length} cards` : 'Pasted card',
-          'success'
-        );
         return;
       }
 
       // Otherwise, handle regular text/url from clipboard
       if (!clipboardText.trim()) {
-        showToast('Clipboard is empty', 'info');
         return;
       }
 
@@ -2173,7 +2121,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         setNodes((prev) => [...prev, newNode]);
         nodesRef.current = [...nodesRef.current, newNode];
         selectSingleNode(newNode.id);
-        showToast('Pasted web page link', 'success');
       } else {
         const cardWidth = 260;
         const cardHeight = 4 * step;
@@ -2199,7 +2146,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         setNodes((prev) => [...prev, newNode]);
         nodesRef.current = [...nodesRef.current, newNode];
         selectSingleNode(newNode.id);
-        showToast('Pasted note card', 'success');
       }
     },
     [effectiveBoardId, recordSnapshot, selectSingleNode, showToast, triggerDiskSync]
@@ -2303,9 +2249,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       edgesRef.current = [...edgesRef.current, newEdge];
       await saveCanvasEdge(newEdge);
       triggerDiskSync(effectiveBoardId);
-      showToast('Connected cards', 'info');
     },
-    [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+    [effectiveBoardId, recordSnapshot, triggerDiskSync]
   );
 
   const handleDeleteEdge = useCallback(
@@ -2326,9 +2271,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
         setEditingLabelDraft('');
       }
       triggerDiskSync(effectiveBoardId);
-      showToast('Removed connection', 'info');
     },
-    [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+    [effectiveBoardId, recordSnapshot, triggerDiskSync]
   );
 
   const handleDeleteEdgeRef = useRef(handleDeleteEdge);
@@ -2510,9 +2454,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       }
 
       triggerDiskSync(effectiveBoardId);
-      showToast('Retargeted connection', 'info');
     },
-    [effectiveBoardId, nodeMap, recordSnapshot, showToast, triggerDiskSync]
+    [effectiveBoardId, nodeMap, recordSnapshot, triggerDiskSync]
   );
 
   const clearTextSelection = useCallback(() => {
@@ -2755,7 +2698,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           await saveCanvasEdge(edgeToPersist);
         }
         triggerDiskSync(effectiveBoardId);
-        showToast('Added card', 'info');
       };
 
       const handleAddNote = () => {
@@ -4630,11 +4572,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           setSelectedNodeIds(cloneIds);
           setSelectedNodeId(newDragId);
           multiDragInitialPositionsRef.current = newPosMap;
-
-          showToast(
-            clones.length > 1 ? `Duplicated ${clones.length} cards` : 'Duplicated card',
-            'info'
-          );
         }
       }
     }
@@ -5736,9 +5673,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setAutoEditingNodeId(newNode.id);
       await saveCanvasNode(newNode);
       triggerDiskSync(effectiveBoardId);
-      showToast('Added card', 'info');
     },
-    [effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+    [effectiveBoardId, recordSnapshot, triggerDiskSync]
   );
 
   handleAltCardShortcutRef.current = (type: 'card' | 'note' | 'media') => {
@@ -6112,10 +6048,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           saveCanvasNode(node);
         }
         triggerDiskSync(effectiveBoardId);
-        showToast(
-          allPlacedNodes.length === 1 ? 'Added note to canvas' : `Added ${allPlacedNodes.length} notes to canvas`,
-          'success'
-        );
       }
     };
 
@@ -6126,7 +6058,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       unsubEnd.dispose();
       window.removeEventListener('noether:custom-drop', handleCustomDrop);
     };
-  }, [app.events, documents, effectiveBoardId, showToast, triggerDiskSync, recordSnapshot, computeGhostPlacement]);
+  }, [app.events, documents, effectiveBoardId, triggerDiskSync, recordSnapshot, computeGhostPlacement]);
 
   const handleAddDocumentCard = useCallback(
     async (docId: string, x: number, y: number): Promise<CanvasNode | null> => {
@@ -6165,7 +6097,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       setSelectedNodeId(newNode.id);
       await saveCanvasNode(newNode);
       triggerDiskSync(effectiveBoardId);
-      showToast(`Added ${targetDoc.title || 'document'} to canvas`, 'success');
       return newNode;
     },
     [documents, effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
@@ -6189,9 +6120,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       triggerDiskSync(effectiveBoardId);
       setNodes((prev) => prev.map((n) => (n.id === nodeId ? updatedNode : n)));
       nodesRef.current = nodesRef.current.map((n) => (n.id === nodeId ? updatedNode : n));
-      showToast(`Swapped note to "${newDoc?.title || 'selected document'}"`, 'success');
     },
-    [documents, effectiveBoardId, recordSnapshot, showToast, triggerDiskSync]
+    [documents, effectiveBoardId, recordSnapshot, triggerDiskSync]
   );
 
   const handleConvertCardToFile = useCallback(
@@ -6295,7 +6225,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           setNodes((prev) => [...prev, newNode]);
           nodesRef.current = [...nodesRef.current, newNode];
           selectSingleNode(newNode.id);
-          showToast('Added web page to canvas', 'success');
         },
       });
     },
@@ -6623,8 +6552,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           isBookmarked: Boolean(doc?.is_bookmarked),
           onToggleBookmark: async () => {
             if (!doc) return;
-            const isNow = await app.vault.toggleBookmark(doc.id);
-            showToast(isNow ? `Bookmarked "${doc.title}"` : `Removed bookmark for "${doc.title}"`, 'info');
+            await app.vault.toggleBookmark(doc.id);
           },
           onCopyRelativePath: () => {
             if (!doc) return;
@@ -6698,7 +6626,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 await saveCanvasNode(updatedNode);
                 triggerDiskSync(effectiveBoardId);
                 setNodes((prev) => prev.map((n) => (n.id === node.id ? updatedNode : n)));
-                showToast('Updated web link', 'success');
               },
             });
           },
@@ -8082,7 +8009,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             await saveCanvasEdge(edgeToPersist);
           }
           triggerDiskSync(effectiveBoardId);
-          showToast(`Added ${targetDoc.title || 'document'} to canvas`, 'success');
         }}
       />
     </div>

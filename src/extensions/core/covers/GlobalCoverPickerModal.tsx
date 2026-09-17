@@ -44,7 +44,6 @@ export const GlobalCoverPickerModal: React.FC = () => {
     delete nextProps.cover;
     delete nextProps.banner;
     await app.vault.setDocumentProperties(targetDocId, nextProps);
-    app.workspace.showToast('Cover image updated', 'success');
   };
 
   const handleRemove = async () => {
@@ -57,7 +56,6 @@ export const GlobalCoverPickerModal: React.FC = () => {
     delete nextProps.cover_y;
     delete nextProps.banner_y;
     await app.vault.setDocumentProperties(targetDocId, nextProps);
-    app.workspace.showToast('Cover image removed', 'info');
   };
 
   if (!isOpen || !targetDocId) return null;

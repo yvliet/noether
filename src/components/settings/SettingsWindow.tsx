@@ -897,10 +897,8 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                                 onChange={async (val) => {
                                   if (val) {
                                     await app.extensions.enableExtension(extId);
-                                    showToast(`Enabled ${tabName}`, 'success');
                                   } else {
                                     await app.extensions.disableExtension(extId);
-                                    showToast(`Disabled ${tabName}`, 'info');
                                   }
                                 }}
                               />
@@ -917,7 +915,6 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                                 type="button"
                                 onClick={async () => {
                                   await app.extensions.enableExtension(extId);
-                                  showToast(`Enabled ${tabName}`, 'success');
                                 }}
                                 className="noether-btn noether-btn-primary"
                               >

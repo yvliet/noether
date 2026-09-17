@@ -229,15 +229,15 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
         </div>
 
         {/* Right: Action Toolbar */}
-        <div className="flex items-center gap-1 text-[#777]">
+        <div className="flex items-center gap-0.5 text-[#777]">
           <button
             onClick={() => setShowMoreContext(!showMoreContext)}
             title={showMoreContext ? 'Collapse results' : 'Show more context'}
-            className={`p-1.5 rounded hover:bg-[#222] transition-none cursor-pointer ${
-              showMoreContext ? 'text-white' : 'text-[#777] hover:text-[#dcddde]'
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-none cursor-pointer ${
+              showMoreContext ? 'text-white bg-[#222]' : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
             }`}
           >
-            <LeftToRightListBulletIcon size={14} />
+            <LeftToRightListBulletIcon size={16} />
           </button>
 
           <CollapseAllButton
@@ -262,11 +262,11 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
               if (isSearchOpen) setSearchQuery('');
             }}
             title={isSearchOpen ? 'Close search' : 'Show search filter'}
-            className={`p-1.5 rounded hover:bg-[#222] transition-none cursor-pointer ${
-              isSearchOpen ? 'text-white bg-[#222]' : 'text-[#777] hover:text-[#dcddde]'
+            className={`w-7 h-7 rounded-md flex items-center justify-center transition-none cursor-pointer ${
+              isSearchOpen ? 'text-white bg-[#222]' : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
             }`}
           >
-            <Search01Icon size={14} />
+            <Search01Icon size={16} />
           </button>
         </div>
       </div>

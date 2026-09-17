@@ -110,7 +110,6 @@ export const HistorySettingsTab: React.FC = () => {
             checked={autoSnapshot}
             onChange={(val) => {
               setAutoSnapshot(val);
-              showToast(val ? 'Automatic snapshots enabled' : 'Automatic snapshots disabled', 'info');
             }}
           />
         </SettingItem>

@@ -12,7 +12,6 @@ export const MarketplaceSettingsTab: React.FC = () => {
       viewType: 'marketplace',
       icon: <Store01Icon size={14} />,
     });
-    showToast('Opened Marketplace', 'info');
   };
 
   const handleOpenExtensionsFolder = () => {

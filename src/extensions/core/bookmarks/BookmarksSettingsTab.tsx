@@ -34,7 +34,6 @@ export const BookmarksSettingsTab: React.FC = () => {
     if (!isLeftSidebarOpen) {
       (app.workspace as any).toggleLeftSidebar?.();
     }
-    showToast('Opened Bookmarks in left sidebar', 'info');
   };
 
   return (

@@ -155,7 +155,7 @@ export function SortDropdown<T extends string = string>({
           onClick={handleToggle}
           title={computedTitle}
           aria-label={computedTitle}
-          className={`p-1.5 rounded select-none ${
+          className={`w-7 h-7 rounded-md flex items-center justify-center select-none ${
             disabled
               ? 'opacity-35 text-[var(--noether-text-muted)] cursor-not-allowed pointer-events-none'
               : isOpen
@@ -163,7 +163,7 @@ export function SortDropdown<T extends string = string>({
               : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'
           }`}
         >
-          <Sorting01Icon size={14} />
+          <Sorting01Icon size={16} />
         </button>
       )}
 

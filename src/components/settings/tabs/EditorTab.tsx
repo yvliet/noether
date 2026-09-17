@@ -420,7 +420,7 @@ export const EditorTab: React.FC = React.memo(() => {
             <FieldResetButton
               isModified={autoPairMath !== DEFAULT_SETTINGS.autoPairMath}
               onReset={() => setAutoPairMath(DEFAULT_SETTINGS.autoPairMath)}
-              title="Restore default (Disabled)"
+              title="Restore default (Enabled)"
             />
           }
         >

@@ -214,7 +214,6 @@ export function registerNativeCommands(app: NoetherApp): void {
         const curMode = appInstance.settings.defaultTabMode;
         const next = curMode === 'Reading view' ? 'Editing view' : 'Reading view';
         appInstance.settings.setDefaultTabMode(next);
-        appInstance.workspace.showToast(`Switched to ${next}`, 'info');
       },
     },
 
@@ -244,7 +243,6 @@ export function registerNativeCommands(app: NoetherApp): void {
         if (appInstance.settings.defaultTabMode === 'Reading view') {
           appInstance.settings.setDefaultTabMode('Editing view');
         }
-        appInstance.workspace.showToast(`Switched to ${next}`, 'info');
       },
     },
 
@@ -487,7 +485,6 @@ export function registerNativeCommands(app: NoetherApp): void {
         const activeDoc = appInstance.vault.activeDocument;
         if (!activeDoc) return;
         appInstance.workspace.revealInFileTree(activeDoc.id);
-        appInstance.workspace.showToast(`Revealed "${activeDoc.title}" in file tree`, 'info');
       },
     },
 
@@ -642,7 +639,22 @@ export function registerNativeCommands(app: NoetherApp): void {
       hotkey: 'Ctrl+Alt+0',
       isEnabled: isMarkdownEditorActive,
       action: (appInstance) => {
-        appInstance.editor.getActiveEditor()?.chain().focus().setParagraph().run();
+        const activeEditor = appInstance.editor.getActiveEditor();
+        if (activeEditor) {
+          const { state } = activeEditor;
+          const $from = state.selection.$from;
+          const node = $from.parent;
+          if (node.type.name === 'heading') {
+            const text = node.textContent;
+            const match = text.match(/^(#{1,6})[ \t]+/);
+            if (match) {
+              const start = $from.start();
+              activeEditor.chain().focus().deleteRange({ from: start, to: start + match[0].length }).setParagraph().run();
+              return;
+            }
+          }
+          activeEditor.chain().focus().setParagraph().run();
+        }
       },
     },
     {

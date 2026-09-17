@@ -207,7 +207,7 @@ export const DEFAULT_SETTINGS = {
   indentationGuides: true,
   accentListPrefixes: false,
   autoPairing: true,
-  autoPairMath: false,
+  autoPairMath: true,
   tabSize: '5' as TabSize,
   showExternalLinkIcon: false,
   spellcheck: true,

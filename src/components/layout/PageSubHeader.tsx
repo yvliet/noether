@@ -211,14 +211,8 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
       onToggleBookmark();
     } else if (document) {
       await toggleBookmark(document.id);
-      showToast(
-        document.is_bookmarked
-          ? `Removed bookmark: "${document.title || 'Untitled'}"`
-          : `Bookmarked: "${document.title || 'Untitled'}"`,
-        'info'
-      );
     }
-  }, [onToggleBookmark, document, toggleBookmark, showToast]);
+  }, [onToggleBookmark, document, toggleBookmark]);
 
   const isLocked = useMemo(() => isDocumentLocked(document), [document]);
   const effectiveReadingMode = isReadingMode || isLocked;

@@ -23,9 +23,6 @@ export const TasksView: React.FC = React.memo(() => {
   const openTab = useCallback((docId: string, title?: string, opts?: any) => {
     app.workspace.openTab(docId, title, opts);
   }, [app]);
-  const showToast = useCallback((msg: string, type?: any) => {
-    app.workspace.showToast(msg, type);
-  }, [app]);
   const refreshGlobalTasks = useCallback(() => {
     return app.vault.refreshGlobalTasks();
   }, [app]);
@@ -86,8 +83,7 @@ export const TasksView: React.FC = React.memo(() => {
 
   const handleToggle = useCallback(async (docId: string, taskText: string, currentCompleted: boolean) => {
     await toggleGlobalTask(docId, taskText, !currentCompleted);
-    showToast(currentCompleted ? 'Marked task as pending' : 'Completed task! 🎉', 'success');
-  }, [toggleGlobalTask, showToast]);
+  }, [toggleGlobalTask]);
 
   const handleOpenDoc = useCallback((docId: string) => {
     const doc = documents.find((d) => d.id === docId);

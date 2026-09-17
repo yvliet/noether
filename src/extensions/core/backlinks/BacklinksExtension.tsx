@@ -108,14 +108,10 @@ export class BacklinksExtension extends Extension {
       section: 'Backlinks',
       icon: <LinkSquare02Icon size={16} />,
       aliases: ['toggle backlinks in document', 'toggle backlinks', 'backlinks', 'show backlinks', 'hide backlinks'],
-      action: (app) => {
+      action: () => {
         const { showBacklinksInDoc, setShowBacklinksInDoc } = useBacklinksSettings.getState();
         const next = !showBacklinksInDoc;
         setShowBacklinksInDoc(next);
-        app.workspace.showToast(
-          next ? 'Backlinks in document enabled' : 'Backlinks in document disabled',
-          'info'
-        );
       },
     });
 
@@ -142,14 +138,10 @@ export class BacklinksExtension extends Extension {
       group: 'primary',
       order: 10,
       isChecked: () => useBacklinksSettings.getState().showBacklinksInDoc,
-      onClick: (app) => {
+      onClick: () => {
         const { showBacklinksInDoc, setShowBacklinksInDoc } = useBacklinksSettings.getState();
         const next = !showBacklinksInDoc;
         setShowBacklinksInDoc(next);
-        app.workspace.showToast(
-          next ? 'Backlinks in document enabled' : 'Backlinks in document disabled',
-          'info'
-        );
       },
     });
 
@@ -223,23 +215,6 @@ export class BacklinksExtension extends Extension {
 
         // Perform the insertion at exact targetPos and focus editor
         activeEditor.chain().focus().insertContentAt(targetPos, insertString).run();
-
-        const anyMedia = droppedList.some((d) => isMediaFileName(d.title));
-        const allMedia = droppedList.every((d) => isMediaFileName(d.title));
-        if (allMedia) {
-          this.app.workspace.showToast(
-            droppedList.length > 1 ? `Embedded ${droppedList.length} media files` : `Embedded “${droppedList[0].title}”`,
-            'success'
-          );
-        } else if (anyMedia) {
-          this.app.workspace.showToast(`Inserted ${droppedList.length} links & media embeds`, 'success');
-        } else {
-          const firstTitle = droppedList[0].title.replace(/\.md$/, '');
-          this.app.workspace.showToast(
-            droppedList.length > 1 ? `Inserted ${droppedList.length} links` : `Linked “${firstTitle}”`,
-            'success'
-          );
-        }
       })
     );
 

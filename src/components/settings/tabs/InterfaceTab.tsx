@@ -106,7 +106,6 @@ export const InterfaceTab: React.FC = React.memo(() => {
           title="Action rail configuration"
           description="Configure what commands appear in the action rail."
           keywords={['action rail', 'commands', 'configure']}
-          onClick={() => showToast('Action Rail configuration', 'info')}
         >
           <ChevronRightIcon size={14} className="text-[#777]" />
         </SettingRow>

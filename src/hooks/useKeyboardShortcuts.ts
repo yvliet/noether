@@ -346,7 +346,6 @@ export function useKeyboardShortcuts() {
         if (ss.defaultTabMode === 'Reading view') {
           ss.setDefaultTabMode('Editing view');
         }
-        ws.showToast(`Switched to ${next}`, 'info');
         return;
       }
 
@@ -356,7 +355,6 @@ export function useKeyboardShortcuts() {
         const curMode = ss.defaultTabMode;
         const next = curMode === 'Reading view' ? 'Editing view' : 'Reading view';
         ss.setDefaultTabMode(next);
-        ws.showToast(`Switched to ${next}`, 'info');
         return;
       }
 

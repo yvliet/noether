@@ -175,7 +175,6 @@ export const BookmarksView: React.FC = React.memo(() => {
         icon: <Cancel01Icon size={14} className="text-red-400" />,
         onClick: () => {
           toggleBookmark(doc.id);
-          showToast(`Removed bookmark for "${doc.title}"`, 'info');
         },
       },
     ];
@@ -217,7 +216,6 @@ export const BookmarksView: React.FC = React.memo(() => {
               onContextMenu={(e) => handleBookmarkContextMenu(e, doc)}
               onUnbookmark={() => {
                 toggleBookmark(doc.id);
-                showToast(`Removed bookmark for "${doc.title}"`, 'info');
               }}
             />
           );

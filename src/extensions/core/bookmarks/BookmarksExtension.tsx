@@ -55,11 +55,7 @@ export class BookmarksExtension extends Extension {
       action: async (app) => {
         const activeDoc = app.vault.activeDocument;
         if (activeDoc) {
-          const isNowBookmarked = await app.vault.toggleBookmark(activeDoc.id);
-          app.workspace.showToast(
-            isNowBookmarked ? `Bookmarked "${activeDoc.title}"` : `Removed bookmark for "${activeDoc.title}"`,
-            'info'
-          );
+          await app.vault.toggleBookmark(activeDoc.id);
         }
       },
     });
@@ -109,11 +105,7 @@ export class BookmarksExtension extends Extension {
           : '',
       onClick: async (ctx) => {
         if (ctx.document) {
-          const isNowBookmarked = await ctx.app.vault.toggleBookmark(ctx.document.id);
-          ctx.app.workspace.showToast(
-            isNowBookmarked ? `Bookmarked "${ctx.document.title}"` : `Removed bookmark for "${ctx.document.title}"`,
-            'info'
-          );
+          await ctx.app.vault.toggleBookmark(ctx.document.id);
         }
       },
       isVisible: (ctx) => Boolean(ctx.document),
@@ -137,13 +129,8 @@ export class BookmarksExtension extends Extension {
           for (const id of ctx.selectedDocIds) {
             await ctx.app.vault.toggleBookmark(id);
           }
-          ctx.app.workspace.showToast(`Updated bookmarks for ${ctx.selectedDocIds.length} items`, 'info');
         } else {
-          const isNow = await ctx.app.vault.toggleBookmark(ctx.item.id);
-          ctx.app.workspace.showToast(
-            isNow ? `Bookmarked "${ctx.item.title}"` : `Removed bookmark for "${ctx.item.title}"`,
-            'info'
-          );
+          await ctx.app.vault.toggleBookmark(ctx.item.id);
         }
       },
     });

@@ -52,7 +52,7 @@ export const CollapseAllButton: React.FC<CollapseAllButtonProps> = React.memo(({
   collapsedTitle = 'Expand all',
   expandedTitle = 'Collapse all',
   disabledTitle = 'Nothing to collapse or expand',
-  size = 14,
+  size = 16,
   className = '',
 }) => {
   const computedTitle = disabled
@@ -66,7 +66,7 @@ export const CollapseAllButton: React.FC<CollapseAllButtonProps> = React.memo(({
       onClick={disabled ? undefined : onToggle}
       title={computedTitle}
       aria-label={computedTitle}
-      className={`p-1.5 rounded select-none ${
+      className={`w-7 h-7 rounded-md flex items-center justify-center select-none ${
         disabled
           ? 'opacity-35 text-[var(--noether-text-muted)] cursor-not-allowed pointer-events-none'
           : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer'

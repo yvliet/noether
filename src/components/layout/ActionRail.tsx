@@ -57,7 +57,7 @@ export const ActionRail: React.FC = React.memo(() => {
       className="noether-action-rail noether-ribbon no-drag relative w-11 flex flex-col items-center justify-between pt-[41px] pb-2 select-none z-20 shrink-0 border-r border-[var(--noether-border-base)]"
     >
       {/* Top Action Icons */}
-      <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full">
+      <div data-no-drag="true" className="no-drag flex flex-col items-center gap-1 w-full pt-2">
         {/* Command Palette Button (Topmost) */}
         <button
           data-action-rail-id="core:command-palette"

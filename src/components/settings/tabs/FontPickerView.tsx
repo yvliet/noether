@@ -65,7 +65,6 @@ export const FontPickerView: React.FC<FontPickerViewProps> = React.memo(({ mode,
   const setTextFont = useSettingsStore((s) => s.setTextFont);
   const monospaceFont = useSettingsStore((s) => s.monospaceFont);
   const setMonospaceFont = useSettingsStore((s) => s.setMonospaceFont);
-  const showToast = useWorkspaceStore((s) => s.showToast);
 
   const [fontSearchQuery, setFontSearchQuery] = useState('');
 
@@ -84,8 +83,7 @@ export const FontPickerView: React.FC<FontPickerViewProps> = React.memo(({ mode,
       setMonospaceFont(fontName);
     }
     onClose();
-    showToast(`Applied font: ${fontName}`, 'success');
-  }, [mode, setInterfaceFont, setTextFont, setMonospaceFont, onClose, showToast]);
+  }, [mode, setInterfaceFont, setTextFont, setMonospaceFont, onClose]);
 
   return (
     <div className="flex flex-col gap-4">

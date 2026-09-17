@@ -1,10 +1,10 @@
-/**
+﻿/**
  * @module PropertiesExtension
  * @description
  * Built-in core extension managing structured YAML frontmatter note properties.
  * Registers the properties sidebar tab, in-document header editor, and doc menu action.
  *
- * Uses native NoetherApp APIs (app.workspace.setActiveSidebarTab, app.workspace.showToast).
+ * Uses native NoetherApp APIs (app.workspace.setActiveSidebarTab).
  *
  * @since 0.1.0
  */
@@ -73,7 +73,6 @@ export class PropertiesExtension extends Extension {
       order: 30,
       onClick: (app) => {
         app.workspace.setActiveSidebarTab('right', 'properties');
-        app.workspace.showToast('Opened properties panel', 'info');
       },
     });
 

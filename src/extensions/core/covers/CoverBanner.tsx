@@ -67,7 +67,6 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
       delete nextProps.cover;
       delete nextProps.banner;
       await app.vault.setDocumentProperties(doc.id, nextProps);
-      app.workspace.showToast('Cover image updated', 'success');
     },
     [doc?.id, currentProperties, app]
   );
@@ -83,7 +82,6 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     delete nextProps.cover_y;
     delete nextProps.banner_y;
     await app.vault.setDocumentProperties(doc.id, nextProps);
-    app.workspace.showToast('Cover image removed', 'info');
   }, [doc?.id, currentProperties, app]);
 
   // Start repositioning
@@ -100,7 +98,6 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     delete nextProps.banner_y;
     await app.vault.setDocumentProperties(doc.id, nextProps);
     setIsRepositioning(false);
-    app.workspace.showToast('Cover position saved', 'success');
   }, [doc?.id, currentProperties, tempOffsetY, app]);
 
   // Cancel repositioning

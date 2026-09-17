@@ -293,10 +293,9 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenF
     }
   }, [showToast]);
 
-  const handleSelectTheme = useCallback((themeId: string, name: string) => {
+  const handleSelectTheme = useCallback((themeId: string, _name: string) => {
     setActiveTheme(themeId);
-    showToast(`Applied "${name}" theme`, 'info');
-  }, [setActiveTheme, showToast]);
+  }, [setActiveTheme]);
 
   const handleDeleteTheme = useCallback((themeId: string, name: string) => {
     openConfirmDialog({
@@ -361,7 +360,6 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenF
                   type="button"
                   onClick={() => {
                     setThemeMode(opt.id as ThemeMode);
-                    showToast(`Switched lighting mode to ${opt.label}`, 'info');
                   }}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-none ${
                     isSelected
@@ -916,7 +914,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenF
           keywords={['app icon', 'icon', 'logo', 'custom']}
         >
           <button
-            onClick={() => showToast('Custom app icon feature active', 'info')}
+            onClick={() => {}}
             className="noether-btn"
           >
             Choose
