@@ -492,6 +492,10 @@ export class NoetherApp {
       createNewCanvas: async (): Promise<DocumentItem | undefined> => {
         return storeRefs.document?.getState()?.createNewCanvas();
       },
+      duplicateDocument: async (docId: string, targetParentId?: string | null): Promise<DocumentItem | undefined> => {
+        const copy = await storeRefs.document?.getState()?.duplicateNote(docId, targetParentId);
+        return copy || undefined;
+      },
       openDocument: async (id: string): Promise<void> => {
         await storeRefs.document?.getState()?.setActiveDocumentById(id);
       },

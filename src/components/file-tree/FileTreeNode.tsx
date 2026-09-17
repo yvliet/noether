@@ -9,15 +9,22 @@ import {
   File01Icon,
   Folder01Icon,
   SplitRightIcon,
+  SplitDownIcon,
   Copy01Icon,
+  ScissorIcon,
+  ClipboardPasteIcon,
+  Link01Icon,
   ExternalLinkIcon,
   FolderOpenIcon,
   Download01Icon,
   MoveFileIcon,
+  ArrowShrink02Icon,
+  ArrowExpand01Icon,
 } from '@/components/common/Icons';
 import { DocumentItem } from '@/types';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
+import { useFileClipboardStore } from '@/store/fileClipboardStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
 import { getUniqueTitleForMove, getDocumentPath, isDescendant } from '@/lib/db/documents';
@@ -87,6 +94,9 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   const selectSingleDoc = useDocumentStore((s) => s.selectSingleDoc);
   const toggleDocSelection = useDocumentStore((s) => s.toggleDocSelection);
   const selectDocRange = useDocumentStore((s) => s.selectDocRange);
+  const duplicateNote = useDocumentStore((s) => s.duplicateNote);
+  const duplicateDocuments = useDocumentStore((s) => s.duplicateDocuments);
+  const isCut = useFileClipboardStore((s) => s.isCut(item.id));
   const showBrokenEmbedIndicators = useSettingsStore((s) => s.showBrokenEmbedIndicators);
   const brokenEmbedCounts = useDocumentStore((s) => (isFolder && showBrokenEmbedIndicators ? s.brokenEmbedCounts : null));
   const fileBrokenCount = useDocumentStore((s) => (!isFolder && showBrokenEmbedIndicators ? (s.brokenEmbedCounts[item.id] || 0) : 0));
@@ -591,6 +601,39 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     },
   });
 
+  // HTML5 External File Drag & Drop Handlers
+  const [isExternalDragOver, setIsExternalDragOver] = useState(false);
+
+  const handleRowDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'copy';
+      setIsExternalDragOver(true);
+    }
+  }, []);
+
+  const handleRowDragLeave = useCallback((e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsExternalDragOver(false);
+  }, []);
+
+  const handleRowDrop = useCallback(
+    async (e: React.DragEvent) => {
+      if (e.dataTransfer.types.includes('Files')) {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsExternalDragOver(false);
+        const files = e.dataTransfer.files;
+        if (files && files.length > 0) {
+          const targetParentId = isFolder ? item.id : (item.parent_id || null);
+          await useDocumentStore.getState().importExternalFiles(files, targetParentId);
+        }
+      }
+    },
+    [isFolder, item.id, item.parent_id]
+  );
+
   // Action Buttons
   const actions: TreeNodeAction[] = useMemo(() => {
     if (isFolder) {
@@ -679,9 +722,37 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       }));
 
       if (isMulti) {
+        const clipboardMode = useFileClipboardStore.getState().mode;
+        const clipboardCount = useFileClipboardStore.getState().itemIds.length;
+        const canPaste = Boolean(clipboardMode && clipboardCount > 0);
+
         const items: ContextMenuItem[] = [
           ...customMenuItems,
           ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }] : []),
+          {
+            id: 'multi-cut',
+            title: `Cut ${currentSelectedIds.length} items`,
+            icon: <ScissorIcon size={14} />,
+            shortcut: 'Ctrl+X',
+            onClick: () => useFileClipboardStore.getState().cut(currentSelectedIds),
+          },
+          {
+            id: 'multi-copy',
+            title: `Copy ${currentSelectedIds.length} items`,
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+C',
+            onClick: () => useFileClipboardStore.getState().copy(currentSelectedIds),
+          },
+          {
+            id: 'multi-duplicate',
+            title: `Duplicate ${currentSelectedIds.length} items`,
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+D',
+            onClick: async () => {
+              await duplicateDocuments(currentSelectedIds);
+            },
+          },
+          { type: 'separator' },
           {
             id: 'multi-move',
             title: `Move ${currentSelectedIds.length} items to...`,
@@ -692,6 +763,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
                 title: `Move ${currentSelectedIds.length} items to folder:`,
                 placeholder: 'Folder path or name (leave empty for root)',
                 confirmText: 'Move',
+                allowEmpty: true,
                 onConfirm: async (folderPath) => {
                   let targetParentId: string | null = null;
                   if (folderPath.trim()) {
@@ -708,6 +780,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             id: 'multi-delete',
             title: `Move ${currentSelectedIds.length} items to trash`,
             icon: <Delete02Icon size={14} />,
+            shortcut: 'Del',
             isDanger: true,
             onClick: () => {
               openConfirmDialog({
@@ -729,6 +802,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       }
 
       if (isFolder) {
+        const clipboardMode = useFileClipboardStore.getState().mode;
+        const clipboardCount = useFileClipboardStore.getState().itemIds.length;
+        const canPaste = Boolean((clipboardMode && clipboardCount > 0) || platform.isDesktop());
+
         const items: ContextMenuItem[] = [
           {
             id: 'new-note',
@@ -753,10 +830,82 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           },
           { type: 'separator' },
           {
+            id: 'cut-folder',
+            title: 'Cut folder',
+            icon: <ScissorIcon size={14} />,
+            shortcut: 'Ctrl+X',
+            onClick: () => useFileClipboardStore.getState().cut([item.id]),
+          },
+          {
+            id: 'copy-folder',
+            title: 'Copy folder',
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+C',
+            onClick: () => useFileClipboardStore.getState().copy([item.id]),
+          },
+          {
+            id: 'paste',
+            title: 'Paste',
+            icon: <ClipboardPasteIcon size={14} />,
+            shortcut: 'Ctrl+V',
+            disabled: !canPaste,
+            onClick: async () => {
+              setIsOpen(true);
+              const { mode, itemIds } = useFileClipboardStore.getState();
+              if (mode && itemIds.length > 0) {
+                await useFileClipboardStore.getState().executePaste(item.id);
+              } else if (platform.isDesktop()) {
+                const files = await platform.readClipboardFiles();
+                if (files && files.length > 0) {
+                  await useDocumentStore.getState().importExternalPaths(files, item.id);
+                } else {
+                  showToast('No files in clipboard to paste', 'info');
+                }
+              }
+            },
+          },
+          {
+            id: 'duplicate-folder',
+            title: 'Duplicate folder',
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+D',
+            onClick: async () => {
+              await duplicateNote(item.id);
+            },
+          },
+          { type: 'separator' },
+          {
             id: 'rename',
             title: 'Rename',
             icon: <Edit02Icon size={14} />,
+            shortcut: 'F2',
             onClick: () => setLocalIsEditing(true),
+          },
+          {
+            id: 'move-folder-to',
+            title: 'Move folder to...',
+            icon: <MoveFileIcon size={14} />,
+            onClick: () => {
+              const availableFolders = allDocs.filter(
+                (d) => d.is_folder && d.id !== item.id && !isDescendant(d.id, item.id, allDocs)
+              );
+              openInputDialog({
+                title: `Move "${item.title}" to folder:`,
+                placeholder: 'Folder path or name (leave empty for root)',
+                confirmText: 'Move',
+                allowEmpty: true,
+                onConfirm: async (folderPath) => {
+                  let targetParentId: string | null = null;
+                  if (folderPath.trim()) {
+                    const targetFolder = availableFolders.find(
+                      (f) => getDocumentPath(f, allDocs).toLowerCase() === folderPath.trim().toLowerCase()
+                    );
+                    if (targetFolder) targetParentId = targetFolder.id;
+                  }
+                  await executeMoveToTarget(targetParentId);
+                },
+              });
+            },
           },
           {
             id: 'copy-path',
@@ -770,18 +919,60 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <Copy01Icon size={14} />,
             onClick: () => handleCopyPath('absolute'),
           },
+          { type: 'separator' },
+          {
+            id: 'collapse-subfolders',
+            title: 'Collapse all subfolders',
+            icon: <ArrowShrink02Icon size={14} />,
+            onClick: () => {
+              const descendants = allDocs.filter((d) => d.is_folder && isDescendant(d.id, item.id, allDocs));
+              descendants.forEach((d) => useWorkspaceStore.getState().setFolderOpen(d.id, false));
+              useWorkspaceStore.getState().setFolderOpen(item.id, false);
+            },
+          },
+          {
+            id: 'expand-subfolders',
+            title: 'Expand all subfolders',
+            icon: <ArrowExpand01Icon size={14} />,
+            onClick: () => {
+              const descendants = allDocs.filter((d) => d.is_folder && isDescendant(d.id, item.id, allDocs));
+              descendants.forEach((d) => useWorkspaceStore.getState().setFolderOpen(d.id, true));
+              useWorkspaceStore.getState().setFolderOpen(item.id, true);
+            },
+          },
+          {
+            id: 'show-in-explorer',
+            title: 'Show in system explorer',
+            icon: <FolderOpenIcon size={14} />,
+            onClick: async () => {
+              if (platform.isDesktop()) {
+                const rel = getDocumentPath(item, allDocs);
+                const res = await platform.revealInExplorer(rel);
+                if (!res.success && res.error) {
+                  showToast(res.error, 'warning');
+                }
+              } else {
+                showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
+              }
+            },
+          },
           ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }, ...customMenuItems] : []),
           { type: 'separator' },
           {
             id: 'delete',
-            title: 'Delete',
+            title: 'Delete folder',
             icon: <Delete02Icon size={14} />,
+            shortcut: 'Del',
             isDanger: true,
             onClick: () => handleDelete({ stopPropagation: () => {} } as React.MouseEvent),
           },
         ];
         showContextMenu(e, items, { scope: 'file-tree', data: item });
       } else {
+        const clipboardMode = useFileClipboardStore.getState().mode;
+        const clipboardCount = useFileClipboardStore.getState().itemIds.length;
+        const canPaste = Boolean((clipboardMode && clipboardCount > 0) || platform.isDesktop());
+
         const items: ContextMenuItem[] = [
           {
             id: 'open',
@@ -814,16 +1005,74 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             id: 'open-split',
             title: 'Open to the right',
             icon: <SplitRightIcon size={14} />,
+            shortcut: 'Ctrl+\\',
             onClick: () => {
-              openSplitTab(item.id, displayTitle);
+              openSplitTab(item.id, displayTitle, 'horizontal');
+            },
+          },
+          {
+            id: 'open-split-down',
+            title: 'Open to the bottom',
+            icon: <SplitDownIcon size={14} />,
+            onClick: () => {
+              openSplitTab(item.id, displayTitle, 'vertical');
             },
           },
           { type: 'separator' },
           {
-            id: 'rename',
-            title: 'Rename...',
-            icon: <Edit02Icon size={14} />,
-            onClick: () => setLocalIsEditing(true),
+            id: 'cut-file',
+            title: 'Cut file',
+            icon: <ScissorIcon size={14} />,
+            shortcut: 'Ctrl+X',
+            onClick: () => useFileClipboardStore.getState().cut([item.id]),
+          },
+          {
+            id: 'copy-file',
+            title: 'Copy file',
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+C',
+            onClick: () => useFileClipboardStore.getState().copy([item.id]),
+          },
+          {
+            id: 'paste',
+            title: 'Paste',
+            icon: <ClipboardPasteIcon size={14} />,
+            shortcut: 'Ctrl+V',
+            disabled: !canPaste,
+            onClick: async () => {
+              const targetParentId = item.parent_id || null;
+              const { mode, itemIds } = useFileClipboardStore.getState();
+              if (mode && itemIds.length > 0) {
+                await useFileClipboardStore.getState().executePaste(targetParentId);
+              } else if (platform.isDesktop()) {
+                const files = await platform.readClipboardFiles();
+                if (files && files.length > 0) {
+                  await useDocumentStore.getState().importExternalPaths(files, targetParentId);
+                } else {
+                  showToast('No files in clipboard to paste', 'info');
+                }
+              }
+            },
+          },
+          {
+            id: 'duplicate',
+            title: 'Duplicate',
+            icon: <Copy01Icon size={14} />,
+            shortcut: 'Ctrl+D',
+            onClick: async () => {
+              await duplicateNote(item.id);
+            },
+          },
+          { type: 'separator' },
+          {
+            id: 'copy-link',
+            title: 'Copy note link (Wikilink)',
+            icon: <Link01Icon size={14} />,
+            onClick: () => {
+              const wikilink = `[[${item.title}]]`;
+              navigator.clipboard.writeText(wikilink);
+              showToast(`Copied ${wikilink} to clipboard`, 'info');
+            },
           },
           {
             id: 'copy-path',
@@ -837,8 +1086,14 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             icon: <Copy01Icon size={14} />,
             onClick: () => handleCopyPath('absolute'),
           },
-          ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }, ...customMenuItems] : []),
           { type: 'separator' },
+          {
+            id: 'rename',
+            title: 'Rename...',
+            icon: <Edit02Icon size={14} />,
+            shortcut: 'F2',
+            onClick: () => setLocalIsEditing(true),
+          },
           {
             id: 'move-to',
             title: 'Move file to...',
@@ -862,12 +1117,32 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
             },
           },
           {
+            id: 'open-default-app',
+            title: 'Open in default app',
+            icon: <ExternalLinkIcon size={14} />,
+            onClick: async () => {
+              if (platform.isDesktop()) {
+                const rel = getDocumentPath(item, allDocs) + '.md';
+                const res = await platform.openInDefaultApp(rel);
+                if (!res.success && res.error) {
+                  showToast(res.error, 'warning');
+                }
+              } else {
+                showToast('Opening in default application is supported in desktop mode', 'info');
+              }
+            },
+          },
+          {
             id: 'show-in-explorer',
             title: 'Show in system explorer',
             icon: <FolderOpenIcon size={14} />,
-            onClick: () => {
+            onClick: async () => {
               if (platform.isDesktop()) {
-                platform.openVaultInExplorer(vaultPath);
+                const rel = getDocumentPath(item, allDocs) + '.md';
+                const res = await platform.revealInExplorer(rel);
+                if (!res.success && res.error) {
+                  showToast(res.error, 'warning');
+                }
               } else {
                 showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
               }
@@ -881,11 +1156,13 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
               window.print();
             },
           },
+          ...(customMenuItems.length > 0 ? [{ type: 'separator' as const }, ...customMenuItems] : []),
           { type: 'separator' },
           {
             id: 'delete',
             title: 'Delete file',
             icon: <Delete02Icon size={14} />,
+            shortcut: 'Del',
             isDanger: true,
             onClick: () => handleDelete({ stopPropagation: () => {} } as React.MouseEvent),
           },
@@ -893,7 +1170,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
         showContextMenu(e, items, { scope: 'file-tree', data: item });
       }
     },
-    [allDocs, createNewFolder, createNewNote, customType, displayTitle, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, vaultPath, app]
+    [allDocs, createNewFolder, createNewNote, customType, displayTitle, duplicateNote, duplicateDocuments, executeMoveToTarget, handleCopyPath, handleDelete, isFolder, item, moveDocuments, openConfirmDialog, openInputDialog, openSplitTab, openTab, removeDocuments, selectSingleDoc, setActiveDocumentById, showContextMenu, showToast, vaultPath, app]
   );
 
   return (
@@ -907,9 +1184,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       isActive={isActive}
       isHighlighted={false}
       isBeingDragged={isBeingDragged}
-      isDropTarget={isDropTarget}
+      isDropTarget={isDropTarget || isExternalDragOver}
       isEditing={isEditing}
       isDisabled={isPickingFolder && !isFolder}
+      isCut={isCut}
       isFolderPickerTarget={isPickingFolder && isFolder}
       folderName={isFolder ? item.title : undefined}
       title={displayTitle}
@@ -941,6 +1219,10 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       onPointerDown={isPickingFolder ? undefined : handlePointerDown}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
+      onDragOver={isPickingFolder ? undefined : handleRowDragOver}
+      onDragEnter={isPickingFolder ? undefined : handleRowDragOver}
+      onDragLeave={isPickingFolder ? undefined : handleRowDragLeave}
+      onDrop={isPickingFolder ? undefined : handleRowDrop}
     >
       {isFolder && sortedChildren.length > 0 && (
         <>

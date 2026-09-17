@@ -51,6 +51,8 @@ export interface IPlatformAdapter {
   removeRecentVault(vaultPath: string): Promise<{ success: boolean; recentVaults: RecentVaultItem[]; error?: string }>;
   setCurrentVault(vaultPath: string): Promise<{ success: boolean; path: string; name: string; recentVaults: RecentVaultItem[]; error?: string }>;
   openVaultInExplorer(vaultPath?: string): Promise<{ success: boolean; error?: string }>;
+  revealInExplorer(path: string): Promise<{ success: boolean; error?: string }>;
+  openInDefaultApp(path: string): Promise<{ success: boolean; error?: string }>;
 
   // File I/O
   scanVaultFiles(customVaultPath?: string, allowedExtensions?: string[]): Promise<VaultDiskItem[]>;
@@ -64,6 +66,32 @@ export interface IPlatformAdapter {
   saveTrashFile(filename: string, content: string, relativePath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   deleteTrashFile(filenameOrPath: string): Promise<{ success: boolean; error?: string }>;
   emptyTrashFolder(): Promise<{ success: boolean; error?: string }>;
+
+  // System Clipboard & External Files
+  readClipboardFiles(): Promise<string[]>;
+  hasClipboardFiles(): Promise<boolean>;
+  copyFilesToVault(
+    sourcePaths: string[],
+    targetRelativeDir?: string
+  ): Promise<{
+    success: boolean;
+    files?: Array<{
+      relativePath: string;
+      filename: string;
+      originalPath: string;
+      size: number;
+      mtime: number;
+      isDir: boolean;
+    }>;
+    error?: string;
+  }>;
+  onWebviewDragDrop(
+    callback: (event: {
+      type: 'enter' | 'over' | 'drop' | 'leave';
+      paths?: string[];
+      position?: { x: number; y: number };
+    }) => void
+  ): () => void;
 
   // Database
   dbInit(vaultPath?: string): Promise<{ success: boolean; path?: string }>;
@@ -691,6 +719,20 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     return { success: false, error: 'Desktop mode only' };
   }
 
+  public async revealInExplorer(path: string): Promise<{ success: boolean; error?: string }> {
+    if (this.isTauri()) {
+      return await invoke('reveal_in_explorer', { path });
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public async openInDefaultApp(path: string): Promise<{ success: boolean; error?: string }> {
+    if (this.isTauri()) {
+      return await invoke('open_in_default_app', { path });
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
   public async selectParentFolder(): Promise<{ canceled: boolean; path?: string }> {
     if (this.isTauri()) {
       try {
@@ -809,6 +851,106 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       return await invoke('empty_trash_folder');
     }
     return { success: false, error: 'Desktop mode only' };
+  }
+
+  // System Clipboard & External Files
+  public async readClipboardFiles(): Promise<string[]> {
+    if (this.isTauri()) {
+      try {
+        return (await invoke<string[]>('read_clipboard_files')) || [];
+      } catch (err) {
+        console.error('[PlatformAdapter] readClipboardFiles error:', err);
+        return [];
+      }
+    }
+    return [];
+  }
+
+  public async hasClipboardFiles(): Promise<boolean> {
+    if (this.isTauri()) {
+      try {
+        return (await invoke<boolean>('has_clipboard_files')) || false;
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  }
+
+  public async copyFilesToVault(
+    sourcePaths: string[],
+    targetRelativeDir?: string
+  ): Promise<{
+    success: boolean;
+    files?: Array<{
+      relativePath: string;
+      filename: string;
+      originalPath: string;
+      size: number;
+      mtime: number;
+      isDir: boolean;
+    }>;
+    error?: string;
+  }> {
+    if (this.isTauri()) {
+      try {
+        return await invoke('copy_files_to_vault', {
+          sourcePaths,
+          targetRelativeDir: targetRelativeDir || null,
+        });
+      } catch (err: any) {
+        return { success: false, error: err?.message || String(err) };
+      }
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public onWebviewDragDrop(
+    callback: (event: {
+      type: 'enter' | 'over' | 'drop' | 'leave';
+      paths?: string[];
+      position?: { x: number; y: number };
+    }) => void
+  ): () => void {
+    if (!this.isTauri()) {
+      return () => {};
+    }
+
+    let unlistenFn: (() => void) | null = null;
+    let isDisposed = false;
+
+    import('@tauri-apps/api/webview')
+      .then(({ getCurrentWebview }) => {
+        if (isDisposed) return;
+        return getCurrentWebview().onDragDropEvent((event) => {
+          const payload = event.payload;
+          callback({
+            type: payload.type,
+            paths: 'paths' in payload ? payload.paths : undefined,
+            position: 'position' in payload ? payload.position : undefined,
+          });
+        });
+      })
+      .then((unlisten) => {
+        if (unlisten) {
+          if (isDisposed) {
+            unlisten();
+          } else {
+            unlistenFn = unlisten;
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('[PlatformAdapter] onWebviewDragDrop registration error:', err);
+      });
+
+    return () => {
+      isDisposed = true;
+      if (unlistenFn) {
+        unlistenFn();
+        unlistenFn = null;
+      }
+    };
   }
 
   // Database operations

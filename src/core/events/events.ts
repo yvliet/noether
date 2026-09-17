@@ -97,6 +97,10 @@ export interface WorkspaceEvents {
   // ── Settings Lifecycle ──
   /** Emitted when application preferences and extension settings are restored to default values. */
   'settings:defaults-restored': { scope: 'all' | string };
+
+  // ── Cache Lifecycle ──
+  /** Emitted when vault cache or media cache should be purged (e.g. trash emptied). */
+  'cache:purge': { scope?: 'all' | 'media' | 'covers'; key?: string };
 }
 
 /**

@@ -13,10 +13,11 @@ import type { DocumentItem } from '@/types';
 import type { Disposable } from '../extensions/types';
 
 export interface FileContextMenuContext {
-  item: DocumentItem;
+  item?: DocumentItem | null;
   selectedDocIds: string[];
   isMulti: boolean;
   app: NoetherApp;
+  isRoot?: boolean;
 }
 
 export interface FileContextMenuActionDefinition {

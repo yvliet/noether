@@ -115,10 +115,11 @@ export class BookmarksExtension extends Extension {
     // 6. Register File Tree Context Menu Action (Bookmark / Remove bookmark)
     this.registerFileContextMenuAction({
       id: 'bookmark',
+      isVisible: (ctx) => Boolean(ctx.item || (ctx.isMulti && ctx.selectedDocIds.length > 0)),
       title: (ctx) =>
         ctx.isMulti
           ? `Bookmark ${ctx.selectedDocIds.length} items`
-          : ctx.item.is_bookmarked
+          : ctx.item?.is_bookmarked
           ? 'Remove bookmark'
           : 'Bookmark',
       icon: () => <Bookmark01Icon size={14} />,
@@ -129,7 +130,7 @@ export class BookmarksExtension extends Extension {
           for (const id of ctx.selectedDocIds) {
             await ctx.app.vault.toggleBookmark(id);
           }
-        } else {
+        } else if (ctx.item) {
           await ctx.app.vault.toggleBookmark(ctx.item.id);
         }
       },

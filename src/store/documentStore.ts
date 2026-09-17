@@ -55,7 +55,7 @@ import { useWorkspaceStore } from './workspaceStore';
 import { useSidebarDockStore } from './sidebarDockStore';
 import { useSettingsStore } from './settingsStore';
 import { useFileHistoryStore } from './fileHistoryStore';
-import { jsonToMarkdown } from '@/lib/db/documents';
+import { jsonToMarkdown, markdownToTipTapJson, parseFrontmatter } from '@/lib/db/documents';
 import { dbAdapter } from '@/lib/db/adapter';
 import { bindNoetherStores } from '@/core/app/storeBridge';
 
@@ -105,11 +105,20 @@ interface DocumentState {
     dataUrlOrContent: string,
     parentId?: string | null
   ) => Promise<DocumentItem>;
+  importExternalFiles: (
+    files: FileList | File[],
+    targetParentId?: string | null
+  ) => Promise<DocumentItem[]>;
+  importExternalPaths: (
+    paths: string[],
+    targetParentId?: string | null
+  ) => Promise<DocumentItem[]>;
   renameDocument: (id: string, newTitle: string, recordHistory?: boolean) => Promise<void>;
   updateDocumentTitleInMemory: (id: string, newTitle: string) => void;
   toggleBookmark: (id: string) => Promise<void>;
   toggleBookmarkDocuments: (ids: string[]) => Promise<void>;
-  duplicateNote: (id: string) => Promise<DocumentItem | null>;
+  duplicateNote: (id: string, targetParentId?: string | null) => Promise<DocumentItem | null>;
+  duplicateDocuments: (ids: string[], targetParentId?: string | null) => Promise<DocumentItem[]>;
   moveDocument: (id: string, targetParentId: string | null, recordHistory?: boolean) => Promise<{ success: boolean; newTitle?: string; error?: string }>;
   moveDocuments: (ids: string[], targetParentId: string | null) => Promise<{ success: boolean; movedCount: number; error?: string }>;
   removeDocument: (id: string, recordHistory?: boolean) => Promise<void>;
@@ -1000,6 +1009,205 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     return doc;
   },
 
+  importExternalFiles: async (
+    files: FileList | File[],
+    targetParentId: string | null = null
+  ) => {
+    if (!files || files.length === 0) return [];
+    const fileArray = Array.from(files);
+    const createdDocs: DocumentItem[] = [];
+
+    for (const file of fileArray) {
+      try {
+        const fileName = file.name;
+        const isMarkdown = /\.(md|markdown)$/i.test(fileName);
+        const isCanvas = /\.canvas$/i.test(fileName);
+        const isText = /\.txt$/i.test(fileName);
+
+        if (isMarkdown) {
+          const rawText = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string) || '');
+            reader.onerror = reject;
+            reader.readAsText(file);
+          });
+          const baseTitle = fileName.replace(/\.(md|markdown)$/i, '');
+          const { properties, bodyText } = parseFrontmatter(rawText);
+          const contentJson = markdownToTipTapJson(bodyText);
+
+          const newNote = await get().createNewNote(baseTitle, targetParentId, 'base', false);
+          await get().saveDocumentById(newNote.id, contentJson, newNote.title, rawText);
+          if (properties && Object.keys(properties).length > 0) {
+            await get().updateProperties(newNote.id, properties);
+          }
+          createdDocs.push(newNote);
+        } else if (isCanvas) {
+          const rawText = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string) || '');
+            reader.onerror = reject;
+            reader.readAsText(file);
+          });
+          const baseTitle = fileName.replace(/\.canvas$/i, '');
+          let validatedJson = rawText;
+          try {
+            JSON.parse(rawText);
+          } catch {
+            validatedJson = JSON.stringify({ nodes: [], edges: [] });
+          }
+
+          const newCanvas = await get().createNewNote(baseTitle, targetParentId, 'canvas', false);
+          await get().saveDocumentById(newCanvas.id, validatedJson, newCanvas.title);
+          createdDocs.push(newCanvas);
+        } else if (isText) {
+          const rawText = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string) || '');
+            reader.onerror = reject;
+            reader.readAsText(file);
+          });
+          const baseTitle = fileName.replace(/\.txt$/i, '');
+          const contentJson = markdownToTipTapJson(rawText);
+
+          const newNote = await get().createNewNote(baseTitle, targetParentId, 'base', false);
+          await get().saveDocumentById(newNote.id, contentJson, newNote.title);
+          createdDocs.push(newNote);
+        } else {
+          // Binary or media attachment file
+          const dataUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string) || '');
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+          const attachment = await get().saveAttachmentDocument(fileName, dataUrl, targetParentId);
+          createdDocs.push(attachment);
+        }
+      } catch (err) {
+        console.error('[DocumentStore] Failed to import external file:', file.name, err);
+      }
+    }
+
+    if (createdDocs.length > 0) {
+      if (targetParentId) {
+        useWorkspaceStore.getState().setFolderOpen(targetParentId, true);
+      }
+      const count = createdDocs.length;
+      useWorkspaceStore
+        .getState()
+        .showToast(`Imported ${count} file${count > 1 ? 's' : ''}`, 'success');
+    }
+
+    return createdDocs;
+  },
+
+  importExternalPaths: async (
+    paths: string[],
+    targetParentId: string | null = null
+  ) => {
+    if (!paths || paths.length === 0) return [];
+
+    const allDocs = get().documents;
+    let targetRelDir: string | undefined = undefined;
+    if (targetParentId) {
+      const parentDoc = allDocs.find((d) => d.id === targetParentId);
+      if (parentDoc) {
+        targetRelDir = getDocumentPath(parentDoc, allDocs);
+      }
+    }
+
+    if (platform.isDesktop()) {
+      const copyRes = await platform.copyFilesToVault(paths, targetRelDir);
+      if (!copyRes.success || !copyRes.files) {
+        useWorkspaceStore.getState().showToast(copyRes.error || 'Failed to import files', 'warning');
+        return [];
+      }
+
+      const createdDocs: DocumentItem[] = [];
+      for (const imported of copyRes.files) {
+        const fileName = imported.filename;
+        const isMarkdown = /\.(md|markdown)$/i.test(fileName);
+        const isCanvas = /\.canvas$/i.test(fileName);
+        const isText = /\.txt$/i.test(fileName);
+        const isPdf = /\.pdf$/i.test(fileName);
+        const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(fileName);
+        const isAud = /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(fileName);
+        const isVid = /\.(mp4|webm|mov|mkv)$/i.test(fileName);
+
+        if (imported.isDir) {
+          const newFolder = await get().createNewFolder(fileName, targetParentId);
+          createdDocs.push(newFolder);
+        } else if (isMarkdown || isText) {
+          const readRes = await platform.readMarkdownFile(imported.relativePath);
+          const rawText = readRes.success && readRes.content !== undefined ? readRes.content : '';
+          const baseTitle = fileName.replace(/\.(md|markdown|txt)$/i, '');
+          const { properties, bodyText } = parseFrontmatter(rawText);
+          const contentJson = markdownToTipTapJson(bodyText);
+
+          const newNote = await get().createNewNote(baseTitle, targetParentId, 'base', false);
+          await get().saveDocumentById(newNote.id, contentJson, newNote.title, rawText);
+          if (properties && Object.keys(properties).length > 0) {
+            await get().updateProperties(newNote.id, properties);
+          }
+          createdDocs.push(newNote);
+        } else if (isCanvas) {
+          const readRes = await platform.readMarkdownFile(imported.relativePath);
+          const rawText = readRes.success && readRes.content !== undefined ? readRes.content : '{"nodes":[],"edges":[]}';
+          const baseTitle = fileName.replace(/\.canvas$/i, '');
+          const newCanvas = await get().createNewNote(baseTitle, targetParentId, 'canvas', false);
+          await get().saveDocumentById(newCanvas.id, rawText, newCanvas.title);
+          createdDocs.push(newCanvas);
+        } else {
+          const detectedDocType = isPdf ? 'pdf' : isImg ? 'image' : isAud ? 'audio' : isVid ? 'video' : 'base';
+          const docId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+          const now = Date.now();
+          const emptyContent = JSON.stringify({
+            type: 'doc',
+            content: [{ type: 'paragraph', content: [] }],
+          });
+
+          const doc: DocumentItem = {
+            id: docId,
+            parent_id: targetParentId,
+            title: fileName,
+            content_json: emptyContent,
+            is_daily_note: 0,
+            is_folder: 0,
+            is_bookmarked: 0,
+            doc_type: detectedDocType,
+            created_at: now,
+            updated_at: now,
+          };
+
+          set((state) => ({
+            documents: [doc, ...state.documents],
+          }));
+
+          await dbAdapter.execute(
+            `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
+             VALUES (?, ?, ?, ?, 0, 0, 0, ?, '{}', ?, ?)`,
+            [docId, targetParentId, fileName, emptyContent, detectedDocType, now, now]
+          );
+          await dbAdapter.persist();
+          createdDocs.push(doc);
+        }
+      }
+
+      if (createdDocs.length > 0) {
+        if (targetParentId) {
+          useWorkspaceStore.getState().setFolderOpen(targetParentId, true);
+        }
+        const count = createdDocs.length;
+        useWorkspaceStore
+          .getState()
+          .showToast(`Imported ${count} file${count > 1 ? 's' : ''}`, 'success');
+      }
+      return createdDocs;
+    }
+
+    return [];
+  },
+
   renameDocument: async (id: string, newTitle: string, recordHistory = true) => {
     const pendingCreation = pendingCreationPromises.get(id);
     if (pendingCreation) {
@@ -1108,16 +1316,61 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     }));
   },
 
-  duplicateNote: async (id: string) => {
+  duplicateNote: async (id: string, targetParentId?: string | null) => {
     const activeDocBefore = get().activeDocument?.id || null;
-    const copy = await duplicateDocument(id);
+    const copy = await duplicateDocument(id, targetParentId);
     if (copy) {
-      set((state) => ({ documents: [copy, ...state.documents] }));
+      if (copy.is_folder) {
+        await get().loadInitialData({ showLoading: false });
+      } else {
+        set((state) => ({ documents: [copy, ...state.documents] }));
+      }
       useFileHistoryStore.getState().recordCreate(copy, activeDocBefore);
-      useWorkspaceStore.getState().setMainViewMode('document');
-      await get().setActiveDocumentById(copy.id);
+      if (!copy.is_folder) {
+        useWorkspaceStore.getState().setMainViewMode('document');
+        await get().setActiveDocumentById(copy.id);
+      }
     }
     return copy;
+  },
+
+  duplicateDocuments: async (ids: string[], targetParentId?: string | null) => {
+    if (!ids || ids.length === 0) return [];
+    const docs = get().documents;
+    const docMap = new Map(docs.map((d) => [d.id, d]));
+
+    // Exclude any document whose ancestor is also selected in ids
+    const topLevelIds = ids.filter((id) => {
+      let curr = docMap.get(id);
+      while (curr && curr.parent_id) {
+        if (ids.includes(curr.parent_id)) return false;
+        curr = docMap.get(curr.parent_id);
+      }
+      return true;
+    });
+
+    const createdItems: DocumentItem[] = [];
+    const activeDocBefore = get().activeDocument?.id || null;
+
+    for (const id of topLevelIds) {
+      const copy = await duplicateDocument(id, targetParentId);
+      if (copy) {
+        createdItems.push(copy);
+        useFileHistoryStore.getState().recordCreate(copy, activeDocBefore);
+      }
+    }
+
+    if (createdItems.length > 0) {
+      await get().loadInitialData({ showLoading: false });
+      if (createdItems.length === 1 && !createdItems[0].is_folder) {
+        useWorkspaceStore.getState().setMainViewMode('document');
+        await get().setActiveDocumentById(createdItems[0].id);
+      } else {
+        get().setSelectedDocIds(createdItems.map((d) => d.id));
+      }
+    }
+
+    return createdItems;
   },
 
   moveDocument: async (id: string, targetParentId: string | null, recordHistory = true) => {

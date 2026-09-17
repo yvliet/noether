@@ -804,6 +804,139 @@ pub fn open_vault_in_explorer(state: tauri::State<AppState>, vault_path: Option<
 }
 
 #[tauri::command]
+pub fn reveal_in_explorer(state: tauri::State<AppState>, path: String) -> Value {
+    let cfg = state.config.lock();
+    let vault_root = &cfg.current_vault_path;
+    if vault_root.is_empty() {
+        return json!({ "success": false, "error": "No active vault" });
+    }
+    let target_vault = PathBuf::from(vault_root);
+
+    let trimmed = path.trim();
+    if trimmed.is_empty() || trimmed == "." || trimmed == "/" || trimmed == "\\" {
+        let target_path = Path::new(&vault_root);
+        if target_path.exists() && target_path.is_dir() {
+            #[cfg(target_os = "windows")]
+            let _ = std::process::Command::new("explorer").arg(vault_root).spawn();
+            #[cfg(target_os = "macos")]
+            let _ = std::process::Command::new("open").arg(vault_root).spawn();
+            #[cfg(target_os = "linux")]
+            let _ = std::process::Command::new("xdg-open").arg(vault_root).spawn();
+            return json!({ "success": true });
+        }
+        return json!({ "success": false, "error": "Vault folder does not exist" });
+    }
+
+    let input_path = Path::new(trimmed);
+    let mut resolved_path = if input_path.is_absolute() {
+        input_path.to_path_buf()
+    } else {
+        target_vault.join(input_path)
+    };
+
+    if !resolved_path.exists() && !trimmed.ends_with(".md") {
+        let with_md = resolved_path.with_extension("md");
+        if with_md.exists() {
+            resolved_path = with_md;
+        }
+    }
+
+    if !is_safe_vault_path(&target_vault, &resolved_path) {
+        return json!({ "success": false, "error": "Path is outside the active vault" });
+    }
+
+    if !resolved_path.exists() {
+        return json!({ "success": false, "error": "Target file or folder does not exist on disk" });
+    }
+
+    if resolved_path.is_dir() {
+        #[cfg(target_os = "windows")]
+        let _ = std::process::Command::new("explorer").arg(&resolved_path).spawn();
+
+        #[cfg(target_os = "macos")]
+        let _ = std::process::Command::new("open").arg(&resolved_path).spawn();
+
+        #[cfg(target_os = "linux")]
+        let _ = std::process::Command::new("xdg-open").arg(&resolved_path).spawn();
+    } else {
+        #[cfg(target_os = "windows")]
+        {
+            let p_str = resolved_path.to_string_lossy();
+            let _ = std::process::Command::new("explorer")
+                .arg(format!("/select,{}", p_str))
+                .spawn();
+        }
+
+        #[cfg(target_os = "macos")]
+        let _ = std::process::Command::new("open")
+            .arg("-R")
+            .arg(&resolved_path)
+            .spawn();
+
+        #[cfg(target_os = "linux")]
+        {
+            let parent_dir = resolved_path.parent().unwrap_or(&resolved_path);
+            let _ = std::process::Command::new("xdg-open").arg(parent_dir).spawn();
+        }
+    }
+
+    json!({ "success": true })
+}
+
+#[tauri::command]
+pub fn open_in_default_app(state: tauri::State<AppState>, path: String) -> Value {
+    let cfg = state.config.lock();
+    let vault_root = &cfg.current_vault_path;
+    if vault_root.is_empty() {
+        return json!({ "success": false, "error": "No active vault" });
+    }
+    let target_vault = PathBuf::from(vault_root);
+
+    let trimmed = path.trim();
+    if trimmed.is_empty() {
+        return json!({ "success": false, "error": "Empty path provided" });
+    }
+
+    let input_path = Path::new(trimmed);
+    let mut resolved_path = if input_path.is_absolute() {
+        input_path.to_path_buf()
+    } else {
+        target_vault.join(input_path)
+    };
+
+    if !resolved_path.exists() && !trimmed.ends_with(".md") {
+        let with_md = resolved_path.with_extension("md");
+        if with_md.exists() {
+            resolved_path = with_md;
+        }
+    }
+
+    if !is_safe_vault_path(&target_vault, &resolved_path) {
+        return json!({ "success": false, "error": "Path is outside the active vault" });
+    }
+
+    if !resolved_path.exists() {
+        return json!({ "success": false, "error": "Target file does not exist on disk" });
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        let p_str = resolved_path.to_string_lossy();
+        let _ = std::process::Command::new("cmd")
+            .args(&["/C", "start", "", &p_str])
+            .spawn();
+    }
+
+    #[cfg(target_os = "macos")]
+    let _ = std::process::Command::new("open").arg(&resolved_path).spawn();
+
+    #[cfg(target_os = "linux")]
+    let _ = std::process::Command::new("xdg-open").arg(&resolved_path).spawn();
+
+    json!({ "success": true })
+}
+
+#[tauri::command]
 pub fn scan_vault_files(
     state: tauri::State<AppState>,
     custom_vault_path: Option<String>,
@@ -1980,6 +2113,245 @@ pub async fn download_remote_text(url: String) -> Value {
         }
         Err(e) => json!({ "success": false, "error": format!("Network request failed: {}", e) }),
     }
+}
+
+#[cfg(windows)]
+mod win_clipboard {
+    use std::ffi::OsString;
+    use std::os::windows::ffi::OsStringExt;
+
+    const CF_HDROP: u32 = 15;
+
+    #[link(name = "user32")]
+    extern "system" {
+        fn OpenClipboard(hwnd: *mut std::ffi::c_void) -> i32;
+        fn CloseClipboard() -> i32;
+        fn GetClipboardData(format: u32) -> *mut std::ffi::c_void;
+        fn IsClipboardFormatAvailable(format: u32) -> i32;
+    }
+
+    #[link(name = "shell32")]
+    extern "system" {
+        fn DragQueryFileW(
+            hdrop: *mut std::ffi::c_void,
+            i_file: u32,
+            lpsz_file: *mut u16,
+            cch: u32,
+        ) -> u32;
+    }
+
+    pub fn has_clipboard_files() -> bool {
+        unsafe { IsClipboardFormatAvailable(CF_HDROP) != 0 }
+    }
+
+    pub fn get_clipboard_files() -> Vec<String> {
+        let mut results = Vec::new();
+        unsafe {
+            if IsClipboardFormatAvailable(CF_HDROP) == 0 {
+                return results;
+            }
+            let mut opened = false;
+            for _ in 0..5 {
+                if OpenClipboard(std::ptr::null_mut()) != 0 {
+                    opened = true;
+                    break;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(10));
+            }
+            if !opened {
+                return results;
+            }
+
+            let hdrop = GetClipboardData(CF_HDROP);
+            if !hdrop.is_null() {
+                let count = DragQueryFileW(hdrop, 0xFFFFFFFF, std::ptr::null_mut(), 0);
+                for i in 0..count {
+                    let len = DragQueryFileW(hdrop, i, std::ptr::null_mut(), 0);
+                    if len > 0 {
+                        let mut buf: Vec<u16> = vec![0; (len + 1) as usize];
+                        let copied = DragQueryFileW(hdrop, i, buf.as_mut_ptr(), len + 1);
+                        if copied > 0 {
+                            buf.truncate(copied as usize);
+                            let os_str = OsString::from_wide(&buf);
+                            if let Ok(s) = os_str.into_string() {
+                                results.push(s);
+                            }
+                        }
+                    }
+                }
+            }
+            CloseClipboard();
+        }
+        results
+    }
+}
+
+#[cfg(not(windows))]
+mod win_clipboard {
+    pub fn has_clipboard_files() -> bool {
+        false
+    }
+    pub fn get_clipboard_files() -> Vec<String> {
+        Vec::new()
+    }
+}
+
+#[tauri::command]
+pub fn read_clipboard_files() -> Vec<String> {
+    win_clipboard::get_clipboard_files()
+}
+
+#[tauri::command]
+pub fn has_clipboard_files() -> bool {
+    win_clipboard::has_clipboard_files()
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path, vault_root: &Path) -> std::io::Result<()> {
+    fs::create_dir_all(dst)?;
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        let target_dst = dst.join(entry.file_name());
+        if !is_safe_vault_path(vault_root, &target_dst) {
+            continue;
+        }
+        if file_type.is_dir() {
+            copy_dir_recursive(&entry.path(), &target_dst, vault_root)?;
+        } else {
+            let _ = fs::copy(entry.path(), target_dst);
+        }
+    }
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ImportedVaultFile {
+    pub relative_path: String,
+    pub filename: String,
+    pub original_path: String,
+    pub size: u64,
+    pub mtime: u64,
+    pub is_dir: bool,
+}
+
+#[tauri::command]
+pub fn copy_files_to_vault(
+    state: tauri::State<AppState>,
+    source_paths: Vec<String>,
+    target_relative_dir: Option<String>,
+) -> Value {
+    mark_internal_write();
+    let cfg = state.config.lock();
+    let vault_root = PathBuf::from(&cfg.current_vault_path);
+    let _ = fs::create_dir_all(&vault_root);
+
+    let dest_dir = match &target_relative_dir {
+        Some(rel) if !rel.trim().is_empty() => {
+            let clean = rel.replace('\\', "/").trim_matches('/').to_string();
+            vault_root.join(clean)
+        }
+        _ => vault_root.clone(),
+    };
+
+    if !is_safe_vault_path(&vault_root, &dest_dir) {
+        return json!({ "success": false, "error": "Security: Destination path escapes vault boundary" });
+    }
+    let _ = fs::create_dir_all(&dest_dir);
+
+    let mut imported: Vec<ImportedVaultFile> = Vec::new();
+
+    for src_str in source_paths {
+        let src_path = PathBuf::from(&src_str);
+        if !src_path.exists() {
+            continue;
+        }
+
+        let raw_name = match src_path.file_name() {
+            Some(n) => n.to_string_lossy().to_string(),
+            None => continue,
+        };
+
+        if src_path.is_file() {
+            let file_stem = Path::new(&raw_name)
+                .file_stem()
+                .map(|s| s.to_string_lossy().to_string())
+                .unwrap_or_else(|| "file".to_string());
+            let file_ext = Path::new(&raw_name)
+                .extension()
+                .map(|e| format!(".{}", e.to_string_lossy()))
+                .unwrap_or_default();
+
+            let mut final_name = raw_name.clone();
+            let mut dest_file = dest_dir.join(&final_name);
+            let mut counter = 1;
+            while dest_file.exists() {
+                final_name = format!("{} ({}){}", file_stem, counter, file_ext);
+                dest_file = dest_dir.join(&final_name);
+                counter += 1;
+            }
+
+            if !is_safe_vault_path(&vault_root, &dest_file) {
+                continue;
+            }
+
+            if fs::copy(&src_path, &dest_file).is_ok() {
+                let metadata = fs::metadata(&dest_file).ok();
+                let size = metadata.as_ref().map(|m| m.len()).unwrap_or(0);
+                let mtime = metadata.as_ref()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+
+                let rel_path = dest_file.strip_prefix(&vault_root)
+                    .map(|p| p.to_string_lossy().replace('\\', "/"))
+                    .unwrap_or_else(|_| final_name.clone());
+
+                imported.push(ImportedVaultFile {
+                    relative_path: rel_path,
+                    filename: final_name,
+                    original_path: src_str,
+                    size,
+                    mtime,
+                    is_dir: false,
+                });
+            }
+        } else if src_path.is_dir() {
+            let dir_name = raw_name.clone();
+            let mut final_dir_name = dir_name.clone();
+            let mut target_sub_dir = dest_dir.join(&final_dir_name);
+            let mut counter = 1;
+            while target_sub_dir.exists() {
+                final_dir_name = format!("{} ({})", dir_name, counter);
+                target_sub_dir = dest_dir.join(&final_dir_name);
+                counter += 1;
+            }
+
+            if !is_safe_vault_path(&vault_root, &target_sub_dir) {
+                continue;
+            }
+
+            if copy_dir_recursive(&src_path, &target_sub_dir, &vault_root).is_ok() {
+                let rel_path = target_sub_dir.strip_prefix(&vault_root)
+                    .map(|p| p.to_string_lossy().replace('\\', "/"))
+                    .unwrap_or_else(|_| final_dir_name.clone());
+
+                imported.push(ImportedVaultFile {
+                    relative_path: rel_path,
+                    filename: final_dir_name,
+                    original_path: src_str,
+                    size: 0,
+                    mtime: SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_millis() as u64).unwrap_or(0),
+                    is_dir: true,
+                });
+            }
+        }
+    }
+
+    json!({
+        "success": true,
+        "files": imported,
+    })
 }
 
 #[cfg(test)]

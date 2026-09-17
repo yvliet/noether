@@ -28,6 +28,7 @@ export interface TreeNodeRowProps {
   isDropTarget?: boolean;
   isEditing?: boolean;
   isDisabled?: boolean;
+  isCut?: boolean;
   isFolderPickerTarget?: boolean;
   folderName?: string;
   renameInput?: React.ReactNode;
@@ -39,6 +40,10 @@ export interface TreeNodeRowProps {
   onPointerDown?: (e: React.PointerEvent) => void;
   onPointerEnter?: () => void;
   onPointerLeave?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragEnter?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
   dataAttributes?: Record<string, string | undefined>;
   className?: string;
   children?: React.ReactNode;
@@ -62,6 +67,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   isDropTarget = false,
   isEditing = false,
   isDisabled = false,
+  isCut = false,
   isFolderPickerTarget = false,
   folderName,
   renameInput,
@@ -73,6 +79,10 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   onPointerDown,
   onPointerEnter,
   onPointerLeave,
+  onDragOver,
+  onDragEnter,
+  onDragLeave,
+  onDrop,
   dataAttributes = {},
   className = '',
   children,
@@ -102,8 +112,14 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onContextMenu={isDisabled ? undefined : onContextMenu}
         onPointerEnter={isDisabled ? undefined : onPointerEnter}
         onPointerLeave={isDisabled ? undefined : onPointerLeave}
+        onDragOver={isDisabled ? undefined : onDragOver}
+        onDragEnter={isDisabled ? undefined : onDragEnter}
+        onDragLeave={isDisabled ? undefined : onDragLeave}
+        onDrop={isDisabled ? undefined : onDrop}
         style={{ paddingLeft: `${8 + level * 16}px` }}
         className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md w-full overflow-visible ${
+          isCut ? 'opacity-50 ' : ''
+        }${
           isDisabled
             ? 'cursor-not-allowed opacity-35 text-[var(--noether-text-muted,#888888)] hover:bg-transparent'
             : isFolderPickerTarget
@@ -113,7 +129,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
             : isHighlighted
             ? 'cursor-pointer bg-[#82691b] text-white font-normal shadow-sm'
             : isDropTarget
-            ? 'cursor-pointer bg-transparent text-[var(--noether-text-primary,#ffffff)] font-normal'
+            ? 'cursor-pointer bg-[var(--noether-bg-card-hover)] ring-1 ring-inset ring-[var(--noether-accent,#eb584d)]/60 text-[var(--noether-text-primary,#ffffff)] font-normal'
             : isSelected || isMultiSelected || (isActive && !isFolder) || isEditing
             ? 'cursor-pointer bg-[var(--noether-bg-sidebar-active,#2a2a2a)] text-[var(--noether-text-primary,#ffffff)] font-normal'
             : 'cursor-pointer text-[var(--noether-text-muted,#888888)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary,#dcddde)] font-normal'

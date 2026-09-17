@@ -581,6 +581,16 @@ export interface VaultAPI {
   createNewCanvas(): Promise<DocumentItem | undefined>;
 
   /**
+   * Clones a document or folder, including all contents and child hierarchy.
+   *
+   * @param docId - The document's unique identifier.
+   * @param targetParentId - Optional parent folder ID for the duplicate.
+   * @returns The newly created duplicate document, or `undefined` if cloning failed.
+   * @since 0.2.0
+   */
+  duplicateDocument(docId: string, targetParentId?: string | null): Promise<DocumentItem | undefined>;
+
+  /**
    * Sets the active document by its ID, loading its content into the active editor.
    *
    * @param docId - The document's unique identifier.

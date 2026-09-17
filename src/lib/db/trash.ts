@@ -5,7 +5,6 @@ import { platform } from '@/lib/platform/platformAdapter';
 import { appInstance } from '@/core/app/NoetherApp';
 import { fileTypeRegistry, isMediaFileName } from '@/core/registries/FileTypeRegistry';
 import { evictImageSrcCache } from '@/components/editor/embed-renderer';
-import { evictCoverCache } from '@/extensions/core/covers/coverPreloader';
 
 // 48 hours in milliseconds = 172,800,000 ms
 export const TRASH_RETENTION_MS = 48 * 60 * 60 * 1000;
@@ -38,8 +37,8 @@ export async function cleanExpiredTrash(): Promise<number> {
           try {
             evictImageSrcCache(item.title);
             evictImageSrcCache(item.original_id);
-            evictCoverCache(item.title);
-            evictCoverCache(item.original_id);
+            appInstance?.events?.emit('cache:purge', { scope: 'covers', key: item.original_id });
+            if (item.title) appInstance?.events?.emit('cache:purge', { scope: 'covers', key: item.title });
             appInstance?.events?.emit('document:deleted', { id: item.original_id, title: item.title });
           } catch (e) {}
         }
@@ -219,8 +218,8 @@ export async function moveDocumentsToTrash(
   for (const item of itemsToTrash) {
     evictImageSrcCache(item.title);
     evictImageSrcCache(item.id);
-    evictCoverCache(item.title);
-    evictCoverCache(item.id);
+    appInstance?.events?.emit('cache:purge', { scope: 'covers', key: item.id });
+    if (item.title) appInstance?.events?.emit('cache:purge', { scope: 'covers', key: item.title });
   }
 
   // Move physical files to .trash folder and clean from vault folder in parallel
@@ -463,8 +462,8 @@ export async function permanentlyDeleteTrashItem(trashOrOriginalId: string): Pro
     try {
       evictImageSrcCache(item.title);
       evictImageSrcCache(item.original_id);
-      evictCoverCache(item.title);
-      evictCoverCache(item.original_id);
+      appInstance.events.emit('cache:purge', { scope: 'covers', key: item.original_id });
+      if (item.title) appInstance.events.emit('cache:purge', { scope: 'covers', key: item.title });
       appInstance.events.emit('document:deleted', { id: item.original_id, title: item.title });
     } catch (e) {}
   }
@@ -488,7 +487,7 @@ export async function emptyTrash(): Promise<void> {
   await dbAdapter.persist();
 
   evictImageSrcCache();
-  evictCoverCache();
+  appInstance.events.emit('cache:purge', { scope: 'covers' });
 
   for (const item of allTrash) {
     try {

@@ -159,6 +159,36 @@ export class CanvasExtension extends Extension {
       },
     });
 
+    // 6. Register File Context Menu Actions (IoC integration for folder and root)
+    this.registerFileContextMenuAction({
+      id: 'create-canvas-in-folder',
+      title: 'New canvas',
+      icon: <DashboardSquareAddIcon size={14} />,
+      order: 15,
+      isVisible: (ctx) => Boolean(ctx.item?.is_folder),
+      onClick: async (ctx) => {
+        if (!ctx.item) return;
+        const doc = await ctx.app.vault.createNewDocument('Untitled', ctx.item.id, 'canvas');
+        if (doc) {
+          ctx.app.workspace.openTab(doc.id, doc.title, { viewType: 'canvas', viewMode: 'canvas' });
+        }
+      },
+    });
+
+    this.registerFileContextMenuAction({
+      id: 'create-canvas-root',
+      title: 'New canvas',
+      icon: <DashboardSquareAddIcon size={14} />,
+      order: 15,
+      isVisible: (ctx) => Boolean(ctx.isRoot),
+      onClick: async (ctx) => {
+        const doc = await ctx.app.vault.createNewDocument('Untitled', null, 'canvas');
+        if (doc) {
+          ctx.app.workspace.openTab(doc.id, doc.title, { viewType: 'canvas', viewMode: 'canvas' });
+        }
+      },
+    });
+
     // 6. Register Custom File Type (.canvas)
     this.registerFileType({
       extension: 'canvas',

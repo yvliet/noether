@@ -17,7 +17,9 @@ import {
   PlusSignIcon,
   Alert02Icon,
   SplitRightIcon,
+  SplitDownIcon,
   Copy01Icon,
+  PinIcon,
 } from '@/components/common/Icons';
 
 interface SplitTabHeaderProps {
@@ -37,11 +39,13 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
   const setActiveTabInPane = useWorkspaceStore((s) => s.setActiveTabInPane);
   const openEmptyTabInPane = useWorkspaceStore((s) => s.openEmptyTabInPane);
+  const openTabInPane = useWorkspaceStore((s) => s.openTabInPane);
   const closeTabInPane = useWorkspaceStore((s) => s.closeTabInPane);
   const reorderTabsInPane = useWorkspaceStore((s) => s.reorderTabsInPane);
   const closePane = useWorkspaceStore((s) => s.closePane);
   const setFocusedPane = useWorkspaceStore((s) => s.setFocusedPane);
   const splitPane = useWorkspaceStore((s) => s.splitPane);
+  const togglePinTab = useWorkspaceStore((s) => s.togglePinTab);
 
   const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
@@ -198,8 +202,18 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
       const items: ContextMenuItem[] = [
         {
+          id: 'toggle-pin',
+          title: tab.is_pinned ? 'Unpin tab' : 'Pin tab',
+          icon: <PinIcon size={14} />,
+          onClick: () => {
+            togglePinTab(tab.id);
+          },
+        },
+        { type: 'separator' },
+        {
           id: 'close-split-tab',
           title: 'Close tab',
+          shortcut: 'Ctrl+W',
           disabled: !canCloseTab,
           onClick: () => {
             closeTabInPane(targetPaneId, tab.id);
@@ -211,7 +225,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           disabled: splitTabs.length <= 1,
           onClick: () => {
             for (const other of splitTabs) {
-              if (other.id !== tab.id) {
+              if (other.id !== tab.id && !other.is_pinned) {
                 closeTabInPane(targetPaneId, other.id);
               }
             }
@@ -224,7 +238,9 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           onClick: () => {
             const toClose = splitTabs.slice(index + 1);
             for (const other of toClose) {
-              closeTabInPane(targetPaneId, other.id);
+              if (!other.is_pinned) {
+                closeTabInPane(targetPaneId, other.id);
+              }
             }
           },
         },
@@ -235,7 +251,21 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           onClick: () => {
             const toClose = splitTabs.slice(0, index);
             for (const other of toClose) {
-              closeTabInPane(targetPaneId, other.id);
+              if (!other.is_pinned) {
+                closeTabInPane(targetPaneId, other.id);
+              }
+            }
+          },
+        },
+        {
+          id: 'close-all-split-tabs',
+          title: 'Close all tabs',
+          disabled: !canCloseTab,
+          onClick: () => {
+            for (const other of splitTabs) {
+              if (!other.is_pinned) {
+                closeTabInPane(targetPaneId, other.id);
+              }
             }
           },
         },
@@ -257,6 +287,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
         {
           id: 'split-down',
           title: 'Split down',
+          icon: <SplitDownIcon size={14} />,
           onClick: () => {
             splitPane(targetPaneId, 'vertical', tab.document_id, tab.title, {
               viewMode: tab.view_mode,
@@ -269,8 +300,12 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
         {
           id: 'duplicate-split-tab',
           title: 'Duplicate tab',
+          icon: <Copy01Icon size={14} />,
           onClick: () => {
-            splitPane(targetPaneId, 'horizontal', tab.document_id, tab.title, {
+            openTabInPane(targetPaneId, tab.document_id, tab.title, {
+              newTab: true,
+              replaceCurrentTab: false,
+              insertIndex: index + 1,
               viewMode: tab.view_mode,
               viewType: tab.view_type,
               icon: tab.icon,
@@ -315,6 +350,15 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 showToast('Copied absolute path', 'success');
               },
             },
+            {
+              id: 'copy-wikilink',
+              title: 'Copy note link (Wikilink)',
+              onClick: async () => {
+                const link = `[[${doc.title || 'Untitled'}]]`;
+                await navigator.clipboard.writeText(link);
+                showToast(`Copied note link [[${doc.title || 'Untitled'}]]`, 'success');
+              },
+            },
           ],
         });
       }
@@ -331,7 +375,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
 
       showContextMenu(e, items, { scope: 'tab', data: tab });
     },
-    [splitTabs, targetPaneId, closeTabInPane, closePane, splitPane, documents, vaultPath, showToast, showContextMenu, app]
+    [splitTabs, targetPaneId, closeTabInPane, togglePinTab, closePane, openTabInPane, splitPane, documents, vaultPath, showToast, showContextMenu, app]
   );
 
   const handleHeaderContextMenu = useCallback(
@@ -513,12 +557,15 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                       : 'text-[var(--noether-text-muted)]'
                   }`}
                 >
-                  {displayTitle}
+                    {displayTitle}
                 </span>
+                {tab.is_pinned && (
+                  <PinIcon size={11} className="shrink-0 opacity-70 ml-1 text-[var(--noether-text-muted)]" />
+                )}
                 <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" className="ml-1" />
               </div>
 
-              {canCloseTab && (
+              {canCloseTab && !tab.is_pinned && (
                 <button
                   type="button"
                   onClick={(e) => {

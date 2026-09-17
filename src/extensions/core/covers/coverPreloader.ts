@@ -51,6 +51,11 @@ if (typeof window !== 'undefined') {
         evictCoverCache(id);
         if (title) evictCoverCache(title);
       });
+      appInstance?.events?.on('cache:purge', ({ scope, key }) => {
+        if (!scope || scope === 'all' || scope === 'covers') {
+          evictCoverCache(key);
+        }
+      });
     })
     .catch(() => {});
 }

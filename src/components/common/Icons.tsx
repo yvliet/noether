@@ -127,6 +127,7 @@ import {
   PlusSignSquareIcon as HugePlusSignSquareIcon,
   Link01Icon as HugeLink01Icon,
   Link04Icon as HugeLink04Icon,
+  PinIcon as HugePinIcon,
   ParagraphIcon as HugeParagraphIcon,
   PaintBrush01Icon as HugePaintBrush01Icon,
   SigmaIcon as HugeSigmaIcon,
@@ -430,6 +431,7 @@ export const HighlighterIcon = createIcon(HugeHighlighterIcon);
 export const PlusSignSquareIcon = createIcon(HugePlusSignSquareIcon);
 export const Link01Icon = createIcon(HugeLink01Icon);
 export const Link04Icon = createIcon(HugeLink04Icon);
+export const PinIcon = createIcon(HugePinIcon);
 export const ParagraphIcon = createIcon(HugeParagraphIcon);
 export const PaintBrush01Icon = createIcon(HugePaintBrush01Icon);
 export const SigmaIcon = createIcon(HugeSigmaIcon);

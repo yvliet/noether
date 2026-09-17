@@ -402,20 +402,58 @@ export async function toggleBookmarkDocument(id: string, isBookmarked: boolean):
   );
 }
 
-export async function duplicateDocument(id: string): Promise<DocumentItem | null> {
+export async function duplicateDocument(id: string, targetParentId?: string | null): Promise<DocumentItem | null> {
   const doc = await getDocumentById(id);
   if (!doc) return null;
 
-  const newTitle = `${doc.title} (Copy)`;
+  const destParentId = targetParentId !== undefined ? targetParentId : (doc.parent_id || null);
+  const allDocs = await getCachedOrDbDocs();
+
+  // Determine non-colliding title in destination folder
+  const existingTitles = new Set(
+    allDocs
+      .filter((d) => (d.parent_id || null) === (destParentId || null))
+      .map((d) => d.title.toLowerCase())
+  );
+
+  const isSameParent = (doc.parent_id || null) === (destParentId || null);
+  let newTitle: string;
+  if (isSameParent) {
+    const match = doc.title.match(/^(.*?)(?:\s+\(Copy(?:\s+(\d+))?\)|\s+Copy(?:\s+(\d+))?)?$/i);
+    const baseName = match && match[1] ? match[1].trim() : doc.title;
+    let candidate = `${baseName} (Copy)`;
+    let counter = 2;
+    while (existingTitles.has(candidate.toLowerCase())) {
+      candidate = `${baseName} (Copy ${counter})`;
+      counter++;
+    }
+    newTitle = candidate;
+  } else {
+    if (!existingTitles.has(doc.title.toLowerCase())) {
+      newTitle = doc.title;
+    } else {
+      const match = doc.title.match(/^(.*?)(?:\s+\(Copy(?:\s+(\d+))?\)|\s+Copy(?:\s+(\d+))?)?$/i);
+      const baseName = match && match[1] ? match[1].trim() : doc.title;
+      let candidate = `${baseName} (Copy)`;
+      let counter = 2;
+      while (existingTitles.has(candidate.toLowerCase())) {
+        candidate = `${baseName} (Copy ${counter})`;
+        counter++;
+      }
+      newTitle = candidate;
+    }
+  }
+
   const newId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
   const now = Date.now();
   const docType = doc.doc_type || 'base';
+  const isFolder = Boolean(doc.is_folder);
 
   try {
     await dbAdapter.execute(
       `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
-      [newId, doc.parent_id, newTitle, doc.content_json, doc.is_daily_note, doc.is_folder, docType, doc.properties || '{}', now, now]
+      [newId, destParentId, newTitle, doc.content_json, doc.is_daily_note, isFolder ? 1 : 0, docType, doc.properties || '{}', now, now]
     );
   } catch (err) {
     try {
@@ -424,39 +462,59 @@ export async function duplicateDocument(id: string): Promise<DocumentItem | null
     await dbAdapter.execute(
       `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
-      [newId, doc.parent_id, newTitle, doc.content_json, doc.is_daily_note, doc.is_folder, docType, doc.properties || '{}', now, now]
+      [newId, destParentId, newTitle, doc.content_json, doc.is_daily_note, isFolder ? 1 : 0, docType, doc.properties || '{}', now, now]
     );
   }
 
-  if (platform.isDesktop() && doc.content_json) {
-    try {
-      const allDocs = await getCachedOrDbDocs();
-      const relPath = getDocumentPath({ id: newId, title: newTitle, parent_id: doc.parent_id }, allDocs);
-      const targetRelPath = getDocumentDiskPath({ id: newId, title: newTitle, doc_type: docType, is_folder: doc.is_folder }, relPath);
-      const md = jsonToMarkdown(doc.content_json, newTitle, doc.properties);
-      await platform.saveMarkdownFile(newTitle, md, targetRelPath);
-
-      const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
-      const manifestKey = normRel;
-      const contentHash = computeFastHash(md);
-      try {
-        await dbAdapter.execute(
-          `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
-          [manifestKey, now, md.length, contentHash, now]
-        );
-      } catch (mErr) {}
-    } catch (e) {}
-  }
-
-  return {
+  const duplicatedDoc: DocumentItem = {
     ...doc,
     id: newId,
+    parent_id: destParentId,
     title: newTitle,
     created_at: now,
     updated_at: now,
     is_bookmarked: 0,
     doc_type: docType,
+    is_folder: isFolder ? 1 : 0,
   };
+
+  if (platform.isDesktop()) {
+    try {
+      const updatedAllDocs = [...allDocs, duplicatedDoc];
+      const relPath = getDocumentPath(duplicatedDoc, updatedAllDocs);
+
+      if (isFolder) {
+        await platform.createFolder(relPath);
+      } else if (doc.content_json) {
+        const customType = fileTypeRegistry.getByDocType(docType) || fileTypeRegistry.getByPath(newTitle);
+        const targetRelPath = getDocumentDiskPath(duplicatedDoc, relPath);
+        const diskContent = customType?.isRawContent ? doc.content_json : jsonToMarkdown(doc.content_json, newTitle, doc.properties);
+        await platform.saveMarkdownFile(newTitle, diskContent, targetRelPath);
+
+        const normRel = targetRelPath.replace(/\\/g, '/').toLowerCase();
+        const manifestKey = normRel;
+        const contentHash = computeFastHash(diskContent);
+        try {
+          await dbAdapter.execute(
+            `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+            [manifestKey, now, diskContent.length, contentHash, now]
+          );
+        } catch (mErr) {}
+      }
+    } catch (e) {
+      console.error('[duplicateDocument] Error persisting duplicated document to disk:', e);
+    }
+  }
+
+  // If this is a folder, recursively duplicate all children into the new folder
+  if (isFolder) {
+    const children = allDocs.filter((d) => d.parent_id === doc.id);
+    for (const child of children) {
+      await duplicateDocument(child.id, newId);
+    }
+  }
+
+  return duplicatedDoc;
 }
 
 export async function deleteDocument(id: string, fallbackDocs?: DocumentItem[]): Promise<DocumentItem[]> {

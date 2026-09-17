@@ -15,6 +15,7 @@ import {
   SplitRightIcon,
   SplitDownIcon,
   Copy01Icon,
+  PinIcon,
   Alert02Icon,
   StickyNote02Icon,
   BookOpen01Icon,
@@ -29,6 +30,10 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useSidebarTabs, useNoetherApp, useViews, useTabDecorators } from '@/core/app/AppContext';
 import { useSidebarDockStore, DockItem, DockZone } from '@/store/sidebarDockStore';
 import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
+import type {
+  TabContextMenuContext,
+  TabContextMenuActionDefinition,
+} from '@/core/registries/TabContextMenuRegistry';
 
 
 import { useIsMaximized } from '@/hooks/useIsMaximized';
@@ -71,6 +76,8 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     const showToast = useWorkspaceStore((s) => s.showToast);
     const documents = useDocumentStore((s) => s.documents);
     const { showContextMenu } = useAppContextMenu();
+    const app = useNoetherApp();
+    const openTabInPane = useWorkspaceStore((s) => s.openTabInPane);
 
     const handleReorder = useCallback(
       (src: number, dst: number) => {
@@ -104,10 +111,34 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
         const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
         const canCloseTab = tabs.length > 1 || !isOnly || !isTabEmpty;
 
+        const context: TabContextMenuContext = {
+          tab,
+          paneId,
+          index,
+          totalTabs: tabs.length,
+          doc: doc || null,
+          app,
+        };
+
+        const mapAction = (action: TabContextMenuActionDefinition): ContextMenuItem => ({
+          id: action.id,
+          title: typeof action.title === 'function' ? action.title(context) : action.title,
+          icon: typeof action.icon === 'function' ? action.icon(context) : action.icon,
+          disabled: action.isEnabled ? !action.isEnabled(context) : false,
+          isDanger: action.isDanger,
+          onClick: () => action.onClick(context),
+        });
+
+        const registeredTabActions = app.tabContextMenu?.getActions(context, 'tabs') ?? [];
+        const registeredSplitActions = app.tabContextMenu?.getActions(context, 'split') ?? [];
+        const registeredCustomActions = app.tabContextMenu?.getActions(context, 'actions') ?? [];
+        const registeredDangerActions = app.tabContextMenu?.getActions(context, 'danger') ?? [];
+
         const items: ContextMenuItem[] = [
           {
             id: 'toggle-pin',
             title: tab.is_pinned ? 'Unpin tab' : 'Pin tab',
+            icon: <PinIcon size={14} />,
             onClick: () => {
               togglePinTab(tab.id);
             },
@@ -147,6 +178,32 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
               }
             },
           },
+          {
+            id: 'close-tabs-left',
+            title: 'Close tabs to the left',
+            disabled: index === 0,
+            onClick: () => {
+              const toClose = tabs.slice(0, index);
+              for (const other of toClose) {
+                if (!other.is_pinned) {
+                  closeTabInPane(paneId, other.id);
+                }
+              }
+            },
+          },
+          {
+            id: 'close-all-tabs',
+            title: 'Close all tabs',
+            disabled: !canCloseTab,
+            onClick: () => {
+              for (const other of tabs) {
+                if (!other.is_pinned) {
+                  closeTabInPane(paneId, other.id);
+                }
+              }
+            },
+          },
+          ...registeredTabActions.map(mapAction),
           { type: 'separator' },
           {
             id: 'split-right',
@@ -177,8 +234,12 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
           {
             id: 'duplicate-tab',
             title: 'Duplicate tab',
+            icon: <Copy01Icon size={14} />,
             onClick: () => {
-              splitPane(paneId, 'horizontal', tab.document_id, tab.title, {
+              openTabInPane(paneId, tab.document_id, tab.title, {
+                newTab: true,
+                replaceCurrentTab: false,
+                insertIndex: index + 1,
                 viewMode: tab.view_mode,
                 viewType: tab.view_type,
                 icon: tab.icon,
@@ -186,6 +247,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
               });
             },
           },
+          ...registeredSplitActions.map(mapAction),
         ];
 
         if (!isOnly) {
@@ -227,19 +289,29 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
               },
               {
                 id: 'copy-md',
-                title: 'Copy Markdown link',
+                title: 'Copy note link (Wikilink)',
                 onClick: async () => {
                   await navigator.clipboard.writeText(`[[${doc.title}]]`);
-                  showToast('Copied Markdown link', 'success');
+                  showToast('Copied note link', 'success');
                 },
               },
             ],
           });
         }
 
+        if (registeredCustomActions.length > 0) {
+          items.push({ type: 'separator' });
+          items.push(...registeredCustomActions.map(mapAction));
+        }
+
+        if (registeredDangerActions.length > 0) {
+          items.push({ type: 'separator' });
+          items.push(...registeredDangerActions.map(mapAction));
+        }
+
         showContextMenu(e, items, { scope: 'tab', data: tab });
       },
-      [tabs, paneId, isOnly, closeTabInPane, togglePinTab, splitPane, closePane, documents, vaultPath, showToast, showContextMenu]
+      [tabs, paneId, isOnly, closeTabInPane, togglePinTab, splitPane, closePane, openTabInPane, documents, vaultPath, showToast, showContextMenu, app]
     );
 
     const handleBarContextMenu = useCallback(
@@ -292,7 +364,6 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
       return { flex: 1 };
     }, [isOnly, isLast, totalColumns]);
 
-    const app = useNoetherApp();
     const activeTabObj = tabs.find((t) => t.id === activeTabId);
     const activeViewType = activeTabObj?.view_type || activeTabObj?.view_mode || 'document';
     const isImmersiveView = Boolean(
@@ -660,10 +731,13 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   >
                     {displayTitle}
                   </span>
+                  {tab.is_pinned && (
+                    <PinIcon size={11} className="shrink-0 opacity-70 ml-1 text-[var(--noether-text-muted)]" />
+                  )}
                   <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" className="ml-1" />
                 </div>
 
-                {canCloseTab && (
+                {canCloseTab && !tab.is_pinned && (
                   <button
                     type="button"
                     data-tauri-drag-region="false"

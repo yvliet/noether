@@ -351,6 +351,16 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
     });
   };
 
+  // Duplicate Note
+  const handleDuplicate = async () => {
+    if (!doc) return;
+    setIsOpen(false);
+    const copy = await useDocumentStore.getState().duplicateNote(doc.id);
+    if (copy) {
+      showToast(`Duplicated note as "${copy.title}"`, 'success');
+    }
+  };
+
   // Move File To...
   const handleMoveFile = () => {
     if (!doc) return;
@@ -498,7 +508,10 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
   // Open in Default App
   const handleOpenInDefaultApp = () => {
     setIsOpen(false);
-    if (platform.isDesktop()) {
+    if (doc) {
+      const relPath = getDocumentPath(doc, documents) + '.md';
+      platform.openInDefaultApp(relPath);
+    } else if (platform.isDesktop()) {
       platform.openVaultInExplorer(vaultPath);
     }
   };
@@ -506,7 +519,10 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
   // Show in System Explorer
   const handleShowInExplorer = () => {
     setIsOpen(false);
-    if (platform.isDesktop()) {
+    if (doc) {
+      const relPath = getDocumentPath(doc, documents) + '.md';
+      platform.revealInExplorer(relPath);
+    } else if (platform.isDesktop()) {
       platform.openVaultInExplorer(vaultPath);
     } else {
       showToast('Vault folder: ' + (vaultPath || 'local memory'), 'info');
@@ -818,6 +834,19 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
                 >
                   <Edit02Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                   <span>Rename...</span>
+                </button>
+
+                <button
+                  type="button"
+                  onMouseEnter={() => setActiveSubmenu(null)}
+                  onClick={handleDuplicate}
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    <Copy01Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
+                    <span>Duplicate note</span>
+                  </div>
+                  <span className="text-[10px] text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-secondary)]">Ctrl D</span>
                 </button>
 
                 <button

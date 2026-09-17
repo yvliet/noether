@@ -494,6 +494,7 @@ export function registerNativeCommands(app: NoetherApp): void {
       title: 'Duplicate active note',
       section: 'Files',
       icon: <Copy01Icon size={16} />,
+      hotkey: 'Ctrl+D',
       aliases: ['duplicate note', 'clone note', 'copy note', 'make a copy'],
       isEnabled: (appInstance) => {
         const doc = appInstance.vault.activeDocument;
@@ -503,24 +504,10 @@ export function registerNativeCommands(app: NoetherApp): void {
         const activeDoc = appInstance.vault.activeDocument;
         if (!activeDoc || activeDoc.is_folder) return;
 
-        const existingTitles = new Set(
-          appInstance.vault.documents
-            .filter((d) => d.parent_id === activeDoc.parent_id)
-            .map((d) => d.title.toLowerCase())
-        );
-        const match = activeDoc.title.match(/^(.*?)(?:\s+\(Copy\)|\s+Copy(?:\s+(\d+))?)?$/i);
-        const baseName = match && match[1] ? match[1].trim() : activeDoc.title;
-        let copyTitle = `${baseName} Copy`;
-        let counter = 2;
-        while (existingTitles.has(copyTitle.toLowerCase())) {
-          copyTitle = `${baseName} Copy ${counter}`;
-          counter++;
-        }
-
-        const newDoc = await appInstance.vault.createNewNote(copyTitle, activeDoc.parent_id);
-        if (newDoc) {
-          appInstance.workspace.openTab(newDoc.id, newDoc.title);
-          appInstance.workspace.showToast(`Duplicated note as "${copyTitle}"`, 'info');
+        const copy = await appInstance.vault.duplicateDocument(activeDoc.id);
+        if (copy) {
+          appInstance.workspace.openTab(copy.id, copy.title);
+          appInstance.workspace.showToast(`Duplicated note as "${copy.title}"`, 'info');
         }
       },
     },
