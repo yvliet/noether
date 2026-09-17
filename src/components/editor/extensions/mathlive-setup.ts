@@ -10,6 +10,12 @@ export function setupMathLive(): void {
   if (isMathLiveConfigured || typeof window === 'undefined') return;
   isMathLiveConfigured = true;
 
+  if ((window as any).MathfieldElement) {
+    try {
+      (window as any).MathfieldElement.mathModeSpace = '\\:';
+    } catch {}
+  }
+
   if (window.mathVirtualKeyboard) {
     // Customize virtual keyboard layouts
     window.mathVirtualKeyboard.layouts = [

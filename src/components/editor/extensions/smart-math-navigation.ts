@@ -1,6 +1,6 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey } from '@tiptap/pm/state';
-import { findMathRangeAtPos } from './mathlive-wysiwyg';
+import { findMathRangeAtPos } from './math-chip-extension';
 
 export const SmartMathNavigationPluginKey = new PluginKey('smartMathNavigation');
 
@@ -342,68 +342,6 @@ export const SmartMathNavigation = Extension.create({
               }
             }
 
-            // ── 7. Up / Down arrow navigation in fractions & scripts ──
-            if (empty && (key === 'ArrowUp' || key === 'ArrowDown')) {
-              // A. Fractions: jump between numerator and denominator
-              const fractions = parseFractions(latex);
-              for (const frac of fractions) {
-                // If cursor in numerator and pressing Down -> jump to denominator
-                if (key === 'ArrowDown' && posInMath >= frac.numStart && posInMath <= frac.numEnd) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const offsetInNum = posInMath - frac.numStart;
-                  const denLen = frac.denEnd - frac.denStart;
-                  const targetPos = contentStart + frac.denStart + Math.min(offsetInNum, denLen);
-                  editor.chain().focus().setTextSelection(targetPos).run();
-                  return true;
-                }
-
-                // If cursor in denominator and pressing Up -> jump to numerator
-                if (key === 'ArrowUp' && posInMath >= frac.denStart && posInMath <= frac.denEnd) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const offsetInDen = posInMath - frac.denStart;
-                  const numLen = frac.numEnd - frac.numStart;
-                  const targetPos = contentStart + frac.numStart + Math.min(offsetInDen, numLen);
-                  editor.chain().focus().setTextSelection(targetPos).run();
-                  return true;
-                }
-              }
-
-              // B. Superscripts: jump up into exponent or down to base
-              const sups = parseScripts(latex, '^');
-              for (const sup of sups) {
-                if (key === 'ArrowUp' && posInMath === sup.basePos) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  editor.chain().focus().setTextSelection(contentStart + sup.innerStart).run();
-                  return true;
-                }
-                if (key === 'ArrowDown' && posInMath >= sup.innerStart && posInMath <= sup.innerEnd) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  editor.chain().focus().setTextSelection(contentStart + sup.innerEnd + 1).run();
-                  return true;
-                }
-              }
-
-              // C. Subscripts: jump down into subscript or up to base
-              const subs = parseScripts(latex, '_');
-              for (const sub of subs) {
-                if (key === 'ArrowDown' && posInMath === sub.basePos) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  editor.chain().focus().setTextSelection(contentStart + sub.innerStart).run();
-                  return true;
-                }
-                if (key === 'ArrowUp' && posInMath >= sub.innerStart && posInMath <= sub.innerEnd) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  editor.chain().focus().setTextSelection(contentStart + sub.innerEnd + 1).run();
-                  return true;
-                }
-              }
-            }
 
             // ── 8. Tab / Shift-Tab slot navigation ──
             if (empty && key === 'Tab') {

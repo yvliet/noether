@@ -86,7 +86,7 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
         });
         return true;
       }
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.key === 'Tab') {
         onSelect({ rows: hoveredRef.current.rows, cols: hoveredRef.current.cols });
         return true;
       }
@@ -108,8 +108,16 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
   return (
     <div
       onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onPointerDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
       style={{ boxShadow: 'var(--noether-shadow-2)' }}
-      className="bg-[var(--noether-bg-popover,var(--noether-bg-card,#232323))] border border-[var(--noether-border-base,#292929)] rounded-lg p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50"
+      className="bg-[var(--noether-bg-popover,var(--noether-bg-card,#232323))] border border-[var(--noether-border-base,#292929)] rounded-lg p-2.5 w-fit select-none text-xs flex flex-col gap-2 z-50 pointer-events-auto"
     >
 
       {/* Visual Grid Selector directly on popover background */}
@@ -130,7 +138,19 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
                 key={`${r}-${c}`}
                 type="button"
                 onMouseEnter={() => setHovered({ cols: c, rows: r })}
-                onClick={() => handleCellClick(c, r)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleCellClick(c, r);
+                }}
                 className={`w-[18px] h-[18px] rounded-[3px] cursor-pointer border ${
                   isHighlighted
                     ? 'bg-white/15 border-white shadow-[0_0_2px_rgba(255,255,255,0.4)]'

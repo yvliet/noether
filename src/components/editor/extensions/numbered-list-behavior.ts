@@ -350,7 +350,7 @@ export const NumberedListBehavior = Extension.create({
           // Case B: Continue blockquote on next line
           const textAfterCursor = lineText.slice(col);
           const nextPrefix = `${blockquote.marker} `;
-          if (col === lineEndOffset) {
+          if (col === lineText.length) {
             const insertPos = $from.after();
             const nextContent = `${nextPrefix}${textAfterCursor}`;
             const newParagraph = state.schema.nodes.paragraph.create(
@@ -624,7 +624,20 @@ export const NumberedListBehavior = Extension.create({
           return true;
         }
 
-        // 4. Default plain paragraph / task list item / blockquote Shift-Enter -> standard hard break:
+        // 4. In callout headers, avoid inline hard breaks that trap body text inside .noether-callout-header
+        if (/^[ \t]*>[ \t]*\[![a-zA-Z0-9_\-]+\]/.test(lineText)) {
+          const insertPos = $from.after();
+          const newParagraph = state.schema.nodes.paragraph.create(
+            null,
+            state.schema.text('> ')
+          );
+          let tr = state.tr.insert(insertPos, newParagraph);
+          tr = tr.setSelection(TextSelection.create(tr.doc, insertPos + 3)).scrollIntoView();
+          dispatch(tr);
+          return true;
+        }
+
+        // 5. Default plain paragraph / task list item / blockquote Shift-Enter -> standard hard break:
         // Produces the exact single-block line-height spacing without paragraph margins.
         return this.editor.commands.setHardBreak();
       },

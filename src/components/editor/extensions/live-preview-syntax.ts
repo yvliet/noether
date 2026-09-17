@@ -1,9 +1,6 @@
 import { Extension } from '@tiptap/core';
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state';
 import { Decoration, DecorationSet } from '@tiptap/pm/view';
-import katex from 'katex';
-import { setupMathLive } from './mathlive-setup';
-import { findMathRangeAtPos } from './mathlive-wysiwyg';
 import { getIndentSize } from './smart-tab-indent';
 import { renderEmbedWidget } from '../embed-renderer';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -60,37 +57,6 @@ const MD_LINK_REGEX = /\[([^\]\n]+)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
 const MD_EMBED_REGEX = /!\[([^\]\n]*)\]\(((?:[^()\n]|\([^()\n]*\))+)\)/g;
 const TAG_REGEX = /(?:^|\s)#([a-zA-Z][a-zA-Z0-9_\-\/]*)/g;
 const HEX_COLOR_REGEX = /^[0-9a-fA-F]{3,6}$/;
-const BLOCK_MATH_REGEX = /\$\$([\s\S]+?)\$\$/g;
-const INLINE_MATH_REGEX = /(?<![\$\\])\$(?!\s)([^\$\n]+?)(?<!\s)\$(?![\$0-9])/g;
-
-// Fast in-memory cache for rendered KaTeX formulas to guarantee 0ms keystroke latency on scale
-const katexHtmlCache = new Map<string, { html: string; isError: boolean }>();
-const MAX_KATEX_CACHE_SIZE = 1500;
-
-function getOrRenderKatex(latex: string, displayMode: boolean): { html: string; isError: boolean } {
-  const trimmed = latex.trim() || '\\square';
-  const cacheKey = `${displayMode ? 'B' : 'I'}:${trimmed}`;
-  const hit = katexHtmlCache.get(cacheKey);
-  if (hit) return hit;
-
-  try {
-    const html = katex.renderToString(trimmed, {
-      displayMode,
-      throwOnError: false,
-    });
-    const result = { html, isError: false };
-    if (katexHtmlCache.size >= MAX_KATEX_CACHE_SIZE) {
-      const keys = Array.from(katexHtmlCache.keys()).slice(0, 500);
-      for (const k of keys) katexHtmlCache.delete(k);
-    }
-    katexHtmlCache.set(cacheKey, result);
-    return result;
-  } catch (e) {
-    const result = { html: '', isError: true };
-    katexHtmlCache.set(cacheKey, result);
-    return result;
-  }
-}
 
 // In-memory cache for measured list prefix widths to guarantee 0ms keystroke latency
 let measureCanvas: HTMLCanvasElement | null = null;
@@ -236,7 +202,7 @@ function scanBlockDecorations(
   if (node.type.name === 'heading') {
     const level = node.attrs.level || 1;
     const classes = [
-      isBlockFocused ? `is-active-heading is-active-h${level}` : '',
+      isBlockFocused ? 'is-active-heading' : '',
       isTargetHeading ? 'noether-heading-target' : '',
     ]
       .filter(Boolean)
@@ -248,6 +214,25 @@ function scanBlockDecorations(
           class: classes,
         })
       );
+    }
+
+    // Inline fence decoration for #{1,6}[ \t]* (dimmed when active, concealed when inactive)
+    const headingPrefixMatch = text.match(/^(#{1,6}[ \t]*)/);
+    if (headingPrefixMatch) {
+      const prefixLen = headingPrefixMatch[1].length;
+      if (isBlockFocused) {
+        decorations.push(
+          Decoration.inline(blockStart, blockStart + prefixLen, {
+            class: 'md-syntax-dimmed md-heading-fence',
+          })
+        );
+      } else {
+        decorations.push(
+          Decoration.inline(blockStart, blockStart + prefixLen, {
+            class: 'md-syntax-hidden md-heading-fence',
+          })
+        );
+      }
     }
   }
 
@@ -406,33 +391,14 @@ function scanBlockDecorations(
     }
 
     if (headerMeta.title) {
-      decorations.push(
-        Decoration.inline(blockStart + prefixLen, blockEnd - 1, {
-          class: 'noether-callout-title-text',
-        })
-      );
-    }
-  } else if (calloutMeta?.isCallout && !calloutMeta.isHeader) {
-    const quoteMatch = text.match(/^([ \t]*>+[ \t]?)/);
-    if (quoteMatch) {
-      const quoteLen = quoteMatch[1].length;
-      const isQuoteFocused = isFocused && selFrom <= blockStart + quoteLen && selTo >= blockStart;
-      decorations.push(
-        Decoration.inline(blockStart, blockStart + quoteLen, {
-          class: isQuoteFocused ? 'md-syntax-dimmed noether-callout-quote-marker' : 'md-syntax-hidden',
-        })
-      );
-    }
-  } else if (calloutMeta?.isStandardBlockquote) {
-    const quoteMatch = text.match(/^([ \t]*>+[ \t]?)/);
-    if (quoteMatch) {
-      const quoteLen = quoteMatch[1].length;
-      const isQuoteFocused = isFocused && selFrom <= blockStart + quoteLen && selTo >= blockStart;
-      decorations.push(
-        Decoration.inline(blockStart, blockStart + quoteLen, {
-          class: isQuoteFocused ? 'md-syntax-dimmed' : 'md-syntax-hidden',
-        })
-      );
+      const firstLineEnd = text.includes('\n') ? text.indexOf('\n') : text.length;
+      if (blockStart + prefixLen < blockStart + firstLineEnd) {
+        decorations.push(
+          Decoration.inline(blockStart + prefixLen, blockStart + firstLineEnd, {
+            class: 'noether-callout-title-text',
+          })
+        );
+      }
     }
   }
 
@@ -442,13 +408,37 @@ function scanBlockDecorations(
     const lines = text.split('\n');
     let lineOffset = 0;
     for (let l = 0; l < lines.length; l++) {
+      const lineStr = lines[l];
+
+      // Conceal quote markers ('> ') on callout body lines and standard blockquote lines
+      if (calloutMeta?.isCallout && (l > 0 || !calloutMeta.isHeader)) {
+        const quoteMatch = lineStr.match(/^([ \t]*>+[ \t]?)/);
+        if (quoteMatch) {
+          const quoteLen = quoteMatch[1].length;
+          const isQuoteFocused = isFocused && selFrom <= blockStart + lineOffset + quoteLen && selTo >= blockStart + lineOffset;
+          decorations.push(
+            Decoration.inline(blockStart + lineOffset, blockStart + lineOffset + quoteLen, {
+              class: isQuoteFocused ? 'md-syntax-dimmed noether-callout-quote-marker' : 'md-syntax-hidden',
+            })
+          );
+        }
+      } else if (calloutMeta?.isStandardBlockquote) {
+        const quoteMatch = lineStr.match(/^([ \t]*>+[ \t]?)/);
+        if (quoteMatch) {
+          const quoteLen = quoteMatch[1].length;
+          const isQuoteFocused = isFocused && selFrom <= blockStart + lineOffset + quoteLen && selTo >= blockStart + lineOffset;
+          decorations.push(
+            Decoration.inline(blockStart + lineOffset, blockStart + lineOffset + quoteLen, {
+              class: isQuoteFocused ? 'md-syntax-dimmed' : 'md-syntax-hidden',
+            })
+          );
+        }
+      }
       const globalLineIdx = startLineIdx + l;
       const lineActiveGuides = activeLineGuides?.get(globalLineIdx) ?? null;
       const lineGuideMap = Array.isArray(listGuideColumns)
         ? (listGuideColumns[globalLineIdx] ?? null)
         : null;
-
-      const lineStr = lines[l];
       const leadingMatch = lineStr.match(/^[ \t]+/);
       let leadingLen = 0;
       if (leadingMatch) {
@@ -1022,115 +1012,6 @@ function scanBlockDecorations(
           class: 'md-tag',
         })
       );
-    }
-
-    // H. Block Math: $$latex$$
-    BLOCK_MATH_REGEX.lastIndex = 0;
-    while ((match = BLOCK_MATH_REGEX.exec(text)) !== null) {
-      const matchStart = blockStart + match.index;
-      const matchEnd = matchStart + match[0].length;
-      const contentStart = matchStart + 2;
-      const contentEnd = matchEnd - 2;
-      const latex = match[1];
-
-      if (!latex || !latex.trim()) continue;
-
-      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
-
-      if (isMatchFocused) {
-        decorations.push(
-          Decoration.inline(matchStart, contentStart, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-        decorations.push(
-          Decoration.inline(contentStart, contentEnd, {
-            class: 'md-math-block',
-          })
-        );
-        decorations.push(
-          Decoration.inline(contentEnd, matchEnd, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-      } else {
-        const dom = document.createElement('div');
-        dom.className = 'md-math-render md-math-block';
-        const rendered = getOrRenderKatex(latex, true);
-        if (!rendered.isError && rendered.html) {
-          dom.innerHTML = rendered.html;
-        } else {
-          dom.className = 'md-math-render md-math-block md-math-error';
-          dom.textContent = `$$${latex}$$`;
-        }
-        decorations.push(
-          Decoration.inline(matchStart, matchEnd, {
-            class: 'md-syntax-hidden',
-          })
-        );
-        decorations.push(
-          Decoration.widget(matchStart, dom, {
-            side: -1,
-            stopEvent: () => false,
-          })
-        );
-      }
-    }
-
-    // I. Inline Math: $latex$
-    INLINE_MATH_REGEX.lastIndex = 0;
-    while ((match = INLINE_MATH_REGEX.exec(text)) !== null) {
-      const matchStart = blockStart + match.index;
-      const matchEnd = matchStart + match[0].length;
-      const contentStart = matchStart + 1;
-      const contentEnd = matchEnd - 1;
-      const latex = match[1];
-
-      // Avoid matching empty $$ or block math
-      if (match[0].includes('$$')) continue;
-
-      if (!latex || !latex.trim()) continue;
-
-      const isMatchFocused = isFocused && selFrom <= matchEnd && selTo >= matchStart;
-
-      if (isMatchFocused) {
-        decorations.push(
-          Decoration.inline(matchStart, contentStart, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-        decorations.push(
-          Decoration.inline(contentStart, contentEnd, {
-            class: 'md-math-inline',
-          })
-        );
-        decorations.push(
-          Decoration.inline(contentEnd, matchEnd, {
-            class: 'md-syntax-dimmed',
-          })
-        );
-      } else {
-        const dom = document.createElement('span');
-        dom.className = 'md-math-render md-math-inline';
-        const rendered = getOrRenderKatex(latex, false);
-        if (!rendered.isError && rendered.html) {
-          dom.innerHTML = rendered.html;
-        } else {
-          dom.className = 'md-math-render md-math-inline md-math-error';
-          dom.textContent = `$${latex}$`;
-        }
-        decorations.push(
-          Decoration.inline(matchStart, matchEnd, {
-            class: 'md-syntax-hidden',
-          })
-        );
-        decorations.push(
-          Decoration.widget(matchStart, dom, {
-            side: -1,
-            stopEvent: () => false,
-          })
-        );
-      }
     }
   }
 
@@ -1852,15 +1733,6 @@ export const LivePreviewSyntax = Extension.create({
               const embedTargetPos = getEmbedTargetPosAt(view.state.doc, pos);
               const tr = view.state.tr.setSelection(
                 (view.state.selection.constructor as any).near(view.state.doc.resolve(embedTargetPos))
-              );
-              view.dispatch(tr);
-              return true;
-            }
-            const mathEl = target.closest('.md-math-render') as HTMLElement | null;
-            if (mathEl) {
-              view.focus();
-              const tr = view.state.tr.setSelection(
-                (view.state.selection.constructor as any).near(view.state.doc.resolve(pos))
               );
               view.dispatch(tr);
               return true;

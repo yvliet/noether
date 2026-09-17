@@ -56,13 +56,18 @@ export const SourceModeEditor: React.FC<SourceModeEditorProps> = React.memo(({
   });
 
   const lastPushedTextRef = useRef<string>(initialRawMarkdown);
+  const prevDocIdRef = useRef<string>(documentId);
 
-  // Reset when active document switches
+  // Synchronize when active document switches or when initial content arrives
   useEffect(() => {
-    setText(initialRawMarkdown);
-    historyRef.current = { stack: [initialRawMarkdown], index: 0 };
-    lastPushedTextRef.current = initialRawMarkdown;
-  }, [documentId]);
+    const docChanged = prevDocIdRef.current !== documentId;
+    prevDocIdRef.current = documentId;
+    if (docChanged || !text.trim()) {
+      setText(initialRawMarkdown);
+      historyRef.current = { stack: [initialRawMarkdown], index: 0 };
+      lastPushedTextRef.current = initialRawMarkdown;
+    }
+  }, [documentId, initialRawMarkdown, text]);
 
   // Auto-resize textarea height so the canvas container handles scrolling naturally
   useEffect(() => {

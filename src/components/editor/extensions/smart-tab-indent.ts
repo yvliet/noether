@@ -1,7 +1,8 @@
 import { Extension } from '@tiptap/core';
-import { TextSelection } from '@tiptap/pm/state';
+import { Selection, TextSelection } from '@tiptap/pm/state';
 import { useSettingsStore } from '@/store/settingsStore';
 import { isSuggestionActive } from './suggestion-state';
+import { getVisualLineBounds } from '../editorCoords';
 
 /**
  * Returns current tab indent size configured in settings (clamped between 2 and 8, default 5).
@@ -256,12 +257,21 @@ export function outdentRange(editor: any, from: number, to: number, indentSize: 
 }
 
 /**
- * Handles Smart Home / Shift+Home navigation.
- * - If line has indentation:
- *   - 1st press (or from anywhere after indentation) -> jumps to after the indentation/tabs.
- *   - 2nd press (when already after the indentation) -> jumps to the true start of the line.
+ * Tracks the last navigated position and visual line affinity (-1 for upstream/line-end, 1 for downstream/line-start)
+ * to ensure that repeatedly alternating Home and End toggles continuously back-and-forth across soft wraps
+ * without stalling or escaping to adjacent visual lines.
+ */
+let lastNavPos: number | null = null;
+let lastNavAffinity: -1 | 1 = 1;
+
+/**
+ * Handles Smart Home / Shift+Home navigation on visual line boundaries.
+ * - If line has leading indentation:
+ *   - 1st press (or from anywhere after indentation) -> jumps to after the indentation.
+ *   - 2nd press (when already after the indentation) -> jumps to the true start of the visual line (col 0).
  *   - Subsequent presses toggle between the two positions.
- * - If line has no indentation -> jumps to start of line.
+ * - If line has no indentation -> jumps directly to the true start of the visual line.
+ * - Preserves selection anchor and extends selection when isShift is true.
  */
 export function handleSmartHome(editor: any, isShift: boolean): boolean {
   const { state, view } = editor;
@@ -270,55 +280,40 @@ export function handleSmartHome(editor: any, isShift: boolean): boolean {
 
   if (!$head.parent.isTextblock) return false;
 
-  const parent = $head.parent;
-  const parentOffset = $head.parentOffset;
-  const blockStart = $head.start();
-  const blockText = getBlockText(parent);
+  const currentPos = $head.pos;
+  let bias: -1 | 1 = -1;
+  if (lastNavPos === currentPos && lastNavAffinity === 1) {
+    bias = 1;
+  }
 
-  // Find line boundaries within the textblock
-  const lineStartOffset = parentOffset === 0 ? 0 : blockText.lastIndexOf('\n', parentOffset - 1) + 1;
-  const nextNewline = blockText.indexOf('\n', parentOffset);
-  const lineEndOffset = nextNewline === -1 ? blockText.length : nextNewline;
-  const lineText = blockText.slice(lineStartOffset, lineEndOffset);
+  const bounds = getVisualLineBounds(view, currentPos, undefined, bias);
+  const lineStart = bounds ? bounds.lineStart : $head.start();
+  const lineEnd = bounds ? bounds.lineEnd : $head.end();
 
-  // Measure leading whitespace on this line
+  // Extract the text of this visual line to detect leading whitespace
+  const lineText = state.doc.textBetween(lineStart, lineEnd);
   const indentMatch = lineText.match(/^[ \t]+/);
   const indentLen = indentMatch ? indentMatch[0].length : 0;
-
-  // If this line has NO indentation, delegate to native browser Home / Shift+Home.
-  // The browser natively navigates visual line boxes (handling both wrapped text and hard breaks <br>)
-  // without jumping to or selecting the preceding lines in the paragraph.
-  if (indentLen === 0) {
-    return false;
-  }
-
-  const trueLineStartOffset = lineStartOffset;
-  const firstNonWsOffset = lineStartOffset + indentLen;
-
-  const trueLineStartPos = getBlockPosFromOffset(parent, blockStart, trueLineStartOffset);
-  const firstNonWsPos = getBlockPosFromOffset(parent, blockStart, firstNonWsOffset);
-
-  const currentPos = $head.pos;
+  const firstNonWsPos = lineStart + indentLen;
 
   let targetPos: number;
-
-  // There is an indent:
-  // If not currently at firstNonWsPos, go to firstNonWsPos (after tabs/indents)
-  // If already at firstNonWsPos, go to trueLineStartPos (true start of line)
-  if (currentPos !== firstNonWsPos) {
-    targetPos = firstNonWsPos;
-  } else {
-    targetPos = trueLineStartPos;
-  }
-
-  // If already at targetPos and line has indent, toggle to the other position
-  if (currentPos === targetPos) {
-    if (targetPos === trueLineStartPos) {
+  if (indentLen > 0) {
+    if (currentPos !== firstNonWsPos) {
       targetPos = firstNonWsPos;
     } else {
-      targetPos = trueLineStartPos;
+      targetPos = lineStart;
     }
+  } else {
+    targetPos = lineStart;
   }
+
+  // Toggle if already at targetPos
+  if (currentPos === targetPos && indentLen > 0) {
+    targetPos = targetPos === lineStart ? firstNonWsPos : lineStart;
+  }
+
+  lastNavPos = targetPos;
+  lastNavAffinity = 1;
 
   let newSelection: TextSelection;
   if (isShift) {
@@ -327,6 +322,83 @@ export function handleSmartHome(editor: any, isShift: boolean): boolean {
     newSelection = TextSelection.create(state.doc, targetPos);
   }
 
+  const tr = state.tr.setSelection(newSelection).scrollIntoView();
+  view.dispatch(tr);
+  return true;
+}
+
+/**
+ * Handles End / Shift+End navigation to visual line end.
+ * Preserves selection anchor and extends selection when isShift is true.
+ */
+export function handleSmartEnd(editor: any, isShift: boolean): boolean {
+  const { state, view } = editor;
+  const { selection } = state;
+  const $head = selection.$head || selection.$from;
+
+  if (!$head.parent.isTextblock) return false;
+
+  const currentPos = $head.pos;
+  let bias: -1 | 1 = 1;
+  if (lastNavPos === currentPos && lastNavAffinity === -1) {
+    bias = -1;
+  }
+
+  const bounds = getVisualLineBounds(view, currentPos, undefined, bias);
+  const lineEnd = bounds ? bounds.lineEnd : $head.end();
+
+  lastNavPos = lineEnd;
+  lastNavAffinity = -1;
+
+  let newSelection: TextSelection;
+  if (isShift) {
+    newSelection = TextSelection.create(state.doc, selection.anchor, lineEnd);
+  } else {
+    newSelection = TextSelection.create(state.doc, lineEnd);
+  }
+
+  const tr = state.tr.setSelection(newSelection).scrollIntoView();
+  view.dispatch(tr);
+  return true;
+}
+
+/**
+ * Handles Mod-Home (Ctrl+Home on Windows/Linux, Cmd+Home on macOS) navigation to document start.
+ */
+export function handleDocStart(editor: any, isShift: boolean): boolean {
+  const { state, view } = editor;
+  const startSel = Selection.atStart(state.doc);
+  const targetPos = startSel.from;
+  lastNavPos = targetPos;
+  lastNavAffinity = 1;
+
+  let newSelection: Selection;
+  if (isShift) {
+    newSelection = TextSelection.create(state.doc, state.selection.anchor, targetPos);
+  } else {
+    newSelection = startSel;
+  }
+  const tr = state.tr.setSelection(newSelection).scrollIntoView();
+  view.dispatch(tr);
+  return true;
+}
+
+/**
+ * Handles Mod-End (Ctrl+End on Windows/Linux, Cmd+End on macOS) navigation to document end.
+ */
+export function handleDocEnd(editor: any, isShift: boolean): boolean {
+  const { state, view } = editor;
+  const endSel = Selection.atEnd(state.doc);
+  const targetPos = endSel.from;
+  lastNavPos = targetPos;
+  lastNavAffinity = -1;
+
+  let newSelection: Selection;
+  if (isShift) {
+    newSelection = TextSelection.create(state.doc, state.selection.anchor, targetPos);
+  } else {
+    newSelection = endSel;
+  }
   const tr = state.tr.setSelection(newSelection).scrollIntoView();
   view.dispatch(tr);
   return true;
@@ -533,6 +605,18 @@ export const SmartTabIndent = Extension.create({
       Home: () => handleSmartHome(this.editor, false),
 
       'Shift-Home': () => handleSmartHome(this.editor, true),
+
+      End: () => handleSmartEnd(this.editor, false),
+
+      'Shift-End': () => handleSmartEnd(this.editor, true),
+
+      'Mod-Home': () => handleDocStart(this.editor, false),
+
+      'Mod-Shift-Home': () => handleDocStart(this.editor, true),
+
+      'Mod-End': () => handleDocEnd(this.editor, false),
+
+      'Mod-Shift-End': () => handleDocEnd(this.editor, true),
     };
   },
 });

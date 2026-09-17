@@ -62,6 +62,104 @@ function getVisibleCoordsAtPos(
   return { coords, pos };
 }
 
+export interface VisualLineBounds {
+  lineStart: number;
+  lineEnd: number;
+  refCoords: { top: number; bottom: number; left: number; right: number };
+}
+
+/**
+ * Resolves the start and end document positions of the visual (screen-rendered) line
+ * for a given document position. Accurately handles soft-wrapped paragraphs, hard breaks,
+ * inline widgets, and markdown syntax decorations.
+ */
+export function getVisualLineBounds(
+  view: EditorView | null | undefined,
+  pos: number,
+  targetY?: number,
+  bias: -1 | 1 = 1
+): VisualLineBounds | null {
+  if (!view || !view.state) return null;
+  const { doc } = view.state;
+  if (!doc || doc.content.size === 0) return null;
+
+  const clampedPos = Math.max(0, Math.min(doc.content.size, pos));
+  const $pos = doc.resolve(clampedPos);
+  if (!$pos.parent.isTextblock) return null;
+
+  const start = $pos.start();
+  const end = $pos.end();
+  if (start >= end) {
+    const coords = safeCoordsAtPos(view, start, 1);
+    return { lineStart: start, lineEnd: start, refCoords: coords };
+  }
+
+  let refCoords: { top: number; bottom: number; left: number; right: number } | null = null;
+  let lineProbePos = clampedPos;
+
+  if (typeof targetY === 'number') {
+    let low = start;
+    let high = end;
+    while (low <= high) {
+      const mid = Math.floor((low + high) / 2);
+      const visible = getVisibleCoordsAtPos(view, mid, 1, start, end, false);
+      const coords = visible.coords;
+      if (!isZeroCoords(coords)) {
+        if (coords.bottom < targetY) {
+          low = mid + 1;
+        } else if (coords.top > targetY) {
+          high = mid - 1;
+        } else {
+          lineProbePos = visible.pos;
+          refCoords = coords;
+          break;
+        }
+        lineProbePos = visible.pos;
+        refCoords = coords;
+      } else {
+        break;
+      }
+    }
+  }
+
+  if (!refCoords) {
+    const effectiveSide: -1 | 1 =
+      bias === -1
+        ? (lineProbePos <= start ? 1 : -1)
+        : (lineProbePos >= end ? -1 : 1);
+
+    const refCoordsResult = getVisibleCoordsAtPos(
+      view,
+      lineProbePos,
+      effectiveSide,
+      start,
+      end,
+      effectiveSide === -1
+    );
+    refCoords = refCoordsResult.coords;
+  }
+
+  if (isZeroCoords(refCoords)) {
+    return { lineStart: start, lineEnd: end, refCoords };
+  }
+
+  let lineStart = lineProbePos;
+  while (lineStart > start) {
+    const c = safeCoordsAtPos(view, lineStart - 1, 1);
+    if (!isZeroCoords(c) && c.bottom <= refCoords.top + 3) break;
+    lineStart--;
+  }
+
+  let lineEnd = lineProbePos;
+  while (lineEnd < end) {
+    const c = safeCoordsAtPos(view, lineEnd + 1, -1);
+    if (!isZeroCoords(c) && c.top >= refCoords.bottom - 3) break;
+    lineEnd++;
+  }
+
+  return { lineStart, lineEnd, refCoords };
+}
+
 /**
  * Calculates document position when clicking or dragging in dead space or line margins.
  *
@@ -153,51 +251,12 @@ export function getLineEdgeInfo(
     return { pos: start, isDeadSpace: true, isLineStart: true, isLineEnd: true };
   }
 
-  // 5. Binary search for a character on the exact visual line matching clientY
-  let low = start;
-  let high = end;
-  let lineProbePos = $pos.pos;
-
-  while (low <= high) {
-    const mid = Math.floor((low + high) / 2);
-    const visible = getVisibleCoordsAtPos(view, mid, 1, start, end, false);
-    const coords = visible.coords;
-    if (!isZeroCoords(coords)) {
-      if (coords.bottom < clientY) {
-        low = mid + 1;
-      } else if (coords.top > clientY) {
-        high = mid - 1;
-      } else {
-        lineProbePos = visible.pos;
-        break;
-      }
-      lineProbePos = visible.pos;
-    } else {
-      break;
-    }
+  const bounds = getVisualLineBounds(view, probePos, clientY);
+  if (!bounds) {
+    return { pos: probePos, isDeadSpace: false, isLineStart: false, isLineEnd: false };
   }
 
-  // 6. Expand outward from lineProbePos to find visual line boundaries
-  const refCoordsResult =
-    lineProbePos === end
-      ? getVisibleCoordsAtPos(view, lineProbePos, -1, start, end, true)
-      : getVisibleCoordsAtPos(view, lineProbePos, 1, start, end, false);
-  const refCoords = refCoordsResult.coords;
-
-  let lineStart = lineProbePos;
-  while (lineStart > start) {
-    const c = safeCoordsAtPos(view, lineStart - 1, 1);
-    if (!isZeroCoords(c) && c.bottom <= refCoords.top + 3) break;
-    lineStart--;
-  }
-
-  let lineEnd = lineProbePos;
-  while (lineEnd < end) {
-    const c = safeCoordsAtPos(view, lineEnd + 1, -1);
-    if (!isZeroCoords(c) && c.top >= refCoords.bottom - 3) break;
-    lineEnd++;
-  }
-
+  const { lineStart, lineEnd, refCoords } = bounds;
   const startCoords = getVisibleCoordsAtPos(view, lineStart, 1, start, end, false).coords;
   const endCoords = getVisibleCoordsAtPos(view, lineEnd, -1, start, end, true).coords;
 

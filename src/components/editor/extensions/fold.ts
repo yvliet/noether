@@ -299,98 +299,19 @@ function getChildBlocksForIndent(blocks: BlockInfo[], targetIdx: number): BlockI
   return childBlocks;
 }
 
-function deleteCollapsedIndent(view: any, targetPos: number): boolean {
-  const state = view.state;
-  const doc = state.doc;
-  const $target = doc.resolve(targetPos + 1);
-  const parent = $target.parent;
-
-  // Check if target is a native TipTap listItem / taskItem with a nested list
-  if (parent.type.name === 'listItem' || parent.type.name === 'taskItem') {
-    let nestedListPos = -1;
-    let nestedListSize = 0;
-    parent.forEach((child: any, childOffset: number) => {
-      if (
-        child.type.name === 'bulletList' ||
-        child.type.name === 'orderedList' ||
-        child.type.name === 'taskList'
-      ) {
-        nestedListPos = targetPos + 1 + childOffset;
-        nestedListSize = child.nodeSize;
-      }
-    });
-
-    if (nestedListPos >= 0 && nestedListSize > 0) {
-      let tr = state.tr.delete(nestedListPos, nestedListPos + nestedListSize);
-      tr = tr.setMeta('unfoldIndent', targetPos);
-      const lastCharPos = targetPos + parent.nodeSize - nestedListSize - 1;
-      tr = tr.setSelection(TextSelection.create(tr.doc, lastCharPos));
-      view.dispatch(tr);
-      view.focus();
-      return true;
-    }
-  }
-
-  // Soft-indented paragraph blocks (multi-level tree)
-  const blocks = extractBlocks(doc);
-  const targetIdx = blocks.findIndex((b) => b.pos === targetPos || Math.abs(b.pos - targetPos) <= 2);
-
-  let childStartPos: number | null = null;
-  let childEndPos: number | null = null;
-
-  if (targetIdx >= 0) {
-    const childBlocks = getChildBlocksForIndent(blocks, targetIdx);
-    if (childBlocks.length > 0) {
-      childStartPos = childBlocks[0].pos;
-      const lastChild = childBlocks[childBlocks.length - 1];
-      childEndPos = lastChild.pos + lastChild.nodeSize;
-    }
-  }
-
-  let tr = state.tr;
-  if (childStartPos !== null && childEndPos !== null && childStartPos < childEndPos) {
-    tr = tr.delete(childStartPos, childEndPos);
-  }
-  tr = tr.setMeta('unfoldIndent', targetPos);
-  const targetSize = targetIdx >= 0 ? blocks[targetIdx].nodeSize : parent.nodeSize;
-  const lastCharPos = targetPos + targetSize - 1;
-  tr = tr.setSelection(TextSelection.create(tr.doc, lastCharPos));
-  view.dispatch(tr);
+function unfoldCollapsedIndent(view: any, targetPos: number): boolean {
+  view.dispatch(view.state.tr.setMeta('unfoldIndent', targetPos));
   view.focus();
   return true;
 }
 
-function deleteCollapsedHeading(view: any, targetPos: number): boolean {
-  const state = view.state;
-  const $target = state.doc.resolve(targetPos + 1);
-  const parent = $target.parent;
-  const currentLevel = parent.attrs.level || 1;
-
-  let endPos = state.doc.content.size;
-  state.doc.descendants((node: any, pos: number) => {
-    if (pos > targetPos && node.type.name === 'heading') {
-      const level = node.attrs.level || 1;
-      if (level <= currentLevel && endPos === state.doc.content.size) {
-        endPos = pos;
-        return false;
-      }
-    }
-  });
-
-  const startPos = targetPos + parent.nodeSize;
-  let tr = state.tr;
-  if (startPos < endPos) {
-    tr = tr.delete(startPos, endPos);
-  }
-  tr = tr.setMeta('unfoldHeading', targetPos);
-  const lastCharPos = targetPos + parent.nodeSize - 1;
-  tr = tr.setSelection(TextSelection.create(tr.doc, lastCharPos));
-  view.dispatch(tr);
+function unfoldCollapsedHeading(view: any, targetPos: number): boolean {
+  view.dispatch(view.state.tr.setMeta('unfoldHeading', targetPos));
   view.focus();
   return true;
 }
 
-function createFoldPlaceholder(onClick: () => void, onDelete?: () => void): HTMLElement {
+function createFoldPlaceholder(onClick: () => void, onUnfold?: () => void): HTMLElement {
   const container = document.createElement('span');
   container.className = 'noether-fold-placeholder-wrap';
   container.contentEditable = 'false';
@@ -412,20 +333,19 @@ function createFoldPlaceholder(onClick: () => void, onDelete?: () => void): HTML
 
   container.appendChild(badge);
 
-  // Editable trailing tail for natural browser caret positioning after the ellipsis
+  // Non-destructive placeholder tail
   const tail = document.createElement('span');
   tail.className = 'noether-fold-tail';
-  tail.contentEditable = 'true';
-  tail.textContent = '\u200B';
-  tail.style.userSelect = 'text';
+  tail.contentEditable = 'false';
+  tail.style.userSelect = 'none';
   tail.style.outline = 'none';
 
   tail.onkeydown = (e) => {
     if (e.key === 'Backspace' || e.key === 'Delete') {
       e.preventDefault();
       e.stopPropagation();
-      if (onDelete) {
-        onDelete();
+      if (onUnfold) {
+        onUnfold();
       }
     }
   };
@@ -576,7 +496,7 @@ function buildFoldDecorations(
                   view.dispatch(view.state.tr.setMeta('toggleFoldHeading', h.pos));
                 },
                 () => {
-                  deleteCollapsedHeading(view, h.pos);
+                  unfoldCollapsedHeading(view, h.pos);
                 }
               ),
             { side: 1, ignoreSelection: false }
@@ -647,7 +567,7 @@ function buildFoldDecorations(
                     view.dispatch(view.state.tr.setMeta('toggleFoldIndent', block.pos));
                   },
                   () => {
-                    deleteCollapsedIndent(view, block.pos);
+                    unfoldCollapsedIndent(view, block.pos);
                   }
                 ),
               { side: 1, ignoreSelection: false }
@@ -724,7 +644,7 @@ function buildFoldDecorations(
                       view.dispatch(view.state.tr.setMeta('toggleFoldIndent', pos));
                     },
                     () => {
-                      deleteCollapsedIndent(view, pos);
+                      unfoldCollapsedIndent(view, pos);
                     }
                   ),
                 { side: 1, ignoreSelection: false }
@@ -768,11 +688,8 @@ function buildFoldDecorations(
                 view.dispatch(view.state.tr.setMeta('toggleFoldCallout', c.headerPos));
               },
               () => {
-                const firstChild = c.bodyBlocks[0];
-                const lastChild = c.bodyBlocks[c.bodyBlocks.length - 1];
-                let tr = view.state.tr.delete(firstChild.pos, lastChild.pos + lastChild.nodeSize);
-                tr = tr.setMeta('unfoldCallout', c.headerPos);
-                view.dispatch(tr);
+                view.dispatch(view.state.tr.setMeta('unfoldCallout', c.headerPos));
+                view.focus();
               }
             ),
           { side: 1, ignoreSelection: false }
@@ -1108,6 +1025,7 @@ export const Fold = Extension.create<FoldOptions>({
             const pluginState = FoldPluginKey.getState(state);
             const foldedHeadings = pluginState?.foldedHeadings || new Set<number>();
             const foldedIndents = pluginState?.foldedIndents || new Set<number>();
+            const foldedCallouts = pluginState?.foldedCallouts || new Set<number>();
 
             // Check if DOM selection is inside .noether-fold-tail (in front of the ellipsis)
             const domSel = window.getSelection();
@@ -1142,10 +1060,17 @@ export const Fold = Extension.create<FoldOptions>({
               if (event.key === 'Backspace' || event.key === 'Delete') {
                 event.preventDefault();
                 event.stopPropagation();
+                const isCallout = Array.from<number>(foldedCallouts as any).some(
+                  (pos) => pos === parentPos || Math.abs(pos - parentPos) <= 2
+                );
                 if (parentNode.type.name === 'heading') {
-                  return deleteCollapsedHeading(view, parentPos);
+                  return unfoldCollapsedHeading(view, parentPos);
+                } else if (isCallout) {
+                  view.dispatch(view.state.tr.setMeta('unfoldCallout', parentPos));
+                  view.focus();
+                  return true;
                 } else {
-                  return deleteCollapsedIndent(view, parentPos);
+                  return unfoldCollapsedIndent(view, parentPos);
                 }
               }
 
@@ -1211,7 +1136,10 @@ export const Fold = Extension.create<FoldOptions>({
               const isIndentFolded = Array.from<number>(foldedIndents as any).some(
                 (pos) => pos === parentPos || Math.abs(pos - parentPos) <= 2
               );
-              const isFolded = isHeadingFolded || isIndentFolded;
+              const isCalloutFolded = Array.from<number>(foldedCallouts as any).some(
+                (pos) => pos === parentPos || Math.abs(pos - parentPos) <= 2
+              );
+              const isFolded = isHeadingFolded || isIndentFolded || isCalloutFolded;
 
               if (isAtEnd && isFolded && !isInTail) {
                 // When at the end of the text, pressing ArrowRight steps into the tail after the ellipsis
@@ -1231,18 +1159,22 @@ export const Fold = Extension.create<FoldOptions>({
                   }
                 }
 
-                // Forward Delete at the end of the line right before the ellipsis deletes the entire collapsed section
+                // Forward Delete at the end of the line unfolds the collapsed section instead of deleting
                 if (event.key === 'Delete') {
                   event.preventDefault();
                   event.stopPropagation();
                   if (parent.type.name === 'heading') {
-                    return deleteCollapsedHeading(view, parentPos);
+                    return unfoldCollapsedHeading(view, parentPos);
+                  } else if (isCalloutFolded) {
+                    view.dispatch(view.state.tr.setMeta('unfoldCallout', parentPos));
+                    view.focus();
+                    return true;
                   } else {
-                    return deleteCollapsedIndent(view, parentPos);
+                    return unfoldCollapsedIndent(view, parentPos);
                   }
                 }
 
-                // Backspace on an empty or marker-only folded line deletes the collapsed section
+                // Backspace on an empty or marker-only folded line unfolds the collapsed section instead of deleting
                 const isEmptyLine =
                   parent.content.size === 0 ||
                   /^[ \t]*(\d+\.|[a-zA-Z]{1,2}\.|[-*+]|\[[ xX]\])?[ \t]*$/.test(parent.textContent || '');
@@ -1251,9 +1183,13 @@ export const Fold = Extension.create<FoldOptions>({
                   event.preventDefault();
                   event.stopPropagation();
                   if (parent.type.name === 'heading') {
-                    return deleteCollapsedHeading(view, parentPos);
+                    return unfoldCollapsedHeading(view, parentPos);
+                  } else if (isCalloutFolded) {
+                    view.dispatch(view.state.tr.setMeta('unfoldCallout', parentPos));
+                    view.focus();
+                    return true;
                   } else {
-                    return deleteCollapsedIndent(view, parentPos);
+                    return unfoldCollapsedIndent(view, parentPos);
                   }
                 }
               }

@@ -8,7 +8,7 @@ import {
   getSmartBackspaceAction,
   getTabOutDelta,
 } from './smart-pairing-utils';
-import { findMathRangeAtPos } from './mathlive-wysiwyg';
+import { findMathRangeAtPos } from './math-chip-extension';
 import { isSuggestionActive } from './suggestion-state';
 
 export const AutoPairingPluginKey = new PluginKey('autoPairing');
@@ -71,6 +71,12 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
             keydown(view, event) {
               if (event.ctrlKey || event.metaKey || event.altKey) return false;
 
+              // Never process auto-pairing keystrokes when focus is inside a math field or math chip
+              const targetEl = event.target as HTMLElement | null;
+              if (targetEl?.closest?.('.noether-math-node, math-field, .noether-live-math-field')) {
+                return false;
+              }
+
               const key = event.key;
               const { state } = view;
               const { selection } = state;
@@ -85,26 +91,25 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                 const isInlineCode = state.schema.marks.code ? Boolean(state.doc.rangeHasMark(from, to, state.schema.marks.code)) : false;
 
                 if (state.schema.nodes.mathChip && !isCodeBlock && !isInlineCode) {
-                  // If autoPairMath is disabled (default), single $ types literal $,
-                  // but typing double dollars ($$) creates a math chip
-                  if (!autoPairMath) {
-                    if (empty && $from.parentOffset > 0 && state.doc.textBetween(from - 1, from) === '$') {
-                      const isTriple = $from.parentOffset > 1 && state.doc.textBetween(from - 2, from - 1) === '$';
-                      if (!isTriple) {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        lastAutoPair = null;
-                        extensionThis.editor
-                          .chain()
-                          .focus()
-                          .deleteRange({ from: from - 1, to: from })
-                          .insertMathChip({ latex: '', display: 'inline', startEditing: true })
-                          .run();
-                        return true;
-                      }
+                // When autoPairMath is disabled: single $ types literal $,
+                // but typing a second $ ($$) creates an inline math chip ($$)
+                if (!autoPairMath) {
+                  if (empty && $from.parentOffset > 0 && state.doc.textBetween(from - 1, from) === '$') {
+                    const isTriple = $from.parentOffset > 1 && state.doc.textBetween(from - 2, from - 1) === '$';
+                    if (!isTriple) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      lastAutoPair = null;
+                      extensionThis.editor
+                        .chain()
+                        .deleteRange({ from: from - 1, to: from })
+                        .insertMathChip({ latex: '', display: 'inline', startEditing: true })
+                        .run();
+                      return true;
                     }
-                    return false;
                   }
+                  return false;
+                }
 
                   event.preventDefault();
                   event.stopPropagation();

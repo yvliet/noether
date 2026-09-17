@@ -273,21 +273,47 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   titleRef.current = title;
   const isDraggingDeadSpaceRef = useRef(false);
 
+  const activeDocIdRef = useRef<string | null>(null);
+  const saveTimerRef = useRef<any>(null);
+  const pendingContentRef = useRef<string | null>(null);
+  const pendingRawMarkdownRef = useRef<string | null>(null);
+  const isEditingTitleRef = useRef(false);
+  const pendingTitleEditRef = useRef<{ docId: string; title: string } | null>(null);
+
   // Synchronous document state derivation during render:
-  // When currentDoc switches, immediately align title and content state before child components render.
-  // This guarantees TipTapEditor never mounts with a previous document's stale content string.
-  if (currentDoc && activeDocStateId !== currentDoc.id) {
-    setActiveDocStateId(currentDoc.id);
-    setTitle(currentDoc.title);
-    titleRef.current = currentDoc.title;
-    const initialContent =
-      currentDoc.content_json && currentDoc.content_json !== '{}'
-        ? currentDoc.content_json
-        : JSON.stringify({
-            type: 'doc',
-            content: [{ type: 'paragraph', content: [] }],
-          });
-    setContent(initialContent);
+  // When currentDoc switches or when content finishes hydrating from SQLite,
+  // align title and content state before child components render.
+  if (currentDoc) {
+    if (activeDocStateId !== currentDoc.id) {
+      setActiveDocStateId(currentDoc.id);
+      setTitle(currentDoc.title);
+      titleRef.current = currentDoc.title;
+      const initialContent =
+        currentDoc.content_json && currentDoc.content_json !== ''
+          ? (currentDoc.content_json !== '{}'
+              ? currentDoc.content_json
+              : JSON.stringify({
+                  type: 'doc',
+                  content: [{ type: 'paragraph', content: [] }],
+                }))
+          : '';
+      setContent(initialContent);
+    } else if (
+      (!content || content === '' || content === '{"type":"doc","content":[{"type":"paragraph","content":[]}]}') &&
+      currentDoc.content_json &&
+      currentDoc.content_json !== '' &&
+      pendingContentRef.current === null
+    ) {
+      // Document content has finished hydrating from SQLite into activeDocument / documents
+      const resolvedContent =
+        currentDoc.content_json !== '{}'
+          ? currentDoc.content_json
+          : JSON.stringify({
+              type: 'doc',
+              content: [{ type: 'paragraph', content: [] }],
+            });
+      setContent(resolvedContent);
+    }
   } else if (!currentDoc && activeDocStateId !== null) {
     setActiveDocStateId(null);
     setTitle('');
@@ -333,6 +359,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   }, [currentDoc]);
 
   const isMediaDoc = isImageDoc || isAudioDoc || isVideoDoc || isPdfDoc;
+
+  const isContentReady = useMemo(() => {
+    if (!currentDoc) return false;
+    if (currentDoc.is_folder || isMediaDoc) return true;
+    return Boolean((content && content !== '') || (currentDoc.content_json && currentDoc.content_json !== ''));
+  }, [currentDoc, isMediaDoc, content]);
 
   const mediaSrc = useMemo(() => {
     if (!currentDoc) return '';
@@ -555,15 +587,22 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           view.focus();
         } catch {}
 
-        // Track drag selection from dead space into content
+        const startX = e.clientX;
+        const startY = e.clientY;
         let hasMoved = false;
+
+        // Track drag selection from dead space into content
         const onMouseMove = (moveEv: MouseEvent) => {
           if ((moveEv.buttons & 1) !== 1) {
             cleanup();
             return;
           }
-          hasMoved = true;
-          isDraggingDeadSpaceRef.current = true;
+          if (!hasMoved && Math.hypot(moveEv.clientX - startX, moveEv.clientY - startY) > 3) {
+            hasMoved = true;
+            isDraggingDeadSpaceRef.current = true;
+          }
+          if (!hasMoved) return;
+
           const headPos = getLineEdgePos(view, moveEv.clientX, moveEv.clientY);
           if (headPos === null) return;
 
@@ -576,9 +615,17 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         const onMouseUp = () => {
           cleanup();
           if (hasMoved) {
+            // Suppress the trailing synthetic click event so it doesn't collapse the selection
+            const suppressClick = (clickEv: MouseEvent) => {
+              clickEv.preventDefault();
+              clickEv.stopPropagation();
+              clickEv.stopImmediatePropagation();
+            };
+            window.addEventListener('click', suppressClick, { capture: true, once: true });
             setTimeout(() => {
+              window.removeEventListener('click', suppressClick, { capture: true });
               isDraggingDeadSpaceRef.current = false;
-            }, 50);
+            }, 100);
           }
         };
 
@@ -622,6 +669,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         const pm = scrollViewportRef.current?.querySelector('.ProseMirror') as HTMLElement | null;
         if (!pm || !pm.contains(target)) {
           const { state, schema, view } = editorInstance;
+          // If a drag just occurred or non-empty selection is present, do not collapse the selection
+          if (isDraggingDeadSpaceRef.current || !state.selection.empty) {
+            return;
+          }
+
           if (state.doc.lastChild && state.doc.lastChild.type.name === 'table') {
             const insertPos = state.doc.content.size;
             const tr = state.tr.insert(insertPos, schema.nodes.paragraph.create());
@@ -953,13 +1005,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     );
   }, [title, currentDoc, isMainTitleFocused, isEditingSubheader]);
 
-  const activeDocIdRef = useRef<string | null>(null);
-  const saveTimerRef = useRef<any>(null);
-  const pendingContentRef = useRef<string | null>(null);
-  const pendingRawMarkdownRef = useRef<string | null>(null);
-  const isEditingTitleRef = useRef(false);
-  const pendingTitleEditRef = useRef<{ docId: string; title: string } | null>(null);
-
   const commitTitleRename = useCallback(async (newVal: string, targetDocId?: string) => {
     isEditingTitleRef.current = false;
     pendingTitleEditRef.current = null;
@@ -1054,11 +1099,15 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         titleRef.current = currentDoc.title;
         setIsEditingSubheader(false);
 
-        // If content was omitted to preserve memory (e.g. split pane note), fetch on demand from SQLite
-        if (!currentDoc.is_folder && (!currentDoc.content_json || currentDoc.content_json === '{}')) {
+        // If content was omitted to preserve memory (e.g. initial catalog load), fetch on demand from SQLite
+        if (!currentDoc.is_folder && (!currentDoc.content_json || currentDoc.content_json === '')) {
           getDocumentById(currentDoc.id).then((fullDoc) => {
-            if (fullDoc && fullDoc.content_json && fullDoc.content_json !== '{}' && activeDocIdRef.current === fullDoc.id) {
+            if (fullDoc && fullDoc.content_json && fullDoc.content_json !== '' && activeDocIdRef.current === fullDoc.id) {
               setContent(fullDoc.content_json);
+              useDocumentStore.setState((s) => ({
+                documents: s.documents.map((d) => (d.id === fullDoc.id ? { ...d, content_json: fullDoc.content_json } : d)),
+                activeDocument: s.activeDocument?.id === fullDoc.id ? { ...s.activeDocument, content_json: fullDoc.content_json } : s.activeDocument,
+              }));
             }
           });
         }
@@ -1068,13 +1117,17 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
           setTitle(currentDoc.title);
           titleRef.current = currentDoc.title;
         }
-        if (pendingContentRef.current === null && !platform.isRecentInternalWrite()) {
-          if (currentDoc.content_json) {
+        if (pendingContentRef.current === null) {
+          if (currentDoc.content_json && currentDoc.content_json !== content) {
             setContent(currentDoc.content_json);
-          } else if (!currentDoc.is_folder) {
+          } else if (!currentDoc.is_folder && (!currentDoc.content_json || currentDoc.content_json === '')) {
             getDocumentById(currentDoc.id).then((fullDoc) => {
-              if (fullDoc && fullDoc.content_json && fullDoc.content_json !== '{}' && activeDocIdRef.current === fullDoc.id) {
+              if (fullDoc && fullDoc.content_json && fullDoc.content_json !== '' && activeDocIdRef.current === fullDoc.id) {
                 setContent(fullDoc.content_json);
+                useDocumentStore.setState((s) => ({
+                  documents: s.documents.map((d) => (d.id === fullDoc.id ? { ...d, content_json: fullDoc.content_json } : d)),
+                  activeDocument: s.activeDocument?.id === fullDoc.id ? { ...s.activeDocument, content_json: fullDoc.content_json } : s.activeDocument,
+                }));
               }
             });
           }
@@ -1770,16 +1823,20 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   </div>
                 </div>
               ) : isSourceMode ? (
-                <SourceModeEditor
-                  key={`source-${currentDoc.id}`}
-                  documentId={currentDoc.id}
-                  contentJson={content}
-                  title={title || currentDoc.title}
-                  properties={currentDoc.properties}
-                  editable={isEditable}
-                  onChange={handleSourceModeChange}
-                  onSave={flushPendingSave}
-                />
+                isContentReady ? (
+                  <SourceModeEditor
+                    key={`source-${currentDoc.id}`}
+                    documentId={currentDoc.id}
+                    contentJson={content || currentDoc.content_json || ''}
+                    title={title || currentDoc.title}
+                    properties={currentDoc.properties}
+                    editable={isEditable}
+                    onChange={handleSourceModeChange}
+                    onSave={flushPendingSave}
+                  />
+                ) : (
+                  <div className="flex-1 w-full min-h-[300px]" />
+                )
               ) : (
                 <>
                   {/* Document Header (Title + In-Document Properties & Tags) */}
@@ -1958,15 +2015,19 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                       !isEditable ? 'tiptap-reading-view cursor-default' : 'cursor-text'
                     }`}
                   >
-                    <TipTapEditor
-                      key={`${currentPaneId}-${currentDoc.id}`}
-                      documentId={currentDoc.id}
-                      content={content}
-                      editable={isEditable}
-                      onChange={handleContentChange}
-                      onEditorReady={setEditorInstance}
-                      onTyping={handleTyping}
-                    />
+                    {isContentReady ? (
+                      <TipTapEditor
+                        key={`${currentPaneId}-${currentDoc.id}`}
+                        documentId={currentDoc.id}
+                        content={content || currentDoc.content_json || ''}
+                        editable={isEditable}
+                        onChange={handleContentChange}
+                        onEditorReady={setEditorInstance}
+                        onTyping={handleTyping}
+                      />
+                    ) : (
+                      <div className="flex-1 w-full min-h-[200px]" />
+                    )}
                   </div>
 
                   {/* Dynamic In-Document Footers (Backlinks, Mentions, etc.) */}

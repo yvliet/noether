@@ -928,64 +928,7 @@ li[data-type="taskItem"][data-checked="true"] > div {
   margin-top: 0.25rem;
 }
 
-/* Obsidian Live Preview: Heading and Blockquote indicators */
-.ProseMirror h1.is-active-h1::before {
-  content: '# ';
-  color: #777777;
-  font-weight: normal;
-  user-select: none;
-  pointer-events: none;
-}
-
-.ProseMirror h2.is-active-h2::before {
-  content: '## ';
-  color: #777777;
-  font-weight: normal;
-  user-select: none;
-  pointer-events: none;
-}
-
-.ProseMirror h3.is-active-h3::before {
-  content: '### ';
-  color: #777777;
-  font-weight: normal;
-  user-select: none;
-  pointer-events: none;
-}
-
-.ProseMirror h4.is-active-h4::before {
-  content: '#### ';
-  color: #777777;
-  font-weight: normal;
-  user-select: none;
-  pointer-events: none;
-}
-
-.ProseMirror h5.is-active-h5::before {
-  content: '##### ';
-  color: #777777;
-  font-weight: normal;
-  user-select: none;
-  pointer-events: none;
-}
-
-.ProseMirror h6.is-active-h6::before {
-  content: '###### ';
-  color: #777777;
-  font-weight: normal;
-  user-select: none;
-  pointer-events: none;
-}
-
-.theme-light .ProseMirror h1.is-active-h1::before,
-.theme-light .ProseMirror h2.is-active-h2::before,
-.theme-light .ProseMirror h3.is-active-h3::before,
-.theme-light .ProseMirror h4.is-active-h4::before,
-.theme-light .ProseMirror h5.is-active-h5::before,
-.theme-light .ProseMirror h6.is-active-h6::before {
-  color: #94a3b8 !important;
-}
-
+/* Obsidian Live Preview: Blockquote indicator */
 .ProseMirror blockquote.is-active-blockquote::before {
   content: '> ';
   color: #777777;
@@ -1182,15 +1125,19 @@ ul > li::marker,
   cursor: pointer !important;
 }
 
-.tiptap-reading-view .is-active-h1::before,
-.tiptap-reading-view .is-active-h2::before,
-.tiptap-reading-view .is-active-h3::before,
-.tiptap-reading-view .is-active-h4::before,
-.tiptap-reading-view .is-active-h5::before,
-.tiptap-reading-view .is-active-h6::before,
 .tiptap-reading-view .is-active-blockquote::before {
   content: '' !important;
   display: none !important;
+}
+
+.md-heading-fence.md-syntax-dimmed {
+  color: #777777;
+  font-weight: 400;
+  user-select: text;
+}
+
+.theme-light .md-heading-fence.md-syntax-dimmed {
+  color: #94a3b8 !important;
 }
 
 .tiptap-reading-view .md-syntax-dimmed {
@@ -1491,30 +1438,6 @@ a.noether-btn::after {
   height: 18px;
 }
 
-/* Offset fold chevrons when live preview markdown prefix indicators (#) are active */
-.ProseMirror h1.is-active-h1 .noether-fold-btn.noether-fold-h1 {
-  right: calc(6px + 1.25ch);
-}
-
-.ProseMirror h2.is-active-h2 .noether-fold-btn.noether-fold-h2 {
-  right: calc(6px + 2.25ch);
-}
-
-.ProseMirror h3.is-active-h3 .noether-fold-btn.noether-fold-h3 {
-  right: calc(5px + 3.25ch);
-}
-
-.ProseMirror h4.is-active-h4 .noether-fold-btn.noether-fold-h4 {
-  right: calc(4px + 4.25ch);
-}
-
-.ProseMirror h5.is-active-h5 .noether-fold-btn.noether-fold-h5 {
-  right: calc(4px + 5.25ch);
-}
-
-.ProseMirror h6.is-active-h6 .noether-fold-btn.noether-fold-h6 {
-  right: calc(4px + 6.25ch);
-}
 
 .noether-fold-btn.noether-fold-list-btn {
   right: 4px;
@@ -2579,13 +2502,46 @@ math-field::part(content) {
 }
 
 .wce-chip.wce-editing .noether-live-math-field {
-  min-width: 2.2em;
+  min-width: 1ch;
   border-bottom: 1px dashed rgba(156, 163, 175, 0.6) !important;
   margin: 0 1px !important;
 }
 
 .theme-light .wce-chip.wce-editing .noether-live-math-field {
   border-bottom: 1px dashed rgba(107, 114, 128, 0.6) !important;
+}
+
+.noether-math-insert-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  margin-left: 3px;
+  padding: 0;
+  border-radius: 3px;
+  background: transparent;
+  border: none;
+  color: var(--noether-text-secondary, #9ca3af);
+  cursor: pointer;
+  opacity: 0.6;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.noether-math-insert-trigger:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--noether-text-primary, #ffffff);
+}
+
+.theme-light .noether-math-insert-trigger {
+  color: var(--noether-text-secondary, #6b7280);
+}
+
+.theme-light .noether-math-insert-trigger:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--noether-text-primary, #18181b);
 }
 
 /* Block Math display and edit modes - centered in the middle of the page */
@@ -2815,23 +2771,38 @@ math-field::part(content) {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   font-size: 14px;
-  line-height: 1.65;
-  color: var(--noether-text-primary, #ffffff);
+  line-height: 1.7;
+  color: var(--noether-text-secondary, #dadada);
 }
 
 .noether-callout-first {
   margin-top: 0.75rem !important;
-  padding-top: 0.75rem !important;
+  padding-top: 0.875rem !important;
   border-top-right-radius: 6px;
+}
+
+.noether-callout-first:not(.noether-callout-last) {
+  padding-bottom: 0.375rem !important;
+}
+
+.noether-callout-body:not(.noether-callout-last) {
+  padding-top: 0.25rem !important;
+  padding-bottom: 0.25rem !important;
 }
 
 .noether-callout-last {
   margin-bottom: 0.75rem !important;
-  padding-bottom: 0.75rem !important;
+  padding-bottom: 0.875rem !important;
   border-bottom-right-radius: 6px;
 }
 
+.noether-callout-last:not(.noether-callout-first) {
+  padding-top: 0.25rem !important;
+}
+
 .noether-callout-first.noether-callout-last {
+  padding-top: 0.875rem !important;
+  padding-bottom: 0.875rem !important;
   border-top-right-radius: 6px;
   border-bottom-right-radius: 6px;
 }
@@ -2842,21 +2813,22 @@ math-field::part(content) {
 
 .noether-callout-body {
   color: var(--noether-text-secondary, #dadada);
-  font-size: 13.5px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 /* Callout Header & Integrated Widget Bar */
 .noether-callout-header {
   font-size: 14px;
-  font-weight: 500;
+  font-weight: normal;
   color: var(--noether-text-primary, #ffffff);
+  margin-bottom: 0 !important;
 }
 
 .noether-callout-header-bar {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.5rem;
   font-weight: 600;
   font-size: 14px;
   user-select: none;
@@ -2885,7 +2857,8 @@ math-field::part(content) {
   font-weight: 600;
   font-size: 14px;
   color: var(--callout-text, #60a5fa);
-  text-transform: none;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .noether-callout-title-text {
@@ -2893,6 +2866,33 @@ math-field::part(content) {
   color: var(--callout-text, #60a5fa);
   text-transform: none;
   font-size: 14px;
+}
+
+/* Strong / Bold inside callouts should be bright primary text */
+.noether-callout strong,
+.noether-callout b,
+.noether-callout .md-bold {
+  color: var(--noether-text-primary, #ffffff) !important;
+  font-weight: 600;
+}
+
+/* Italic inside callouts */
+.noether-callout em,
+.noether-callout i,
+.noether-callout .md-italic {
+  color: #e0e0e0;
+  font-style: italic;
+}
+
+/* Inline code inside callouts */
+.noether-callout code,
+.noether-callout .md-code {
+  background-color: rgba(26, 26, 26, 0.9);
+  border: 1px solid rgba(46, 46, 46, 0.8);
+  color: #dadada;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875em;
 }
 
 .noether-callout-fold-toggle {
@@ -3070,11 +3070,30 @@ math-field::part(content) {
 
 /* Light Theme Callout Palettes */
 .theme-light .noether-callout {
-  color: #18181b;
+  color: #3f3f46;
 }
 
 .theme-light .noether-callout-body {
   color: #3f3f46;
+}
+
+.theme-light .noether-callout strong,
+.theme-light .noether-callout b,
+.theme-light .noether-callout .md-bold {
+  color: #18181b !important;
+}
+
+.theme-light .noether-callout em,
+.theme-light .noether-callout i,
+.theme-light .noether-callout .md-italic {
+  color: #52525b;
+}
+
+.theme-light .noether-callout code,
+.theme-light .noether-callout .md-code {
+  background-color: #f4f4f5;
+  border-color: #e4e4e7;
+  color: #27272a;
 }
 
 .theme-light .noether-callout-type-note,

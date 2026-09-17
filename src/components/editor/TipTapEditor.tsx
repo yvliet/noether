@@ -57,6 +57,7 @@ import { SearchAndReplace } from './extensions/search-and-replace';
 import { SmartTabIndent } from './extensions/smart-tab-indent';
 import { DropGhost } from './extensions/drop-ghost';
 import { TableExitBehavior } from './extensions/table-exit-behavior';
+import { LivePreviewHeading } from './extensions/heading-behavior';
 import { transformPastedHtmlToMarkdown } from './paste-markdown';
 import { SlashMenu } from './SlashMenu';
 import { getAllCalloutDefinitions } from '@/lib/editor/callouts';
@@ -178,16 +179,15 @@ const baseSlashItems: SlashItem[] = [
     description: 'Insert an interactive table grid',
     icon: 'table',
     aliases: ['table', 'grid', 'matrix'],
-    command: ({ editor, range, rows, cols }: any) => {
+    command: ({ editor, range, rows, cols, extra }: any) => {
       const { tableDefaultRows, tableDefaultCols } = useSettingsStore.getState();
-      const r = rows || tableDefaultRows || 3;
-      const c = cols || tableDefaultCols || 3;
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .insertTable({ rows: r, cols: c, withHeaderRow: true })
-        .run();
+      const r = rows || extra?.rows || tableDefaultRows || 3;
+      const c = cols || extra?.cols || tableDefaultCols || 3;
+      const chain = editor.chain().focus();
+      if (range && typeof range.from === 'number' && typeof range.to === 'number' && range.to > range.from) {
+        chain.deleteRange(range);
+      }
+      chain.insertTable({ rows: r, cols: c, withHeaderRow: true }).run();
     },
   },
   {
@@ -197,9 +197,22 @@ const baseSlashItems: SlashItem[] = [
     aliases: ['callout', 'box'],
     command: ({ editor, range, extra, id, type: passedType }: any) => {
       const type = extra?.id || id || passedType || 'note';
-      const def = getAllCalloutDefinitions().find((d) => d.id === type || d.canonicalType === type);
-      const capTitle = extra?.title || def?.title || (type.charAt(0).toUpperCase() + type.slice(1));
-      editor.chain().focus().deleteRange(range).insertContent(`> [!${type}] ${capTitle}\n`).run();
+      const customTitle = extra?.title ? ` ${extra.title}` : '';
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertContent([
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: `> [!${type}]${customTitle}` }],
+          },
+          {
+            type: 'paragraph',
+            content: [{ type: 'text', text: '> ' }],
+          },
+        ])
+        .run();
     },
   },
   {
@@ -228,24 +241,26 @@ const baseSlashItems: SlashItem[] = [
   },
   {
     title: 'Math Block',
-    description: 'Display LaTeX equation block',
+    description: 'Display LaTeX equation block ($$...$$)',
     icon: 'quote',
+    aliases: ['math', 'block', 'latex', 'equation', 'matrix', '$$'],
     command: ({ editor, range }) => {
       const $from = editor.state.doc.resolve(range.from);
       const isStartOfLine = $from.parentOffset === 0;
       if (!isStartOfLine) {
-        editor.chain().focus().deleteRange(range).splitBlock().insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
+        editor.chain().deleteRange(range).splitBlock().insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
       } else {
-        editor.chain().focus().deleteRange(range).insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
+        editor.chain().deleteRange(range).insertMathChip({ latex: '', display: 'block', startEditing: true }).run();
       }
     },
   },
   {
     title: 'Inline Math',
-    description: 'Inline LaTeX formula',
+    description: 'Inline LaTeX formula ($...$)',
     icon: 'quote',
+    aliases: ['math', 'inline', 'latex', 'formula', '$'],
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).insertMathChip({ latex: '', display: 'inline', startEditing: true }).run();
+      editor.chain().deleteRange(range).insertMathChip({ latex: '', display: 'inline', startEditing: true }).run();
     },
   },
   {
@@ -829,22 +844,35 @@ function normalizeTipTapContent(doc: any): any {
         const match = firstChild.text.match(/^([ ]{0,3})(#{1,6})(?:[ \t]+(.*))?$/);
         if (match) {
           const level = match[2].length;
-          const restOfFirstText = (match[3] || '').replace(/[ \t]+#+[ \t]*$/, '');
-          const remainingContent = node.content.slice(1);
-          const newInlineContent: any[] = [];
-          if (restOfFirstText.length > 0) {
-            newInlineContent.push({ ...firstChild, text: restOfFirstText });
-          }
-          newInlineContent.push(...remainingContent);
           return [
             {
               type: 'heading',
               attrs: { level },
-              content: newInlineContent,
+              content: node.content,
             },
           ];
         }
       }
+    }
+
+    // 4b. Ensure existing/legacy headings have the #{1,6} prefix in text
+    if (node.type === 'heading') {
+      const level = Math.min(Math.max(node.attrs?.level || 1, 1), 6);
+      const expectedPrefix = `${'#'.repeat(level)} `;
+      let content = Array.isArray(node.content) ? [...node.content] : [];
+      if (content.length === 0) {
+        content = [{ type: 'text', text: expectedPrefix }];
+      } else {
+        const first = content[0];
+        if (first && first.type === 'text' && typeof first.text === 'string') {
+          if (!/^#{1,6}(\s|$)/.test(first.text)) {
+            content[0] = { ...first, text: expectedPrefix + first.text };
+          }
+        } else {
+          content.unshift({ type: 'text', text: expectedPrefix });
+        }
+      }
+      return [{ ...node, attrs: { ...node.attrs, level }, content }];
     }
 
     // 4. Recursively normalize children for containers (blockquote, etc.)
@@ -1163,7 +1191,16 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                         .chain()
                         .focus()
                         .deleteRange(range)
-                        .insertContent(`> [!${def.id}] ${def.title}\n`)
+                        .insertContent([
+                          {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: `> [!${def.id}] ${def.title}` }],
+                          },
+                          {
+                            type: 'paragraph',
+                            content: [{ type: 'text', text: '> ' }],
+                          },
+                        ])
                         .run();
                     },
                   });
@@ -1338,17 +1375,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         },
       }),
       MarkdownShortcuts,
+      MathChip,
       AutoPairing,
       SmartTabIndent,
       NumberedListBehavior,
       Fold.configure({ documentId }),
       LivePreviewSyntax,
-      MathChip,
       SmartMathNavigation,
       SearchAndReplace,
       DropGhost.configure({ app }),
+      LivePreviewHeading.configure({
+        levels: [1, 2, 3, 4, 5, 6],
+      }),
       StarterKit.configure({
-        heading: { levels: [1, 2, 3, 4, 5, 6] },
+        heading: false,
         // Enable hardBreak so that Shift-Enter inserts inline <br> breaks with normal line-height
         // instead of splitting blocks into new paragraphs (which have 0.5rem paragraph margins).
         hardBreak: {
@@ -1464,12 +1504,21 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                   ed.view.focus();
                 } catch {}
 
+                const startX = me.clientX;
+                const startY = me.clientY;
+                let hasMoved = false;
+
                 // Support drag selection from trailing whitespace or bottom empty space
                 const onMouseMove = (moveEv: MouseEvent) => {
                   if ((moveEv.buttons & 1) !== 1) {
                     cleanup();
                     return;
                   }
+                  if (!hasMoved && Math.hypot(moveEv.clientX - startX, moveEv.clientY - startY) > 3) {
+                    hasMoved = true;
+                  }
+                  if (!hasMoved) return;
+
                   let headPos: number | null = null;
                   const targetEl = document.elementFromPoint(moveEv.clientX, moveEv.clientY) as HTMLElement | null;
                   const cellEl = targetEl?.closest('td, th') as HTMLTableCellElement | null;
@@ -1506,6 +1555,17 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
 
                 const onMouseUp = () => {
                   cleanup();
+                  if (hasMoved) {
+                    const suppressClick = (clickEv: MouseEvent) => {
+                      clickEv.preventDefault();
+                      clickEv.stopPropagation();
+                      clickEv.stopImmediatePropagation();
+                    };
+                    window.addEventListener('click', suppressClick, { capture: true, once: true });
+                    setTimeout(() => {
+                      window.removeEventListener('click', suppressClick, { capture: true });
+                    }, 100);
+                  }
                 };
 
                 const cleanup = () => {
@@ -1646,7 +1706,6 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                     state.schema.text(embedSyntax)
                   );
                   view.dispatch(tr);
-                  ws.showToast(`Pasted ${savedDoc.title}`, 'success');
                 };
                 reader.readAsDataURL(file);
                 return true;
@@ -1745,6 +1804,13 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       // Retain popup if focus moved to something inside this editor container (or popup)
       const related = (event as FocusEvent)?.relatedTarget as Node | null;
       if (related && containerRef.current?.contains(related)) {
+        return;
+      }
+      if (
+        typeof document !== 'undefined' &&
+        (document.activeElement?.closest?.('[data-noether-suggestion-popup="true"]') ||
+          document.querySelector('[data-noether-suggestion-popup="true"]:hover'))
+      ) {
         return;
       }
       suggestionPopupsRef.current?.closeAll();
@@ -2080,6 +2146,18 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
                 !editor.isActive('taskList') &&
                 !editor.isActive('blockquote'),
               onClick: () => {
+                const { state } = editor;
+                const $from = state.selection.$from;
+                const node = $from.parent;
+                if (node.type.name === 'heading') {
+                  const text = node.textContent;
+                  const match = text.match(/^(#{1,6})[ \t]+/);
+                  if (match) {
+                    const start = $from.start();
+                    editor.chain().focus().deleteRange({ from: start, to: start + match[0].length }).setParagraph().run();
+                    return;
+                  }
+                }
                 editor.chain().focus().setParagraph().run();
               },
             },
@@ -2123,7 +2201,20 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
               title: 'Callout',
               icon: <QuoteDownIcon size={14} />,
               onClick: () => {
-                editor.chain().focus().insertContent('> [!note] Note\n').run();
+                editor
+                  .chain()
+                  .focus()
+                  .insertContent([
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: '> [!note] Note' }],
+                    },
+                    {
+                      type: 'paragraph',
+                      content: [{ type: 'text', text: '> ' }],
+                    },
+                  ])
+                  .run();
               },
             },
             {
@@ -2379,8 +2470,12 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         // ProseMirror Authority Invariant:
         // If the editor is currently focused on this document, ProseMirror is the sole ground truth.
         // Never call setContent while focused as it resets selection, destroys undo history, and introduces typing latency.
+        // However, if the editor is currently empty (e.g. initial placeholder) and incoming content is populated,
+        // this is delayed hydration, not a conflicting user edit.
+        const isEditorEmpty = editor.isEmpty || editor.state.doc.content.size <= 2;
         if (
           !docChanged &&
+          !isEditorEmpty &&
           (editor.isFocused || editor.view?.hasFocus() || (containerRef.current && typeof document !== 'undefined' && containerRef.current.contains(document.activeElement)))
         ) {
           return;

@@ -687,12 +687,12 @@ export function jsonToMarkdown(
 
       if (node.type === 'heading') {
         const level = node.attrs?.level || 1;
-        const prefix = '#'.repeat(level);
         const inner = (node.content || []).map(processNode).join('');
         const trimmed = inner.trim();
-        if (trimmed.startsWith('#')) {
+        if (/^#{1,6}(\s|$)/.test(trimmed)) {
           return `${trimmed}\n`;
         }
+        const prefix = '#'.repeat(level);
         return inner ? `${prefix} ${inner.trimStart()}\n` : `${prefix}\n`;
       }
 
@@ -1085,10 +1085,11 @@ export function markdownToTipTapJson(md: string): string {
     if (headingMatch) {
       const level = headingMatch[1].length;
       const headingText = (headingMatch[2] || '').trim();
+      const fullHeadingText = headingText ? `${headingMatch[1]} ${headingText}` : `${headingMatch[1]} `;
       content.push({
         type: 'heading',
         attrs: { level },
-        content: headingText ? parseInlineMarkdownTokens(headingText) : [],
+        content: parseInlineMarkdownTokens(fullHeadingText),
       });
       continue;
     }
@@ -1223,21 +1224,22 @@ export async function saveDocumentAndSynchronize(
     if (!node) return;
 
     if (node.type === 'heading') {
-      const hText = node.content?.map((c: any) => c.text || '').join('') || '';
+      const rawHText = node.content?.map((c: any) => c.text || '').join('') || '';
+      const cleanHText = rawHText.replace(/^#{1,6}\s*/, '').trim();
       headings.push({
-        id: `h-${headings.length}-${hText.slice(0, 15).replace(/\s+/g, '-').toLowerCase()}`,
+        id: `h-${headings.length}-${cleanHText.slice(0, 15).replace(/\s+/g, '-').toLowerCase()}`,
         level: node.attrs?.level || 1,
-        text: hText,
+        text: cleanHText || rawHText,
         pos: orderIndex,
       });
       extractedBlocks.push({
         id: `blk-${documentId}-${orderIndex++}`,
-        text: hText,
+        text: cleanHText || rawHText,
         type: 'heading',
         isTask: false,
         taskCompleted: false,
       });
-      fullText += ' ' + hText;
+      fullText += ' ' + (cleanHText || rawHText);
     } else if (node.type === 'paragraph' || node.type === 'codeBlock' || node.type === 'blockquote') {
       const pText = node.content?.map((c: any) => c.text || '').join('') || '';
       if (pText.trim()) {

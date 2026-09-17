@@ -6,30 +6,33 @@ export interface MathInsertItem {
   latex: string;
   category: 'Structures' | 'Operators' | 'Greek' | 'Relations' | 'Delimiters' | 'Functions' | 'Misc';
   cursorOffset?: number; // Offset from start of inserted latex where cursor should be placed
+  keywords?: string[];
 }
 
 export const MATH_INSERT_ITEMS: MathInsertItem[] = [
   // ── Structures ──
-  { id: 'frac', title: 'Fraction (a/b)', latex: '\\frac{a}{b}', category: 'Structures', cursorOffset: 6 },
-  { id: 'sqrt', title: 'Square Root (√x)', latex: '\\sqrt{x}', category: 'Structures', cursorOffset: 6 },
-  { id: 'nroot', title: 'nth Root (ⁿ√x)', latex: '\\sqrt[n]{x}', category: 'Structures', cursorOffset: 6 },
-  { id: 'sup', title: 'Power / Superscript (xⁿ)', latex: '^{2}', category: 'Structures', cursorOffset: 2 },
-  { id: 'sub', title: 'Subscript (xₙ)', latex: '_{i}', category: 'Structures', cursorOffset: 2 },
-  { id: 'supsub', title: 'Power & Subscript (xᵢⁿ)', latex: '_{i}^{n}', category: 'Structures', cursorOffset: 2 },
-  { id: 'binom', title: 'Binomial Coefficient', latex: '\\binom{n}{k}', category: 'Structures', cursorOffset: 7 },
-  { id: 'overline', title: 'Overline (x̄)', latex: '\\overline{x}', category: 'Structures', cursorOffset: 10 },
-  { id: 'vec', title: 'Vector Arrow (x⃗)', latex: '\\vec{v}', category: 'Structures', cursorOffset: 5 },
-  { id: 'hat', title: 'Hat Accent (x̂)', latex: '\\hat{x}', category: 'Structures', cursorOffset: 5 },
+  { id: 'frac', title: 'Fraction (a/b)', latex: '\\frac{a}{b}', category: 'Structures', cursorOffset: 6, keywords: ['fraction', 'div', 'frac'] },
+  { id: 'sqrt', title: 'Square Root (√x)', latex: '\\sqrt{x}', category: 'Structures', cursorOffset: 6, keywords: ['sqrt', 'root', 'square'] },
+  { id: 'nroot', title: 'nth Root (ⁿ√x)', latex: '\\sqrt[n]{x}', category: 'Structures', cursorOffset: 6, keywords: ['root', 'nth', 'radicand'] },
+  { id: 'sup', title: 'Power / Superscript (xⁿ)', latex: '^{2}', category: 'Structures', cursorOffset: 2, keywords: ['power', 'superscript', 'exponent'] },
+  { id: 'sub', title: 'Subscript (xₙ)', latex: '_{i}', category: 'Structures', cursorOffset: 2, keywords: ['subscript', 'index'] },
+  { id: 'supsub', title: 'Power & Subscript (xᵢⁿ)', latex: '_{i}^{n}', category: 'Structures', cursorOffset: 2, keywords: ['subscript', 'power', 'index'] },
+  { id: 'binom', title: 'Binomial Coefficient', latex: '\\binom{n}{k}', category: 'Structures', cursorOffset: 7, keywords: ['binomial', 'choose', 'combination'] },
+  { id: 'overline', title: 'Overline (x̄)', latex: '\\overline{x}', category: 'Structures', cursorOffset: 10, keywords: ['overline', 'bar', 'mean'] },
+  { id: 'vec', title: 'Vector Arrow (x⃗)', latex: '\\vec{v}', category: 'Structures', cursorOffset: 5, keywords: ['vector', 'arrow'] },
+  { id: 'hat', title: 'Hat Accent (x̂)', latex: '\\hat{x}', category: 'Structures', cursorOffset: 5, keywords: ['hat', 'unit'] },
 
   // ── Large Operators & Calculus ──
-  { id: 'sum', title: 'Summation (∑)', latex: '\\sum_{i=1}^{n}', category: 'Operators', cursorOffset: 6 },
-  { id: 'prod', title: 'Product (∏)', latex: '\\prod_{i=1}^{n}', category: 'Operators', cursorOffset: 7 },
-  { id: 'int', title: 'Definite Integral (∫)', latex: '\\int_{0}^{\\infty} f(x)\\,dx', category: 'Operators', cursorOffset: 6 },
-  { id: 'iint', title: 'Double Integral (∬)', latex: '\\iint_{D} f(x, y)\\,dA', category: 'Operators', cursorOffset: 7 },
-  { id: 'oint', title: 'Contour Integral (∮)', latex: '\\oint_{C} F\\cdot dr', category: 'Operators', cursorOffset: 7 },
-  { id: 'lim', title: 'Limit (lim)', latex: '\\lim_{x \\to 0}', category: 'Operators', cursorOffset: 6 },
-  { id: 'partial', title: 'Partial Derivative (∂/∂x)', latex: '\\frac{\\partial f}{\\partial x}', category: 'Operators', cursorOffset: 15 },
-  { id: 'infty', title: 'Infinity (∞)', latex: '\\infty', category: 'Operators' },
+  { id: 'sum', title: 'Summation (∑)', latex: '\\sum_{i=1}^{n}', category: 'Operators', cursorOffset: 6, keywords: ['sum', 'sigma', 'series'] },
+  { id: 'prod', title: 'Product (∏)', latex: '\\prod_{i=1}^{n}', category: 'Operators', cursorOffset: 7, keywords: ['product', 'pi'] },
+  { id: 'int', title: 'Definite Integral (∫)', latex: '\\int_{0}^{\\infty} f(x)\\,dx', category: 'Operators', cursorOffset: 6, keywords: ['integral', 'calculus', 'int'] },
+  { id: 'iint', title: 'Double Integral (∬)', latex: '\\iint_{D} f(x, y)\\,dA', category: 'Operators', cursorOffset: 7, keywords: ['double', 'integral', 'area'] },
+  { id: 'oint', title: 'Contour Integral (∮)', latex: '\\oint_{C} F\\cdot dr', category: 'Operators', cursorOffset: 7, keywords: ['contour', 'closed', 'integral'] },
+  { id: 'lim', title: 'Limit (x → 0)', latex: '\\lim_{x \\to 0}', category: 'Operators', cursorOffset: 6, keywords: ['limit', 'lim', 'calculus'] },
+  { id: 'lim_inf', title: 'Limit (x → ∞)', latex: '\\lim_{x \\to \\infty}', category: 'Operators', cursorOffset: 6, keywords: ['limit', 'lim', 'infinity'] },
+  { id: 'lim_n', title: 'Limit (n → ∞)', latex: '\\lim_{n \\to \\infty}', category: 'Operators', cursorOffset: 6, keywords: ['limit', 'lim', 'sequence', 'series'] },
+  { id: 'partial', title: 'Partial Derivative (∂/∂x)', latex: '\\frac{\\partial f}{\\partial x}', category: 'Operators', cursorOffset: 15, keywords: ['partial', 'derivative', 'gradient'] },
+  { id: 'infty', title: 'Infinity (∞)', latex: '\\infty', category: 'Operators', keywords: ['infinity', 'inf'] },
 
   // ── Greek Letters ──
   { id: 'alpha', title: 'α (alpha)', latex: '\\alpha', category: 'Greek' },
@@ -66,14 +69,18 @@ export const MATH_INSERT_ITEMS: MathInsertItem[] = [
   { id: 'iff', title: '⟺ If and Only If', latex: '\\iff', category: 'Relations' },
 
   // ── Delimiters & Matrices ──
-  { id: 'paren', title: 'Parentheses ( ... )', latex: '\\left( x \\right)', category: 'Delimiters', cursorOffset: 7 },
-  { id: 'bracket', title: 'Brackets [ ... ]', latex: '\\left[ x \\right]', category: 'Delimiters', cursorOffset: 7 },
-  { id: 'brace', title: 'Braces { ... }', latex: '\\left\\{ x \\right\\}', category: 'Delimiters', cursorOffset: 8 },
-  { id: 'abs', title: 'Absolute Value | ... |', latex: '\\left| x \\right|', category: 'Delimiters', cursorOffset: 7 },
-  { id: 'norm', title: 'Norm ‖ ... ‖', latex: '\\| x \\|', category: 'Delimiters', cursorOffset: 3 },
-  { id: 'pmatrix', title: 'Parenthesis Matrix 2x2', latex: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}', category: 'Delimiters', cursorOffset: 16 },
-  { id: 'bmatrix', title: 'Bracket Matrix 2x2', latex: '\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}', category: 'Delimiters', cursorOffset: 16 },
-  { id: 'cases', title: 'Piecewise Cases', latex: '\\begin{cases} x & \\text{if } x \\ge 0 \\\\ -x & \\text{otherwise} \\end{cases}', category: 'Delimiters', cursorOffset: 14 },
+  { id: 'paren', title: 'Parentheses ( ... )', latex: '\\left( x \\right)', category: 'Delimiters', cursorOffset: 7, keywords: ['parentheses', 'paren', 'round'] },
+  { id: 'bracket', title: 'Brackets [ ... ]', latex: '\\left[ x \\right]', category: 'Delimiters', cursorOffset: 7, keywords: ['brackets', 'square'] },
+  { id: 'brace', title: 'Braces { ... }', latex: '\\left\\{ x \\right\\}', category: 'Delimiters', cursorOffset: 8, keywords: ['braces', 'set', 'curly'] },
+  { id: 'abs', title: 'Absolute Value | ... |', latex: '\\left| x \\right|', category: 'Delimiters', cursorOffset: 7, keywords: ['abs', 'absolute', 'modulus'] },
+  { id: 'norm', title: 'Norm ‖ ... ‖', latex: '\\| x \\|', category: 'Delimiters', cursorOffset: 3, keywords: ['norm', 'magnitude'] },
+  { id: 'pmatrix', title: 'Parenthesis Matrix 2x2', latex: '\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}', category: 'Delimiters', cursorOffset: 16, keywords: ['matrix', 'pmatrix', '2x2'] },
+  { id: 'pmatrix3', title: 'Parenthesis Matrix 3x3', latex: '\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}', category: 'Delimiters', cursorOffset: 16, keywords: ['matrix', 'pmatrix', '3x3'] },
+  { id: 'bmatrix', title: 'Bracket Matrix 2x2', latex: '\\begin{bmatrix} a & b \\\\ c & d \\end{bmatrix}', category: 'Delimiters', cursorOffset: 16, keywords: ['matrix', 'bmatrix', '2x2'] },
+  { id: 'bmatrix3', title: 'Bracket Matrix 3x3', latex: '\\begin{bmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{bmatrix}', category: 'Delimiters', cursorOffset: 16, keywords: ['matrix', 'bmatrix', '3x3'] },
+  { id: 'vmatrix', title: 'Determinant Matrix 2x2', latex: '\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}', category: 'Delimiters', cursorOffset: 16, keywords: ['matrix', 'determinant', 'vmatrix', '2x2'] },
+  { id: 'vmatrix3', title: 'Determinant Matrix 3x3', latex: '\\begin{vmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{vmatrix}', category: 'Delimiters', cursorOffset: 16, keywords: ['matrix', 'determinant', 'vmatrix', '3x3'] },
+  { id: 'cases', title: 'Piecewise Cases', latex: '\\begin{cases} x & \\text{if } x \\ge 0 \\\\ -x & \\text{otherwise} \\end{cases}', category: 'Delimiters', cursorOffset: 14, keywords: ['cases', 'piecewise', 'condition'] },
 
   // ── Functions ──
   { id: 'sin', title: 'sin(x)', latex: '\\sin(x)', category: 'Functions', cursorOffset: 5 },

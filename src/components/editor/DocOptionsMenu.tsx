@@ -232,7 +232,6 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
     const next = isReadingView ? 'Editing view' : 'Reading view';
     setDefaultTabMode(next);
     setIsOpen(false);
-    showToast(`Switched to ${next}`, 'info');
   };
 
   // Split Views
@@ -502,7 +501,6 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
     if (platform.isDesktop()) {
       platform.openVaultInExplorer(vaultPath);
     }
-    showToast('Opening file in default application', 'info');
   };
 
   // Show in System Explorer
@@ -526,7 +524,6 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
         detail: { id: doc.id },
       })
     );
-    showToast(`Revealed "${doc.title}" in file tree`, 'info');
   };
 
   // Delete Note
@@ -641,7 +638,6 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
                       setDefaultTabMode('Editing view');
                     }
                     setIsOpen(false);
-                    showToast(`Switched to ${next}`, 'info');
                   }}
                   data-tooltip={isLocked ? 'Note is locked' : undefined}
                   data-shortcuts={isLocked ? JSON.stringify(['Read-only']) : undefined}

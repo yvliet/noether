@@ -11,7 +11,7 @@ Traditional note-taking editors generally fall into one of two extremes:
 
 Noether implements a **Live Preview Architecture**:
 - When your cursor is outside a formatted block, it renders as rich typography, live math, interactive checkboxes, and callout containers.
-- When your cursor moves inside a formatted element, the underlying Markdown tokens (`**bold**`, `[[wikilink]]`, `$E=mc^2$`) dynamically unveil themselves right under your cursor for instant editing.
+- When your cursor moves inside a formatted element, the underlying Markdown tokens (`# heading`, `**bold**`, `[[wikilink]]`, `$E=mc^2$`) dynamically unveil themselves right under your cursor for instant editing.
 
 ## 2. Incremental Decoration Mapping
 ---

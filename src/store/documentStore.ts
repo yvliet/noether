@@ -249,8 +249,18 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
 
       const hasCachedDocs = initialDocs.length > 0;
       if (hasCachedDocs) {
+        // Preserve any already-cached content_json from in-memory documents
+        const existingDocMap = new Map(get().documents.map((d) => [d.id, d]));
+        const mergedInitialDocs = initialDocs.map((doc) => {
+          const existing = existingDocMap.get(doc.id);
+          if (existing?.content_json && !doc.content_json) {
+            return { ...doc, content_json: existing.content_json };
+          }
+          return doc;
+        });
+
         set({
-          documents: initialDocs,
+          documents: mergedInitialDocs,
           trashItems: initialTrash,
           globalTasks: initialTasks,
           vaultTags: initialTags,
@@ -309,8 +319,16 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
                 getAllVaultTags(),
                 getTrashItems(),
               ]);
+              const existingDocMap = new Map(get().documents.map((d) => [d.id, d]));
+              const mergedDocs = docs.map((doc) => {
+                const existing = existingDocMap.get(doc.id);
+                if (existing?.content_json && !doc.content_json) {
+                  return { ...doc, content_json: existing.content_json };
+                }
+                return doc;
+              });
               set({
-                documents: docs,
+                documents: mergedDocs,
                 trashItems: trash,
                 globalTasks,
                 vaultTags: tags,
@@ -342,8 +360,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         getTrashItems(),
       ]);
 
+      const existingDocMap = new Map(get().documents.map((d) => [d.id, d]));
+      const mergedDocs = docs.map((doc) => {
+        const existing = existingDocMap.get(doc.id);
+        if (existing?.content_json && !doc.content_json) {
+          return { ...doc, content_json: existing.content_json };
+        }
+        return doc;
+      });
+
       set({
-        documents: docs,
+        documents: mergedDocs,
         trashItems: trash,
         globalTasks,
         vaultTags: tags,
@@ -526,14 +553,15 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         const extract = (node: any) => {
           if (!node) return;
           if (node.type === 'heading') {
-            const text = node.content?.map((c: any) => c.text || '').join('') || '';
+            const rawText = node.content?.map((c: any) => c.text || '').join('') || '';
+            const text = rawText.replace(/^#{1,6}\s*/, '').trim();
             headings.push({
               id: `h-${headings.length}-${text.slice(0, 15).replace(/\s+/g, '-').toLowerCase()}`,
               level: node.attrs?.level || 1,
-              text,
+              text: text || rawText,
               pos: 0,
             });
-            fullText += ' ' + text;
+            fullText += ' ' + (text || rawText);
           } else if (node.type === 'paragraph' || node.type === 'taskItem') {
             const text = node.content?.map((c: any) => c.text || '').join('') || '';
             fullText += ' ' + text;
@@ -590,7 +618,17 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     if (active && active.id === id && active.content_json) {
       return active;
     }
-    return await getDocumentById(id);
+    const memDoc = get().documents.find((d) => d.id === id);
+    if (memDoc && memDoc.content_json) {
+      return memDoc;
+    }
+    const doc = await getDocumentById(id);
+    if (doc && doc.content_json) {
+      set((s) => ({
+        documents: s.documents.map((d) => (d.id === id ? { ...d, content_json: doc.content_json } : d)),
+      }));
+    }
+    return doc;
   },
 
   createNewNote: async (

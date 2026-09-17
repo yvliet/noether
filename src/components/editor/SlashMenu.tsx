@@ -62,6 +62,13 @@ export const SlashMenu = React.memo(
               if (activeSubmenuRef.current === 'table') {
                 const handled = gridPickerRef.current?.onKeyDown(event);
                 if (handled) return true;
+                if (event.key === 'Enter' || event.key === 'Tab') {
+                  const currentItem = items[selectedIndexRef.current];
+                  if (currentItem) {
+                    command(currentItem);
+                    return true;
+                  }
+                }
                 if (event.key === 'Escape' || event.key === 'ArrowLeft') {
                   setActiveSubmenu(null);
                   activeSubmenuRef.current = null;
@@ -112,27 +119,18 @@ export const SlashMenu = React.memo(
             const hasSubmenu = Boolean(currentItem?.submenu) || Boolean(isTable) || Boolean(isCallout);
             const subId = currentItem?.submenu?.id || (isTable ? 'table' : (isCallout ? 'callout' : null));
 
-            if (event.key === 'ArrowRight' && hasSubmenu && subId) {
+            // Pressing Enter, Tab, or ArrowRight on an item with a submenu enters and expands the submenu flyout
+            if ((event.key === 'ArrowRight' || event.key === 'Tab' || event.key === 'Enter') && hasSubmenu && subId) {
               setActiveSubmenu(subId);
               activeSubmenuRef.current = subId;
               return true;
             }
 
+            // Pressing Enter or Tab on an item without a submenu executes command
             if (event.key === 'Enter' || event.key === 'Tab') {
               if (currentItem) {
-                if (hasSubmenu && subId) {
-                  if (activeSubmenuRef.current !== subId) {
-                    setActiveSubmenu(subId);
-                    activeSubmenuRef.current = subId;
-                    return true;
-                  } else {
-                    command(currentItem);
-                    return true;
-                  }
-                } else {
-                  command(currentItem);
-                  return true;
-                }
+                command(currentItem);
+                return true;
               }
             }
 
@@ -260,6 +258,12 @@ export const SlashMenu = React.memo(
             <div
               data-noether-suggestion-popup="true"
               onMouseDown={(e) => {
+                const target = e.target as HTMLElement;
+                if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
+                  e.preventDefault();
+                }
+              }}
+              onPointerDown={(e) => {
                 const target = e.target as HTMLElement;
                 if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') {
                   e.preventDefault();

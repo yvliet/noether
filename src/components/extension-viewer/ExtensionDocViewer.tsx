@@ -50,11 +50,11 @@ const ViewerCallout: React.FC<{
   const IconComp = typeInfo.iconComponent;
   const isFoldable = headerMeta.foldable;
 
-  const displayTitle = headerMeta.title || typeInfo.title;
+  const displayTitle = headerMeta.title || typeInfo.title.toUpperCase();
 
   return (
     <div
-      className={`my-3 p-3.5 border-l-[3px] ${typeInfo.borderColor} ${typeInfo.bgColor} rounded-r-lg text-[var(--editor-font-size,16px)]`}
+      className={`my-3 p-3.5 border-l-[3px] ${typeInfo.borderColor} ${typeInfo.bgColor} rounded-r-md text-[14px]`}
       data-callout={headerMeta.type}
     >
       <div
@@ -68,7 +68,7 @@ const ViewerCallout: React.FC<{
         {isFoldable && (
           <button
             type="button"
-            className="text-[var(--noether-text-muted)] hover:text-white p-0.5 rounded transition-none"
+            className="text-[var(--noether-text-muted,#888888)] hover:text-white p-0.5 rounded transition-none"
             aria-label={isCollapsed ? 'Expand callout' : 'Collapse callout'}
           >
             {isCollapsed ? <ChevronRightIcon size={14} /> : <ChevronDownIcon size={14} />}
@@ -76,10 +76,18 @@ const ViewerCallout: React.FC<{
         )}
       </div>
       {!isCollapsed && bodyLines.length > 0 && (
-        <div className="text-[var(--noether-text-secondary)] leading-[1.75] space-y-1.5">
-          {bodyLines.map((line, lIdx) => (
-            <div key={lIdx} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }} />
-          ))}
+        <div className="text-[#dadada] leading-[1.7] space-y-2">
+          {bodyLines.map((line, lIdx) => {
+            if (line.startsWith('- ') || line.startsWith('* ')) {
+              return (
+                <div key={lIdx} className="flex items-start gap-2 pl-1">
+                  <span className="text-[#888888] select-none">•</span>
+                  <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line.slice(2)) }} />
+                </div>
+              );
+            }
+            return <div key={lIdx} dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }} />;
+          })}
         </div>
       )}
     </div>
