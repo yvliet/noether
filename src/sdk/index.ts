@@ -80,6 +80,18 @@ export {
   useBreadcrumbDecorators,
 } from '../core/app/AppContext';
 export { ToolbarIconButton } from '../components/common/ToolbarIconButton';
+export {
+  SidebarActionHeader,
+  SidebarActionButton,
+} from '../components/common/SidebarActionHeader';
+export type {
+  SidebarActionHeaderProps,
+  SidebarActionButtonProps,
+} from '../components/common/SidebarActionHeader';
+export { CollapseAllButton } from '../components/common/CollapseAllButton';
+export type { CollapseAllButtonProps } from '../components/common/CollapseAllButton';
+export { SortDropdown } from '../components/common/SortDropdown';
+export type { SortDropdownProps } from '../components/common/SortDropdown';
 export { ViewportActionSlotHost } from '../components/layout/ViewportActionSlotHost';
 
 // ── Reactive React Hooks ──

@@ -274,7 +274,7 @@ The SDK exports unified layout wrappers that guarantee custom views match Noethe
 
 ### `PageView`
 
-The root layout container for all custom workspace views. Encapsulates active tab cutout mask passthrough, sticky floating `PageSubHeader`, dynamic scroll dissolve transparency, custom scrollbar tracks, and navigation history.
+The root layout container for all custom full-page workspace views. Encapsulates active tab cutout mask passthrough, sticky floating `PageSubHeader`, dynamic scroll dissolve transparency, custom scrollbar tracks, and navigation history.
 
 ```typescript
 import { PageView, PageViewProps } from 'noether';
@@ -292,7 +292,39 @@ export const MyView: React.FC = () => {
 };
 ```
 
-For the complete list of UI primitives (buttons, toggles, text inputs, sliders, and setting builders), see [[Noether UI Components]].
+### `SidebarActionHeader` & `SidebarActionButton`
+
+The canonical action toolbar suite for sidebar views, dock panels, and extension explorer tabs (e.g. Backlinks, Outline, Tags, Bookshelf, History). Encapsulates pixel-perfect Action Rail baseline alignment (`y = 49px`), 28×28px buttons, 2px gaps, and instant click response.
+
+```typescript
+import {
+  SidebarActionHeader,
+  SidebarActionButton,
+  CollapseAllButton,
+  SortDropdown,
+} from 'noether';
+
+export const MySidebarView: React.FC = () => {
+  return (
+    <div className="flex flex-col h-full select-none text-xs">
+      <SidebarActionHeader borderBottom>
+        <SidebarActionButton
+          title="New Item"
+          icon={<PlusIcon size={16} />}
+          onClick={handleCreate}
+        />
+        <CollapseAllButton
+          isCollapsed={isCollapsed}
+          onToggle={handleToggleCollapse}
+        />
+      </SidebarActionHeader>
+      <div className="flex-1 overflow-y-auto p-2">...</div>
+    </div>
+  );
+};
+```
+
+For the complete list of UI primitives (buttons, toggles, text inputs, sliders, setting builders, and action headers), see [[Noether UI Components]].
 
 To learn how extensions store relational data, read [[Database Schema Reference]] and [[Events & Relational Storage]]. To register AI tools, read [[Model Context Protocol (MCP) Tools]].
 

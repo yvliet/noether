@@ -363,7 +363,72 @@ this.addCommand({
 ```
 
 
-## 11. Global Modals & Dialogs
+## 11. Custom Sidebar Tabs (`registerSidebarTab`)
+
+---
+
+When building custom inspectors, outlines, or bookshelf managers, you can mount dedicated explorer views directly into the left or right dock panels using `this.registerSidebarTab()`.
+
+I designed the sidebar action toolbar to pair with `<SidebarActionHeader>` and `<SidebarActionButton>`. Wrapping your controls in these components ensures your custom tab inherits the exact same baseline alignment (`y = 49px`), 28×28px buttons, 2px gaps, and instant responsiveness as Noether's native file explorer and document views:
+
+```typescript
+import React, { useState } from 'react';
+import {
+  Extension,
+  SidebarActionHeader,
+  SidebarActionButton,
+  CollapseAllButton,
+} from 'noether';
+import { Bookmark01Icon, PlusSignIcon, Search01Icon } from '@/components/common/Icons';
+
+export default class BookmarksExtension extends Extension {
+  async onload() {
+    this.registerSidebarTab({
+      id: 'bookmarks-explorer',
+      title: 'Bookmarks',
+      icon: <Bookmark01Icon size={16} />,
+      side: 'left', // 'left' or 'right'
+      order: 10,
+      render: () => <BookmarksSidebarView />,
+    });
+  }
+}
+
+const BookmarksSidebarView: React.FC = () => {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  return (
+    <div className="flex flex-col h-full select-none text-xs">
+      {/* Standardized Optical Toolbar */}
+      <SidebarActionHeader borderBottom={false}>
+        <SidebarActionButton
+          title="Add Bookmark"
+          icon={<PlusSignIcon size={16} />}
+          onClick={() => console.log('Bookmark added')}
+        />
+        <CollapseAllButton
+          isCollapsed={isCollapsed}
+          onToggle={() => setIsCollapsed(!isCollapsed)}
+        />
+        <SidebarActionButton
+          isActive={isSearchOpen}
+          title="Search Bookmarks"
+          icon={<Search01Icon size={16} />}
+          onClick={() => setIsSearchOpen(!isSearchOpen)}
+        />
+      </SidebarActionHeader>
+
+      <div className="flex-1 overflow-y-auto p-2">
+        {/* Bookmark items */}
+      </div>
+    </div>
+  );
+};
+```
+
+
+## 12. Global Modals & Dialogs
 
 ---
 
@@ -390,7 +455,7 @@ this.registerModal({
 ```
 
 
-## 12. Settings Tabs
+## 13. Settings Tabs
 
 ---
 
@@ -422,7 +487,7 @@ this.registerSettingTab({
 ```
 
 
-## 13. Advanced Editor Extension Points
+## 14. Advanced Editor Extension Points
 
 ---
 
@@ -476,7 +541,7 @@ this.registerPortalSlot({
 ```
 
 
-## 14. Custom File Types (`registerFileType`)
+## 15. Custom File Types (`registerFileType`)
 
 ---
 
@@ -498,7 +563,7 @@ this.registerFileType({
 ```
 
 
-## 15. Related Reading & References
+## 16. Related Reading & References
 
 ---
 

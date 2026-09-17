@@ -389,7 +389,46 @@ this.app.events.emit('canvas:register-card-renderer', {
 });
 ```
 
-### R. Shared Host Dependencies & Subpaths
+### R. Sidebar Tabs & Action Toolbars (`SidebarActionHeader`)
+Mount custom explorer views into the left or right dock panels using `this.registerSidebarTab()`. Use `SidebarActionHeader` and `SidebarActionButton` to achieve pixel-perfect optical alignment with the Action Rail top launcher (`y = 49px`), 28×28px buttons, 2px gaps, and instant click responsiveness:
+
+```javascript
+const {
+  SidebarActionHeader,
+  SidebarActionButton,
+  CollapseAllButton,
+  SortDropdown,
+} = require('noether');
+
+// Register sidebar view in onload()
+this.registerSidebarTab({
+  id: 'my-sidebar-explorer',
+  title: 'My Explorer',
+  icon: <MyIcon size={16} />,
+  side: 'left', // 'left' or 'right'
+  order: 10,
+  render: () => {
+    return (
+      <div className="flex flex-col h-full select-none text-xs">
+        <SidebarActionHeader borderBottom={false}>
+          <SidebarActionButton
+            title="New Item"
+            icon={<PlusIcon size={16} />}
+            onClick={() => console.log('Create')}
+          />
+          <CollapseAllButton
+            isCollapsed={isCollapsed}
+            onToggle={() => setIsCollapsed(!isCollapsed)}
+          />
+        </SidebarActionHeader>
+        <div className="flex-1 overflow-y-auto p-2">...</div>
+      </div>
+    );
+  }
+});
+```
+
+### S. Shared Host Dependencies & Subpaths
 Noether shares common libraries with extensions so your bundles stay small and avoid duplicate runtime overhead:
 
 - **SDK Aliases**: `require('noether')`, `require('noether/sdk')`, `require('@noether')`, `require('@noether/core')`, `require('noether-sdk')`

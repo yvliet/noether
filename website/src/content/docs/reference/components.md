@@ -21,6 +21,11 @@ import {
   SettingCard,
   SettingItem,
   SettingBuilder,
+  PageView,
+  SidebarActionHeader,
+  SidebarActionButton,
+  CollapseAllButton,
+  SortDropdown,
 } from 'noether';
 ```
 
@@ -394,7 +399,124 @@ export const CustomAnalyticsView: React.FC = () => {
 | `children` | `React.ReactNode` | `undefined` | View body content rendered in the viewport. |
 
 
-## 11. Related Reading & References
+## 11. SidebarActionHeader & SidebarActionButton Components
+
+---
+
+When I built Noether's sidebars and dock views, I wanted the top toolbar row across every panel (Files, Outlines, Backlinks, Tags, Properties, History, and extension sidebars) to feel completely unified with the window frame.
+
+The `SidebarActionHeader` and `SidebarActionButton` suite provides the canonical container and button controls for custom sidebar views and dock panels. Using these components guarantees optical baseline Y-alignment with the vertical Action Rail (`y = 49px`), uniform 28×28px button footprints with 16px icons, tight 2px gaps (`gap-0.5`), and instantaneous click response with zero artificial animation delay.
+
+```typescript
+import React, { useState } from 'react';
+import {
+  SidebarActionHeader,
+  SidebarActionButton,
+  CollapseAllButton,
+  SortDropdown,
+} from 'noether';
+import { PlusSignIcon, Search01Icon } from '@/components/common/Icons';
+
+export const CustomSidebarView: React.FC = () => {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [sortOrder, setSortOrder] = useState('alpha-asc');
+
+  const sortOptions = [
+    { id: 'alpha-asc', label: 'Alphabetical: A-Z' },
+    { id: 'alpha-desc', label: 'Alphabetical: Z-A' },
+  ];
+
+  return (
+    <div className="flex flex-col h-full select-none text-xs">
+      {/* Standardized Optical Toolbar */}
+      <SidebarActionHeader borderBottom={false}>
+        <SidebarActionButton
+          onClick={() => console.log('Create item')}
+          title="Create item (Ctrl+N)"
+          icon={<PlusSignIcon size={16} />}
+        />
+
+        <SortDropdown
+          value={sortOrder}
+          onChange={setSortOrder}
+          options={sortOptions}
+        />
+
+        <CollapseAllButton
+          isCollapsed={isCollapsed}
+          onToggle={() => setIsCollapsed(!isCollapsed)}
+          collapsedTitle="Expand all items"
+          expandedTitle="Collapse all items"
+        />
+
+        <SidebarActionButton
+          onClick={() => setIsSearchOpen(!isSearchOpen)}
+          isActive={isSearchOpen}
+          title={isSearchOpen ? 'Close search' : 'Search items'}
+          icon={<Search01Icon size={16} />}
+        />
+      </SidebarActionHeader>
+
+      {/* View Body */}
+      <div className="flex-1 overflow-y-auto p-2">
+        {/* View content */}
+      </div>
+    </div>
+  );
+};
+```
+
+### Architectural Alignment Invariant
+
+- **Baseline Y-Coordinate Synchronization**: The top icon in the Action Rail / Ribbon aligns at `y = 49px` (`pt-[41px]` header padding + `pt-2` inner container padding). `SidebarActionHeader` applies `h-9 mt-1` (36px height + 4px top margin + 4px inner button offset = `y = 49px`). This prevents awkward vertical staggering when glancing across the top of the sidebar and ribbon.
+- **Button Sizing & Density**: `SidebarActionButton` and `CollapseAllButton` render at `w-7 h-7 rounded-md` (28×28px) with `16px` icon size and `gap-0.5` (2px) horizontal spacing, matching the dock control cluster and window header tools.
+- **Instant Responsiveness**: Micro-interaction hover states and active toggles engage immediately without artificial transition delays, preserving the snappy feel of a native desktop utility.
+
+### Props Reference
+
+#### `SidebarActionHeaderProps`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `children` | `React.ReactNode` | `undefined` | Action buttons, dropdowns, and controls rendered in the header. |
+| `borderBottom` | `boolean` | `false` | When true, renders a subtle bottom border separator (`border-[var(--noether-border-base)]`). |
+| `className` | `string` | `''` | Additional CSS classes applied to the container. |
+
+#### `SidebarActionButtonProps`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `icon` | `React.ReactNode` | `undefined` | Primary icon element (rendered at 16px by convention). |
+| `isActive` | `boolean` | `false` | When true, highlights the button with active card background styling. |
+| `disabled` | `boolean` | `false` | Disables pointer events and dims opacity to 35%. |
+| `title` | `string` | `undefined` | Tooltip title shown on hover and used for accessibility labels. |
+| `onClick` | `(e: React.MouseEvent) => void` | `undefined` | Click event handler callback. |
+| `className` | `string` | `''` | Additional CSS classes. |
+
+#### `CollapseAllButtonProps`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `isCollapsed` | `boolean` | - | Whether the target items are currently all collapsed. |
+| `onToggle` | `() => void` | - | Toggle handler callback. |
+| `disabled` | `boolean` | `false` | Dims button when no collapsible items exist. |
+| `collapsedTitle` | `string` | `'Expand all'` | Tooltip when items are collapsed (clicking will expand). |
+| `expandedTitle` | `string` | `'Collapse all'` | Tooltip when items are expanded (clicking will collapse). |
+| `size` | `number` | `16` | Icon glyph size in pixels. |
+
+#### `SortDropdownProps<T>`
+
+| Prop | Type | Default | Description |
+| :--- | :--- | :--- | :--- |
+| `value` | `T` | - | Currently selected sort option ID. |
+| `onChange` | `(value: T) => void` | - | Sort change callback. |
+| `options` | `SortOption<T>[]` | - | Array of sort option descriptors (`{ id, label, section? }`). |
+| `disabled` | `boolean` | `false` | Dims button when items list is empty. |
+| `title` | `string` | `'Change sort order'` | Tooltip label. |
+
+
+## 12. Related Reading & References
 
 ---
 

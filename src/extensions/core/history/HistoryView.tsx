@@ -18,6 +18,7 @@ import {
 import { getDocumentPath } from '@/lib/db/documents';
 import { parseGitDiff, computeLineDiff, formatRelativeTime, DiffLine } from './diffUtils';
 import { useHistorySettings } from './historySettings';
+import { SidebarActionHeader, SidebarActionButton } from '@/components/common/SidebarActionHeader';
 
 interface RevisionItem {
   hash: string;
@@ -420,38 +421,31 @@ export const HistoryView: React.FC = React.memo(() => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Action Header (Matching BacklinksView & OutlineView) */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[#777] shrink-0 border-b border-[var(--noether-border-base)]">
-        <button
+      <SidebarActionHeader borderBottom>
+        <SidebarActionButton
           onClick={handleTakeSnapshot}
           disabled={isTakingSnapshot}
           title="Take snapshot now"
-          className="p-1.5 rounded hover:bg-[#202020] text-[#777] hover:text-[#dcddde] disabled:opacity-40"
-        >
-          <PlusSignIcon size={14} />
-        </button>
+          icon={<PlusSignIcon size={16} />}
+        />
 
-        <button
+        <SidebarActionButton
           onClick={() => {
             setIsSearchOpen(!isSearchOpen);
             if (isSearchOpen) setSearchQuery('');
           }}
+          isActive={isSearchOpen}
           title={isSearchOpen ? 'Close search' : 'Filter revisions'}
-          className={`p-1.5 rounded hover:bg-[#202020] ${
-            isSearchOpen ? 'text-white bg-[#202020]' : 'text-[#777] hover:text-[#dcddde]'
-          }`}
-        >
-          <Search01Icon size={14} />
-        </button>
+          icon={<Search01Icon size={16} />}
+        />
 
-        <button
+        <SidebarActionButton
           onClick={loadHistory}
           disabled={isLoadingHistory}
           title="Refresh history"
-          className="p-1.5 rounded hover:bg-[#202020] text-[#777] hover:text-[#dcddde] disabled:opacity-40"
-        >
-          <RotateCcwIcon size={14} className={isLoadingHistory ? 'animate-spin' : ''} />
-        </button>
-      </div>
+          icon={<RotateCcwIcon size={16} className={isLoadingHistory ? 'animate-spin' : ''} />}
+        />
+      </SidebarActionHeader>
 
       {/* Search Input Bar */}
       {isSearchOpen && (

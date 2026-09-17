@@ -21,6 +21,7 @@ import {
 } from '@/components/common/Icons';
 import { CollapseAllButton } from '@/components/common/CollapseAllButton';
 import { SortDropdown } from '@/components/common/SortDropdown';
+import { SidebarActionHeader, SidebarActionButton } from '@/components/common/SidebarActionHeader';
 import { FileSortOrder, FILE_SORT_OPTIONS } from '@/lib/sort';
 
 export const BacklinksView: React.FC = React.memo(() => {
@@ -153,7 +154,7 @@ export const BacklinksView: React.FC = React.memo(() => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[#777] shrink-0">
+      <SidebarActionHeader>
         <CollapseAllButton
           isCollapsed={areAllCollapsed}
           onToggle={handleToggleCollapseAll}
@@ -170,19 +171,16 @@ export const BacklinksView: React.FC = React.memo(() => {
           disabled={totalLinksCount === 0}
         />
 
-        <button
+        <SidebarActionButton
           onClick={() => {
             setIsSearchOpen(!isSearchOpen);
             if (isSearchOpen) setSearchQuery('');
           }}
+          isActive={isSearchOpen}
           title={isSearchOpen ? 'Close search' : 'Search links & mentions'}
-          className={`p-1.5 rounded hover:bg-[#202020] transition-colors ${
-            isSearchOpen ? 'text-white bg-[#202020]' : 'text-[#777] hover:text-[#dcddde]'
-          }`}
-        >
-          <Search01Icon size={14} />
-        </button>
-      </div>
+          icon={<Search01Icon size={16} />}
+        />
+      </SidebarActionHeader>
 
       {isSearchOpen && (
         <div className="px-2.5 py-1.5">

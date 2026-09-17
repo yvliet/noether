@@ -19,6 +19,7 @@ import {
 import { renderPropertyIcon, getPropertyIconName } from './propertyIcons';
 import { PropertyRow } from './PropertyRow';
 import { usePropertyFilters } from '@/core/app/AppContext';
+import { SidebarActionHeader, SidebarActionButton } from '@/components/common/SidebarActionHeader';
 
 export const PropertiesView: React.FC = () => {
   const app = useNoetherApp();
@@ -236,44 +237,32 @@ export const PropertiesView: React.FC = () => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)] shrink-0">
+      <SidebarActionHeader>
         {!isLocked && (
-          <button
+          <SidebarActionButton
             onClick={handleAddDirectProperty}
             title={`Add Property\nCreate a new metadata field for this note`}
-            className="p-1.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
-          >
-            <PlusSignIcon size={14} />
-          </button>
+            icon={<PlusSignIcon size={16} />}
+          />
         )}
 
-        <button
+        <SidebarActionButton
           onClick={() => setSortAlpha(!sortAlpha)}
+          isActive={sortAlpha}
           title={`Sort Properties\nSwitch to ${sortAlpha ? 'default order' : 'alphabetical order'}`}
-          className={`p-1.5 rounded-[5px] cursor-pointer ${
-            sortAlpha
-              ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]'
-              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
-          }`}
-        >
-          <ArrowDownAZIcon size={14} />
-        </button>
+          icon={<ArrowDownAZIcon size={16} />}
+        />
 
-        <button
+        <SidebarActionButton
           onClick={() => {
             setIsSearchOpen(!isSearchOpen);
             if (isSearchOpen) setSearchQuery('');
           }}
+          isActive={isSearchOpen}
           title={isSearchOpen ? 'Close search' : 'Search properties'}
-          className={`p-1.5 rounded-[5px] cursor-pointer ${
-            isSearchOpen
-              ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]'
-              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
-          }`}
-        >
-          <Search01Icon size={14} />
-        </button>
-      </div>
+          icon={<Search01Icon size={16} />}
+        />
+      </SidebarActionHeader>
 
       {/* Optional Search Input */}
       {isSearchOpen && (

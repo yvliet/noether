@@ -16,6 +16,7 @@ import {
   HelpCircleIcon,
 } from '@/components/common/Icons';
 import { CollapseAllButton } from '@/components/common/CollapseAllButton';
+import { SidebarActionHeader, SidebarActionButton } from '@/components/common/SidebarActionHeader';
 import { Tooltip } from '@/components/common/Tooltip';
 
 interface TagTreeRowProps {
@@ -203,27 +204,20 @@ export const TagsView: React.FC = () => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)] shrink-0">
+      <SidebarActionHeader>
         <Tooltip content="Sort order" shortcut={sortMode === 'count' ? 'Frequency: 9-1' : 'Alphabetical: A-Z'}>
-          <button
+          <SidebarActionButton
             onClick={() => setSortMode(sortMode === 'count' ? 'alpha' : 'count')}
-            className={`p-1.5 rounded-[5px] cursor-pointer ${
-              sortMode === 'count'
-                ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
-                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] border border-transparent'
-            }`}
-          >
-            {sortMode === 'count' ? <ArrowDown10Icon size={14} /> : <ArrowDownAZIcon size={14} />}
-          </button>
+            isActive={sortMode === 'count'}
+            icon={sortMode === 'count' ? <ArrowDown10Icon size={16} /> : <ArrowDownAZIcon size={16} />}
+          />
         </Tooltip>
 
-        <button
+        <SidebarActionButton
           onClick={() => setViewMode(viewMode === 'tree' ? 'flat' : 'tree')}
           title={`View mode: ${viewMode === 'tree' ? 'Hierarchical Tree' : 'Flat List'}`}
-          className="p-1.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
-        >
-          {viewMode === 'tree' ? <FolderTreeIcon size={14} /> : <HashIcon size={14} />}
-        </button>
+          icon={viewMode === 'tree' ? <FolderTreeIcon size={16} /> : <HashIcon size={16} />}
+        />
 
         {viewMode === 'tree' && (
           <CollapseAllButton
@@ -236,21 +230,16 @@ export const TagsView: React.FC = () => {
           />
         )}
 
-        <button
+        <SidebarActionButton
           onClick={() => {
             setIsSearchOpen(!isSearchOpen);
             if (isSearchOpen) setSearchQuery('');
           }}
+          isActive={isSearchOpen}
           title={isSearchOpen ? 'Close search' : 'Search tags'}
-          className={`p-1.5 rounded-[5px] cursor-pointer ${
-            isSearchOpen
-              ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] border border-[var(--noether-border-strong)] shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
-              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] border border-transparent'
-          }`}
-        >
-          <Search01Icon size={14} />
-        </button>
-      </div>
+          icon={<Search01Icon size={16} />}
+        />
+      </SidebarActionHeader>
 
       {isSearchOpen && (
         <div className="px-2.5 py-1.5">

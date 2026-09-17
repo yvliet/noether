@@ -9,6 +9,7 @@ import {
   HelpCircleIcon,
 } from '@/components/common/Icons';
 import { CollapseAllButton } from '@/components/common/CollapseAllButton';
+import { SidebarActionHeader, SidebarActionButton } from '@/components/common/SidebarActionHeader';
 
 interface OutlineNode {
   heading: HeadingItem;
@@ -232,7 +233,7 @@ export const OutlineView: React.FC = () => {
   return (
     <div className="flex flex-col h-full select-none text-xs">
       {/* Top Centered Action Header (Matching Left Sidebar) */}
-      <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)] shrink-0">
+      <SidebarActionHeader>
         <CollapseAllButton
           isCollapsed={collapsedIds.size > 0}
           onToggle={handleCollapseAll}
@@ -242,19 +243,16 @@ export const OutlineView: React.FC = () => {
           disabledTitle="No collapsible headings"
         />
 
-        <button
+        <SidebarActionButton
           onClick={() => {
             setIsSearchOpen(!isSearchOpen);
             if (isSearchOpen) setSearchQuery('');
           }}
+          isActive={isSearchOpen}
           title={isSearchOpen ? 'Close search' : 'Search headings'}
-          className={`p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] transition-colors cursor-pointer ${
-            isSearchOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
-          }`}
-        >
-          <Search01Icon size={14} />
-        </button>
-      </div>
+          icon={<Search01Icon size={16} />}
+        />
+      </SidebarActionHeader>
 
       {/* Optional Search Input */}
       {isSearchOpen && (

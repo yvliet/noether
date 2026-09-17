@@ -34,6 +34,7 @@ import {
 } from '@/lib/sort';
 import { CollapseAllButton } from '@/components/common/CollapseAllButton';
 import { SortDropdown } from '@/components/common/SortDropdown';
+import { SidebarActionHeader, SidebarActionButton } from '@/components/common/SidebarActionHeader';
 
 export type { FileSortOrder };
 export { SORT_OPTIONS, sortDocuments };
@@ -546,32 +547,26 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       {/* Top Action Header (Centered Minimal Obsidian Toolbar) - Hide if viewing docked pane or in search view */}
       {isFilesActive && (
-        <div className="h-9 px-2 flex items-center justify-center gap-1.5 text-[var(--noether-text-muted)]">
-          <button
+        <SidebarActionHeader>
+          <SidebarActionButton
             onClick={handleCreateNote}
             title="New note (Ctrl+N)"
-            className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
-          >
-            <FileAddIcon size={14} />
-          </button>
-          <button
+            icon={<FileAddIcon size={16} />}
+          />
+          <SidebarActionButton
             onClick={handleCreateFolder}
             title="New folder"
-            className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
-          >
-            <FolderAddIcon size={14} />
-          </button>
+            icon={<FolderAddIcon size={16} />}
+          />
 
-          {/* Dynamic Plugin File Tree Actions */}
+          {/* Dynamic Extension File Tree Actions */}
           {fileTreeActions.map((action) => (
-            <button
+            <SidebarActionButton
               key={action.id}
               onClick={() => action.onClick(app)}
               title={action.title}
-              className="p-1.5 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
-            >
-              {action.icon}
-            </button>
+              icon={action.icon}
+            />
           ))}
 
           {/* Sort Menu Dropdown */}
@@ -591,7 +586,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             expandedTitle="Collapse all folders"
             disabledTitle="No folders to collapse or expand"
           />
-        </div>
+        </SidebarActionHeader>
       )}
 
       {/* Top Search Header - Shown in search view (replaces top action toolbar) */}
