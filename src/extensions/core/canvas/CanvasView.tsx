@@ -10,6 +10,7 @@ import {
   deleteCanvasEdge,
   syncCanvasToDisk,
   importCanvasBoard,
+  batchPersistCanvasDelta,
 } from './canvasDb';
 import {
   getSideAnchorPoint,
@@ -589,6 +590,12 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     edges: CanvasEdge[];
   }
 
+  const cloneSnapshotEdges = (edgeList: CanvasEdge[]): CanvasEdge[] =>
+    edgeList.map((e) => ({
+      ...e,
+      control_points: e.control_points ? e.control_points.map((p) => ({ ...p })) : undefined,
+    }));
+
   const undoStackRef = useRef<CanvasSnapshot[]>([]);
   const redoStackRef = useRef<CanvasSnapshot[]>([]);
   const [canUndo, setCanUndo] = useState(false);
@@ -602,7 +609,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
   const recordSnapshot = useCallback(() => {
     const currentSnapshot: CanvasSnapshot = {
       nodes: nodesRef.current.map((n) => ({ ...n })),
-      edges: edgesRef.current.map((e) => ({ ...e })),
+      edges: cloneSnapshotEdges(edgesRef.current),
     };
     undoStackRef.current.push(currentSnapshot);
     if (undoStackRef.current.length > 50) {
@@ -612,84 +619,110 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
     updateUndoRedoState();
   }, [updateUndoRedoState]);
 
-  const handleUndo = useCallback(async () => {
+  const textEditInitialSnapshotRef = useRef<{ nodeId: string; initialText: string; snapshot: CanvasSnapshot } | null>(null);
+
+  const handleTextFocus = useCallback((id: string) => {
+    const node = nodesRef.current.find((n) => n.id === id);
+    if (node && node.type === 'text') {
+      textEditInitialSnapshotRef.current = {
+        nodeId: id,
+        initialText: node.text_content || '',
+        snapshot: {
+          nodes: nodesRef.current.map((n) => ({ ...n })),
+          edges: cloneSnapshotEdges(edgesRef.current),
+        },
+      };
+    }
+  }, []);
+
+  const handleTextBlur = useCallback(
+    (id: string) => {
+      if (textEditInitialSnapshotRef.current && textEditInitialSnapshotRef.current.nodeId === id) {
+        const initial = textEditInitialSnapshotRef.current;
+        textEditInitialSnapshotRef.current = null;
+        const currentNode = nodesRef.current.find((n) => n.id === id);
+        const currentText = currentNode?.text_content || '';
+        if (currentText !== initial.initialText) {
+          undoStackRef.current.push(initial.snapshot);
+          if (undoStackRef.current.length > 50) {
+            undoStackRef.current.shift();
+          }
+          redoStackRef.current = [];
+          updateUndoRedoState();
+        }
+      }
+    },
+    [updateUndoRedoState]
+  );
+
+  const handleUndo = useCallback(() => {
     if (canvasReadOnlyRef.current || undoStackRef.current.length === 0) return;
     const previousState = undoStackRef.current.pop();
     if (!previousState) return;
 
     const currentSnapshot: CanvasSnapshot = {
       nodes: nodesRef.current.map((n) => ({ ...n })),
-      edges: edgesRef.current.map((e) => ({ ...e })),
+      edges: cloneSnapshotEdges(edgesRef.current),
     };
     redoStackRef.current.push(currentSnapshot);
 
-    const prevNodeIds = new Set(previousState.nodes.map((n) => n.id));
-    for (const n of nodesRef.current) {
-      if (!prevNodeIds.has(n.id)) {
-        await deleteCanvasNode(n.id);
-      }
-    }
-    for (const n of previousState.nodes) {
-      await saveCanvasNode(n);
-    }
+    const oldNodes = nodesRef.current;
+    const oldEdges = edgesRef.current;
 
-    const prevEdgeIds = new Set(previousState.edges.map((e) => e.id));
-    for (const e of edgesRef.current) {
-      if (!prevEdgeIds.has(e.id)) {
-        await deleteCanvasEdge(e.id);
-      }
-    }
-    for (const e of previousState.edges) {
-      await saveCanvasEdge(e);
-    }
-
-    triggerDiskSync(effectiveBoardId);
-
+    // 1. Synchronously update visual state and refs instantly (0ms UI latency)
     setNodes(previousState.nodes);
     setEdges(previousState.edges);
     nodesRef.current = previousState.nodes;
     edgesRef.current = previousState.edges;
     updateUndoRedoState();
+
+    // 2. Persist differential delta to SQLite in background and schedule debounced disk sync
+    batchPersistCanvasDelta(
+      oldNodes,
+      previousState.nodes,
+      oldEdges,
+      previousState.edges,
+      effectiveBoardId
+    ).catch((err) => {
+      console.error('[Noether Canvas] Failed to persist undo delta in background:', err);
+    });
+
+    triggerDiskSync(effectiveBoardId);
   }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState]);
 
-  const handleRedo = useCallback(async () => {
+  const handleRedo = useCallback(() => {
     if (canvasReadOnlyRef.current || redoStackRef.current.length === 0) return;
     const nextState = redoStackRef.current.pop();
     if (!nextState) return;
 
     const currentSnapshot: CanvasSnapshot = {
       nodes: nodesRef.current.map((n) => ({ ...n })),
-      edges: edgesRef.current.map((e) => ({ ...e })),
+      edges: cloneSnapshotEdges(edgesRef.current),
     };
     undoStackRef.current.push(currentSnapshot);
 
-    const nextNodeIds = new Set(nextState.nodes.map((n) => n.id));
-    for (const n of nodesRef.current) {
-      if (!nextNodeIds.has(n.id)) {
-        await deleteCanvasNode(n.id);
-      }
-    }
-    for (const n of nextState.nodes) {
-      await saveCanvasNode(n);
-    }
+    const oldNodes = nodesRef.current;
+    const oldEdges = edgesRef.current;
 
-    const nextEdgeIds = new Set(nextState.edges.map((e) => e.id));
-    for (const e of edgesRef.current) {
-      if (!nextEdgeIds.has(e.id)) {
-        await deleteCanvasEdge(e.id);
-      }
-    }
-    for (const e of nextState.edges) {
-      await saveCanvasEdge(e);
-    }
-
-    triggerDiskSync(effectiveBoardId);
-
+    // 1. Synchronously update visual state and refs instantly (0ms UI latency)
     setNodes(nextState.nodes);
     setEdges(nextState.edges);
     nodesRef.current = nextState.nodes;
     edgesRef.current = nextState.edges;
     updateUndoRedoState();
+
+    // 2. Persist differential delta to SQLite in background and schedule debounced disk sync
+    batchPersistCanvasDelta(
+      oldNodes,
+      nextState.nodes,
+      oldEdges,
+      nextState.edges,
+      effectiveBoardId
+    ).catch((err) => {
+      console.error('[Noether Canvas] Failed to persist redo delta in background:', err);
+    });
+
+    triggerDiskSync(effectiveBoardId);
   }, [effectiveBoardId, triggerDiskSync, updateUndoRedoState]);
 
   // Debounced save for card text edits with flush on unmount
@@ -2839,6 +2872,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
 
         if (!bendDidMove && Math.hypot(dx, dy) > 2) {
           bendDidMove = true;
+          recordSnapshot();
         }
         if (!bendDidMove) return;
 
@@ -2873,7 +2907,6 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           if (updatedEdge) {
             saveCanvasEdge(updatedEdge);
             triggerDiskSyncRef.current(updatedEdge.board_id);
-            recordSnapshot();
           }
         }
       };
@@ -3782,10 +3815,13 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
           return line;
         });
         const updatedText = updatedLines.join('\n');
-        handleTextChange(nodeId, updatedText);
+        if (updatedText !== targetNode.text_content) {
+          recordSnapshot();
+          handleTextChange(nodeId, updatedText);
+        }
       }
     },
-    [nodes, docContentMap, app.vault, handleTextChange]
+    [nodes, docContentMap, app.vault, handleTextChange, recordSnapshot]
   );
 
   // Refs for real-time reads during continuous drag operations
@@ -6035,10 +6071,11 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       ];
 
       if (allPlacedNodes.length > 0) {
-        recordSnapshot();
-        if (additionalNodes.length > 0) {
-          nodesRef.current = [...nodesRef.current, ...additionalNodes];
+        if (inFlightId) {
+          nodesRef.current = nodesRef.current.filter((n) => n.id !== inFlightId);
         }
+        recordSnapshot();
+        nodesRef.current = [...nodesRef.current, ...allPlacedNodes];
         // Force synchronous state update so isNavDraggingThisNode becomes false without unmounting the card!
         setNodes([...nodesRef.current]);
         setSelectedNodeIds(allPlacedNodes.map((n) => n.id));
@@ -6622,10 +6659,14 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 let url = newUrl.trim();
                 if (!url) return;
                 if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+                if (url === node.url) return;
+
+                recordSnapshot();
                 const updatedNode: CanvasNode = { ...node, url, text_content: url };
+                nodesRef.current = nodesRef.current.map((n) => (n.id === node.id ? updatedNode : n));
+                setNodes(nodesRef.current);
                 await saveCanvasNode(updatedNode);
                 triggerDiskSync(effectiveBoardId);
-                setNodes((prev) => prev.map((n) => (n.id === node.id ? updatedNode : n)));
               },
             });
           },
@@ -7650,6 +7691,8 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
                 onColorChange={handleColorChange}
                 onTextChange={handleTextChange}
                 onDocContentChange={handleDocContentChange}
+                onTextFocus={handleTextFocus}
+                onTextBlur={handleTextBlur}
                 onResizeStart={handleResizeStart}
                 onImageDimensions={handleImageDimensions}
                 onTaskToggle={handleTaskToggle}

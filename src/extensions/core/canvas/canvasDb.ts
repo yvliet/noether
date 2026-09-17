@@ -211,6 +211,132 @@ export async function deleteCanvasEdge(edgeId: string): Promise<void> {
   await dbAdapter.execute(`DELETE FROM ext_canvas_edges WHERE id = ?`, [edgeId]);
 }
 
+/**
+ * Asynchronously persists the differential changes (added, modified, deleted nodes and edges)
+ * between two canvas states in a single atomic database transaction.
+ */
+export async function batchPersistCanvasDelta(
+  oldNodes: CanvasNode[],
+  newNodes: CanvasNode[],
+  oldEdges: CanvasEdge[],
+  newEdges: CanvasEdge[],
+  boardId: string = 'default'
+): Promise<void> {
+  await initCanvasTables();
+
+  const queries: Array<{ sql: string; params: any[] }> = [];
+
+  const oldNodesMap = new Map<string, CanvasNode>(oldNodes.map((n) => [n.id, n]));
+  const newNodesMap = new Map<string, CanvasNode>(newNodes.map((n) => [n.id, n]));
+
+  // 1. Deleted nodes (present in old, missing in new)
+  for (const oldNode of oldNodes) {
+    if (!newNodesMap.has(oldNode.id)) {
+      queries.push({
+        sql: `DELETE FROM ext_canvas_nodes WHERE id = ?`,
+        params: [oldNode.id],
+      });
+      queries.push({
+        sql: `DELETE FROM ext_canvas_edges WHERE from_node_id = ? OR to_node_id = ?`,
+        params: [oldNode.id, oldNode.id],
+      });
+    }
+  }
+
+  // 2. Added or modified nodes
+  for (const newNode of newNodes) {
+    const oldNode = oldNodesMap.get(newNode.id);
+    const isModified =
+      !oldNode ||
+      oldNode.x !== newNode.x ||
+      oldNode.y !== newNode.y ||
+      oldNode.width !== newNode.width ||
+      oldNode.height !== newNode.height ||
+      oldNode.type !== newNode.type ||
+      oldNode.text_content !== newNode.text_content ||
+      oldNode.color !== newNode.color ||
+      oldNode.url !== newNode.url ||
+      oldNode.document_id !== newNode.document_id ||
+      oldNode.board_id !== (newNode.board_id || boardId);
+
+    if (isModified) {
+      queries.push({
+        sql: `INSERT OR REPLACE INTO ext_canvas_nodes (id, board_id, type, x, y, width, height, document_id, text_content, color, url)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [
+          newNode.id,
+          newNode.board_id || boardId,
+          newNode.type,
+          newNode.x,
+          newNode.y,
+          newNode.width,
+          newNode.height,
+          newNode.document_id || null,
+          newNode.text_content || null,
+          newNode.color || null,
+          newNode.url || null,
+        ],
+      });
+    }
+  }
+
+  const oldEdgesMap = new Map<string, CanvasEdge>(oldEdges.map((e) => [e.id, e]));
+  const newEdgesMap = new Map<string, CanvasEdge>(newEdges.map((e) => [e.id, e]));
+
+  // 3. Deleted edges (present in old, missing in new)
+  for (const oldEdge of oldEdges) {
+    if (!newEdgesMap.has(oldEdge.id)) {
+      queries.push({
+        sql: `DELETE FROM ext_canvas_edges WHERE id = ?`,
+        params: [oldEdge.id],
+      });
+    }
+  }
+
+  // 4. Added or modified edges
+  for (const newEdge of newEdges) {
+    const oldEdge = oldEdgesMap.get(newEdge.id);
+    const oldCpStr = oldEdge?.control_points ? JSON.stringify(oldEdge.control_points) : null;
+    const newCpStr = newEdge.control_points && newEdge.control_points.length > 0 ? JSON.stringify(newEdge.control_points) : null;
+
+    const isModified =
+      !oldEdge ||
+      oldEdge.from_node_id !== newEdge.from_node_id ||
+      oldEdge.from_side !== (newEdge.from_side || 'right') ||
+      oldEdge.to_node_id !== newEdge.to_node_id ||
+      oldEdge.to_side !== (newEdge.to_side || 'left') ||
+      oldEdge.label !== (newEdge.label || null) ||
+      oldEdge.color !== (newEdge.color || null) ||
+      oldEdge.direction !== (newEdge.direction || 'unidirectional') ||
+      oldEdge.style !== (newEdge.style || null) ||
+      oldCpStr !== newCpStr;
+
+    if (isModified) {
+      queries.push({
+        sql: `INSERT OR REPLACE INTO ext_canvas_edges (id, board_id, from_node_id, from_side, to_node_id, to_side, label, color, direction, style, control_points)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        params: [
+          newEdge.id,
+          newEdge.board_id || boardId,
+          newEdge.from_node_id,
+          newEdge.from_side || 'right',
+          newEdge.to_node_id,
+          newEdge.to_side || 'left',
+          newEdge.label || null,
+          newEdge.color || null,
+          newEdge.direction || 'unidirectional',
+          newEdge.style || null,
+          newCpStr,
+        ],
+      });
+    }
+  }
+
+  if (queries.length > 0) {
+    await dbAdapter.transaction(queries);
+  }
+}
+
 export async function purgeCanvasNodesForDocument(documentId: string): Promise<void> {
   await initCanvasTables();
   const nodes = await dbAdapter.query<{ id: string }>(

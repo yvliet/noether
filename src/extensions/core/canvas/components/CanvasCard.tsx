@@ -30,6 +30,8 @@ export interface CanvasCardProps {
   onColorChange?: (id: string, color: string) => void;
   onTextChange?: (id: string, newText: string) => void;
   onDocContentChange?: (docId: string, newContent: string) => void;
+  onTextFocus?: (id: string) => void;
+  onTextBlur?: (id: string) => void;
   onResizeStart?: (id: string, e: React.PointerEvent, handle: ResizeHandleType) => void;
   onImageDimensions?: (id: string, naturalWidth: number, naturalHeight: number) => void;
   onTaskToggle?: (nodeId: string, taskText: string, currentChecked: boolean) => void;
@@ -61,6 +63,8 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
     onColorChange,
     onTextChange,
     onDocContentChange,
+    onTextFocus,
+    onTextBlur,
     onResizeStart,
     onImageDimensions,
     onTaskToggle,
@@ -103,6 +107,16 @@ export const CanvasCard: React.FC<CanvasCardProps> = React.memo(
 
     const [isEditingText, setIsEditingText] = useState(Boolean(autoFocus && canEdit));
     const isDraggable = !isReadOnly && !isEditingText;
+
+    const prevEditingTextRef = useRef(isEditingText);
+    useEffect(() => {
+      if (!prevEditingTextRef.current && isEditingText) {
+        onTextFocus?.(node.id);
+      } else if (prevEditingTextRef.current && !isEditingText) {
+        onTextBlur?.(node.id);
+      }
+      prevEditingTextRef.current = isEditingText;
+    }, [isEditingText, node.id, onTextFocus, onTextBlur]);
 
     useEffect(() => {
       if (autoFocus) {
