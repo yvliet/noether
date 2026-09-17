@@ -16,6 +16,9 @@
 
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { DocumentItem } from '@/types';
+import { getCachedImageSrc, resolveImageSrcAsync } from '@/components/editor/embed-renderer';
+import { COVER_PRESETS } from './presets';
+import { getPresetUrl, initPresetCache } from './presetCache';
 
 /** Maximum number of decoded image elements kept resident in memory */
 const MAX_CACHE_SIZE = 64;
@@ -93,75 +96,158 @@ export function isCoverPreloaded(url: string | null | undefined): boolean {
 }
 
 /**
- * Resolves a raw cover string (URL, data URI, or vault attachment) to a usable image source,
- * initiating background pre-decoding automatically.
- *
- * Avoids reactive React store subscriptions by querying `app.vault.documents` synchronously in memory.
+ * Normalizes and strips wikilink `![[...]]` or `[[...]]` wrappers, dimensions, and whitespace from a cover string.
+ */
+export function cleanCoverTarget(rawCover: string): string {
+  if (!rawCover) return '';
+  let trimmed = rawCover.trim();
+  if (!trimmed) return '';
+
+  // 1. Strip wikilink embed wrapper ![[...]] or [[...]]
+  if (trimmed.startsWith('![[') && trimmed.endsWith(']]')) {
+    trimmed = trimmed.slice(3, -2).trim();
+  } else if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
+    trimmed = trimmed.slice(2, -2).trim();
+  }
+
+  // 2. Strip markdown image wrapper ![alt](url)
+  const mdMatch = trimmed.match(/^!\[.*?\]\((.*?)\)$/);
+  if (mdMatch && mdMatch[1]) {
+    trimmed = mdMatch[1].trim();
+  }
+
+  // 3. Strip wikilink alias / dimension if present: image.png|300 -> image.png
+  if (trimmed.includes('|')) {
+    trimmed = trimmed.split('|')[0].trim();
+  }
+
+  return trimmed;
+}
+
+/**
+ * Resolves a raw cover string (URL, data URI, preset, or vault attachment) to a usable image source synchronously.
  *
  * @param rawCover - Raw frontmatter Cover value.
  * @param app - Central Noether application instance.
- * @returns Fully resolved image URI or original string.
+ * @returns Fully resolved image URI or empty string if asynchronous resolution is needed.
  */
-export function resolveCoverSource(rawCover: string, app: NoetherApp): string {
+export function resolveCoverSource(rawCover: string, app?: NoetherApp): string {
   if (!rawCover) return '';
-  const trimmed = rawCover.trim();
-  if (!trimmed) return '';
+  const cleaned = cleanCoverTarget(rawCover);
+  if (!cleaned) return '';
 
-  // Fast-path: external web URLs, data URIs, local blob URIs, Tauri asset URIs, or static paths
+  // 1. Check if it matches a preset (url or id)
+  const preset = COVER_PRESETS.find((p) => p.id === cleaned || p.url === cleaned);
+  if (preset) {
+    const presetSrc = getPresetUrl(preset);
+    preloadCoverImage(presetSrc);
+    return presetSrc;
+  }
+
+  // 2. Fast-path: external web URLs, data URIs, local blob URIs, Tauri asset URIs, or static paths
   if (
-    trimmed.startsWith('http://') ||
-    trimmed.startsWith('https://') ||
-    trimmed.startsWith('data:') ||
-    trimmed.startsWith('blob:') ||
-    trimmed.startsWith('asset://') ||
-    trimmed.startsWith('/') ||
-    trimmed.startsWith('./')
+    cleaned.startsWith('http://') ||
+    cleaned.startsWith('https://') ||
+    cleaned.startsWith('data:') ||
+    cleaned.startsWith('blob:') ||
+    cleaned.startsWith('asset://') ||
+    cleaned.startsWith('/') ||
+    cleaned.startsWith('./')
   ) {
-    preloadCoverImage(trimmed);
-    return trimmed;
+    preloadCoverImage(cleaned);
+    return cleaned;
   }
 
-  // Lookup vault attachment document by title without subscribing to reactive hooks
-  const documents = app.vault.documents;
-  if (!documents || documents.length === 0) {
-    preloadCoverImage(trimmed);
-    return trimmed;
+  // 3. Synchronous hit in embed-renderer image cache
+  const cached = getCachedImageSrc(cleaned);
+  if (cached) {
+    preloadCoverImage(cached);
+    return cached;
   }
 
-  const cleanTarget = trimmed.toLowerCase();
-  const cleanWithoutExt = cleanTarget.replace(/\.[a-zA-Z0-9]+$/, '');
+  // 4. Check in-memory app documents if content_json happens to be present
+  const documents = app?.vault?.documents;
+  if (documents && documents.length > 0) {
+    const cleanTarget = cleaned.toLowerCase();
+    const cleanWithoutExt = cleanTarget.replace(/\.[a-zA-Z0-9]+$/, '');
 
-  const matched = documents.find((d: DocumentItem) => {
-    if (d.is_folder) return false;
-    const titleLower = d.title.toLowerCase();
-    return (
-      titleLower === cleanTarget ||
-      titleLower === cleanWithoutExt ||
-      d.title === trimmed
-    );
-  });
+    const matched = documents.find((d: DocumentItem) => {
+      if (d.is_folder) return false;
+      const titleLower = d.title.toLowerCase();
+      return (
+        titleLower === cleanTarget ||
+        titleLower === cleanWithoutExt ||
+        d.title === cleaned
+      );
+    });
 
-  if (matched && matched.content_json) {
-    try {
-      const parsed = JSON.parse(matched.content_json);
-      const firstText = parsed.content?.[0]?.content?.[0]?.text;
-      if (
-        firstText &&
-        (firstText.startsWith('data:image/') ||
-          firstText.startsWith('http') ||
-          firstText.startsWith('blob:') ||
-          firstText.startsWith('asset://'))
-      ) {
-        preloadCoverImage(firstText);
-        return firstText;
-      }
-    } catch {
-      // Return trimmed target on parse error
+    if (matched && matched.content_json) {
+      try {
+        const parsed = JSON.parse(matched.content_json);
+        const firstText = parsed.content?.[0]?.content?.[0]?.text;
+        if (
+          firstText &&
+          (firstText.startsWith('data:image/') ||
+            firstText.startsWith('http') ||
+            firstText.startsWith('blob:') ||
+            firstText.startsWith('asset://'))
+        ) {
+          preloadCoverImage(firstText);
+          return firstText;
+        }
+      } catch {}
     }
   }
 
-  preloadCoverImage(trimmed);
-  return trimmed;
+  // If not yet resolvable synchronously, return empty string so CoverBanner avoids relative 404s
+  return '';
+}
+
+/**
+ * Asynchronously resolves a raw cover string, querying SQLite / disk storage if not loaded in memory.
+ *
+ * @param rawCover - Raw frontmatter Cover value.
+ * @param app - Central Noether application instance.
+ * @returns Fully resolved image URI or null if not found.
+ */
+export async function resolveCoverSourceAsync(rawCover: string, app?: NoetherApp): Promise<string | null> {
+  const syncHit = resolveCoverSource(rawCover, app);
+  if (syncHit) return syncHit;
+
+  const cleaned = cleanCoverTarget(rawCover);
+  if (!cleaned) return null;
+
+  // Fast-path for external URLs
+  if (
+    cleaned.startsWith('http://') ||
+    cleaned.startsWith('https://') ||
+    cleaned.startsWith('data:') ||
+    cleaned.startsWith('blob:') ||
+    cleaned.startsWith('asset://')
+  ) {
+    preloadCoverImage(cleaned);
+    return cleaned;
+  }
+
+  // Check preset cache initialization
+  const preset = COVER_PRESETS.find((p) => p.id === cleaned || p.url === cleaned);
+  if (preset) {
+    await initPresetCache();
+    const presetSrc = getPresetUrl(preset);
+    preloadCoverImage(presetSrc);
+    return presetSrc;
+  }
+
+  // Asynchronously resolve vault image attachment from SQLite / documents
+  try {
+    const src = await resolveImageSrcAsync(cleaned);
+    if (src) {
+      preloadCoverImage(src);
+      return src;
+    }
+  } catch {}
+
+  return null;
 }
 
 /**
@@ -183,15 +269,15 @@ export function preloadAllVaultCovers(app: NoetherApp): void {
     for (const doc of documents) {
       if (!doc.properties) continue;
       const rawProps = typeof doc.properties === 'string' ? doc.properties : '';
-      if (rawProps && !rawProps.includes('Cover')) continue;
+      if (rawProps && !rawProps.includes('Cover') && !rawProps.includes('cover') && !rawProps.includes('banner')) continue;
 
       try {
         const parsed = typeof doc.properties === 'string'
           ? JSON.parse(doc.properties)
           : doc.properties;
-        const coverVal = parsed?.Cover;
+        const coverVal = parsed?.Cover || parsed?.cover || parsed?.banner;
         if (coverVal && typeof coverVal === 'string') {
-          resolveCoverSource(coverVal, app);
+          resolveCoverSourceAsync(coverVal, app).catch(() => {});
         }
       } catch {
         // Skip unparseable frontmatter

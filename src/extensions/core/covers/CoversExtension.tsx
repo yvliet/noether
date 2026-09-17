@@ -48,9 +48,8 @@ export class CoversExtension extends Extension {
         if (!props) return false;
         try {
           const parsed = typeof props === 'string' ? JSON.parse(props) : props;
-          const coverVal = parsed?.Cover;
-          if (coverVal && typeof coverVal === 'string') {
-            preloadCoverImage(coverVal);
+          const coverVal = parsed?.Cover || parsed?.cover || parsed?.banner;
+          if (coverVal && typeof coverVal === 'string' && coverVal.trim()) {
             return true;
           }
           return false;

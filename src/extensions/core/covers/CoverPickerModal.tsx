@@ -36,6 +36,8 @@ import { useCoversSettings } from './coversSettings';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { useVaultDocuments } from 'noether';
 import { preloadCoverImage } from './coverPreloader';
+import { getCachedImageSrc, resolveImageSrcAsync } from '@/components/editor/embed-renderer';
+import { DocumentItem } from '@/types';
 
 export interface CoverPickerModalProps {
   isOpen: boolean;
@@ -49,6 +51,61 @@ export interface CoverPickerModalProps {
 type PickerTab = 'wallhaven' | 'presets' | 'vault' | 'link';
 
 const POPULAR_TAGS = ['Pixel Art', 'Nature', 'Anime', 'Cyberpunk', 'City', 'Space', 'Minimalist'];
+
+const VaultImageThumbnailCard: React.FC<{
+  doc: DocumentItem;
+  isSelected: boolean;
+  onSelect: (target: string) => void;
+}> = ({ doc, isSelected, onSelect }) => {
+  const [src, setSrc] = useState<string | null>(() => getCachedImageSrc(doc.title, doc.id));
+
+  useEffect(() => {
+    if (src) return;
+    let isMounted = true;
+    resolveImageSrcAsync(doc.title, doc.id).then((resolved) => {
+      if (isMounted && resolved) {
+        setSrc(resolved);
+      }
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [doc.title, doc.id, src]);
+
+  return (
+    <div
+      onClick={() => onSelect(doc.title)}
+      className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
+        isSelected
+          ? 'border-emerald-500 ring-2 ring-emerald-500/30'
+          : 'border-[#2a2a2a] hover:border-[#555]'
+      }`}
+    >
+      {src ? (
+        <img
+          src={src}
+          alt={doc.title}
+          loading="lazy"
+          className="w-full h-full object-cover select-none"
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-[#181818] text-[#666]">
+          <FileImageIcon size={20} />
+        </div>
+      )}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
+        <span className="text-[11px] text-white font-medium truncate">
+          {doc.title}
+        </span>
+      </div>
+      {isSelected && (
+        <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow">
+          <CheckmarkCircle02Icon size={12} />
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
   isOpen,
@@ -416,7 +473,7 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                     <div
                       key={p.id}
                       onClick={() => {
-                        handleSelectCover(displayUrl);
+                        handleSelectCover(p.url);
                         onClose();
                       }}
                       className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
@@ -465,57 +522,17 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {vaultImages.map((doc) => {
-                    let previewSrc = '';
-                    if (doc.content_json) {
-                      try {
-                        const parsed = JSON.parse(doc.content_json);
-                        const firstText = parsed.content?.[0]?.content?.[0]?.text;
-                        if (firstText && (firstText.startsWith('data:image/') || firstText.startsWith('http') || firstText.startsWith('blob:'))) {
-                          previewSrc = firstText;
-                        }
-                      } catch {}
-                    }
-                    const targetIdentifier = doc.title;
-                    const isSelected = currentUrl === targetIdentifier || currentUrl === previewSrc;
-
-                    return (
-                      <div
-                        key={doc.id}
-                        onClick={() => {
-                          handleSelectCover(targetIdentifier);
-                          onClose();
-                        }}
-                        className={`group relative h-28 rounded-lg overflow-hidden border cursor-pointer bg-[#121212] ${
-                          isSelected
-                            ? 'border-emerald-500 ring-2 ring-emerald-500/30'
-                            : 'border-[#2a2a2a] hover:border-[#555]'
-                        }`}
-                      >
-                        {previewSrc ? (
-                          <img
-                            src={previewSrc}
-                            alt={doc.title}
-                            className="w-full h-full object-cover select-none"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-[#181818] text-[#666]">
-                            <FileImageIcon size={20} />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
-                          <span className="text-[11px] text-white font-medium truncate">
-                            {doc.title}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-emerald-500 text-black flex items-center justify-center shadow">
-                            <CheckmarkCircle02Icon size={12} />
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                  {vaultImages.map((doc) => (
+                    <VaultImageThumbnailCard
+                      key={doc.id}
+                      doc={doc}
+                      isSelected={currentUrl === doc.title}
+                      onSelect={(target) => {
+                        handleSelectCover(target);
+                        onClose();
+                      }}
+                    />
+                  ))}
                 </div>
               )}
             </div>

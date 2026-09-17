@@ -793,7 +793,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       const props = typeof currentDoc.properties === 'string'
         ? JSON.parse(currentDoc.properties)
         : currentDoc.properties;
-      return Boolean(props?.Cover);
+      return Boolean(props?.Cover || props?.cover || props?.banner);
     } catch {
       return false;
     }

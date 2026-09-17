@@ -9,7 +9,7 @@
  * @since 1.0.0
  */
 
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
   FileImageIcon,
   Delete02Icon,
@@ -21,7 +21,7 @@ import { useCoversSettings } from './coversSettings';
 import { useCoverModalStore } from './coversModalStore';
 import { NoetherApp } from '@/core/app/NoetherApp';
 import { DocumentItem } from '@/types';
-import { resolveCoverSource, preloadCoverImage } from './coverPreloader';
+import { resolveCoverSource, resolveCoverSourceAsync, preloadCoverImage, cleanCoverTarget } from './coverPreloader';
 
 export interface CoverBannerProps {
   document: DocumentItem | null | undefined;
@@ -33,6 +33,8 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
 
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [tempOffsetY, setTempOffsetY] = useState<number>(0.5);
+  const [hasLoadError, setHasLoadError] = useState(false);
+  const [asyncSrc, setAsyncSrc] = useState<string | null>(null);
 
   const dragStartYRef = useRef<number>(0);
   const dragStartOffsetRef = useRef<number>(0.5);
@@ -48,15 +50,54 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     }
   }, [doc?.properties]);
 
-  const rawCover = (currentProperties.Cover || '') as string;
-  const savedOffsetY = typeof currentProperties.Cover_y === 'number'
-    ? currentProperties.Cover_y
-    : 0.5;
+  const rawCover = ((currentProperties.Cover || currentProperties.cover || currentProperties.banner || '') as string).trim();
+  const savedOffsetY =
+    typeof currentProperties.Cover_y === 'number'
+      ? currentProperties.Cover_y
+      : typeof currentProperties.cover_y === 'number'
+      ? currentProperties.cover_y
+      : typeof currentProperties.banner_y === 'number'
+      ? currentProperties.banner_y
+      : 0.5;
 
-  // Resolve image source: URL, data URI, or vault attachment document without reactive store subscriptions
-  const resolvedSrc = useMemo(() => {
+  // Frame-0 synchronous resolution
+  const syncSrc = useMemo(() => {
     return resolveCoverSource(rawCover, app);
   }, [rawCover, app]);
+
+  // Asynchronous resolution (for vault attachment documents & delayed hydration)
+  useEffect(() => {
+    let isMounted = true;
+    setHasLoadError(false);
+
+    if (!rawCover) {
+      setAsyncSrc(null);
+      return;
+    }
+
+    if (syncSrc) {
+      setAsyncSrc(syncSrc);
+      return;
+    }
+
+    resolveCoverSourceAsync(rawCover, app)
+      .then((src) => {
+        if (isMounted) {
+          if (src) {
+            setAsyncSrc(src);
+          } else {
+            setHasLoadError(true);
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) setHasLoadError(true);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [rawCover, syncSrc, app]);
 
   // Handle setting a new cover
   const handleSelectCover = useCallback(
@@ -134,12 +175,13 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
     [isRepositioning, tempOffsetY, bannerHeight]
   );
 
-  if (!rawCover || !resolvedSrc) {
+  if (!rawCover) {
     return null;
   }
 
   const effectiveOffsetY = isRepositioning ? tempOffsetY : savedOffsetY;
   const contentOverlap = Math.round(bannerHeight * 0.37);
+  const activeSrc = asyncSrc || syncSrc;
 
   return (
     <>
@@ -157,31 +199,64 @@ export const CoverBanner: React.FC<CoverBannerProps> = ({ document: doc, app }) 
             isRepositioning ? 'cursor-grab active:cursor-grabbing ring-2 ring-emerald-500/50' : ''
           }`}
         >
-          {/* Cover Image Element */}
-          <img
-            src={resolvedSrc}
-            alt="Note Cover"
-            draggable={false}
-            loading="eager"
-            decoding="async"
-            // @ts-expect-error React DOM fetchpriority attribute
-            fetchpriority="high"
-            fetchPriority="high"
-            style={{
-              objectPosition: `center ${effectiveOffsetY * 100}%`,
-              ...(fadeEffect
-                ? {
-                    maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)',
-                    WebkitMaskImage:
-                      'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)',
-                  }
-                : {}),
-            }}
-            className="w-full h-full object-cover select-none pointer-events-none"
-          />
+          {/* Cover Image Element or Error Fallback */}
+          {hasLoadError || (!activeSrc && !rawCover.startsWith('http')) ? (
+            <div className="w-full h-full rounded-2xl border border-amber-500/20 bg-[#161616] flex flex-col items-center justify-center gap-2 p-4 text-center">
+              <div className="w-8 h-8 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                <FileImageIcon size={18} />
+              </div>
+              <div className="text-xs text-[#999]">
+                <span>Cover not found: <strong className="text-[#ccc]">{cleanCoverTarget(rawCover)}</strong></span>
+              </div>
+              <div className="flex items-center gap-2 mt-1 pointer-events-auto">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (doc?.id) useCoverModalStore.getState().open(doc.id);
+                  }}
+                  className="px-2.5 py-1 rounded bg-[#252525] hover:bg-[#303030] text-[11px] text-[#ddd] border border-[#383838] cursor-pointer"
+                >
+                  Change cover
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemoveCover}
+                  className="px-2.5 py-1 rounded bg-transparent hover:bg-rose-500/10 text-[11px] text-rose-400 cursor-pointer"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ) : activeSrc ? (
+            <img
+              src={activeSrc}
+              alt="Note Cover"
+              draggable={false}
+              loading="eager"
+              decoding="async"
+              // @ts-expect-error React DOM fetchpriority attribute
+              fetchpriority="high"
+              fetchPriority="high"
+              onError={() => setHasLoadError(true)}
+              onLoad={() => setHasLoadError(false)}
+              style={{
+                objectPosition: `center ${effectiveOffsetY * 100}%`,
+                ...(fadeEffect
+                  ? {
+                      maskImage: 'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)',
+                      WebkitMaskImage:
+                        'linear-gradient(to bottom, rgba(0,0,0,1) 35%, rgba(0,0,0,0) 100%)',
+                    }
+                  : {}),
+              }}
+              className="w-full h-full object-cover select-none pointer-events-none"
+            />
+          ) : (
+            <div className="w-full h-full rounded-2xl bg-[#141414]" />
+          )}
 
           {/* Normal Hover Action Controls */}
-          {showControlsOnHover && !isRepositioning && (
+          {showControlsOnHover && !isRepositioning && !hasLoadError && activeSrc && (
             <div className="absolute top-2.5 right-2.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 flex items-center gap-0.5 pointer-events-auto z-30 [&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]">
               <button
                 type="button"
