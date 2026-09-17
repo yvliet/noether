@@ -18,6 +18,8 @@ export interface PageViewProps {
   subHeader?: React.ReactNode;
   /** Set to true to completely omit the subheader */
   hideSubHeader?: boolean;
+  /** Set to true to enable floating transparent subheader with drop shadows (e.g. spatial canvases) */
+  immersiveHeader?: boolean;
   /** Custom action controls rendered on the left of the subheader (next to history arrows) */
   customLeftActions?: React.ReactNode;
   /** Custom action controls rendered on the right of the subheader */
@@ -98,6 +100,7 @@ export const PageView: React.FC<PageViewProps> = React.memo(({
   document = null,
   subHeader,
   hideSubHeader = false,
+  immersiveHeader = false,
   customLeftActions,
   customRightActions,
   centerContent,
@@ -191,6 +194,7 @@ export const PageView: React.FC<PageViewProps> = React.memo(({
             customLeftActions={customLeftActions}
             customRightActions={customRightActions}
             customDocMenuActions={customDocMenuActions}
+            immersive={immersiveHeader}
             isScrolled={isScrolled}
           />
         )

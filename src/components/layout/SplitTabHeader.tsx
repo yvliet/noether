@@ -487,22 +487,20 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
               )}
 
               {/*
-               * Scroll-triggered shadow on the active tab icon + title.
-               *
-               * INTENTIONAL ANIMATION EXCEPTION: This 150ms opacity transition is explicitly
-               * allowed despite the zero-animation rule. Without it, the shadow pops in/out
-               * abruptly when elements are dragged across or content scrolls behind the tab
-               * header, creating a choppy visual artifact. The short fade keeps it smooth
-               * without feeling sluggish or "animated" in the UI sense.
+               * Scroll-triggered shadow on the active tab icon + title (only for immersive/spatial views).
                */}
               <div
                 className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-6"
                 style={{
-                  filter: isTabActive && isContentScrolled
+                  filter: isTabActive && isContentScrolled && (
+                    tab.view_type === 'graph' ||
+                    tab.view_type === 'canvas' ||
+                    tab.view_mode === 'graph' ||
+                    tab.view_mode === 'canvas' ||
+                    app?.views?.isViewImmersive(tab.view_type || tab.view_mode)
+                  )
                     ? 'drop-shadow(0 1px 3px rgba(0,0,0,0.5))'
                     : 'none',
-                  // Intentional transition exception: prevents choppy pop when elements move behind the tab
-                  transition: 'filter 150ms ease',
                 }}
               >
                 {renderTabIcon(tab, isTabActive, isInactiveActive)}

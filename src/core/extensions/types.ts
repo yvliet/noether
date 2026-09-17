@@ -209,6 +209,12 @@ export interface ViewBehaviorPolicy {
    * document shortcuts might need different handling.
    */
   isSpatialSurface?: boolean;
+  /**
+   * When true, enables floating transparent subheaders and window topbar cutout
+   * blending effects (ideal for full-screen spatial canvases and interactive maps).
+   * Defaults to false (standard solid gray subheader bar and clean tabs).
+   */
+  immersiveHeader?: boolean;
 }
 
 export interface ViewDefinition {
@@ -222,6 +228,12 @@ export interface ViewDefinition {
   extensionId?: string;
   /** Optional behavioral policies for workspace interactions. */
   behavior?: ViewBehaviorPolicy;
+  /**
+   * When true, enables floating transparent subheaders and window topbar cutout
+   * blending effects (ideal for full-screen spatial canvases and interactive maps).
+   * Defaults to false (standard solid gray subheader bar and clean tabs).
+   */
+  immersiveHeader?: boolean;
   /**
    * Whether this view should automatically be suspended and frozen when out of view,
    * hidden behind inactive tabs, minimized, or when the window loses focus.

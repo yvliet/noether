@@ -40,9 +40,11 @@ export class GraphExtension extends Extension {
       type: 'graph',
       title: 'Graph View',
       icon: <NeuralNetworkIcon size={14} />,
+      immersiveHeader: true,
       behavior: {
         openNewDocumentsInBackground: true,
         isSpatialSurface: true,
+        immersiveHeader: true,
         allowSplitView: true,
       },
       render: (props) => (

@@ -186,6 +186,20 @@ export class ViewRegistry {
   }
 
   /**
+   * Checks whether a view type uses immersive floating headers and topbar cutout integration.
+   * Returns true for built-in spatial surfaces ('graph', 'canvas') or views configured
+   * with `immersiveHeader: true` or `behavior.isSpatialSurface: true`.
+   * @since 0.6.0
+   */
+  public isViewImmersive(type?: string): boolean {
+    if (!type || type === 'document') return false;
+    if (type === 'graph' || type === 'canvas') return true;
+    const view = this.getView(type);
+    if (!view) return false;
+    return Boolean(view.immersiveHeader || view.behavior?.immersiveHeader || view.behavior?.isSpatialSurface);
+  }
+
+  /**
    * Returns a snapshot array of all currently registered active views.
    * @since 0.1.0
    */

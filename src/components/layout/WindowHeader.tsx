@@ -292,9 +292,16 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
       return { flex: 1 };
     }, [isOnly, isLast, totalColumns]);
 
+    const app = useNoetherApp();
     const activeTabObj = tabs.find((t) => t.id === activeTabId);
     const activeViewType = activeTabObj?.view_type || activeTabObj?.view_mode || 'document';
-    const isCutoutActive = Boolean(activeTabObj);
+    const isImmersiveView = Boolean(
+      activeTabObj &&
+      (activeViewType === 'graph' ||
+       activeViewType === 'canvas' ||
+       app?.views?.isViewImmersive(activeViewType))
+    );
+    const isCutoutActive = isImmersiveView;
 
     const paneContainerRef = useRef<HTMLDivElement | null>(null);
     const activeTabRef = useRef<HTMLDivElement | null>(null);
@@ -519,7 +526,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             const isSingleTab = tabs.length <= 1 && isOnly;
             const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
             const canCloseTab = !isSingleTab || !isTabEmpty;
-            const hasElementsBehind = isTabActive && (
+            const hasElementsBehind = isTabActive && isImmersiveView && (
               activeViewType === 'canvas' ||
               activeViewType === 'graph' ||
               isContentScrolled

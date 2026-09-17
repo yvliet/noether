@@ -1333,19 +1333,11 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         <div
           data-sub-header="true"
           style={{ top: 'var(--noether-header-offset, 0px)' }}
-          className={`absolute left-0 right-0 h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none z-20 pointer-events-none ${
-            isScrolled
-              ? 'bg-transparent'
-              : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
-          }`}
+          className="absolute left-0 right-0 h-8 px-4 flex items-center justify-between text-xs text-[#777] shrink-0 select-none z-20 pointer-events-none bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]"
         >
 
         {/* Left: Navigation History Arrows */}
-        <div
-          className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
-            isScrolled ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
-          }`}
-        >
+        <div className="relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto">
           <button
             onClick={handleBack}
             disabled={!canGoBack}
@@ -1375,13 +1367,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         {/* Center: Truly Absolute Centered Document Breadcrumb Title (Click to rename live in-place) */}
         <div className="absolute inset-x-0 inset-y-0 flex items-center justify-center pointer-events-none px-20">
           {currentDoc ? (
-            <div
-              className={`pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden text-[#777] ${
-                isScrolled
-                  ? 'drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]'
-                  : 'drop-shadow-none'
-              }`}
-            >
+            <div className="pointer-events-auto text-[12px] max-w-3xl px-1.5 py-0.5 text-center select-none flex items-center justify-center min-w-0 overflow-hidden text-[#777] drop-shadow-none">
               {(() => {
                 const parts = breadcrumbItems;
                 const hasFolders = parts.length > 1;
@@ -1547,11 +1533,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         </div>
 
         {/* Right: Reading View, Bookmark, Search & More Options */}
-        <div
-          className={`relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto ${
-            isScrolled ? '[&_svg]:drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]' : ''
-          }`}
-        >
+        <div className="relative z-10 flex items-center gap-0.5 shrink-0 pointer-events-auto">
           {/* Dynamic Extension Subheader Actions Slot (Left of View Mode Toggle) */}
           <ViewportActionSlotHost
             corner="top-right"

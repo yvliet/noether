@@ -50,6 +50,7 @@ export interface PageSubHeaderProps {
   customRightActions?: React.ReactNode;
   customDocMenuActions?: DocMenuActionDefinition[];
   floating?: boolean;
+  immersive?: boolean;
   hideBar?: boolean;
   isSidebar?: boolean;
   isScrolled?: boolean;
@@ -78,6 +79,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   customRightActions,
   customDocMenuActions,
   floating = false,
+  immersive: propImmersive,
   hideBar = false,
   isSidebar: propIsSidebar,
   isScrolled: propIsScrolled,
@@ -428,7 +430,18 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
     );
   }
 
-  const isTransparent = isFrameless || isScrolled;
+  const isImmersive = Boolean(
+    propImmersive !== undefined
+      ? propImmersive
+      : floating ||
+        (currentViewType && (
+          currentViewType === 'graph' ||
+          currentViewType === 'canvas' ||
+          app?.views?.isViewImmersive(currentViewType)
+        ))
+  );
+
+  const isTransparent = isImmersive && (isFrameless || isScrolled);
 
   return (
     <div

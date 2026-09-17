@@ -90,6 +90,12 @@ export class CanvasExtension extends Extension {
       type: 'canvas',
       title: 'Canvas',
       icon: <DashboardSquare01Icon size={14} />,
+      immersiveHeader: true,
+      behavior: {
+        isSpatialSurface: true,
+        immersiveHeader: true,
+        allowSplitView: true,
+      },
       render: (props?: { tabId?: string; documentId?: string }) => (
         <CanvasView
           key={props?.tabId || props?.documentId || 'canvas'}
