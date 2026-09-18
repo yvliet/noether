@@ -7,17 +7,18 @@ Welcome to Noether! This guide walks you through organizing your notes, building
 1. [Core Philosophy & Architecture](#1-core-philosophy--architecture)
 2. [Workspaces & Vaults](#2-workspaces--vaults)
 3. [Live Preview Editor & Markdown](#3-live-preview-editor--markdown)
-4. [Bidirectional Linking & Knowledge Graph](#4-bidirectional-linking--knowledge-graph)
-5. [Infinite 2D Spatial Canvas](#5-infinite-2d-spatial-canvas)
-6. [Embedded FSRS-4.5 Spaced Repetition](#6-embedded-fsrs-45-spaced-repetition)
-7. [Centralized Tasks Dashboard](#7-centralized-tasks-dashboard)
-8. [Journal & Daily Notes](#8-journal--daily-notes)
-9. [Universal Command Palette & Search](#9-universal-command-palette--search)
-10. [Model Context Protocol (MCP) AI Integration](#10-model-context-protocol-mcp-ai-integration)
-11. [Settings & Deep Search](#11-settings--deep-search)
-12. [More Icons & Visual Customization](#12-more-icons--visual-customization)
-13. [Client Updates & Release Management](#13-client-updates--release-management)
-14. [Keyboard Shortcuts Cheat Sheet](#14-keyboard-shortcuts-cheat-sheet)
+4. [Native PDF Viewer & Presentation Mode](#4-native-pdf-viewer--presentation-mode)
+5. [Bidirectional Linking & Knowledge Graph](#5-bidirectional-linking--knowledge-graph)
+6. [Infinite 2D Spatial Canvas](#6-infinite-2d-spatial-canvas)
+7. [Embedded FSRS-4.5 Spaced Repetition](#7-embedded-fsrs-45-spaced-repetition)
+8. [Centralized Tasks Dashboard](#8-centralized-tasks-dashboard)
+9. [Journal & Daily Notes](#9-journal--daily-notes)
+10. [Universal Command Palette & Search](#10-universal-command-palette--search)
+11. [Model Context Protocol (MCP) AI Integration](#11-model-context-protocol-mcp-ai-integration)
+12. [Settings & Deep Search](#12-settings--deep-search)
+13. [More Icons & Visual Customization](#13-more-icons--visual-customization)
+14. [Client Updates & Release Management](#14-client-updates--release-management)
+15. [Keyboard Shortcuts Cheat Sheet](#15-keyboard-shortcuts-cheat-sheet)
 
 ## 1. Core Philosophy & Architecture
 ---
@@ -110,7 +111,32 @@ Pasting text copied from research articles, Wikipedia, or web pages automaticall
 - Converts HTML headers, tables, and lists into clean CommonMark.
 - Strips URL referral tracking parameters.
 
-## 4. Bidirectional Linking & Knowledge Graph
+## 4. Native PDF Viewer & Presentation Mode
+---
+
+Noether includes a fast, native PDF reader designed for reviewing academic papers, reading slide decks, and delivering distraction-free presentations directly inside your workspace without third-party extensions.
+
+### Opening PDFs & Subheader Integration
+- Click any `.pdf` file in the sidebar tree or type its title in Quick Open (`Ctrl+O`) to launch it in an active workspace tab.
+- Clicking any Markdown wikilink embed (`![[research.pdf]]`) opens the full PDF in a dedicated tab.
+- The document subheader integrates PDF controls: page jumper (`< 1 / 42 >`), zoom presets (50% to 200%), Fit to Width (`Ctrl+0`), Fit to Page, 90° Clockwise Rotation (`Ctrl+Alt+R`), and the fullscreen **Present** button (`Alt+P`).
+
+### Dual-Mode PDF Sidebar
+Clicking the sidebar icon in the subheader opens a collapsible drawer with two inspection views:
+1. **Thumbnails**: Virtualized page previews with active page borders. Clicking any thumbnail jumps directly to that page.
+2. **Document Outline (TOC)**: Hierarchical bookmark tree parsed directly from the PDF. Nested sections can be expanded or collapsed to jump straight to chapters and subheadings.
+
+### Fullscreen Presentation Mode (`Alt+P`)
+- **Distraction-Free Deep Black Canvas**: Window switches into borderless fullscreen with app headers, tabs, and rails hidden.
+- **Minimal HUD**: A lightweight bottom control bar (`< page / total > | + - ↺ | ✕`) vertically centered on the dark backdrop.
+- **Pure Zoom & Pan**: Directional mouse wheel scroll is disabled in favor of cursor-centered zooming (`Ctrl+Wheel` or pinch). Drag-panning is strictly enabled when zoomed in (`> 1x`), keeping slides firmly centered at 1x.
+- **Double-Click Zoom**: Double-clicking any section toggles instantly between 1x fit and 2x magnified view at your cursor.
+- **Keyboard Navigation**: `→` / `Space` for next slide, `←` for previous slide, `+` / `-` to zoom, `0` to reset, and `Esc` to exit.
+
+### AI Assistant Integration (`noether_pdf_get_info`)
+Local AI assistants connected via Model Context Protocol (MCP) can inspect PDF documents in your vault using the built-in `noether_pdf_get_info` tool to query page counts, metadata, and the full outline structure without slow binary file transfers.
+
+## 5. Bidirectional Linking & Knowledge Graph
 ---
 
 Noether turns independent notes into a structured web of thoughts.
@@ -153,7 +179,7 @@ Located in the right sidebar, the Backlinks Pane displays:
   - **Virtual #tag nodes**: Render tag nodes as virtual hubs connecting tagged notes. Clicking any tag node instantly filters the graph.
 - **Pauses when idle**: The graph physics simulation settles within 3 to 5 seconds and automatically suspends when idle, minimized, or switched to another tab, saving battery and GPU cycles.
 
-## 5. Infinite 2D Spatial Canvas
+## 6. Infinite 2D Spatial Canvas
 ---
 
 For visual brainstorming, concept maps, flowcharts, and moodboards:
@@ -171,7 +197,7 @@ For visual brainstorming, concept maps, flowcharts, and moodboards:
   - Double-click any arrow to type an explanatory relationship label (e.g. *"implements"*, *"leads to"*).
 - **Navigation**: Hold `Spacebar` or `Ctrl` to pan, scroll with `Ctrl+Wheel` to zoom, and use snap-to-grid for tidy alignment.
 
-## 6. Embedded FSRS-4.5 Spaced Repetition
+## 7. Embedded FSRS-4.5 Spaced Repetition
 ---
 
 Noether features an integrated flashcard scheduler powered by **FSRS-4.5 (Free Spaced Repetition Scheduler)** via `ts-fsrs`.
@@ -191,7 +217,7 @@ Create flashcards directly in your notes:
   - `4` (Easy): Effortless recall, push the review further out.
 - View stability ($S$), difficulty ($D$), and upcoming review heatmaps in *Settings → Extensions → Spaced Repetition*.
 
-## 7. Centralized Tasks Dashboard
+## 8. Centralized Tasks Dashboard
 ---
 
 Never lose track of action items scattered across project notes:
@@ -202,14 +228,14 @@ Never lose track of action items scattered across project notes:
 - **Checklist Mode**: Group tasks by file, priority, or tag.
 - **Instant two-way sync**: Checking off a task in the dashboard immediately checks the box in your markdown file, and editing the note updates the dashboard.
 
-## 8. Journal & Daily Notes
+## 9. Journal & Daily Notes
 ---
 
 - Click the **Journal** icon or press `Ctrl+Shift+D` to open today's scratchpad (e.g. `Journal/2026-09-12.md`).
 - Customize note naming formats (`YYYY-MM-DD`, `YYYY/MM/DD`) and default templates in *Settings → Extensions → Journal*.
 - Use `Alt+←` and `Alt+→` in the journal header to step backward and forward through previous daily entries.
 
-## 9. Universal Command Palette & Search
+## 10. Universal Command Palette & Search
 ---
 
 Noether features a lightning-fast launcher and file switcher accessible anytime via `Ctrl+K` or `Ctrl+O`.
@@ -254,13 +280,13 @@ Commands that require an active Markdown editor are context-aware: outside Markd
 - **Reveal in File Tree**: Instantly expands the file explorer sidebar, opens the files tab, and highlights the active document.
 - **Vault-Wide Full-Text Search (`Ctrl+Shift+F`)**: Opens the dedicated search view powered by FTS5 with BM25 ranking and diacritics normalization.
 
-## 10. Model Context Protocol (MCP) AI Integration
+## 11. Model Context Protocol (MCP) AI Integration
 ---
 
 Noether includes a built-in stdio Model Context Protocol server (`bin/noether-mcp-server.cjs`). External AI assistants can query and modify your notes directly.
 
 ### Built-in MCP Tools
-`noether_search_notes`, `noether_read_note`, `noether_create_note`, `noether_update_note`, `noether_delete_note`, `noether_list_all_notes`, `noether_list_vaults`, `noether_get_active_vault`, `noether_switch_vault`, `noether_search_across_vaults`, `noether_get_backlinks`, `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`, and `more-icons` management tools.
+`noether_search_notes`, `noether_read_note`, `noether_create_note`, `noether_update_note`, `noether_delete_note`, `noether_list_all_notes`, `noether_pdf_get_info`, `noether_list_vaults`, `noether_get_active_vault`, `noether_switch_vault`, `noether_search_across_vaults`, `noether_get_backlinks`, `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`, and `more-icons` management tools.
 
 ### Quick Configuration (Claude Desktop / Antigravity / Cursor)
 Add to your client configuration file:
@@ -275,7 +301,7 @@ Add to your client configuration file:
 }
 ```
 
-## 11. Settings & Deep Search
+## 12. Settings & Deep Search
 ---
 
 Open **Settings** (`Ctrl+,` or `Cmd+,`) from anywhere in the app or via the Command Palette:
@@ -300,7 +326,7 @@ In **Settings → Appearance**, customize how Noether renders lighting and visua
 - **Tactile Buttons**: Clean physical button styling with crisp borders and snappy, instant feedback.
 - **Link Styling**: Choose between theme accent, classic browser blue/purple, or neutral link palettes.
 
-## 12. More Icons & Visual Customization
+## 13. More Icons & Visual Customization
 ---
 
 Noether includes the built-in **More icons** extension to personalize files, folders, and notes with icons from Lucide and Hugeicons collections:
@@ -310,7 +336,7 @@ Noether includes the built-in **More icons** extension to personalize files, fol
 - **Folder Prefix Icons**: Toggle prefix icons in **Settings** (`Ctrl+,`) → **More icons** to show custom icons alongside folder chevrons.
 - **MCP Integration**: AI assistants can query, assign, or remove custom note and folder icons via the `more-icons_list`, `more-icons_get`, `more-icons_update_icon`, and `more-icons_delete_icon` tools.
 
-## 13. Client Updates & Release Management
+## 14. Client Updates & Release Management
 ---
 
 Noether features an integrated updater that monitors official GitHub releases:
@@ -319,7 +345,7 @@ Noether features an integrated updater that monitors official GitHub releases:
 - **Manual Check**: Click **Check for updates** in the General settings tab anytime to immediately check against the remote repository.
 - **Direct Installer Download**: Launch the update modal to review release notes and download the matching installer directly.
 
-## 14. Keyboard Shortcuts Cheat Sheet
+## 15. Keyboard Shortcuts Cheat Sheet
 ---
 
 | Action | Windows / Linux | macOS |

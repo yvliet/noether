@@ -92,7 +92,24 @@ Manage your open workspaces, panes, and note buffers:
 | **Toggle Task State** | `Ctrl+Enter` | `Cmd+Enter` |
 | **Blockquote** | `Ctrl+Shift+.` | `Cmd+Shift+.` |
 
-## 5. Extension Hotkeys
+## 5. PDF Viewer & Presentation Mode
+---
+
+| Action | Windows / Linux | macOS |
+| :--- | :--- | :--- |
+| **Toggle Presentation Mode** | `Alt+P` | `Option+P` |
+| **Next Slide / Page** | `→` / `Space` / `PageDown` | `→` / `Space` / `PageDown` |
+| **Previous Slide / Page** | `←` / `PageUp` | `←` / `PageUp` |
+| **Zoom In** | `+` / `Ctrl++` | `+` / `Cmd++` |
+| **Zoom Out** | `-` / `Ctrl+-` | `-` / `Cmd+-` |
+| **Reset Zoom (1x Fit)** | `0` | `0` |
+| **Toggle 1x / 2x Zoom** | `Double Click` | `Double Click` |
+| **Pan Slide (when zoomed)** | `Click & Drag` | `Click & Drag` |
+| **Exit Presentation** | `Esc` | `Esc` |
+| **Fit to Width** | `Ctrl+0` | `Cmd+0` |
+| **Rotate 90° Clockwise** | `Ctrl+Alt+R` | `Cmd+Option+R` |
+
+## 6. Extension Hotkeys
 ---
 
 | Extension | Shortcut | Action |

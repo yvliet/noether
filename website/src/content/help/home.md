@@ -21,6 +21,7 @@ Learn the foundational writing and organization tools in Noether:
 | :--- | :--- |
 | **[[Live Preview Editor & Markdown]]** | Live preview editing, slash commands, math formulas ($KaTeX$), tables, and callouts. |
 | **[[Vaults & Workspace Storage]]** | Organizing vault folders, fast search, file backups, and syncing across devices. |
+| **[[PDF Viewer & Presentation Mode]]** | High-DPI PDF reading, thumbnail and TOC sidebars, and distraction-free slide presentations. |
 | **[[Keyboard Shortcuts & Commands]]** | Command Palette (`Ctrl+K`), window split hotkeys, and editing shortcuts. |
 | **[[AI Assistants & MCP Tools]]** | Connecting Claude Desktop, Cursor, and Antigravity to your local notes via MCP. |
 

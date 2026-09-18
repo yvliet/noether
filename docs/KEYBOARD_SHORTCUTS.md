@@ -117,7 +117,24 @@ Sidebar and panel commands are stateful in Noether. In the Command Palette, thei
 | **Indent List Item** | `Tab` | `Tab` |
 | **Unindent List Item** | `Shift+Tab` | `Shift+Tab` |
 
-## 6. File Operations History
+## 6. PDF Viewer & Presentation Mode
+---
+
+| Action | Windows / Linux | macOS |
+| :--- | :--- | :--- |
+| **Toggle Fullscreen Presentation Mode** | `Alt+P` | `Option+P` |
+| **Next Slide / Page** | `→` / `Space` / `PageDown` | `→` / `Space` / `PageDown` |
+| **Previous Slide / Page** | `←` / `PageUp` | `←` / `PageUp` |
+| **Zoom In** | `+` / `Ctrl++` | `+` / `Cmd++` |
+| **Zoom Out** | `-` / `Ctrl+-` | `-` / `Cmd+-` |
+| **Reset Zoom (1x Fit to Center)** | `0` | `0` |
+| **Toggle 1x / 2x Zoom** | `Double Click` | `Double Click` |
+| **Pan Document** | `Click & Drag` *(when zoomed)* | `Click & Drag` *(when zoomed)* |
+| **Exit Presentation Mode** | `Esc` | `Esc` |
+| **Fit to Width** | `Ctrl+0` | `Cmd+0` |
+| **Rotate 90° Clockwise** | `Ctrl+Alt+R` | `Cmd+Option+R` |
+
+## 7. File Operations History
 ---
 
 These shortcuts manage file-level mutations across your vault separate from in-editor text undo.
@@ -127,7 +144,7 @@ These shortcuts manage file-level mutations across your vault separate from in-e
 | **Undo File Action** *(restore deleted or renamed file)* | `Ctrl+Alt+Z` | `Cmd+Alt+Z` |
 | **Redo File Action** | `Ctrl+Alt+Y` | `Cmd+Alt+Y` |
 
-## 7. Extension Shortcuts & Launchers
+## 8. Extension Shortcuts & Launchers
 ---
 
 | Action | Windows / Linux | macOS |

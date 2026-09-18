@@ -186,7 +186,7 @@ The server listens on `stdin` and writes JSON-RPC 2.0 responses to `stdout`.
 
 ---
 
-Noether exposes 18 tools for AI assistants:
+Noether exposes 19 tools for AI assistants:
 
 | Tool Name | Scope | What It Does |
 | :--- | :--- | :--- |
@@ -200,6 +200,7 @@ Noether exposes 18 tools for AI assistants:
 | `noether_update_note` | Notes | Safely updates note text while preserving existing frontmatter. |
 | `noether_delete_note` | Notes | Moves a note to the `.trash/` folder. |
 | `noether_list_all_notes` | Notes | Lists all note titles, relative paths, tags, and timestamps. |
+| `noether_pdf_get_info` | PDF | Extracts page count, metadata, and hierarchical outline structure from a PDF. |
 | `noether_get_backlinks` | Graph | Returns incoming links, forward links, and unlinked mentions. |
 | `tasks_get_all` | Tasks | Aggregates all open and completed `- [ ]` checklist items across the vault. |
 | `fsrs-spaced-repetition_get_due_cards` | Study | Retrieves flashcards currently due for active recall review. |

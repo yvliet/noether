@@ -7,6 +7,7 @@ import installRaw from '../content/help/getting-started/installation.md?raw';
 import editorMarkdownRaw from '../content/help/user-guide/editor-and-markdown.md?raw';
 import vaultsStorageRaw from '../content/help/user-guide/vaults-and-storage.md?raw';
 import shortcutsCommandsRaw from '../content/help/user-guide/shortcuts-and-commands.md?raw';
+import pdfViewerRaw from '../content/help/user-guide/pdf-viewer.md?raw';
 import aiMcpRaw from '../content/help/user-guide/ai-and-mcp.md?raw';
 
 import backlinksRaw from '../content/help/core-extensions/backlinks.md?raw';
@@ -91,6 +92,14 @@ export const HELP_TREE: DocNode[] = [
         aliases: ['Keyboard Shortcuts', 'Shortcuts', 'Command Palette', 'Hotkeys', 'Keybindings'],
         portal: 'help',
         content: shortcutsCommandsRaw,
+      },
+      {
+        id: 'pdf-viewer',
+        title: 'PDF Viewer & Presentation Mode',
+        slug: 'pdf-viewer',
+        aliases: ['PDF', 'PDF Viewer', 'Presentation Mode', 'Slides', 'Slideshow', 'PDF Outline', 'Thumbnails'],
+        portal: 'help',
+        content: pdfViewerRaw,
       },
       {
         id: 'ai-and-mcp',
