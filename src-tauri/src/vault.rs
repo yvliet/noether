@@ -1179,6 +1179,48 @@ pub fn read_markdown_file(
 }
 
 #[tauri::command]
+pub fn read_binary_file(
+    state: tauri::State<AppState>,
+    filename_or_path: String,
+) -> Value {
+    let cfg = state.config.lock();
+    let target_vault = PathBuf::from(&cfg.current_vault_path);
+
+    let clean = filename_or_path.replace('\\', "/");
+    let file_path = target_vault.join(&clean);
+
+    if !is_safe_vault_path(&target_vault, &file_path) {
+        return json!({ "success": false, "error": "Security: Target path escapes vault directory boundary" });
+    }
+
+    if !file_path.exists() {
+        return json!({ "success": false, "error": "File does not exist" });
+    }
+
+    match fs::read(&file_path) {
+        Ok(bytes) => {
+            use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+            use base64::Engine;
+            let encoded = BASE64_STANDARD.encode(&bytes);
+            let mtime = fs::metadata(&file_path)
+                .ok()
+                .and_then(|m| m.modified().ok())
+                .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0);
+            json!({
+                "success": true,
+                "data": encoded,
+                "size": bytes.len(),
+                "mtime": mtime,
+                "path": file_path.to_string_lossy()
+            })
+        }
+        Err(e) => json!({ "success": false, "error": e.to_string() }),
+    }
+}
+
+#[tauri::command]
 pub fn set_file_attributes(
     state: tauri::State<AppState>,
     filename_or_path: String,
@@ -1894,6 +1936,40 @@ pub fn window_is_maximized(window: tauri::Window) -> bool {
 #[tauri::command]
 pub fn window_is_minimized(window: tauri::Window) -> bool {
     window.is_minimized().unwrap_or(false)
+}
+
+static WAS_MAXIMIZED_BEFORE_FULLSCREEN: std::sync::atomic::AtomicBool =
+    std::sync::atomic::AtomicBool::new(false);
+
+#[tauri::command]
+pub fn window_set_fullscreen(window: tauri::Window, fullscreen: bool) {
+    if fullscreen {
+        let is_max = window.is_maximized().unwrap_or(false);
+        WAS_MAXIMIZED_BEFORE_FULLSCREEN.store(is_max, std::sync::atomic::Ordering::SeqCst);
+
+        // When decorations: false on Windows, unmaximizing resets showCmd to SW_SHOWNORMAL
+        // so tao applies the full monitor rect.
+        if is_max {
+            let _ = window.unmaximize();
+        }
+
+        let _ = window.set_fullscreen(true);
+    } else {
+        let _ = window.set_fullscreen(false);
+
+        if WAS_MAXIMIZED_BEFORE_FULLSCREEN.swap(false, std::sync::atomic::Ordering::SeqCst) {
+            let win = window.clone();
+            std::thread::spawn(move || {
+                std::thread::sleep(std::time::Duration::from_millis(150));
+                let _ = win.maximize();
+            });
+        }
+    }
+}
+
+#[tauri::command]
+pub fn window_is_fullscreen(window: tauri::Window) -> bool {
+    window.is_fullscreen().unwrap_or(false)
 }
 
 #[tauri::command]

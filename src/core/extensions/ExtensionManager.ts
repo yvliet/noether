@@ -648,7 +648,7 @@ export class ExtensionManager {
     }
 
     // Core built-in views are permanent and must never be marked as deleted or trigger tab removal
-    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc'].includes(viewType);
+    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'pdf'].includes(viewType);
     if (isBuiltinCore) {
       return { state: 'not_extension' };
     }

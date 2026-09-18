@@ -1508,6 +1508,68 @@ export function registerNativeTools(app: NoetherApp): void {
         }
       },
     },
+
+    // ── PDF Metadata & Table of Contents Tool ──
+    {
+      name: 'noether_pdf_get_info',
+      description: 'Extracts metadata, total page count, and hierarchical table of contents (outline) from a PDF in the vault.',
+      category: 'read',
+      parameters: {
+        type: 'object',
+        properties: {
+          target: {
+            type: 'string',
+            description: 'Note ID, document title, or relative path of the target PDF file',
+          },
+        },
+        required: ['target'],
+      },
+      handler: async (args: Record<string, unknown>, hostApp: NoetherApp): Promise<McpToolResult> => {
+        try {
+          const target = String(args.target || '').trim();
+          if (!target) {
+            return {
+              isError: true,
+              content: [{ type: 'text', text: 'target PDF identifier is required' }],
+            };
+          }
+
+          const { loadPdfDocument } = await import('@/components/pdf/pdfLoader');
+          const docs = hostApp.vault.documents;
+          const matchedDoc = docs.find(
+            (d) =>
+              d.id === target ||
+              d.title.toLowerCase() === target.toLowerCase() ||
+              d.title.toLowerCase() === `${target.toLowerCase()}.pdf`
+          );
+
+          const data = await loadPdfDocument(matchedDoc || target, matchedDoc ? undefined : target);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    title: matchedDoc?.title || target,
+                    numPages: data.numPages,
+                    outline: data.outline,
+                    pageInfos: data.pageInfos,
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          return {
+            isError: true,
+            content: [{ type: 'text', text: msg }],
+          };
+        }
+      },
+    },
   ];
 
   // Register each native tool directly on the application's ToolRegistry

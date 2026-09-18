@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { BookOpen01Icon } from '@/components/common/Icons';
+import { BookOpen01Icon, File01Icon } from '@/components/common/Icons';
 import { CommandRegistry } from '../registries/CommandRegistry';
 import { ViewRegistry, viewRegistry } from '../registries/ViewRegistry';
 import { ActionRailRegistry } from '../registries/ActionRailRegistry';
@@ -80,6 +80,10 @@ export { bindNoetherStores };
 
 const LazyExtensionDocViewer = React.lazy(() =>
   import('@/components/extension-viewer/ExtensionDocViewer').then((m) => ({ default: m.ExtensionDocViewer }))
+);
+
+const LazyPdfViewer = React.lazy(() =>
+  import('@/components/pdf/PdfViewer').then((m) => ({ default: m.PdfViewer }))
 );
 
 export class NoetherApp {
@@ -217,6 +221,19 @@ export class NoetherApp {
           React.Suspense,
           { fallback: null },
           React.createElement(LazyExtensionDocViewer, props)
+        ),
+    });
+
+    // Register built-in PDF Document Viewer
+    this.views.registerView({
+      type: 'pdf',
+      title: 'PDF Viewer',
+      icon: React.createElement(File01Icon, { size: 14 }),
+      render: (props) =>
+        React.createElement(
+          React.Suspense,
+          { fallback: null },
+          React.createElement(LazyPdfViewer, props)
         ),
     });
   }

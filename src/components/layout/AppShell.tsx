@@ -99,7 +99,7 @@ const PaneViewport: React.FC<{ paneId: string }> = React.memo(({ paneId }) => {
 
   // If the extension has been completely deleted from files, automatically delete the tab
   useEffect(() => {
-    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc'].includes(currentViewType || '');
+    const isBuiltinCore = ['graph', 'canvas', 'tasks', 'marketplace', 'extension-doc', 'pdf'].includes(currentViewType || '');
     if (!isBuiltinCore && app.extensions.isReady && extensionState.state === 'deleted' && currentTab) {
       closeTabInPane(paneId, currentTab.id);
     }

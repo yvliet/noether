@@ -63,6 +63,7 @@ import {
 } from '@/components/common/Icons';
 import { insertOrWrapMarkdownLink } from '@/components/editor/extensions/markdown-shortcuts';
 import { useSettingsStore } from '@/store/settingsStore';
+import { platform } from '@/lib/platform/platformAdapter';
 
 /**
  * Predicate determining if an active Markdown editor is available for formatting operations.
@@ -442,18 +443,14 @@ export function registerNativeCommands(app: NoetherApp): void {
     // ── 20. Toggle Fullscreen ──
     {
       id: 'cmd-toggle-fullscreen',
-      title: () => (Boolean(document.fullscreenElement) ? 'Exit fullscreen' : 'Enter fullscreen'),
+      title: 'Toggle fullscreen',
       section: 'View',
-      icon: () =>
-        Boolean(document.fullscreenElement) ? <Minimize01Icon size={16} /> : <Maximize01Icon size={16} />,
+      icon: () => <Maximize01Icon size={16} />,
       hotkey: 'F11',
       aliases: ['toggle fullscreen', 'fullscreen', 'maximize', 'minimize', 'screen'],
-      action: () => {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
-        } else {
-          document.exitFullscreen().catch(() => {});
-        }
+      action: async () => {
+        const isFull = await platform.isFullscreen();
+        await platform.setFullscreen(!isFull);
       },
     },
 
@@ -908,6 +905,62 @@ export function registerNativeCommands(app: NoetherApp): void {
             );
           }
         }
+      },
+    },
+
+    // ── PDF Viewer Commands ──
+    {
+      id: 'pdf:zoom-in',
+      title: 'PDF: Zoom in',
+      section: 'View',
+      icon: <ZoomInIcon size={16} />,
+      hotkey: 'Ctrl+=',
+      aliases: ['zoom in pdf', 'magnify pdf'],
+      action: () => {
+        window.dispatchEvent(new CustomEvent('noether:pdf-zoom-in'));
+      },
+    },
+    {
+      id: 'pdf:zoom-out',
+      title: 'PDF: Zoom out',
+      section: 'View',
+      icon: <ZoomOutIcon size={16} />,
+      hotkey: 'Ctrl+-',
+      aliases: ['zoom out pdf', 'shrink pdf'],
+      action: () => {
+        window.dispatchEvent(new CustomEvent('noether:pdf-zoom-out'));
+      },
+    },
+    {
+      id: 'pdf:fit-width',
+      title: 'PDF: Fit to width',
+      section: 'View',
+      icon: <ZoomIcon size={16} />,
+      hotkey: 'Ctrl+0',
+      aliases: ['fit width pdf', 'fit page width'],
+      action: () => {
+        window.dispatchEvent(new CustomEvent('noether:pdf-fit-width'));
+      },
+    },
+    {
+      id: 'pdf:rotate-cw',
+      title: 'PDF: Rotate clockwise',
+      section: 'View',
+      icon: <RotateCcwIcon size={16} />,
+      hotkey: 'Ctrl+]',
+      aliases: ['rotate pdf', 'rotate clockwise'],
+      action: () => {
+        window.dispatchEvent(new CustomEvent('noether:pdf-rotate-cw'));
+      },
+    },
+    {
+      id: 'pdf:toggle-sidebar',
+      title: 'PDF: Toggle sidebar',
+      section: 'View',
+      icon: <LayoutLeftIcon size={16} />,
+      aliases: ['toggle pdf sidebar', 'pdf thumbnails', 'pdf outline'],
+      action: () => {
+        window.dispatchEvent(new CustomEvent('noether:pdf-toggle-sidebar'));
       },
     },
   ];

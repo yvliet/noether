@@ -47,6 +47,7 @@ pub fn run() {
             vault::create_vault_folder,
             vault::save_markdown_file,
             vault::read_markdown_file,
+            vault::read_binary_file,
             vault::set_file_attributes,
             vault::delete_markdown_file,
             vault::rename_markdown_file,
@@ -72,6 +73,8 @@ pub fn run() {
             vault::window_close,
             vault::window_is_maximized,
             vault::window_is_minimized,
+            vault::window_set_fullscreen,
+            vault::window_is_fullscreen,
             vault::window_start_dragging,
             vault::window_set_title,
             vault::window_trim_memory,
@@ -128,6 +131,11 @@ pub fn run() {
                 if let Some(window) = app.get_webview_window("main") {
                     let _ = window.set_decorations(true);
                 }
+            }
+
+            // Ensure main window is never stuck in OS fullscreen on cold startup
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.set_fullscreen(false);
             }
 
             // Initialize general-purpose global hotkey loop

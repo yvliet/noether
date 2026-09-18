@@ -24,6 +24,8 @@ export interface IPlatformAdapter {
   onMaximizedChange(callback: (isMaximized: boolean) => void): () => void;
   isMinimized(): Promise<boolean>;
   onMinimizedChange(callback: (isMinimized: boolean) => void): () => void;
+  setFullscreen(fullscreen: boolean): Promise<void>;
+  isFullscreen(): Promise<boolean>;
   getCurrentWindowLabel(): Promise<string | null>;
   getCurrentWindowLabelSync(): string | null;
 
@@ -59,6 +61,7 @@ export interface IPlatformAdapter {
   createFolder(relativePath: string): Promise<{ success: boolean; path?: string; error?: string }>;
   saveMarkdownFile(filename: string, content: string, relativePath?: string, vaultPath?: string): Promise<{ success: boolean; path?: string; mtime?: number; size?: number; error?: string }>;
   readMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; content?: string; mtime?: number; error?: string }>;
+  readBinaryFile(filenameOrPath: string): Promise<{ success: boolean; data?: string; size?: number; mtime?: number; error?: string }>;
   setFileAttributes(filenameOrPath: string, options: { readonly?: boolean; mtime?: number }): Promise<{ success: boolean; path?: string; error?: string }>;
   deleteMarkdownFile(filenameOrPath: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
   renameMarkdownFile(oldFilename: string, newFilename: string, oldRelativePath?: string, newRelativePath?: string, vaultPath?: string): Promise<{ success: boolean; error?: string }>;
@@ -453,6 +456,51 @@ class PlatformAdapterImpl implements IPlatformAdapter {
     };
   }
 
+  public async setFullscreen(fullscreen: boolean): Promise<void> {
+    if (this.isTauri()) {
+      try {
+        await invoke('window_set_fullscreen', { fullscreen });
+        return;
+      } catch {
+        try {
+          const win = getCurrentWindow();
+          if (fullscreen) {
+            const isMax = await win.isMaximized();
+            if (isMax) await win.unmaximize();
+            await win.setFullscreen(true);
+          } else {
+            await win.setFullscreen(false);
+          }
+          return;
+        } catch (e) {
+          console.error('[Platform] Failed to set window fullscreen:', e);
+        }
+      }
+    }
+    if (typeof document !== 'undefined') {
+      try {
+        if (fullscreen) {
+          await document.documentElement.requestFullscreen?.();
+        } else if (document.fullscreenElement) {
+          await document.exitFullscreen?.();
+        }
+      } catch {}
+    }
+  }
+
+  public async isFullscreen(): Promise<boolean> {
+    if (this.isTauri()) {
+      try {
+        return Boolean(await invoke('window_is_fullscreen'));
+      } catch {
+        try {
+          return await getCurrentWindow().isFullscreen();
+        } catch {}
+      }
+    }
+    return typeof document !== 'undefined' && Boolean(document.fullscreenElement);
+  }
+
   public async getCurrentWindowLabel(): Promise<string | null> {
     return this.getCurrentWindowLabelSync();
   }
@@ -785,6 +833,13 @@ class PlatformAdapterImpl implements IPlatformAdapter {
   public async readMarkdownFile(filenameOrPath: string): Promise<{ success: boolean; content?: string; mtime?: number; error?: string }> {
     if (this.isTauri()) {
       return await invoke('read_markdown_file', { filenameOrPath });
+    }
+    return { success: false, error: 'Desktop mode only' };
+  }
+
+  public async readBinaryFile(filenameOrPath: string): Promise<{ success: boolean; data?: string; size?: number; mtime?: number; error?: string }> {
+    if (this.isTauri()) {
+      return await invoke('read_binary_file', { filenameOrPath });
     }
     return { success: false, error: 'Desktop mode only' };
   }

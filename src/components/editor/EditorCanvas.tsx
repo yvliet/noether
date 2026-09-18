@@ -12,6 +12,9 @@ import { SourceModeEditor } from './SourceModeEditor';
 import { DocOptionsMenu } from './DocOptionsMenu';
 import { FindReplaceBar } from './FindReplaceBar';
 import { DeadDocumentView } from './DeadDocumentView';
+const LazyPdfViewer = React.lazy(() =>
+  import('@/components/pdf/PdfViewer').then((m) => ({ default: m.PdfViewer }))
+);
 import { WikilinkHoverPreview, resolveTargetDocument, isDocumentContentEmpty } from './WikilinkHoverPreview';
 import { useNoetherApp, useExtensionList, useDocumentHeaders, useDocumentFooters, useBreadcrumbProviders, useBreadcrumbDecorators, useDocumentTitleDecorators } from '@/core/app/AppContext';
 import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlotHost';
@@ -1776,16 +1779,16 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   </div>
                 </div>
               ) : isPdfDoc ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-8 my-auto">
-                  <div className="p-8 rounded-lg border border-[#2a2a2a] bg-[#161616] flex flex-col items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => window.open(mediaSrc, '_blank')}
-                      className="noether-btn"
-                    >
-                      Open PDF
-                    </button>
-                  </div>
+                <div className="flex-1 w-full h-full min-h-[500px] flex flex-col rounded-lg overflow-hidden border border-[#2a2a2a] my-2">
+                  <React.Suspense
+                    fallback={
+                      <div className="flex-1 flex items-center justify-center text-xs text-[#888]">
+                        Loading PDF...
+                      </div>
+                    }
+                  >
+                    <LazyPdfViewer doc={currentDoc} isSidebar={isSidebarMode} app={app} embedded />
+                  </React.Suspense>
                 </div>
               ) : isSourceMode ? (
                 isContentReady ? (

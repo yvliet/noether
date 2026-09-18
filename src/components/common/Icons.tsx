@@ -186,6 +186,9 @@ import {
   Moon02Icon as HugeMoon02Icon,
   Sun02Icon as HugeSun02Icon,
   ComputerIcon as HugeComputerIcon,
+  FitToScreenIcon as HugeFitToScreenIcon,
+  PrinterIcon as HugePrinterIcon,
+  Presentation01Icon as HugePresentation01Icon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -418,6 +421,9 @@ export const ZoomIcon = createIcon(HugeZoomIcon);
 export const SearchAddIcon = createIcon(HugeSearchAddIcon);
 export const SearchMinusIcon = createIcon(HugeSearchMinusIcon);
 export const CenterFocusIcon = createIcon(HugeCenterFocusIcon);
+export const FitToScreenIcon = createIcon(HugeFitToScreenIcon);
+export const PrinterIcon = createIcon(HugePrinterIcon);
+export const Presentation01Icon = createIcon(HugePresentation01Icon);
 export const BubblesIcon = createIcon(HugeBubblesIcon);
 export const Motion01Icon = createIcon(HugeMotion01Icon);
 export const ScissorIcon = createIcon(HugeScissorIcon);

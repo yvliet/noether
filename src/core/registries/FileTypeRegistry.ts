@@ -237,3 +237,13 @@ fileTypeRegistry.registerFileType({
   defaultContent: JSON.stringify({ nodes: [], edges: [] }, null, 2),
   isRawContent: true,
 });
+
+// Pre-register standard built-in PDF format so vault scanning and view routing work natively
+fileTypeRegistry.registerFileType({
+  extension: 'pdf',
+  docType: 'pdf',
+  badgeLabel: 'PDF',
+  viewType: 'pdf',
+  isRawContent: true,
+});
+

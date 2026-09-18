@@ -32,6 +32,11 @@ export function App() {
   });
 
   useEffect(() => {
+    // Guarantee the application starts in normal desktop window/maximized mode and never in fullscreen
+    platform.setFullscreen(false).catch(() => {});
+  }, []);
+
+  useEffect(() => {
     const label = platform.getCurrentWindowLabelSync();
     if (label && label !== windowMode) {
       setWindowMode(label);
