@@ -42,7 +42,7 @@ If `.noether/noether.sqlite` is ever deleted, corrupted, or wiped, Noether autom
               +----------------------+----------------------+
                                      v
                           Tauri File System Watcher
-                    (Signature-Based Echo Suppression)
+                        (Internal Write Filtering)
 ```
 
 ## 2. The 3-Tier Save Lifecycle
@@ -72,17 +72,17 @@ On Windows and macOS, background file indexing services (like Windows Search Ind
 
 Noether writes new note contents to a hidden temporary file (`.noether-tmp-*`) in the vault and performs an atomic filesystem rename (`MoveFileEx` / `renameat`). The original note remains untouched on disk until the new bytes are completely flushed and verified.
 
-## 3. File Watcher Echo Suppression
+## 3. Preventing Self-Write Reload Loops
 
 ---
 
 Because Noether supports editing notes externally in VS Code or pulling changes via Git, the Tauri backend runs a recursive filesystem watcher over the entire vault.
 
-When Noether saves a note internally, the filesystem watcher detects that file modification on disk and fires an `on_file_changed` event. Without protection, this creates a dangerous recursive reload loop: the app saves, the watcher sees the save, the app reloads the file, and active typing caret positions get reset.
+When Noether saves a note internally, the filesystem watcher detects that file modification on disk and fires an `on_file_changed` event. Without protection, this creates a recursive reload loop: the app saves, the watcher sees the save, the app reloads the file, and active typing caret positions get reset.
 
-Noether prevents this with **Signature-Based Write Tracking**:
+Noether prevents this by **Tracking Internal Write Timestamps**:
 
-1. Before writing `note.md` to disk, the internal save pipeline records an in-memory signature containing the document ID, absolute path, and millisecond timestamp.
+1. Before writing `note.md` to disk, the internal save pipeline records an in-memory timestamp containing the document ID, absolute path, and millisecond timestamp.
 2. When the filesystem watcher receives a file modification event, it checks whether the file event matches an active internal write signature within a 500ms window.
 3. If the signature matches, the watcher suppresses the event as an internal echo.
 4. If an external tool (like Git or an external text editor) modified the file, the signature is absent, and Noether immediately updates the editor buffer and re-indexes SQLite.

@@ -158,12 +158,12 @@ To avoid name collisions between independent extensions:
 
 ---
 
-I architected Noether's lighting mode engine around strict orthogonality between visual themes and lighting conditions:
+The theme and lighting system separates visual color schemes from lighting modes (light, dark, system):
 
-- **Orthogonal State Separation**: Lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is decoupled from theme selection (`activeTheme`). Users can switch lighting modes independently without losing their active theme customization.
-- **Explicit Theme Mode Support**: Themes declare their capabilities via `modeSupport: 'both' | 'dark-only' | 'light-only'`. Single-mode themes enforce their intended aesthetic, while dual-mode themes dynamically adapt to the user's active lighting mode.
-- **Dynamic Token Resolution**: During runtime theme activation, `resolveThemeTokens()` merges baseline variables with `modes.light` overrides for light mode sessions, producing a single resolved token tree.
-- **Normalized Interactive Surface Tokens**: Themes compile through `generateCssVariables()`, which derives high-contrast interactive surface tokens (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`). Extensions and components can safely rely on these tokens for effortless dual-mode contrast compliance.
+- **Decoupled Lighting State**: Lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is independent from theme selection (`activeTheme`). Users can switch lighting modes without losing their selected theme styles.
+- **Explicit Theme Mode Support**: Themes declare supported modes via `modeSupport: 'both' | 'dark-only' | 'light-only'`. Single-mode themes enforce their designed aesthetic, while dual-mode themes dynamically adapt to the active lighting mode.
+- **Dynamic Token Resolution**: When activating a theme, `resolveThemeTokens()` merges baseline variables with `modes.light` overrides for light mode sessions, producing a single resolved token tree.
+- **Semantic Interactive Surface Variables**: Themes compile through `generateCssVariables()`, which derives consistent interactive surface variables (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`). Extensions and components rely on these variables for reliable dual-mode contrast.
 
 
 ## 6. Related Reading & References

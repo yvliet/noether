@@ -104,7 +104,7 @@ export interface IPlatformAdapter {
   saveDatabase(bytes: Uint8Array, customVaultPath?: string): Promise<{ success: boolean; path?: string; error?: string }>;
   loadDatabase(customVaultPath?: string): Promise<Uint8Array | ArrayBuffer | null>;
 
-  // Internal write echo suppression
+  // Internal write ignore tracking
   recordInternalWrite(pathOrContent?: string): void;
   isRecentInternalWrite(thresholdMs?: number): boolean;
   isInternalWriteMatch(relativePath: string, hashOrMtime?: string | number): boolean;

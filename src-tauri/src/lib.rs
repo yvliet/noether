@@ -174,7 +174,7 @@ pub fn run() {
                                     if p_str.contains(".tmp.") || p_str.ends_with(".tmp") {
                                         return false;
                                     }
-                                    // Deterministic echo suppression: verify against per-path fingerprint
+                                    // Ignore self-write: verify against per-path fingerprint
                                     if vault::is_internal_echo(p) {
                                         return false;
                                     }

@@ -95,15 +95,15 @@ const childrenMap = useMemo(() => {
 
 Each folder node performs a single $O(1)$ map lookup (`childrenMap.get(folderId)`) to retrieve its immediate children.
 
-## 5. Universal View Suspension & Zero-CPU Backgrounding
+## 5. View Suspension & Idle Background Throttling
 
 ---
 
-Continuous visual simulations like the 2D force-directed Graph View, infinite Canvas, or custom WebGL extensions can quickly drain battery and burn GPU cycles if left running in background tabs or minimized windows.
+Continuous visual simulations like the 2D force-directed Graph View, infinite Canvas, or custom WebGL extensions can drain battery and consume GPU cycles if left running in background tabs or minimized windows.
 
 Rather than relying on ad-hoc timers in each individual component, Noether coordinates background efficiency through a unified system:
 
-- **Universal `useViewSuspension` Hook**: Monitors 5 distinct lifecycle channels simultaneously (Tauri native window minimize, document visibility, OS blur and focus via `document.hasFocus()`, `IntersectionObserver` viewport culling, and workspace pane switching).
+- **Unified `useViewSuspension` Hook**: Monitors 5 distinct lifecycle channels simultaneously (Tauri native window minimize, document visibility, OS blur and focus via `document.hasFocus()`, `IntersectionObserver` viewport culling, and workspace pane switching).
 - **GPU Containment & Paint Isolation**: Suspended containers receive `contain: content`, instructing Chromium to skip reflow and repaint passes while preserving the static rasterized backing store required for crisp Windows DWM taskbar hover previews.
 - **Global CSS Animation Freezing**: When the app is minimized or backgrounded, `data-app-suspended="true"` pauses all CSS keyframe animations (`animation-play-state: paused !important`), eliminating compositor thread wakeups.
 - **Single-Click Window Activation**: Mouse hit-testing remains active so clicking an unfocused window immediately activates and registers the clicked target without needing an extra focus click.

@@ -50,14 +50,14 @@ In typical React state architectures, top-level components inadvertently subscri
 - **Status Bar**: Subscribes to boolean flags (`isLocked`, `hasActiveDoc`) and decoupled metric slices so typing never re-renders unrelated UI chrome.
 - **Document Options Menu**: Extracted into an inert trigger button while closed. Store subscriptions, plugin action evaluations, and positioning calculations execute only when the menu dropdown is explicitly opened by the user.
 
-## 3. Atomic File Saves & Echo Suppression
+## 3. Atomic File Saves & Watcher Loop Filtering
 ---
 
 When Noether saves a note to disk, the operating system's filesystem watcher fires a change event. Without proper handling, this creates an infinite loop: save note → watcher detects change → reload note → re-save note.
 
-Noether prevents this through signature-based echo suppression:
+Noether prevents this through internal write timestamp tracking:
 - **Timestamp Registration**: When an internal save occurs, the timestamp is registered in memory via `mark_internal_write()`.
-- **Echo Suppression**: When the watcher fires, it compares the event timestamp against `LAST_INTERNAL_WRITE`. If the event originated from Noether's own save within the last 500ms, the reload is silently discarded.
+- **Internal Write Filtering**: When the watcher fires, it compares the event timestamp against `LAST_INTERNAL_WRITE`. If the event originated from Noether's own save within the last 500ms, the reload is silently discarded.
 - **External Change Detection**: If an external modification occurs (from Git, another editor, or a background script), Noether detects it, debounces the burst, and reloads the note in the editor without losing external changes.
 - **Conflict Protection**: When the editor is actively focused, ProseMirror maintains sole authority over its active buffer, preventing cursor jumps or typing interruptions during background file sync.
 

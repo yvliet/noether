@@ -266,7 +266,7 @@ export function useToast(): (message: string, type?: 'info' | 'success' | 'warni
   };
 }
 
-// Re-export universal view suspension hooks & context
+// View suspension and background throttling hooks & context
 export {
   useViewSuspension,
   useViewSuspensionContext,

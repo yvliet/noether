@@ -63,12 +63,12 @@ To keep the codebase maintainable and prevent extensions from tangling with core
 ## 4. Lighting Mode Engine & Semantic Theme Tokens
 ---
 
-I designed Noether's theming system around a clean separation of concerns: visual aesthetics (palette and typography) are independent from lighting preferences (dark vs. light contrast):
+Noether's theming system is built around a clean separation of concerns: visual aesthetics (palette and typography) are independent from lighting preferences (dark vs. light contrast):
 
-- **Orthogonal Lighting Mode**: The user's lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is decoupled from the active theme (`activeTheme`). Users can toggle between Dark, Light, and System modes while preserving their selected theme styling.
+- **Lighting Mode Separation**: The user's lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is decoupled from the active theme (`activeTheme`). Users can toggle between Dark, Light, and System modes while preserving their selected theme styling.
 - **Theme Mode Support Declarations**: Each theme declares its capabilities via `ThemeDefinition.modeSupport` (`'both' | 'dark-only' | 'light-only'`). Single-mode themes enforce their intended contrast, while dual-mode themes adapt dynamically to user choice.
 - **Dynamic Runtime Resolution**: When applying appearance settings, `resolveThemeTokens()` merges baseline tokens with `modes.light` overrides for light mode sessions, allowing themes to define one unified identity with tailored contrast values.
-- **Normalized Interactive Surface Tokens**: Theme compilation via `generateCssVariables()` automatically derives high-contrast interactive surface variables:
+- **Semantic Interactive Surface Variables**: Theme compilation via `generateCssVariables()` automatically derives high-contrast interactive surface variables:
   - `--noether-btn-hover-bg`: Derived hover tint (`rgba(255, 255, 255, 0.1)` in dark mode, `rgba(0, 0, 0, 0.08)` in light mode).
   - `--noether-btn-active-bg`: Derived active tint (`rgba(255, 255, 255, 0.2)` in dark mode, `rgba(0, 0, 0, 0.15)` in light mode).
   - `--noether-bg-card` & `--noether-bg-card-hover`: Elevated card surfaces that automatically scale between deep charcoal and clean porcelain.

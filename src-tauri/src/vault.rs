@@ -92,7 +92,7 @@ pub fn canonical_key_path(p: &Path) -> PathBuf {
     }
 }
 
-/// Registers an internal write fingerprint for deterministic echo suppression.
+/// Registers an internal write fingerprint to ignore self-write watcher events.
 pub fn register_internal_write(path: &Path, content_bytes: &[u8]) {
     mark_internal_write();
     let key = canonical_key_path(path);
