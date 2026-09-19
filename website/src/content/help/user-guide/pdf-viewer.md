@@ -84,7 +84,7 @@ Presentation mode eliminates accidental vertical and horizontal wheel scrolling:
 ## 4. Markdown Embed Integration
 ---
 
-Noether seamlessly integrates PDF documents into your daily note-taking workflow:
+You can open, read, and reference PDF files alongside your notes:
 
 - Write `![[research-paper.pdf]]` to embed a live interactive PDF preview directly inside any Markdown note.
 - The embed renders the document with smooth page navigation and scroll containment.

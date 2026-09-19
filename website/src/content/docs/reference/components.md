@@ -2,7 +2,7 @@
 
 Noether provides a suite of native UI primitives and setting builders directly via the Noether Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components use Noether's design tokens and are designed to feel like native desktop controls: clean, tactile, and responding instantly to clicks and keyboard navigation without cosmetic animation delays.
 
-Extension authors should use these components to build custom settings tabs, modal dialogs, status bar widgets, and workspace panels that seamlessly blend with the host application.
+Extension authors can use these components to build custom settings tabs, modal dialogs, status bar widgets, and workspace panels that match the host application styling.
 
 
 ## 1. Importing UI Primitives

@@ -1,44 +1,29 @@
 # Version History
 
-Version History tracks local snapshots of your notes as you edit, allowing you to inspect changes side-by-side and restore earlier drafts at any time.
+Track local snapshots of your notes as you edit, inspect visual diffs, and recover deleted paragraphs or restore earlier drafts.
 
-## 1. Overview
+## 1. How Local Snapshots Work
 ---
 
-Noether automatically records snapshots of modified documents every few minutes while you type. Revisions are stored locally inside `.noether/history/` without relying on cloud servers or external Git setups.
+Version History uses an embedded Git repository stored entirely on your computer inside `.noether/history/`. It never uploads your drafts to external servers or requires a Git account.
 
-## 2. View Note History
+- **Automatic Checkpoints**: Whenever you edit a note and pause typing, Noether saves a lightweight revision snapshot.
+- **Viewing History**: Press `Ctrl+Shift+H` (or select **Version history** from the `...` menu in the editor header) to open the history panel.
+- **Diff Inspection**: Each entry shows when it was saved (`"5m ago"`, `"Yesterday, 4:10 PM"`). Click any revision to view additions in green and deletions in red.
+
+## 2. Restoring & Selective Copying
 ---
 
-1. Open the note you want to inspect.
-2. Click the note options menu (`...`) in the top right of the editor.
-3. Select **Version history** (or run `Command Palette → History: View note history`).
-4. A side-by-side diff viewer opens showing chronological revision snapshots.
+You don't always want to roll back an entire document just to get one deleted paragraph back.
 
-## 3. Compare and Restore Revisions
+- **Restore Draft**: Overwrites the active editor buffer with the chosen revision snapshot. Noether automatically takes a quick safety snapshot of your current text before reverting.
+- **Selective Copying**: Highlight and copy specific sentences or code blocks directly from the diff view and paste them into your current note.
+- **Inline vs Split Diff**: Toggle between unified inline view or split side-by-side panes depending on how wide your window is.
+
+## 3. Storage & Cleanup
 ---
 
-- **Side-by-Side Diff**: Highlights additions in green and deletions in red.
-- **Unified Diff View**: Switch between split-pane diff and single-column inline diff.
-- **Restore Revision**: Click **Restore this version** to overwrite the current editor buffer with the selected snapshot.
-- **Copy Text**: Select and copy specific paragraphs from older snapshots without rolling back the entire file.
+All history files live inside `.noether/history/` within your vault. If you use external Git or cloud sync tools, `.noether/` is ignored by default so revision snapshots remain purely local to that machine.
 
-## 4. Retention and Storage Settings
----
+In **Settings (`Ctrl+,`) → Version History**, you can adjust how frequently snapshots trigger (default: 5 minutes of active writing) and set retention limits (e.g. automatically purge revisions older than 30 days to save disk space).
 
-Open **Settings (`Ctrl+,`) → Version History** to customize snapshot behavior:
-
-- **Auto-Snapshot Interval**: Configure how often snapshots are saved (default: every 5 minutes during active edits).
-- **Max Snapshot Age**: Automatically purge snapshots older than 30, 60, or 90 days to conserve disk space.
-- **Exclude Folders**: Skip tracking temporary directories or scratch notes.
-
-## 5. Keyboard Shortcuts & Commands
----
-
-| Command | Action |
-| :--- | :--- |
-| `Command Palette → History: View note history` | Open history viewer for active note |
-| `Command Palette → History: Create manual snapshot` | Force save a snapshot checkpoint |
-
-> [!NOTE]
-> History snapshots are purely local. If you sync your vault with Git or cloud storage, your revision files remain private in `.noether/history/`.

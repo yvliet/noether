@@ -11,7 +11,7 @@ Inside your vault folder, Noether creates a hidden `.noether/` directory to stor
 
 ### Vault Manager (`Ctrl+Shift+O`)
 
-Noether allows you to create, switch, and manage multiple isolated vaults seamlessly:
+You can create, switch, and manage multiple independent vaults:
 
 - **Switch Vaults**: Press `Ctrl+Shift+O` or click the vault name at the bottom of the left sidebar to open the Vault Manager modal.
 - **Recent Vaults**: Displays a list of recently opened workspaces with their disk paths, document counts, and last accessed timestamps.

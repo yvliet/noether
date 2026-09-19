@@ -1,24 +1,15 @@
 # Model Context Protocol (MCP) Tools
 
-Model Context Protocol (MCP) is an open standard that allows AI agents and Large Language Models (LLMs) to discover and invoke tools exposed by local applications. In Noether, MCP is a first-class architectural primitive: **every extension that manages queryable data or performs state changes can expose tools to AI agents**.
+Model Context Protocol (MCP) lets AI agents and language models discover and call tools exposed by local applications. In Noether, extensions that manage queryable data or perform state changes can expose tools directly to AI agents.
 
-## 1. How MCP Operates in Noether
+## 1. How MCP Works in Noether
 ---
 
-Noether implements a native, in-process MCP tool registry. When an extension registers a tool via `this.registerTool()`, it becomes immediately available to:
+Noether includes an internal MCP tool registry. When an extension registers a tool via `this.registerTool()`, it becomes available to:
 
-1. **In-App AI Copilots & Assistants**: Agents running inside Noether can search, create, summarize, and reorganize notes directly in memory with zero IPC serialization latency.
-2. **External Desktop Clients**: Applications like **Claude Desktop**, **Cursor**, and **Antigravity** connect to Noether over standard I/O (`noether-mcp-server`) and discover all core and extension tools automatically.
+1. **In-App AI Copilot**: Agents running inside Noether can search, create, and organize notes directly via in-memory stores and SQLite.
+2. **External AI Clients**: Applications like **Claude Desktop**, **Cursor**, and **Antigravity** connect to Noether over standard I/O (`bin/noether-mcp-server.cjs`) and discover registered tools automatically.
 
-| Client & Protocol Layer | In-Process Resolution Pipeline |
-| :--- | :--- |
-| **AI Client Layer** | Applications communicating via standard Model Context Protocol (MCP) |
-| **Supported Clients** | In-App AI Copilot, Claude Desktop, Claude Code, Cursor, Antigravity, Cline, custom LLM orchestrators |
-| **Transport Layer** | In-memory direct call (In-App) or JSON-RPC 2.0 over standard I/O (`noether-mcp-server`) |
-| **Noether `ToolRegistry` Engine** | Central discovery and dispatch coordinator |
-| **Core Built-in Tools** | `noether_search_notes`, `noether_read_note`, `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`, etc. |
-| **Extension Registered Tools** | Dynamic tools registered during extension lifecycle via `this.registerTool()` |
-| **Execution Handlers** | Type-safe async handlers querying SQLite database or in-memory stores with zero UI lag |
 
 ## 2. Tool Registration Guidelines & Conventions
 ---

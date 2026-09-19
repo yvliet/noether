@@ -78,7 +78,7 @@ Noether features an autonomous multi-tier update manager (`app.extensions.update
 
 - **Resilient 5-Tier Fallback Pipeline**: Noether queries distribution bundles in deterministic order: (1) Official registry endpoints, (2) Turso edge replicas, (3) GitHub Releases (`releases/latest/download/main.js`), (4) Raw GitHub CDNs, and (5) Local Vault caches.
 - **In-App Checking & Updates**: Users can trigger "Check for updates" or "Update all" from Settings → Community Extensions, or upgrade directly via the Community Marketplace.
-- **Zero Restart Required**: Noether automatically invokes the extension unload lifecycle, writes the updated bundle to `.noether/extensions/<id>/`, evaluates the new bundle in memory, and re-enables the extension seamlessly.
+- **Zero Restart Required**: Noether invokes the extension unload lifecycle, writes the updated bundle to `.noether/extensions/<id>/`, evaluates the new bundle in memory, and re-enables the extension immediately.
 
 For more lifecycle details, read [[Noether SDK API Reference]] and [[Developer Policies & Guidelines]].
 

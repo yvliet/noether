@@ -1,47 +1,38 @@
 # Covers
 
-Covers adds header banner images to your notes with image search, offline gradient presets, and vertical alignment controls.
+Add header banner images to notes with Wallhaven wallpaper search, offline presets, and drag repositioning.
 
-## 1. Overview
+## 1. How It Works
 ---
 
-Adding a cover image gives your notes a visual header. Cover metadata is stored cleanly in your note's YAML frontmatter (`cover: ...`), so your images stay consistent across devices.
+Hover above your note title in the editor and click **Add cover** (or run `Covers: Add cover image` from `Ctrl+K`). You can pick from three sources:
 
-## 2. Add a Cover to a Note
+- **Wallhaven**: Search online wallpapers by keyword (e.g. `pixel art`, `minimal`, `cyberpunk`).
+- **Offline Presets**: Curated gradients and abstract textures bundled with the app, available without an internet connection.
+- **Custom URL or Local File**: Paste an image link or select any local image attachment in your vault.
+
+To adjust the crop, hover over the banner, click **Reposition**, drag the image up or down to set the focal point, and click **Save**.
+
+## 2. Where Cover Data Lives
 ---
 
-1. Hover over the area above the note title in the editor.
-2. Click **Add cover**.
-3. Choose an image source from the popup modal:
-   - **Search Wallhaven**: Search millions of wallpapers by keyword.
-   - **Offline Presets**: Pick from built-in gradients and minimalist abstract art.
-   - **Custom URL / File**: Paste any image web link or select a local image from your vault.
+Covers writes directly to your note's YAML frontmatter. It never touches your Markdown body text:
 
-## 3. Reposition and Adjust Cover
+```yaml
+---
+cover: "assets/banner.png"
+cover_position: 0.35
+---
+```
+
+Because it uses standard frontmatter keys, your cover choices stay intact if you sync your vault or view notes in other markdown editors.
+
+## 3. Configuration
 ---
 
-1. Hover over the cover banner.
-2. Click **Reposition**.
-3. Drag the image up or down to adjust which part is visible.
-4. Click **Save position**.
+In **Settings (`Ctrl+,`) → Covers**, you can:
 
-## 4. Settings & Styles
----
+- Adjust the default banner height (from 180px to 320px).
+- Toggle the bottom gradient fade that blends the image into your note's background color.
+- Remove or change existing covers at any time.
 
-Open **Settings (`Ctrl+,`) → Covers** to customize banner behavior:
-
-- **Banner Height**: Set the default height for covers (e.g. 180px to 320px).
-- **Fade Effect**: Enable a sleek bottom-to-top gradient fade into the editor background.
-- **Auto-Suggest**: Suggest relevant banners based on note title keywords.
-
-## 5. Keyboard Shortcuts & Commands
----
-
-| Command | Action |
-| :--- | :--- |
-| `Command Palette → Covers: Add cover image` | Open cover image picker for active note |
-| `Command Palette → Covers: Remove cover image` | Remove cover from active note |
-| `Command Palette → Covers: Reposition cover` | Enter reposition mode |
-
-> [!NOTE]
-> Covers never alters the text content of your document. It only writes the image path or URL to the `cover` key in the frontmatter block.

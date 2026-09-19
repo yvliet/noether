@@ -1,46 +1,19 @@
 # Backlinks
 
-Backlinks shows all incoming links to the active note from other notes across your vault, making it easy to see how ideas connect.
+See incoming links and unlinked mentions to your active note from across the vault.
 
-## 1. Overview
+## 1. Linked & Unlinked Mentions
 ---
 
-When you link to a note using wikilinks (`[[Note Name]]`), Noether tracks the connection in its local database. The Backlinks pane displays two types of connections:
+Press `Ctrl+Shift+B` or click the backlinks icon in the right sidebar rail to inspect incoming connections:
 
-- **Linked mentions**: Notes that explicitly contain a wikilink pointing to the active note.
-- **Unlinked mentions**: Notes that mention the title of the active note in plain text without a link.
+- **Linked Mentions**: Notes that contain an explicit `[[Wikilink]]` pointing to the note you are currently reading.
+- **Unlinked Mentions**: Notes that mention the title of your current note in plain text without a link. Click **Link** on any mention preview to immediately convert that text into an active wikilink.
 
-## 2. Open the Backlinks Pane
+## 2. Vault-Wide Renaming
 ---
 
-1. Click the **Backlinks** icon in the right sidebar rail.
-2. The pane opens and shows all notes linking to the currently active note in the editor.
-3. Click any mention in the list to jump directly to that note.
+When you rename a note in Noether, the embedded SQLite index detects every incoming wikilink across your vault and automatically updates the links in other files so your connections never break.
 
-## 3. Link Unlinked Mentions
----
+You can also drag any mention from the backlinks panel directly into the editor to insert a link (`[[Note]]`) or hold `Shift` while dragging to insert an embed (`![[Note]]`).
 
-Unlinked mentions highlight places where you referenced a concept before creating a note for it:
-
-1. Expand the **Unlinked mentions** section in the Backlinks pane.
-2. Review the preview snippet showing where the term appears.
-3. Click **Link** to turn the plain text into an active `[[Wikilink]]` instantly.
-
-## 4. Drag and Drop Links into Editor
----
-
-You can drag references directly from the Backlinks pane into your active note:
-
-- **Insert Link**: Drag a backlink item into the editor to insert a `[[Target Note]]` link.
-- **Insert Embed**: Hold `Shift` while dragging to insert a transcluded media embed or note embed (`![[Target Note]]`).
-
-## 5. Keyboard Shortcuts & Commands
----
-
-| Shortcut / Command | Action |
-| :--- | :--- |
-| `Ctrl+Shift+B` | Toggle Backlinks sidebar panel |
-| `Command Palette → Backlinks: Open linked mentions` | Focus Backlinks pane |
-
-> [!TIP]
-> Backlinks update in real time as you write. When you rename a note, all incoming wikilinks update automatically across your entire vault.

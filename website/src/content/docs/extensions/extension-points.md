@@ -1,11 +1,11 @@
 # Extension Points Reference
 
-Noether provides a rich set of declarative extension points allowing extensions to seamlessly inject buttons, views, menus, and editor behaviors into the workspace.
+Declarative extension points for registering buttons, custom views, menus, and editor behaviors directly into the Noether workspace.
 
 ## 1. Action Rail (Left Ribbon Toolbar)
 ---
 
-The Action Rail is the narrow vertical icon bar on the far-left side of the Noether window. Use it for high-frequency global actions or view toggles.
+The Action Rail is the vertical icon bar on the far-left side of the Noether window. Use it for high-frequency global actions or view toggles.
 
 ```typescript
 import { Extension, NoetherApp } from 'noether';
@@ -56,7 +56,7 @@ this.addCommand({
 ## 3. Status Bar (Bottom Information Rail)
 ---
 
-Widgets in the bottom status bar provide persistent, unobtrusive status information, counters, or quick triggers.
+Widgets in the bottom status bar provide status information, item counters, and quick triggers.
 
 ```typescript
 this.addStatusBarItem({
@@ -244,7 +244,7 @@ export default class CustomBreadcrumbsProvider extends Extension {
 Extensions can register full-screen view types that render inside workspace tabs (similar to Noether's native Graph View, Tasks, and Marketplace).
 
 When rendering custom views, wrap your content in the SDK's `PageView` component. `PageView` provides the native Noether view architecture:
-- **Active Tab Cutout Passthrough**: The active workspace tab cutout seamlessly connects to the view background.
+- **Active Tab Cutout Passthrough**: The active workspace tab cutout connects directly to the view background.
 - **Floating Subheader**: Mounts navigation history (back and forward), view icon, title, and custom action buttons or option menus floating at `var(--noether-header-offset)`.
 - **Dynamic Scroll Dissolve**: The subheader dissolves to transparent on scroll, with subtle drop-shadows keeping controls crisp over scrolling content.
 - **Scrollbar Track Offset**: Applies `.scrollbar-track-offset-subheader` so custom scrollbar thumbs never overlap the floating header.
