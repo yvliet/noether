@@ -24,6 +24,81 @@ Noether includes an intelligent file watcher: when you edit a file externally, N
 </details>
 
 <details>
+<summary><b>How do I restore accidentally deleted notes or empty the Trash?</b></summary>
+
+When you delete a note or folder in Noether, it is moved to the `.trash/` directory inside your vault instead of being permanently erased:
+
+1. Open **Settings (`Ctrl+,`) → Files & Links → Trash**.
+2. Browse or search through soft-deleted notes.
+3. Select a note to preview its markdown content.
+4. Click **Restore** to reinstate the note to its original directory, or click **Empty Trash** to permanently purge all deleted items.
+
+</details>
+
+<details>
+<summary><b>How do I lock a note so I don't accidentally edit or overwrite it?</b></summary>
+
+You can set any note to read-only mode by opening the **Document Options menu (`...`)** in the top-right corner of the editor and selecting **Lock Note (Read-Only)**.
+
+Alternatively, add `locked: true` to your YAML frontmatter properties. When locked, typing and text mutations are disabled, preserving reference notes and completed drafts.
+
+</details>
+
+<details>
+<summary><b>How does in-note Find & Replace work?</b></summary>
+
+Press `Ctrl+F` to open the in-editor Find bar, or `Ctrl+H` to open Find & Replace:
+
+- If you select text before pressing `Ctrl+F`, it automatically fills the search box.
+- Press `Enter` or `↓` to jump to the next match, and `Shift+Enter` or `↑` for the previous match.
+- Toggle strict case sensitivity with the `Aa` button.
+- Click **Replace** to substitute the active match, or **Replace All** to replace every occurrence across the document in one atomic step.
+
+</details>
+
+<details>
+<summary><b>How do I customize typography, font sizes, and accent colors?</b></summary>
+
+Open **Settings (`Ctrl+,`) → Appearance**:
+
+- Choose your base color mode (Dark, Light, OLED Black, or System).
+- Select from curated accent color palettes.
+- Choose your preferred font families for **Interface Font**, **Text Font**, and **Monospace Font** using the system font picker.
+- Adjust base font sizing, line height, and editor padding to fit your reading preferences.
+
+</details>
+
+<details>
+<summary><b>How do I dock tabs and panels into sidebars?</b></summary>
+
+Noether includes a **4-Zone Docking Engine** (`left-top`, `left-bottom`, `right-top`, `right-bottom`):
+
+- Click and drag any tab from the workspace tab strip or secondary rail directly toward the top or bottom of either sidebar.
+- Drop the tab when the dock zone highlights to pin the view into that quadrant.
+- Drag the separator bar between top and bottom dock panes to resize vertical height distribution.
+
+</details>
+
+<details>
+<summary><b>Can I zoom in on images and diagrams inside my notes?</b></summary>
+
+**Yes.** Click any image in Live Preview or Reading View to open the full-screen **Image Lightbox**:
+
+- Scroll your mouse wheel or pinch your trackpad to zoom up to 25x magnification centered at your cursor.
+- Press `+` / `-` to zoom in or out, and `0` to reset to 1x centered fit.
+- Click and drag or use keyboard arrow keys (`Shift + Arrows` for 100px steps) to pan across large architecture diagrams.
+- Double-click to toggle between 1x fit and 2x magnification.
+
+</details>
+
+<details>
+<summary><b>What happens if I move a file to a folder that already has a note with the same name?</b></summary>
+
+Noether features a non-destructive **Duplicate Name Safeguard**. When dragging or moving a file into a destination folder that already contains an identical filename, Noether displays a confirmation dialog offering to automatically create a numbered copy (e.g. `Note (1).md`) rather than silently overwriting your work.
+
+</details>
+
+<details>
 <summary><b>How do I sync my notes across multiple devices for free?</b></summary>
 
 Because your vault is a regular folder on your computer, you have total freedom in how you sync it:
@@ -41,13 +116,6 @@ Because your vault is a regular folder on your computer, you have total freedom 
 **No.** Noether collects zero telemetry, zero analytics, zero keystroke logs, and zero tracking data. There are no mandatory user accounts and no background network calls to third-party tracking services.
 
 When you run Noether, it runs entirely on your local machine. The only network calls that occur are explicit user actions, such as checking for application updates or downloading an extension from the Community Marketplace.
-
-</details>
-
-<details>
-<summary><b>What happens if I accidentally delete a note or folder?</b></summary>
-
-Noether includes a safe soft-delete mechanism. Deleting a note moves it into a hidden `.trash/` directory inside your vault root rather than wiping it permanently from your disk. You can recover deleted notes at any time in **Settings (`Ctrl+,`) → Trash**.
 
 </details>
 
@@ -70,3 +138,4 @@ The immediate focus is getting the desktop build fast, stable, and completely po
 In the meantime, you can sync your vault folder to your phone via Syncthing or Git and read or edit notes using any standard mobile markdown editor.
 
 </details>
+

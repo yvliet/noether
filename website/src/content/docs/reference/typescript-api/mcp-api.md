@@ -2,9 +2,7 @@
 
 Every extension managing queryable state can expose native AI agent tools and prompts using standard Zod schemas via `this.registerTool()`.
 
-
-## 1. Registering an AI Tool
-
+## 1. Registering an AI Tool (`McpZodToolDefinition`)
 ---
 
 ```typescript
@@ -17,9 +15,10 @@ this.registerTool({
     documentId: z.string().describe('Target document identifier'),
     targetWpm: z.number().default(200).describe('Words per minute reading baseline'),
   }),
+  isDestructive: false,
   handler: async ({ documentId, targetWpm }, app) => {
-    const doc = await app.vault.readNote(documentId);
-    const words = (doc?.content || '').split(/\s+/).filter(Boolean).length;
+    const doc = await app.vault.readDocument(documentId);
+    const words = (doc?.title || '').split(/\s+/).filter(Boolean).length;
     const minutes = Math.ceil(words / targetWpm);
 
     return {
@@ -34,9 +33,7 @@ this.registerTool({
 });
 ```
 
-
-## 2. Registering an AI Workflow Prompt
-
+## 2. Registering an AI Workflow Prompt (`McpPromptDefinition`)
 ---
 
 ```typescript
@@ -61,3 +58,43 @@ this.registerPrompt({
   },
 });
 ```
+
+## 3. Core Interface Contracts
+---
+
+```typescript
+export interface McpToolResult {
+  content: Array<{
+    type: 'text' | 'image' | 'resource';
+    text?: string;
+    data?: string;
+    mimeType?: string;
+  }>;
+  isError?: boolean;
+}
+
+export interface McpPromptResult {
+  description?: string;
+  messages: Array<{
+    role: 'user' | 'assistant';
+    content: {
+      type: 'text';
+      text: string;
+    };
+  }>;
+}
+```
+
+## 4. The Host `ToolRegistry` (`app.tools`)
+---
+
+Extensions and host views can inspect and invoke tools programmatically:
+
+- `app.tools.registerTool(tool: McpToolDefinition | McpZodToolDefinition): Disposable`
+- `app.tools.unregisterTool(name: string): void`
+- `app.tools.getTool(name: string): McpToolDefinition | undefined`
+- `app.tools.getAllTools(): McpToolDefinition[]`
+- `app.tools.executeTool(name: string, args: Record<string, unknown>): Promise<McpToolResult>`
+- `app.tools.registerPrompt(prompt: McpPromptDefinition): Disposable`
+- `app.tools.getAllPrompts(): McpPromptDefinition[]`
+

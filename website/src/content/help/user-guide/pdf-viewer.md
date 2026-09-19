@@ -2,8 +2,6 @@
 
 Noether includes a fast, native PDF reader designed specifically for reviewing academic papers, reading slide decks, and delivering distraction-free presentations directly inside your workspace without third-party extensions.
 
----
-
 ## 1. Opening PDFs & Core Navigation
 ---
 

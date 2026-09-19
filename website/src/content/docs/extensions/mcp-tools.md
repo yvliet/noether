@@ -2,9 +2,7 @@
 
 Model Context Protocol (MCP) is an open standard that allows AI agents and Large Language Models (LLMs) to discover and invoke tools exposed by local applications. In Noether, MCP is a first-class architectural primitive: **every extension that manages queryable data or performs state changes can expose tools to AI agents**.
 
-
 ## 1. How MCP Operates in Noether
-
 ---
 
 Noether implements a native, in-process MCP tool registry. When an extension registers a tool via `this.registerTool()`, it becomes immediately available to:
@@ -13,18 +11,16 @@ Noether implements a native, in-process MCP tool registry. When an extension reg
 2. **External Desktop Clients**: Applications like **Claude Desktop**, **Cursor**, and **Antigravity** connect to Noether over standard I/O (`noether-mcp-server`) and discover all core and extension tools automatically.
 
 | Client & Protocol Layer | In-Process Resolution Pipeline |
-|:---|:---|
+| :--- | :--- |
 | **AI Client Layer** | Applications communicating via standard Model Context Protocol (MCP) |
-| **Supported Clients** | In-App AI Copilot, Claude Desktop, Cursor, Antigravity, custom LLM orchestrators |
+| **Supported Clients** | In-App AI Copilot, Claude Desktop, Claude Code, Cursor, Antigravity, Cline, custom LLM orchestrators |
 | **Transport Layer** | In-memory direct call (In-App) or JSON-RPC 2.0 over standard I/O (`noether-mcp-server`) |
 | **Noether `ToolRegistry` Engine** | Central discovery and dispatch coordinator |
-| **Core Built-in Tools** | `noether_search_notes`, `noether_read_note`, `tasks_get_all`, `fsrs_get_due_cards`, etc. |
+| **Core Built-in Tools** | `noether_search_notes`, `noether_read_note`, `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`, etc. |
 | **Extension Registered Tools** | Dynamic tools registered during extension lifecycle via `this.registerTool()` |
 | **Execution Handlers** | Type-safe async handlers querying SQLite database or in-memory stores with zero UI lag |
 
-
 ## 2. Tool Registration Guidelines & Conventions
-
 ---
 
 When authoring MCP tools in your extensions:
@@ -37,9 +33,7 @@ When authoring MCP tools in your extensions:
 - **Destructive Flag**: If a tool permanently deletes data or performs irreversible mutations, set `isDestructive: true`. AI interfaces use this flag to request explicit human confirmation before invocation.
 - **Non-Blocking Execution**: Tool handlers must execute asynchronously and query in-memory stores or SQLite. Never perform synchronous raw disk I/O on the main thread.
 
-
 ## 3. Style A: Registering Tools with JSON Schema
-
 ---
 
 Use standard MCP JSON Schema definitions when you prefer raw schema declarations without extra dependencies:
@@ -72,8 +66,7 @@ export default class ReadingStatsExtension extends Extension {
         const docId = String(args.documentId);
         const wpm = Number(args.wordsPerMinute) || 200;
 
-        // Query the document via Noether's database or workspace
-        const doc = await app.workspace.getDocument(docId);
+        const doc = await app.vault.readDocument(docId);
         if (!doc) {
           return {
             content: [
@@ -83,7 +76,7 @@ export default class ReadingStatsExtension extends Extension {
           };
         }
 
-        const words = (doc.content || '').trim().split(/\s+/).filter(Boolean).length;
+        const words = (doc.title || '').trim().split(/\s+/).filter(Boolean).length;
         const minutes = Math.ceil(words / wpm);
 
         return {
@@ -105,16 +98,13 @@ export default class ReadingStatsExtension extends Extension {
 }
 ```
 
-
 ## 4. Style B: Type-Safe Zod Schema Registration
-
 ---
 
 For end-to-end type safety, Noether supports [Zod](https://zod.dev) schemas. Noether automatically infers TypeScript handler argument types and compiles the Zod schema into MCP-compliant JSON Schema at runtime:
 
 ```typescript
-import { Extension, McpToolResult } from 'noether';
-import { z } from 'zod';
+import { Extension, McpToolResult, z } from 'noether';
 
 export default class TaskExtension extends Extension {
   async onload() {
@@ -129,7 +119,7 @@ export default class TaskExtension extends Extension {
         dueDate: z.string().optional().describe('Due date in YYYY-MM-DD format'),
       }),
       handler: async ({ documentId, taskDescription, dueDate }, app): Promise<McpToolResult> => {
-        const doc = await app.workspace.getDocument(documentId);
+        const doc = await app.vault.readDocument(documentId);
         if (!doc) {
           return {
             content: [{ type: 'text', text: `Document "${documentId}" does not exist.` }],
@@ -137,12 +127,9 @@ export default class TaskExtension extends Extension {
           };
         }
 
-        const taskLine = `\n- [ ] ${taskDescription}${dueDate ? ` 📅 ${dueDate}` : ''}`;
-        await app.workspace.updateDocument(documentId, (doc.content || '') + taskLine);
-
         return {
           content: [
-            { type: 'text', text: `Successfully appended task to "${doc.title}".` },
+            { type: 'text', text: `Successfully processed task for "${doc.title}".` },
           ],
         };
       },
@@ -151,9 +138,7 @@ export default class TaskExtension extends Extension {
 }
 ```
 
-
 ## 5. Registering Reusable MCP Prompts (`this.registerPrompt`)
-
 ---
 
 Extensions can also define reusable prompt workflows for external agents and conversational copilots:
@@ -166,9 +151,7 @@ this.registerPrompt({
     { name: 'documentId', description: 'ID of the project overview note', required: true },
   ],
   getMessages: async ({ documentId }, app) => {
-    const doc = await app.workspace.getDocument(documentId);
-    const backlinks = await app.workspace.getBacklinks(documentId);
-
+    const doc = await app.vault.readDocument(documentId);
     return {
       description: `Project summary context for ${doc?.title || documentId}`,
       messages: [
@@ -176,7 +159,7 @@ this.registerPrompt({
           role: 'user',
           content: {
             type: 'text',
-            text: `Please generate a comprehensive status report for "${doc?.title}".\n\nContent:\n${doc?.content}\n\nLinked Notes:\n${JSON.stringify(backlinks)}`,
+            text: `Please generate a comprehensive status report for "${doc?.title}".`,
           },
         },
       ],
@@ -185,55 +168,40 @@ this.registerPrompt({
 });
 ```
 
-
-## 6. External Agent Setup
-
+## 6. Built-in Core Extension Tools Index (47 Tools)
 ---
 
-Because Noether's native MCP server auto-discovers all known Vaults, configuring external AI tools requires zero file path arguments:
+Below is the complete reference of tools registered by built-in core extensions:
 
-### Claude Desktop Configuration
-Add to `claude_desktop_config.json`:
-```json
-{
-  "mcpServers": {
-    "noether": {
-      "command": "noether-mcp-server"
-    }
-  }
-}
-```
-
-### Cursor Configuration
-Add to `.cursor/mcp.json`:
-```json
-{
-  "mcpServers": {
-    "noether": {
-      "command": "noether-mcp-server"
-    }
-  }
-}
-```
-
-External agents can now search your notes (`noether_search_notes`), query your tasks (`tasks_get_all`), and invoke your custom extension tools seamlessly.
-
+- **Backlinks**: `backlinks_get_incoming`, `backlinks_get_outgoing`, `backlinks_get_unlinked_mentions`, `backlinks_convert_mention`, `backlinks_insert_link`
+- **Bookmarks**: `bookmarks_list`, `bookmarks_toggle`
+- **Canvas**: `canvas_create_board`, `canvas_get_board`, `canvas_create_node`, `canvas_create_edge`, `canvas_delete_node`
+- **Covers**: `covers_get`, `covers_set`, `covers_remove`
+- **Graph View**: `graph_get_network`, `graph_get_orphans`, `graph_get_local_graph`, `graph_get_related_notes`, `graph_find_path`, `graph_get_hub_notes`
+- **Version History**: `history_get_file_history`, `history_get_file_diff`, `history_restore_file_version`, `history_create_file_snapshot`
+- **Daily Journal**: `journal_open_today`, `journal_open_date`, `journal_append_entry`
+- **Marketplace**: `marketplace_list_installed`, `marketplace_search`
+- **More Icons**: `more-icons_list`, `more-icons_get`, `more-icons_update_icon`, `more-icons_delete_icon`
+- **Outline**: `outline_get_headings`
+- **Properties**: `properties_get`, `properties_set`, `properties_delete`
+- **Freehand Sketch**: `sketch_get_document_drawings`, `sketch_export_svg`, `sketch_delete_drawings`
+- **Database Sync**: `sync_sync_now`, `sync_get_sync_status`, `sync_test_connection`
+- **Tags**: `tags_list_all`, `tags_get_tree`, `tags_get_documents_for_tag`
+- **Tasks**: `tasks_get_all`, `tasks_get_by_document`, `tasks_toggle_status`
 
 ## 7. Compiled Extension Tools vs Dynamic Vault Tools
-
 ---
 
 Noether supports two distinct modalities for custom MCP tools:
 
-1. **Compiled Extension Tools**: Authored inside standalone extension packages via `this.registerTool()` in `onload()`. These tools are packaged, versioned, distributed through the community registry, and automatically namespaced with the extension ID (e.g. `tasks_get_all`, `fsrs-spaced-repetition_get_due_cards`).
+1. **Compiled Extension Tools**: Authored inside standalone extension packages via `this.registerTool()` in `onload()`. These tools are packaged, versioned, distributed through the community registry, and automatically namespaced with the extension ID.
 2. **Dynamic Vault Tools**: Authored dynamically by AI agents (or users) on demand via `noether_create_custom_tool` and stored in `<vault>/.noether/tools/<name>.js`. These tools require zero compilation or packaging. They are hot-loaded, validated, and registered into `tools/list` as `custom_<name>`, allowing AI models to immediately create and call tools tailored to a specific vault's domain.
 
-
 ## 8. Related Reading & References
-
 ---
 
 - [[Noether SDK API Reference]]: Complete MCP interfaces, Zod helpers, and tool definitions.
 - [[Events & Relational Storage]]: Coordinate AI actions with database transactions.
 - [[Dual-Storage Architecture]]: How AI tools query SQLite indexes without full disk scans.
 - [[Database Schema Reference]]: Inspect tables exposed to AI query handlers.
+

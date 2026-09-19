@@ -38,7 +38,7 @@ Manage files and folders in the left sidebar with instant keyboard controls:
 | **Vault-Wide Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` |
 | **Open Help Window** | `F1` | `F1` |
 | **Open Settings Window** | `Ctrl+,` | `Cmd+,` |
-| **Switch Vault** | `Ctrl+Shift+O` | `Cmd+Shift+O` |
+| **Switch Vault Manager** | `Ctrl+Shift+O` | `Cmd+Shift+O` |
 | **Toggle Fullscreen** | `F11` | `F11` |
 
 ## 3. Tabs & Split Panes
@@ -50,6 +50,7 @@ Manage your open workspaces, panes, and note buffers:
 | :--- | :--- | :--- |
 | **New Tab** | `Ctrl+T` | `Cmd+T` |
 | **Close Active Tab** | `Ctrl+W` | `Cmd+W` |
+| **Reopen Closed Tab** | `Ctrl+Shift+T` | `Cmd+Shift+T` |
 | **Next Tab** | `Ctrl+Tab` | `Ctrl+Tab` |
 | **Previous Tab** | `Ctrl+Shift+Tab` | `Ctrl+Shift+Tab` |
 | **Jump to Tab 1..8** | `Ctrl+1` ... `Ctrl+8` | `Cmd+1` ... `Cmd+8` |
@@ -74,11 +75,14 @@ Manage your open workspaces, panes, and note buffers:
 | **Copy absolute path** | Copies the full filesystem path to your clipboard. |
 | **Copy note link (Wikilink)** | Copies `[[Note Title]]` link to your clipboard for instant pasting. |
 
-## 4. Editing & Text Formatting
+## 4. Editing & In-Note Search
 ---
 
 | Action | Windows / Linux | macOS |
 | :--- | :--- | :--- |
+| **Find in Note** | `Ctrl+F` | `Cmd+F` |
+| **Find & Replace in Note** | `Ctrl+H` | `Cmd+H` |
+| **Toggle Live Preview / Source Mode** | `Ctrl+Shift+M` | `Cmd+Shift+M` |
 | **Duplicate Active Note** | `Ctrl+D` | `Cmd+D` |
 | **Bold** | `Ctrl+B` | `Cmd+B` |
 | **Italic** | `Ctrl+I` | `Cmd+I` |
@@ -89,10 +93,23 @@ Manage your open workspaces, panes, and note buffers:
 | **Bullet List** | `Ctrl+Shift+8` | `Cmd+Shift+8` |
 | **Numbered List** | `Ctrl+Shift+7` | `Cmd+Shift+7` |
 | **Task Checklist** | `Ctrl+Shift+9` | `Cmd+Shift+9` |
-| **Toggle Task State** | `Ctrl+Enter` | `Cmd+Enter` |
-| **Blockquote** | `Ctrl+Shift+.` | `Cmd+Shift+.` |
+| **Toggle Task Checkbox** | `Ctrl+Enter` | `Cmd+Enter` |
+| **Blockquote** | `> Quote` (`Ctrl+Shift+.`) | `> Quote` (`Cmd+Shift+.`) |
 
-## 5. PDF Viewer & Presentation Mode
+## 5. Image Lightbox & Media Viewer
+---
+
+| Action | Control / Shortcut |
+| :--- | :--- |
+| **Open Lightbox** | Click any embedded image in Live Preview or Reading View |
+| **Zoom In / Out** | Mouse wheel / Trackpad pinch or `+` / `-` (`=` / `_`) |
+| **Reset Zoom (1x Fit)** | `0` (or `Numpad0`) |
+| **Toggle 1x / 2x Magnification** | Double-Click on image |
+| **Pan Image (when zoomed)** | Click & Drag or Arrow Keys (`↑`, `↓`, `←`, `→`) |
+| **Fast Pan (100px)** | `Shift + Arrow Keys` |
+| **Close Lightbox** | `Esc` or click backdrop |
+
+## 6. PDF Viewer & Presentation Mode
 ---
 
 | Action | Windows / Linux | macOS |
@@ -109,7 +126,7 @@ Manage your open workspaces, panes, and note buffers:
 | **Fit to Width** | `Ctrl+0` | `Cmd+0` |
 | **Rotate 90° Clockwise** | `Ctrl+Alt+R` | `Cmd+Option+R` |
 
-## 6. Extension Hotkeys
+## 7. Extension Hotkeys
 ---
 
 | Extension | Shortcut | Action |
@@ -118,9 +135,10 @@ Manage your open workspaces, panes, and note buffers:
 | **Daily Journal** | `Alt+J` | Open or create today's journal note |
 | **Tasks Dashboard** | `Alt+T` | Open vault tasks dashboard |
 | **Bookmarks** | `Ctrl+Shift+B` | Toggle Bookmarks panel |
-| **Backlinks** | `Ctrl+Shift+B` | Toggle Backlinks pane |
+| **Backlinks** | `Ctrl+Shift+L` | Toggle Backlinks pane |
 | **Outline** | `Ctrl+Shift+O` | Toggle Outline pane |
 | **Tags** | `Ctrl+Shift+T` | Toggle Tags pane |
 
 > [!TIP]
 > You can customize hotkeys for any command in **Settings (`Ctrl+,`) → Hotkeys**.
+

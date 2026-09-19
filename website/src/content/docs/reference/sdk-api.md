@@ -3,7 +3,6 @@
 The Noether Extension SDK (`src/sdk/index.ts`) is the official public programming interface for building extensions and themes. It exposes base classes, typed service registries, event subscribers, and data models while maintaining strict separation from host application internals.
 
 ## 1. The `Extension` Base Class
-
 ---
 
 Every Noether extension extends the `Extension` base class. It provides automated resource tracking so that all commands, event listeners, status bar widgets, and tools registered through its methods are automatically disposed of when the extension is disabled or reloaded.
@@ -32,17 +31,32 @@ export default class MyCustomExtension extends Extension {
 
 ### Core Registration Methods on `Extension`
 
-| Method | Description |
-| :--- | :--- |
-| `this.addCommand(command: CommandItem): void` | Registers an action into the Command Palette (`Ctrl+K` / `Cmd+K`). Supports dynamic stateful titles, dynamic icons, search aliases, and contextual enablement. |
-| `this.addActionRailIcon(id, icon, tooltip, callback, order?): void` | Adds a high-frequency icon trigger to the left vertical Action Rail / Ribbon. |
-| `this.addStatusBarItem(item: StatusBarItem): HTMLElement` | Adds a status indicator or live counter to the bottom status bar. |
-| `this.addSettingTab(tab: ExtensionSettingTab): void` | Injects a custom configuration panel into Noether Settings. |
-| `this.registerEvent(disposable: Disposable): void` | Binds an EventBus listener and tracks it for automatic disposal. |
-| `this.registerTool(tool: McpToolDefinition): void` | Exposes a Model Context Protocol tool to AI agents. |
-| `this.registerView(viewType, factory): void` | Registers a custom main content view or tab mode. |
-| `this.registerPortalSlot(slot: PortalSlotDefinition): void` | Injects React components into dynamic application portal slots. |
-| `this.registerWorkerTask(task: WorkerTaskDefinition): void` | Registers an off-thread background Web Worker routine. |
+| Category | Method Signature | Description |
+| :--- | :--- | :--- |
+| **Command & Ribbon** | `addCommand(command: CommandItem): void` | Registers an action into the Command Palette (`Ctrl+K`). Supports dynamic titles, icons, and hotkeys. |
+| | `addActionRailIcon(id, icon, tooltip, callback, order?): void` | Adds an icon trigger to the left vertical Action Rail / Ribbon. |
+| **Status Bar & Settings** | `addStatusBarItem(item: StatusBarItem): HTMLElement` | Adds a status indicator or live counter to the bottom status bar. |
+| | `addSettingTab(tab: ExtensionSettingTab): void` | Injects a custom configuration tab into Noether Settings (`Ctrl+,`). |
+| **Disposables & Timers** | `registerDisposable(disposable: Disposable): Disposable` | Automatically tracks any object with a `.dispose()` method for cleanup. |
+| | `registerDomEvent<K>(target, type, listener, options?): Disposable` | Binds a DOM event listener with automatic unbinding on extension unload. |
+| | `registerInterval(callback: () => void, ms: number): Disposable` | Registers a recurring interval timer cleared automatically on unload. |
+| | `registerTimeout(callback: () => void, ms: number): Disposable` | Registers a one-shot timeout timer cleared automatically on unload. |
+| | `registerStoreSubscription(store, listener): Disposable` | Subscribes to a Zustand or Vanilla store with automatic cleanup. |
+| **UI Extension Points** | `registerViewportAction(action: ViewportActionDefinition): Disposable` | Adds floating corner action buttons over editor or spatial surfaces. |
+| | `registerFileContextMenuAction(action: FileContextMenuActionDefinition): Disposable` | Injects custom actions into file tree node context menus. |
+| | `registerTabContextMenuAction(action: TabContextMenuActionDefinition): Disposable` | Injects actions into workspace tab right-click menus. |
+| | `registerSearchProvider(provider: OmniboxProvider): Disposable` | Registers custom search prefixes and results into the Command Palette. |
+| | `registerTabDecorator(decorator: TabDecoratorDefinition): Disposable` | Dynamically decorates workspace tab titles, icons, and badges. |
+| | `registerIconPackProvider(provider: IconPackProvider): Disposable` | Registers custom icon packs for file tree and note glyphs. |
+| | `registerView(viewType: string, factory: ViewFactory): void` | Registers custom full-page views, tab modes, or spatial surfaces. |
+| | `registerPortalSlot(slot: PortalSlotDefinition): void` | Injects React components into dynamic application portal slots. |
+| **AI & Workers** | `registerTool(tool: McpToolDefinition \| McpZodToolDefinition): Disposable` | Exposes a Model Context Protocol tool to local and external AI agents. |
+| | `registerPrompt(prompt: McpPromptDefinition): Disposable` | Exposes structured MCP prompts to AI assistants. |
+| | `registerWorkerTask(task: WorkerTaskDefinition): Disposable` | Registers an off-thread background Web Worker task. |
+| | `runTask(taskId, input, options?): Promise<TOutput>` | Executes a registered background worker task. |
+| **Relational Data** | `defineTable<TRecord>(definition: TableDefinition): Promise<ExtensionTable<TRecord>>` | Declares a type-safe relational SQLite table with migrations. |
+| | `loadData<T>(): Promise<T \| null>` | Loads lightweight JSON configuration from `.noether/extensions/<id>/data.json`. |
+| | `saveData<T>(data: T): Promise<void>` | Persists lightweight JSON configuration to disk. |
 
 ### The `CommandItem` Specification
 
@@ -68,7 +82,6 @@ export interface CommandItem {
 ```
 
 ## 2. The `NoetherApp` Container
-
 ---
 
 Extensions access host capabilities through the `NoetherApp` instance (`this.app`).
@@ -119,47 +132,49 @@ export interface NoetherApp {
 - `app.vault.readDocument(id: string): Promise<DocumentItem | null>`: Retrieves full note content and metadata from the SQLite index.
 
 ## 3. The `EventBus`
-
 ---
 
 The `EventBus` enables loosely coupled communication between the Noether core and extensions. Always subscribe through `this.registerEvent(this.app.events.on(...))` to prevent memory leaks:
 
 ```typescript
-// Subscribing to document creation
+// Subscribing to document save events
 this.registerEvent(
-  this.app.events.on('document:created', ({ documentId, title, path }) => {
-    console.log(`Note created: ${title} (${path})`);
-  })
-);
-
-// Subscribing to document changes
-this.registerEvent(
-  this.app.events.on('document:changed', ({ documentId, content }) => {
-    this.recomputeMetrics(documentId, content);
+  this.app.events.on('document:saved', ({ id, title }) => {
+    console.log(`Note saved: ${title} (${id})`);
   })
 );
 
 // Subscribing to Vault switching
 this.registerEvent(
-  this.app.events.on('vault:switched', ({ vaultPath }) => {
-    this.reloadExtensionState(vaultPath);
+  this.app.events.on('vault:loaded', ({ path, name }) => {
+    this.reloadExtensionState(path);
   })
 );
 ```
 
-### Common Workspace Events
+### Complete `WorkspaceEvents` Catalog
 
-| Event Name | Payload | Trigger Condition |
+| Event Name | Payload Type | Trigger Condition |
 | :--- | :--- | :--- |
-| `document:created` | `{ documentId, path, title }` | A new markdown note is created. |
-| `document:changed` | `{ documentId, content }` | Editor content is edited by the user. |
-| `document:saved` | `{ documentId, path }` | Document is debounced and persisted to disk. |
-| `document:deleted` | `{ documentId, path }` | Note is removed from the Vault. |
-| `vault:switched` | `{ vaultPath }` | User switches to a different Vault folder. |
-| `tag:renamed` | `{ oldTag, newTag }` | A tag taxonomy is refactored across notes. |
+| `vault:loaded` | `{ path: string, name: string }` | Vault workspace finishes cold startup and indexing. |
+| `vault:changed` | `{ path: string, name: string }` | Active vault directory is switched. |
+| `document:opened` | `{ id: string, title: string }` | Document is activated in an editor tab. |
+| `document:saved` | `{ id: string, title: string }` | Note buffer is debounced and serialized to disk. |
+| `document:deleted` | `{ id: string, title?: string }` | Note or folder is moved to `.trash/`. |
+| `document:renamed` | `{ id: string, oldTitle: string, newTitle: string }` | File is renamed in tree or frontmatter. |
+| `tab:changed` | `{ activeTabId: string \| null }` | Active workspace tab changes. |
+| `view:mode-changed` | `{ mode: string }` | Viewport mode changes (`'document'`, `'canvas'`). |
+| `extension:loaded` | `{ extensionId: string }` | Extension bundle evaluates and calls `onload()`. |
+| `extension:unloaded` | `{ extensionId: string }` | Extension is disabled and unbinds resources. |
+| `drag:start` / `drag:end` | `ActiveDragData` / `{ source, cancelled }` | Global drag-and-drop operations begin or conclude. |
+| `editor:action` | `{ action: string, payload?: Record<string, unknown> }` | Editor dispatches high-level editing command. |
+| `mcp:tool-called` | `{ toolName: string, args: Record<string, unknown>, source: string }` | MCP tool is invoked by an agent. |
+| `mcp:tool-result` | `{ toolName: string, success: boolean, durationMs: number }` | MCP tool finishes execution. |
+| `mcp:tools-changed` | `{ count: number }` | Tools are dynamically registered or unregistered. |
+| `settings:defaults-restored` | `{ scope: 'all' \| string }` | User resets hotkeys or appearance settings. |
+| `cache:purge` | `{ scope?: 'all' \| 'media' \| 'covers', key?: string }` | In-memory thumbnail or SQLite cache is cleared. |
 
 ## 4. Inversion of Control: `SlotRegistry`
-
 ---
 
 Noether provides dynamic React portal slots that allow extensions to mount UI components directly into native application shell regions:
@@ -169,8 +184,9 @@ import { PortalSlotLocation } from 'noether';
 
 this.registerPortalSlot({
   id: 'header-reading-timer',
-  location: 'editor:header' as PortalSlotLocation,
+  location: 'editor:subheader-actions' as PortalSlotLocation,
   order: 10,
+  predicate: (ctx) => Boolean(ctx.activeDoc),
   component: ({ activeDoc }) => {
     if (!activeDoc) return null;
     return <div className="text-xs text-neutral-400">Estimated: 3 min</div>;
@@ -178,31 +194,40 @@ this.registerPortalSlot({
 });
 ```
 
-### Available Portal Locations
+### Supported Portal Slot Locations (`PortalSlotLocation`)
 
-- `window:header:left`: Title bar left items (next to workspace name).
-- `window:header:right`: Title bar right items (before window controls).
-- `editor:header`: Top toolbar above the markdown reading canvas.
-- `editor:footer`: Bottom bar below the markdown content.
-- `sidebar:left:bottom`: Docked below the left file tree.
-- `sidebar:right:bottom`: Docked below the backlinks outline panel.
+- `'editor:viewport-overlay'`: Floating glass HUD pinned to viewport corners.
+- `'editor:floating-toolbar'`: Floating toolbar docked above text selection.
+- `'editor:minimap'`: Vertical right-side outline strip next to the editor.
+- `'editor:gutter'`: Left-side gutter container for line badges and triggers.
+- `'editor:subheader-actions'`: Action button dock in the document subheader.
+- `'editor:content-overlay'`: In-editor canvas overlay scrolling naturally with document text.
+- `'editor:banner'`: Header banner slot mounted directly below the subheader bar.
+- `'workspace:root'`: Full viewport overlays, modal hosts, and floating panels.
 
 ## 5. Background Web Worker Pool (`ExtensionWorkerPool`)
-
 ---
 
 To keep the UI responsive, heavy computational tasks (such as vector embeddings or dense PDF parsing) can be offloaded to the worker pool:
 
 ```typescript
-const result = await this.app.workerPool.runTask({
-  taskName: 'generate-embeddings',
-  payload: { documentContent: '...' },
-  timeoutMs: 5000,
+// 1. Register worker task definition in onload()
+this.registerWorkerTask({
+  taskId: 'generate-embeddings',
+  run: async (input: { texts: string[] }, emitEvent) => {
+    emitEvent('embedding:progress', { percent: 50 });
+    return [{ vector: [0.1, 0.2, 0.3] }];
+  },
+});
+
+// 2. Execute off-thread when needed
+const result = await this.runTask('generate-embeddings', { texts: ['Hello'] }, {
+  priority: 'background',
+  timeoutMs: 10000,
 });
 ```
 
 ## 6. Reactive React Hooks (`@noether/react` and `noether`)
-
 ---
 
 Extensions rendering React components can import reactive hooks directly from `noether` or `@noether/react`. These hooks subscribe directly to host state changes using React 18 external store synchronization with zero state leakage:
@@ -215,15 +240,9 @@ import {
   useVaultDocuments,
   useActiveTab,
   useWorkspaceTabs,
-  useMainViewMode,
   useDocumentBacklinks,
-  useDocumentOutgoingLinks,
-  useDocumentUnlinkedMentions,
-  useVaultTags,
-  useGlobalTasks,
-  useDocumentProperties,
-  useNoetherStore,
-  useToast,
+  useViewSuspension,
+  useCurrentDrag,
 } from 'noether';
 
 export const MyExtensionView: React.FC = () => {
@@ -231,13 +250,14 @@ export const MyExtensionView: React.FC = () => {
   const activeDoc = useActiveDocument();
   const documents = useVaultDocuments();
   const backlinks = useDocumentBacklinks();
-  const showToast = useToast();
+  const activeDrag = useCurrentDrag();
 
   return (
     <div className="p-4">
       <h2 className="text-sm font-semibold">{activeDoc?.title || 'No note open'}</h2>
       <p className="text-xs text-neutral-400">Total documents: {documents.length}</p>
       <p className="text-xs text-neutral-400">Incoming backlinks: {backlinks.length}</p>
+      {activeDrag && <p className="text-xs text-accent">Dragging item...</p>}
     </div>
   );
 };
@@ -252,32 +272,20 @@ export const MyExtensionView: React.FC = () => {
 | `useVaultDocuments()` | `DocumentItem[]` | Subscribes to all documents in the active Vault. |
 | `useActiveTab()` | `TabItem \| null` | Subscribes to the active workspace tab. |
 | `useWorkspaceTabs()` | `readonly TabItem[]` | Subscribes to all open workspace tabs. |
-| `useMainViewMode()` | `string` | Subscribes to the current main view mode (e.g. `'document'`, `'canvas'`). |
+| `useMainViewMode()` | `string` | Subscribes to the current main view mode (`'document'`, `'canvas'`). |
 | `useDocumentHeadings(docId?)` | `HeadingItem[]` | Subscribes to outline headings for a note. |
 | `useDocumentBacklinks(docId?)` | `BacklinkItem[]` | Subscribes to incoming backlinks for a note. |
 | `useDocumentOutgoingLinks(docId?)` | `OutgoingLinkItem[]` | Subscribes to outgoing wikilinks from a note. |
 | `useDocumentUnlinkedMentions(docId?)` | `UnlinkedMentionItem[]` | Subscribes to unlinked text mentions of a note title. |
 | `useVaultTags()` | `TagItem[]` | Subscribes to all indexed hashtags across the Vault. |
 | `useGlobalTasks()` | `GlobalTaskItem[]` | Subscribes to interactive checklist items across all notes. |
-| `useDocumentProperties(docId?)` | `Record<string, any>` | Subscribes to frontmatter properties of a note. |
-| `useNoetherStore(key, selector)` | `TSelected` | Subscribes to host store slices with a selector function. |
+| `useDocumentProperties(docId?)` | `Record<string, any>` | Subscribes to frontmatter properties with stable object identity. |
+| `useCurrentDrag()` | `ActiveDragData \| null` | Subscribes to active application-wide drag-and-drop actions. |
 | `useToast()` | `(msg, type?) => void` | Returns a toast notification dispatcher. |
 | `useViewSuspension(ref?, opts?)` | `ViewSuspensionState` | Subscribes to window blur, focus, OS minimize, tab switching, and container intersection to freeze animation loops and physics when inactive. |
 | `useViewSuspensionContext()` | `ViewSuspensionState` | Consumes the ambient view suspension state provided by the enclosing host container. |
 
-## 7. Inversion of Control Registries
-
----
-
-Noether decouples native UI shells from extensions using singleton Inversion of Control (IoC) registries. Extensions register declarative contributions during `onload()` that native components dynamically project into their layouts:
-
-- **`ViewportActionRegistry`**: Registers action buttons across any viewport corner (`top-left`, `top-right`, `bottom-left`, `bottom-right`) in horizontal or vertical orientations with view scoping (`document`, `canvas`, `graph`, `all`).
-- **`FileContextMenuRegistry`**: Injects contextual action items into the file explorer tree context menu (`FileTreeNode`).
-- **`FileTypeRegistry`**: Associates custom file extensions (`.canvas`, `.sketch`, `.table`) with custom document archetypes and view types.
-- **`SlotRegistry`**: Injects arbitrary React components into high-level shell slots.
-
-## 8. View Layout Components
-
+## 7. View Layout & Action Components
 ---
 
 The SDK exports unified layout wrappers that guarantee custom views match Noether's native desktop geometry and theming:
@@ -287,7 +295,7 @@ The SDK exports unified layout wrappers that guarantee custom views match Noethe
 The root layout container for all custom full-page workspace views. Encapsulates active tab cutout mask passthrough, sticky floating `PageSubHeader`, dynamic scroll dissolve transparency, custom scrollbar tracks, and navigation history.
 
 ```typescript
-import { PageView, PageViewProps } from 'noether';
+import { PageView } from 'noether';
 
 export const MyView: React.FC = () => {
   return (
@@ -304,14 +312,13 @@ export const MyView: React.FC = () => {
 
 ### `SidebarActionHeader` & `SidebarActionButton`
 
-The canonical action toolbar suite for sidebar views, dock panels, and extension explorer tabs (e.g. Backlinks, Outline, Tags, Bookshelf, History). Encapsulates pixel-perfect Action Rail baseline alignment (`y = 49px`), 28×28px buttons, 2px gaps, and instant click response.
+The canonical action toolbar suite for sidebar views, dock panels, and extension explorer tabs. Encapsulates pixel-perfect Action Rail baseline alignment (`y = 49px`), 28×28px buttons, 2px gaps, and instant click response.
 
 ```typescript
 import {
   SidebarActionHeader,
   SidebarActionButton,
   CollapseAllButton,
-  SortDropdown,
 } from 'noether';
 
 export const MySidebarView: React.FC = () => {
@@ -333,8 +340,4 @@ export const MySidebarView: React.FC = () => {
   );
 };
 ```
-
-For the complete list of UI primitives (buttons, toggles, text inputs, sliders, setting builders, and action headers), see [[Noether UI Components]].
-
-To learn how extensions store relational data, read [[Database Schema Reference]] and [[Events & Relational Storage]]. To register AI tools, read [[Model Context Protocol (MCP) Tools]].
 

@@ -4,9 +4,7 @@ Noether provides two foundational primitives for data management in extensions:
 1. **The Typed EventBus**: For reactive real-time notifications when documents are saved, opened, or deleted.
 2. **Declarative Relational Storage**: For high-performance SQLite tables and lightweight JSON key-value persistence.
 
-
 ## 1. The Central EventBus
-
 ---
 
 Noether uses a strongly-typed publish-subscribe event system. Subscribing via `this.onEvent()` registers a listener that automatically unregisters when your extension is unloaded.
@@ -32,7 +30,7 @@ export default class EventWatcherExtension extends Extension {
       console.log(`Active tab changed to: ${activeTabId}`);
     });
 
-    // 4. Vault/Vault Loaded Event
+    // 4. Vault Loaded Event
     this.onEvent('vault:loaded', ({ path, name }) => {
       console.log(`Loaded Vault "${name}" at ${path}`);
     });
@@ -50,15 +48,13 @@ export default class EventWatcherExtension extends Extension {
 | :--- | :--- | :--- |
 | `'document:opened'` | `{ id: string, title: string }` | Fires when a document is viewed in an editor tab. |
 | `'document:saved'` | `{ id: string, title: string }` | Fires immediately after a note is serialized to disk and indexed. |
-| `'document:deleted'` | `{ id: string }` | Fires when a note is permanently deleted or moved to trash. |
+| `'document:deleted'` | `{ id: string, title?: string }` | Fires when a note is permanently deleted or moved to trash. |
 | `'document:renamed'` | `{ id: string, oldTitle: string, newTitle: string }` | Fires when a note is renamed. |
 | `'tab:changed'` | `{ activeTabId: string \| null }` | Fires when the user switches tabs. |
-| `'view:mode-changed'` | `{ mode: string }` | Fires when toggling between Live Preview (`Visible`) and Source Markdown (`Source`). |
+| `'view:mode-changed'` | `{ mode: string }` | Fires when toggling between Live Preview and Source Markdown. |
 | `'mcp:tool-called'` | `{ toolName: string, args: Record<string, unknown>, source: string }` | Fires when an in-app or external AI client invokes an MCP tool. |
 
-
 ## 2. Lightweight JSON Settings (`loadData` & `saveData`)
-
 ---
 
 For simple extension configuration (such as API keys, user preferences, or toggle states), use `this.loadData()` and `this.saveData()`. Data is serialized as JSON in `.noether/extensions/<extension-id>/data.json`.
@@ -95,9 +91,7 @@ export default class ConfigurableExtension extends Extension {
 }
 ```
 
-
 ## 3. Declarative Relational SQLite Tables (`this.defineTable`)
-
 ---
 
 When your extension manages structured, relational, or high-volume data (such as flashcard review logs, canvas node vectors, or task audit trails), JSON files become slow and inefficient.
@@ -182,32 +176,30 @@ export default class SpacedRepetitionExtension extends Extension {
 - **Automated Versioned Migrations**: Declare a `migrations` map for seamless schema evolution across extension versions.
 - **Teardown Safety**: When `teardownPolicy: 'drop-on-uninstall'` is specified, Noether removes the table upon extension uninstallation, leaving no database bloat behind.
 
-
 ## 4. Off-Thread Web Workers (`this.registerWorkerTask`)
-
 ---
 
 For computationally heavy tasks (such as semantic vector embeddings, image hashing, or large graph layout computations), Noether provides an off-thread Web Worker pool so heavy algorithms never block the UI or typing thread.
 
 ```typescript
 // 1. Register the task in onload()
-this.registerWorkerTask('calculate-embeddings', async (input: { texts: string[] }, emitEvent) => {
-  const vectors = [];
-  for (let i = 0; i < input.texts.length; i++) {
-    // Perform intensive vector calculation
-    vectors.push(new Float32Array(384));
-    emitEvent('embedding:progress', { percent: ((i + 1) / input.texts.length) * 100 });
-  }
-  return vectors;
+this.registerWorkerTask({
+  taskId: 'calculate-embeddings',
+  run: async (input: { texts: string[] }, emitEvent) => {
+    const vectors = [];
+    for (let i = 0; i < input.texts.length; i++) {
+      vectors.push(new Float32Array(384));
+      emitEvent('embedding:progress', { percent: ((i + 1) / input.texts.length) * 100 });
+    }
+    return vectors;
+  },
 });
 
 // 2. Execute off-thread when needed
 const embeddings = await this.runTask('calculate-embeddings', { texts: ['Hello world', 'Local first'] });
 ```
 
-
 ## 5. Related Reading & References
-
 ---
 
 - [[Database Schema Reference]]: Inspect Noether's internal SQLite tables and indexes.
@@ -215,3 +207,4 @@ const embeddings = await this.runTask('calculate-embeddings', { texts: ['Hello w
 - [[Noether SDK API Reference]]: Complete EventBus signatures and database manager interfaces.
 - [[Optimizing Extension Load Time]]: Best practices for debouncing database writes.
 - [[Model Context Protocol (MCP) Tools]]: Expose database-backed queries to AI agents.
+
