@@ -208,7 +208,7 @@ export const COMPACT_DOC_CSS = `
   }
   .tiptap-reading-view .task-list-item input[type="checkbox"] {
     pointer-events: auto !important;
-    cursor: pointer !important;
+    cursor: default !important;
   }
 `;
 

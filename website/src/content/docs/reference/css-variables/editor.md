@@ -59,6 +59,7 @@ CSS variables and styling rules for the TipTap 2.x and ProseMirror Live Preview 
 | `--noether-link-hover` | `var(--noether-accent-hover)` | Hovered link state. |
 | `--noether-link-visited`| `var(--noether-accent)` | Persistent visited link color. |
 | `--noether-link-decoration-color` | `var(--noether-border-strong)` | Underline decoration color. |
+| `--noether-link-icon-color` | `var(--noether-text-muted)` | External link trailing indicator icon color. |
 
 
 ## 6. Folding Gutters & Placeholders

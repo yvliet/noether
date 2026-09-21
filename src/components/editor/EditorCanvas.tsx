@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from 'react';
 import { TextSelection } from '@tiptap/pm/state';
-import { getLineEdgePos } from './editorCoords';
+import { getLineEdgePos, isInteractiveEditorTarget } from './editorCoords';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSidebarDockStore } from '@/store/sidebarDockStore';
@@ -40,6 +40,16 @@ import {
   TextUnderlineIcon,
 } from '@/components/common/Icons';
 
+function isExternalUrlTarget(target?: string | null): boolean {
+  if (!target) return false;
+  const trimmed = target.trim();
+  return (
+    /^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) ||
+    trimmed.startsWith('www.') ||
+    trimmed.includes('://')
+  );
+}
+
 /**
  * Extracts a valid internal wikilink target from a mouse event target.
  * Explicitly ignores external URLs, media embeds, hover popovers, and temporary drop ghost previews.
@@ -52,30 +62,44 @@ function extractWikilinkFromTarget(rawTarget: EventTarget | null): { element: HT
   );
   if (!targetElem) return null;
 
-  // Ignore embeds, media, hover preview itself, or drop ghosts
-  if (targetElem.closest('.noether-embed-wrapper, .noether-embed-media, [data-wikilink-hover-preview="true"], .noether-drop-ghost-wrapper, [data-drop-ghost]')) {
+  // Ignore embeds, media, hover preview itself, drop ghosts, or explicit external links
+  if (
+    targetElem.closest(
+      '.noether-embed-wrapper, .noether-embed-media, [data-wikilink-hover-preview="true"], .noether-drop-ghost-wrapper, [data-drop-ghost], a[target="_blank"], a[href^="http://"], a[href^="https://"], a[href^="mailto:"], a[href^="ftp:"], [data-link-url^="http://"], [data-link-url^="https://"], [data-link-url^="mailto:"], [data-link-url^="ftp:"]'
+    )
+  ) {
     return null;
   }
 
   // 1. Direct check for .md-wikilink
   const wikiElem = targetElem.closest('.md-wikilink') as HTMLElement | null;
   if (wikiElem) {
+    const rawUrl = wikiElem.getAttribute('data-link-url') || wikiElem.getAttribute('href');
+    if (rawUrl && isExternalUrlTarget(rawUrl)) {
+      return null;
+    }
     const target = wikiElem.getAttribute('data-wikilink-target') || wikiElem.textContent?.trim() || '';
-    if (target) return { element: wikiElem, target };
+    if (target && !isExternalUrlTarget(target)) {
+      return { element: wikiElem, target };
+    }
+    return null;
   }
 
   // 2. Direct check for [data-wikilink-target]
   const dataWikiElem = targetElem.closest('[data-wikilink-target]') as HTMLElement | null;
   if (dataWikiElem) {
     const target = dataWikiElem.getAttribute('data-wikilink-target');
-    if (target) return { element: dataWikiElem, target };
+    if (target && !isExternalUrlTarget(target)) {
+      return { element: dataWikiElem, target };
+    }
+    return null;
   }
 
   // 3. Check for .md-link pointing to internal wikilink
   const mdLinkElem = targetElem.closest('.md-link') as HTMLElement | null;
   if (mdLinkElem) {
     const explicitWikiTarget = mdLinkElem.getAttribute('data-wikilink-target');
-    if (explicitWikiTarget) {
+    if (explicitWikiTarget && !isExternalUrlTarget(explicitWikiTarget)) {
       return { element: mdLinkElem, target: explicitWikiTarget };
     }
     const rawUrl = mdLinkElem.getAttribute('data-link-url') || mdLinkElem.getAttribute('href') || null;
@@ -84,10 +108,10 @@ function extractWikilinkFromTarget(rawTarget: EventTarget | null): { element: HT
       if (trimmed.startsWith('[[') && trimmed.endsWith(']]')) {
         let inner = trimmed.slice(2, -2).trim();
         if (inner.includes('|')) inner = inner.split('|')[0].trim();
-        if (inner) return { element: mdLinkElem, target: inner };
-      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) && !trimmed.startsWith('#')) {
+        if (inner && !isExternalUrlTarget(inner)) return { element: mdLinkElem, target: inner };
+      } else if (!isExternalUrlTarget(trimmed) && !trimmed.startsWith('#')) {
         const decoded = decodeURIComponent(trimmed).trim();
-        if (decoded) return { element: mdLinkElem, target: decoded };
+        if (decoded && !isExternalUrlTarget(decoded)) return { element: mdLinkElem, target: decoded };
       }
     }
   }
@@ -514,11 +538,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      if (
-        target.closest(
-          'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
-        )
-      ) {
+      if (isInteractiveEditorTarget(target)) {
         return;
       }
 
@@ -620,11 +640,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       const target = e.target as HTMLElement | null;
       if (!target) return;
 
-      if (
-        target.closest(
-          'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
-        )
-      ) {
+      if (isInteractiveEditorTarget(target)) {
         return;
       }
 
@@ -1747,7 +1763,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
               }
               className={`mx-auto pt-3 pb-8 flex flex-col min-h-full relative z-10 ${
                 isSidebarMode ? 'w-full pl-7 pr-3 max-w-none' : readableLineLength ? 'w-full max-w-3xl px-10' : 'w-full px-12 max-w-none'
-              } ${isEditable ? 'cursor-text' : ''}`}
+              }`}
             >
               {/* Dynamic Extension Content Overlay Slot (Moves with text) */}
               <ExtensionPortalSlotHost
@@ -1811,7 +1827,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                   <div className="relative group/title">
                     {/* Document Title Header */}
                     {inlineTitle && (
-                      <div className={`${hasActiveHeaders ? 'mb-3' : 'mb-4'} relative select-none -ml-1`}>
+                      <div className={`${hasActiveHeaders ? 'mb-3' : 'mb-4'} relative -ml-1`}>
                         {/* Fold button on Document Title Header */}
                         {foldHeading && hasActiveHeaders && currentDoc && (
                           <button
@@ -1820,7 +1836,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                             title={isHeaderFolded ? 'Unfold document header' : 'Fold document header'}
                             className={`absolute ${
                               isSidebarMode ? '-left-[22px] w-[22px]' : '-left-[36px] w-[36px]'
-                            } top-[calc(50%-4px)] -translate-y-1/2 h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] cursor-pointer z-10 ${
+                            } top-[calc(50%-4px)] -translate-y-1/2 h-[32px] flex items-center justify-start pl-[2px] text-[#777] hover:text-[#dcddde] z-10 ${
                               isHeaderFolded ? 'opacity-100 text-[#aaa]' : 'opacity-0 group-hover/title:opacity-100'
                             }`}
                           >
@@ -1833,10 +1849,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                           <div className="flex items-center gap-1.5 w-full pb-2">
                             <div className="shrink-0 flex items-center">{titlePrefixNodes}</div>
                             {effectiveReadingMode ? (
-                              <h1
-                                style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
-                                className="w-full font-bold text-[var(--noether-text-primary)] font-text tracking-tight leading-tight cursor-default select-text"
-                              >
+                              <h1 className="noether-doc-title w-full cursor-default select-text">
                                 {breadcrumbTitleOverride || title || 'Untitled'}
                               </h1>
                             ) : (
@@ -1844,7 +1857,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                 <input
                                   type="text"
                                   value={isMainTitleFocused ? title : (breadcrumbTitleOverride || title)}
-                                  style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
                                   onFocus={() => setIsMainTitleFocused(true)}
                                   onChange={(e) => handleTitleChange(e.target.value)}
                                   onBlur={() => {
@@ -1874,7 +1886,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                     }
                                   }}
                                   placeholder="Untitled"
-                                  className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none p-0 font-text tracking-tight leading-tight"
+                                  className="noether-doc-title-input bg-transparent placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40"
                                 />
 
                                 {/* Duplicate Name Warning Tooltip */}
@@ -1890,10 +1902,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                             )}
                           </div>
                         ) : effectiveReadingMode ? (
-                          <h1
-                            style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
-                            className="w-full font-bold text-[var(--noether-text-primary)] pb-2 font-text tracking-tight leading-tight cursor-default select-text"
-                          >
+                          <h1 className="noether-doc-title w-full pb-2 cursor-default select-text">
                             {breadcrumbTitleOverride || title || 'Untitled'}
                           </h1>
                         ) : (
@@ -1901,7 +1910,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                             <input
                               type="text"
                               value={isMainTitleFocused ? title : (breadcrumbTitleOverride || title)}
-                              style={{ fontSize: 'calc(var(--editor-font-size, 12px) * 2.3)' }}
                               onFocus={() => setIsMainTitleFocused(true)}
                               onChange={(e) => handleTitleChange(e.target.value)}
                               onBlur={() => {
@@ -1931,7 +1939,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                                 }
                               }}
                               placeholder="Untitled"
-                              className="w-full font-bold bg-transparent text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40 outline-none p-0 pb-2 font-text tracking-tight leading-tight"
+                              className="noether-doc-title-input bg-transparent pb-2 placeholder:text-[var(--noether-text-muted)] placeholder:opacity-40"
                             />
 
                             {/* Duplicate Name Warning Tooltip */}
@@ -1950,7 +1958,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
 
                     {/* Dynamic In-Document Headers */}
                     {hasActiveHeaders && currentDoc && (
-                      <div className="mb-3">
+                      <div data-document-header="true" className="mb-3">
                         {documentHeaders.map((header) => (
                           <DocumentHeaderItem
                             key={header.id}

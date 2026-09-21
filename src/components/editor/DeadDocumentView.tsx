@@ -66,43 +66,41 @@ export const DeadDocumentView: React.FC<DeadDocumentViewProps> = React.memo(({
 
   return (
     <div data-main="true" className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] relative">
-      {/* 1. View Subheader with interactive inline action link */}
+      {/* 1. Standard View Subheader */}
       <PageSubHeader
         title={displayTitle}
-        icon={<Alert02Icon size={14} className="text-amber-400" />}
-        centerContent={
-          <div className="text-[11px] text-[var(--noether-text-muted)] truncate max-w-lg px-2 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans">
-            <Alert02Icon size={12} className="text-amber-400 shrink-0" />
-            <span className="truncate">
-              This file <strong className="text-[var(--noether-text-secondary)] font-medium">{displayTitle}</strong> has been deleted or cannot be found.{' '}
-              {matchingTrashItem ? (
-                <button
-                  type="button"
-                  onClick={handleRestore}
-                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline ml-1"
-                >
-                  Restore it back?
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleRecreate}
-                  className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline ml-1"
-                >
-                  Recreate note?
-                </button>
-              )}
-            </span>
-          </div>
-        }
+        icon={<Alert02Icon size={14} className="opacity-40" />}
         showReadingToggle={false}
         showBookmark={false}
         showSearch={false}
         showDocOptions={false}
       />
 
-      {/* 2. Empty Body (clean empty space matching DisabledExtensionView) */}
-      <div className="flex-1 w-full h-full" />
+      {/* 2. Main Empty View Body */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center select-none p-6 gap-2 text-[#666] text-xs">
+        <Alert02Icon size={36} className="opacity-40 mb-1" />
+        <span className="text-[13px] text-[#888]">Note deleted or cannot be found</span>
+        <p className="text-xs text-[#666] max-w-sm leading-relaxed">
+          The file <strong className="text-[#888] font-normal">&ldquo;{displayTitle}&rdquo;</strong> is no longer in this vault.
+        </p>
+        {matchingTrashItem ? (
+          <button
+            type="button"
+            onClick={handleRestore}
+            className="text-[11px] text-[#888] hover:text-white cursor-pointer mt-1 underline underline-offset-2"
+          >
+            Restore from Trash
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={handleRecreate}
+            className="text-[11px] text-[#888] hover:text-white cursor-pointer mt-1 underline underline-offset-2"
+          >
+            Recreate note
+          </button>
+        )}
+      </div>
     </div>
   );
 });

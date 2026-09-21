@@ -237,7 +237,7 @@ export const CardContentRenderer: React.FC<CardContentRendererProps> = React.mem
       const src = node.url || resolveMediaSrc(contentJson || doc?.content_json, doc?.title);
       return (
         <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-transparent gap-2 rounded-[4px] text-center">
-          <File01Icon size={26} className="text-rose-400" />
+          <File01Icon size={28} className="text-[#888] opacity-50" />
           <span className="text-[14px] font-medium text-[#dedede] truncate max-w-[260px]">
             {doc?.title || 'PDF Document'}
           </span>

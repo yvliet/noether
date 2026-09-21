@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { platform } from '@/lib/platform/platformAdapter';
+import { Alert02Icon } from '@/components/common/Icons';
 
 interface Props {
   children: ReactNode;
@@ -30,31 +31,32 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-full bg-[#181818] text-[#dcddde] flex flex-col items-center justify-center p-8 select-text">
-          <div className="max-w-lg bg-[#222] border border-rose-500/40 rounded-xl p-6 shadow-2xl">
-            <h2 className="text-base font-semibold text-rose-400 mb-2">Something went wrong</h2>
-            <p className="text-xs text-[#8b8e95] mb-4">
-              {this.state.error?.message || 'An unexpected error occurred'}
-            </p>
-            {this.state.error?.stack && (
-              <pre className="bg-[#141414] p-3 rounded text-[11px] font-mono text-[#9ca3af] overflow-auto max-h-48 mb-4 border border-[#333]">
-                {this.state.error.stack}
-              </pre>
-            )}
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => window.location.reload()}
-                className="noether-btn"
-              >
-                Reload Application
-              </button>
-              <button
-                onClick={() => platform.close()}
-                className="noether-btn noether-btn-danger"
-              >
-                Close Window
-              </button>
-            </div>
+        <div className="w-full h-full bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] flex flex-col items-center justify-center text-center p-8 select-none gap-2.5">
+          <Alert02Icon size={36} className="text-[#666] opacity-40 mb-1" />
+          <span className="text-[13px] text-[#888] font-normal">Something went wrong</span>
+          <p className="text-xs text-[#666] max-w-md leading-relaxed">
+            {this.state.error?.message || 'An unexpected error occurred in this view.'}
+          </p>
+          {this.state.error?.stack && (
+            <pre className="bg-[#141414] p-3 rounded text-[11px] font-mono text-[#777] overflow-auto max-h-40 max-w-lg w-full my-2 border border-[#2a2a2a] text-left select-text">
+              {this.state.error.stack}
+            </pre>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="noether-btn text-xs"
+            >
+              Reload Application
+            </button>
+            <button
+              type="button"
+              onClick={() => platform.close()}
+              className="noether-btn text-xs text-[#888] hover:text-[#bbb]"
+            >
+              Close Window
+            </button>
           </div>
         </div>
       );

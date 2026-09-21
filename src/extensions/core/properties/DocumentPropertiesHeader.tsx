@@ -243,7 +243,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
   });
 
   return (
-    <div className="text-xs mb-3 select-none">
+    <div className="text-xs mb-3 select-none cursor-default">
       <div className="flex flex-col gap-1.5">
         {/* 1. Created Date (Human-readable, read-only) */}
         {createdDateStr && (
@@ -297,7 +297,6 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         />
 
         {/* 4. Tags Row */}
-        {/* 4. Tags Row */}
         <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
           <div className="relative flex items-center shrink-0 w-24">
             <span
@@ -328,7 +327,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
                     title={`Remove #${tag}\nDelete this tag`}
-                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 ml-0.5"
                   >
                     <Cancel01Icon size={10} />
                   </button>
@@ -385,7 +384,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                       setIsAddingTag(false);
                     }}
                     title={`Cancel\nDiscard tag input`}
-                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 ml-0.5"
                   >
                     <Cancel01Icon size={10} />
                   </button>
@@ -395,7 +394,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                   type="button"
                   onClick={() => setIsAddingTag(true)}
                   title={`Add Tag\nAttach a new tag to this note`}
-                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)]"
                 >
                   + Add tag
                 </button>
@@ -435,7 +434,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                     type="button"
                     onClick={() => handleRemoveAlias(alias)}
                     title={`Remove "${alias}"\nDelete this alias`}
-                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 ml-0.5"
                   >
                     <Cancel01Icon size={10} />
                   </button>
@@ -489,7 +488,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                       setIsAddingAlias(false);
                     }}
                     title={`Cancel\nDiscard alias input`}
-                    className="text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer ml-0.5"
+                    className="text-[var(--noether-text-muted)] hover:text-rose-500 ml-0.5"
                   >
                     <Cancel01Icon size={10} />
                   </button>
@@ -499,7 +498,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                   type="button"
                   onClick={() => setIsAddingAlias(true)}
                   title={`Add Alias\nAttach an alternate name to this note`}
-                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)]"
                 >
                   + Add alias
                 </button>

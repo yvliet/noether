@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { PageSubHeader } from '@/components/layout/PageSubHeader';
-import { Alert02Icon } from '@/components/common/Icons';
+import { PuzzleIcon } from '@/components/common/Icons';
 import { useNoetherApp } from '@/core/app/AppContext';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 
@@ -42,33 +42,31 @@ export const DisabledExtensionView: React.FC<DisabledExtensionViewProps> = React
 
   return (
     <div data-main="true" className="w-full h-full flex flex-col min-w-0 overflow-hidden font-sans select-none bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] relative">
-      {/* 1. View Subheader with interactive inline link */}
+      {/* 1. Standard View Subheader */}
       <PageSubHeader
         title={viewTitle || targetName}
-        icon={<Alert02Icon size={14} className="text-amber-400" />}
-        centerContent={
-          <div className="text-[11px] text-[var(--noether-text-muted)] truncate max-w-lg px-2 py-0.5 text-center select-none flex items-center justify-center gap-1.5 font-sans">
-            <Alert02Icon size={12} className="text-amber-400 shrink-0" />
-            <span className="truncate">
-              This view belonged to <strong className="text-[var(--noether-text-secondary)] font-medium">{targetName}</strong>, but you disabled it.{' '}
-              <button
-                type="button"
-                onClick={handleEnableExtension}
-                className="text-[var(--noether-accent)] hover:underline font-medium cursor-pointer bg-transparent border-0 p-0 inline"
-              >
-                Enable it back?
-              </button>
-            </span>
-          </div>
-        }
+        icon={<PuzzleIcon size={14} className="opacity-40" />}
         showReadingToggle={false}
         showBookmark={false}
         showSearch={false}
         showDocOptions={false}
       />
 
-      {/* 2. Empty Body */}
-      <div className="flex-1 w-full h-full" />
+      {/* 2. Main Empty View Body */}
+      <div className="flex-1 flex flex-col items-center justify-center text-center select-none p-6 gap-2 text-[#666] text-xs">
+        <PuzzleIcon size={36} className="opacity-40 mb-1" />
+        <span className="text-[13px] text-[#888]">Extension view disabled</span>
+        <p className="text-xs text-[#666] max-w-sm leading-relaxed">
+          This view belongs to <strong className="text-[#888] font-normal">&ldquo;{targetName}&rdquo;</strong>, which is currently disabled.
+        </p>
+        <button
+          type="button"
+          onClick={handleEnableExtension}
+          className="text-[11px] text-[#888] hover:text-white cursor-pointer mt-1 underline underline-offset-2"
+        >
+          Enable extension
+        </button>
+      </div>
     </div>
   );
 });

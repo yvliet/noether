@@ -91,6 +91,7 @@ The default Noether brand accent is a vivid flame orange (`#eb584d`), used for p
 | `--noether-link-hover` | `var(--noether-accent-hover)` | Hover state for links. |
 | `--noether-link-visited` | `var(--noether-accent)` | Visited link color. |
 | `--noether-link-decoration-color`| `var(--noether-border-strong)` | Underline decoration color for links. |
+| `--noether-link-icon-color` | `var(--noether-text-muted)` | Color of trailing external link icons. |
 
 ### Link Customization Attributes
 
@@ -99,6 +100,7 @@ Noether supports workspace-wide and per-theme link overrides via root attributes
 - `[data-no-link-accent="true"]` / `.noether-no-link-accent`: Removes the colored accent from links, rendering them in standard secondary text color with an underline.
 - `[data-blue-links="true"]` / `.noether-blue-links`: Switches links to classic web blue (`#58a6ff` in dark mode, `#0000ee` in light mode).
 - `[data-color-link-underline="true"]` / `.noether-color-link-underline`: Forces link underlines to match link text color.
+- `[data-color-link-icon="true"]` / `.noether-color-link-icon`: Forces external link icons to match link text color instead of muted gray.
 
 
 ## 5. Selection & Code Tokens

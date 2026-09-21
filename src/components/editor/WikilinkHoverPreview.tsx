@@ -15,6 +15,16 @@ export interface WikilinkHoverPreviewProps {
   onMouseLeave?: (e: React.MouseEvent) => void;
 }
 
+export function isExternalUrlTarget(target?: string | null): boolean {
+  if (!target) return false;
+  const trimmed = target.trim();
+  return (
+    /^(https?|mailto|ftp|file|data|blob):/i.test(trimmed) ||
+    trimmed.startsWith('www.') ||
+    trimmed.includes('://')
+  );
+}
+
 /**
  * Resolves a raw wikilink target (such as "Note Title", "Note Title#Heading",
  * "Note Title|Alias", or an ID) against the in-memory documents list.
@@ -32,7 +42,9 @@ export function resolveTargetDocument(
     targetTitle = targetTitle.split('|')[0];
   }
   targetTitle = targetTitle.replace(/^\[+|\]+$/g, '').trim();
-  if (!targetTitle) return { doc: null, targetTitle: '', headingPart: null };
+  if (!targetTitle || isExternalUrlTarget(targetTitle) || isExternalUrlTarget(rawTarget)) {
+    return { doc: null, targetTitle: '', headingPart: null };
+  }
 
   let notePart = targetTitle;
   let headingPart: string | null = null;
@@ -42,8 +54,8 @@ export function resolveTargetDocument(
     headingPart = parts.slice(1).join('#').trim();
   }
 
-  if (!notePart) {
-    return { doc: null, targetTitle, headingPart };
+  if (!notePart || isExternalUrlTarget(notePart)) {
+    return { doc: null, targetTitle: '', headingPart: null };
   }
 
   const cleanTarget = notePart.trim().toLowerCase();
@@ -229,12 +241,16 @@ export const WikilinkHoverPreview: React.FC<WikilinkHoverPreviewProps> = React.m
     return isDocumentContentEmpty(fullContent, doc.doc_type);
   }, [doc, hasLoaded, fullContent]);
 
-  // Automatically dismiss hover preview if the target note is empty
+  // Automatically dismiss hover preview if the target is an external URL or empty note
   useEffect(() => {
-    if (isEmptyNote) {
+    if (isExternalUrlTarget(target) || isEmptyNote) {
       onClose();
     }
-  }, [isEmptyNote, onClose]);
+  }, [target, isEmptyNote, onClose]);
+
+  if (isExternalUrlTarget(target)) {
+    return null;
+  }
 
   // Compute collision-free viewport placement that sits snug against the wikilink
   useLayoutEffect(() => {

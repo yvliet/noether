@@ -716,7 +716,13 @@ function scanBlockDecorations(
         display = parts.slice(1).join('|');
       }
 
-      const isVisited = isLinkVisited(target);
+      const isExternalTarget =
+        /^(https?|mailto|ftp|file|data|blob):/i.test(target.trim()) ||
+        target.trim().startsWith('www.') ||
+        target.trim().includes('://');
+
+      const isVisited = isExternalTarget ? isLinkVisited(target.trim()) : isLinkVisited(target);
+      const linkBaseClass = isExternalTarget ? 'md-link' : 'md-wikilink';
 
       if (isMatchFocused) {
         // Dim opening brackets [[
@@ -731,8 +737,8 @@ function scanBlockDecorations(
           // Target before pipe
           decorations.push(
             Decoration.inline(matchStart + 2, matchStart + 2 + pipeOffset, {
-              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
-              'data-wikilink-target': target,
+              class: `${linkBaseClass} is-focused${isVisited ? ' is-visited' : ''}`,
+              ...(isExternalTarget ? { 'data-link-url': target.trim() } : { 'data-wikilink-target': target }),
               'data-visited': isVisited ? 'true' : 'false',
             })
           );
@@ -745,8 +751,8 @@ function scanBlockDecorations(
           // Display text after pipe
           decorations.push(
             Decoration.inline(matchStart + 2 + pipeOffset + 1, matchEnd - 2, {
-              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
-              'data-wikilink-target': target,
+              class: `${linkBaseClass} is-focused${isVisited ? ' is-visited' : ''}`,
+              ...(isExternalTarget ? { 'data-link-url': target.trim() } : { 'data-wikilink-target': target }),
               'data-visited': isVisited ? 'true' : 'false',
             })
           );
@@ -754,8 +760,8 @@ function scanBlockDecorations(
           // Wikilink target text
           decorations.push(
             Decoration.inline(matchStart + 2, matchEnd - 2, {
-              class: `md-wikilink is-focused${isVisited ? ' is-visited' : ''}`,
-              'data-wikilink-target': target,
+              class: `${linkBaseClass} is-focused${isVisited ? ' is-visited' : ''}`,
+              ...(isExternalTarget ? { 'data-link-url': target.trim() } : { 'data-wikilink-target': target }),
               'data-visited': isVisited ? 'true' : 'false',
             })
           );
@@ -783,16 +789,16 @@ function scanBlockDecorations(
           );
           decorations.push(
             Decoration.inline(matchStart + 2 + pipeOffset + 1, matchEnd - 2, {
-              class: `md-wikilink${isVisited ? ' is-visited' : ''}`,
-              'data-wikilink-target': target,
+              class: `${linkBaseClass}${isVisited ? ' is-visited' : ''}`,
+              ...(isExternalTarget ? { 'data-link-url': target.trim() } : { 'data-wikilink-target': target }),
               'data-visited': isVisited ? 'true' : 'false',
             })
           );
         } else {
           decorations.push(
             Decoration.inline(matchStart + 2, matchEnd - 2, {
-              class: `md-wikilink${isVisited ? ' is-visited' : ''}`,
-              'data-wikilink-target': target,
+              class: `${linkBaseClass}${isVisited ? ' is-visited' : ''}`,
+              ...(isExternalTarget ? { 'data-link-url': target.trim() } : { 'data-wikilink-target': target }),
               'data-visited': isVisited ? 'true' : 'false',
             })
           );
@@ -826,10 +832,29 @@ function scanBlockDecorations(
       if (isWrappedWikilink) {
         let raw = trimmedUrl.slice(2, -2).trim();
         if (raw.includes('|')) raw = raw.split('|')[0].trim();
-        if (raw) internalWikiTarget = raw;
-      } else if (!/^(https?|mailto|ftp|file|data|blob):/i.test(trimmedUrl) && !trimmedUrl.startsWith('#')) {
+        if (
+          raw &&
+          !/^(https?|mailto|ftp|file|data|blob):/i.test(raw) &&
+          !raw.startsWith('www.') &&
+          !raw.includes('://')
+        ) {
+          internalWikiTarget = raw;
+        }
+      } else if (
+        !/^(https?|mailto|ftp|file|data|blob):/i.test(trimmedUrl) &&
+        !trimmedUrl.startsWith('www.') &&
+        !trimmedUrl.includes('://') &&
+        !trimmedUrl.startsWith('#')
+      ) {
         const decoded = decodeURIComponent(trimmedUrl).trim();
-        if (decoded) internalWikiTarget = decoded;
+        if (
+          decoded &&
+          !/^(https?|mailto|ftp|file|data|blob):/i.test(decoded) &&
+          !decoded.startsWith('www.') &&
+          !decoded.includes('://')
+        ) {
+          internalWikiTarget = decoded;
+        }
       }
 
       const isVisited = internalWikiTarget

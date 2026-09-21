@@ -275,15 +275,13 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
           })}
         </div>
       ) : (
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl p-8 text-center mt-1 flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-2xl bg-[var(--noether-accent)]/10 border border-[var(--noether-accent)]/20 flex items-center justify-center text-[var(--noether-accent)] mb-3 shadow-xs">
-            <Store01Icon size={24} />
-          </div>
-          <h4 className="text-sm font-semibold text-white mb-1">Discover Community Extensions</h4>
-          <p className="text-xs text-[#888] max-w-md leading-relaxed mb-5">
+        <div className="text-center py-12 flex flex-col items-center justify-center select-none gap-2 text-[#666] text-xs">
+          <Store01Icon size={36} className="opacity-40 mb-1" />
+          <span className="text-[13px] text-[#888] font-normal">No community extensions installed</span>
+          <p className="text-xs text-[#666] max-w-sm leading-relaxed mb-2">
             Extend Noether with community extensions for enhanced workflows, visualizations, and integrations.
           </p>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => {
                 useWorkspaceStore.getState().openCustomTab({
@@ -296,16 +294,16 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
                   platform.closeSettingsWindow();
                 }
               }}
-              className="noether-btn noether-btn-primary flex items-center gap-2 !py-2 !px-4"
+              className="noether-btn noether-btn-primary text-xs flex items-center gap-1.5 cursor-pointer"
             >
-              <Store01Icon size={14} />
-              <span>Browse Extension Marketplace</span>
+              <Store01Icon size={13} />
+              <span>Browse Extensions</span>
             </button>
             <button
               onClick={handleOpenExtensionsFolder}
-              className="noether-btn flex items-center gap-1.5 !py-2 !px-3.5"
+              className="noether-btn text-xs flex items-center gap-1.5 cursor-pointer"
             >
-              Open extensions folder
+              Open folder
             </button>
           </div>
         </div>

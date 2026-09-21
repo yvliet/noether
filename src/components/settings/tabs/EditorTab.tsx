@@ -57,6 +57,8 @@ export const EditorTab: React.FC = React.memo(() => {
   const setTabSize = useSettingsStore((s) => s.setTabSize);
   const showExternalLinkIcon = useSettingsStore((s) => s.showExternalLinkIcon);
   const setShowExternalLinkIcon = useSettingsStore((s) => s.setShowExternalLinkIcon);
+  const matchLinkIconColor = useSettingsStore((s) => s.matchLinkIconColor);
+  const setMatchLinkIconColor = useSettingsStore((s) => s.setMatchLinkIconColor);
   const spellcheck = useSettingsStore((s) => s.spellcheck);
   const setSpellcheck = useSettingsStore((s) => s.setSpellcheck);
   const colorLinksWithAccent = useSettingsStore((s) => s.colorLinksWithAccent);
@@ -101,6 +103,7 @@ export const EditorTab: React.FC = React.memo(() => {
     autoPairMath !== DEFAULT_SETTINGS.autoPairMath ||
     tabSize !== DEFAULT_SETTINGS.tabSize ||
     showExternalLinkIcon !== DEFAULT_SETTINGS.showExternalLinkIcon ||
+    matchLinkIconColor !== DEFAULT_SETTINGS.matchLinkIconColor ||
     spellcheck !== DEFAULT_SETTINGS.spellcheck ||
     colorLinksWithAccent !== DEFAULT_SETTINGS.colorLinksWithAccent ||
     blueLinks !== DEFAULT_SETTINGS.blueLinks ||
@@ -491,6 +494,37 @@ export const EditorTab: React.FC = React.memo(() => {
           }
         >
           <ToggleSwitch checked={showExternalLinkIcon} onChange={setShowExternalLinkIcon} />
+        </SettingRow>
+
+        {/* Match link icon color to link */}
+        <SettingRow
+          title="Match link icon color to link"
+          className={!showExternalLinkIcon ? 'opacity-40' : ''}
+          description={
+            <>
+              {highlightMatch(
+                'Color the external link icon to match the link text color instead of muted gray.',
+                searchQuery
+              )}
+              {!showExternalLinkIcon && ' (Disabled while external link icons are turned off)'}
+            </>
+          }
+          descriptionText="Color the external link icon to match the link text color instead of muted gray."
+          keywords={['match', 'link', 'icon', 'color', 'external']}
+          resetButton={
+            <FieldResetButton
+              isModified={showExternalLinkIcon && matchLinkIconColor !== DEFAULT_SETTINGS.matchLinkIconColor}
+              onReset={() => setMatchLinkIconColor(DEFAULT_SETTINGS.matchLinkIconColor)}
+              title="Restore default (Disabled)"
+            />
+          }
+        >
+          <ToggleSwitch
+            checked={matchLinkIconColor}
+            onChange={setMatchLinkIconColor}
+            disabled={!showExternalLinkIcon}
+            title={!showExternalLinkIcon ? 'Disabled while external link icons are turned off' : undefined}
+          />
         </SettingRow>
 
         {/* Color all links with accent color */}

@@ -241,13 +241,11 @@ export const HistoryView: React.FC = React.memo(() => {
   // Not Installed state
   if (!gitStatus.loading && !gitStatus.installed) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 text-center select-none text-xs gap-3">
-        <div className="w-10 h-10 rounded-full bg-[#1c1c1c] border border-[var(--noether-border-base)] flex items-center justify-center text-[#777]">
-          <HistoryIcon size={20} />
-        </div>
-        <div className="font-medium text-[13px] text-[#e0e0e0]">Git Required</div>
-        <p className="text-[#888] leading-relaxed max-w-[240px]">
-          Version History uses standard local Git to safely store revisions directly inside your vault. Install Git to enable automatic snapshots.
+      <div className="flex flex-col items-center justify-center p-6 text-center select-none text-xs gap-2 text-[#666]">
+        <HistoryIcon size={36} className="opacity-40 mb-1" />
+        <span className="text-[13px] text-[#888] font-normal">Git Required</span>
+        <p className="text-xs text-[#666] leading-relaxed max-w-[240px]">
+          Version History uses standard local Git to store revisions directly inside your vault.
         </p>
         <button
           onClick={() => {
@@ -255,7 +253,7 @@ export const HistoryView: React.FC = React.memo(() => {
               window.open('https://git-scm.com/downloads', '_blank');
             }
           }}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--noether-bg-surface)] hover:bg-[#252525] border border-[var(--noether-border-base)] text-[#ccc] hover:text-white"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[var(--noether-bg-surface)] hover:bg-[#252525] border border-[var(--noether-border-base)] text-[#ccc] hover:text-white mt-1 cursor-pointer"
         >
           <span>Download Git</span>
           <ExternalLinkIcon size={12} />
@@ -267,17 +265,15 @@ export const HistoryView: React.FC = React.memo(() => {
   // Not Initialized state
   if (!gitStatus.loading && !gitStatus.initialized) {
     return (
-      <div className="flex flex-col items-center justify-center p-6 text-center select-none text-xs gap-3">
-        <div className="w-10 h-10 rounded-full bg-[var(--noether-bg-surface)] border border-[var(--noether-border-base)] flex items-center justify-center text-[var(--noether-accent)]">
-          <HistoryIcon size={20} />
-        </div>
-        <div className="font-medium text-[13px] text-[#e0e0e0]">Enable Version History</div>
-        <p className="text-[#888] leading-relaxed max-w-[240px]">
-          Keep track of edits, compare drafts side-by-side, and restore earlier versions with instant local snapshots.
+      <div className="flex flex-col items-center justify-center p-6 text-center select-none text-xs gap-2 text-[#666]">
+        <HistoryIcon size={36} className="opacity-40 mb-1" />
+        <span className="text-[13px] text-[#888] font-normal">Enable Version History</span>
+        <p className="text-xs text-[#666] leading-relaxed max-w-[240px]">
+          Track edits, compare drafts side-by-side, and restore revisions with instant local snapshots.
         </p>
         <button
           onClick={handleInitVault}
-          className="px-3.5 py-1.5 rounded-md bg-[var(--noether-accent)] hover:opacity-90 text-white font-medium shadow-sm"
+          className="noether-btn noether-btn-primary mt-1 cursor-pointer"
         >
           Enable History
         </button>

@@ -900,10 +900,10 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                     <button
                       type="button"
                       onClick={() => platform.openUrl(meta.authorUrl!)}
-                      className="text-[11px] text-[var(--noether-link-color)] hover:underline font-normal leading-tight font-sans cursor-pointer text-left inline-flex items-center gap-1"
+                      className="text-[11px] text-[var(--noether-link-color)] hover:underline font-normal leading-tight font-sans cursor-pointer text-left inline-flex items-center gap-0.5"
                     >
                       <span>{creatorName}</span>
-                      {showExternalLinkIcon && <LinkSquare02Icon size={10} className="opacity-70 shrink-0" />}
+                      {showExternalLinkIcon && <LinkSquare02Icon size={10} className="text-[var(--noether-link-icon-color)] opacity-70 shrink-0" />}
                     </button>
                   ) : (
                     <span className="text-[11px] text-[var(--noether-text-secondary)] font-normal leading-tight font-sans select-text">
@@ -926,10 +926,10 @@ export const ExtensionDocViewer: React.FC<ExtensionDocViewerProps> = React.memo(
                     <button
                       type="button"
                       onClick={() => platform.openUrl(repoUrl)}
-                      className="text-[11px] text-[var(--noether-link-color)] hover:underline font-sans truncate text-left cursor-pointer inline-flex items-center gap-1"
+                      className="text-[11px] text-[var(--noether-link-color)] hover:underline font-sans truncate text-left cursor-pointer inline-flex items-center gap-0.5"
                     >
                       <span>{repoUrl.replace(/^https?:\/\/(www\.)?github\.com\//, '')}</span>
-                      {showExternalLinkIcon && <LinkSquare02Icon size={10} className="opacity-70 shrink-0" />}
+                      {showExternalLinkIcon && <LinkSquare02Icon size={10} className="text-[var(--noether-link-icon-color)] opacity-70 shrink-0" />}
                     </button>
                   </div>
                 </div>

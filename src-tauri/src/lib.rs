@@ -18,7 +18,27 @@ fn set_accent_icon(app_handle: tauri::AppHandle, accent_color: String) -> Result
     Ok(())
 }
 
+#[cfg(target_os = "windows")]
+fn disable_mouse_vanish_on_windows() {
+    extern "system" {
+        fn SystemParametersInfoW(
+            ui_action: u32,
+            ui_param: u32,
+            pv_param: *mut std::ffi::c_void,
+            f_win_ini: u32,
+        ) -> i32;
+    }
+    const SPI_SETMOUSEVANISH: u32 = 0x1021;
+    unsafe {
+        // Set in-memory session flag to FALSE so WebView2 does not hide the cursor while typing
+        SystemParametersInfoW(SPI_SETMOUSEVANISH, 0, std::ptr::null_mut(), 0);
+    }
+}
+
 pub fn run() {
+    #[cfg(target_os = "windows")]
+    disable_mouse_vanish_on_windows();
+
     let initial_config = load_config();
     let initial_vault = initial_config.current_vault_path.clone();
 

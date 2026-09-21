@@ -18,7 +18,7 @@ import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import { TableEdgeControls } from './TableEdgeControls';
-import { getLineEdgeInfo, getLineEdgePos } from './editorCoords';
+import { getLineEdgeInfo, getLineEdgePos, isInteractiveEditorTarget } from './editorCoords';
 import { tableColumnResizing, CustomTableView } from './extensions/table-column-resizing';
 
 // Ensure table column resizing is active with isolated column sizing and highlight-free cursors
@@ -1470,7 +1470,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           if (me.button === 0 && editable) {
             if (
               target?.closest(
-                'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .md-link, .katex, .noether-embed-wrapper, .document-footer, .cm-editor, table, [data-node-type]'
+                'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .md-link, .katex, .noether-embed-wrapper, [data-document-header], .document-header, .document-footer, .cm-editor, table, [data-node-type]'
               )
             ) {
               return false;
@@ -2870,11 +2870,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
         if (editor && editable && editor.state.selection.empty) {
           const target = e.target as HTMLElement | null;
           if (!target) return;
-          if (
-            target.closest(
-              'input, textarea, button, a, [role="button"], .noether-tag, .md-wikilink, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]'
-            )
-          ) {
+          if (isInteractiveEditorTarget(target)) {
             return;
           }
 

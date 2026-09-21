@@ -8,6 +8,21 @@ export interface LineEdgeResult {
   isLineEnd: boolean;
 }
 
+/**
+ * Consolidated CSS selector matching interactive controls, UI widgets, links, headers,
+ * footers, embeds, and code blocks that should not trigger dead-space caret snapping.
+ */
+export const INTERACTIVE_EDITOR_SELECTOR =
+  'input, textarea, button, select, a, [role="button"], [data-interactive], [data-document-header], .document-header, .noether-tag, .md-wikilink, .md-link, .katex, .noether-embed-wrapper, .group\\/title, .document-footer, .cm-editor, table, [data-node-type]';
+
+/**
+ * Checks whether an event target is an interactive editor component or form control.
+ */
+export function isInteractiveEditorTarget(target: EventTarget | null): boolean {
+  if (!target || !(target instanceof Element)) return false;
+  return Boolean(target.closest(INTERACTIVE_EDITOR_SELECTOR));
+}
+
 function safeCoordsAtPos(view: EditorView, pos: number, side: number = 1) {
   try {
     const clampedPos = Math.max(0, Math.min(view.state.doc.content.size, pos));

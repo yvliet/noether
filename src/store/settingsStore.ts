@@ -61,6 +61,7 @@ export interface SettingsState {
   autoPairMath: boolean;
   tabSize: TabSize;
   showExternalLinkIcon: boolean;
+  matchLinkIconColor: boolean;
   spellcheck: boolean;
   colorLinksWithAccent: boolean;
   blueLinks: boolean;
@@ -127,6 +128,7 @@ export interface SettingsState {
   setAutoPairMath: (val: boolean) => void;
   setTabSize: (val: TabSize) => void;
   setShowExternalLinkIcon: (val: boolean) => void;
+  setMatchLinkIconColor: (val: boolean) => void;
   setSpellcheck: (val: boolean) => void;
   setColorLinksWithAccent: (val: boolean) => void;
   setBlueLinks: (val: boolean) => void;
@@ -210,6 +212,7 @@ export const DEFAULT_SETTINGS = {
   autoPairMath: true,
   tabSize: '5' as TabSize,
   showExternalLinkIcon: false,
+  matchLinkIconColor: false,
   spellcheck: true,
   colorLinksWithAccent: true,
   blueLinks: false,
@@ -290,6 +293,7 @@ interface AppearanceCache {
   blueLinks?: boolean;
   underlineLinks?: boolean;
   matchLinkUnderlineColor?: boolean;
+  matchLinkIconColor?: boolean;
 }
 
 const appliedAppearanceCache: AppearanceCache = {};
@@ -486,6 +490,19 @@ function runApplyAppearanceDOM(current: Partial<SettingsState>) {
       root.classList.remove('noether-color-link-underline');
     }
   }
+
+  // 14. Match Link Icon Color to Link (default false)
+  const matchLinkIconColor = current.matchLinkIconColor ?? false;
+  if (appliedAppearanceCache.matchLinkIconColor !== matchLinkIconColor) {
+    appliedAppearanceCache.matchLinkIconColor = matchLinkIconColor;
+    if (matchLinkIconColor) {
+      root.setAttribute('data-color-link-icon', 'true');
+      root.classList.add('noether-color-link-icon');
+    } else {
+      root.removeAttribute('data-color-link-icon');
+      root.classList.remove('noether-color-link-icon');
+    }
+  }
 }
 
 // Helper: Apply appearance settings directly to the DOM (batched with requestAnimationFrame)
@@ -616,6 +633,10 @@ export const useSettingsStore = create<SettingsState>()(
         syncSettingsToDisk({ ...get(), tabSize });
       },
       setShowExternalLinkIcon: (showExternalLinkIcon) => set({ showExternalLinkIcon }),
+      setMatchLinkIconColor: (matchLinkIconColor) => {
+        set({ matchLinkIconColor });
+        applyAppearanceDOM({ ...get(), matchLinkIconColor });
+      },
       setSpellcheck: (spellcheck) => set({ spellcheck }),
       setColorLinksWithAccent: (colorLinksWithAccent) => {
         set({ colorLinksWithAccent });
@@ -756,6 +777,7 @@ export const useSettingsStore = create<SettingsState>()(
             autoPairMath: DEFAULT_SETTINGS.autoPairMath,
             tabSize: DEFAULT_SETTINGS.tabSize,
             showExternalLinkIcon: DEFAULT_SETTINGS.showExternalLinkIcon,
+            matchLinkIconColor: DEFAULT_SETTINGS.matchLinkIconColor,
             spellcheck: DEFAULT_SETTINGS.spellcheck,
             colorLinksWithAccent: DEFAULT_SETTINGS.colorLinksWithAccent,
             blueLinks: DEFAULT_SETTINGS.blueLinks,
@@ -771,6 +793,7 @@ export const useSettingsStore = create<SettingsState>()(
             blueLinks: DEFAULT_SETTINGS.blueLinks,
             underlineLinks: DEFAULT_SETTINGS.underlineLinks,
             matchLinkUnderlineColor: DEFAULT_SETTINGS.matchLinkUnderlineColor,
+            matchLinkIconColor: DEFAULT_SETTINGS.matchLinkIconColor,
           });
         } else if (tabId === 'files') {
           if (typeof window !== 'undefined') {

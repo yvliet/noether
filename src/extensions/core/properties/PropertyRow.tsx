@@ -223,7 +223,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               type="button"
               onClick={() => setIsPickerOpen(!isPickerOpen)}
               title={iconTooltip}
-              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer shrink-0 mr-1"
+              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 mr-1"
             >
               {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
             </button>
@@ -251,25 +251,17 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
                 e.stopPropagation();
                 return;
               }
-              if (e.key === 'Enter' || e.key === 'Tab') {
+              if (e.key === 'Enter') {
                 e.preventDefault();
-                const trimmed = localKey.trim();
-                const cleanNewKey = trimmed ? trimmed.replace(/\s+/g, '_') : propertyKey;
                 handleCommitKey();
-                onShiftFocusToValue?.(cleanNewKey);
-                setTimeout(() => {
-                  valInputRef.current?.focus();
-                  if (valInputRef.current?.type === 'text') {
-                    valInputRef.current?.select();
-                  }
-                }, 30);
+                onShiftFocusToValue?.(propertyKey);
               } else if (e.key === 'Escape') {
                 setLocalKey(propertyKey);
                 setIsEditingKey(false);
               }
             }}
-            placeholder="Property_name"
-            className="bg-transparent border-none outline-none text-[11px] font-medium text-[var(--noether-text-primary)] placeholder:text-[var(--noether-text-muted)] w-full p-0 m-0 leading-tight"
+            placeholder="Property name"
+            className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-[11px] p-0 m-0 min-w-0"
           />
         ) : (
           <span
@@ -283,7 +275,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             title={keyTooltip}
-            className={`text-[11px] font-medium text-[var(--noether-text-muted)] ${isReadOnlyKey ? 'cursor-default' : 'hover:text-[var(--noether-text-primary)] cursor-pointer'} truncate flex-1 min-w-0 leading-tight`}
+            className={`text-[11px] font-medium text-[var(--noether-text-muted)] ${isReadOnlyKey ? 'cursor-default' : 'hover:text-[var(--noether-text-primary)]'} truncate flex-1 min-w-0 leading-tight`}
           >
             {localKey || propertyKey}
           </span>
@@ -329,7 +321,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               onSaveValue(propertyKey, nextVal);
             }}
             title={valueTooltip}
-            className="text-xs font-medium text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline cursor-pointer select-none px-0.5 py-0.5"
+            className="text-xs font-medium text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline select-none px-0.5 py-0.5"
           >
             {isYes ? 'Yes' : 'No'}
           </button>
@@ -386,7 +378,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
             type="button"
             onClick={() => onDelete(propertyKey)}
             title={`Delete ${propertyKey}`}
-            className="opacity-0 group-hover:opacity-100 text-[var(--noether-text-muted)] hover:text-rose-500 cursor-pointer p-0.5 shrink-0 ml-auto"
+            className="opacity-0 group-hover:opacity-100 text-[var(--noether-text-muted)] hover:text-rose-500 p-0.5 shrink-0 ml-auto"
           >
             <Cancel01Icon size={11} />
           </button>
