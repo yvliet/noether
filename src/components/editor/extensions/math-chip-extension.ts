@@ -1,9 +1,18 @@
+import React from 'react';
 import { Node, mergeAttributes, InputRule } from '@tiptap/core';
 import { Plugin, TextSelection, NodeSelection } from '@tiptap/pm/state';
 import katex from 'katex';
 import { setupMathLive } from './mathlive-setup';
 import { buildPlaceholderLatex } from './math-snippets';
 import { buildMathInsertSubmenus } from './math-insert-menu';
+import {
+  Copy01Icon,
+  CodeIcon,
+  ArrowUpDownIcon,
+  MathIcon,
+  KeyboardIcon,
+  Delete02Icon,
+} from '@/components/common/Icons';
 import { useContextMenuStore } from '@/store/contextMenuStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { getVisualLineBounds } from '../editorCoords';
@@ -656,6 +665,7 @@ export const MathChip = Node.create<MathChipOptions>({
           {
             type: 'item',
             title: 'Copy LaTeX',
+            icon: React.createElement(Copy01Icon, { size: 14 }),
             onClick: () => {
               const latexToCopy = isEditing && activeMf ? activeMf.value : currentLatex;
               navigator.clipboard.writeText(latexToCopy);
@@ -664,6 +674,7 @@ export const MathChip = Node.create<MathChipOptions>({
           {
             type: 'item',
             title: 'Copy MathML',
+            icon: React.createElement(CodeIcon, { size: 14 }),
             onClick: () => {
               const mathml = activeMf?.getValue?.('math-ml') || '';
               if (mathml) {
@@ -674,6 +685,7 @@ export const MathChip = Node.create<MathChipOptions>({
           {
             type: 'item',
             title: currentDisplay === 'block' ? 'Convert to Inline Math ($)' : 'Convert to Block Math ($$)',
+            icon: React.createElement(ArrowUpDownIcon, { size: 14 }),
             onClick: () => {
               const nextDisplay = currentDisplay === 'block' ? 'inline' : 'block';
               currentDisplay = nextDisplay;
@@ -692,11 +704,13 @@ export const MathChip = Node.create<MathChipOptions>({
           {
             type: 'item',
             title: 'Insert Math Structure',
+            icon: React.createElement(MathIcon, { size: 14 }),
             submenu: insertSubmenu,
           },
           {
             type: 'item',
             title: 'Toggle Math Keyboard',
+            icon: React.createElement(KeyboardIcon, { size: 14 }),
             onClick: () => {
               if (window.mathVirtualKeyboard) {
                 if (window.mathVirtualKeyboard.visible) {
@@ -714,6 +728,7 @@ export const MathChip = Node.create<MathChipOptions>({
             type: 'item',
             title: 'Delete Formula',
             isDanger: true,
+            icon: React.createElement(Delete02Icon, { size: 14 }),
             onClick: () => {
               if (typeof getPos === 'function') {
                 const pos = getPos();

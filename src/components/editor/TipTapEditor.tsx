@@ -101,6 +101,8 @@ import {
   PaintBrush01Icon,
   TextFontIcon,
   SigmaIcon,
+  MathIcon,
+  KeyboardIcon,
   PercentIcon,
   RemoveFormattingIcon,
   Menu01Icon,
@@ -2354,8 +2356,8 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           items.push({ type: 'separator' });
           items.push({
             id: 'menu-math-insert',
-            title: 'Math Insert',
-            icon: <SigmaIcon size={14} />,
+            title: 'Insert Math Structure',
+            icon: <MathIcon size={14} />,
             submenu: buildMathInsertSubmenus((latex, cursorOffset) => {
               restoreSelection();
               const { from } = editor.state.selection;
@@ -2369,7 +2371,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           items.push({
             id: 'menu-math-keyboard',
             title: 'Toggle Math Keyboard',
-            icon: <SigmaIcon size={14} />,
+            icon: <KeyboardIcon size={14} />,
             onClick: () => {
               setIsMathKeyboardOpen((prev) => !prev);
             },

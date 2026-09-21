@@ -1,5 +1,4 @@
 import React from 'react';
-import { useSettingsStore } from '@/store/settingsStore';
 import { HugeiconsIcon } from '@hugeicons/react';
 import {
   File01Icon as HugeFile01Icon,
@@ -189,6 +188,37 @@ import {
   FitToScreenIcon as HugeFitToScreenIcon,
   PrinterIcon as HugePrinterIcon,
   Presentation01Icon as HugePresentation01Icon,
+  MathIcon as HugeMathIcon,
+  KeyboardIcon as HugeKeyboardIcon,
+  MatrixIcon as HugeMatrixIcon,
+  AlphabetGreekIcon as HugeAlphabetGreekIcon,
+  FirstBracketIcon as HugeFirstBracketIcon,
+  SecondBracketIcon as HugeSecondBracketIcon,
+  ThirdBracketIcon as HugeThirdBracketIcon,
+  RadicalIcon as HugeRadicalIcon,
+  NThRootIcon as HugeNThRootIcon,
+  Infinity01Icon as HugeInfinity01Icon,
+  PiIcon as HugePiIcon,
+  FunctionIcon as HugeFunctionIcon,
+  FunctionOfXIcon as HugeFunctionOfXIcon,
+  EqualNotIcon as HugeEqualNotIcon,
+  GreaterThanOrEqualIcon as HugeGreaterThanOrEqualIcon,
+  LessThanOrEqualIcon as HugeLessThanOrEqualIcon,
+  SquarePowerIcon as HugeSquarePowerIcon,
+  SubscriptIcon as HugeSubscriptIcon,
+  SuperscriptIcon as HugeSuperscriptIcon,
+  VectorSquareIcon as HugeVectorSquareIcon,
+  PlusMinusSquare01Icon as HugePlusMinusSquare01Icon,
+  MultiplicationSignSquareIcon as HugeMultiplicationSignSquareIcon,
+  ApproximatelyEqualIcon as HugeApproximatelyEqualIcon,
+  MultiplicationSignIcon as HugeMultiplicationSignIcon,
+  PlusMinus01Icon as HugePlusMinus01Icon,
+  AlphaIcon as HugeAlphaIcon,
+  BetaIcon as HugeBetaIcon,
+  OmegaIcon as HugeOmegaIcon,
+  ParenthesesIcon as HugeParenthesesIcon,
+  BracketsIcon as HugeBracketsIcon,
+  BracesIcon as HugeBracesIcon,
 } from '@hugeicons/core-free-icons';
 
 export interface IconProps extends React.SVGProps<SVGSVGElement> {
@@ -200,7 +230,25 @@ export interface IconProps extends React.SVGProps<SVGSVGElement> {
 }
 
 export const NoetherLogoIcon = React.memo<IconProps>(({ size = 20, className = '', ...props }) => {
-  const accentColor = useSettingsStore((s) => s.accentColor);
+  const [accentColor, setAccentColor] = React.useState<string>(() => {
+    if (typeof document !== 'undefined') {
+      return getComputedStyle(document.documentElement).getPropertyValue('--noether-accent').trim();
+    }
+    return '';
+  });
+
+  React.useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const updateAccent = () => {
+      const color = getComputedStyle(document.documentElement).getPropertyValue('--noether-accent').trim();
+      setAccentColor(color);
+    };
+    updateAccent();
+    const observer = new MutationObserver(updateAccent);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['style', 'class'] });
+    return () => observer.disconnect();
+  }, []);
+
   const isDefaultAccent = !accentColor || accentColor.toLowerCase() === '#eb584d';
 
   if (isDefaultAccent) {
@@ -440,8 +488,39 @@ export const Link04Icon = createIcon(HugeLink04Icon);
 export const PinIcon = createIcon(HugePinIcon);
 export const ParagraphIcon = createIcon(HugeParagraphIcon);
 export const PaintBrush01Icon = createIcon(HugePaintBrush01Icon);
-export const SigmaIcon = createIcon(HugeSigmaIcon);
 export const PercentIcon = createIcon(HugePercentIcon);
+export const SigmaIcon = createIcon(HugeSigmaIcon);
+export const MathIcon = createIcon(HugeMathIcon);
+export const KeyboardIcon = createIcon(HugeKeyboardIcon);
+export const MatrixIcon = createIcon(HugeMatrixIcon);
+export const AlphabetGreekIcon = createIcon(HugeAlphabetGreekIcon);
+export const FirstBracketIcon = createIcon(HugeFirstBracketIcon);
+export const SecondBracketIcon = createIcon(HugeSecondBracketIcon);
+export const ThirdBracketIcon = createIcon(HugeThirdBracketIcon);
+export const RadicalIcon = createIcon(HugeRadicalIcon);
+export const NThRootIcon = createIcon(HugeNThRootIcon);
+export const Infinity01Icon = createIcon(HugeInfinity01Icon);
+export const PiIcon = createIcon(HugePiIcon);
+export const FunctionIcon = createIcon(HugeFunctionIcon);
+export const FunctionOfXIcon = createIcon(HugeFunctionOfXIcon);
+export const EqualNotIcon = createIcon(HugeEqualNotIcon);
+export const GreaterThanOrEqualIcon = createIcon(HugeGreaterThanOrEqualIcon);
+export const LessThanOrEqualIcon = createIcon(HugeLessThanOrEqualIcon);
+export const SquarePowerIcon = createIcon(HugeSquarePowerIcon);
+export const SubscriptIcon = createIcon(HugeSubscriptIcon);
+export const SuperscriptIcon = createIcon(HugeSuperscriptIcon);
+export const VectorSquareIcon = createIcon(HugeVectorSquareIcon);
+export const PlusMinusSquare01Icon = createIcon(HugePlusMinusSquare01Icon);
+export const MultiplicationSignSquareIcon = createIcon(HugeMultiplicationSignSquareIcon);
+export const ApproximatelyEqualIcon = createIcon(HugeApproximatelyEqualIcon);
+export const MultiplicationSignIcon = createIcon(HugeMultiplicationSignIcon);
+export const PlusMinus01Icon = createIcon(HugePlusMinus01Icon);
+export const AlphaIcon = createIcon(HugeAlphaIcon);
+export const BetaIcon = createIcon(HugeBetaIcon);
+export const OmegaIcon = createIcon(HugeOmegaIcon);
+export const ParenthesesIcon = createIcon(HugeParenthesesIcon);
+export const BracketsIcon = createIcon(HugeBracketsIcon);
+export const BracesIcon = createIcon(HugeBracesIcon);
 export const RemoveFormattingIcon = createIcon(HugeRemoveFormattingIcon);
 export const Heading401Icon = createIcon(HugeHeading04Icon);
 export const Heading501Icon = createIcon(HugeHeading05Icon);
