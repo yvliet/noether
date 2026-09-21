@@ -469,14 +469,14 @@ export function useKeyboardShortcuts() {
         Boolean(activeEl?.closest('.noether-doc-wrapper')) ||
         Boolean(activeEl?.closest('.editor-canvas'));
       const isAnyEditorOrInput = isInput || isContentEditor;
-      const isSidebarFocused = Boolean(target?.closest('[data-sidebar="true"]') || activeEl?.closest('[data-sidebar="true"]'));
+      const isSidebarFileTreeFocused = Boolean(
+        target?.closest('aside[data-sidebar-side="left"] [data-sidebar-root="true"], aside[data-sidebar-side="left"] [data-tree-item-id]') ||
+        activeEl?.closest('aside[data-sidebar-side="left"] [data-sidebar-root="true"], aside[data-sidebar-side="left"] [data-tree-item-id]')
+      );
 
-      // 18. File Action Undo & Redo (Only when explicitly focused in sidebar/file tree)
-      if (!isAnyEditorOrInput && isSidebarFocused) {
-        const isUndo =
-          isMatch('workspace:undo-file-action', ['Ctrl+Alt+Z', 'Ctrl+Z']) ||
-          ((keyLower === 'z' || code === 'KeyZ') && isCtrlOrMeta && !isShift && !isAlt);
-
+      // 18. File Action Undo & Redo (Strictly Ctrl+Alt+Z / Ctrl+Alt+Y when focused in sidebar file tree)
+      if (!isAnyEditorOrInput && isSidebarFileTreeFocused) {
+        const isUndo = isMatch('workspace:undo-file-action', ['Ctrl+Alt+Z']);
         if (isUndo) {
           e.preventDefault();
           e.stopPropagation();
@@ -484,11 +484,7 @@ export function useKeyboardShortcuts() {
           return;
         }
 
-        const isRedo =
-          isMatch('workspace:redo-file-action', ['Ctrl+Alt+Y', 'Ctrl+Y', 'Ctrl+Shift+Z']) ||
-          ((keyLower === 'y' || code === 'KeyY') && isCtrlOrMeta && !isShift && !isAlt) ||
-          ((keyLower === 'z' || code === 'KeyZ') && isCtrlOrMeta && isShift && !isAlt);
-
+        const isRedo = isMatch('workspace:redo-file-action', ['Ctrl+Alt+Y']);
         if (isRedo) {
           e.preventDefault();
           e.stopPropagation();

@@ -1847,43 +1847,7 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
     }
   }, [editor, onEditorReady]);
 
-  // Synchronize external content changes (e.g. SQLite hydration or note switching) into ProseMirror
-  useEffect(() => {
-    if (!editor || editor.isDestroyed) return;
-    if (isInternalUpdateRef.current) {
-      isInternalUpdateRef.current = false;
-      return;
-    }
 
-    let nextParsed: any = null;
-    try {
-      if (typeof content === 'string' && content.trim()) {
-        nextParsed = JSON.parse(content);
-      } else if (typeof content === 'object' && content !== null) {
-        nextParsed = content;
-      }
-    } catch {
-      try {
-        if (typeof content === 'string') {
-          nextParsed = JSON.parse(markdownToTipTapJson(content));
-        }
-      } catch {}
-    }
-
-    if (!nextParsed || typeof nextParsed !== 'object' || nextParsed.type !== 'doc') {
-      return;
-    }
-
-    const normalized = normalizeTipTapContent(nextParsed);
-    const normalizedStr = JSON.stringify(normalized);
-    const currentJson = editor.getJSON();
-    const currentStr = JSON.stringify(currentJson);
-
-    if (normalizedStr !== currentStr && normalizedStr !== lastEmittedJsonRef.current) {
-      lastEmittedJsonRef.current = normalizedStr;
-      editor.commands.setContent(normalized, false);
-    }
-  }, [content, editor]);
 
   const handleEditorContextMenu = useCallback(
     (e: MouseEvent | React.MouseEvent) => {
@@ -2535,9 +2499,25 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
           parsed = JSON.parse(jsonStr);
         }
         if (parsed && parsed.type === 'doc' && Array.isArray(parsed.content)) {
-          editor.commands.setContent(normalizeTipTapContent(parsed), false);
-          if (editor.view && !editor.isDestroyed) {
-            editor.view.dispatch(editor.state.tr.setMeta('forceRebuildDecorations', true));
+          const normalized = normalizeTipTapContent(parsed);
+          if (isEditorEmpty && editor.view && !editor.isDestroyed) {
+            // Delayed hydration: replace document content without polluting prosemirror-history
+            try {
+              const docNode = editor.schema.nodeFromJSON(normalized);
+              const tr = editor.state.tr
+                .replaceWith(0, editor.state.doc.content.size, docNode.content)
+                .setMeta('preventUpdate', true)
+                .setMeta('addToHistory', false)
+                .setMeta('forceRebuildDecorations', true);
+              editor.view.dispatch(tr);
+            } catch {
+              editor.commands.setContent(normalized, false);
+            }
+          } else {
+            editor.commands.setContent(normalized, false);
+            if (editor.view && !editor.isDestroyed) {
+              editor.view.dispatch(editor.state.tr.setMeta('forceRebuildDecorations', true));
+            }
           }
         }
       }

@@ -599,6 +599,7 @@ export const MathChip = Node.create<MathChipOptions>({
 
       let isEditing = false;
       let currentLatex = node.attrs.latex || '';
+      let initialLatex = currentLatex;
       let currentDisplay: 'inline' | 'block' = node.attrs.display === 'block' ? 'block' : 'inline';
       let activeMf: any = null;
       let lastCursorPos = editor.state.selection.from;
@@ -741,7 +742,13 @@ export const MathChip = Node.create<MathChipOptions>({
         ]);
       }
 
-      function renderStaticView() {
+      function renderStaticView(shouldRefocus = false) {
+        const wasActive = activeMf && (
+          typeof document !== 'undefined' && (
+            document.activeElement === activeMf ||
+            dom.contains(document.activeElement)
+          )
+        );
         isEditing = false;
         activeMf = null;
         dom.classList.remove('wce-editing');
@@ -774,11 +781,26 @@ export const MathChip = Node.create<MathChipOptions>({
         }
 
         dom.appendChild(renderSpan);
+
+        // Safe focus hand-off: ensure browser focus never drops to document.body
+        if (wasActive || shouldRefocus) {
+          if (typeof getPos === 'function') {
+            const pos = getPos();
+            if (typeof pos === 'number') {
+              editor.commands.focus(pos + 1);
+            } else {
+              editor.commands.focus();
+            }
+          } else {
+            editor.commands.focus();
+          }
+        }
       }
 
       function enterEditMode(opts: { selectAll?: boolean; fromArrow?: 'left' | 'right' | 'up' | 'down' | boolean; clickCoords?: { x: number; y: number } } = {}) {
         if (isEditing && activeMf) return;
         isEditing = true;
+        initialLatex = currentLatex;
         const mountedTime = Date.now();
         dom.classList.add('wce-editing');
         if (currentDisplay === 'block') {
@@ -863,12 +885,40 @@ export const MathChip = Node.create<MathChipOptions>({
         // Intercept right click on math-field to suppress MathLive's menu and show Noether's native context menu
         mf.addEventListener('contextmenu', openMathContextMenu, true);
 
-        const commit = () => {
+        const commit = (shouldRefocus = false) => {
           if (!isEditing) return;
           const newLatex = mf.value;
           currentLatex = newLatex;
-          syncAttrs({ latex: newLatex, display: currentDisplay }, true);
-          renderStaticView();
+
+          if (typeof getPos === 'function') {
+            const pos = getPos();
+            if (typeof pos === 'number') {
+              const currentNode = editor.state.doc.nodeAt(pos);
+              if (currentNode && currentNode.type.name === 'mathChip') {
+                if (newLatex !== initialLatex) {
+                  // 1. Revert to initialLatex without adding to history
+                  const trRevert = editor.state.tr.setNodeMarkup(pos, undefined, {
+                    ...currentNode.attrs,
+                    latex: initialLatex,
+                    display: currentDisplay,
+                  }).setMeta('addToHistory', false);
+                  editor.view.dispatch(trRevert);
+
+                  // 2. Dispatch the edit transition from initialLatex to newLatex WITH history
+                  const trCommit = editor.state.tr.setNodeMarkup(pos, undefined, {
+                    ...currentNode.attrs,
+                    latex: newLatex,
+                    display: currentDisplay,
+                  }).setMeta('addToHistory', true);
+                  editor.view.dispatch(trCommit);
+                } else {
+                  syncAttrs({ latex: newLatex, display: currentDisplay }, false);
+                }
+              }
+            }
+          }
+
+          renderStaticView(shouldRefocus);
         };
 
         mf.addEventListener('input', () => {
@@ -1392,7 +1442,20 @@ export const MathChip = Node.create<MathChipOptions>({
           if (event.type === 'mousedown' || event.type === 'pointerdown') {
             return true;
           }
-          return isEditing;
+          if (isEditing) {
+            // If user presses Ctrl+Z inside MathLive and MathLive's undo stack is exhausted,
+            // let ProseMirror handle document undo
+            if (event.type === 'keydown') {
+              const ke = event as KeyboardEvent;
+              if ((ke.ctrlKey || ke.metaKey) && ke.key.toLowerCase() === 'z' && !ke.shiftKey) {
+                if (activeMf && typeof activeMf.canUndo === 'function' && !activeMf.canUndo()) {
+                  return false;
+                }
+              }
+            }
+            return true;
+          }
+          return false;
         },
         ignoreMutation: () => true,
         update: (updatedNode) => {

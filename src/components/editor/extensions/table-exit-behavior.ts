@@ -332,13 +332,19 @@ function handleDeleteInTable(editor: any): boolean {
 
         // Partial cell selection: empty cell contents rather than deleting columns or rows
         let tr = state.tr;
-        selectedCellPositions.forEach((pos) => {
+        const sortedPositions = [...selectedCellPositions].sort((a, b) => b - a);
+        sortedPositions.forEach((pos) => {
           const cellNode = state.doc.nodeAt(pos);
           if (cellNode && cellNode.content.size > 0) {
             tr = tr.replaceWith(pos + 1, pos + cellNode.nodeSize - 1, state.schema.nodes.paragraph.create());
           }
         });
-        clearCellSelectionToText(editor, fallbackPos);
+        if (typeof fallbackPos === 'number') {
+          const mappedFallback = tr.mapping.map(fallbackPos);
+          try {
+            tr = tr.setSelection(TextSelection.near(tr.doc.resolve(mappedFallback)));
+          } catch {}
+        }
         editor.view.dispatch(tr);
         return true;
       }

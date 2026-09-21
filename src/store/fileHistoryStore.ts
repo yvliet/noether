@@ -163,12 +163,31 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
 
     try {
       if (action.type === 'create') {
+        // Safety guard: if document has user content, refuse to delete on undo
+        const existingDocs = useDocumentStore.getState().documents;
+        const targetDoc = existingDocs.find((d) => d.id === action.item.id);
+        const hasContent = Boolean(
+          targetDoc &&
+          !targetDoc.is_folder &&
+          targetDoc.content_json &&
+          targetDoc.content_json.trim() !== '' &&
+          targetDoc.content_json.trim() !== '{}' &&
+          targetDoc.content_json !== '{"type":"doc","content":[{"type":"paragraph"}]}'
+        );
+
+        if (hasContent) {
+          useWorkspaceStore.getState().showToast(`Cannot undo creation: "${action.item.title}" contains content`, 'warning');
+          set({ isExecuting: false });
+          return false;
+        }
+
         // Undo file/folder creation by moving it to trash
         await moveToTrash(action.item.id);
         useWorkspaceStore.getState().closeTabsForDocuments([action.item.id]);
 
         const docs = await getAllDocuments();
         useDocumentStore.setState({ documents: docs });
+        await useDocumentStore.getState().loadTrash();
 
         if (action.previousActiveDocId) {
           await useDocumentStore.getState().setActiveDocumentById(action.previousActiveDocId);
@@ -213,23 +232,24 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         await restoreTrashItemsBatch(batchIds);
         const finalDocs = await getAllDocuments();
         useDocumentStore.setState({ documents: finalDocs });
+        await useDocumentStore.getState().loadTrash();
       } else if (action.type === 'rename') {
         await useDocumentStore.getState().renameDocument(action.id, action.oldTitle, false);
         useWorkspaceStore.getState().showToast(`Restored name to "${action.oldTitle}"`, 'success');
       } else if (action.type === 'move') {
         const titleToRestore = action.oldTitle || action.title;
+        await useDocumentStore.getState().moveDocument(action.id, action.oldParentId, false);
         if (action.oldTitle && action.newTitle && action.oldTitle !== action.newTitle) {
           await useDocumentStore.getState().renameDocument(action.id, action.oldTitle, false);
         }
-        await useDocumentStore.getState().moveDocument(action.id, action.oldParentId, false);
         useWorkspaceStore.getState().showToast(`Restored position of "${titleToRestore}"`, 'success');
       } else if (action.type === 'batch_move') {
         for (const m of action.moves) {
           const titleToRestore = m.oldTitle || m.title;
+          await useDocumentStore.getState().moveDocument(m.id, m.oldParentId, false);
           if (m.oldTitle && m.newTitle && m.oldTitle !== m.newTitle) {
             await useDocumentStore.getState().renameDocument(m.id, m.oldTitle, false);
           }
-          await useDocumentStore.getState().moveDocument(m.id, m.oldParentId, false);
         }
         useWorkspaceStore.getState().showToast(`Restored positions of ${action.moves.length} items`, 'success');
       }
@@ -261,6 +281,7 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         await restoreTrashItem(action.item.id);
         const docs = await getAllDocuments();
         useDocumentStore.setState({ documents: docs });
+        await useDocumentStore.getState().loadTrash();
         if (!action.item.is_folder) {
           await useDocumentStore.getState().setActiveDocumentById(action.item.id);
         }
@@ -295,23 +316,24 @@ export const useFileHistoryStore = create<FileHistoryState>((set, get) => ({
         await moveDocumentsToTrash(deletedIds);
         const finalDocs = await getAllDocuments();
         useDocumentStore.setState({ documents: finalDocs });
+        await useDocumentStore.getState().loadTrash();
       } else if (action.type === 'rename') {
         await useDocumentStore.getState().renameDocument(action.id, action.newTitle, false);
         useWorkspaceStore.getState().showToast(`Renamed to "${action.newTitle}"`, 'success');
       } else if (action.type === 'move') {
         const titleToApply = action.newTitle || action.title;
+        await useDocumentStore.getState().moveDocument(action.id, action.newParentId, false);
         if (action.oldTitle && action.newTitle && action.oldTitle !== action.newTitle) {
           await useDocumentStore.getState().renameDocument(action.id, action.newTitle, false);
         }
-        await useDocumentStore.getState().moveDocument(action.id, action.newParentId, false);
         useWorkspaceStore.getState().showToast(`Moved "${titleToApply}"`, 'success');
       } else if (action.type === 'batch_move') {
         for (const m of action.moves) {
           const titleToApply = m.newTitle || m.title;
+          await useDocumentStore.getState().moveDocument(m.id, m.newParentId, false);
           if (m.oldTitle && m.newTitle && m.oldTitle !== m.newTitle) {
             await useDocumentStore.getState().renameDocument(m.id, m.newTitle, false);
           }
-          await useDocumentStore.getState().moveDocument(m.id, m.newParentId, false);
         }
         useWorkspaceStore.getState().showToast(`Moved ${action.moves.length} items`, 'success');
       }

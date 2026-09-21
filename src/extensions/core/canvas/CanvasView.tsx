@@ -3322,19 +3322,29 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
       // If user is editing text inside an input or note card, preserve standard text undo/redo
       if (isInput) return;
 
-      // Ctrl+Z / Cmd+Z: Undo canvas action
+      const isCanvasFocused = Boolean(
+        containerRef.current && (
+          containerRef.current.contains(document.activeElement) ||
+          containerRef.current.contains(target as Node)
+        )
+      );
+      if (!isCanvasFocused) return;
+
+      // Ctrl+Z / Cmd+Z: Undo canvas action (only when canvas has history to undo)
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        if (undoStackRef.current.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
         handleUndo();
         return;
       }
 
-      // Ctrl+Y / Cmd+Y or Ctrl+Shift+Z / Cmd+Shift+Z: Redo canvas action
+      // Ctrl+Y / Cmd+Y or Ctrl+Shift+Z / Cmd+Shift+Z: Redo canvas action (only when canvas has history to redo)
       if (
         (e.ctrlKey || e.metaKey) &&
         (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))
       ) {
+        if (redoStackRef.current.length === 0) return;
         e.preventDefault();
         e.stopPropagation();
         handleRedo();

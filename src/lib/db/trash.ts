@@ -1,6 +1,6 @@
 import { dbAdapter } from './adapter';
 import { DocumentItem, TrashItem } from '@/types';
-import { jsonToMarkdown, getDocumentPath, getDocumentDiskPath, saveDocumentAndSynchronize } from './documents';
+import { jsonToMarkdown, getDocumentPath, getDocumentDiskPath, saveDocumentAndSynchronize, getAllDocuments } from './documents';
 import { platform } from '@/lib/platform/platformAdapter';
 import { appInstance } from '@/core/app/NoetherApp';
 import { fileTypeRegistry, isMediaFileName } from '@/core/registries/FileTypeRegistry';
@@ -411,6 +411,19 @@ export async function restoreTrashItemsBatch(trashOrOriginalIds: string[]): Prom
           }
         } catch (e) {
           console.error('[Noether Trash] Error synchronizing restored document:', e);
+        }
+      } else if (item.is_folder && platform.isDesktop()) {
+        try {
+          const allDocs = await getAllDocuments();
+          const folderDoc = allDocs.find((d: DocumentItem) => d.id === item.original_id);
+          if (folderDoc) {
+            const folderPath = getDocumentPath(folderDoc, allDocs);
+            if (folderPath) {
+              await platform.createFolder(folderPath);
+            }
+          }
+        } catch (e) {
+          console.error('[Noether Trash] Error recreating restored folder directory on disk:', e);
         }
       }
     }

@@ -190,16 +190,40 @@ export const MarkdownShortcuts = Extension.create({
       'Shift-Mod-H': ({ editor }) => toggleFormat(editor, '=='),
 
       // Explicit Undo: Ctrl+Z / Cmd+Z (all case variations)
-      'Mod-z': ({ editor }) => editor.commands.undo(),
-      'Mod-Z': ({ editor }) => editor.commands.undo(),
+      'Mod-z': ({ editor }) => {
+        editor.commands.undo();
+        return true;
+      },
+      'Mod-Z': ({ editor }) => {
+        editor.commands.undo();
+        return true;
+      },
 
       // Explicit Redo: Ctrl+Y / Cmd+Y, Ctrl+Shift+Z / Cmd+Shift+Z
-      'Mod-y': ({ editor }) => editor.commands.redo(),
-      'Mod-Y': ({ editor }) => editor.commands.redo(),
-      'Mod-Shift-z': ({ editor }) => editor.commands.redo(),
-      'Mod-Shift-Z': ({ editor }) => editor.commands.redo(),
-      'Shift-Mod-z': ({ editor }) => editor.commands.redo(),
-      'Shift-Mod-Z': ({ editor }) => editor.commands.redo(),
+      'Mod-y': ({ editor }) => {
+        editor.commands.redo();
+        return true;
+      },
+      'Mod-Y': ({ editor }) => {
+        editor.commands.redo();
+        return true;
+      },
+      'Mod-Shift-z': ({ editor }) => {
+        editor.commands.redo();
+        return true;
+      },
+      'Mod-Shift-Z': ({ editor }) => {
+        editor.commands.redo();
+        return true;
+      },
+      'Shift-Mod-z': ({ editor }) => {
+        editor.commands.redo();
+        return true;
+      },
+      'Shift-Mod-Z': ({ editor }) => {
+        editor.commands.redo();
+        return true;
+      },
 
       // Math: Ctrl+Shift+4 / Cmd+Shift+4 or Ctrl+$
       'Mod-Shift-4': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),

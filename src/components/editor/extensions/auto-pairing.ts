@@ -68,6 +68,10 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
         key: AutoPairingPluginKey,
         props: {
           handleDOMEvents: {
+            mousedown(_view, _event) {
+              lastAutoPair = null;
+              return false;
+            },
             keydown(view, event) {
               if (event.ctrlKey || event.metaKey || event.altKey) return false;
 
@@ -203,6 +207,7 @@ export const AutoPairing = Extension.create<never, AutoPairingStorage>({
                     event.preventDefault();
                     event.stopPropagation();
                     const tr = state.tr.delete(from, from + lastAutoPair.char.length);
+                    tr.setMeta('addToHistory', false);
                     view.dispatch(tr);
                     lastAutoPair = null;
                     return true;
