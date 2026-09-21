@@ -75,6 +75,8 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
     const vaultPath = useWorkspaceStore((s) => s.vaultPath);
     const showToast = useWorkspaceStore((s) => s.showToast);
     const documents = useDocumentStore((s) => s.documents);
+    const showBrokenEmbedIndicators = useSettingsStore((s) => s.showBrokenEmbedIndicators);
+    const brokenEmbedCounts = useDocumentStore((s) => s.brokenEmbedCounts);
     const { showContextMenu } = useAppContextMenu();
     const app = useNoetherApp();
     const openTabInPane = useWorkspaceStore((s) => s.openTabInPane);
@@ -597,6 +599,12 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
             const isSingleTab = tabs.length <= 1 && isOnly;
             const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
             const canCloseTab = !isSingleTab || !isTabEmpty;
+            const isClosable = canCloseTab && !tab.is_pinned;
+            const hasBrokenEmbeds = Boolean(
+              showBrokenEmbedIndicators &&
+              tab.document_id &&
+              (brokenEmbedCounts[tab.document_id] || 0) > 0
+            );
             const hasElementsBehind = isTabActive && isImmersiveView && (
               activeViewType === 'canvas' ||
               activeViewType === 'graph' ||
@@ -710,7 +718,13 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                  * without feeling sluggish or "animated" in the UI sense.
                  */}
                 <div
-                  className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-6"
+                  className={`relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] ${
+                    hasBrokenEmbeds && isClosable
+                      ? 'pr-5 group-hover:pr-11'
+                      : hasBrokenEmbeds
+                      ? 'pr-5'
+                      : 'group-hover:pr-5'
+                  }`}
                   style={{
                     filter: hasElementsBehind
                       ? 'drop-shadow(0 1px 2px rgba(0,0,0,0.9)) drop-shadow(0 0 8px rgba(0,0,0,0.6))'
@@ -734,10 +748,20 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   {tab.is_pinned && (
                     <PinIcon size={11} className="shrink-0 opacity-70 ml-1 text-[var(--noether-text-muted)]" />
                   )}
-                  <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" className="ml-1" />
                 </div>
 
-                {canCloseTab && !tab.is_pinned && (
+                {/* Warning badge: centered where X is when idle; shifts to the left of X when hovering */}
+                <div
+                  className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center pointer-events-auto z-20 ${
+                    hasBrokenEmbeds && isClosable
+                      ? 'right-1.5 group-hover:right-6'
+                      : 'right-1.5'
+                  }`}
+                >
+                  <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" />
+                </div>
+
+                {isClosable && (
                   <button
                     type="button"
                     data-tauri-drag-region="false"
@@ -798,6 +822,8 @@ export const WindowHeader: React.FC = React.memo(() => {
   const leftTabs = useSidebarTabs('left');
 
   const showTabTitleBar = useSettingsStore((s) => s.showTabTitleBar);
+  const showBrokenEmbedIndicators = useSettingsStore((s) => s.showBrokenEmbedIndicators);
+  const brokenEmbedCounts = useDocumentStore((s) => s.brokenEmbedCounts);
   const activeLeftView = useWorkspaceStore((s) => s.activeLeftView);
   const setActiveLeftView = useWorkspaceStore((s) => s.setActiveLeftView);
   const isLeftSidebarOpen = useWorkspaceStore((s) => s.isLeftSidebarOpen);

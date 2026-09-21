@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { BrokenEmbedIndicator } from '@/components/common/BrokenEmbedAlert';
 import { useNoetherApp, useTabDecorators } from '@/core/app/AppContext';
 import { useAppContextMenu, ContextMenuItem } from '@/components/common/ContextMenu';
@@ -50,6 +51,8 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
   const vaultPath = useWorkspaceStore((s) => s.vaultPath);
   const showToast = useWorkspaceStore((s) => s.showToast);
   const documents = useDocumentStore((s) => s.documents);
+  const showBrokenEmbedIndicators = useSettingsStore((s) => s.showBrokenEmbedIndicators);
+  const brokenEmbedCounts = useDocumentStore((s) => s.brokenEmbedCounts);
   const { showContextMenu } = useAppContextMenu();
 
   const tabDecorators = useTabDecorators();
@@ -161,6 +164,32 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       return tab.title || (doc ? doc.title : 'Untitled');
     },
     [tabDecorators, documents, app.views]
+  );
+
+  const getTabTooltip = useCallback(
+    (tab: TabItem) => {
+      const isDoc =
+        (!tab.view_type || tab.view_type === 'document') &&
+        (!tab.view_mode || tab.view_mode === 'document') &&
+        Boolean(tab.document_id && !tab.document_id.startsWith('__'));
+      const doc = isDoc ? documents.find((d) => d.id === tab.document_id) || null : null;
+
+      if (isDoc && !doc) {
+        return `${tab.title || 'Untitled'} (File deleted)`;
+      }
+
+      for (const dec of tabDecorators) {
+        if (dec.matches && !dec.matches(tab, doc)) continue;
+        const customTooltip = dec.getTooltip?.(tab, doc);
+        if (customTooltip !== undefined) return customTooltip;
+      }
+
+      if (doc) {
+        return doc.title || getTabDisplayTitle(tab);
+      }
+      return getTabDisplayTitle(tab);
+    },
+    [tabDecorators, documents, getTabDisplayTitle]
   );
 
   const handleSplitTabContextMenu = useCallback(
@@ -442,10 +471,17 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
           const tabReorderStyle = splitTabReorder.getTabStyle(index, isTabActive);
           const isTabEmpty = (!tab.document_id || tab.document_id === '') && (!tab.view_type || tab.view_type === 'document');
           const canCloseTab = splitTabs.length > 1 || !isTabEmpty;
+          const isClosable = canCloseTab && !tab.is_pinned;
+          const hasBrokenEmbeds = Boolean(
+            showBrokenEmbedIndicators &&
+            tab.document_id &&
+            (brokenEmbedCounts[tab.document_id] || 0) > 0
+          );
 
           return (
             <div
               key={tab.id}
+              role="tab"
               data-tab-id={tab.id}
               data-tab-doc-id={tab.document_id || ''}
               ref={(el) => splitTabReorder.registerTabRef(index, el)}
@@ -464,6 +500,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 }
               }}
               onContextMenu={(e) => handleSplitTabContextMenu(e, tab, index)}
+              data-tooltip={splitTabReorder.isDragging ? undefined : getTabTooltip(tab)}
               style={{
                 color: isFocusedActive
                   ? 'var(--noether-text-primary)'
@@ -534,7 +571,13 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                * Scroll-triggered shadow on the active tab icon + title (only for immersive/spatial views).
                */}
               <div
-                className="relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] group-hover:pr-6"
+                className={`relative z-10 flex items-center gap-1.5 min-w-0 flex-1 -translate-y-[2px] ${
+                  hasBrokenEmbeds && isClosable
+                    ? 'pr-5 group-hover:pr-11'
+                    : hasBrokenEmbeds
+                    ? 'pr-5'
+                    : 'group-hover:pr-5'
+                }`}
                 style={{
                   filter: isTabActive && isContentScrolled && (
                     tab.view_type === 'graph' ||
@@ -562,10 +605,20 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 {tab.is_pinned && (
                   <PinIcon size={11} className="shrink-0 opacity-70 ml-1 text-[var(--noether-text-muted)]" />
                 )}
-                <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" className="ml-1" />
               </div>
 
-              {canCloseTab && !tab.is_pinned && (
+              {/* Warning badge: centered where X is when idle; shifts to the left of X when hovering */}
+              <div
+                className={`absolute top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center pointer-events-auto z-20 ${
+                  hasBrokenEmbeds && isClosable
+                    ? 'right-1.5 group-hover:right-6'
+                    : 'right-1.5'
+                }`}
+              >
+                <BrokenEmbedIndicator documentId={tab.document_id} position="bottom" />
+              </div>
+
+              {isClosable && (
                 <button
                   type="button"
                   onClick={(e) => {
