@@ -1,7 +1,7 @@
 /**
  * @file MoreIconsNode.tsx
  * @description
- * Tree node icon component for custom and default icons in the Vault file tree.
+ * Tree node icon component for custom and default icons in the vault file tree.
  * Renders custom icons for both folders and files (notes, canvases, media).
  * Zero artificial micro-interaction animations/transitions.
  *

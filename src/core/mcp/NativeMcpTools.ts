@@ -201,7 +201,7 @@ export function registerNativeTools(app: NoetherApp): void {
           if (!newDoc) {
             return {
               isError: true,
-              content: [{ type: 'text', text: 'Failed to create document in Vault storage.' }],
+              content: [{ type: 'text', text: 'Failed to create document in vault storage.' }],
             };
           }
 
@@ -843,7 +843,7 @@ export function registerNativeTools(app: NoetherApp): void {
     // ── 14. List All Known Vaults ──
     {
       name: 'noether_list_vaults',
-      description: 'List all known and recent Vaults (workspaces/vaults) in Noether, including paths, names, and which one is active. Enables zero-config multi-vault access for agents.',
+      description: 'List all known and recent vaults (workspaces/vaults) in Noether, including paths, names, and which one is active. Enables zero-config multi-vault access for agents.',
       category: 'vaults',
       parameters: {
         type: 'object',
@@ -892,7 +892,7 @@ export function registerNativeTools(app: NoetherApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error listing Vaults: ${message}` }],
+            content: [{ type: 'text', text: `Error listing vaults: ${message}` }],
           };
         }
       },
@@ -901,7 +901,7 @@ export function registerNativeTools(app: NoetherApp): void {
     // ── 15. Get Active Vault ──
     {
       name: 'noether_get_active_vault',
-      description: 'Get details about the currently active Vault workspace: name, root path, document count, and status.',
+      description: 'Get details about the currently active vault workspace: name, root path, document count, and status.',
       category: 'vaults',
       parameters: {
         type: 'object',
@@ -932,7 +932,7 @@ export function registerNativeTools(app: NoetherApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error getting active Vault: ${message}` }],
+            content: [{ type: 'text', text: `Error getting active vault: ${message}` }],
           };
         }
       },
@@ -941,18 +941,18 @@ export function registerNativeTools(app: NoetherApp): void {
     // ── 16. Switch Active Vault ──
     {
       name: 'noether_switch_vault',
-      description: 'Switch the active Vault workspace to a different known Vault by path or name. Seamlessly switches context without reconfiguring the agent.',
+      description: 'Switch the active vault workspace to a different known vault by path or name. Seamlessly switches context without reconfiguring the agent.',
       category: 'vaults',
       parameters: {
         type: 'object',
         properties: {
           vaultPath: {
             type: 'string',
-            description: 'The absolute directory path to the target Vault workspace',
+            description: 'The absolute directory path to the target vault workspace',
           },
           name: {
             type: 'string',
-            description: 'Optional name of a recent Vault (used to resolve path if vaultPath is omitted)',
+            description: 'Optional name of a recent vault (used to resolve path if vaultPath is omitted)',
           },
         },
       },
@@ -977,7 +977,7 @@ export function registerNativeTools(app: NoetherApp): void {
               content: [
                 {
                   type: 'text',
-                  text: 'Could not resolve target Vault. Please provide a valid "vaultPath" or known "name". Use noether_list_vaults to view available Vaults.',
+                  text: 'Could not resolve target vault. Please provide a valid "vaultPath" or known "name". Use noether_list_vaults to view available vaults.',
                 },
               ],
             };
@@ -987,7 +987,7 @@ export function registerNativeTools(app: NoetherApp): void {
           if (!res.success) {
             return {
               isError: true,
-              content: [{ type: 'text', text: `Failed to switch to Vault at "${targetPath}".` }],
+              content: [{ type: 'text', text: `Failed to switch to vault at "${targetPath}".` }],
             };
           }
 
@@ -998,7 +998,7 @@ export function registerNativeTools(app: NoetherApp): void {
               {
                 type: 'text',
                 text: JSON.stringify({
-                  message: `Successfully switched active Vault to "${res.name}".`,
+                  message: `Successfully switched active vault to "${res.name}".`,
                   activeVault: {
                     name: res.name,
                     path: res.path,
@@ -1011,7 +1011,7 @@ export function registerNativeTools(app: NoetherApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error switching Vault: ${message}` }],
+            content: [{ type: 'text', text: `Error switching vault: ${message}` }],
           };
         }
       },
@@ -1020,18 +1020,18 @@ export function registerNativeTools(app: NoetherApp): void {
     // ── 17. Create New Vault ──
     {
       name: 'noether_create_vault',
-      description: 'Create a brand new Vault workspace folder and optionally switch to it.',
+      description: 'Create a brand new vault workspace folder and optionally switch to it.',
       category: 'vaults',
       parameters: {
         type: 'object',
         properties: {
           name: {
             type: 'string',
-            description: 'Display name and directory name for the new Vault',
+            description: 'Display name and directory name for the new vault',
           },
           parentPath: {
             type: 'string',
-            description: 'Parent directory where the Vault folder should be created. If omitted, default system location is used.',
+            description: 'Parent directory where the vault folder should be created. If omitted, default system location is used.',
           },
         },
         required: ['name'],
@@ -1052,7 +1052,7 @@ export function registerNativeTools(app: NoetherApp): void {
           if (!res.success) {
             return {
               isError: true,
-              content: [{ type: 'text', text: `Failed to create Vault: ${res.error || 'Unknown error'}` }],
+              content: [{ type: 'text', text: `Failed to create vault: ${res.error || 'Unknown error'}` }],
             };
           }
 
@@ -1076,7 +1076,7 @@ export function registerNativeTools(app: NoetherApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error creating Vault: ${message}` }],
+            content: [{ type: 'text', text: `Error creating vault: ${message}` }],
           };
         }
       },
@@ -1085,18 +1085,18 @@ export function registerNativeTools(app: NoetherApp): void {
     // ── 18. Search Across All Vaults ──
     {
       name: 'noether_search_across_vaults',
-      description: 'Search for notes across ALL known/recent Vaults in Noether simultaneously, returning results grouped by Vault workspace.',
+      description: 'Search for notes across ALL known/recent vaults in Noether simultaneously, returning results grouped by vault workspace.',
       category: 'search',
       parameters: {
         type: 'object',
         properties: {
           query: {
             type: 'string',
-            description: 'Search query to match against note titles and file paths across all Vaults',
+            description: 'Search query to match against note titles and file paths across all vaults',
           },
           limitPerVault: {
             type: 'number',
-            description: 'Maximum results to return per Vault (default: 10)',
+            description: 'Maximum results to return per vault (default: 10)',
           },
         },
         required: ['query'],
@@ -1193,7 +1193,7 @@ export function registerNativeTools(app: NoetherApp): void {
           const message = err instanceof Error ? err.message : String(err);
           return {
             isError: true,
-            content: [{ type: 'text', text: `Error searching across Vaults: ${message}` }],
+            content: [{ type: 'text', text: `Error searching across vaults: ${message}` }],
           };
         }
       },
@@ -1202,7 +1202,7 @@ export function registerNativeTools(app: NoetherApp): void {
     // ── 23. Run Script ──
     {
       name: 'noether_run_script',
-      description: 'Execute an ad-hoc JavaScript script against the in-app Vault state with instant access to documents, database, and workspace APIs.',
+      description: 'Execute an ad-hoc JavaScript script against the in-app vault state with instant access to documents, database, and workspace APIs.',
       category: 'workspace',
       parameters: {
         type: 'object',
@@ -1581,7 +1581,7 @@ export function registerNativeTools(app: NoetherApp): void {
   const nativePrompts: McpPromptDefinition[] = [
     {
       name: 'noether_system_instructions',
-      description: 'Comprehensive system instructions and domain manual for AI agents operating in Noether. Explains Vaults, Wikilinks, FSRS flashcard syntax, Cascades, and optimal tool-chaining recipes.',
+      description: 'Comprehensive system instructions and domain manual for AI agents operating in Noether. Explains vaults, Wikilinks, FSRS flashcard syntax, Cascades, and optimal tool-chaining recipes.',
       arguments: [
         {
           name: 'mode',
@@ -1590,7 +1590,7 @@ export function registerNativeTools(app: NoetherApp): void {
         },
       ],
       getMessages: async (args: Record<string, string>, hostApp: NoetherApp) => {
-        const vaultName = hostApp.vault.vaultName || 'Default Vault';
+        const vaultName = hostApp.vault.vaultName || 'Default vault';
         const vaultPath = hostApp.vault.vaultPath || 'Local';
         const docCount = hostApp.vault.documents.length;
         const mode = args.mode === 'concise' ? 'concise' : 'comprehensive';
@@ -1600,7 +1600,7 @@ export function registerNativeTools(app: NoetherApp): void {
 You are connected to Noether via native Model Context Protocol (MCP) tools and prompts.
 
 ## Active Workspace Context
-- **Active Vault**: "${vaultName}" (${vaultPath})
+- **Active vault**: "${vaultName}" (${vaultPath})
 - **Total Indexed Documents**: ${docCount}
 - **Database Status**: ${hostApp.workspace.isDatabaseActive ? 'Online & Synchronized' : 'Offline'}
 
@@ -1660,7 +1660,7 @@ You are connected to Noether via native Model Context Protocol (MCP) tools and p
 ${journalContent}
 
 ## Workspace Overview
-- Active Vault: ${hostApp.vault.vaultName}
+- Active vault: ${hostApp.vault.vaultName}
 - Total Notes: ${allDocs.length}
 
 Please provide:
@@ -1689,7 +1689,7 @@ Please provide:
       arguments: [
         {
           name: 'topic',
-          description: 'The topic, keyword, or concept to synthesize across the Vault.',
+          description: 'The topic, keyword, or concept to synthesize across the vault.',
           required: true,
         },
       ],
@@ -1713,7 +1713,7 @@ Please provide:
 
         const promptText = `I want a comprehensive knowledge synthesis on the topic: **"${topic}"**.
 
-Here are the most relevant notes found in my Vault "${hostApp.vault.vaultName}":
+Here are the most relevant notes found in my vault "${hostApp.vault.vaultName}":
 
 ${notesSummary || 'No direct note matches found.'}
 

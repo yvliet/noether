@@ -108,7 +108,7 @@ export const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
 
       <div className="px-4">
         <p className="text-xs text-[#777]">
-          Items in trash are automatically cleared after 48 hours. You can restore them back to your Vault anytime before they expire.
+          Items in trash are automatically cleared after 48 hours. You can restore them back to your vault anytime before they expire.
         </p>
       </div>
 
@@ -187,7 +187,7 @@ export const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                       onClick={async () => {
                         await restoreFromTrash(item.id);
                       }}
-                      title="Restore to Vault"
+                      title="Restore to vault"
                       className="noether-btn text-xs py-1 px-2.5 flex items-center gap-1.5"
                     >
                       <RotateCcwIcon size={12} />

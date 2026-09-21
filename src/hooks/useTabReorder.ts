@@ -705,7 +705,7 @@ function handleTabOrDockPointerMove({
     const allDocs = useDocumentStore.getState().documents;
     if (targetNode.hasAttribute('data-sidebar-root') && !targetNode.hasAttribute('data-tree-item-id')) {
       const { vaultName } = useWorkspaceStore.getState();
-      const currentVault = vaultName || 'Noether Vault';
+      const currentVault = vaultName || 'Noether vault';
       if (docItem.parent_id) {
         dragTooltipManager.updateSubtitle(`Move into “${currentVault}”`);
         targetEl.style.cursor = 'grabbing';

@@ -78,7 +78,7 @@ class NativeSqliteAdapter {
         try {
           if (platform.isTauri()) {
             await platform.dbInit(this.activeVaultPath || undefined);
-            console.log('[Noether Native DB] Connected to native rusqlite engine for Vault:', this.activeVaultPath || 'default');
+            console.log('[Noether Native DB] Connected to native rusqlite engine for vault:', this.activeVaultPath || 'default');
           }
           this.isInitialized = true;
           this.notifyStatus(true);

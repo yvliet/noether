@@ -341,7 +341,7 @@ export class ExtensionManager {
    * Hot-reloads an individual extension from disk or registered constructor:
    * 1. Unloads the running instance if active.
    * 2. Cleans up injected styles and cached constructor.
-   * 3. Re-discovers bundle files from Vault `.noether/extensions/<id>/` on desktop.
+   * 3. Re-discovers bundle files from vault `.noether/extensions/<id>/` on desktop.
    * 4. Re-enables the extension if it was previously enabled.
    */
   public async reloadExtension(extensionId: string): Promise<boolean> {

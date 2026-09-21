@@ -6642,7 +6642,7 @@ export const CanvasView: React.FC<CanvasViewProps> = React.memo(({ boardId, tabI
             if (!doc) return;
             openConfirmDialog({
               title: `Delete "${doc.title}"?`,
-              message: `Are you sure you want to delete "${doc.title}"? It will be permanently removed from your Vault.`,
+              message: `Are you sure you want to delete "${doc.title}"? It will be permanently removed from your vault.`,
               confirmText: 'Delete file',
               isDanger: true,
               onConfirm: async () => {

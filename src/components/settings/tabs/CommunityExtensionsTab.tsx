@@ -84,7 +84,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .noether/extensions/ inside Vault', 'info');
+      showToast('Extensions folder: .noether/extensions/ inside vault', 'info');
     }
   }, [showToast]);
 
@@ -143,7 +143,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
             {highlightMatch('Community Extensions', searchQuery)}
           </h3>
           <p className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed">
-            {highlightMatch('Manage third-party extensions installed in your Vault (.noether/extensions/).', searchQuery)}
+            {highlightMatch('Manage third-party extensions installed in your vault (.noether/extensions/).', searchQuery)}
           </p>
         </div>
         <div className="flex items-center gap-2">

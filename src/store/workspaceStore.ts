@@ -2466,7 +2466,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   // Vault state
-  vaultName: 'Noether Vault',
+  vaultName: 'Noether vault',
   vaultPath: '',
   recentVaults: [],
   setVaultName: (name) => set({ vaultName: name }),
@@ -2485,7 +2485,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         const persistedSort = loadPersistedFileSortOrder(vault.path);
         set({
           vaultPath: vault.path,
-          vaultName: vault.name || 'Noether Vault',
+          vaultName: vault.name || 'Noether vault',
           recentVaults: recentList,
           folderOpenState: persisted,
           fileSortOrder: persistedSort,
@@ -2545,7 +2545,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     return null;
   },
 
-  createNewVault: async (name: string, parentPath: string) => {
+  createNewVault: async (name: string, parentPath?: string) => {
     try {
       const currentPath = get().vaultPath;
       if (currentPath) {
@@ -2561,6 +2561,9 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         }
       } else {
         dbAdapter.setSwitchingVault(false);
+        if (res.error) {
+          get().showToast(res.error, 'warning');
+        }
       }
     } catch (e) {
       dbAdapter.setSwitchingVault(false);
@@ -2570,23 +2573,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   renameVault: async (targetPath: string, newName: string) => {
     try {
-      const cleanName = (newName || '').trim();
-      if (!cleanName) return { success: false, error: 'Name cannot be empty' };
-
-      const activePath = targetPath || get().vaultPath;
-      const isCurrent = !activePath || activePath === get().vaultPath;
-
-      // If the active vault is being renamed, flush pending SQLite writes first
-      if (isCurrent) {
-        try {
-          await dbAdapter.persist();
-        } catch (_) {}
-      }
-
-      const res = await platform.renameVault(activePath, cleanName);
-      if (res && res.success) {
+      const res = await platform.renameVault(targetPath, newName);
+      if (res.success && res.path) {
+        const finalPath = res.path;
+        const cleanName = res.name || newName.trim();
+        const activePath = targetPath;
+        const isCurrent = get().vaultPath === activePath;
         const list = res.recentVaults || [];
-        const finalPath = res.path || activePath;
 
         set((state) => ({
           recentVaults: list.length > 0 ? list : state.recentVaults.map((v) => (v.path === activePath ? { ...v, path: finalPath, name: cleanName } : v)),
@@ -2601,10 +2594,10 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
           } catch (_) {}
         }
 
-        get().showToast(`Renamed Vault to "${cleanName}"`, 'success');
+        get().showToast(`Renamed vault to "${cleanName}"`, 'success');
         return { success: true, path: finalPath, name: cleanName };
       } else {
-        const rawErr = res?.error || 'Failed to rename Vault';
+        const rawErr = res?.error || 'Failed to rename vault';
         const isLocked = rawErr.includes('os error 5') || rawErr.includes('os error 32') || rawErr.includes('Access is denied') || rawErr.includes('used by another process');
         const errorMsg = isLocked
           ? 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.'
@@ -2614,7 +2607,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       }
     } catch (e: any) {
       console.error('Error renaming vault:', e);
-      const rawMsg = e?.message || 'Failed to rename Vault';
+      const rawMsg = e?.message || 'Failed to rename vault';
       const isLocked = rawMsg.includes('os error 5') || rawMsg.includes('os error 32') || rawMsg.includes('Access is denied') || rawMsg.includes('used by another process');
       const errorMsg = isLocked
         ? 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.'
@@ -2630,7 +2623,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       if (res.success) {
         const list = res.recentVaults || [];
         set({ recentVaults: list });
-        get().showToast('Removed Vault from list', 'info');
+        get().showToast('Removed vault from list', 'info');
       }
     } catch (e) {
       console.error('Error removing recent vault:', e);
@@ -2641,7 +2634,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const currentPath = get().vaultPath;
       if (vaultPath && currentPath && vaultPath.toLowerCase() === currentPath.toLowerCase()) {
-        get().showToast('This Vault is already open', 'info');
+        get().showToast('This vault is already open', 'info');
         return;
       }
       if (currentPath) {

@@ -546,7 +546,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
           openConfirmDialog({
             title: `${typeLabel} already exists`,
             message: `A ${typeLabel.toLowerCase()} named “${item.title}” already exists in ${
-              targetParentId ? `“${targetTitle}”` : 'Vault root'
+              targetParentId ? `“${targetTitle}”` : 'vault root'
             }. Would you like to rename it to “${candidateTitle}”?`,
             subtext: `It will be renamed to “${candidateTitle}” and moved.`,
             confirmText: 'Rename and move',

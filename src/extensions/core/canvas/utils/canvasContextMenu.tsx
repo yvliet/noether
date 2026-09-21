@@ -101,7 +101,7 @@ export function buildCanvasBackgroundContextMenu(
     },
     {
       id: 'canvas-add-note',
-      title: 'Add note from Vault',
+      title: 'Add note from vault',
       icon: <FileEmpty01Icon size={14} />,
       onClick: params.onAddNote,
       onMouseEnter: params.onHoverNote,
@@ -109,7 +109,7 @@ export function buildCanvasBackgroundContextMenu(
     },
     {
       id: 'canvas-add-media',
-      title: 'Add media from Vault',
+      title: 'Add media from vault',
       icon: <FileImageIcon size={14} />,
       onClick: params.onAddMedia,
       onMouseEnter: params.onHoverMedia,
@@ -647,7 +647,7 @@ export function buildUnconnectedEdgeContextMenu(
     },
     {
       id: 'canvas-edge-add-note',
-      title: 'Add note from Vault',
+      title: 'Add note from vault',
       icon: <FileEmpty01Icon size={14} />,
       onClick: params.onAddNote,
       onMouseEnter: params.onHoverNote,
@@ -655,7 +655,7 @@ export function buildUnconnectedEdgeContextMenu(
     },
     {
       id: 'canvas-edge-add-media',
-      title: 'Add media from Vault',
+      title: 'Add media from vault',
       icon: <FileImageIcon size={14} />,
       onClick: params.onAddMedia,
       onMouseEnter: params.onHoverMedia,

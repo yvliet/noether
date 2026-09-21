@@ -634,7 +634,7 @@ export class MoreIconsExtension extends Extension {
     // Primary MCP tools: more-icons_*
     this.registerTool({
       name: 'list',
-      description: 'List all folders and files with customized icons in the current Vault.',
+      description: 'List all folders and files with customized icons in the current vault.',
       parameters: {
         type: 'object',
         properties: {

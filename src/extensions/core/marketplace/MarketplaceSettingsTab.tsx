@@ -18,7 +18,7 @@ export const MarketplaceSettingsTab: React.FC = () => {
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .noether/extensions/ inside Vault', 'info');
+      showToast('Extensions folder: .noether/extensions/ inside vault', 'info');
     }
   };
 

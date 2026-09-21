@@ -327,7 +327,7 @@ export function useTreeDragDrop({
           if (targetNode) {
             if (targetNode.hasAttribute('data-sidebar-root') && !targetNode.hasAttribute('data-tree-item-id')) {
               const { vaultName } = useWorkspaceStore.getState();
-              const currentVault = vaultName || 'Noether Vault';
+              const currentVault = vaultName || 'Noether vault';
               if (item.parent_id || isMultiDrag) {
                 setDragOverFolder(null, true);
                 dragTooltipManager.updateSubtitle(`Move into “${currentVault}”`);
@@ -402,7 +402,7 @@ export function useTreeDragDrop({
                   }
                 } else {
                   const { vaultName } = useWorkspaceStore.getState();
-                  const currentVault = vaultName || 'Noether Vault';
+                  const currentVault = vaultName || 'Noether vault';
                   if (item.parent_id || isMultiDrag) {
                     setDragOverFolder(null, true);
                     dragTooltipManager.updateSubtitle(`Move into “${currentVault}”`);

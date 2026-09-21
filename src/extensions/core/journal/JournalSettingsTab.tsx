@@ -29,7 +29,7 @@ export const JournalSettingsTab: React.FC = () => {
       onSelect: (folderPath: string) => {
         setDailyFolder(folderPath);
         setIsSettingsOpen(true, 'journal-settings');
-        showToast(folderPath ? `Journal location set to "${folderPath}"` : 'Journal location set to Vault root', 'success');
+        showToast(folderPath ? `Journal location set to "${folderPath}"` : 'Journal location set to vault root', 'success');
       },
       onCancel: () => {
         setIsSettingsOpen(true, 'journal-settings');

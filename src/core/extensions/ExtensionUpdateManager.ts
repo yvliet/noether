@@ -501,7 +501,7 @@ export class ExtensionUpdateManager {
   }
 
   /**
-   * Downloads the latest distribution bundle, updates physical files in the Vault,
+   * Downloads the latest distribution bundle, updates physical files in the vault,
    * and hot-reloads the extension in memory.
    */
   public async updateExtension(extensionId: string): Promise<boolean> {

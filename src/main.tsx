@@ -37,10 +37,10 @@ const isAuxiliaryWindow = typeof window !== 'undefined' && (
   window.location.hash.includes('window=help')
 );
 
-// Pre-warm native SQLite connection and Vault info only for main workspace window
+// Pre-warm native SQLite connection and vault info only for main workspace window
 if (!isAuxiliaryWindow) {
   dbAdapter.init().catch((err) => console.error('[Main] Pre-warm DB error:', err));
-  useWorkspaceStore.getState().initVaultInfo().catch((err) => console.error('[Main] Pre-warm Vault info error:', err));
+  useWorkspaceStore.getState().initVaultInfo().catch((err) => console.error('[Main] Pre-warm vault info error:', err));
 }
 
 const isHelpWindow = typeof window !== 'undefined' && (

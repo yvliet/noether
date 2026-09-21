@@ -664,7 +664,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               dragTooltipManager.updateSubtitle(`Import into "${targetDoc?.title || 'Folder'}"`);
             } else {
               const parentFolder = targetDoc?.parent_id ? docs.find((d) => d.id === targetDoc.parent_id) : null;
-              dragTooltipManager.updateSubtitle(parentFolder ? `Import into "${parentFolder.title}"` : 'Import into Vault root');
+              dragTooltipManager.updateSubtitle(parentFolder ? `Import into "${parentFolder.title}"` : 'Import into vault root');
             }
 
             if (activeHoveredRow !== treeItemEl) {
@@ -681,7 +681,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
               activeRootHovered = false;
             }
           } else {
-            dragTooltipManager.updateSubtitle('Import into Vault root');
+            dragTooltipManager.updateSubtitle('Import into vault root');
             if (activeHoveredRow) {
               activeHoveredRow.removeAttribute('data-drop-target');
               activeHoveredRow.classList.remove('!bg-[var(--noether-bg-card-hover)]', '!ring-1', '!ring-[var(--noether-accent,#eb584d)]');
@@ -1207,7 +1207,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             </div>
             {rootDocs.length === 0 && fileTreeSections.length === 0 && (
               <div className="text-center py-8 text-xs text-[var(--noether-text-muted)] leading-relaxed">
-                No files in Vault. Click{' '}
+                No files in vault. Click{' '}
                 <FileAddIcon
                   size={14}
                   className="inline-block align-[-2.5px]"
@@ -1262,14 +1262,14 @@ export const LeftSidebar: React.FC = React.memo(() => {
             showContextMenu(e, [
               {
                 id: 'open-switcher',
-                title: 'Open Vault switcher',
+                title: 'Open vault switcher',
                 icon: <ArrowUpDownIcon size={14} />,
                 onClick: () => setIsVaultModalOpen(true),
               },
               { type: 'separator' },
               {
                 id: 'reveal-in-explorer',
-                title: 'Reveal Vault in file explorer',
+                title: 'Reveal vault in file explorer',
                 icon: <FolderOpenIcon size={14} />,
                 onClick: () => {
                   platform.openVaultInExplorer(vaultPath);
@@ -1289,7 +1289,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
             style={{ overflowClipMargin: '4px' }}
             className="overflow-clip text-ellipsis whitespace-nowrap font-medium text-xs text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] leading-tight"
           >
-            {vaultName || 'Noether Vault'}
+            {vaultName || 'Noether vault'}
           </span>
         </button>
 

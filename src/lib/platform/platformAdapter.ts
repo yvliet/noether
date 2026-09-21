@@ -677,11 +677,11 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       const res: any = await invoke('get_current_vault');
       return {
         path: res?.path || '',
-        name: res?.name || 'Noether Vault',
+        name: res?.name || 'Noether vault',
         recentVaults: res?.recentVaults || res?.recentVaults || [],
       };
     }
-    return { path: '', name: 'Noether Vault', recentVaults: [] };
+    return { path: '', name: 'Noether vault', recentVaults: [] };
   }
 
   public async selectVaultFolder(): Promise<{ canceled: boolean; path?: string; name?: string; recentVaults?: RecentVaultItem[] }> {
@@ -690,7 +690,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         const selected = await openDialog({
           directory: true,
           multiple: false,
-          title: 'Select Vault Folder',
+          title: 'Select vault folder',
         });
         if (selected && typeof selected === 'string') {
           const res: any = await invoke('set_current_vault', { vaultPath: selected });
@@ -734,7 +734,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
           error,
         };
       } catch (e: any) {
-        let msg = e?.message || 'Failed to rename Vault';
+        let msg = e?.message || 'Failed to rename vault';
         if (msg.includes('os error 5') || msg.includes('os error 32') || msg.includes('Access is denied') || msg.includes('used by another process')) {
           msg = 'Cannot rename this vault because it is currently opened or in use. Please close any files or programs accessing this folder and try again.';
         }
@@ -787,7 +787,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
         const selected = await openDialog({
           directory: true,
           multiple: false,
-          title: 'Select Folder for New Vault',
+          title: 'Select folder for new vault',
         });
         if (selected && typeof selected === 'string') {
           return { canceled: false, path: selected };
@@ -1060,7 +1060,7 @@ class PlatformAdapterImpl implements IPlatformAdapter {
       listen('vault-changed', (event: any) => {
         callback({
           path: event.payload?.path,
-          name: event.payload?.name || 'Noether Vault',
+          name: event.payload?.name || 'Noether vault',
           recentVaults: event.payload?.recentVaults || event.payload?.recentVaults || [],
         });
       }).then((fn) => {

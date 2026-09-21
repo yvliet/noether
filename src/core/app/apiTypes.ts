@@ -472,11 +472,11 @@ export interface WorkspaceAPI {
   getActiveDrag(): ActiveDragData | null;
 }
 
-// ─── Vault API (formerly Vault API) ────────────────────────────
+// ─── Vault API ──────────────────────────────────────────────────
 
 /**
  * The Vault API provides methods for interacting with documents,
- * notes, and the underlying Vault storage layer.
+ * notes, and the underlying vault storage layer.
  * Accessed via `app.vault` inside any Extension.
  *
  * @example
@@ -498,26 +498,26 @@ export interface VaultAPI {
   readonly activeDocument: DocumentItem | null;
 
   /**
-   * All documents and folders currently loaded in the Vault.
+   * All documents and folders currently loaded in the vault.
    * @since 0.2.0
    */
   readonly documents: DocumentItem[];
 
   /**
-   * Display name of the currently open Vault.
+   * Display name of the currently open vault.
    * @since 0.1.0
    */
   readonly vaultName: string;
 
   /**
-   * Filesystem path of the currently open Vault root directory.
+   * Filesystem path of the currently open vault root directory.
    * @since 0.1.0
    */
   readonly vaultPath: string;
 
   /**
    * Retrieves a document by its unique ID.
-   * Returns `undefined` if no document with that ID exists in the Vault.
+   * Returns `undefined` if no document with that ID exists in the vault.
    *
    * @param docId - The document's unique identifier.
    * @since 0.2.0
@@ -533,7 +533,7 @@ export interface VaultAPI {
   readDocument(docId: string): Promise<DocumentItem | undefined>;
 
   /**
-   * Creates a new note document in the Vault.
+   * Creates a new note document in the vault.
    *
    * @param title - Initial title for the note (default: 'Untitled').
    * @param parentId - Optional parent folder ID for nesting.
@@ -550,7 +550,7 @@ export interface VaultAPI {
   ): Promise<DocumentItem | undefined>;
 
   /**
-   * Creates a new folder in the Vault.
+   * Creates a new folder in the vault.
    *
    * @param name - Initial folder name (default: 'Untitled').
    * @param parentId - Optional parent folder ID for nesting.
@@ -610,7 +610,7 @@ export interface VaultAPI {
   saveDocument(docId: string, contentJson: string, title?: string, rawMarkdownOverride?: string): Promise<void>;
 
   /**
-   * Permanently deletes a document from the Vault.
+   * Permanently deletes a document from the vault.
    *
    * @param docId - The document's unique identifier.
    * @since 0.1.0
@@ -712,7 +712,7 @@ export interface VaultAPI {
   getOutgoingLinks(docId?: string): Promise<OutgoingLinkItem[]>;
 
   /**
-   * Finds unlinked text mentions of a document title across the Vault.
+   * Finds unlinked text mentions of a document title across the vault.
    * @param docId - The target document ID.
    * @param title - Optional title override to search for.
    * @since 0.4.6
@@ -736,7 +736,7 @@ export interface VaultAPI {
   loadLinksAndMentions(docId: string, title: string): Promise<void>;
 
   /**
-   * Retrieves the complete list of unique tags indexed in the Vault.
+   * Retrieves the complete list of unique tags indexed in the vault.
    * @since 0.4.6
    */
   getTags(): Promise<TagItem[]>;
@@ -771,7 +771,7 @@ export interface VaultAPI {
   toggleTask(docId: string, lineIndexOrText: number | string, completed?: boolean): Promise<boolean>;
 
   /**
-   * Refreshes the cached global tasks across all Vault documents.
+   * Refreshes the cached global tasks across all vault documents.
    * @since 0.4.6
    */
   refreshGlobalTasks(): Promise<void>;
@@ -789,7 +789,7 @@ export interface VaultAPI {
  * The Settings API provides access to application-level preferences
  * that affect the editor, interface, and display behavior.
  *
- * Accessed via `app.settings` inside any Plugin.
+ * Accessed via `app.settings` inside any Extension.
  *
  * @example
  * ```ts

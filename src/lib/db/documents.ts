@@ -1457,7 +1457,7 @@ export async function saveDocumentAndSynchronize(
     }
   }
 
-  // 5. Auto-export to raw Markdown (.md) in Noether Vault on disk for 100% portability
+  // 5. Auto-export to raw Markdown (.md) in Noether vault on disk for 100% portability
   try {
     const docRecord = (await dbAdapter.query<{ id: string; parent_id: string | null; title: string; properties?: string; doc_type?: string }>(`SELECT id, parent_id, title, properties, doc_type FROM documents WHERE id = ?`, [documentId]))[0];
     const docTitle = title || docRecord?.title || 'Untitled';
@@ -1727,7 +1727,7 @@ Here are a few handy things to try right away:
 - **Explore connections**: Open the **Graph View** in the ribbon to see your thoughts branch out as your notes grow.
 
 ## Your Notes, Your Machine
-There is no proprietary lock-in here. Your notes live in your Vault folder as standard \`.md\` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.
+There is no proprietary lock-in here. Your notes live in your vault folder as standard \`.md\` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.
 Feel free to edit this note, delete it, or keep it around as a quick reference. Happy writing!
 `;
 

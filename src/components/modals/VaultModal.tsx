@@ -71,7 +71,7 @@ export const VaultModal: React.FC = React.memo(() => {
   const handleSwitchVault = async (targetPath: string) => {
     if (editingVaultPath) return;
     if (targetPath && vaultPath && targetPath.toLowerCase() === vaultPath.toLowerCase()) {
-      showToast('This Vault is already open', 'info');
+      showToast('This vault is already open', 'info');
       setIsVaultModalOpen(false);
       return;
     }
@@ -90,16 +90,16 @@ export const VaultModal: React.FC = React.memo(() => {
   const getMenuItems = (rv: RecentVaultItem): ContextMenuItem[] => [
     {
       id: 'copy-vault-id',
-      title: 'Copy Vault path',
+      title: 'Copy vault path',
       icon: <Copy01Icon size={14} />,
       onClick: () => {
         navigator.clipboard.writeText(rv.path);
-        showToast('Copied Vault path to clipboard', 'info');
+        showToast('Copied vault path to clipboard', 'info');
       },
     },
     {
       id: 'rename-vault',
-      title: 'Rename Vault...',
+      title: 'Rename vault...',
       icon: <Edit02Icon size={14} />,
       onClick: () => {
         setEditingVaultPath(rv.path);
@@ -108,7 +108,7 @@ export const VaultModal: React.FC = React.memo(() => {
     },
     {
       id: 'move-vault',
-      title: 'Move Vault...',
+      title: 'Move vault...',
       icon: <MoveFileIcon size={14} />,
       onClick: async () => {
         const newParent = await selectParentFolder();
@@ -120,7 +120,7 @@ export const VaultModal: React.FC = React.memo(() => {
     { type: 'separator' },
     {
       id: 'reveal-in-explorer',
-      title: 'Reveal Vault in file explorer',
+      title: 'Reveal vault in file explorer',
       icon: <FolderOpenIcon size={14} />,
       onClick: () => {
         platform.openVaultInExplorer(rv.path);
@@ -134,7 +134,7 @@ export const VaultModal: React.FC = React.memo(() => {
       isDanger: true,
       onClick: () => {
         openConfirmDialog({
-          title: 'Remove Vault from List',
+          title: 'Remove vault from list',
           message: `Remove "${rv.name}" from your recent vaults list?`,
           subtext: 'The vault folder on your disk will remain untouched and can be reopened anytime.',
           confirmText: 'Remove from list',
@@ -239,7 +239,7 @@ export const VaultModal: React.FC = React.memo(() => {
               })
             ) : (
               <div className="text-center py-10 text-[11px] text-[var(--noether-text-muted,#555)]">
-                No recent Vaults found.
+                No recent vaults found.
               </div>
             )}
           </div>
@@ -256,13 +256,13 @@ export const VaultModal: React.FC = React.memo(() => {
 
           {/* Action Cards Container */}
           <div className="w-full max-w-[420px] flex flex-col gap-3">
-            {/* Card 1: Create new Vault */}
+            {/* Card 1: Create new vault */}
             <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-subtle,#2c2c2c)] rounded-xl p-4 shadow-xs">
               <div className="flex items-center justify-between">
                 <div className="flex flex-col pr-3">
-                  <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Create new Vault</span>
+                  <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Create new vault</span>
                   <span className="text-[11px] text-[var(--noether-text-muted,#888)] mt-0.5">
-                    Create a new Noether Vault under a folder.
+                    Create a new Noether vault under a folder.
                   </span>
                 </div>
                 {!isCreating && (
@@ -331,10 +331,10 @@ export const VaultModal: React.FC = React.memo(() => {
               )}
             </div>
 
-            {/* Card 2: Open folder as Vault */}
+            {/* Card 2: Open folder as vault */}
             <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-subtle,#2c2c2c)] rounded-xl p-4 flex items-center justify-between shadow-xs">
               <div className="flex flex-col pr-3">
-                <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Open folder as Vault</span>
+                <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Open folder as vault</span>
                 <span className="text-[11px] text-[var(--noether-text-muted,#888)] mt-0.5">
                   Choose an existing folder of Markdown files.
                 </span>
@@ -354,7 +354,7 @@ export const VaultModal: React.FC = React.memo(() => {
                 <div className="flex flex-col pr-3">
                   <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Open in File Explorer</span>
                   <span className="text-[11px] text-[var(--noether-text-muted,#888)] mt-0.5">
-                    View currently opened Vault files on disk.
+                    View currently opened vault files on disk.
                   </span>
                 </div>
                 <button

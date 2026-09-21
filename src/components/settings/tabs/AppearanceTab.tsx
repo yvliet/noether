@@ -289,7 +289,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenF
     if (platform.isDesktop()) {
       platform.openExtensionsFolder();
     } else {
-      showToast('Extensions folder: .noether/extensions/ inside Vault', 'info');
+      showToast('Extensions folder: .noether/extensions/ inside vault', 'info');
     }
   }, [showToast]);
 

@@ -237,7 +237,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                               className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--noether-bg-card-hover)] rounded-md text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer"
                             >
                               <Copy01Icon size={14} className="text-[var(--noether-text-muted)]" />
-                              <span>Copy Vault path</span>
+                              <span>Copy vault path</span>
                             </button>
 
                             <button
@@ -249,7 +249,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                               className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--noether-bg-card-hover)] rounded-md text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer"
                             >
                               <Edit02Icon size={14} className="text-[var(--noether-text-muted)]" />
-                              <span>Rename Vault...</span>
+                              <span>Rename vault...</span>
                             </button>
 
                           <button
@@ -260,7 +260,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                             className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--noether-bg-card-hover)] rounded-md text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer"
                           >
                             <MoveFileIcon size={14} className="text-[var(--noether-text-muted)]" />
-                            <span>Move Vault...</span>
+                            <span>Move vault...</span>
                           </button>
 
                           <div className="h-[1px] bg-[var(--noether-border-subtle)] my-1" />
@@ -273,7 +273,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                             className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--noether-bg-card-hover)] rounded-md text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer"
                           >
                             <FolderOpenIcon size={14} className="text-[var(--noether-text-muted)]" />
-                            <span>Reveal Vault in file explorer</span>
+                            <span>Reveal vault in file explorer</span>
                           </button>
 
                           <div className="h-[1px] bg-[var(--noether-border-subtle)] my-1" />
@@ -298,7 +298,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
             })
           ) : (
             <div className="text-center py-10 text-[11px] text-[var(--noether-text-muted)]">
-              No recent Vaults found.
+              No recent vaults found.
             </div>
           )}
         </div>
@@ -357,12 +357,12 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
           {view === 'main' ? (
             /* VIEW 1: MAIN ACTION CARDS */
             <div className="w-full flex flex-col gap-3 px-1">
-              {/* Card 1: Create new Vault */}
+              {/* Card 1: Create new vault */}
               <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl p-4 flex items-center justify-between">
                 <div className="flex flex-col pr-3">
-                  <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Create new Vault</span>
+                  <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Create new vault</span>
                   <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
-                    Create a new Noether Vault under a folder.
+                    Create a new Noether vault under a folder.
                   </span>
                 </div>
                 <button
@@ -377,10 +377,10 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                 </button>
               </div>
 
-              {/* Card 2: Open folder as Vault */}
+              {/* Card 2: Open folder as vault */}
               <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl p-4 flex items-center justify-between">
                 <div className="flex flex-col pr-3">
-                  <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Open folder as Vault</span>
+                  <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Open folder as vault</span>
                   <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
                     Choose an existing folder of Markdown files.
                   </span>
@@ -400,7 +400,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                   <div className="flex flex-col pr-3">
                     <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Open in File Explorer</span>
                     <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
-                      View currently opened Vault files on disk.
+                      View currently opened vault files on disk.
                     </span>
                   </div>
                   <button
@@ -424,7 +424,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                   <ArrowLeft01Icon size={13} />
                   <span>Back</span>
                 </button>
-                <h2 className="text-sm font-bold text-[var(--noether-text-primary)] mb-3">Create local Vault</h2>
+                <h2 className="text-sm font-bold text-[var(--noether-text-primary)] mb-3">Create local vault</h2>
               </div>
 
               {/* Form Card */}
@@ -434,7 +434,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                   <div className="flex flex-col pr-4">
                     <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Vault name</span>
                     <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
-                      Pick a name for your Vault.
+                      Pick a name for your vault.
                     </span>
                   </div>
                   <input
@@ -454,7 +454,7 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                   <div className="flex flex-col pr-4 min-w-0">
                     <span className="font-semibold text-xs text-[var(--noether-text-primary)]">Location</span>
                     <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5 truncate">
-                      Pick a location for your new Vault.
+                      Pick a location for your new vault.
                     </span>
                     {newVaultLocation && (
                       <span className="text-[10px] text-emerald-400 truncate mt-1 select-text">

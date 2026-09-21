@@ -192,7 +192,7 @@ export const INITIAL_DOCUMENTS_SEED = [
         {
           type: 'paragraph',
           content: [
-            { type: 'text', text: 'There is no proprietary lock-in here. Your notes live in your Vault folder as standard `.md` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.' }
+            { type: 'text', text: 'There is no proprietary lock-in here. Your notes live in your vault folder as standard `.md` files that you can edit in any text editor, back up with Git, or sync with whatever tool you prefer.' }
           ]
         },
         {

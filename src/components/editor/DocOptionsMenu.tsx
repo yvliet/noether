@@ -372,7 +372,7 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
     setIsOpen(false);
     const folders = documents.filter((d) => d.is_folder);
     if (folders.length === 0) {
-      showToast('No folders exist in this Vault', 'info');
+      showToast('No folders exist in this vault', 'info');
       return;
     }
     openInputDialog({

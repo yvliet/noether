@@ -2,8 +2,8 @@
  * @module NoetherApp
  * @description
  * Central application singleton and host context aggregator for Noether.
- * Serves as the primary public API surface for plugins, exposing registries,
- * the EventBus, PluginManager, and convenience proxies for Workspace, Vault,
+ * Serves as the primary public API surface for extensions, exposing registries,
+ * the EventBus, ExtensionManager, and convenience proxies for Workspace, vault,
  * and Settings state.
  *
  * @since 0.1.0

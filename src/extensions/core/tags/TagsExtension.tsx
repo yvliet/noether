@@ -68,7 +68,7 @@ export class TagsExtension extends Extension {
     // ── Tool: list_all ──
     this.registerTool({
       name: 'list_all',
-      description: 'List all tags in the Vault with their occurrence frequencies and document references.',
+      description: 'List all tags in the vault with their occurrence frequencies and document references.',
       parameters: {
         type: 'object',
         properties: {},
@@ -101,7 +101,7 @@ export class TagsExtension extends Extension {
     // ── Tool: get_tree ──
     this.registerTool({
       name: 'get_tree',
-      description: 'Get nested hierarchical tag tree (e.g. #parent/subtag) across all documents in the Vault.',
+      description: 'Get nested hierarchical tag tree (e.g. #parent/subtag) across all documents in the vault.',
       parameters: {
         type: 'object',
         properties: {},

@@ -80,7 +80,7 @@ export function useActiveDocument(): DocumentItem | null {
 }
 
 /**
- * Subscribes to all documents and folders currently loaded in the active Vault.
+ * Subscribes to all documents and folders currently loaded in the active vault.
  * @since 0.4.6
  */
 export function useVaultDocuments(): DocumentItem[] {
@@ -201,7 +201,7 @@ export function useDocumentUnlinkedMentions(docId?: string): UnlinkedMentionItem
 }
 
 /**
- * Subscribes to the list of unique tags indexed across the entire Vault.
+ * Subscribes to the list of unique tags indexed across the entire vault.
  * @since 0.4.6
  */
 export function useVaultTags(): TagItem[] {
@@ -209,7 +209,7 @@ export function useVaultTags(): TagItem[] {
 }
 
 /**
- * Subscribes to all interactive tasks found across all documents in the Vault.
+ * Subscribes to all interactive tasks found across all documents in the vault.
  * @since 0.4.6
  */
 export function useGlobalTasks(): GlobalTaskItem[] {

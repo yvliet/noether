@@ -83,7 +83,7 @@ export const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) =>
       onSelect: (folderPath) => {
         setAttachmentFolder(folderPath);
         setIsSettingsOpen(true, 'files');
-        showToast(folderPath ? `Attachment location set to "${folderPath}"` : 'Attachment location set to Vault root', 'success');
+        showToast(folderPath ? `Attachment location set to "${folderPath}"` : 'Attachment location set to vault root', 'success');
       },
       onCancel: () => {
         setIsSettingsOpen(true, 'files');
@@ -128,7 +128,7 @@ export const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) =>
       >
         <SettingRow
           title="Vault name"
-          description="Change the display name of this Vault."
+          description="Change the display name of this vault."
           keywords={['vault', 'name', 'rename']}
         >
           <div className="flex items-center gap-2">
@@ -248,7 +248,7 @@ export const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) =>
         {/* New attachment location */}
         <SettingRow
           title="Default location for new attachments"
-          description="Folder where pasted images and media attachments are placed (leave blank for Vault root)."
+          description="Folder where pasted images and media attachments are placed (leave blank for vault root)."
           keywords={['attachment', 'images', 'media', 'folder', 'pasted']}
           resetButton={
             <FieldResetButton
@@ -312,7 +312,7 @@ export const FilesTab: React.FC<FilesTabProps> = React.memo(({ onOpenTrash }) =>
             options={[
               { value: 'shortest', label: 'Shortest path when possible' },
               { value: 'relative', label: 'Relative path from file' },
-              { value: 'absolute', label: 'Absolute path in Vault' },
+              { value: 'absolute', label: 'Absolute path in vault' },
             ]}
           />
         </SettingRow>

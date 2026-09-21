@@ -533,7 +533,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
           <span className="font-medium text-xs text-[var(--noether-text-muted,#888)] flex items-center gap-1.5 select-none">
             <span className="text-[var(--noether-text-secondary,#ccc)]">Settings</span>
             <span className="text-[var(--noether-text-faint,#555)]">﹕</span>
-            <span className="text-[var(--noether-text-primary)] font-medium">{vaultName || 'Noether Vault'}</span>
+            <span className="text-[var(--noether-text-primary)] font-medium">{vaultName || 'Noether vault'}</span>
             <span className="text-[var(--noether-text-faint,#555)]">﹕</span>
             <span className="text-[var(--noether-text-muted,#888)]">Noether</span>
           </span>

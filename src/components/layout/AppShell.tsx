@@ -371,12 +371,12 @@ export const AppShell: React.FC = React.memo(() => {
       });
 
     const unsubVault = platform.onVaultChanged(async (data) => {
-      // If the current window state has already updated to the new Vault path, do not reload
+      // If the current window state has already updated to the new vault path, do not reload
       const currentPath = useWorkspaceStore.getState().vaultPath;
       if (currentPath && data?.path && currentPath.toLowerCase() === data.path.toLowerCase()) {
         return;
       }
-      // Reload window to start completely fresh for the new Vault
+      // Reload window to start completely fresh for the new vault
       window.location.reload();
     });
 
