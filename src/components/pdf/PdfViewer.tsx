@@ -130,7 +130,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
   const pageOffsets = useMemo(() => {
     if (!pdfData || pdfData.pageInfos.length === 0) return [];
     const isSideways = rotation === 90 || rotation === 270;
-    const gap = 16;
+    const gap = 8;
     let currentTop = 16;
 
     return pdfData.pageInfos.map((info, idx) => {
@@ -920,6 +920,17 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
     if (!el) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.closest('[contenteditable="true"]'))
+      ) {
+        return;
+      }
+
       if (e.ctrlKey || e.metaKey) {
         if (e.key === '=' || e.key === '+') {
           e.preventDefault();
@@ -944,12 +955,26 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
         if (e.key === 'F5') {
           e.preventDefault();
           handleStartPresentation();
-        } else if (e.key === 'PageDown') {
+        } else if (
+          e.key === 'ArrowRight' ||
+          e.key === 'ArrowDown' ||
+          e.key === 'PageDown' ||
+          e.key === ' ' ||
+          e.key === '>' ||
+          e.key === '.'
+        ) {
           e.preventDefault();
           if (pdfData && currentPage < pdfData.numPages) {
             scrollToPage(currentPage + 1);
           }
-        } else if (e.key === 'PageUp') {
+        } else if (
+          e.key === 'ArrowLeft' ||
+          e.key === 'ArrowUp' ||
+          e.key === 'PageUp' ||
+          e.key === 'Backspace' ||
+          e.key === '<' ||
+          e.key === ','
+        ) {
           e.preventDefault();
           if (currentPage > 1) {
             scrollToPage(currentPage - 1);
@@ -1020,7 +1045,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
   return (
     <div
       ref={containerRef}
-      className={`flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] select-none relative ${className}`}
+      tabIndex={-1}
+      className={`flex-1 h-full flex flex-col min-w-0 overflow-hidden bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] select-none relative outline-none ${className}`}
     >
       {/* Native Document Subheader - 100% consistent with all documents in Noether */}
       {!isSidebar && !embedded && (
@@ -1032,6 +1058,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
           showBookmark={Boolean(currentDoc)}
           showSearch={false}
           showDocOptions={true}
+          borderBottom={true}
           customDocMenuActions={customDocMenuActions}
           customLeftActions={
             <PdfSubHeaderLeftActions
@@ -1087,24 +1114,17 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
         <div
           ref={viewportRef}
           onScroll={handleViewportScroll}
-          className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[#181818] p-4 flex flex-col items-center"
+          className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] p-4 flex flex-col items-center"
         >
-          {isLoading && (
-            <div className="my-auto flex flex-col items-center justify-center gap-3 text-sm text-[#888]">
-              <div className="w-8 h-8 rounded-full border-2 border-[#444] border-t-[#3b82f6] animate-spin" />
-              <span>Loading {documentTitle}...</span>
-            </div>
-          )}
-
           {errorMessage && (
-            <div className="my-auto max-w-md p-6 rounded-lg border border-[#333] bg-[#1e1e1e] text-center flex flex-col items-center gap-3">
-              <span className="text-sm font-medium text-rose-400">Unable to load PDF</span>
-              <p className="text-xs text-[#888] leading-relaxed">{errorMessage}</p>
+            <div className="my-auto flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16 text-center">
+              <File01Icon size={32} className="opacity-40" />
+              <span>PDF document not found</span>
               {diskPath && (
                 <button
                   type="button"
                   onClick={handleOpenInDefaultApp}
-                  className="noether-btn text-xs mt-2"
+                  className="text-[11px] text-[#555] hover:text-[#888] cursor-pointer mt-1"
                 >
                   Open in default desktop app
                 </button>
@@ -1113,7 +1133,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
           )}
 
           {pdfData && (
-            <div className="flex flex-col items-center gap-4 pb-12">
+            <div className="flex flex-col items-center gap-2 pb-12">
               {Array.from({ length: pdfData.numPages }, (_, i) => i + 1).map((pageNum) => (
                 <PdfPageCanvas
                   key={`page-${pageNum}`}

@@ -131,8 +131,8 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
             : isDropTarget
             ? 'cursor-pointer bg-[var(--noether-bg-card-hover)] ring-1 ring-inset ring-[var(--noether-accent,#eb584d)]/60 text-[var(--noether-text-primary,#ffffff)] font-normal'
             : isSelected || isMultiSelected || (isActive && !isFolder) || isEditing
-            ? 'cursor-pointer bg-[var(--noether-bg-sidebar-active,#2a2a2a)] text-[var(--noether-text-primary,#ffffff)] font-normal'
-            : 'cursor-pointer text-[var(--noether-text-muted,#888888)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary,#dcddde)] font-normal'
+            ? 'cursor-pointer bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-normal'
+            : 'cursor-pointer text-[var(--noether-text-muted)] hover:bg-[var(--noether-bg-sidebar-hover)] hover:text-[var(--noether-text-primary)] font-normal'
         }`}
       >
         <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-visible">

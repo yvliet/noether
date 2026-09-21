@@ -21,9 +21,10 @@ interface CachedPage {
 const MAX_CACHE_ENTRIES = 30;
 const pageRenderCache = new Map<string, CachedPage>();
 
-function getCacheKey(pageNumber: number, scale: number, rotation: number): string {
+function getCacheKey(pdfDoc: any, pageNumber: number, scale: number, rotation: number): string {
+  const docKey = pdfDoc?.fingerprint || 'doc';
   const roundedScale = Math.round(scale * 100) / 100;
-  return `${pageNumber}_${roundedScale}_${rotation}`;
+  return `${docKey}_${pageNumber}_${roundedScale}_${rotation}`;
 }
 
 function setCachedPage(key: string, data: CachedPage) {
@@ -49,7 +50,7 @@ export const preloadPdfPage = async (
   rotation: number
 ): Promise<void> => {
   if (!pdfDoc || pageNumber < 1 || pageNumber > pdfDoc.numPages) return;
-  const key = getCacheKey(pageNumber, scale, rotation);
+  const key = getCacheKey(pdfDoc, pageNumber, scale, rotation);
   if (pageRenderCache.has(key)) return;
 
   try {
@@ -115,7 +116,7 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
 
   // Render page when visible and not yet rendered for current scale/rotation/pageNumber
   useEffect(() => {
-    const currentKey = getCacheKey(pageNumber, scale, rotation);
+    const currentKey = getCacheKey(pdfDoc, pageNumber, scale, rotation);
     if (!isVisible || !pdfDoc) return;
     if (renderedKeyRef.current === currentKey) return;
 
@@ -235,7 +236,7 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
         width: `${displayWidth}px`,
         height: `${displayHeight}px`,
       }}
-      className={`relative mx-auto bg-[#181818] shadow-xl border border-[#2a2a2a] select-text select-none overflow-hidden ${className}`}
+      className={`relative mx-auto bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] shadow-xl border border-[var(--noether-border-base,#2a2a2a)] select-text select-none overflow-hidden ${className}`}
     >
       <canvas
         ref={canvasRef}
@@ -245,14 +246,6 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
         }}
         className="block"
       />
-      {!isRendered && isVisible && (
-        <div className="absolute inset-0 flex items-center justify-center bg-[#181818]/80 text-xs text-[#888]">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#888] animate-pulse" />
-            Loading page {pageNumber}...
-          </div>
-        </div>
-      )}
     </div>
   );
 });

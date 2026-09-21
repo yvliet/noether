@@ -3,13 +3,15 @@ import { PdfOutlineItem, PdfPageInfo } from './types';
 import platform from '@/lib/platform/platformAdapter';
 import { DocumentItem } from '@/types';
 import { useDocumentStore } from '@/store/documentStore';
-import { getDocumentDiskPath, getDocumentPath } from '@/lib/db/documents';
+import { getDocumentDiskPath, getDocumentPath, getAllDocuments } from '@/lib/db/documents';
+
+// In-memory document cache for instant zero-latency PDF switching
+const pdfDocumentCache = new Map<string, LoadedPdfData>();
 
 /**
  * Fast binary conversion from base64 string to Uint8Array.
  */
 export function base64ToUint8Array(base64: string): Uint8Array {
-  // Strip optional data URI scheme prefix (e.g. data:application/pdf;base64,)
   const cleanBase64 = base64.includes(',') ? base64.split(',')[1] : base64;
   const binaryString = window.atob(cleanBase64.trim());
   const len = binaryString.length;
@@ -29,24 +31,50 @@ export interface LoadedPdfData {
 }
 
 /**
- * Loads and parses a PDF document from either physical vault disk or SQLite data URL.
+ * Clears the PDF document cache or invalidates a specific document entry.
+ */
+export function invalidatePdfCache(docIdOrPath?: string) {
+  if (docIdOrPath) {
+    pdfDocumentCache.delete(docIdOrPath);
+  } else {
+    pdfDocumentCache.clear();
+  }
+}
+
+/**
+ * Loads and parses a PDF document with multi-tier path resolution, parallel page parsing,
+ * and instant in-memory caching.
  */
 export async function loadPdfDocument(
   docOrId?: DocumentItem | string | null,
   customFilePath?: string
 ): Promise<LoadedPdfData> {
-  let doc: DocumentItem | null = null;
-  const allDocs = useDocumentStore.getState().documents;
+  const cacheKey = customFilePath || (typeof docOrId === 'string' ? docOrId : docOrId?.id);
+  if (cacheKey && pdfDocumentCache.has(cacheKey)) {
+    return pdfDocumentCache.get(cacheKey)!;
+  }
 
+  let doc: DocumentItem | null = null;
+  let allDocs = useDocumentStore.getState().documents;
+
+  // 1. Resolve document item
   if (typeof docOrId === 'string') {
-    doc = allDocs.find((d) => d.id === docOrId) || null;
+    doc = allDocs.find((d) => d.id === docOrId || d.title.toLowerCase() === docOrId.toLowerCase()) || null;
   } else if (docOrId) {
     doc = docOrId;
   }
 
+  // Fallback: If document list in Zustand hasn't populated yet, fetch from database
+  if (!doc && typeof docOrId === 'string' && allDocs.length === 0) {
+    try {
+      allDocs = await getAllDocuments();
+      doc = allDocs.find((d) => d.id === docOrId || d.title.toLowerCase() === docOrId.toLowerCase()) || null;
+    } catch {}
+  }
+
   let binaryBytes: Uint8Array | null = null;
 
-  // 1. Try reading base64 data from doc.content_json if available
+  // 2. Try reading base64 data from doc.content_json if available
   if (doc?.content_json) {
     try {
       const parsed = JSON.parse(doc.content_json);
@@ -57,20 +85,48 @@ export async function loadPdfDocument(
     } catch {}
   }
 
-  // 2. If no data URL in database, read binary file from vault disk
+  // 3. Multi-strategy physical disk file resolution
   if (!binaryBytes) {
-    let targetPath = customFilePath;
-    if (!targetPath && doc) {
-      targetPath = getDocumentDiskPath(doc, getDocumentPath(doc, allDocs));
+    const candidatePaths: string[] = [];
+
+    if (customFilePath) {
+      const cleanCustom = customFilePath.replace(/\\/g, '/').replace(/^\/+/, '');
+      candidatePaths.push(cleanCustom);
+      if (!cleanCustom.toLowerCase().endsWith('.pdf')) {
+        candidatePaths.push(`${cleanCustom}.pdf`);
+      }
     }
 
-    if (targetPath) {
-      const res = await platform.readBinaryFile(targetPath);
-      if (res.success && res.data) {
-        binaryBytes = base64ToUint8Array(res.data);
-      } else if (res.error) {
-        throw new Error(res.error);
+    if (doc) {
+      if (allDocs.length > 0) {
+        const hierPath = getDocumentDiskPath(doc, getDocumentPath(doc, allDocs));
+        candidatePaths.push(hierPath);
       }
+      const directTitlePath = getDocumentDiskPath(doc, doc.title);
+      candidatePaths.push(directTitlePath);
+
+      if (!doc.title.toLowerCase().endsWith('.pdf')) {
+        candidatePaths.push(`${doc.title}.pdf`);
+      }
+    }
+
+    if (typeof docOrId === 'string' && !candidatePaths.includes(docOrId)) {
+      const cleanStr = docOrId.replace(/\\/g, '/').replace(/^\/+/, '');
+      candidatePaths.push(cleanStr);
+      if (!cleanStr.toLowerCase().endsWith('.pdf')) {
+        candidatePaths.push(`${cleanStr}.pdf`);
+      }
+    }
+
+    // Try candidates in order
+    for (const targetPath of candidatePaths) {
+      try {
+        const res = await platform.readBinaryFile(targetPath);
+        if (res.success && res.data) {
+          binaryBytes = base64ToUint8Array(res.data);
+          break;
+        }
+      } catch {}
     }
   }
 
@@ -78,7 +134,7 @@ export async function loadPdfDocument(
     throw new Error('PDF document content could not be found or loaded');
   }
 
-  // Load document using pdfjs-dist
+  // 4. Parse PDF document off-thread via PDF.js worker
   const loadingTask = pdfjsLib.getDocument({
     data: binaryBytes,
     useSystemFonts: true,
@@ -87,7 +143,7 @@ export async function loadPdfDocument(
   const pdfDoc = await loadingTask.promise;
   const numPages = pdfDoc.numPages;
 
-  // Read outline (bookmarks / table of contents)
+  // 5. Read outline (bookmarks / table of contents)
   let rawOutline: any[] | null = null;
   try {
     rawOutline = await pdfDoc.getOutline();
@@ -95,35 +151,47 @@ export async function loadPdfDocument(
 
   const outline = rawOutline ? await resolveOutlineTree(pdfDoc, rawOutline) : [];
 
-  // Read page dimensions for placeholder sizing & virtualization
-  const pageInfos: PdfPageInfo[] = [];
-  for (let p = 1; p <= numPages; p++) {
+  // 6. Fast parallel page dimension extraction across worker
+  const pageInfoPromises = Array.from({ length: numPages }, async (_, i) => {
+    const pageNum = i + 1;
     try {
-      const page = await pdfDoc.getPage(p);
+      const page = await pdfDoc.getPage(pageNum);
       const vp = page.getViewport({ scale: 1 });
-      pageInfos.push({
-        pageNumber: p,
+      return {
+        pageNumber: pageNum,
         width: vp.width,
         height: vp.height,
         aspectRatio: vp.width / vp.height,
-      });
+      };
     } catch {
-      pageInfos.push({
-        pageNumber: p,
+      return {
+        pageNumber: pageNum,
         width: 595,
         height: 842,
         aspectRatio: 595 / 842,
-      });
+      };
     }
-  }
+  });
 
-  return {
+  const pageInfos = await Promise.all(pageInfoPromises);
+
+  const result: LoadedPdfData = {
     pdfDoc,
     numPages,
     outline,
     pageInfos,
     rawBytes: binaryBytes,
   };
+
+  // Cache in memory for instant tab returns
+  if (cacheKey) {
+    pdfDocumentCache.set(cacheKey, result);
+  }
+  if (doc?.id) {
+    pdfDocumentCache.set(doc.id, result);
+  }
+
+  return result;
 }
 
 /**

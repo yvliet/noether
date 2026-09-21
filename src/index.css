@@ -3255,3 +3255,36 @@ math-field::part(content) {
   animation-play-state: paused !important;
 }
 
+/* PDF Sidebar Thumbnail & Outline Items */
+.pdf-thumbnail-item {
+  background-color: transparent;
+  cursor: default;
+  transition: none;
+}
+
+.pdf-thumbnail-item:hover {
+  background-color: var(--noether-bg-sidebar-hover);
+}
+
+.pdf-thumbnail-item.active {
+  background-color: var(--noether-bg-sidebar-active);
+}
+
+.pdf-outline-item {
+  background-color: transparent;
+  cursor: default;
+  color: var(--noether-text-muted);
+  transition: none;
+}
+
+.pdf-outline-item:hover {
+  background-color: var(--noether-bg-sidebar-hover);
+  color: var(--noether-text-primary);
+}
+
+.pdf-outline-item.active {
+  background-color: var(--noether-bg-sidebar-active);
+  color: var(--noether-text-primary);
+  font-weight: 500;
+}
+

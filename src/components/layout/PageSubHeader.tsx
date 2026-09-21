@@ -54,6 +54,8 @@ export interface PageSubHeaderProps {
   hideBar?: boolean;
   isSidebar?: boolean;
   isScrolled?: boolean;
+  borderBottom?: boolean;
+  className?: string;
 }
 
 export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
@@ -83,6 +85,8 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
   hideBar = false,
   isSidebar: propIsSidebar,
   isScrolled: propIsScrolled,
+  borderBottom = false,
+  className = '',
 }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [isSidebarDetected, setIsSidebarDetected] = React.useState(false);
@@ -452,7 +456,7 @@ export const PageSubHeader: React.FC<PageSubHeaderProps> = React.memo(({
         isTransparent
           ? 'bg-transparent'
           : 'bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]'
-      }`}
+      } ${borderBottom && !isTransparent ? 'border-b border-[var(--noether-border-base)]' : ''} ${className}`.trim()}
     >
       {/* Left: Navigation History Arrows & Custom Left Actions */}
       <div
