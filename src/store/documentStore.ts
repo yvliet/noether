@@ -1,6 +1,12 @@
 import { create } from 'zustand';
 import { emitBridgeAppEvent } from '@/core/app/storeBridge';
-import { fileTypeRegistry } from '@/core/registries/FileTypeRegistry';
+import {
+  fileTypeRegistry,
+  isPdfFileName,
+  isImageFileName,
+  isAudioFileName,
+  isVideoFileName,
+} from '@/core/registries/FileTypeRegistry';
 import { viewRegistry } from '@/core/registries/ViewRegistry';
 import {
   DocumentItem,
@@ -966,11 +972,7 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
       ],
     });
 
-    const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(finalTitle);
-    const isAud = /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(finalTitle);
-    const isVid = /\.(mp4|webm|mov|mkv)$/i.test(finalTitle);
-    const isPdf = /\.pdf$/i.test(finalTitle);
-    const detectedDocType = isImg ? 'image' : isAud ? 'audio' : isVid ? 'video' : isPdf ? 'pdf' : 'base';
+    const detectedDocType = fileTypeRegistry.getMediaDocType(finalTitle) || 'base';
 
     const doc: DocumentItem = {
       id,
@@ -1129,10 +1131,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
         const isMarkdown = /\.(md|markdown)$/i.test(fileName);
         const isCanvas = /\.canvas$/i.test(fileName);
         const isText = /\.txt$/i.test(fileName);
-        const isPdf = /\.pdf$/i.test(fileName);
-        const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(fileName);
-        const isAud = /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(fileName);
-        const isVid = /\.(mp4|webm|mov|mkv)$/i.test(fileName);
+        const isPdf = isPdfFileName(fileName);
+        const isImg = isImageFileName(fileName);
+        const isAud = isAudioFileName(fileName);
+        const isVid = isVideoFileName(fileName);
 
         if (imported.isDir) {
           const newFolder = await get().createNewFolder(fileName, targetParentId);

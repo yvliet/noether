@@ -275,16 +275,14 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
   }, [isFolder, item.doc_type, item.title]);
 
   const displayTitle = useMemo(() => {
-    if (customType) {
-      return fileTypeRegistry.cleanTitle(item.title);
-    }
-    return item.title;
-  }, [customType, item.title]);
+    if (isFolder) return item.title;
+    return fileTypeRegistry.cleanTitle(item.title, item.doc_type);
+  }, [isFolder, item.title, item.doc_type]);
 
-  const fileExtMatch = !isFolder && !customType ? item.title.match(/\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a)$/i) : null;
-  const typeBadge = customType
-    ? (customType.badgeLabel || customType.extension.toUpperCase())
-    : (fileExtMatch ? fileExtMatch[1].toUpperCase() : (item.doc_type && item.doc_type !== 'base' ? item.doc_type.toUpperCase() : null));
+  const typeBadge = useMemo(() => {
+    if (isFolder) return null;
+    return fileTypeRegistry.getFileBadge(item.title, item.doc_type);
+  }, [isFolder, item.title, item.doc_type]);
 
   const sortedChildren = useMemo(() => {
     if (!isFolder) return [];
@@ -311,15 +309,16 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
 
   // Keep edit title in sync
   useEffect(() => {
+    const clean = isFolder ? item.title : fileTypeRegistry.cleanTitle(item.title, item.doc_type);
     if (isEditing && !prevIsEditingRef.current) {
-      setEditTitle(item.title);
-      originalTitleRef.current = item.title;
+      setEditTitle(clean);
+      originalTitleRef.current = clean;
     } else if (!isEditing) {
-      setEditTitle(item.title);
-      originalTitleRef.current = item.title;
+      setEditTitle(clean);
+      originalTitleRef.current = clean;
     }
     prevIsEditingRef.current = isEditing;
-  }, [isEditing, item.title]);
+  }, [isEditing, item.title, isFolder, item.doc_type]);
 
 
   // Auto-expand folder only when active document explicitly changes during user navigation

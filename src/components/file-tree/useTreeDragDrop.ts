@@ -92,12 +92,9 @@ export function useTreeDragDrop({
           if (dist > 5) {
             hasStartedDrag = true;
             justDraggedRef.current = true;
-            const customType = fileTypeRegistry.getByDocType(item.doc_type) || fileTypeRegistry.getByPath(item.title);
             const displayTitle = getDisplayTitle
               ? getDisplayTitle()
-              : customType
-              ? fileTypeRegistry.cleanTitle(item.title)
-              : item.title || 'Untitled';
+              : fileTypeRegistry.cleanTitle(item.title, item.doc_type) || 'Untitled';
             const iconSvg = getIconSvg ? getIconSvg() : isFolder ? FOLDER_SVG : NOTE_ICON_SVG;
 
             const allDocs = useDocumentStore.getState().documents;

@@ -3,7 +3,19 @@ import type { DocumentItem } from '@/types';
 import type { CanvasNode } from '../types';
 import { File01Icon, LinkSquare02Icon } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { DocumentView, useNoetherApp } from 'noether';
+import {
+  DocumentView,
+  useNoetherApp,
+  isImageFileName,
+  isVideoFileName,
+  isAudioFileName,
+  isPdfFileName,
+  IMAGE_EXTENSIONS as IMAGE_EXTS,
+  AUDIO_EXTENSIONS as AUDIO_EXTS,
+  VIDEO_EXTENSIONS as VIDEO_EXTS,
+  DOCUMENT_EXTENSIONS as PDF_EXTS,
+} from 'noether';
+export { IMAGE_EXTS, AUDIO_EXTS, VIDEO_EXTS, PDF_EXTS };
 import {
   canvasCardRegistry,
   useCanvasCardRenderers,
@@ -22,11 +34,6 @@ export interface CardContentRendererProps {
   onTaskToggle?: (taskText: string, currentChecked: boolean) => void;
 }
 
-export const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif']);
-export const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus']);
-export const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi']);
-export const PDF_EXTS = new Set(['pdf']);
-
 export function getFileExtension(filename?: string): string {
   if (!filename) return '';
   const clean = filename.split('?')[0].split('#')[0];
@@ -37,25 +44,25 @@ export function getFileExtension(filename?: string): string {
 export function isImageDocument(doc?: DocumentItem | null): boolean {
   if (!doc) return false;
   if (doc.doc_type === 'image') return true;
-  return IMAGE_EXTS.has(getFileExtension(doc.title));
+  return isImageFileName(doc.title);
 }
 
 export function isAudioDocument(doc?: DocumentItem | null): boolean {
   if (!doc) return false;
   if (doc.doc_type === 'audio') return true;
-  return AUDIO_EXTS.has(getFileExtension(doc.title));
+  return isAudioFileName(doc.title);
 }
 
 export function isVideoDocument(doc?: DocumentItem | null): boolean {
   if (!doc) return false;
   if (doc.doc_type === 'video') return true;
-  return VIDEO_EXTS.has(getFileExtension(doc.title));
+  return isVideoFileName(doc.title);
 }
 
 export function isPdfDocument(doc?: DocumentItem | null): boolean {
   if (!doc) return false;
   if (doc.doc_type === 'pdf') return true;
-  return PDF_EXTS.has(getFileExtension(doc.title));
+  return isPdfFileName(doc.title);
 }
 
 /**

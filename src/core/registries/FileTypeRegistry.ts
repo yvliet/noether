@@ -120,7 +120,7 @@ export class FileTypeRegistry {
   }
 
   /**
-   * Strips any registered custom file extension from a title or filename string.
+   * Strips any registered custom file extension or recognized media extension from a title or filename string.
    */
   public cleanTitle(pathOrTitle?: string | null, docType?: string | null): string {
     if (!pathOrTitle) return '';
@@ -129,7 +129,66 @@ export class FileTypeRegistry {
       const stripped = pathOrTitle.slice(0, -(custom.extension.length + 1)).trim();
       return stripped || 'Untitled';
     }
+    if (pathOrTitle.toLowerCase().endsWith('.md')) {
+      const stripped = pathOrTitle.slice(0, -3).trim();
+      return stripped || 'Untitled';
+    }
+    const lastDot = pathOrTitle.lastIndexOf('.');
+    if (lastDot > 0) {
+      const ext = pathOrTitle.slice(lastDot + 1).toLowerCase();
+      if (MEDIA_EXTENSIONS.has(ext)) {
+        const stripped = pathOrTitle.slice(0, lastDot).trim();
+        return stripped || 'Untitled';
+      }
+    }
     return pathOrTitle;
+  }
+
+  /**
+   * Resolves the uppercase badge text for a file (e.g. "CANVAS", "MP4", "MOV", "GIF", "PNG", "PDF").
+   * Returns null for standard markdown notes, and never returns generic "VIDEO" or "IMAGE" labels.
+   */
+  public getFileBadge(pathOrTitle?: string | null, docType?: string | null): string | null {
+    if (!pathOrTitle && !docType) return null;
+    const custom = this.getByDocType(docType) || (pathOrTitle ? this.getByPath(pathOrTitle) : undefined);
+    if (custom) {
+      return custom.badgeLabel || custom.extension.toUpperCase();
+    }
+    if (pathOrTitle) {
+      const lastDot = pathOrTitle.lastIndexOf('.');
+      if (lastDot > 0) {
+        const ext = pathOrTitle.slice(lastDot + 1).trim();
+        if (ext && MEDIA_EXTENSIONS.has(ext.toLowerCase())) {
+          return ext.toUpperCase();
+        }
+      }
+    }
+    if (
+      docType &&
+      docType !== 'base' &&
+      docType !== 'document' &&
+      docType !== 'image' &&
+      docType !== 'video' &&
+      docType !== 'audio'
+    ) {
+      return docType.toUpperCase();
+    }
+    return null;
+  }
+
+  /**
+   * Detects the high-level media doc_type identifier for a given filename or path.
+   */
+  public getMediaDocType(filenameOrPath?: string | null): 'image' | 'video' | 'audio' | 'pdf' | null {
+    if (!filenameOrPath) return null;
+    const lastDot = filenameOrPath.lastIndexOf('.');
+    if (lastDot === -1) return null;
+    const ext = filenameOrPath.slice(lastDot + 1).toLowerCase().trim();
+    if (IMAGE_EXTENSIONS.has(ext)) return 'image';
+    if (VIDEO_EXTENSIONS.has(ext)) return 'video';
+    if (AUDIO_EXTENSIONS.has(ext)) return 'audio';
+    if (DOCUMENT_EXTENSIONS.has(ext)) return 'pdf';
+    return null;
   }
 
   /**
@@ -195,16 +254,47 @@ export class FileTypeRegistry {
   }
 }
 
-/** Known image, audio, video, and document media file extensions recognized across Noether. */
-export const MEDIA_EXTENSIONS = new Set([
-  // Images
-  'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif', 'tiff',
-  // Audio
-  'mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus', 'wma',
-  // Video
-  'mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi', 'm4v',
-  // Documents
+/** Known image and animated graphics formats supported across Noether. */
+export const IMAGE_EXTENSIONS = new Set([
+  'png', 'jpg', 'jpeg', 'jfif', 'pjpeg', 'pjp',
+  'gif', 'apng', 'webp', 'avif',
+  'svg', 'svgz',
+  'ico', 'cur',
+  'bmp', 'dib',
+  'heic', 'heif', 'hif',
+  'jxl', 'jp2', 'j2k', 'jpf', 'jpx', 'jpm', 'mj2',
+  'tiff', 'tif',
+  'raw', 'cr2', 'nef', 'arw', 'dng', 'orf', 'rw2', 'pef', 'raf',
+  'hdr', 'exr', 'tga',
+]);
+
+/** Known video formats supported across Noether. */
+export const VIDEO_EXTENSIONS = new Set([
+  'mp4', 'm4v', 'mov', 'qt', 'webm', 'mkv',
+  'avi', 'wmv', 'asf', 'flv', 'f4v', 'ogv',
+  '3gp', '3g2', 'ts', 'mts', 'm2ts', 'vob',
+  'mpg', 'mpeg', 'm1v', 'm2v', 'mpv', 'divx', 'rm', 'rmvb',
+]);
+
+/** Known audio formats supported across Noether. */
+export const AUDIO_EXTENSIONS = new Set([
+  'mp3', 'wav', 'ogg', 'oga', 'opus', 'spx',
+  'm4a', 'aac', 'm4b', 'flac', 'alac',
+  'aiff', 'aif', 'aifc', 'wma', 'mid', 'midi',
+  'amr', 'ac3', 'eac3',
+]);
+
+/** Known document media formats recognized across Noether. */
+export const DOCUMENT_EXTENSIONS = new Set([
   'pdf',
+]);
+
+/** Exhaustive union of all known image, animated graphic, video, audio, and document media file extensions recognized across Noether. */
+export const MEDIA_EXTENSIONS = new Set<string>([
+  ...IMAGE_EXTENSIONS,
+  ...VIDEO_EXTENSIONS,
+  ...AUDIO_EXTENSIONS,
+  ...DOCUMENT_EXTENSIONS,
 ]);
 
 /**
@@ -224,6 +314,122 @@ export function isMediaFileName(filenameOrPath?: string | null): boolean {
   if (parts.length < 2) return false;
   const ext = parts.pop()?.toLowerCase() || '';
   return MEDIA_EXTENSIONS.has(ext);
+}
+
+/**
+ * Checks whether a filename or path ends with an image or animated graphic extension.
+ */
+export function isImageFileName(filenameOrPath?: string | null): boolean {
+  if (!filenameOrPath) return false;
+  const parts = filenameOrPath.trim().split('.');
+  if (parts.length < 2) return false;
+  const ext = parts.pop()?.toLowerCase() || '';
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+/**
+ * Checks whether a filename or path ends with a video extension.
+ */
+export function isVideoFileName(filenameOrPath?: string | null): boolean {
+  if (!filenameOrPath) return false;
+  const parts = filenameOrPath.trim().split('.');
+  if (parts.length < 2) return false;
+  const ext = parts.pop()?.toLowerCase() || '';
+  return VIDEO_EXTENSIONS.has(ext);
+}
+
+/**
+ * Checks whether a filename or path ends with an audio extension.
+ */
+export function isAudioFileName(filenameOrPath?: string | null): boolean {
+  if (!filenameOrPath) return false;
+  const parts = filenameOrPath.trim().split('.');
+  if (parts.length < 2) return false;
+  const ext = parts.pop()?.toLowerCase() || '';
+  return AUDIO_EXTENSIONS.has(ext);
+}
+
+/**
+ * Checks whether a filename or path ends with a PDF document extension.
+ */
+export function isPdfFileName(filenameOrPath?: string | null): boolean {
+  if (!filenameOrPath) return false;
+  return filenameOrPath.toLowerCase().trim().endsWith('.pdf');
+}
+
+/**
+ * Resolves standard MIME type string for media streaming and source tags.
+ */
+export function getMediaMimeType(filenameOrPath: string): string {
+  const ext = filenameOrPath.split('?')[0].split('#')[0].split('.').pop()?.toLowerCase() || '';
+  switch (ext) {
+    // Images & Animated
+    case 'png': return 'image/png';
+    case 'jpg':
+    case 'jpeg':
+    case 'jfif':
+    case 'pjpeg':
+    case 'pjp': return 'image/jpeg';
+    case 'gif': return 'image/gif';
+    case 'apng': return 'image/apng';
+    case 'webp': return 'image/webp';
+    case 'avif': return 'image/avif';
+    case 'svg':
+    case 'svgz': return 'image/svg+xml';
+    case 'bmp':
+    case 'dib': return 'image/bmp';
+    case 'ico':
+    case 'cur': return 'image/x-icon';
+    case 'heic': return 'image/heic';
+    case 'heif':
+    case 'hif': return 'image/heif';
+    case 'jxl': return 'image/jxl';
+    case 'tiff':
+    case 'tif': return 'image/tiff';
+    // Videos
+    case 'mp4':
+    case 'm4v': return 'video/mp4';
+    case 'webm': return 'video/webm';
+    case 'ogv': return 'video/ogg';
+    case 'mov':
+    case 'qt': return 'video/quicktime';
+    case 'mkv': return 'video/x-matroska';
+    case 'avi': return 'video/x-msvideo';
+    case 'wmv': return 'video/x-ms-wmv';
+    case 'flv': return 'video/x-flv';
+    case '3gp': return 'video/3gpp';
+    case '3g2': return 'video/3gpp2';
+    case 'ts':
+    case 'mts':
+    case 'm2ts': return 'video/mp2t';
+    case 'mpg':
+    case 'mpeg':
+    case 'm1v':
+    case 'm2v':
+    case 'mpv':
+    case 'vob': return 'video/mpeg';
+    // Audio
+    case 'mp3': return 'audio/mpeg';
+    case 'wav': return 'audio/wav';
+    case 'ogg':
+    case 'oga':
+    case 'opus':
+    case 'spx': return 'audio/ogg';
+    case 'm4a':
+    case 'aac':
+    case 'm4b': return 'audio/mp4';
+    case 'flac': return 'audio/flac';
+    case 'alac': return 'audio/alac';
+    case 'aiff':
+    case 'aif':
+    case 'aifc': return 'audio/aiff';
+    case 'wma': return 'audio/x-ms-wma';
+    case 'mid':
+    case 'midi': return 'audio/midi';
+    // Documents
+    case 'pdf': return 'application/pdf';
+    default: return 'application/octet-stream';
+  }
 }
 
 export const fileTypeRegistry = new FileTypeRegistry();
@@ -246,4 +452,5 @@ fileTypeRegistry.registerFileType({
   viewType: 'pdf',
   isRawContent: true,
 });
+
 

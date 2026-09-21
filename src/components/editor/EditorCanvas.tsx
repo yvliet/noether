@@ -21,7 +21,8 @@ import { ExtensionPortalSlotHost } from '@/components/common/ExtensionPortalSlot
 import { ViewportActionSlotHost } from '@/components/layout/ViewportActionSlotHost';
 import type { PortalSlotContext } from '@/core/extensions/types';
 import type { ViewportActionContext } from '@/core/registries/ViewportActionRegistry';
-import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById } from '@/lib/db/documents';
+import { getDocumentPath, getDocumentPathParts, getDocumentBreadcrumbParts, isDocumentLocked, getDocumentById, getDocumentDiskPath } from '@/lib/db/documents';
+import { isImageFileName, isVideoFileName, isAudioFileName, isPdfFileName, getMediaMimeType } from '@/core/registries/FileTypeRegistry';
 import { DocumentProperties } from '@/types';
 import { useAppContextMenu } from '@/components/common/ContextMenu';
 import {
@@ -336,25 +337,25 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const isImageDoc = useMemo(() => {
     if (!currentDoc) return false;
     if (currentDoc.doc_type === 'image') return true;
-    return /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(currentDoc.title);
+    return isImageFileName(currentDoc.title);
   }, [currentDoc]);
 
   const isAudioDoc = useMemo(() => {
     if (!currentDoc) return false;
     if (currentDoc.doc_type === 'audio') return true;
-    return /\.(mp3|wav|ogg|m4a|aac|flac|opus|wma)$/i.test(currentDoc.title);
+    return isAudioFileName(currentDoc.title);
   }, [currentDoc]);
 
   const isVideoDoc = useMemo(() => {
     if (!currentDoc) return false;
     if (currentDoc.doc_type === 'video') return true;
-    return /\.(mp4|webm|ogv|mov|mkv|avi)$/i.test(currentDoc.title);
+    return isVideoFileName(currentDoc.title);
   }, [currentDoc]);
 
   const isPdfDoc = useMemo(() => {
     if (!currentDoc) return false;
     if (currentDoc.doc_type === 'pdf') return true;
-    return /\.pdf$/i.test(currentDoc.title);
+    return isPdfFileName(currentDoc.title);
   }, [currentDoc]);
 
   const isMediaDoc = isImageDoc || isAudioDoc || isVideoDoc || isPdfDoc;
@@ -363,7 +364,7 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     return Boolean(currentDoc);
   }, [currentDoc]);
 
-  const mediaSrc = useMemo(() => {
+  const immediateMediaSrc = useMemo(() => {
     if (!currentDoc) return '';
     if (currentDoc.content_json) {
       try {
@@ -374,8 +375,70 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
         }
       } catch {}
     }
-    return currentDoc.title;
+    return '';
   }, [currentDoc]);
+
+  const [asyncMediaSrc, setAsyncMediaSrc] = useState<string>('');
+  const [isMediaLoading, setIsMediaLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!currentDoc || !isMediaDoc || isPdfDoc) {
+      setAsyncMediaSrc('');
+      setIsMediaLoading(false);
+      return;
+    }
+
+    if (immediateMediaSrc) {
+      setAsyncMediaSrc(immediateMediaSrc);
+      setIsMediaLoading(false);
+      return;
+    }
+
+    if (!platform.isDesktop()) {
+      setAsyncMediaSrc('');
+      setIsMediaLoading(false);
+      return;
+    }
+
+    let isCancelled = false;
+    let createdBlobUrl: string | null = null;
+    setIsMediaLoading(true);
+
+    (async () => {
+      try {
+        const allDocs = useDocumentStore.getState().documents;
+        const relPath = getDocumentDiskPath(currentDoc, getDocumentPath(currentDoc, allDocs));
+        const res = await platform.readBinaryFile(relPath);
+        if (!isCancelled && res.success && res.data) {
+          const mime = getMediaMimeType(currentDoc.title);
+          const binaryString = atob(res.data);
+          const len = binaryString.length;
+          const bytes = new Uint8Array(len);
+          for (let i = 0; i < len; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+          }
+          const blob = new Blob([bytes], { type: mime });
+          createdBlobUrl = URL.createObjectURL(blob);
+          setAsyncMediaSrc(createdBlobUrl);
+        }
+      } catch (err) {
+        console.error('[EditorCanvas] Failed to read media asset from vault disk:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsMediaLoading(false);
+        }
+      }
+    })();
+
+    return () => {
+      isCancelled = true;
+      if (createdBlobUrl) {
+        URL.revokeObjectURL(createdBlobUrl);
+      }
+    };
+  }, [currentDoc?.id, currentDoc?.title, currentDoc?.content_json, isMediaDoc, isPdfDoc, immediateMediaSrc]);
+
+  const mediaSrc = immediateMediaSrc || asyncMediaSrc;
 
   const effectiveReadingMode = isReadingMode || isLocked || isMediaDoc;
   const isEditable = !effectiveReadingMode;
@@ -1771,14 +1834,18 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 context={portalSlotContext}
                 className="absolute inset-0 pointer-events-none z-20 overflow-visible"
               />
-              {isImageDoc ? (
+              {isMediaLoading && !mediaSrc ? (
+                <div className="flex-1 flex items-center justify-center py-12 text-xs text-[var(--noether-text-muted,#888888)]">
+                  Loading media...
+                </div>
+              ) : isImageDoc ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-4 select-none my-auto">
                   <div className="max-w-full flex items-center justify-center">
                     <img
                       src={mediaSrc}
                       alt={currentDoc.title}
-                      onClick={() => useWorkspaceStore.getState().openImageLightbox(mediaSrc, currentDoc.title)}
-                      className="max-w-full max-h-[calc(100vh-140px)] object-contain cursor-zoom-in"
+                      onClick={() => mediaSrc && useWorkspaceStore.getState().openImageLightbox(mediaSrc, currentDoc.title)}
+                      className="max-w-full max-h-[calc(100vh-140px)] object-contain cursor-zoom-in rounded"
                     />
                   </div>
                 </div>
@@ -1790,8 +1857,8 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
                 </div>
               ) : isVideoDoc ? (
                 <div className="flex-1 flex flex-col items-center justify-center py-4 my-auto">
-                  <div className="max-w-3xl w-full rounded-lg overflow-hidden border border-[#2a2a2a] bg-black">
-                    <video controls src={mediaSrc} className="w-full max-h-[calc(100vh-140px)]" />
+                  <div className="max-w-4xl w-full rounded-lg overflow-hidden border border-[#2a2a2a] bg-black shadow-lg">
+                    <video controls src={mediaSrc} className="w-full max-h-[calc(100vh-140px)]" playsInline autoPlay={false} />
                   </div>
                 </div>
               ) : isPdfDoc ? (

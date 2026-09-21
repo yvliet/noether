@@ -59,7 +59,16 @@ export {
   fileTypeRegistry,
   isMediaFileName,
   isMediaExtension,
+  isImageFileName,
+  isVideoFileName,
+  isAudioFileName,
+  isPdfFileName,
+  getMediaMimeType,
   MEDIA_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  VIDEO_EXTENSIONS,
+  AUDIO_EXTENSIONS,
+  DOCUMENT_EXTENSIONS,
 } from '../core/registries/FileTypeRegistry';
 export { IconRegistry } from '../core/registries/IconRegistry';
 export type { IconPackProvider, IconDescriptor, IconRenderOptions } from '../core/registries/IconRegistry';

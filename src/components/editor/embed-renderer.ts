@@ -1,7 +1,15 @@
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
-import { getDocumentById } from '@/lib/db/documents';
+import { getDocumentById, getDocumentPath, getDocumentDiskPath } from '@/lib/db/documents';
 import { dbAdapter } from '@/lib/db/adapter';
+import { platform } from '@/lib/platform/platformAdapter';
+import {
+  IMAGE_EXTENSIONS as IMAGE_EXTS,
+  AUDIO_EXTENSIONS as AUDIO_EXTS,
+  VIDEO_EXTENSIONS as VIDEO_EXTS,
+  DOCUMENT_EXTENSIONS as PDF_EXTS,
+  getMediaMimeType,
+} from '@/core/registries/FileTypeRegistry';
 import { DocumentItem } from '@/types';
 import katex from 'katex';
 
@@ -19,11 +27,6 @@ export interface ParsedEmbed {
   isExternalUrl: boolean;
   youtubeId: string | null;
 }
-
-const IMAGE_EXTS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'bmp', 'ico', 'avif']);
-const AUDIO_EXTS = new Set(['mp3', 'wav', 'ogg', 'm4a', 'aac', 'flac', 'opus', 'wma']);
-const VIDEO_EXTS = new Set(['mp4', 'webm', 'ogv', 'mov', 'mkv', 'avi']);
-const PDF_EXTS = new Set(['pdf']);
 
 let cachedDocsRef: any = null;
 let cachedDocIndex: Map<string, any> = new Map();
@@ -207,7 +210,22 @@ export async function resolveImageSrcAsync(target: string, docId?: string): Prom
     } catch {}
   }
 
-  if (!matched) return null;
+  if (!matched) {
+    if (platform.isDesktop()) {
+      try {
+        const res = await platform.readBinaryFile(target);
+        if (res.success && res.data) {
+          const mime = getMediaMimeType(target);
+          const dataUrl = `data:${mime};base64,${res.data}`;
+          for (const k of keys) {
+            imageSrcCache.set(k, dataUrl);
+          }
+          return dataUrl;
+        }
+      } catch {}
+    }
+    return null;
+  }
 
   try {
     let fullDoc = matched;
@@ -245,6 +263,22 @@ export async function resolveImageSrcAsync(target: string, docId?: string): Prom
         imageSrcCache.set(k, rawContent);
       }
       return rawContent;
+    }
+
+    // Disk fallback for media documents without in-memory data URLs
+    if (platform.isDesktop()) {
+      const targetDoc = fullDoc || matched;
+      const allDocs = ds.documents;
+      const relPath = getDocumentDiskPath(targetDoc, getDocumentPath(targetDoc, allDocs));
+      const res = await platform.readBinaryFile(relPath);
+      if (res.success && res.data) {
+        const mime = getMediaMimeType(targetDoc?.title || target);
+        const dataUrl = `data:${mime};base64,${res.data}`;
+        for (const k of keys) {
+          imageSrcCache.set(k, dataUrl);
+        }
+        return dataUrl;
+      }
     }
   } catch {}
 

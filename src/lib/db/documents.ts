@@ -2,7 +2,7 @@ import { dbAdapter } from './adapter';
 import { DocumentItem, BlockItem, HeadingItem, GlobalTaskItem, DocumentProperties } from '@/types';
 import { moveToTrash, moveDocumentsToTrash } from './trash';
 import { platform } from '@/lib/platform/platformAdapter';
-import { fileTypeRegistry, isMediaFileName } from '@/core/registries/FileTypeRegistry';
+import { fileTypeRegistry, isMediaFileName, MEDIA_EXTENSIONS } from '@/core/registries/FileTypeRegistry';
 
 
 export async function getAllDocuments(options?: { includeContent?: boolean }): Promise<DocumentItem[]> {
@@ -1742,7 +1742,7 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
 
   try {
     const customExts = fileTypeRegistry.getAllExtensions();
-    const allowedExtensions = Array.from(new Set(['md', ...customExts]));
+    const allowedExtensions: string[] = Array.from(new Set<string>(['md', ...customExts, ...Array.from(MEDIA_EXTENSIONS)]));
     let diskItems: import('@/types').VaultDiskItem[] = [];
 
     if (changedPaths && changedPaths.length > 0 && changedPaths.length <= 20) {
@@ -1752,17 +1752,28 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
         const rawFileName = parts[parts.length - 1];
         const ext = rawFileName.split('.').pop()?.toLowerCase();
         if (ext && (ext === 'md' || allowedExtensions.includes(ext))) {
-          const readRes = await platform.readMarkdownFile(cleanP);
-          if (readRes.success && readRes.content !== undefined) {
-            // Strip file extension to match what Rust scan_vault_files produces (file_stem)
-            const cleanStem = rawFileName.replace(/\.[^/.]+$/, '');
+          const isMedia = fileTypeRegistry.isMedia(rawFileName);
+          if (isMedia) {
             diskItems.push({
               relativePath: cleanP,
-              name: cleanStem,
+              name: rawFileName,
               isFolder: false,
-              mtime: readRes.mtime || Date.now(),
-              content: readRes.content,
+              mtime: Date.now(),
+              content: undefined,
             });
+          } else {
+            const readRes = await platform.readMarkdownFile(cleanP);
+            if (readRes.success && readRes.content !== undefined) {
+              // Strip file extension to match what Rust scan_vault_files produces (file_stem)
+              const cleanStem = rawFileName.replace(/\.[^/.]+$/, '');
+              diskItems.push({
+                relativePath: cleanP,
+                name: cleanStem,
+                isFolder: false,
+                mtime: readRes.mtime || Date.now(),
+                content: readRes.content,
+              });
+            }
           }
         }
       }
@@ -1860,7 +1871,7 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
       }
     }
 
-    // 2. Process files differentially (.md notes and registered custom file types)
+    // 2. Process files differentially (.md notes, custom types, and media assets)
     const diskFiles = diskItems.filter((i) => !i.isFolder);
     let syncedCount = 0;
     const modifiedOrAddedDocIds: string[] = [];
@@ -1868,9 +1879,13 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
     for (const file of diskFiles) {
       const relPath = file.relativePath.replace(/\\/g, '/');
       const parts = relPath.split('/');
+      const rawFileName = parts[parts.length - 1];
+      const mediaDocType = fileTypeRegistry.getMediaDocType(rawFileName);
       const customType = fileTypeRegistry.getByPath(relPath);
       let fileName = file.name;
-      if (customType) {
+      if (mediaDocType) {
+        fileName = rawFileName;
+      } else if (customType) {
         fileName = fileTypeRegistry.cleanTitle(fileName);
       }
       const parentRelPath = parts.slice(0, -1).join('/');
@@ -1893,10 +1908,10 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
             !d.is_folder &&
             d.title.toLowerCase() === fileName.toLowerCase() &&
             (d.parent_id || null) === (parentId || null) &&
-            (d.doc_type || 'base') === (customType ? customType.docType : 'base')
+            (d.doc_type || 'base') === (mediaDocType || (customType ? customType.docType : 'base'))
         );
       }
-      if (!matchedDoc && !customType && (fileName.toLowerCase() === 'welcome to noether' || fileName.toLowerCase() === 'welcome-to-noether')) {
+      if (!matchedDoc && !customType && !mediaDocType && (fileName.toLowerCase() === 'welcome to noether' || fileName.toLowerCase() === 'welcome-to-noether')) {
         matchedDoc = existingDocs.find((d) => d.id === 'welcome-to-noether');
       }
 
@@ -1912,6 +1927,51 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
         manifestEntry.size === fileSize
       ) {
         // Document is 100% up-to-date in SQLite index! Skip reading & parsing!
+        continue;
+      }
+
+      // Handle binary media files directly without reading entire contents into SQLite
+      if (mediaDocType) {
+        const fastHash = `${fileSize}-${fileMtime}`;
+        if (matchedDoc && manifestEntry && manifestEntry.content_hash === fastHash) {
+          try {
+            await dbAdapter.execute(
+              `UPDATE file_manifest SET mtime = ?, size = ?, indexed_at = ? WHERE LOWER(relative_path) = ?`,
+              [fileMtime, fileSize, Date.now(), normKey]
+            );
+          } catch (e) {}
+          continue;
+        }
+
+        if (!matchedDoc) {
+          const newId = `doc-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+          await dbAdapter.execute(
+            `INSERT INTO documents (id, parent_id, title, content_json, is_daily_note, is_folder, is_bookmarked, doc_type, properties, created_at, updated_at)
+             VALUES (?, ?, ?, '{}', 0, 0, 0, ?, '{}', ?, ?)`,
+            [newId, parentId, fileName, mediaDocType, fileMtime, fileMtime]
+          );
+          try {
+            await dbAdapter.execute(
+              `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+              [normKey, fileMtime, fileSize, fastHash, Date.now()]
+            );
+          } catch (e) {}
+          modifiedOrAddedDocIds.push(newId);
+          syncedCount++;
+        } else {
+          await dbAdapter.execute(
+            `UPDATE documents SET doc_type = ?, updated_at = ? WHERE id = ?`,
+            [mediaDocType, fileMtime, matchedDoc.id]
+          );
+          try {
+            await dbAdapter.execute(
+              `INSERT OR REPLACE INTO file_manifest (relative_path, mtime, size, content_hash, indexed_at) VALUES (?, ?, ?, ?, ?)`,
+              [normKey, fileMtime, fileSize, fastHash, Date.now()]
+            );
+          } catch (e) {}
+          modifiedOrAddedDocIds.push(matchedDoc.id);
+          syncedCount++;
+        }
         continue;
       }
 
@@ -2028,29 +2088,36 @@ export async function syncVaultDiskToSQLite(changedPaths?: string[]): Promise<{ 
             diskPathSet.add(relPath);
           }
         }
+        for (const ext of Array.from(MEDIA_EXTENSIONS)) {
+          if (relPath.endsWith(`.${ext}`)) {
+            diskPathSet.add(relPath);
+          }
+        }
       }
 
       for (const doc of existingDocs) {
         if (doc.is_folder) continue;
 
-        // Preserve media attachments stored in SQLite
-        const isMediaOrAttachment =
-          doc.doc_type === 'image' ||
-          doc.doc_type === 'audio' ||
-          doc.doc_type === 'video' ||
-          doc.doc_type === 'pdf' ||
-          /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif|pdf|mp4|webm|mp3|wav|ogg|m4a)$/i.test(doc.title);
+        const docCustomType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
+        const isMedia = fileTypeRegistry.isMedia(doc.title) || doc.doc_type === 'image' || doc.doc_type === 'video' || doc.doc_type === 'audio' || doc.doc_type === 'pdf';
 
-        if (isMediaOrAttachment) {
+        // Preserve in-memory/DB-only data URI attachments if they don't have disk files
+        if (isMedia && doc.content_json && doc.content_json.includes('data:')) {
           continue;
         }
 
-        const docCustomType = fileTypeRegistry.getByDocType(doc.doc_type) || fileTypeRegistry.getByPath(doc.title);
-        const ext = docCustomType ? docCustomType.extension : 'md';
         const docPath = getDocumentPath(doc, existingDocs).replace(/\\/g, '/').toLowerCase();
-        const docPathWithExt = `${docPath}.${ext}`;
+        let docPathWithExt = docPath;
+        if (docCustomType) {
+          docPathWithExt = `${docPath}.${docCustomType.extension}`;
+        } else if (!isMedia && !docPath.endsWith('.md')) {
+          docPathWithExt = `${docPath}.md`;
+        }
 
-        const existsOnDisk = diskPathSet.has(docPathWithExt) || diskPathSet.has(docPath);
+        const existsOnDisk =
+          diskPathSet.has(docPathWithExt) ||
+          diskPathSet.has(docPath) ||
+          (doc.title && diskPathSet.has(doc.title.toLowerCase()));
 
         if (!existsOnDisk) {
           removedDocIds.push(doc.id);

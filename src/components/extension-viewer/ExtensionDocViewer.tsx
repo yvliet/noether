@@ -23,6 +23,7 @@ import { ExtensionAppIcon } from '@/components/common/ExtensionAppIcon';
 import { platform } from '@/lib/platform/platformAdapter';
 import { highlightCode } from './syntaxHighlighter';
 import { parseCalloutHeader, getCalloutTypeInfo } from '@/lib/editor/callouts';
+import { isImageFileName } from '@/core/registries/FileTypeRegistry';
 import {
   resolveExtensionMetadata,
   fetchGitHubReadme,
@@ -565,7 +566,7 @@ function renderInlineMarkdown(text: string): string {
     // Wikilink Embeds: ![[target|alias/size]]
     .replace(/!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, target, alias) => {
       const cleanTarget = target.trim();
-      const isImg = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i.test(cleanTarget);
+      const isImg = isImageFileName(cleanTarget);
       if (isImg) {
         if (!isSafeUrl(cleanTarget)) return '';
         return `<img src="${cleanTarget}" alt="${alias || cleanTarget}" class="noether-media-image rounded-md border border-[var(--noether-border-subtle)] max-w-full my-3 block" loading="lazy" />`;

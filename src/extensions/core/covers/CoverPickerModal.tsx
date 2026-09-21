@@ -30,7 +30,7 @@ import {
 } from './presetCache';
 import { useCoversSettings } from './coversSettings';
 import { NoetherApp } from '@/core/app/NoetherApp';
-import { useVaultDocuments } from 'noether';
+import { useVaultDocuments, isImageFileName } from 'noether';
 import { preloadCoverImage } from './coverPreloader';
 import { getCachedImageSrc, resolveImageSrcAsync } from '@/components/editor/embed-renderer';
 import { DocumentItem } from '@/types';
@@ -136,11 +136,10 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
 
   // Filter vault documents for image attachments
   const vaultImages = useMemo(() => {
-    const IMAGE_REGEX = /\.(png|jpe?g|gif|svg|webp|bmp|ico|avif)$/i;
     return allVaultDocuments.filter((d) => {
       if (d.is_folder) return false;
       if (d.doc_type === 'image') return true;
-      return IMAGE_REGEX.test(d.title);
+      return isImageFileName(d.title);
     });
   }, [allVaultDocuments]);
 
