@@ -359,11 +359,11 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             data-tooltip="Drawer options"
             aria-label="Drawer options"
             data-active={isSidebarMenuOpen ? 'true' : undefined}
-            className={`noether-toolbar-btn w-[18px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white flex items-center justify-center transition-none cursor-pointer ${
+            className={`noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white flex items-center justify-center transition-none cursor-pointer ${
               isSidebarMenuOpen ? 'text-white bg-[#2e2e2e]' : 'text-[#999999]'
             }`}
           >
-            <ArrowDown01Icon size={11} />
+            <ArrowDown01Icon size={12} />
           </button>
 
           <div className="w-[1px] h-3 bg-[#333333] mx-0.5 shrink-0" />
@@ -410,9 +410,9 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={() => handlePageChange(currentPage - 1)}
             data-tooltip="Previous page (Left arrow / PageUp)"
             aria-label="Previous page"
-            className="noether-toolbar-btn w-[20px] h-[20px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
           >
-            <ArrowLeft01Icon size={11} />
+            <ArrowLeft01Icon size={12} />
           </button>
 
           <form onSubmit={handlePageSubmit} className="flex items-center text-xs">
@@ -444,9 +444,9 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={() => handlePageChange(currentPage + 1)}
             data-tooltip="Next page (Right arrow / PageDown)"
             aria-label="Next page"
-            className="noether-toolbar-btn w-[20px] h-[20px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
           >
-            <ArrowRight01Icon size={11} />
+            <ArrowRight01Icon size={12} />
           </button>
         </div>
 
