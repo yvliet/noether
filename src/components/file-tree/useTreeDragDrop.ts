@@ -435,7 +435,7 @@ export function useTreeDragDrop({
           justDraggedRef.current = true;
           setTimeout(() => {
             justDraggedRef.current = false;
-          }, 120);
+          }, 200);
 
           const allDocs = useDocumentStore.getState().documents;
           dragTooltipManager.hide();

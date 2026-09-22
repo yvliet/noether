@@ -333,76 +333,6 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     }
   }, [isFolder, activeDocId, allDocs, item.id, setIsOpen]);
 
-  const handleSelect = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-
-      // Folder Picker Mode: clicking a folder chooses it
-      if (isPickingFolder) {
-        if (isFolder && folderPickerPrompt) {
-          const folderPath = getDocumentPath(item, allDocs);
-          const onSelect = folderPickerPrompt.onSelect;
-          useWorkspaceStore.setState({ folderPickerPrompt: null });
-          onSelect(folderPath, item);
-        }
-        return;
-      }
-
-      const isCtrl = e.ctrlKey || e.metaKey;
-      const isShift = e.shiftKey;
-
-      if (isShift) {
-        e.preventDefault();
-        if (typeof window !== 'undefined' && window.getSelection) {
-          window.getSelection()?.removeAllRanges();
-        }
-        const visibleIds = getVisibleTreeItemIds(e.currentTarget as HTMLElement);
-        selectDocRange(item.id, visibleIds, isCtrl);
-        return;
-      }
-
-      if (isCtrl) {
-        toggleDocSelection(item.id);
-        return;
-      }
-
-      if (isFolder) {
-        setIsOpen(!isOpen);
-        if (useDocumentStore.getState().selectedDocIds.length <= 1) {
-          useDocumentStore.setState({ selectedDocIds: [] });
-        }
-      } else {
-        selectSingleDoc(item.id);
-        openTab(item.id, displayTitle, {
-          replaceCurrentTab: true,
-          viewType: customType ? customType.viewType : 'document',
-          viewMode: customType ? (customType.viewType as any) : 'document',
-        });
-        setActiveDocumentById(item.id, { preserveViewMode: true });
-      }
-    },
-    [isPickingFolder, isFolder, folderPickerPrompt, item, allDocs, isOpen, openTab, displayTitle, customType, selectDocRange, selectSingleDoc, toggleDocSelection, setIsOpen, setActiveDocumentById]
-  );
-
-  const handleAuxClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (isPickingFolder || isFolder) return;
-      if (e.button === 1) {
-        // Middle-click: open explicitly in a new tab
-        e.preventDefault();
-        e.stopPropagation();
-        openTab(item.id, displayTitle, {
-          newTab: true,
-          replaceCurrentTab: false,
-          viewType: customType ? customType.viewType : 'document',
-          viewMode: customType ? (customType.viewType as any) : 'document',
-        });
-        setActiveDocumentById(item.id, { preserveViewMode: true });
-      }
-    },
-    [isPickingFolder, isFolder, item.id, displayTitle, customType, openTab, setActiveDocumentById]
-  );
-
   const handleSaveRename = useCallback(async () => {
     if (saveTimerRef.current) {
       clearTimeout(saveTimerRef.current);
@@ -573,6 +503,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
     handlePointerLeave,
     isBeingDragged,
     isDropTarget,
+    hasJustDragged,
   } = useTreeDragDrop({
     item,
     isEditing,
@@ -599,6 +530,98 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       }
     },
   });
+
+  const handleSelect = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+
+      // Folder Picker Mode: clicking a folder chooses it
+      if (isPickingFolder) {
+        if (isFolder && folderPickerPrompt) {
+          const folderPath = getDocumentPath(item, allDocs);
+          const onSelect = folderPickerPrompt.onSelect;
+          useWorkspaceStore.setState({ folderPickerPrompt: null });
+          onSelect(folderPath, item);
+        }
+        return;
+      }
+
+      // Suppress synthetic clicks triggered when releasing a drag gesture (e.g. dropping onto itself)
+      if (hasJustDragged()) {
+        return;
+      }
+
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+
+      if (isShift) {
+        e.preventDefault();
+        if (typeof window !== 'undefined' && window.getSelection) {
+          window.getSelection()?.removeAllRanges();
+        }
+        const visibleIds = getVisibleTreeItemIds(e.currentTarget as HTMLElement);
+        selectDocRange(item.id, visibleIds, isCtrl);
+        return;
+      }
+
+      if (isCtrl) {
+        toggleDocSelection(item.id);
+        return;
+      }
+
+      if (isFolder) {
+        setIsOpen(!isOpen);
+        if (useDocumentStore.getState().selectedDocIds.length <= 1) {
+          useDocumentStore.setState({ selectedDocIds: [] });
+        }
+      } else {
+        selectSingleDoc(item.id);
+        openTab(item.id, displayTitle, {
+          replaceCurrentTab: true,
+          viewType: customType ? customType.viewType : 'document',
+          viewMode: customType ? (customType.viewType as any) : 'document',
+        });
+        setActiveDocumentById(item.id, { preserveViewMode: true });
+      }
+    },
+    [
+      isPickingFolder,
+      isFolder,
+      folderPickerPrompt,
+      item,
+      allDocs,
+      isOpen,
+      openTab,
+      displayTitle,
+      customType,
+      selectDocRange,
+      selectSingleDoc,
+      toggleDocSelection,
+      setIsOpen,
+      setActiveDocumentById,
+      hasJustDragged,
+    ]
+  );
+
+  const handleAuxClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (isPickingFolder || isFolder) return;
+      if (hasJustDragged()) return;
+      if (e.button === 1) {
+        // Middle-click: open explicitly in a new tab
+        e.preventDefault();
+        e.stopPropagation();
+        openTab(item.id, displayTitle, {
+          newTab: true,
+          replaceCurrentTab: false,
+          viewType: customType ? customType.viewType : 'document',
+          viewMode: customType ? (customType.viewType as any) : 'document',
+        });
+        setActiveDocumentById(item.id, { preserveViewMode: true });
+      }
+    },
+    [isPickingFolder, isFolder, item.id, displayTitle, customType, openTab, setActiveDocumentById, hasJustDragged]
+  );
 
   // HTML5 External File Drag & Drop Handlers
   const [isExternalDragOver, setIsExternalDragOver] = useState(false);
@@ -1210,6 +1233,7 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       onSelect={handleSelect}
       onDoubleClick={(e) => {
         if (isPickingFolder) return;
+        if (hasJustDragged()) return;
         e.stopPropagation();
         if (isFolder) {
           setIsOpen((prev) => !prev);
