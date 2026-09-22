@@ -325,12 +325,12 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       style={{ height: containerHeight, width: containerWidth }}
-      className={`noether-embed-card noether-pdf-embed-card relative flex flex-col rounded-lg border border-[var(--noether-border-base,#2a2a2a)] bg-[#141414] overflow-hidden my-2.5 shadow-sm select-text focus:outline-none focus:ring-1 focus:ring-[var(--noether-accent,#eb584d)]/40 ${className}`}
+      className={`noether-embed-card noether-pdf-embed-card relative flex flex-col rounded-lg border border-[var(--noether-border-base,#2a2a2a)] bg-[#141414] overflow-hidden my-2.5 shadow-sm select-none cursor-default focus:outline-none focus:ring-1 focus:ring-[var(--noether-accent,#eb584d)]/40 ${className}`}
     >
       {/* Top Control Toolbar */}
       <div
         data-pdf-toolbar="true"
-        className="h-8 px-2.5 flex items-center justify-between bg-[#1a1a1a] border-b border-[#282828] text-xs text-[#888888] shrink-0 select-none"
+        className="h-8 px-2.5 flex items-center justify-between bg-[#1a1a1a] border-b border-[#282828] text-xs text-[#888888] shrink-0 select-none cursor-default"
       >
         {/* Left Actions: Drawer toggle & mode */}
         <div className="flex items-center gap-0.5">

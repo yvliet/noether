@@ -727,7 +727,7 @@ export function renderEmbedWidget(
 ): HTMLElement {
   const embed = parseEmbedTarget(rawTarget, format, altText);
   const container = document.createElement('div');
-  container.className = 'noether-embed-wrapper select-text';
+  container.className = 'noether-embed-wrapper';
 
   // 1. YouTube Video Embed
   if (embed.kind === 'youtube' && embed.youtubeId) {
@@ -1076,7 +1076,7 @@ export function renderEmbedWidget(
 
   // Header Bar
   const header = document.createElement('div');
-  header.className = 'noether-embed-header flex items-center justify-between px-3 py-1.5 bg-[#1f1f1f] border-b border-[#282828] text-xs select-none';
+  header.className = 'noether-embed-header flex items-center justify-between px-3 py-1.5 bg-[#1f1f1f] border-b border-[#282828] text-xs select-none cursor-default';
 
   const titleLeft = document.createElement('div');
   titleLeft.className = 'flex items-center gap-1.5 truncate text-[#dedede] font-medium';

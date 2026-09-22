@@ -11,8 +11,11 @@
   }
 
   button,
+  button *,
   a,
+  a *,
   [role="button"],
+  [role="button"] *,
   input[type="button"],
   input[type="submit"],
   input[type="reset"],
@@ -21,7 +24,24 @@
   select,
   summary,
   label,
-  .cursor-pointer {
+  .cursor-pointer,
+  .noether-toolbar-btn,
+  .noether-toolbar-btn *,
+  .noether-embed-card,
+  .noether-embed-card *:not(input):not(textarea):not([contenteditable="true"]),
+  .noether-embed-wrapper,
+  .noether-embed-header,
+  .noether-embed-header *,
+  .noether-embed-action,
+  .noether-embed-action *,
+  [data-pdf-toolbar],
+  [data-pdf-toolbar] *:not(input),
+  [data-pdf-sidebar],
+  [data-pdf-sidebar] *,
+  [data-pdf-dropdown],
+  [data-pdf-dropdown] *,
+  .noether-pdf-embed-card,
+  .noether-pdf-embed-card *:not(input):not(textarea) {
     cursor: default !important;
   }
 
@@ -29,15 +49,15 @@
   input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),
   textarea,
   [contenteditable="true"],
-  [contenteditable="true"] *:not(button):not(a):not([role="button"]):not(input):not(select):not(.noether-fold-btn):not(.noether-btn):not([data-type="taskItem"] > label):not([data-type="taskItem"] > label *):not(.resize-cursor):not(.resize-cursor *):not(.cursor-grab):not(.cursor-grabbing):not(.cursor-move):not(.cursor-col-resize):not(.cursor-row-resize):not(.cursor-crosshair):not(.cursor-not-allowed),
+  [contenteditable="true"] *:not(button):not(button *):not(a):not(a *):not([role="button"]):not([role="button"] *):not(input):not(select):not(.noether-fold-btn):not(.noether-fold-btn *):not(.noether-btn):not(.noether-btn *):not(.noether-toolbar-btn):not(.noether-toolbar-btn *):not(.noether-embed-card):not(.noether-embed-card *):not(.noether-embed-header):not(.noether-embed-header *):not(.noether-embed-action):not(.noether-embed-action *):not([data-pdf-toolbar]):not([data-pdf-toolbar] *):not([data-pdf-sidebar]):not([data-pdf-sidebar] *):not([data-pdf-dropdown]):not([data-pdf-dropdown] *):not([data-type="taskItem"] > label):not([data-type="taskItem"] > label *):not(.resize-cursor):not(.resize-cursor *):not(.cursor-grab):not(.cursor-grabbing):not(.cursor-move):not(.cursor-col-resize):not(.cursor-row-resize):not(.cursor-crosshair):not(.cursor-not-allowed),
   .ProseMirror,
-  .ProseMirror *:not(button):not(a):not([role="button"]):not(input):not(select):not(.noether-fold-btn):not(.noether-btn):not([data-type="taskItem"] > label):not([data-type="taskItem"] > label *):not(.resize-cursor):not(.resize-cursor *):not(.cursor-grab):not(.cursor-grabbing):not(.cursor-move):not(.cursor-col-resize):not(.cursor-row-resize):not(.cursor-crosshair):not(.cursor-not-allowed),
+  .ProseMirror *:not(button):not(button *):not(a):not(a *):not([role="button"]):not([role="button"] *):not(input):not(select):not(.noether-fold-btn):not(.noether-fold-btn *):not(.noether-btn):not(.noether-btn *):not(.noether-toolbar-btn):not(.noether-toolbar-btn *):not(.noether-embed-card):not(.noether-embed-card *):not(.noether-embed-header):not(.noether-embed-header *):not(.noether-embed-action):not(.noether-embed-action *):not([data-pdf-toolbar]):not([data-pdf-toolbar] *):not([data-pdf-sidebar]):not([data-pdf-sidebar] *):not([data-pdf-dropdown]):not([data-pdf-dropdown] *):not([data-type="taskItem"] > label):not([data-type="taskItem"] > label *):not(.resize-cursor):not(.resize-cursor *):not(.cursor-grab):not(.cursor-grabbing):not(.cursor-move):not(.cursor-col-resize):not(.cursor-row-resize):not(.cursor-crosshair):not(.cursor-not-allowed),
   .cm-editor,
-  .cm-editor *:not(button):not(a):not([role="button"]):not(input):not(select):not(.cm-foldGutter):not(.cm-foldGutter *):not(.cm-gutterElement),
+  .cm-editor *:not(button):not(button *):not(a):not(a *):not([role="button"]):not([role="button"] *):not(input):not(select):not(.cm-foldGutter):not(.cm-foldGutter *):not(.cm-gutterElement),
   .cm-content,
   .cm-content *,
   .cursor-text,
-  .cursor-text *:not(button):not(a):not([role="button"]):not(input):not(select):not(.noether-fold-btn):not(.noether-btn):not(.noether-switch):not(.noether-switch *):not(.cursor-grab):not(.cursor-grabbing):not(.cursor-move):not(.cursor-col-resize):not(.cursor-row-resize):not(.cursor-crosshair):not(.cursor-not-allowed) {
+  .cursor-text *:not(button):not(button *):not(a):not(a *):not([role="button"]):not([role="button"] *):not(input):not(select):not(.noether-fold-btn):not(.noether-btn):not(.noether-switch):not(.noether-switch *):not(.cursor-grab):not(.cursor-grabbing):not(.cursor-move):not(.cursor-col-resize):not(.cursor-row-resize):not(.cursor-crosshair):not(.cursor-not-allowed) {
     cursor: text !important;
   }
 
@@ -2785,7 +2805,7 @@ math-field::part(content) {
   max-width: 100%;
   height: auto;
   display: block;
-  cursor: text;
+  cursor: default;
 }
 
 .noether-embed-media.noether-image-embed {
@@ -2798,7 +2818,7 @@ math-field::part(content) {
 .noether-embed-media.noether-image-embed img {
   display: block;
   margin: 0;
-  cursor: text;
+  cursor: default;
 }
 
 /* Embed Container & Paragraph Layout */
