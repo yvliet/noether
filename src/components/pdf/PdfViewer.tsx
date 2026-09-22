@@ -342,16 +342,70 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
     };
   }, []);
 
-  // Zoom Actions
+  // Zoom Actions: anchor zooming around the viewport center to eliminate scroll jumping
   const handleZoomIn = useCallback(() => {
+    const vp = viewportRef.current;
+    const currentScale = scale;
+    const nextScale = Math.min(4.0, +(currentScale + 0.15).toFixed(2));
+    if (Math.abs(nextScale - currentScale) < 0.001) return;
+
+    if (vp) {
+      const ratio = nextScale / currentScale;
+      const centerY = vp.scrollTop + vp.clientHeight / 2;
+      const newScrollTop = Math.max(0, Math.round(centerY * ratio - vp.clientHeight / 2));
+      let newScrollLeft = 0;
+      if (vp.scrollWidth > vp.clientWidth + 4) {
+        const centerX = vp.scrollLeft + vp.clientWidth / 2;
+        newScrollLeft = Math.max(0, Math.round(centerX * ratio - vp.clientWidth / 2));
+      }
+      setZoomMode('custom');
+      setScale(nextScale);
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTop = newScrollTop;
+          if (newScrollLeft > 0) {
+            viewportRef.current.scrollLeft = newScrollLeft;
+          }
+        }
+      });
+      return;
+    }
+
     setZoomMode('custom');
-    setScale((prev) => Math.min(4.0, +(prev + 0.15).toFixed(2)));
-  }, []);
+    setScale(nextScale);
+  }, [scale]);
 
   const handleZoomOut = useCallback(() => {
+    const vp = viewportRef.current;
+    const currentScale = scale;
+    const nextScale = Math.max(0.25, +(currentScale - 0.15).toFixed(2));
+    if (Math.abs(nextScale - currentScale) < 0.001) return;
+
+    if (vp) {
+      const ratio = nextScale / currentScale;
+      const centerY = vp.scrollTop + vp.clientHeight / 2;
+      const newScrollTop = Math.max(0, Math.round(centerY * ratio - vp.clientHeight / 2));
+      let newScrollLeft = 0;
+      if (vp.scrollWidth > vp.clientWidth + 4) {
+        const centerX = vp.scrollLeft + vp.clientWidth / 2;
+        newScrollLeft = Math.max(0, Math.round(centerX * ratio - vp.clientWidth / 2));
+      }
+      setZoomMode('custom');
+      setScale(nextScale);
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTop = newScrollTop;
+          if (newScrollLeft > 0) {
+            viewportRef.current.scrollLeft = newScrollLeft;
+          }
+        }
+      });
+      return;
+    }
+
     setZoomMode('custom');
-    setScale((prev) => Math.max(0.25, +(prev - 0.15).toFixed(2)));
-  }, []);
+    setScale(nextScale);
+  }, [scale]);
 
   const handleSetZoomMode = useCallback((mode: PdfZoomMode, customScale?: number) => {
     setZoomMode(mode);
@@ -1113,10 +1167,10 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
         <div
           ref={viewportRef}
           onScroll={handleViewportScroll}
-          className="flex-1 h-full overflow-auto custom-scrollbar bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] p-4 flex flex-col items-center"
+          className="flex-1 h-full overflow-auto custom-scrollbar bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]"
         >
           {errorMessage && (
-            <div className="my-auto flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16 text-center">
+            <div className="w-full h-full flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16 text-center">
               <File01Icon size={32} className="opacity-40" />
               <span>PDF document not found</span>
               {diskPath && (
@@ -1132,7 +1186,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
           )}
 
           {pdfData && (
-            <div ref={pagesContentRef} className="flex flex-col items-center gap-2 pb-12 w-fit min-w-full">
+            <div ref={pagesContentRef} className="min-w-full w-max flex flex-col items-center gap-2 p-4 pb-12">
               {Array.from({ length: pdfData.numPages }, (_, i) => i + 1).map((pageNum) => (
                 <PdfPageCanvas
                   key={`page-${pageNum}`}

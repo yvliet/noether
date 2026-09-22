@@ -405,13 +405,67 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
   };
 
   const handleZoomIn = () => {
+    const vp = viewportRef.current;
+    const currentScale = scale;
+    const nextScale = Math.min(4.0, +(currentScale + 0.15).toFixed(2));
+    if (Math.abs(nextScale - currentScale) < 0.001) return;
+
+    if (vp) {
+      const ratio = nextScale / currentScale;
+      const centerY = vp.scrollTop + vp.clientHeight / 2;
+      const newScrollTop = Math.max(0, Math.round(centerY * ratio - vp.clientHeight / 2));
+      let newScrollLeft = 0;
+      if (vp.scrollWidth > vp.clientWidth + 4) {
+        const centerX = vp.scrollLeft + vp.clientWidth / 2;
+        newScrollLeft = Math.max(0, Math.round(centerX * ratio - vp.clientWidth / 2));
+      }
+      setZoomMode('custom');
+      setScale(nextScale);
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTop = newScrollTop;
+          if (newScrollLeft > 0) {
+            viewportRef.current.scrollLeft = newScrollLeft;
+          }
+        }
+      });
+      return;
+    }
+
     setZoomMode('custom');
-    setScale((prev) => Math.min(4.0, +(prev + 0.15).toFixed(2)));
+    setScale(nextScale);
   };
 
   const handleZoomOut = () => {
+    const vp = viewportRef.current;
+    const currentScale = scale;
+    const nextScale = Math.max(0.2, +(currentScale - 0.15).toFixed(2));
+    if (Math.abs(nextScale - currentScale) < 0.001) return;
+
+    if (vp) {
+      const ratio = nextScale / currentScale;
+      const centerY = vp.scrollTop + vp.clientHeight / 2;
+      const newScrollTop = Math.max(0, Math.round(centerY * ratio - vp.clientHeight / 2));
+      let newScrollLeft = 0;
+      if (vp.scrollWidth > vp.clientWidth + 4) {
+        const centerX = vp.scrollLeft + vp.clientWidth / 2;
+        newScrollLeft = Math.max(0, Math.round(centerX * ratio - vp.clientWidth / 2));
+      }
+      setZoomMode('custom');
+      setScale(nextScale);
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTop = newScrollTop;
+          if (newScrollLeft > 0) {
+            viewportRef.current.scrollLeft = newScrollLeft;
+          }
+        }
+      });
+      return;
+    }
+
     setZoomMode('custom');
-    setScale((prev) => Math.max(0.25, +(prev - 0.15).toFixed(2)));
+    setScale(nextScale);
   };
 
   const openSidebarMenu = (e: React.MouseEvent) => {
@@ -634,17 +688,17 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
         <div
           ref={viewportRef}
           onScroll={handleViewportScroll}
-          className="w-full h-full overflow-auto custom-scrollbar flex flex-col items-center relative select-none"
+          className="w-full h-full overflow-auto custom-scrollbar relative select-none"
         >
           {isLoading && (
-            <div className="my-auto flex flex-col items-center justify-center gap-2 text-[#777777] text-xs">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#777777] text-xs py-16">
               <div className="w-5 h-5 border-2 border-[var(--noether-accent,#eb584d)] border-t-transparent rounded-full animate-spin" />
               <span>Loading PDF...</span>
             </div>
           )}
 
           {errorMessage && !isLoading && (
-            <div className="my-auto flex flex-col items-center justify-center gap-2 text-[#777777] text-xs text-center px-4">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#777777] text-xs text-center px-4 py-16">
               <File01Icon size={28} className="text-rose-400/60" />
               <span className="text-[#cccccc] font-medium">{documentTitle}</span>
               <span className="text-rose-400 text-[11px]">{errorMessage}</span>
@@ -661,7 +715,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
           {pdfData && !isLoading && !errorMessage && (
             <div
               ref={pagesContentRef}
-              className="w-fit min-w-full flex flex-col items-center gap-4 p-4"
+              className="min-w-full w-max flex flex-col items-center gap-4 p-4"
             >
               {Array.from({ length: pdfData.numPages }, (_, i) => i + 1).map((pageNum) => (
                 <PdfPageCanvas

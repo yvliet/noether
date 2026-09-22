@@ -46,6 +46,8 @@ export function usePdfSmoothZoom({
     contentOffsetTop: number;
     contentOffsetLeft: number;
     baseScale: number;
+    wasHorizontallyCentered: boolean;
+    initialScrollWidth: number;
   } | null>(null);
 
   const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
@@ -73,11 +75,21 @@ export function usePdfSmoothZoom({
         content.style.willChange = '';
       }
 
-      // Viewport scrollWidth and scrollHeight now reflect the new scale, preventing clamping
+      // Force synchronous reflow so viewport scrollWidth/scrollHeight match the new scale
       if (viewport) {
+        void viewport.scrollWidth;
+        void viewport.scrollHeight;
         viewport.scrollLeft = left;
         viewport.scrollTop = top;
       }
+
+      // Guard against layout shifts in the subsequent paint frame
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollLeft = left;
+          viewportRef.current.scrollTop = top;
+        }
+      });
 
       isZoomingRef.current = false;
       gestureOriginRef.current = null;
@@ -111,7 +123,14 @@ export function usePdfSmoothZoom({
         const vpRect = viewport.getBoundingClientRect();
         const contentRect = content.getBoundingClientRect();
 
-        const originX = Math.max(0, e.clientX - contentRect.left);
+        // Check whether content is horizontally centered within the viewport
+        const isHorizontallyCentered = content.scrollWidth <= viewport.clientWidth + 4;
+
+        // When horizontally centered, anchor horizontally at the content midpoint
+        // so scaling expands symmetrically without drifting sideways toward the off-center cursor
+        const originX = isHorizontallyCentered
+          ? content.clientWidth / 2
+          : Math.max(0, e.clientX - contentRect.left);
         const originY = Math.max(0, e.clientY - contentRect.top);
 
         gestureOriginRef.current = {
@@ -122,11 +141,15 @@ export function usePdfSmoothZoom({
           contentOffsetTop: content.offsetTop,
           contentOffsetLeft: content.offsetLeft,
           baseScale,
+          wasHorizontallyCentered: isHorizontallyCentered,
+          initialScrollWidth: content.scrollWidth,
         };
 
         content.style.transformOrigin = `${originX}px ${originY}px`;
         content.style.willChange = 'transform';
       }
+
+      if (!gestureOriginRef.current) return;
 
       // GPU-accelerated immediate visual scaling without re-rendering PDF canvas
       const ratio = nextScale / gestureOriginRef.current.baseScale;
@@ -155,14 +178,36 @@ export function usePdfSmoothZoom({
           return;
         }
 
-        const { originX, originY, cursorVpX, cursorVpY, contentOffsetTop, contentOffsetLeft, baseScale: startScale } = gestureOriginRef.current;
+        const {
+          originX,
+          originY,
+          cursorVpX,
+          cursorVpY,
+          contentOffsetTop,
+          contentOffsetLeft,
+          baseScale: startScale,
+          wasHorizontallyCentered,
+          initialScrollWidth,
+        } = gestureOriginRef.current as any;
         const commitRatio = finalScale / startScale;
 
-        // Calculate exact scroll offsets to keep the focused content point anchored at cursor
-        const newContentX = originX * commitRatio;
+        // Calculate exact vertical scroll offset to keep the focused content point anchored at cursor
         const newContentY = originY * commitRatio;
-        const targetScrollLeft = Math.max(0, Math.round((contentOffsetLeft + newContentX) - cursorVpX));
         const targetScrollTop = Math.max(0, Math.round((contentOffsetTop + newContentY) - cursorVpY));
+
+        // Calculate horizontal scroll offset:
+        let targetScrollLeft = 0;
+        if (wasHorizontallyCentered) {
+          const estimatedNewWidth = initialScrollWidth * commitRatio;
+          if (estimatedNewWidth > viewport.clientWidth) {
+            targetScrollLeft = Math.max(0, Math.round((estimatedNewWidth - viewport.clientWidth) / 2));
+          } else {
+            targetScrollLeft = 0;
+          }
+        } else {
+          const newContentX = originX * commitRatio;
+          targetScrollLeft = Math.max(0, Math.round((contentOffsetLeft + newContentX) - cursorVpX));
+        }
 
         // Stash pending scroll offset for synchronous application in useLayoutEffect upon DOM mutation
         pendingScrollRef.current = { left: targetScrollLeft, top: targetScrollTop };
