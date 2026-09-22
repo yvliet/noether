@@ -19,7 +19,8 @@ interface MenuItemProps {
   onClose: () => void;
   isFocused?: boolean;
   isSubmenuOpen: boolean;
-  onRequestOpenSubmenu: () => void;
+  isPinned: boolean;
+  onTogglePin: () => void;
   onRequestCloseSubmenu: () => void;
   onHoverChange: (hasSubmenu: boolean) => void;
 }
@@ -30,7 +31,8 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
   onClose,
   isFocused,
   isSubmenuOpen,
-  onRequestOpenSubmenu,
+  isPinned,
+  onTogglePin,
   onRequestCloseSubmenu,
   onHoverChange,
 }) => {
@@ -107,12 +109,8 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
     }
 
     if (hasSubmenu) {
-      if (isSubmenuOpen) {
-        onRequestCloseSubmenu();
-      } else {
-        calculateSubmenuPosition();
-        onRequestOpenSubmenu();
-      }
+      calculateSubmenuPosition();
+      onTogglePin();
       return;
     }
 
@@ -128,7 +126,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
       }}
       onMouseLeave={() => {
         item.onMouseLeave?.();
-        if (hasSubmenu && isSubmenuOpen) {
+        if (hasSubmenu && isSubmenuOpen && !isPinned) {
           onRequestCloseSubmenu();
         }
       }}
@@ -145,7 +143,7 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
             ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted,#777)]'
             : item.isDanger
             ? 'text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/10 hover:text-[var(--noether-danger,#ef4444)]'
-            : isFocused
+            : isFocused || isPinned
             ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
             : isSubmenuOpen
             ? 'bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-primary)]'
@@ -235,17 +233,45 @@ const MenuList: React.FC<MenuListProps> = React.memo(({
   actionableItems,
 }) => {
   const [activeSubmenuId, setActiveSubmenuId] = useState<string | null>(null);
+  const [pinnedSubmenuId, setPinnedSubmenuId] = useState<string | null>(null);
 
   const handleHoverChange = useCallback((itemId: string, hasSubmenu: boolean) => {
     if (hasSubmenu) {
       setActiveSubmenuId(itemId);
+      setPinnedSubmenuId((curr) => (curr && curr !== itemId ? null : curr));
     } else {
       setActiveSubmenuId(null);
+      setPinnedSubmenuId(null);
     }
   }, []);
 
+  const handleTogglePin = useCallback((itemId: string) => {
+    setPinnedSubmenuId((curr) => {
+      if (curr === itemId) {
+        setActiveSubmenuId(null);
+        return null;
+      } else {
+        setActiveSubmenuId(itemId);
+        return itemId;
+      }
+    });
+  }, []);
+
+  const handleRequestClose = useCallback((itemId: string) => {
+    if (pinnedSubmenuId !== itemId) {
+      setActiveSubmenuId((curr) => (curr === itemId ? null : curr));
+    }
+  }, [pinnedSubmenuId]);
+
   return (
-    <div onMouseLeave={() => setActiveSubmenuId(null)} className="flex flex-col gap-[1px] w-full">
+    <div
+      onMouseLeave={() => {
+        if (!pinnedSubmenuId) {
+          setActiveSubmenuId(null);
+        }
+      }}
+      className="flex flex-col gap-[1px] w-full"
+    >
       {items.map((item, idx) => {
         const itemId = item.id || `${item.title || 'item'}-${idx}`;
         const actionIdx = actionableItems ? actionableItems.indexOf(item) : -1;
@@ -258,12 +284,9 @@ const MenuList: React.FC<MenuListProps> = React.memo(({
             onClose={onClose}
             isFocused={isFocused}
             isSubmenuOpen={activeSubmenuId === itemId}
-            onRequestOpenSubmenu={() => {
-              setActiveSubmenuId(itemId);
-            }}
-            onRequestCloseSubmenu={() => {
-              setActiveSubmenuId((curr) => (curr === itemId ? null : curr));
-            }}
+            isPinned={pinnedSubmenuId === itemId}
+            onTogglePin={() => handleTogglePin(itemId)}
+            onRequestCloseSubmenu={() => handleRequestClose(itemId)}
             onHoverChange={(hasSubmenu) => handleHoverChange(itemId, hasSubmenu)}
           />
         );
