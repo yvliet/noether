@@ -52,10 +52,7 @@ export function useTreeDragDrop({
     draggedItem?.id === item.id ||
       (draggedItem && selectedDocIds.includes(draggedItem.id) && selectedDocIds.includes(item.id))
   );
-  const isDropTarget = Boolean(
-    isFolder &&
-      (dragOverFolderId === item.id || (draggedItem && isDragHovered && !draggedItem.is_folder))
-  );
+  const isDropTarget = Boolean(isFolder && dragOverFolderId === item.id);
 
   const handlePointerEnter = useCallback(() => {
     if (useDragDropStore.getState().draggedItem) {

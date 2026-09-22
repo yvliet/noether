@@ -1,5 +1,6 @@
 import React from 'react';
 import { TreeNodeGuideline } from './TreeNodeGuideline';
+import { useDragDropStore } from '@/store/dragDropStore';
 
 export interface TreeNodeAction {
   id: string;
@@ -87,6 +88,8 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
   className = '',
   children,
 }) => {
+  const isAnyDragging = useDragDropStore((s) => Boolean(s.activeDrag?.isDragging || s.draggedItem));
+
   return (
     <div
       data-tree-item-id={id}
@@ -96,23 +99,18 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
       aria-selected={isSelected || isActive}
       aria-level={level + 1}
       tabIndex={isSelected || isActive ? 0 : -1}
-      style={
-        isDropTarget && isFolder
-          ? {
-              marginLeft: `${level * 16}px`,
-              width: `calc(100% - ${level * 16}px)`,
-            }
-          : undefined
-      }
-      className={`select-none text-xs rounded-md ${
-        isDropTarget && isFolder
-          ? 'bg-[var(--noether-bg-sidebar-hover,#282828)] transition-none'
-          : isDropTarget
-          ? 'bg-[var(--noether-bg-sidebar-hover,#282828)] w-full'
-          : 'w-full'
-      } ${className}`}
+      className={`select-none text-xs rounded-md w-full relative ${className}`}
       {...dataAttributes}
     >
+      {/* Drop target background highlight box starting at folder indentation without shifting contents */}
+      {isDropTarget && (
+        <div
+          aria-hidden="true"
+          className="absolute inset-y-0 right-0 rounded-md pointer-events-none bg-[var(--noether-bg-sidebar-hover,#282828)] z-0"
+          style={{ left: `${level * 16}px` }}
+        />
+      )}
+
       {/* Node Row */}
       <div
         id={`noether-tree-item-${id}`}
@@ -134,9 +132,9 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onDragLeave={isDisabled ? undefined : onDragLeave}
         onDrop={isDisabled ? undefined : onDrop}
         style={{
-          paddingLeft: isDropTarget && isFolder ? '8px' : `${8 + level * 16}px`,
+          paddingLeft: `${8 + level * 16}px`,
         }}
-        className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md w-full overflow-visible ${
+        className={`group relative z-10 flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md w-full overflow-visible ${
           isCut ? 'opacity-50 ' : ''
         }${
           isDisabled
@@ -147,10 +145,12 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
             ? 'cursor-pointer opacity-40 bg-[var(--noether-bg-main,#1c1c1c)]'
             : isHighlighted
             ? 'cursor-pointer bg-[#82691b] text-white font-normal shadow-sm'
-            : isDropTarget && !isFolder
-            ? 'cursor-pointer bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-primary,#ffffff)] font-normal'
+            : isDropTarget
+            ? 'cursor-pointer text-[var(--noether-text-primary,#ffffff)] font-normal'
             : isSelected || isMultiSelected || (isActive && !isFolder) || isEditing
             ? 'cursor-pointer bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-normal'
+            : isAnyDragging
+            ? 'cursor-pointer text-[var(--noether-text-muted)] font-normal'
             : 'cursor-pointer text-[var(--noether-text-muted)] hover:bg-[var(--noether-bg-sidebar-hover)] hover:text-[var(--noether-text-primary)] font-normal'
         }`}
       >
@@ -193,7 +193,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
 
       {/* Expanded Children Container with Guideline */}
       {isOpen && children && (
-        <div className="relative flex flex-col w-full">
+        <div className="relative z-10 flex flex-col w-full">
           <TreeNodeGuideline level={level} />
           {children}
         </div>
