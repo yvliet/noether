@@ -5,6 +5,7 @@ import { PdfSubHeaderLeftActions, PdfSubHeaderRightActions } from './PdfToolbar'
 import { PdfSidebar } from './PdfSidebar';
 import { PdfPageCanvas, preloadPdfPage } from './PdfPageCanvas';
 import { loadPdfDocument, LoadedPdfData } from './pdfLoader';
+import { usePdfSmoothZoom } from './usePdfSmoothZoom';
 import { PdfSidebarMode, PdfZoomMode, PdfViewerProps } from './types';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -89,6 +90,19 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pagesContentRef = useRef<HTMLDivElement>(null);
+
+  // GPU-accelerated smooth touchpad pinch and Ctrl+scroll zoom
+  usePdfSmoothZoom({
+    viewportRef,
+    contentRef: pagesContentRef,
+    scale,
+    onScaleCommit: (newScale) => {
+      setZoomMode('custom');
+      setScale(newScale);
+    },
+    enabled: !isPresenting,
+  });
 
   const isPresentingRef = useRef<boolean>(false);
   isPresentingRef.current = isPresenting;
@@ -991,19 +1005,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
       }
     };
 
-    const handleWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) {
-        e.preventDefault();
-        if (e.deltaY < 0) {
-          handleZoomIn();
-        } else if (e.deltaY > 0) {
-          handleZoomOut();
-        }
-      }
-    };
-
     window.addEventListener('keydown', handleKeyDown);
-    el.addEventListener('wheel', handleWheel, { passive: false });
 
     const onCmdZoomIn = () => handleZoomIn();
     const onCmdZoomOut = () => handleZoomOut();
@@ -1021,7 +1023,6 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      el.removeEventListener('wheel', handleWheel);
       window.removeEventListener('noether:pdf-zoom-in', onCmdZoomIn);
       window.removeEventListener('noether:pdf-zoom-out', onCmdZoomOut);
       window.removeEventListener('noether:pdf-fit-width', onCmdFitWidth);
@@ -1114,7 +1115,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
         <div
           ref={viewportRef}
           onScroll={handleViewportScroll}
-          className="flex-1 h-full overflow-y-auto custom-scrollbar bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] p-4 flex flex-col items-center"
+          className="flex-1 h-full overflow-auto custom-scrollbar bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] p-4 flex flex-col items-center"
         >
           {errorMessage && (
             <div className="my-auto flex flex-col items-center justify-center text-[#666] text-xs gap-2 select-none py-16 text-center">
@@ -1133,7 +1134,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
           )}
 
           {pdfData && (
-            <div className="flex flex-col items-center gap-2 pb-12">
+            <div ref={pagesContentRef} className="flex flex-col items-center gap-2 pb-12 w-fit min-w-full">
               {Array.from({ length: pdfData.numPages }, (_, i) => i + 1).map((pageNum) => (
                 <PdfPageCanvas
                   key={`page-${pageNum}`}

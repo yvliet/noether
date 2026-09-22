@@ -7,13 +7,11 @@ import {
   ArrowRight02Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  MinusSignIcon,
-  PlusSignIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
   CheckIcon,
   RotateCcwIcon,
   Presentation01Icon,
-  CenterFocusIcon,
-  FitToScreenIcon,
   ExternalLinkIcon,
   File01Icon,
   SourceCodeIcon,
@@ -22,6 +20,7 @@ import {
 import { PdfSidebar } from './PdfSidebar';
 import { PdfPageCanvas, preloadPdfPage } from './PdfPageCanvas';
 import { loadPdfDocument, LoadedPdfData } from './pdfLoader';
+import { usePdfSmoothZoom } from './usePdfSmoothZoom';
 import { PdfSidebarMode, PdfZoomMode } from './types';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
@@ -108,18 +107,178 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
   const [revealedPageNumber, setRevealedPageNumber] = useState<number | null>(null);
   const [isPresenting, setIsPresenting] = useState<boolean>(false);
 
+  // Visible pages in or near viewport for continuous virtualized slide rendering
+  const [visiblePageSet, setVisiblePageSet] = useState<Set<number>>(new Set([1, 2]));
+
   // Sidebar (drawer options) dropdown menu state
   const [isSidebarMenuOpen, setIsSidebarMenuOpen] = useState(false);
   const sidebarMenuTriggerRef = useRef<HTMLButtonElement>(null);
   const [sidebarMenuPos, setSidebarMenuPos] = useState({ top: 0, left: 0 });
 
-  // Zoom dropdown menu state
-  const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
-  const zoomMenuTriggerRef = useRef<HTMLButtonElement>(null);
-  const [zoomMenuPos, setZoomMenuPos] = useState({ top: 0, left: 0 });
-
   const containerRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
+  const pagesContentRef = useRef<HTMLDivElement>(null);
+
+  const scrollRafRef = useRef<number | null>(null);
+  const currentPageRef = useRef<number>(currentPage);
+  currentPageRef.current = currentPage;
+
+  // GPU-accelerated smooth touchpad pinch and Ctrl+scroll zoom
+  usePdfSmoothZoom({
+    viewportRef,
+    contentRef: pagesContentRef,
+    scale,
+    onScaleCommit: (newScale) => {
+      setZoomMode('custom');
+      setScale(newScale);
+    },
+    enabled: !isPresenting,
+  });
+
+  // Precompute page vertical layout offsets for instant math-based viewport culling without DOM reflow
+  const pageOffsets = useMemo(() => {
+    if (!pdfData || pdfData.pageInfos.length === 0) return [];
+    const isSideways = rotation === 90 || rotation === 270;
+    const gap = 16;
+    let currentTop = 16;
+
+    return pdfData.pageInfos.map((info, idx) => {
+      const baseH = isSideways ? info.width : info.height;
+      const height = Math.floor(baseH * scale) + 2;
+      const top = currentTop;
+      const bottom = top + height;
+      currentTop = bottom + gap;
+      return {
+        pageNumber: idx + 1,
+        top,
+        bottom,
+        height,
+      };
+    });
+  }, [pdfData, scale, rotation]);
+
+  // Viewport Intersection & Virtualized Page Set calculation
+  const updateVisiblePages = useCallback((explicitTargetPage?: number) => {
+    const vp = viewportRef.current;
+    if (!vp || !pdfData || pageOffsets.length === 0) return;
+
+    const vpTop = vp.scrollTop;
+    const vpBottom = vpTop + vp.clientHeight;
+    const vpHeight = vp.clientHeight;
+    const buffer = 600;
+
+    const newVisible = new Set<number>();
+    let bestCandidatePage = explicitTargetPage ?? currentPageRef.current;
+    let maxVisibilityRatio = -1;
+    let currentVisibilityRatio = 0;
+    let currentCoverageRatio = 0;
+
+    for (let i = 0; i < pageOffsets.length; i++) {
+      const offset = pageOffsets[i];
+
+      // Buffer check for virtualization
+      if (offset.bottom >= vpTop - buffer && offset.top <= vpBottom + buffer) {
+        newVisible.add(offset.pageNumber);
+      }
+
+      // Exact viewport intersection
+      const overlapTop = Math.max(offset.top, vpTop);
+      const overlapBottom = Math.min(offset.bottom, vpBottom);
+      const visibleHeight = Math.max(0, overlapBottom - overlapTop);
+
+      if (visibleHeight > 0) {
+        const visibilityRatio = visibleHeight / offset.height;
+        const coverageRatio = visibleHeight / vpHeight;
+
+        if (offset.pageNumber === currentPageRef.current) {
+          currentVisibilityRatio = visibilityRatio;
+          currentCoverageRatio = coverageRatio;
+        }
+
+        if (visibilityRatio > maxVisibilityRatio) {
+          maxVisibilityRatio = visibilityRatio;
+          bestCandidatePage = offset.pageNumber;
+        }
+      }
+    }
+
+    // Stability Invariant: Guarantee active page and adjacent neighbors are always in visible set
+    const active = explicitTargetPage ?? currentPageRef.current;
+    newVisible.add(active);
+    if (active > 1) newVisible.add(active - 1);
+    if (active < pdfData.numPages) newVisible.add(active + 1);
+
+    setVisiblePageSet((prev) => {
+      if (prev.size === newVisible.size) {
+        let isSame = true;
+        for (const p of newVisible) {
+          if (!prev.has(p)) {
+            isSame = false;
+            break;
+          }
+        }
+        if (isSame) return prev;
+      }
+      return newVisible;
+    });
+
+    if (explicitTargetPage !== undefined) {
+      if (explicitTargetPage !== currentPageRef.current && explicitTargetPage >= 1 && explicitTargetPage <= pdfData.numPages) {
+        currentPageRef.current = explicitTargetPage;
+        setCurrentPage(explicitTargetPage);
+      }
+      return;
+    }
+
+    // Dominant page tracking with hysteresis
+    let targetPage = active;
+    if (bestCandidatePage !== active) {
+      const candidateDominant = maxVisibilityRatio > currentVisibilityRatio + 0.15;
+      const currentLeftView = currentVisibilityRatio < 0.20 && currentCoverageRatio < 0.20;
+      const candidateCoversMajority = maxVisibilityRatio > 0.55;
+
+      if (candidateDominant || currentLeftView || candidateCoversMajority) {
+        targetPage = bestCandidatePage;
+      }
+    }
+
+    if (targetPage !== active && targetPage >= 1 && targetPage <= pdfData.numPages) {
+      currentPageRef.current = targetPage;
+      setCurrentPage(targetPage);
+    }
+  }, [pdfData, pageOffsets]);
+
+  useEffect(() => {
+    updateVisiblePages();
+  }, [updateVisiblePages]);
+
+  const handleViewportScroll = useCallback(() => {
+    if (scrollRafRef.current !== null) return;
+    scrollRafRef.current = requestAnimationFrame(() => {
+      scrollRafRef.current = null;
+      updateVisiblePages();
+    });
+  }, [updateVisiblePages]);
+
+  useEffect(() => {
+    return () => {
+      if (scrollRafRef.current !== null) {
+        cancelAnimationFrame(scrollRafRef.current);
+      }
+    };
+  }, []);
+
+  const scrollToPage = useCallback((pageNum: number) => {
+    if (!viewportRef.current) return;
+    const pageIndex = Math.max(0, Math.min(pageOffsets.length - 1, pageNum - 1));
+    const offset = pageOffsets[pageIndex];
+    if (offset) {
+      viewportRef.current.scrollTo({ top: Math.max(0, offset.top - 16), behavior: 'smooth' });
+      currentPageRef.current = pageNum;
+      setCurrentPage(pageNum);
+      updateVisiblePages(pageNum);
+    }
+  }, [pageOffsets, updateVisiblePages]);
 
   // 3. Load PDF Document asynchronously
   useEffect(() => {
@@ -135,6 +294,11 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
         if (initialPage && initialPage >= 1 && initialPage <= data.numPages) {
           setCurrentPage(initialPage);
           setPageInput(String(initialPage));
+          if (initialPage > 1) {
+            setTimeout(() => {
+              scrollToPage(initialPage);
+            }, 60);
+          }
         }
       })
       .catch((err) => {
@@ -147,7 +311,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     return () => {
       isCancelled = true;
     };
-  }, [currentDoc?.id, diskPath, target, initialPage]);
+  }, [currentDoc?.id, diskPath, target, initialPage, scrollToPage]);
 
   // Sync page input on page changes
   useEffect(() => {
@@ -174,10 +338,10 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     const vpHeight = viewport.clientHeight;
     if (vpWidth <= 0 || vpHeight <= 0) return;
 
-    const activeInfo = pdfData.pageInfos[currentPage - 1] || pdfData.pageInfos[0];
+    const primaryInfo = pdfData.pageInfos[0];
     const isSideways = rotation === 90 || rotation === 270;
-    const pageWidth = isSideways ? activeInfo.height : activeInfo.width;
-    const pageHeight = isSideways ? activeInfo.width : activeInfo.height;
+    const pageWidth = isSideways ? primaryInfo.height : primaryInfo.width;
+    const pageHeight = isSideways ? primaryInfo.width : primaryInfo.height;
 
     if (zoomMode === 'fit-width') {
       const horizontalPadding = 32;
@@ -188,7 +352,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
       const targetScale = (vpHeight - verticalPadding) / pageHeight;
       setScale(Math.max(0.2, Math.min(3.0, targetScale)));
     }
-  }, [pdfData, currentPage, rotation, zoomMode, isPresenting]);
+  }, [pdfData, rotation, zoomMode, isPresenting]);
 
   useEffect(() => {
     recomputeFitScale();
@@ -202,18 +366,16 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     return () => window.removeEventListener('resize', handleResize);
   }, [recomputeFitScale]);
 
-  // Close dropdowns on outside click or Escape
+  // Close drawer options dropdown on outside click or Escape
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const targetEl = e.target as HTMLElement;
       if (!targetEl.closest('[data-pdf-dropdown]') && !targetEl.closest('[data-pdf-trigger]')) {
-        setIsZoomMenuOpen(false);
         setIsSidebarMenuOpen(false);
       }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsZoomMenuOpen(false);
         setIsSidebarMenuOpen(false);
       }
     };
@@ -229,15 +391,14 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
   const handlePageChange = (pageNum: number) => {
     if (!pdfData) return;
     const clamped = Math.max(1, Math.min(pdfData.numPages, pageNum));
-    setCurrentPage(clamped);
-    setPageInput(String(clamped));
+    scrollToPage(clamped);
   };
 
   const handlePageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = parseInt(pageInput, 10);
     if (!isNaN(parsed) && pdfData && parsed >= 1 && parsed <= pdfData.numPages) {
-      setCurrentPage(parsed);
+      scrollToPage(parsed);
     } else {
       setPageInput(String(currentPage));
     }
@@ -245,12 +406,12 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
 
   const handleZoomIn = () => {
     setZoomMode('custom');
-    setScale((prev) => Math.min(3.0, prev * 1.25));
+    setScale((prev) => Math.min(4.0, +(prev + 0.15).toFixed(2)));
   };
 
   const handleZoomOut = () => {
     setZoomMode('custom');
-    setScale((prev) => Math.max(0.3, prev * 0.8));
+    setScale((prev) => Math.max(0.25, +(prev - 0.15).toFixed(2)));
   };
 
   const openSidebarMenu = (e: React.MouseEvent) => {
@@ -260,15 +421,6 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     const left = Math.max(8, Math.min(rect.left, window.innerWidth - 228));
     setSidebarMenuPos({ top: rect.bottom + 4, left });
     setIsSidebarMenuOpen((prev) => !prev);
-  };
-
-  const openZoomMenu = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!zoomMenuTriggerRef.current) return;
-    const rect = zoomMenuTriggerRef.current.getBoundingClientRect();
-    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 188));
-    setZoomMenuPos({ top: rect.bottom + 4, left });
-    setIsZoomMenuOpen((prev) => !prev);
   };
 
   const handleRotateCw = () => {
@@ -304,15 +456,6 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
       handlePageChange(currentPage + 1);
     }
   };
-
-  const zoomPresets = [
-    { label: '50%', scale: 0.5 },
-    { label: '75%', scale: 0.75 },
-    { label: '100%', scale: 1.0 },
-    { label: '125%', scale: 1.25 },
-    { label: '150%', scale: 1.5 },
-    { label: '200%', scale: 2.0 },
-  ];
 
   const activePageInfo = pdfData?.pageInfos[currentPage - 1] || pdfData?.pageInfos[0];
 
@@ -372,33 +515,21 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
           <button
             type="button"
             onClick={handleZoomOut}
-            data-tooltip="Zoom out"
+            data-tooltip="Zoom out (Ctrl + -)"
             aria-label="Zoom out"
             className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
           >
-            <MinusSignIcon size={12} />
-          </button>
-
-          <button
-            ref={zoomMenuTriggerRef}
-            data-pdf-trigger="zoom"
-            type="button"
-            onClick={openZoomMenu}
-            data-tooltip="Zoom presets"
-            aria-label="Zoom presets"
-            className="px-1.5 py-0.5 text-[11px] tabular-nums font-sans rounded hover:bg-[#2c2c2c] hover:text-white text-[#aaaaaa] flex items-center gap-0.5 transition-none cursor-pointer"
-          >
-            <span>{Math.round(scale * 100)}%</span>
+            <ZoomOutIcon size={13} />
           </button>
 
           <button
             type="button"
             onClick={handleZoomIn}
-            data-tooltip="Zoom in"
+            data-tooltip="Zoom in (Ctrl + +)"
             aria-label="Zoom in"
             className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
           >
-            <PlusSignIcon size={12} />
+            <ZoomInIcon size={13} />
           </button>
         </div>
 
@@ -499,20 +630,21 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
 
       {/* Main Container: Absolute Overlay Drawer + Full Width Slide Canvas Viewport */}
       <div className="flex-1 min-h-0 relative overflow-hidden bg-[#111111]">
-        {/* Full-width Viewport & Slide Display */}
+        {/* Full-width Viewport & Continuous Slide Display */}
         <div
           ref={viewportRef}
-          className="w-full h-full overflow-auto custom-scrollbar flex items-center justify-center p-3 relative select-none"
+          onScroll={handleViewportScroll}
+          className="w-full h-full overflow-auto custom-scrollbar flex flex-col items-center relative select-none"
         >
           {isLoading && (
-            <div className="flex flex-col items-center justify-center gap-2 text-[#777777] text-xs">
+            <div className="my-auto flex flex-col items-center justify-center gap-2 text-[#777777] text-xs">
               <div className="w-5 h-5 border-2 border-[var(--noether-accent,#eb584d)] border-t-transparent rounded-full animate-spin" />
               <span>Loading PDF...</span>
             </div>
           )}
 
           {errorMessage && !isLoading && (
-            <div className="flex flex-col items-center justify-center gap-2 text-[#777777] text-xs text-center px-4">
+            <div className="my-auto flex flex-col items-center justify-center gap-2 text-[#777777] text-xs text-center px-4">
               <File01Icon size={28} className="text-rose-400/60" />
               <span className="text-[#cccccc] font-medium">{documentTitle}</span>
               <span className="text-rose-400 text-[11px]">{errorMessage}</span>
@@ -527,17 +659,22 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
           )}
 
           {pdfData && !isLoading && !errorMessage && (
-            <div className="flex items-center justify-center">
-              <PdfPageCanvas
-                key={`slide-${currentPage}-${scale}-${rotation}`}
-                pdfDoc={pdfData.pdfDoc}
-                pageNumber={currentPage}
-                scale={scale}
-                rotation={rotation}
-                isVisible={true}
-                pageInfo={activePageInfo}
-                className="shadow-[0_4px_24px_rgba(0,0,0,0.6)] rounded-xs border border-[#2a2a2a]"
-              />
+            <div
+              ref={pagesContentRef}
+              className="w-fit min-w-full flex flex-col items-center gap-4 p-4"
+            >
+              {Array.from({ length: pdfData.numPages }, (_, i) => i + 1).map((pageNum) => (
+                <PdfPageCanvas
+                  key={`slide-${pageNum}`}
+                  pdfDoc={pdfData.pdfDoc}
+                  pageNumber={pageNum}
+                  scale={scale}
+                  rotation={rotation}
+                  isVisible={visiblePageSet.has(pageNum)}
+                  pageInfo={pdfData.pageInfos[pageNum - 1]}
+                  className="shadow-[0_4px_24px_rgba(0,0,0,0.6)] rounded-xs border border-[#2a2a2a]"
+                />
+              ))}
             </div>
           )}
         </div>
@@ -558,7 +695,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
               pageInfos={pdfData.pageInfos || []}
               revealedPageNumber={revealedPageNumber}
               onSelectPage={(pageNum) => {
-                handlePageChange(pageNum);
+                scrollToPage(pageNum);
               }}
               className="h-full border-none"
             />
@@ -642,94 +779,6 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
               <ArrowRight02Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
               <span className="truncate">Reveal page in table of contents</span>
             </button>
-          </div>,
-          document.body
-        )}
-
-      {/* Portaled Zoom Preset Dropdown (Matching SortDropdown style) */}
-      {isZoomMenuOpen &&
-        createPortal(
-          <div
-            data-pdf-dropdown="zoom"
-            style={{
-              position: 'fixed',
-              top: `${zoomMenuPos.top}px`,
-              left: `${zoomMenuPos.left}px`,
-              zIndex: 99999,
-              background: 'var(--noether-bg-popover, var(--noether-bg-card))',
-              border: '1px solid var(--noether-border-base)',
-              boxShadow: 'var(--noether-shadow-2)',
-            }}
-            className="w-[180px] rounded-lg p-1 text-xs text-[var(--noether-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                setZoomMode('fit-width');
-                setIsZoomMenuOpen(false);
-              }}
-              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
-                zoomMode === 'fit-width'
-                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
-                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
-              }`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <CenterFocusIcon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
-                <span className="truncate">Fit to width</span>
-              </div>
-              {zoomMode === 'fit-width' && (
-                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setZoomMode('fit-page');
-                setIsZoomMenuOpen(false);
-              }}
-              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
-                zoomMode === 'fit-page'
-                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
-                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
-              }`}
-            >
-              <div className="flex items-center gap-2 truncate">
-                <FitToScreenIcon size={13} className="text-[var(--noether-text-muted)] shrink-0" />
-                <span className="truncate">Fit to page</span>
-              </div>
-              {zoomMode === 'fit-page' && (
-                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
-              )}
-            </button>
-
-            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 mx-1" />
-
-            {zoomPresets.map((preset) => {
-              const isSelected = zoomMode === 'custom' && Math.abs(scale - preset.scale) < 0.05;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => {
-                    setZoomMode('custom');
-                    setScale(preset.scale);
-                    setIsZoomMenuOpen(false);
-                  }}
-                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
-                    isSelected
-                      ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
-                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
-                  }`}
-                >
-                  <span className="tabular-nums font-sans truncate">{preset.label}</span>
-                  {isSelected && (
-                    <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
-                  )}
-                </button>
-              );
-            })}
           </div>,
           document.body
         )}

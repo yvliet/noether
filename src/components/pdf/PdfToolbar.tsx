@@ -6,8 +6,8 @@ import {
   ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  MinusSignIcon,
-  PlusSignIcon,
+  ZoomInIcon,
+  ZoomOutIcon,
   CheckIcon,
   RotateCcwIcon,
   ArrowRight02Icon,
@@ -212,33 +212,9 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
   onPresent,
 }) => {
   const [pageInput, setPageInput] = useState<string>(String(currentPage));
-  const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
-  const zoomMenuTriggerRef = useRef<HTMLButtonElement>(null);
-  const [zoomMenuPos, setZoomMenuPos] = useState({ top: 0, left: 0 });
-
   useEffect(() => {
     setPageInput(String(currentPage));
   }, [currentPage]);
-
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest('[data-pdf-dropdown]') && !target.closest('[data-pdf-trigger]')) {
-        setIsZoomMenuOpen(false);
-      }
-    };
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsZoomMenuOpen(false);
-      }
-    };
-    window.addEventListener('mousedown', handleGlobalClick);
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('mousedown', handleGlobalClick);
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, []);
 
   const handlePageSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -249,25 +225,6 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
       setPageInput(String(currentPage));
     }
   };
-
-  const openZoomMenu = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!zoomMenuTriggerRef.current) return;
-    const rect = zoomMenuTriggerRef.current.getBoundingClientRect();
-    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 188));
-    setZoomMenuPos({ top: rect.bottom + 4, left });
-    setIsZoomMenuOpen((prev) => !prev);
-  }, []);
-
-  const zoomPresets = [
-    { label: '50%', scale: 0.5 },
-    { label: '75%', scale: 0.75 },
-    { label: '100%', scale: 1.0 },
-    { label: '125%', scale: 1.25 },
-    { label: '150%', scale: 1.5 },
-    { label: '200%', scale: 2.0 },
-    { label: '300%', scale: 3.0 },
-  ];
 
   return (
     <div className="flex items-center gap-0.5 shrink-0">
@@ -328,19 +285,7 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
           aria-label="Zoom out"
           className="noether-toolbar-btn"
         >
-          <MinusSignIcon size={13} />
-        </button>
-
-        <button
-          ref={zoomMenuTriggerRef}
-          data-pdf-trigger="zoom"
-          type="button"
-          onClick={openZoomMenu}
-          data-tooltip="Zoom options"
-          aria-label="Zoom options"
-          className="noether-toolbar-btn px-1.5 text-[11px] tabular-nums font-sans text-[var(--noether-text-muted,#aaa)] hover:text-white"
-        >
-          {Math.round(scale * 100)}%
+          <ZoomOutIcon size={13} />
         </button>
 
         <button
@@ -350,7 +295,7 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
           aria-label="Zoom in"
           className="noether-toolbar-btn"
         >
-          <PlusSignIcon size={13} />
+          <ZoomInIcon size={13} />
         </button>
 
         <button
@@ -363,95 +308,6 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
           <Presentation01Icon size={13} />
         </button>
       </div>
-
-      {/* Portaled Zoom Menu Dropdown */}
-      {isZoomMenuOpen &&
-        createPortal(
-          <div
-            data-pdf-dropdown="zoom"
-            data-noether-popover="true"
-            style={{
-              position: 'fixed',
-              top: `${zoomMenuPos.top}px`,
-              left: `${zoomMenuPos.left}px`,
-              zIndex: 99999,
-              background: 'var(--noether-bg-popover, var(--noether-bg-card))',
-              border: '1px solid var(--noether-border-base)',
-              boxShadow: 'var(--noether-shadow-2)',
-            }}
-            className="w-[180px] rounded-lg p-1 text-xs text-[var(--noether-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
-          >
-            <button
-              type="button"
-              onClick={() => {
-                onSetZoomMode('fit-width');
-                setIsZoomMenuOpen(false);
-              }}
-              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
-                zoomMode === 'fit-width'
-                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
-                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 truncate">
-                <CenterFocusIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
-                <span className="truncate">Fit to width</span>
-              </div>
-              {zoomMode === 'fit-width' && (
-                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                onSetZoomMode('fit-page');
-                setIsZoomMenuOpen(false);
-              }}
-              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
-                zoomMode === 'fit-page'
-                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
-                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
-              }`}
-            >
-              <div className="flex items-center gap-2.5 truncate">
-                <FitToScreenIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
-                <span className="truncate">Fit to page</span>
-              </div>
-              {zoomMode === 'fit-page' && (
-                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
-              )}
-            </button>
-
-            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 mx-1 shrink-0" />
-
-            {zoomPresets.map((preset) => {
-              const isSelected =
-                zoomMode === 'custom' && Math.abs(scale - preset.scale) < 0.05;
-              return (
-                <button
-                  key={preset.label}
-                  type="button"
-                  onClick={() => {
-                    onSetZoomMode('custom', preset.scale);
-                    setIsZoomMenuOpen(false);
-                  }}
-                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
-                    isSelected
-                      ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
-                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
-                  }`}
-                >
-                  <span className="tabular-nums font-sans truncate">{preset.label}</span>
-                  {isSelected && (
-                    <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
-                  )}
-                </button>
-              );
-            })}
-          </div>,
-          document.body
-        )}
 
       <div className="w-[1px] h-3.5 bg-[var(--noether-border-base,#333)] mx-1 shrink-0" />
 
