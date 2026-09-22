@@ -128,6 +128,9 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
       }}
       onMouseLeave={() => {
         item.onMouseLeave?.();
+        if (hasSubmenu && isSubmenuOpen) {
+          onRequestCloseSubmenu();
+        }
       }}
       onMouseDown={(e) => e.preventDefault()}
       className="relative w-full"
@@ -137,14 +140,16 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
         tabIndex={0}
         onClick={handleClick}
         onMouseDown={(e) => e.preventDefault()}
-        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-3 cursor-pointer group outline-none select-none ${
+        className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-3 cursor-pointer group outline-none select-none transition-none ${
           item.disabled
             ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted,#777)]'
             : item.isDanger
             ? 'text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/10 hover:text-[var(--noether-danger,#ef4444)]'
-            : isFocused || isSubmenuOpen
+            : isFocused
             ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
-            : 'text-[var(--noether-text-primary,#dcddde)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
+            : isSubmenuOpen
+            ? 'bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-primary)]'
+            : 'text-[var(--noether-text-primary,#dcddde)] hover:bg-[var(--noether-btn-hover-bg)] active:bg-[var(--noether-btn-active-bg)] hover:text-[var(--noether-text-primary)]'
         }`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">
@@ -230,34 +235,17 @@ const MenuList: React.FC<MenuListProps> = React.memo(({
   actionableItems,
 }) => {
   const [activeSubmenuId, setActiveSubmenuId] = useState<string | null>(null);
-  const hoverTimeoutRef = useRef<any>(null);
-
-  const clearHoverTimeout = () => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    return () => clearHoverTimeout();
-  }, []);
 
   const handleHoverChange = useCallback((itemId: string, hasSubmenu: boolean) => {
-    clearHoverTimeout();
     if (hasSubmenu) {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setActiveSubmenuId(itemId);
-      }, 40);
+      setActiveSubmenuId(itemId);
     } else {
-      hoverTimeoutRef.current = setTimeout(() => {
-        setActiveSubmenuId(null);
-      }, 80);
+      setActiveSubmenuId(null);
     }
   }, []);
 
   return (
-    <>
+    <div onMouseLeave={() => setActiveSubmenuId(null)} className="flex flex-col gap-[1px] w-full">
       {items.map((item, idx) => {
         const itemId = item.id || `${item.title || 'item'}-${idx}`;
         const actionIdx = actionableItems ? actionableItems.indexOf(item) : -1;
@@ -271,18 +259,16 @@ const MenuList: React.FC<MenuListProps> = React.memo(({
             isFocused={isFocused}
             isSubmenuOpen={activeSubmenuId === itemId}
             onRequestOpenSubmenu={() => {
-              clearHoverTimeout();
               setActiveSubmenuId(itemId);
             }}
             onRequestCloseSubmenu={() => {
-              clearHoverTimeout();
-              setActiveSubmenuId(null);
+              setActiveSubmenuId((curr) => (curr === itemId ? null : curr));
             }}
             onHoverChange={(hasSubmenu) => handleHoverChange(itemId, hasSubmenu)}
           />
         );
       })}
-    </>
+    </div>
   );
 });
 
