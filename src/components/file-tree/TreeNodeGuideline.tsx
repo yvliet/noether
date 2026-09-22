@@ -14,7 +14,7 @@ export const TreeNodeGuideline: React.FC<TreeNodeGuidelineProps> = React.memo(({
   return (
     <div
       aria-hidden="true"
-      className="absolute top-0 bottom-0 pointer-events-none w-0 border-l border-[#383838] z-20"
+      className="absolute top-0 bottom-0 pointer-events-none w-0 border-l border-[var(--noether-border-strong,#383838)] z-20"
       style={{ left: `${8 + level * 16 + 8}px` }}
     />
   );

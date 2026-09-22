@@ -141,7 +141,7 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
         </div>
 
         {/* Sync Status Card */}
-        <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div
             className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${
@@ -151,14 +151,14 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
                 ? 'bg-[#292213] border-[#78350f] text-[#fbbf24]'
                 : telemetry.lastStatus === 'error'
                 ? 'bg-[#2b1616] border-[#7f1d1d] text-[#f87171]'
-                : 'bg-[#242424] border-[#383838] text-[#888]'
+                : 'bg-[var(--noether-bg-surface)] border-[var(--noether-border-base)] text-[var(--noether-text-muted)]'
             }`}
           >
             <CloudIcon size={18} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-white">
+              <span className="text-xs font-normal text-[var(--noether-text-primary)]">
                 {telemetry.lastStatus === 'success'
                   ? 'Connected & In Sync'
                   : telemetry.lastStatus === 'syncing'
@@ -167,11 +167,11 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
                   ? 'Sync Error'
                   : 'Sync Idle'}
               </span>
-              <span className="text-[10px] text-[#666] font-mono">
+              <span className="text-[10px] text-[var(--noether-text-muted)] font-mono">
                 {localConfig.activeProvider.toUpperCase()}
               </span>
             </div>
-            <p className="text-[11px] text-[#777] mt-0.5">
+            <p className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
               {telemetry.lastSyncedAt
                 ? `Last synced: ${new Date(telemetry.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (${telemetry.syncedCount} items synced)`
                 : 'Never synchronized yet'}
@@ -222,12 +222,12 @@ export const SyncSettingsTab: React.FC<SyncSettingsTabProps> = ({
                 onClick={() => updateConfig({ activeProvider: prov.id as SyncProviderType })}
                 className={`p-3 rounded-xl text-left border cursor-pointer transition-none ${
                   isSelected
-                    ? 'bg-[#242424] border-[var(--noether-accent,#eb584d)] shadow-sm'
-                    : 'bg-[#1c1c1c] border-[#2a2a2a] hover:bg-[#202020] text-[#999]'
+                    ? 'bg-[var(--noether-bg-input,#242424)] border-[var(--noether-accent,#eb584d)] shadow-sm'
+                    : 'bg-[var(--noether-bg-card)] border-[var(--noether-border-base)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-muted)]'
                 }`}
               >
-                <div className="text-xs font-semibold text-white">{prov.label}</div>
-                <div className="text-[10px] text-[#777] mt-0.5">{prov.desc}</div>
+                <div className="text-xs font-normal text-[var(--noether-text-primary)]">{prov.label}</div>
+                <div className="text-[10px] text-[var(--noether-text-muted)] mt-0.5">{prov.desc}</div>
               </button>
             );
           })}

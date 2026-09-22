@@ -353,7 +353,7 @@ export const PropertiesView: React.FC = () => {
 
           {/* Tags Row */}
           {(!searchQuery || 'tags'.includes(searchQuery.toLowerCase())) && (
-            <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+            <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-sidebar-hover)] group">
               <div className="relative flex items-center shrink-0 w-24">
                 <span
                   title={getPropertyIconName('Tags', propertyIcons)}
@@ -364,7 +364,7 @@ export const PropertiesView: React.FC = () => {
 
                 <span
                   title={`Note Tags\nCategorize and filter notes with tags`}
-                  className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+                  className="text-[11px] font-normal text-[var(--noether-text-muted)] cursor-default"
                 >
                   Tags
                 </span>
@@ -375,7 +375,7 @@ export const PropertiesView: React.FC = () => {
                   <span
                     key={`${tag}-${idx}`}
                     title={`Tag: #${tag}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-normal text-xs"
                   >
                     #{tag}
                     {!isLocked && (
@@ -393,7 +393,7 @@ export const PropertiesView: React.FC = () => {
 
                 {!isLocked && (
                   isAddingTag ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-normal text-xs">
                       <span className="inline-flex items-center">
                         <span>#</span>
                         <input
@@ -429,7 +429,7 @@ export const PropertiesView: React.FC = () => {
                             }
                           }}
                           placeholder=""
-                          className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                          className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-normal text-xs p-0 m-0 min-w-0"
                         />
                       </span>
                       <button
@@ -450,7 +450,7 @@ export const PropertiesView: React.FC = () => {
                       type="button"
                       onClick={() => setIsAddingTag(true)}
                       title={`Add Tag\nAttach a new tag to this note`}
-                      className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+                      className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-sidebar-hover)] cursor-pointer"
                     >
                       + Add tag
                     </button>
@@ -462,7 +462,7 @@ export const PropertiesView: React.FC = () => {
 
           {/* Aliases Row */}
           {(!searchQuery || 'aliases'.includes(searchQuery.toLowerCase())) && (
-            <div key="system-aliases" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+            <div key="system-aliases" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-sidebar-hover)] group">
               <div className="relative flex items-center shrink-0 w-24">
                 <span
                   title={getPropertyIconName('Aliases', propertyIcons)}
@@ -473,7 +473,7 @@ export const PropertiesView: React.FC = () => {
 
                 <span
                   title={`Note Aliases\nAlternate names and titles for linking`}
-                  className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+                  className="text-[11px] font-normal text-[var(--noether-text-muted)] cursor-default"
                 >
                   Aliases
                 </span>
@@ -484,7 +484,7 @@ export const PropertiesView: React.FC = () => {
                   <span
                     key={`${alias}-${idx}`}
                     title={`Alias: ${alias}${isLocked ? '' : "\nClick 'x' to remove alias"}`}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-normal text-xs"
                   >
                     {alias}
                     {!isLocked && (
@@ -502,7 +502,7 @@ export const PropertiesView: React.FC = () => {
 
                 {!isLocked && (
                   isAddingAlias ? (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-normal text-xs">
                       <input
                         type="text"
                         autoFocus
@@ -536,7 +536,7 @@ export const PropertiesView: React.FC = () => {
                           }
                         }}
                         placeholder=""
-                        className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                        className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-normal text-xs p-0 m-0 min-w-0"
                       />
                       <button
                         type="button"
@@ -556,7 +556,7 @@ export const PropertiesView: React.FC = () => {
                       type="button"
                       onClick={() => setIsAddingAlias(true)}
                       title={`Add Alias\nAttach an alternate name to this note`}
-                      className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+                      className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-sidebar-hover)] cursor-pointer"
                     >
                       + Add alias
                     </button>
@@ -593,9 +593,9 @@ export const PropertiesView: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsDetailsOpen(!isDetailsOpen)}
-            className="flex items-center justify-between px-1.5 py-1 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] text-left cursor-pointer group text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]"
+            className="flex items-center justify-between px-1.5 py-1 rounded-[5px] hover:bg-[var(--noether-bg-sidebar-hover)] text-left cursor-pointer group text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]"
           >
-            <div className="flex items-center gap-1.5 font-medium text-[11px]">
+            <div className="flex items-center gap-1.5 font-normal text-[11px]">
               {isDetailsOpen ? (
                 <ChevronDownIcon size={12} className="text-[var(--noether-text-muted)]" />
               ) : (
@@ -609,19 +609,19 @@ export const PropertiesView: React.FC = () => {
             <div className="px-1.5 py-1 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[11px]">
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Words</span>
-                <span className="text-[var(--noether-text-primary)] font-medium">{wordCount}</span>
+                <span className="text-[var(--noether-text-primary)] font-normal">{wordCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Characters</span>
-                <span className="text-[var(--noether-text-primary)] font-medium">{charCount}</span>
+                <span className="text-[var(--noether-text-primary)] font-normal">{charCount}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Read time</span>
-                <span className="text-[var(--noether-text-primary)] font-medium">{readingTimeMins} min</span>
+                <span className="text-[var(--noether-text-primary)] font-normal">{readingTimeMins} min</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-[var(--noether-text-muted)]">Type</span>
-                <span className="text-[var(--noether-text-primary)] font-medium uppercase text-[10px]">
+                <span className="text-[var(--noether-text-primary)] font-normal uppercase text-[10px]">
                   {(!activeDocument.doc_type || activeDocument.doc_type === 'base') ? 'MD' : activeDocument.doc_type}
                 </span>
               </div>

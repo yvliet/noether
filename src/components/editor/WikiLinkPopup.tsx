@@ -84,7 +84,7 @@ export const WikiLinkPopup = React.memo(
                   setSelectedIndex(index);
                 }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 text-left cursor-pointer ${
-                  isSelected ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)]'
+                  isSelected ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 {item.isNew ? (
@@ -93,7 +93,7 @@ export const WikiLinkPopup = React.memo(
                   <File01Icon size={16} className="text-[var(--noether-text-muted)] shrink-0" />
                 )}
                 <div className="flex-1 min-w-0 truncate">
-                  <span className="font-medium text-sm text-[var(--noether-text-primary)]">{item.title}</span>
+                  <span className="font-normal text-sm text-[var(--noether-text-primary)]">{item.title}</span>
                   {item.isNew && (
                     <span className="ml-1.5 text-[10px] text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)] px-1 py-0.5 rounded border border-[var(--noether-border-subtle)]">
                       Create new

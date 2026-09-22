@@ -354,14 +354,14 @@ export const MoreIconsSettingsTab: React.FC = () => {
         <div className="flex flex-col gap-2 px-1">
           {/* Filter tabs and search bar */}
           <div className="flex items-center justify-between gap-2 px-1">
-            <div className="flex items-center bg-[#1c1c1c] p-0.5 rounded-lg border border-[#2a2a2a]">
+            <div className="flex items-center bg-[var(--noether-bg-card)] p-0.5 rounded-lg border border-[var(--noether-border-base)]">
               <button
                 type="button"
                 onClick={() => setFilterType('all')}
-                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer ${
+                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer font-normal ${
                   filterType === 'all'
-                    ? 'bg-[#2a2a2a] text-white font-medium'
-                    : 'text-[#888] hover:text-[#dcddde]'
+                    ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] shadow-xs'
+                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 All ({allEntries.length})
@@ -369,10 +369,10 @@ export const MoreIconsSettingsTab: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFilterType('folder')}
-                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer ${
+                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer font-normal ${
                   filterType === 'folder'
-                    ? 'bg-[#2a2a2a] text-white font-medium'
-                    : 'text-[#888] hover:text-[#dcddde]'
+                    ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] shadow-xs'
+                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 Folders ({folderCount})
@@ -380,10 +380,10 @@ export const MoreIconsSettingsTab: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFilterType('file')}
-                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer ${
+                className={`px-2.5 py-1 text-xs rounded-md cursor-pointer font-normal ${
                   filterType === 'file'
-                    ? 'bg-[#2a2a2a] text-white font-medium'
-                    : 'text-[#888] hover:text-[#dcddde]'
+                    ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] shadow-xs'
+                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 Files ({fileCount})

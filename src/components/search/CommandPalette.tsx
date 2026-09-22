@@ -474,7 +474,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         {/* Top Search Input - Pure and clean */}
         <div className="relative flex items-center px-4 py-3 border-b border-[var(--noether-border-subtle,#2b2b2b)]">
           {activeSearchProvider && (
-            <div className="flex items-center gap-1.5 px-2 py-0.5 mr-2.5 rounded bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-subtle,#2b2b2b)] text-xs text-[var(--noether-text-primary)] shrink-0 font-medium select-none">
+            <div className="flex items-center gap-1.5 px-2 py-0.5 mr-2.5 rounded bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-primary)] shrink-0 font-normal select-none">
               <span className="text-[var(--noether-text-muted)] font-mono">{activeSearchProvider.prefix}</span>
               <span>{activeSearchProvider.name || activeSearchProvider.id}</span>
             </div>

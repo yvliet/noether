@@ -66,10 +66,10 @@ const TagTreeRow: React.FC<TagTreeRowProps> = ({
           toggleTagExpand(node.fullPath);
           setActiveTag(isTagSelected ? null : node.fullPath);
         }}
-        className={`group flex items-center justify-between px-2 py-1 rounded-[5px] cursor-pointer transition-colors ${
+        className={`group flex items-center justify-between px-2 py-1 rounded-[5px] cursor-pointer transition-none ${
           isTagSelected
-            ? 'bg-[#262626] text-white'
-            : 'text-[#a0a0a0] hover:bg-[#1e1e1e] hover:text-[#e0e0e0]'
+            ? 'bg-[var(--noether-bg-sidebar-active,#272727)] text-[var(--noether-text-primary)] font-normal'
+            : 'text-[var(--noether-text-secondary,#a0a0a0)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] hover:text-[var(--noether-text-primary)] font-normal'
         }`}
       >
         <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
@@ -118,7 +118,7 @@ const TagTreeRow: React.FC<TagTreeRowProps> = ({
             <div
               key={doc.id}
               onClick={() => onSelectDoc(doc.id)}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] cursor-pointer text-[#777] hover:text-[#dcddde] hover:bg-[#1c1c1c] transition-colors"
+              className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] cursor-pointer text-[var(--noether-text-muted,#777)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] transition-none"
             >
               <File01Icon size={12} className="text-[#555] shrink-0" />
               <span className="truncate text-[11px]">{doc.title}</span>
@@ -288,11 +288,19 @@ export const TagsView: React.FC = () => {
           <div className="flex flex-col gap-1">
             {processedTags.map((t) => {
               const isExpanded = expandedTags.has(t.tag);
+              const isTagSelected = activeTag === t.tag;
               return (
                 <div key={t.tag} className="flex flex-col">
                   <div
-                    onClick={() => toggleTagExpand(t.tag)}
-                    className="flex items-center justify-between px-2.5 py-1.5 rounded-md hover:bg-[#1e1e1e] cursor-pointer text-[#a0a0a0] hover:text-white transition-colors group"
+                    onClick={() => {
+                      toggleTagExpand(t.tag);
+                      setActiveTag(isTagSelected ? null : t.tag);
+                    }}
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer transition-none group ${
+                      isTagSelected
+                        ? 'bg-[var(--noether-bg-sidebar-active,#272727)] text-[var(--noether-text-primary)] font-normal'
+                        : 'text-[var(--noether-text-secondary,#a0a0a0)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] hover:text-[var(--noether-text-primary)] font-normal'
+                    }`}
                   >
                     <div className="flex items-center gap-1.5 truncate flex-1 min-w-0">
                       {showHashPrefix && <span className="text-[#666] font-mono text-[11px]">#</span>}
@@ -311,7 +319,7 @@ export const TagsView: React.FC = () => {
                         <div
                           key={doc.id}
                           onClick={() => handleSelectDoc(doc.id)}
-                          className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] cursor-pointer text-[#777] hover:text-[#dcddde] hover:bg-[#1c1c1c] transition-colors"
+                          className="flex items-center gap-1.5 px-2 py-1 rounded-[4px] cursor-pointer text-[var(--noether-text-muted,#777)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] transition-none"
                         >
                           <File01Icon size={12} className="text-[#555] shrink-0" />
                           <span className="truncate text-[11px]">{doc.title}</span>

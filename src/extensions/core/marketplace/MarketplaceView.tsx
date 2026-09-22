@@ -269,10 +269,10 @@ export const MarketplaceView: React.FC = () => {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1 rounded-[5px] text-xs font-medium whitespace-nowrap cursor-pointer border ${
+                  className={`px-3 py-1 rounded-[5px] text-xs font-normal whitespace-nowrap cursor-pointer border ${
                     selectedCategory === cat
-                      ? 'bg-[#2a2a2a] text-white border-[#444] shadow-xs'
-                      : 'bg-[#1e1e1e] text-[#888] hover:text-[#ccc] border-[#2a2a2a] hover:bg-[#252525]'
+                      ? 'bg-[var(--noether-bg-input,#2a2a2a)] text-[var(--noether-text-primary)] border-[var(--noether-border-strong,#444)] shadow-xs'
+                      : 'bg-[var(--noether-bg-card,#1e1e1e)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary,#ccc)] border-[var(--noether-border-base,#2a2a2a)] hover:bg-[var(--noether-btn-hover-bg)]'
                   }`}
                 >
                   {cat}

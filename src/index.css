@@ -132,8 +132,8 @@
   --noether-tab-corner-fill: #1c1c1c;
   --noether-tab-corner-hover-fill: #232323;
   --noether-bg-statusbar: #1f1f1f;
-  --noether-btn-hover-bg: rgba(255, 255, 255, 0.1);
-  --noether-btn-active-bg: rgba(255, 255, 255, 0.2);
+  --noether-btn-hover-bg: rgba(255, 255, 255, 0.06);
+  --noether-btn-active-bg: #272727;
 
   /* Border tokens */
   --noether-border-subtle: #202020;
@@ -363,8 +363,8 @@ textarea.bg-transparent,
 
 .theme-light {
   color-scheme: light;
-  --noether-btn-hover-bg: rgba(0, 0, 0, 0.08);
-  --noether-btn-active-bg: rgba(0, 0, 0, 0.15);
+  --noether-btn-hover-bg: rgba(0, 0, 0, 0.05);
+  --noether-btn-active-bg: rgba(0, 0, 0, 0.06);
 }
 
 /* Light mode selection */
@@ -1812,7 +1812,7 @@ a.noether-btn::after {
 .noether-toolbar-btn.active,
 .noether-toolbar-btn[data-active="true"] {
   color: var(--noether-text-primary, #ffffff);
-  background-color: var(--noether-btn-active-bg, rgba(255, 255, 255, 0.2));
+  background-color: var(--noether-btn-active-bg, var(--noether-bg-sidebar-active, #272727));
 }
 
 .noether-toolbar-btn:disabled,
@@ -2688,20 +2688,20 @@ math-field::part(content) {
 }
 
 .noether-math-key {
-  background-color: #242424 !important;
-  color: #e5e7eb !important;
-  border: 1px solid #333333 !important;
+  background-color: var(--noether-bg-card, #222222) !important;
+  color: var(--noether-text-primary, #e5e7eb) !important;
+  border: 1px solid var(--noether-border-base, #292929) !important;
   border-radius: 6px !important;
   font-size: 1.1rem !important;
 }
 
 .noether-math-key:hover {
-  background-color: #333333 !important;
-  border-color: #444444 !important;
+  background-color: var(--noether-bg-sidebar-hover, #1f1f1f) !important;
+  border-color: var(--noether-border-strong, #383838) !important;
 }
 
 .noether-math-key:active {
-  background-color: #404040 !important;
+  background-color: var(--noether-bg-sidebar-active, #272727) !important;
   transform: scale(0.96);
 }
 
@@ -2713,9 +2713,9 @@ math-field::part(content) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: #222222;
-  color: #e5e7eb;
-  border: 1px solid #303030;
+  background-color: var(--noether-bg-card, #222222);
+  color: var(--noether-text-primary, #e5e7eb);
+  border: 1px solid var(--noether-border-base, #292929);
   border-radius: 0.375rem;
   font-size: 0.95rem;
   cursor: default;
@@ -2723,13 +2723,13 @@ math-field::part(content) {
 }
 
 .noether-key:hover {
-  background-color: #2e2e2e;
-  border-color: #404040;
-  color: #ffffff;
+  background-color: var(--noether-bg-sidebar-hover, #1f1f1f);
+  border-color: var(--noether-border-strong, #383838);
+  color: var(--noether-text-primary, #ffffff);
 }
 
 .noether-key:active {
-  background-color: #383838;
+  background-color: var(--noether-bg-sidebar-active, #272727);
   transform: scale(0.96);
 }
 

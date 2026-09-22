@@ -263,7 +263,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
             }}
             title={isSearchOpen ? 'Close search' : 'Show search filter'}
             className={`w-7 h-7 rounded-md flex items-center justify-center transition-none cursor-pointer ${
-              isSearchOpen ? 'text-white bg-[#222]' : 'text-[#777] hover:text-[#dcddde] hover:bg-[#222]'
+              isSearchOpen ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)]' : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
             }`}
           >
             <Search01Icon size={16} />
@@ -299,7 +299,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
       {/* 3. Linked Mentions Content */}
       <div className="mt-2">
         {groupedBacklinks.length === 0 ? (
-          <div className="py-2 text-[#666] text-xs font-normal">
+          <div className="py-2 text-[var(--noether-text-muted)] text-xs font-normal">
             No backlinks found.
           </div>
         ) : (
@@ -315,13 +315,13 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                   {/* Clean group row: NO card container, NO border, NO file icon */}
                   <div
                     onClick={() => handleToggleGroup(group.docId)}
-                    className="flex items-center justify-between py-1 cursor-pointer select-none text-[#dcddde] hover:text-white group"
+                    className="flex items-center justify-between py-1 cursor-pointer select-none text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] group"
                   >
                     <div className="flex items-center gap-1.5 min-w-0">
                       {isCollapsed ? (
-                        <ChevronRightIcon size={12} className="text-[#777] group-hover:text-white shrink-0" />
+                        <ChevronRightIcon size={12} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                       ) : (
-                        <ChevronDownIcon size={12} className="text-[#777] group-hover:text-white shrink-0" />
+                        <ChevronDownIcon size={12} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
                       )}
                       <span
                         onClick={(e) => {
@@ -335,7 +335,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                     </div>
 
                     {/* Plain count on right: NO badge pill */}
-                    <span className="text-xs text-[#666] font-normal shrink-0 ml-2">
+                    <span className="text-xs text-[var(--noether-text-muted)] font-normal shrink-0 ml-2">
                       {group.items.length}
                     </span>
                   </div>
@@ -347,7 +347,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                         <div
                           key={idx}
                           onClick={() => setActiveDocumentById(item.source_document_id)}
-                          className="p-2.5 rounded-md bg-[#161616] hover:bg-[#1a1a1a] border border-[#262626] hover:border-[#333] transition-none cursor-pointer text-[#a0a0a0] hover:text-[#ccc] text-[12px] leading-relaxed select-text"
+                          className="p-2.5 rounded-md bg-[var(--noether-bg-card)] hover:bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-base)] transition-none cursor-pointer text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] text-[12px] leading-relaxed select-text"
                         >
                           {highlightSnippet(item.snippet, documentTitle)}
                         </div>
@@ -365,18 +365,18 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
       <div className="mt-6 pt-2">
         <div
           onClick={() => setIsUnlinkedOpen(!isUnlinkedOpen)}
-          className="py-1 cursor-pointer select-none text-[#777] hover:text-[#bbb] font-semibold text-xs transition-none flex items-center gap-2"
+          className="py-1 cursor-pointer select-none text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] font-normal text-xs transition-none flex items-center gap-2"
         >
           <span>Unlinked mentions</span>
           {filteredUnlinked.length > 0 && (
-            <span className="text-[#555] font-normal">{filteredUnlinked.length}</span>
+            <span className="text-[var(--noether-text-muted)] font-normal">{filteredUnlinked.length}</span>
           )}
         </div>
 
         {isUnlinkedOpen && (
           <div className="mt-2 pl-2">
             {filteredUnlinked.length === 0 ? (
-              <div className="py-2 text-[#666] text-xs">
+              <div className="py-2 text-[var(--noether-text-muted)] text-xs">
                 No unlinked mentions found.
               </div>
             ) : (
@@ -386,14 +386,14 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                   return (
                     <div
                       key={idx}
-                      className="p-2.5 rounded-lg bg-[#1c1c1c]/50 border border-[#262626] flex flex-col gap-1.5"
+                      className="p-2.5 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] flex flex-col gap-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <div
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
                           className="flex items-center gap-1.5 cursor-pointer truncate flex-1 min-w-0"
                         >
-                          <span className="noether-link font-medium hover:underline text-xs truncate">
+                          <span className="noether-link font-normal hover:underline text-xs truncate">
                             {unlinked.source_document_title}
                           </span>
                         </div>
@@ -402,7 +402,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
                           onClick={() => handleConvertLink(unlinked.source_document_id, documentTitle)}
                           disabled={isLinking}
                           title={`Convert to [[${documentTitle}]]`}
-                          className="px-2.5 py-0.5 rounded bg-[#242424] hover:bg-[#2f2f2f] text-[#38bdf8] hover:text-[#7dd3fc] text-[11px] font-medium transition-none shrink-0 ml-2 flex items-center gap-1 border border-[#333] cursor-pointer"
+                          className="px-2.5 py-0.5 rounded bg-[var(--noether-bg-surface)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-accent)] text-[11px] font-normal transition-none shrink-0 ml-2 flex items-center gap-1 border border-[var(--noether-border-base)] cursor-pointer"
                         >
                           {isLinking ? (
                             <CheckIcon size={11} className="text-emerald-400" />
@@ -415,7 +415,7 @@ export const DocumentBacklinks: React.FC<DocumentBacklinksProps> = React.memo(({
 
                       <div
                         onClick={() => setActiveDocumentById(unlinked.source_document_id)}
-                        className="text-[11.5px] text-[#888] hover:text-[#bbb] leading-relaxed bg-[#141414] p-2 rounded border border-[#202020] cursor-pointer transition-none"
+                        className="text-[11.5px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] leading-relaxed bg-[var(--noether-bg-input)] p-2 rounded border border-[var(--noether-border-base)] cursor-pointer transition-none"
                       >
                         {highlightSnippet(unlinked.snippet, documentTitle)}
                       </div>

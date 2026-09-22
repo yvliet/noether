@@ -792,7 +792,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                       e.stopPropagation();
                       closeTabInPane(paneId, tab.id);
                     }}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]"
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center cursor-pointer opacity-0 group-hover:opacity-100 z-20 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded-[4px] transition-none"
                   >
                     <Cancel01Icon size={13} />
                   </button>
@@ -1425,10 +1425,10 @@ export const WindowHeader: React.FC = React.memo(() => {
                     data-tauri-drag-region="false"
                     data-no-drag="true"
                     style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 transition-none ${
                       isActive
-                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
-                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                        ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] shadow-xs'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                     }`}
                   >
                     {icon}
@@ -1689,10 +1689,10 @@ export const WindowHeader: React.FC = React.memo(() => {
                     data-tauri-drag-region="false"
                     data-no-drag="true"
                     style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 transition-none ${
                       isActive
-                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
-                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                        ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] shadow-xs'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                     }`}
                   >
                     {icon}
@@ -1724,7 +1724,7 @@ export const WindowHeader: React.FC = React.memo(() => {
               data-tauri-drag-region="false"
               data-no-drag="true"
               style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-              className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer transition-none"
             >
               {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
             </button>
@@ -1746,7 +1746,7 @@ export const WindowHeader: React.FC = React.memo(() => {
             data-tauri-drag-region="false"
             data-no-drag="true"
             style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-            className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer shrink-0 mr-[14px]`}
+            className={`w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer shrink-0 mr-[14px] transition-none`}
           >
             {isRightSidebarOpen ? <LayoutRightIcon size={15} /> : <LayoutAlignRightIcon size={15} />}
           </button>
@@ -1808,10 +1808,10 @@ export const WindowHeader: React.FC = React.memo(() => {
                     data-tauri-drag-region="false"
                     data-no-drag="true"
                     style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+                    className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 transition-none ${
                       isActive
-                        ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
-                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                        ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] shadow-xs'
+                        : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                     }`}
                   >
                     {icon}

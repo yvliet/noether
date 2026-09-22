@@ -866,10 +866,10 @@ export const IconPicker = React.memo(
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer transition-none font-normal ${
                     isSelected
-                      ? 'bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong,#444)] font-medium shadow-xs'
-                      : 'bg-[var(--noether-bg-input,#1a1a1a)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)]'
+                      ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)] shadow-xs'
+                      : 'bg-[var(--noether-bg-input)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)]'
                   }`}
                 >
                   {cat}
@@ -886,10 +886,10 @@ export const IconPicker = React.memo(
                   key={cat}
                   type="button"
                   onClick={() => setSelectedEmojiCategory(cat)}
-                  className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer ${
+                  className={`px-2 py-0.5 rounded text-[10px] whitespace-nowrap cursor-pointer transition-none font-normal ${
                     isSelected
-                      ? 'bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong,#444)] font-medium shadow-xs'
-                      : 'bg-[var(--noether-bg-input,#1a1a1a)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)]'
+                      ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)] shadow-xs'
+                      : 'bg-[var(--noether-bg-input)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)]'
                   }`}
                 >
                   {cat === 'Smileys & Emotion'
@@ -952,17 +952,17 @@ export const IconPicker = React.memo(
                     }}
                     onMouseLeave={() => setHoveredIcon(null)}
                     title={icon.name}
-                    className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
+                    className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group transition-none ${
                       isSelected
-                        ? 'bg-[var(--noether-bg-sidebar-active,#2f2f2f)] border border-[var(--noether-border-strong,#555)] text-[var(--noether-text-primary)] shadow-xs'
+                        ? 'bg-[var(--noether-btn-active-bg)] border border-[var(--noether-border-strong)] text-[var(--noether-text-primary)] shadow-xs'
                         : isHighlighted
-                        ? 'bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong,#444)]'
-                        : 'bg-[var(--noether-bg-input,#1a1a1a)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-secondary,#a0a0a0)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-subtle,#2a2a2a)] hover:border-[var(--noether-border-base,#3a3a3a)]'
+                        ? 'bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)]'
+                        : 'bg-[var(--noether-bg-input)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-subtle)] hover:border-[var(--noether-border-base)]'
                     }`}
                   >
                     <HugeIconRenderer iconDef={icon.iconDef} size={15} />
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--noether-text-primary)] text-[var(--noether-bg-popover,#232323)] rounded-full flex items-center justify-center text-[7px] shadow-xs font-bold">
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--noether-text-primary)] text-[var(--noether-bg-popover)] rounded-full flex items-center justify-center text-[7px] shadow-xs font-normal">
                         <CheckIcon size={7} />
                       </span>
                     )}
@@ -999,17 +999,17 @@ export const IconPicker = React.memo(
                   }}
                   onMouseLeave={() => setHoveredEmoji(null)}
                   title={emoji.name}
-                  className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group ${
+                  className={`h-8 rounded-lg flex items-center justify-center cursor-pointer relative group transition-none ${
                     isSelected
-                      ? 'bg-[var(--noether-bg-sidebar-active,#2f2f2f)] border border-[var(--noether-border-strong,#555)] shadow-xs'
+                      ? 'bg-[var(--noether-btn-active-bg)] border border-[var(--noether-border-strong)] shadow-xs'
                       : isHighlighted
-                      ? 'bg-[var(--noether-bg-card-hover,#2c2c2c)] border border-[var(--noether-border-strong,#444)]'
-                      : 'bg-[var(--noether-bg-input,#1a1a1a)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] border border-[var(--noether-border-subtle,#2a2a2a)] hover:border-[var(--noether-border-base,#3a3a3a)]'
+                      ? 'bg-[var(--noether-bg-card-hover)] border border-[var(--noether-border-strong)]'
+                      : 'bg-[var(--noether-bg-input)] hover:bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-subtle)] hover:border-[var(--noether-border-base)]'
                   }`}
                 >
                   <EmojiRenderer emoji={emoji.char} size={16} style={emojiStyle} />
                   {isSelected && (
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--noether-text-primary)] text-[var(--noether-bg-popover,#232323)] rounded-full flex items-center justify-center text-[7px] shadow-xs font-bold">
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-[var(--noether-text-primary)] text-[var(--noether-bg-popover)] rounded-full flex items-center justify-center text-[7px] shadow-xs font-normal">
                       <CheckIcon size={7} />
                     </span>
                   )}

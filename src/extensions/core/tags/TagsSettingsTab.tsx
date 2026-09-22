@@ -62,7 +62,7 @@ export const TagsSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setShowTagsCount(DEFAULT_TAGS_SETTINGS.showTagsCount)}
                 title="Restore default (Enabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[var(--noether-btn-hover-bg,rgba(255,255,255,0.06))] transition-none cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -85,7 +85,7 @@ export const TagsSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setSortTagsBy(DEFAULT_TAGS_SETTINGS.sortTagsBy)}
                 title="Restore default (Frequency)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] transition-colors cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[var(--noether-btn-hover-bg,rgba(255,255,255,0.06))] transition-none cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>

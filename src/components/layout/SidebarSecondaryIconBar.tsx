@@ -307,10 +307,10 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
               }}
               onContextMenu={(e) => handleContextMenu(e, item)}
               title={item.title}
-              className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 ${
+              className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 transition-none ${
                 isActive
-                  ? 'text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)]'
-                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] shadow-xs'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
               }`}
             >
               {renderIcon(item)}

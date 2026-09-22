@@ -3921,7 +3921,7 @@ export const GraphView: React.FC<GraphViewProps> = React.memo(({ isSidebar: prop
                 startAnimation();
               }}
               title="Close search (Esc)"
-              className="p-0.5 rounded text-[#777] hover:text-[#dcddde] hover:bg-[#282828] transition-colors cursor-pointer"
+              className="p-0.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
             >
               <Cancel01Icon size={14} />
             </button>

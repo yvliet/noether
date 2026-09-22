@@ -184,7 +184,7 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
               onClick={() => selectMode('Reading')}
               className={`flex items-center justify-between w-full px-2.5 py-1.5 rounded-[4px] text-left text-xs cursor-pointer whitespace-nowrap transition-none ${
                 currentMode === 'Reading'
-                  ? 'text-[var(--noether-text-primary)] font-medium bg-[var(--noether-btn-active-bg,#2a2a2a)]'
+                  ? 'text-[var(--noether-text-primary)] font-normal bg-[var(--noether-btn-active-bg)]'
                   : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
               }`}
             >
@@ -202,7 +202,7 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
                 isLocked
                   ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
                   : currentMode === 'Source mode'
-                  ? 'text-[var(--noether-text-primary)] font-medium bg-[var(--noether-btn-active-bg,#2a2a2a)] cursor-pointer'
+                  ? 'text-[var(--noether-text-primary)] font-normal bg-[var(--noether-btn-active-bg)] cursor-pointer'
                   : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer'
               }`}
             >
@@ -220,7 +220,7 @@ const ModeDropdownMenu: React.FC = React.memo(() => {
                 isLocked
                   ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted)] hover:bg-transparent'
                   : currentMode === 'Live Preview'
-                  ? 'text-[var(--noether-text-primary)] font-medium bg-[var(--noether-btn-active-bg,#2a2a2a)] cursor-pointer'
+                  ? 'text-[var(--noether-text-primary)] font-normal bg-[var(--noether-btn-active-bg)] cursor-pointer'
                   : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer'
               }`}
             >

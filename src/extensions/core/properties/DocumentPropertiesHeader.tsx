@@ -297,7 +297,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         />
 
         {/* 4. Tags Row */}
-        <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+        <div key="system-tags" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] group">
           <div className="relative flex items-center shrink-0 w-24">
             <span
               title={getPropertyIconName('Tags', propertyIcons)}
@@ -308,7 +308,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
             <span
               title={`Note Tags\nCategorize and filter notes with tags`}
-              className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+              className="text-[11px] font-normal text-[var(--noether-text-muted)] cursor-default"
             >
               Tags
             </span>
@@ -319,7 +319,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
               <span
                 key={`${tag}-${idx}`}
                 title={`Tag: #${tag}${isLocked ? '' : "\nClick 'x' to remove tag"}`}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-normal text-xs"
               >
                 #{tag}
                 {!isLocked && (
@@ -337,7 +337,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
             {!isLocked && (
               isAddingTag ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-normal text-xs">
                   <span className="inline-flex items-center">
                     <span>#</span>
                     <input
@@ -373,7 +373,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                         }
                       }}
                       placeholder=""
-                      className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                      className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-normal text-xs p-0 m-0 min-w-0"
                     />
                   </span>
                   <button
@@ -394,7 +394,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                   type="button"
                   onClick={() => setIsAddingTag(true)}
                   title={`Add Tag\nAttach a new tag to this note`}
-                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)]"
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)]"
                 >
                   + Add tag
                 </button>
@@ -404,7 +404,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
         </div>
 
         {/* Aliases Row */}
-        <div key="system-aliases" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+        <div key="system-aliases" className="flex items-center gap-2 flex-wrap min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] group">
           <div className="relative flex items-center shrink-0 w-24">
             <span
               title={getPropertyIconName('Aliases', propertyIcons)}
@@ -415,7 +415,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
             <span
               title={`Note Aliases\nAlternate names and titles for linking`}
-              className="text-[11px] font-medium text-[var(--noether-text-muted)] cursor-default"
+              className="text-[11px] font-normal text-[var(--noether-text-muted)] cursor-default"
             >
               Aliases
             </span>
@@ -426,7 +426,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
               <span
                 key={`${alias}-${idx}`}
                 title={`Alias: ${alias}${isLocked ? '' : "\nClick 'x' to remove alias"}`}
-                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-medium text-xs"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] shadow-xs font-normal text-xs"
               >
                 {alias}
                 {!isLocked && (
@@ -444,7 +444,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
 
             {!isLocked && (
               isAddingAlias ? (
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-medium text-xs">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-[5px] bg-[var(--noether-bg-card)] text-[var(--noether-text-primary)] border border-[var(--noether-border-base)] shadow-xs font-normal text-xs">
                   <input
                     type="text"
                     autoFocus
@@ -478,7 +478,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                       }
                     }}
                     placeholder=""
-                    className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-xs p-0 m-0 min-w-0"
+                    className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-normal text-xs p-0 m-0 min-w-0"
                   />
                   <button
                     type="button"
@@ -498,7 +498,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
                   type="button"
                   onClick={() => setIsAddingAlias(true)}
                   title={`Add Alias\nAttach an alternate name to this note`}
-                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-card-hover)]"
+                  className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-1.5 py-0.5 rounded hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)]"
                 >
                   + Add alias
                 </button>
@@ -535,7 +535,7 @@ export const DocumentPropertiesHeader: React.FC<DocumentPropertiesHeaderProps> =
               type="button"
               onClick={handleAddDirectProperty}
               title={`Add Property\nCreate a new metadata field for this note`}
-              className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer py-0.5 px-1 rounded hover:bg-[var(--noether-bg-card-hover)]"
+              className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] flex items-center gap-1 cursor-pointer py-0.5 px-1 rounded hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)]"
             >
               <PlusSignIcon size={11} /> Add property
             </button>

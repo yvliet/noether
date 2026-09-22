@@ -44,12 +44,12 @@ export const OutlineSettingsTab: React.FC = () => {
         )}
       </div>
 
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-base)]">
         {/* Collapse by default */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Collapse outline by default</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
+            <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">Collapse outline by default</span>
+            <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
               Keep sub-headings collapsed when opening a document.
             </span>
           </div>
@@ -59,7 +59,7 @@ export const OutlineSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setCollapseOutlineByDefault(DEFAULT_OUTLINE_SETTINGS.collapseOutlineByDefault)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -71,8 +71,8 @@ export const OutlineSettingsTab: React.FC = () => {
         {/* Show heading numbers */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Show heading numbers</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
+            <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">Show heading numbers</span>
+            <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
               Display level tags (H1, H2, H3) next to outline entries.
             </span>
           </div>
@@ -82,7 +82,7 @@ export const OutlineSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setShowHeadingNumbers(DEFAULT_OUTLINE_SETTINGS.showHeadingNumbers)}
                 title="Restore default (Disabled)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>
@@ -94,8 +94,8 @@ export const OutlineSettingsTab: React.FC = () => {
         {/* Max heading level */}
         <div className="flex items-center justify-between p-4">
           <div className="flex flex-col pr-4">
-            <span className="text-[13px] font-normal text-[#dcddde]">Maximum heading level</span>
-            <span className="text-[11px] text-[#777] mt-0.5">
+            <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">Maximum heading level</span>
+            <span className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
               Only show headings up to this depth in the outline panel.
             </span>
           </div>
@@ -105,7 +105,7 @@ export const OutlineSettingsTab: React.FC = () => {
                 type="button"
                 onClick={() => setMaxHeadingLevel(DEFAULT_OUTLINE_SETTINGS.maxHeadingLevel)}
                 title="Restore default (H6)"
-                className="p-1 rounded-md text-[#777] hover:text-white hover:bg-[#282828] cursor-pointer shrink-0 flex items-center justify-center"
+                className="p-1 rounded-md text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer shrink-0 flex items-center justify-center"
               >
                 <RotateCcwIcon size={13} />
               </button>

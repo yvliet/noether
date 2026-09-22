@@ -195,10 +195,10 @@ export function SortDropdown<T extends string = string>({
                     onChange(opt.id);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none ${
+                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
                     value === opt.id
-                      ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] font-medium'
-                      : 'hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)]'
+                      ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
                   }`}
                 >
                   <span className="truncate">{opt.label}</span>

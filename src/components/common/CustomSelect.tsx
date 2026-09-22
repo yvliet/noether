@@ -180,10 +180,10 @@ function CustomSelectInner<T extends string | number>({
                     onChange(opt.value);
                     setIsOpen(false);
                   }}
-                  className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[5px] flex items-center justify-between gap-3 cursor-pointer ${
+                  className={`w-full px-2.5 py-1.5 text-left text-xs rounded-[5px] flex items-center justify-between gap-3 cursor-pointer transition-none ${
                     isSelected
-                      ? 'bg-[var(--noether-bg-sidebar-active,var(--noether-bg-card-hover))] text-[var(--noether-text-primary)] font-medium'
-                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)]'
+                      ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] font-normal'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
                   }`}
                 >
                   <div className="flex flex-col pr-2">

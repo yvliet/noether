@@ -166,14 +166,14 @@ export const Slider: React.FC<SliderProps> = React.memo(({
       >
         {/* Filled progress track */}
         <div
-          className="h-full bg-white rounded-full pointer-events-none"
+          className="h-full bg-[var(--noether-text-primary)] rounded-full pointer-events-none"
           style={{ width: `${clampedPercentage}%` }}
         />
       </div>
 
       {/* Thumb Knob */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.45),0_1px_2px_rgba(0,0,0,0.25)] pointer-events-none active:scale-105"
+        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[var(--noether-text-primary)] rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.45),0_1px_2px_rgba(0,0,0,0.25)] pointer-events-none border border-[var(--noether-border-strong)]"
         style={{
           left: `calc(${clampedPercentage}% - ${(clampedPercentage / 100) * 16}px)`,
         }}

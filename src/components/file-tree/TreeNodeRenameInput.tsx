@@ -61,7 +61,7 @@ export const TreeNodeRenameInput: React.FC<TreeNodeRenameInputProps> = React.mem
           }
         }}
         style={{ overflowClipMargin: '4px' }}
-        className={`w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-white font-normal caret-white selection:bg-[#505560] selection:text-white leading-tight ${className}`}
+        className={`w-full bg-transparent border-none outline-none p-0 m-0 text-[13px] tracking-tight text-[var(--noether-text-primary)] font-normal caret-[var(--noether-text-primary)] selection:bg-[var(--noether-accent-subtle)] selection:text-[var(--noether-text-primary)] leading-tight ${className}`}
       />
 
       {/* Warning / Error Tooltip */}

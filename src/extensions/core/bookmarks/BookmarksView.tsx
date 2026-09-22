@@ -52,15 +52,15 @@ const BookmarkRow: React.FC<BookmarkRowProps> = React.memo(({
       onContextMenu={onContextMenu}
       className={`group flex items-center justify-between px-2.5 py-1.5 rounded-md cursor-pointer select-none ${
         isActive
-          ? 'bg-[#2a2a2a] text-white font-normal'
-          : 'text-[#9ca3af] hover:bg-[#202020] hover:text-[#dcddde] font-normal'
+          ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-normal'
+          : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-sidebar-hover)] hover:text-[var(--noether-text-primary)] font-normal'
       }`}
     >
       <div className="flex items-center gap-2 min-w-0 flex-1">
-        <File01Icon size={14} className={isActive ? 'text-white' : 'text-[#777] shrink-0'} />
+        <File01Icon size={14} className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted)] shrink-0'} />
         <span className="truncate">{doc.title}</span>
         {showBookmarkPath && parentPath && (
-          <span className="text-[10px] text-[#666] font-mono truncate max-w-[120px] bg-[#1a1a1a] px-1 py-0.5 rounded shrink-0">
+          <span className="text-[10px] text-[var(--noether-text-muted)] font-mono truncate max-w-[120px] bg-[var(--noether-bg-card)] px-1 py-0.5 rounded shrink-0">
             {parentPath}
           </span>
         )}
@@ -72,7 +72,7 @@ const BookmarkRow: React.FC<BookmarkRowProps> = React.memo(({
           onUnbookmark();
         }}
         title="Remove bookmark"
-        className="opacity-0 group-hover:opacity-100 p-1 text-[#777] hover:text-white"
+        className="opacity-0 group-hover:opacity-100 p-1 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
       >
         <Cancel01Icon size={11} />
       </button>

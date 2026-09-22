@@ -140,7 +140,7 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
           isDisabled
             ? 'cursor-not-allowed opacity-35 text-[var(--noether-text-muted,#888888)] hover:bg-transparent'
             : isFolderPickerTarget
-            ? 'cursor-pointer text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-accent,#eb584d)]/20 hover:border-[var(--noether-accent,#eb584d)]/40 border border-transparent font-medium'
+            ? 'cursor-pointer text-[var(--noether-text-primary,#ffffff)] hover:bg-[var(--noether-accent,#eb584d)]/20 hover:border-[var(--noether-accent,#eb584d)]/40 border border-transparent font-normal'
             : isBeingDragged
             ? 'cursor-pointer opacity-40 bg-[var(--noether-bg-main,#1c1c1c)]'
             : isHighlighted

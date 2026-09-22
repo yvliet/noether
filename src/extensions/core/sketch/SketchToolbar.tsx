@@ -158,20 +158,20 @@ export const SketchToolbar: React.FC = React.memo(() => {
 
   return (
     <div
-      className="absolute top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-1 bg-[#181818] border border-[#2e2e2e] rounded-lg p-1 shadow-2xl select-none"
+      className="absolute top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-auto flex items-center gap-1 bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-lg p-1 shadow-2xl select-none"
       style={{ touchAction: 'none' }}
       onClick={(e) => e.stopPropagation()}
     >
       {/* Tool Selectors (Icon-only) */}
-      <div className="flex items-center gap-0.5 bg-[#141414] p-0.5 rounded border border-[#262626]">
+      <div className="flex items-center gap-0.5 bg-[var(--noether-bg-input)] p-0.5 rounded border border-[var(--noether-border-base)]">
         <Tooltip content="Select & Move" shortcut="V">
           <button
             type="button"
             onClick={() => setTool('select')}
             className={`p-1.5 rounded cursor-pointer ${
               activeTool === 'select'
-                ? 'bg-[#282828] text-white'
-                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+                ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
             }`}
           >
             <Cursor02Icon size={14} />
@@ -184,8 +184,8 @@ export const SketchToolbar: React.FC = React.memo(() => {
             onClick={() => setTool('pen')}
             className={`p-1.5 rounded cursor-pointer ${
               activeTool === 'pen'
-                ? 'bg-[#282828] text-white'
-                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+                ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
             }`}
           >
             <PaintBrush01Icon size={14} />
@@ -198,8 +198,8 @@ export const SketchToolbar: React.FC = React.memo(() => {
             onClick={() => setTool('highlighter')}
             className={`p-1.5 rounded cursor-pointer ${
               activeTool === 'highlighter'
-                ? 'bg-[#282828] text-white'
-                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+                ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
             }`}
           >
             <HighlighterIcon size={14} />
@@ -212,8 +212,8 @@ export const SketchToolbar: React.FC = React.memo(() => {
             onClick={() => setTool('eraser')}
             className={`p-1.5 rounded cursor-pointer ${
               activeTool === 'eraser'
-                ? 'bg-[#282828] text-white'
-                : 'text-[#888] hover:text-[#dcddde] hover:bg-[#202020]'
+                ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
             }`}
           >
             <EraserIcon size={14} />
@@ -224,7 +224,7 @@ export const SketchToolbar: React.FC = React.memo(() => {
       {/* Color Palette (Active when drawing with pen/highlighter) */}
       {activeTool !== 'eraser' && activeTool !== 'select' && (
         <>
-          <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
+          <div className="w-px h-4 bg-[var(--noether-border-base)] mx-0.5" />
           <div className="flex items-center gap-1">
             {COLOR_PRESETS.map((p) => {
               const isSelected = activeColor.toLowerCase() === p.value.toLowerCase();
@@ -235,7 +235,7 @@ export const SketchToolbar: React.FC = React.memo(() => {
                   onClick={() => setColor(p.value)}
                   title={p.label}
                   className={`w-4 h-4 rounded-full cursor-pointer flex items-center justify-center ${
-                    isSelected ? 'ring-2 ring-white ring-offset-1 ring-offset-[#181818]' : 'opacity-80 hover:opacity-100'
+                    isSelected ? 'ring-2 ring-[var(--noether-text-primary)] ring-offset-1 ring-offset-[var(--noether-bg-card)]' : 'opacity-80 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: p.value }}
                 />
@@ -248,8 +248,8 @@ export const SketchToolbar: React.FC = React.memo(() => {
       {/* Stroke Width Selector (Visual dots) */}
       {activeTool !== 'eraser' && activeTool !== 'select' && (
         <>
-          <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
-          <div className="flex items-center gap-0.5 bg-[#141414] p-0.5 rounded border border-[#262626]">
+          <div className="w-px h-4 bg-[var(--noether-border-base)] mx-0.5" />
+          <div className="flex items-center gap-0.5 bg-[var(--noether-bg-input)] p-0.5 rounded border border-[var(--noether-border-base)]">
             {WIDTH_PRESETS.map((w) => (
               <button
                 key={w.value}
@@ -258,8 +258,8 @@ export const SketchToolbar: React.FC = React.memo(() => {
                 title={w.label}
                 className={`w-5 h-5 flex items-center justify-center rounded cursor-pointer ${
                   activeWidth === w.value
-                    ? 'bg-[#282828] text-white'
-                    : 'text-[#777] hover:text-[#ccc] hover:bg-[#202020]'
+                    ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                    : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 <span className={`${w.dotClass} rounded-full bg-current`} />
@@ -269,18 +269,18 @@ export const SketchToolbar: React.FC = React.memo(() => {
         </>
       )}
 
-      <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
+      <div className="w-px h-4 bg-[var(--noether-border-base)] mx-0.5" />
 
       {/* Anchoring Mode Switcher (Icon-only: TextIcon vs FullscreenIcon) */}
-      <div className="flex items-center gap-0.5 bg-[#141414] p-0.5 rounded border border-[#262626]">
+      <div className="flex items-center gap-0.5 bg-[var(--noether-bg-input)] p-0.5 rounded border border-[var(--noether-border-base)]">
         <button
           type="button"
           onClick={() => setAnchoring('content')}
           title="Attached to note: Drawings scroll naturally with the text"
           className={`p-1.5 rounded cursor-pointer ${
             activeAnchoring === 'content'
-              ? 'bg-[#282828] text-white'
-              : 'text-[#777] hover:text-[#ccc]'
+              ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+              : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
           }`}
         >
           <TextIcon size={14} />
@@ -291,8 +291,8 @@ export const SketchToolbar: React.FC = React.memo(() => {
             onClick={() => setAnchoring('viewport')}
             className={`p-1.5 rounded cursor-pointer ${
               activeAnchoring === 'viewport'
-                ? 'bg-[#282828] text-white'
-                : 'text-[#777] hover:text-[#ccc]'
+                ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             <FullscreenIcon size={14} />
@@ -300,7 +300,7 @@ export const SketchToolbar: React.FC = React.memo(() => {
         </Tooltip>
       </div>
 
-      <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
+      <div className="w-px h-4 bg-[var(--noether-border-base)] mx-0.5" />
 
       {/* Undo / Redo */}
       <Tooltip content="Undo stroke" shortcut="Ctrl+Z">
@@ -308,7 +308,7 @@ export const SketchToolbar: React.FC = React.memo(() => {
           type="button"
           onClick={undo}
           disabled={undoStack.length === 0}
-          className="p-1.5 rounded text-[#888] hover:text-[#dcddde] hover:bg-[#222] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+          className="p-1.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
         >
           <UndoIcon size={14} />
         </button>
@@ -319,7 +319,7 @@ export const SketchToolbar: React.FC = React.memo(() => {
           type="button"
           onClick={redo}
           disabled={redoStack.length === 0}
-          className="p-1.5 rounded text-[#888] hover:text-[#dcddde] hover:bg-[#222] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
+          className="p-1.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] disabled:opacity-30 disabled:hover:bg-transparent cursor-pointer disabled:cursor-default"
         >
           <RedoIcon size={14} />
         </button>
@@ -331,7 +331,7 @@ export const SketchToolbar: React.FC = React.memo(() => {
           <button
             type="button"
             onClick={deleteSelectedStrokes}
-            className="p-1.5 rounded text-[#f87171] hover:text-white hover:bg-[#dc2626] cursor-pointer"
+            className="p-1.5 rounded text-[var(--noether-danger,#f87171)] hover:text-white hover:bg-[var(--noether-danger)] cursor-pointer"
           >
             <Delete02Icon size={14} />
           </button>
@@ -344,20 +344,20 @@ export const SketchToolbar: React.FC = React.memo(() => {
           type="button"
           onClick={clearAllStrokes}
           title="Clear all drawings on this note"
-          className="p-1.5 rounded text-[#888] hover:text-[#f87171] hover:bg-[#222] cursor-pointer"
+          className="p-1.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-danger)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
         >
           <Delete02Icon size={14} />
         </button>
       )}
 
-      <div className="w-px h-4 bg-[#2e2e2e] mx-0.5" />
+      <div className="w-px h-4 bg-[var(--noether-border-base)] mx-0.5" />
 
       {/* Done / Close HUD button (Icon-only) */}
       <Tooltip content="Close toolbar" shortcuts={['Drawings remain visible on note', 'Esc']}>
         <button
           type="button"
           onClick={handleClose}
-          className="p-1.5 rounded text-[#888] hover:text-white hover:bg-[#282828] cursor-pointer"
+          className="p-1.5 rounded text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
         >
           <Cancel01Icon size={14} />
         </button>

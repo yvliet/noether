@@ -185,7 +185,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
       </div>
 
       {filteredCommunity.length > 0 ? (
-        <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828] mt-1">
+        <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-base)] mt-1">
           {filteredCommunity.map((ext) => {
             const isEnabled = app.extensions.isExtensionEnabled(ext.id);
             const communityTab = communityExtensionTabs.find((t) => isTabMatch(t, ext.id));
@@ -194,22 +194,22 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
             return (
               <div
                 key={ext.id}
-                className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
+                className="p-3.5 flex items-center justify-between hover:bg-[var(--noether-btn-hover-bg)]"
               >
                 <div className="flex-1 pr-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-[13px] font-normal text-white">
+                    <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">
                       {highlightMatch(ext.name, searchQuery)}
                     </span>
-                    <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
+                    <span className="text-[11px] text-[var(--noether-text-muted)] font-normal">v{ext.version}</span>
                     {ext.author && (
-                      <span className="text-[10px] text-[#777]">
+                      <span className="text-[10px] text-[var(--noether-text-muted)]">
                         by {highlightMatch(ext.author, searchQuery)}
                       </span>
                     )}
                   </div>
                   {ext.description && (
-                    <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+                    <p className="text-[11px] text-[var(--noether-text-muted)] mt-0.5 leading-relaxed">
                       {highlightMatch(ext.description, searchQuery)}
                     </p>
                   )}
@@ -243,7 +243,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
                         }
                       }}
                       title={`View ${ext.name} README`}
-                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
+                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
                     >
                       <BookOpen01Icon size={14} />
                     </button>
@@ -252,7 +252,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
                     <button
                       onClick={() => onNavigateTab(communityTab.id)}
                       title={`${ext.name} options`}
-                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
+                      className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
                     >
                       <Settings02Icon size={15} />
                     </button>
@@ -261,7 +261,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
                     type="button"
                     onClick={() => handleUninstallExtension(ext)}
                     title={`Uninstall ${ext.name}`}
-                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#f85153] hover:bg-[#2a2a2a] cursor-pointer"
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-danger)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
                   >
                     <Delete02Icon size={14} />
                   </button>
@@ -275,10 +275,10 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
           })}
         </div>
       ) : (
-        <div className="text-center py-12 flex flex-col items-center justify-center select-none gap-2 text-[#666] text-xs">
+        <div className="text-center py-12 flex flex-col items-center justify-center select-none gap-2 text-[var(--noether-text-muted)] text-xs">
           <Store01Icon size={36} className="opacity-40 mb-1" />
-          <span className="text-[13px] text-[#888] font-normal">No community extensions installed</span>
-          <p className="text-xs text-[#666] max-w-sm leading-relaxed mb-2">
+          <span className="text-[13px] text-[var(--noether-text-primary)] font-normal">No community extensions installed</span>
+          <p className="text-xs text-[var(--noether-text-muted)] max-w-sm leading-relaxed mb-2">
             Extend Noether with community extensions for enhanced workflows, visualizations, and integrations.
           </p>
           <div className="flex items-center gap-2">

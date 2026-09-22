@@ -187,9 +187,9 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
           type="button"
           onClick={handleAddColumn}
           title="Add column"
-          className="w-[22px] h-[22px] rounded-full bg-[var(--noether-bg-card,#222222)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] active:bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-base,#333333)] hover:border-[var(--noether-border-strong,#555555)] text-[var(--noether-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
+          className="w-[22px] h-[22px] rounded-full bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] active:bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
         >
-          <PlusSignIcon size={12} className="group-hover:text-white" />
+          <PlusSignIcon size={12} className="group-hover:text-[var(--noether-text-primary)]" />
         </button>
       </div>
 
@@ -207,9 +207,9 @@ export const TableEdgeControls: React.FC<TableEdgeControlsProps> = ({ editor }) 
           type="button"
           onClick={handleAddRow}
           title="Add row"
-          className="w-[22px] h-[22px] rounded-full bg-[var(--noether-bg-card,#222222)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] active:bg-[var(--noether-bg-input,#181818)] border border-[var(--noether-border-base,#333333)] hover:border-[var(--noether-border-strong,#555555)] text-[var(--noether-text-muted,#888888)] hover:text-white shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
+          className="w-[22px] h-[22px] rounded-full bg-[var(--noether-bg-card)] hover:bg-[var(--noether-bg-card-hover)] active:bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shadow-[0_2px_8px_rgba(0,0,0,0.35)] flex items-center justify-center cursor-pointer group outline-none"
         >
-          <PlusSignIcon size={12} className="group-hover:text-white" />
+          <PlusSignIcon size={12} className="group-hover:text-[var(--noether-text-primary)]" />
         </button>
       </div>
     </>

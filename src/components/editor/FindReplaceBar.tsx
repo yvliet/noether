@@ -238,10 +238,10 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
                 setCaseSensitive(nextCase);
                 syncSearch(searchTerm, replaceTerm, nextCase, currentIndex);
               }}
-              className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer shrink-0 ${
+              className={`px-1.5 py-0.5 rounded text-[10px] font-mono cursor-pointer shrink-0 font-normal ${
                 caseSensitive
-                  ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-bold border border-[var(--noether-border-strong)]'
-                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
+                  ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)]'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] border border-transparent'
               }`}
             >
               Aa
@@ -281,8 +281,8 @@ export const FindReplaceBar: React.FC<FindReplaceBarProps> = React.memo(({
               title={isReplaceOpen ? 'Hide replace (Ctrl+H)' : 'Show replace (Ctrl+H)'}
               className={`p-1.5 rounded-[5px] border cursor-pointer shrink-0 ${
                 isReplaceOpen
-                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-sidebar-active)] border-[var(--noether-border-strong)]'
-                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] bg-[var(--noether-bg-card-hover)] hover:bg-[var(--noether-bg-sidebar-active)] border-[var(--noether-border-base)]'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] border-[var(--noether-border-strong)]'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] border-transparent'
               }`}
             >
               {isReplaceOpen ? <ChevronDownIcon size={13} /> : <ChevronRightIcon size={13} />}

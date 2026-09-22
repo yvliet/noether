@@ -604,7 +604,7 @@ export const CanvasGroup: React.FC<CanvasGroupProps> = React.memo(
                               className={`w-6 h-6 rounded-full cursor-pointer transition-none shrink-0 flex items-center justify-center ${
                                 isColorSelected
                                   ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#1b1b1b]'
-                                  : 'hover:scale-105'
+                                  : 'hover:opacity-90'
                               }`}
                             />
                           );
@@ -625,7 +625,7 @@ export const CanvasGroup: React.FC<CanvasGroupProps> = React.memo(
                           className={`w-6 h-6 rounded-full cursor-pointer transition-none shrink-0 flex items-center justify-center ${
                             showAdvancedPicker || colorTheme.isCustom
                               ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#1b1b1b]'
-                              : 'hover:scale-105'
+                              : 'hover:opacity-90'
                           }`}
                         />
                       </div>

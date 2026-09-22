@@ -70,14 +70,14 @@ const HotkeyRow: React.FC<HotkeyRowProps> = React.memo(({
           <button
             onClick={() => onStartRecord(cmd.id)}
             title="Click to reassign hotkey"
-            className="noether-btn text-xs font-mono text-[#bbb] hover:text-white py-1 px-2.5"
+            className="noether-btn text-xs font-mono text-[var(--noether-text-primary)] py-1 px-2.5"
           >
             {activeHotkey}
           </button>
         ) : (
           <button
             onClick={() => onStartRecord(cmd.id)}
-            className="text-[11px] text-[#777] hover:text-white px-2 py-1 rounded-[5px] hover:bg-[#2a2a2a] cursor-pointer"
+            className="text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] px-2 py-1 rounded-[5px] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
           >
             + Assign
           </button>
@@ -266,7 +266,7 @@ export const HotkeysTab: React.FC = React.memo(() => {
       {recordingCommandId && (
         <div
           style={{ borderColor: 'var(--noether-accent, #eb584d)' }}
-          className="mx-4 p-3 bg-[#242424] border rounded-xl flex items-center justify-between text-xs text-white"
+          className="mx-4 p-3 bg-[var(--noether-bg-card)] border rounded-xl flex items-center justify-between text-xs text-[var(--noether-text-primary)]"
         >
           <span>Press your desired key combination (e.g. <b>Ctrl+Shift+K</b>)...</span>
           <button

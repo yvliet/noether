@@ -105,77 +105,77 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 bg-[#161616] border-t border-[#2a2a2a] shadow-[0_-8px_32px_rgba(0,0,0,0.55)] select-none"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-[var(--noether-bg-card)] border-t border-[var(--noether-border-base)] shadow-[0_-8px_32px_rgba(0,0,0,0.55)] select-none"
       onMouseDown={(e) => e.preventDefault()}
     >
       {/* Top Bar with Tabs and Controls */}
-      <div className="flex items-center justify-between px-6 py-2 border-b border-[#242424] bg-[#121212]">
+      <div className="flex items-center justify-between px-6 py-2 border-b border-[var(--noether-border-subtle)] bg-[var(--noether-bg-input)]">
         {/* Tabs */}
         <div className="flex items-center gap-6">
           <button
             type="button"
             onClick={() => setActiveTab('123')}
-            className={`pb-1 text-sm font-medium tracking-wide relative ${
+            className={`pb-1 text-sm font-normal tracking-wide relative ${
               activeTab === '123'
-                ? 'text-[#eb584d]'
-                : 'text-[#888888] hover:text-[#cccccc]'
+                ? 'text-[var(--noether-accent)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             123
             {activeTab === '123' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--noether-accent)] rounded-full" />
             )}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('symbols')}
-            className={`pb-1 text-sm font-medium tracking-wide relative ${
+            className={`pb-1 text-sm font-normal tracking-wide relative ${
               activeTab === 'symbols'
-                ? 'text-[#eb584d]'
-                : 'text-[#888888] hover:text-[#cccccc]'
+                ? 'text-[var(--noether-accent)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             ∞≠∈
             {activeTab === 'symbols' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--noether-accent)] rounded-full" />
             )}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('abc')}
-            className={`pb-1 text-sm font-medium tracking-wide relative ${
+            className={`pb-1 text-sm font-normal tracking-wide relative ${
               activeTab === 'abc'
-                ? 'text-[#eb584d]'
-                : 'text-[#888888] hover:text-[#cccccc]'
+                ? 'text-[var(--noether-accent)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             abc
             {activeTab === 'abc' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--noether-accent)] rounded-full" />
             )}
           </button>
           <button
             type="button"
             onClick={() => setActiveTab('greek')}
-            className={`pb-1 text-sm font-medium tracking-wide relative ${
+            className={`pb-1 text-sm font-normal tracking-wide relative ${
               activeTab === 'greek'
-                ? 'text-[#eb584d]'
-                : 'text-[#888888] hover:text-[#cccccc]'
+                ? 'text-[var(--noether-accent)]'
+                : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)]'
             }`}
           >
             αβγ
             {activeTab === 'greek' && (
-              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#eb584d] rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--noether-accent)] rounded-full" />
             )}
           </button>
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-3 text-[#888888]">
+        <div className="flex items-center gap-3 text-[var(--noether-text-muted)]">
           <button
             type="button"
             onClick={() => editor?.chain().focus().undo().run()}
-            className="p-1 hover:text-white"
+            className="p-1 hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded"
             title="Undo (Ctrl+Z)"
           >
             <span className="text-sm">↺</span>
@@ -183,7 +183,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={() => editor?.chain().focus().redo().run()}
-            className="p-1 hover:text-white"
+            className="p-1 hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded"
             title="Redo (Ctrl+Y)"
           >
             <span className="text-sm">↻</span>
@@ -191,7 +191,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={handleCopy}
-            className="p-1 hover:text-white"
+            className="p-1 hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded"
             title="Copy Selection"
           >
             <Copy01Icon size={14} />
@@ -199,7 +199,7 @@ export const MathKeyboard: React.FC<MathKeyboardProps> = React.memo(({
           <button
             type="button"
             onClick={onClose}
-            className="p-1 hover:text-white ml-2"
+            className="p-1 hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded ml-2"
             title="Close Math Keyboard"
           >
             <Cancel01Icon size={15} />

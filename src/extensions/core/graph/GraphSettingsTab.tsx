@@ -661,7 +661,7 @@ export const GraphSettingsTab: React.FC = () => {
                       }`}
                     >
                       <div className="flex items-center justify-between w-full mb-1">
-                        <span className={`text-[13px] ${isDown ? 'font-semibold text-white' : 'font-medium text-[#dcddde]'}`}>
+                        <span className={`text-[13px] font-normal ${isDown ? 'text-white' : 'text-[#dcddde]'}`}>
                           {pal.name}
                         </span>
                       </div>
@@ -729,7 +729,7 @@ export const GraphSettingsTab: React.FC = () => {
                             triggerClassName="w-6 h-6 rounded-md border border-white/20 shadow-sm cursor-pointer shrink-0 block hover:border-white/50 outline-none"
                           />
                           <div className="flex flex-col">
-                            <span className="text-[12px] font-medium text-[#dcddde]">{label}</span>
+                            <span className="text-[12px] font-normal text-[#dcddde]">{label}</span>
                             <span className="text-[10px] text-[#666] font-mono">{description}</span>
                           </div>
                         </div>

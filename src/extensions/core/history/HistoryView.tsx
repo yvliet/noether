@@ -290,29 +290,29 @@ export const HistoryView: React.FC = React.memo(() => {
           <button
             onClick={() => setSelectedRevision(null)}
             title="Back to timeline"
-            className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[#202020] text-[#888] hover:text-[#dcddde]"
+            className="flex items-center gap-1 px-1.5 py-1 rounded hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
           >
             <ArrowLeft01Icon size={13} />
             <span className="text-[11px]">Timeline</span>
           </button>
 
-          <div className="flex items-center gap-1 bg-[#181818] p-0.5 rounded border border-[var(--noether-border-base)]">
+          <div className="flex items-center gap-1 bg-[var(--noether-bg-card)] p-0.5 rounded border border-[var(--noether-border-base)]">
             <button
               onClick={() => setViewMode('diff')}
-              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+              className={`px-2 py-0.5 rounded text-[11px] font-normal cursor-pointer ${
                 viewMode === 'diff'
-                  ? 'bg-[#2a2a2a] text-white shadow-xs'
-                  : 'text-[#777] hover:text-[#aaa]'
+                  ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] shadow-xs'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
               }`}
             >
               Diff
             </button>
             <button
               onClick={() => setViewMode('draft')}
-              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+              className={`px-2 py-0.5 rounded text-[11px] font-normal cursor-pointer ${
                 viewMode === 'draft'
-                  ? 'bg-[#2a2a2a] text-white shadow-xs'
-                  : 'text-[#777] hover:text-[#aaa]'
+                  ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] shadow-xs'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
               }`}
             >
               Draft
@@ -323,7 +323,7 @@ export const HistoryView: React.FC = React.memo(() => {
             <button
               onClick={handleCopyText}
               title="Copy historical draft"
-              className="p-1.5 rounded hover:bg-[#202020] text-[#888] hover:text-[#dcddde]"
+              className="p-1.5 rounded hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer"
             >
               {hasCopied ? <CheckIcon size={13} className="text-emerald-400" /> : <Copy01Icon size={13} />}
             </button>
@@ -333,20 +333,20 @@ export const HistoryView: React.FC = React.memo(() => {
         {/* Revision Metadata Sub-header */}
         <div className="px-3 py-2 bg-[var(--noether-bg-surface)] border-b border-[var(--noether-border-base)] flex items-center justify-between gap-2">
           <div className="flex flex-col min-w-0">
-            <span className="font-medium text-[#e0e0e0] truncate text-[12px]">
+            <span className="font-normal text-[var(--noether-text-primary)] truncate text-[12px]">
               {selectedRevision.message}
             </span>
-            <div className="flex items-center gap-2 text-[10px] text-[#777] mt-0.5">
+            <div className="flex items-center gap-2 text-[10px] text-[var(--noether-text-muted)] mt-0.5">
               <span>{formatRelativeTime(selectedRevision.timestamp)}</span>
               <span>•</span>
-              <span className="text-[#666]">{selectedRevision.shortHash}</span>
+              <span className="text-[var(--noether-text-muted)]">{selectedRevision.shortHash}</span>
             </div>
           </div>
 
           <button
             onClick={handleRestoreDraft}
             disabled={isRestoring}
-            className="px-2.5 py-1 rounded bg-[var(--noether-accent)] hover:opacity-90 text-white text-[11px] font-medium shrink-0 disabled:opacity-50"
+            className="px-2.5 py-1 rounded bg-[var(--noether-accent)] hover:opacity-90 text-white text-[11px] font-normal shrink-0 disabled:opacity-50 cursor-pointer"
           >
             {isRestoring ? 'Restoring...' : 'Restore draft'}
           </button>
@@ -461,11 +461,11 @@ export const HistoryView: React.FC = React.memo(() => {
       )}
 
       {/* Sub-header Note Context */}
-      <div className="px-3 py-2 flex items-center justify-between text-[11px] text-[#888] border-b border-[var(--noether-border-base)] bg-[var(--noether-bg-surface)]">
-        <span className="truncate max-w-[180px] font-medium text-[#ccc]">
+      <div className="px-3 py-2 flex items-center justify-between text-[11px] text-[var(--noether-text-muted)] border-b border-[var(--noether-border-base)] bg-[var(--noether-bg-surface)]">
+        <span className="truncate max-w-[180px] font-normal text-[var(--noether-text-primary)]">
           {activeDocument.title || 'Untitled'}
         </span>
-        <span className="text-[11px] text-[#777]">
+        <span className="text-[11px] text-[var(--noether-text-muted)]">
           {filteredRevisions.length} {filteredRevisions.length === 1 ? 'draft' : 'drafts'}
         </span>
       </div>
@@ -473,15 +473,15 @@ export const HistoryView: React.FC = React.memo(() => {
       {/* Timeline List */}
       <div className="flex-1 overflow-y-auto px-2 py-2 custom-scrollbar flex flex-col gap-1.5">
         {isLoadingHistory && revisions.length === 0 ? (
-          <div className="text-center py-10 text-[#555] text-[12px]">
+          <div className="text-center py-10 text-[var(--noether-text-muted)] text-[12px]">
             Reading version history...
           </div>
         ) : filteredRevisions.length === 0 ? (
-          <div className="text-center py-10 text-[#555] text-[12px] flex flex-col items-center gap-2">
+          <div className="text-center py-10 text-[var(--noether-text-muted)] text-[12px] flex flex-col items-center gap-2">
             <span>No previous drafts recorded.</span>
             <button
               onClick={handleTakeSnapshot}
-              className="text-[11px] text-[var(--noether-accent)] hover:underline"
+              className="text-[11px] text-[var(--noether-accent)] hover:underline cursor-pointer"
             >
               Take first snapshot
             </button>
@@ -491,24 +491,24 @@ export const HistoryView: React.FC = React.memo(() => {
             <div
               key={rev.hash}
               onClick={() => handleSelectRevision(rev)}
-              className="group flex items-center justify-between p-2 rounded-md hover:bg-[#1a1a1a] cursor-pointer border border-transparent hover:border-[var(--noether-border-base)]"
+              className="group flex items-center justify-between p-2 rounded-md hover:bg-[var(--noether-bg-sidebar-hover)] cursor-pointer"
             >
               <div className="flex flex-col min-w-0 flex-1 pr-2">
                 <div className="flex items-center gap-1.5">
-                  <span className="font-medium text-[#ccc] group-hover:text-white text-[12px] truncate">
+                  <span className="font-normal text-[var(--noether-text-secondary)] group-hover:text-[var(--noether-text-primary)] text-[12px] truncate">
                     {rev.message}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[#777]">
+                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-[var(--noether-text-muted)]">
                   <span>{formatRelativeTime(rev.timestamp)}</span>
                   <span>•</span>
-                  <span className="text-[#666]">{rev.shortHash}</span>
+                  <span className="text-[var(--noether-text-muted)]">{rev.shortHash}</span>
                 </div>
               </div>
 
               <ChevronRightIcon
                 size={13}
-                className="text-[#555] group-hover:text-[#aaa] shrink-0"
+                className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0"
               />
             </div>
           ))

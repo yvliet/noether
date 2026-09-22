@@ -351,7 +351,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
             type="button"
             onClick={handleEyeDropper}
             title="Pick color from screen"
-            className="p-1 rounded-[4px] text-[#888] hover:text-white hover:bg-[#333333] cursor-pointer shrink-0"
+            className="p-1 rounded-[4px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer shrink-0"
           >
             <EyedropperIcon size={15} />
           </button>
@@ -394,9 +394,9 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 max={255}
                 value={rgb.r}
                 onChange={(e) => handleRgbChange('r', e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
+                className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus:border-[var(--noether-border-strong)] rounded-[4px] py-0.5 text-center text-xs text-[var(--noether-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
               />
-              <span className="text-[9px] text-[#888] mt-0.5 font-normal">R</span>
+              <span className="text-[9px] text-[var(--noether-text-muted)] mt-0.5 font-normal">R</span>
             </div>
 
             {/* G */}
@@ -407,9 +407,9 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 max={255}
                 value={rgb.g}
                 onChange={(e) => handleRgbChange('g', e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
+                className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus:border-[var(--noether-border-strong)] rounded-[4px] py-0.5 text-center text-xs text-[var(--noether-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
               />
-              <span className="text-[9px] text-[#888] mt-0.5 font-normal">G</span>
+              <span className="text-[9px] text-[var(--noether-text-muted)] mt-0.5 font-normal">G</span>
             </div>
 
             {/* B */}
@@ -420,9 +420,9 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 max={255}
                 value={rgb.b}
                 onChange={(e) => handleRgbChange('b', e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
+                className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus:border-[var(--noether-border-strong)] rounded-[4px] py-0.5 text-center text-xs text-[var(--noether-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal"
               />
-              <span className="text-[9px] text-[#888] mt-0.5 font-normal">B</span>
+              <span className="text-[9px] text-[var(--noether-text-muted)] mt-0.5 font-normal">B</span>
             </div>
 
             {/* Switch to HEX */}
@@ -430,7 +430,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
               type="button"
               onClick={() => setFormat('hex')}
               title="Switch to HEX format"
-              className="p-1 mb-2.5 text-[#777] hover:text-white hover:bg-[#333] rounded-[4px] cursor-pointer shrink-0"
+              className="p-1 mb-2.5 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded-[4px] cursor-pointer shrink-0"
             >
               <ChevronsUpDownIcon size={13} />
             </button>
@@ -443,9 +443,9 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                 type="text"
                 value={tempHexInput}
                 onChange={(e) => handleHexChange(e.target.value)}
-                className="w-full bg-[#1e1e1e] border border-[#383838] focus:border-[#555] rounded-[4px] py-0.5 text-center text-xs text-white outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal uppercase"
+                className="w-full bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] focus:border-[var(--noether-border-strong)] rounded-[4px] py-0.5 text-center text-xs text-[var(--noether-text-primary)] outline-none shadow-[inset_0_1px_2px_rgba(0,0,0,0.35)] font-normal uppercase"
               />
-              <span className="text-[9px] text-[#888] mt-0.5 font-normal">HEX</span>
+              <span className="text-[9px] text-[var(--noether-text-muted)] mt-0.5 font-normal">HEX</span>
             </div>
 
             {/* Switch to RGB */}
@@ -453,7 +453,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
               type="button"
               onClick={() => setFormat('rgb')}
               title="Switch to RGB format"
-              className="p-1 mb-2.5 text-[#777] hover:text-white hover:bg-[#333] rounded-[4px] cursor-pointer shrink-0"
+              className="p-1 mb-2.5 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] rounded-[4px] cursor-pointer shrink-0"
             >
               <ChevronsUpDownIcon size={13} />
             </button>
@@ -462,7 +462,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
 
         {/* 4. Color History Swatches */}
         {swatches && swatches.length > 0 && (
-          <div className="pt-2 border-t border-[#383838]">
+          <div className="pt-2 border-t border-[var(--noether-border-base)]">
             <div className="flex items-center gap-1.5 flex-wrap">
               {swatches.map((p, idx) => {
                 const presetColor = typeof p === 'string' ? p : p.color;
@@ -479,7 +479,7 @@ export const InlineColorPicker: React.FC<InlineColorPickerProps> = React.memo(({
                       addColorHistory(presetColor);
                     }}
                     className={`w-4 h-4 rounded-full border cursor-pointer flex items-center justify-center p-0 ${
-                      isSelected ? 'border-white ring-1 ring-white/70' : 'border-white/20'
+                      isSelected ? 'border-[var(--noether-text-primary)] ring-1 ring-[var(--noether-text-primary)]/70' : 'border-[var(--noether-border-base)]'
                     }`}
                     style={{ backgroundColor: presetColor }}
                     title={presetName}

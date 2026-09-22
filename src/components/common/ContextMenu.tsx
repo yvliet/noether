@@ -141,17 +141,17 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
           item.disabled
             ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted,#777)]'
             : item.isDanger
-            ? 'text-[#eb5757] hover:bg-rose-950/20 hover:text-[#ff6b6b]'
+            ? 'text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/10 hover:text-[var(--noether-danger,#ef4444)]'
             : isFocused || isSubmenuOpen
-            ? 'bg-[var(--noether-bg-card-hover,#2c2c2c)] text-[var(--noether-text-primary)]'
-            : 'text-[var(--noether-text-primary,#dcddde)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] hover:text-[var(--noether-text-primary)]'
+            ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+            : 'text-[var(--noether-text-primary,#dcddde)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
         }`}
       >
         <div className="flex items-center gap-2 truncate min-w-0 flex-1">
           <span
             className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center ${
               item.isDanger
-                ? 'text-[#eb5757] group-hover:text-[#ff6b6b]'
+                ? 'text-[var(--noether-danger,#ef4444)]'
                 : 'text-[var(--noether-text-muted,#8b8e95)] group-hover:text-[var(--noether-text-primary)]'
             }`}
           >

@@ -308,8 +308,8 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                         onClick={() => setPresetCategory(cat)}
                         className={`text-[11px] px-2.5 py-1 rounded-md cursor-pointer border transition-none shrink-0 ${
                           isSelected
-                            ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] border-[var(--noether-border-strong)] font-medium shadow-xs'
-                            : 'bg-[var(--noether-bg-card)] text-[var(--noether-text-muted)] border-[var(--noether-border-subtle)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]'
+                            ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] border-[var(--noether-border-strong)] font-normal shadow-xs'
+                            : 'bg-[var(--noether-bg-card)] text-[var(--noether-text-muted)] border-[var(--noether-border-subtle)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                         }`}
                       >
                         {cat}

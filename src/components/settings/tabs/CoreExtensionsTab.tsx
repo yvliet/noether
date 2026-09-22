@@ -72,24 +72,24 @@ export const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({
         </p>
       </div>
 
-      <div className="bg-[#202020] border border-[#2a2a2a] rounded-xl overflow-hidden divide-y divide-[#282828]">
+      <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-base)]">
         {filteredCore.map((ext) => {
           const isEnabled = app.extensions.isExtensionEnabled(ext.id);
           const settingsTab = coreExtensionTabs.find((tab) => isTabMatch(tab, ext.id));
           return (
             <div
               key={ext.id}
-              className="p-3.5 flex items-center justify-between hover:bg-[#242424]/40"
+              className="p-3.5 flex items-center justify-between hover:bg-[var(--noether-btn-hover-bg)]"
             >
               <div className="flex-1 pr-4">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[13px] font-normal text-white">
+                  <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">
                     {highlightMatch(ext.name, searchQuery)}
                   </span>
-                  <span className="text-[11px] text-[#777] font-normal">v{ext.version}</span>
+                  <span className="text-[11px] text-[var(--noether-text-muted)] font-normal">v{ext.version}</span>
                 </div>
                 {ext.description && (
-                  <p className="text-[11px] text-[#777] mt-0.5 leading-relaxed">
+                  <p className="text-[11px] text-[var(--noether-text-muted)] mt-0.5 leading-relaxed">
                     {highlightMatch(ext.description, searchQuery)}
                   </p>
                 )}
@@ -112,7 +112,7 @@ export const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({
                       }
                     }}
                     title={`View ${ext.name} README`}
-                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
                   >
                     <BookOpen01Icon size={14} />
                   </button>
@@ -121,7 +121,7 @@ export const CoreExtensionsTab: React.FC<CoreExtensionsTabProps> = React.memo(({
                   <button
                     onClick={() => onNavigateTab(settingsTab.id)}
                     title={`${ext.name} options`}
-                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[#777] hover:text-[#dcddde] hover:bg-[#2a2a2a] cursor-pointer"
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
                   >
                     <Settings02Icon size={15} />
                   </button>

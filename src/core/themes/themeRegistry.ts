@@ -408,8 +408,8 @@ class ThemeRegistry {
       '--noether-bg-statusbar': tokens.bgStatusBar || tokens.bgCard,
 
       // Button interactive tokens
-      '--noether-btn-hover-bg': tokens.btnHoverBg || (isLightMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.1)'),
-      '--noether-btn-active-bg': tokens.btnActiveBg || (isLightMode ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.2)'),
+      '--noether-btn-hover-bg': tokens.btnHoverBg || (isLightMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)'),
+      '--noether-btn-active-bg': tokens.btnActiveBg || (isLightMode ? 'rgba(0, 0, 0, 0.06)' : '#272727'),
 
       // Borders
       '--noether-border-subtle': tokens.borderSubtle,

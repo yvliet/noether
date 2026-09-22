@@ -392,7 +392,7 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
                       className={`w-6 h-6 rounded-full cursor-pointer transition-none shrink-0 flex items-center justify-center ${
                         isSelected
                           ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#1b1b1b]'
-                          : 'hover:scale-105'
+                          : 'hover:opacity-90'
                       }`}
                     />
                   );
@@ -412,7 +412,7 @@ export const EdgeActionPill: React.FC<EdgeActionPillProps> = React.memo(
                   className={`w-6 h-6 rounded-full cursor-pointer transition-none shrink-0 flex items-center justify-center ${
                     showAdvancedPicker || activeTheme.isCustom
                       ? 'ring-2 ring-white/80 ring-offset-2 ring-offset-[#1b1b1b]'
-                      : 'hover:scale-105'
+                      : 'hover:opacity-90'
                   }`}
                 />
               </div>

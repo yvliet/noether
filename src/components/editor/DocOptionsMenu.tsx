@@ -768,8 +768,8 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
                         onClick={() => handleSetZoom(level)}
                         className={`w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs flex items-center justify-between gap-2.5 cursor-pointer group ${
                           isCurrent
-                            ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-medium'
-                            : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)]'
+                            ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)] font-normal'
+                            : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
                         }`}
                       >
                         <span>{level}%</span>

@@ -165,11 +165,11 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
         onClick={onClose}
       >
         <div
-          className="w-full max-w-xl bg-[#1e1e1e] border border-[#333333] rounded-xl shadow-2xl overflow-hidden flex flex-col"
+          className="w-full max-w-xl bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl shadow-2xl overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Top Search Input */}
-          <div className="relative flex items-center px-4 py-3 border-b border-[#2b2b2b]">
+          <div className="relative flex items-center px-4 py-3 border-b border-[var(--noether-border-base)]">
             <input
               ref={inputRef}
               type="text"
@@ -180,7 +180,7 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
               }}
               onKeyDown={handleKeyDown}
               placeholder="Type to search..."
-              className="w-full bg-transparent text-sm text-[#e0e0e0] placeholder-[#666666] outline-none pr-7 font-normal"
+              className="w-full bg-transparent text-sm text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] outline-none pr-7 font-normal"
             />
             {query.length > 0 && (
               <button
@@ -190,7 +190,7 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
                   setSelectedIndex(0);
                   inputRef.current?.focus();
                 }}
-                className="absolute right-3.5 text-[#777777] hover:text-[#cccccc] cursor-pointer p-0.5"
+                className="absolute right-3.5 text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer p-0.5"
                 title="Clear search"
               >
                 <CancelCircleIcon size={16} />
@@ -216,10 +216,10 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
                       onSelectDocument(doc.id);
                     }}
                     onMouseEnter={() => setSelectedIndex(idx)}
-                    className={`px-3 py-2 rounded-lg text-sm cursor-pointer select-none text-left truncate ${
+                    className={`px-3 py-2 rounded-lg text-sm cursor-pointer select-none text-left truncate font-normal ${
                       isSelected
-                        ? 'bg-[#2b2b2b] text-[#ffffff]'
-                        : 'text-[#999999] hover:bg-[#252525] hover:text-[#e0e0e0]'
+                        ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                        : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)]'
                     }`}
                   >
                     {displayPath}
@@ -227,7 +227,7 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
                 );
               })
             ) : (
-              <div className="py-8 text-center text-xs text-[#666666]">
+              <div className="py-8 text-center text-xs text-[var(--noether-text-muted)]">
                 {mode === 'note'
                   ? 'No notes found. Press Shift + Enter to create a new note.'
                   : 'No media files found.'}
@@ -236,7 +236,7 @@ export const CanvasItemSearchModal: React.FC<CanvasItemSearchModalProps> = React
           </div>
 
           {/* Keyboard Navigation Footer */}
-          <div className="px-4 py-2.5 border-t border-[#2a2a2a] flex items-center justify-center gap-4 text-[11px] text-[#777777] select-none">
+          <div className="px-4 py-2.5 border-t border-[var(--noether-border-base)] flex items-center justify-center gap-4 text-[11px] text-[var(--noether-text-muted)] select-none">
             <span>
               <strong className="font-semibold text-[#aaaaaa]">↑↓</strong> to navigate
             </span>

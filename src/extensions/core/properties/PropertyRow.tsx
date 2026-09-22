@@ -207,7 +207,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
   }, [lowerKey, isYes, isToggle, isReadOnlyValue, localVal]);
 
   return (
-    <div className="flex items-center gap-2 min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-card-hover)] group">
+    <div className="flex items-center gap-2 min-h-[28px] px-1.5 py-0.5 rounded-[5px] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] group">
       {/* Property Name + Icon */}
       <div className="relative flex items-center shrink-0 w-24">
         {isBuiltIn ? (
@@ -223,7 +223,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               type="button"
               onClick={() => setIsPickerOpen(!isPickerOpen)}
               title={iconTooltip}
-              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-card-hover)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 mr-1"
+              className="p-1 -ml-1 rounded hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] shrink-0 mr-1 cursor-pointer"
             >
               {renderPropertyIcon(propertyKey, propertyIcons, { size: 12, className: 'text-[var(--noether-text-muted)] shrink-0' })}
             </button>
@@ -261,7 +261,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             placeholder="Property name"
-            className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-medium text-[11px] p-0 m-0 min-w-0"
+            className="bg-transparent border-none outline-none text-[var(--noether-text-primary)] font-normal text-[11px] p-0 m-0 min-w-0"
           />
         ) : (
           <span
@@ -275,7 +275,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               }
             }}
             title={keyTooltip}
-            className={`text-[11px] font-medium text-[var(--noether-text-muted)] ${isReadOnlyKey ? 'cursor-default' : 'hover:text-[var(--noether-text-primary)]'} truncate flex-1 min-w-0 leading-tight`}
+            className={`text-[11px] font-normal text-[var(--noether-text-muted)] ${isReadOnlyKey ? 'cursor-default' : 'hover:text-[var(--noether-text-primary)]'} truncate flex-1 min-w-0 leading-tight`}
           >
             {localKey || propertyKey}
           </span>
@@ -321,7 +321,7 @@ export const PropertyRow: React.FC<PropertyRowProps> = React.memo(({
               onSaveValue(propertyKey, nextVal);
             }}
             title={valueTooltip}
-            className="text-xs font-medium text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline select-none px-0.5 py-0.5"
+            className="text-xs font-normal text-[var(--noether-text-primary)] hover:text-[var(--noether-accent)] hover:underline select-none px-0.5 py-0.5 cursor-pointer"
           >
             {isYes ? 'Yes' : 'No'}
           </button>

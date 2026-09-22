@@ -90,13 +90,13 @@ export const FontPickerView: React.FC<FontPickerViewProps> = React.memo(({ mode,
       <div className="px-4 flex flex-col gap-1.5">
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-xs text-[#888] hover:text-white cursor-pointer -ml-1 w-fit"
+          className="flex items-center gap-1.5 text-xs text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-pointer -ml-1 w-fit"
         >
           <ArrowLeft01Icon size={14} />
           <span className="capitalize font-medium">{mode} font</span>
         </button>
 
-        <p className="text-xs text-[#777]">
+        <p className="text-xs text-[var(--noether-text-muted)]">
           {mode === 'interface' && (interfaceFont ? `Current font: ${interfaceFont}` : 'No custom font is applied right now. Add one below.')}
           {mode === 'text' && (textFont ? `Current font: ${textFont}` : 'No custom font is applied right now. Add one below.')}
           {mode === 'monospace' && (monospaceFont ? `Current font: ${monospaceFont}` : 'No custom font is applied right now. Add one below.')}
@@ -127,7 +127,7 @@ export const FontPickerView: React.FC<FontPickerViewProps> = React.memo(({ mode,
               {((mode === 'interface' && interfaceFont === font) ||
                 (mode === 'text' && textFont === font) ||
                 (mode === 'monospace' && monospaceFont === font)) && (
-                <CheckIcon size={14} className="text-white" />
+                <CheckIcon size={14} className="text-[var(--noether-accent)]" />
               )}
             </button>
           ))}

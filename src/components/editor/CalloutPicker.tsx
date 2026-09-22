@@ -90,8 +90,8 @@ export const CalloutPicker = forwardRef<CalloutPickerHandle, CalloutPickerProps>
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-left cursor-pointer transition-none ${
                 isSelected
-                  ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)]'
-                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)]'
+                  ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)]'
               }`}
             >
               <div
@@ -105,7 +105,7 @@ export const CalloutPicker = forwardRef<CalloutPickerHandle, CalloutPickerProps>
                 <IconComp size={14} />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-medium text-xs text-[var(--noether-text-primary)] truncate">
+                <div className="font-normal text-xs text-[var(--noether-text-primary)] truncate">
                   {def.title}
                 </div>
                 <div className="text-[10.5px] text-[var(--noether-text-muted)] truncate">

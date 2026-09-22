@@ -468,7 +468,7 @@ export const AppearanceTab: React.FC<AppearanceTabProps> = React.memo(({ onOpenF
                     onClick={() => setThemeFilter(tab.id as any)}
                     className={`px-2.5 py-1 text-xs rounded-[5px] cursor-pointer shadow-xs transition-none ${
                       isSelected
-                        ? 'bg-[var(--noether-bg-input,#2a2a2a)] text-[var(--noether-text-primary)] font-medium border border-[var(--noether-border-strong,#383838)]'
+                        ? 'bg-[var(--noether-bg-input,#2a2a2a)] text-[var(--noether-text-primary)] font-normal border border-[var(--noether-border-strong,#383838)]'
                         : 'bg-[var(--noether-bg-card,#181818)] text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-base,#282828)]'
                     }`}
                   >

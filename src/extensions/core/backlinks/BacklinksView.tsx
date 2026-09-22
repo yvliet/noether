@@ -204,13 +204,13 @@ export const BacklinksView: React.FC = React.memo(() => {
         <div className="flex flex-col">
           <button
             onClick={() => setIsLinkedOpen(!isLinkedOpen)}
-            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-[#1a1a1a] text-left transition-colors group"
+            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-[var(--noether-bg-sidebar-hover)] text-left group cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 font-medium text-[#c0c0c0] group-hover:text-white">
-              {isLinkedOpen ? <ChevronDownIcon size={13} className="text-[#777]" /> : <ChevronRightIcon size={13} className="text-[#777]" />}
+            <div className="flex items-center gap-1.5 font-normal text-[var(--noether-text-secondary)] group-hover:text-[var(--noether-text-primary)]">
+              {isLinkedOpen ? <ChevronDownIcon size={13} className="text-[var(--noether-text-muted)]" /> : <ChevronRightIcon size={13} className="text-[var(--noether-text-muted)]" />}
               <span className="text-[12px]">Linked mentions</span>
             </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#222] text-[#888] font-mono">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--noether-bg-card)] text-[var(--noether-text-muted)] font-mono">
               {filteredBacklinks.length}
             </span>
           </button>
@@ -218,11 +218,11 @@ export const BacklinksView: React.FC = React.memo(() => {
           {isLinkedOpen && (
             <div className="mt-1 flex flex-col gap-1.5 pl-2">
               {filteredBacklinks.length === 0 ? (
-                <div className="py-2 text-center flex items-center justify-center gap-1.5 select-none text-[#555]">
+                <div className="py-2 text-center flex items-center justify-center gap-1.5 select-none text-[var(--noether-text-muted)]">
                   <span className="text-[11px]">No linked mentions</span>
                   <span
                     data-tooltip={`Type [[${activeDocument.title}]]&#10;in other notes to link here`}
-                    className="inline-flex items-center text-[#555] hover:text-[#bbb] cursor-help transition-colors"
+                    className="inline-flex items-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-help"
                   >
                     <HelpCircleIcon size={12} />
                   </span>
@@ -232,17 +232,17 @@ export const BacklinksView: React.FC = React.memo(() => {
                   <div
                     key={idx}
                     onClick={() => setActiveDocumentById(link.source_document_id)}
-                    className="p-2 rounded-lg bg-[#181818] hover:bg-[#222] cursor-pointer transition-none border border-[#242424] hover:border-[#333] group"
+                    className="p-2 rounded-lg bg-[var(--noether-bg-card)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer transition-none border border-[var(--noether-border-base)] group"
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <div className="noether-link font-medium text-xs hover:underline truncate">
+                      <div className="noether-link font-normal text-xs hover:underline truncate text-[var(--noether-text-primary)]">
                         {link.source_document_title}
                       </div>
-                      <span className="text-[9px] text-[#555]">
+                      <span className="text-[9px] text-[var(--noether-text-muted)]">
                         {new Date(link.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                       </span>
                     </div>
-                    <div className="text-[11px] text-[#888] leading-relaxed line-clamp-2 bg-[#121212] p-1.5 rounded border border-[#1e1e1e]">
+                    <div className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed line-clamp-2 bg-[var(--noether-bg-input)] p-1.5 rounded border border-[var(--noether-border-base)]">
                       "{link.snippet}"
                     </div>
                   </div>
@@ -256,13 +256,13 @@ export const BacklinksView: React.FC = React.memo(() => {
         <div className="flex flex-col">
           <button
             onClick={() => setIsOutgoingOpen(!isOutgoingOpen)}
-            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-[#1a1a1a] text-left transition-colors group"
+            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-[var(--noether-bg-sidebar-hover)] text-left group cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 font-medium text-[#c0c0c0] group-hover:text-white">
-              {isOutgoingOpen ? <ChevronDownIcon size={13} className="text-[#777]" /> : <ChevronRightIcon size={13} className="text-[#777]" />}
+            <div className="flex items-center gap-1.5 font-normal text-[var(--noether-text-secondary)] group-hover:text-[var(--noether-text-primary)]">
+              {isOutgoingOpen ? <ChevronDownIcon size={13} className="text-[var(--noether-text-muted)]" /> : <ChevronRightIcon size={13} className="text-[var(--noether-text-muted)]" />}
               <span className="text-[12px]">Outgoing links</span>
             </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#222] text-[#888] font-mono">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--noether-bg-card)] text-[var(--noether-text-muted)] font-mono">
               {filteredOutgoing.length}
             </span>
           </button>
@@ -270,11 +270,11 @@ export const BacklinksView: React.FC = React.memo(() => {
           {isOutgoingOpen && (
             <div className="mt-1 flex flex-col gap-1 pl-2">
               {filteredOutgoing.length === 0 ? (
-                <div className="py-2 text-center flex items-center justify-center gap-1.5 select-none text-[#555]">
+                <div className="py-2 text-center flex items-center justify-center gap-1.5 select-none text-[var(--noether-text-muted)]">
                   <span className="text-[11px]">No outgoing links</span>
                   <span
                     data-tooltip="Type [[Note Title]] in your note to link outward"
-                    className="inline-flex items-center text-[#555] hover:text-[#bbb] cursor-help transition-colors"
+                    className="inline-flex items-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-help"
                   >
                     <HelpCircleIcon size={12} />
                   </span>
@@ -283,7 +283,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                 filteredOutgoing.map((out: OutgoingLinkItem, idx: number) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-1.5 rounded-md bg-[#181818] hover:bg-[#202020] transition-colors border border-[#222]"
+                    className="flex items-center justify-between p-1.5 rounded-md bg-[var(--noether-bg-card)] hover:bg-[var(--noether-btn-hover-bg)] border border-[var(--noether-border-base)]"
                   >
                     <div
                       onClick={() => {
@@ -295,8 +295,8 @@ export const BacklinksView: React.FC = React.memo(() => {
                       }}
                       className="flex items-center gap-2 cursor-pointer truncate flex-1 min-w-0"
                     >
-                      <Link2Icon size={12} className={out.exists ? 'text-[var(--noether-link-color)]' : 'text-[#666]'} />
-                      <span className={`text-[12px] truncate ${out.exists ? 'noether-link hover:underline' : 'text-[#888] italic'}`}>
+                      <Link2Icon size={12} className={out.exists ? 'text-[var(--noether-link-color)]' : 'text-[var(--noether-text-muted)]'} />
+                      <span className={`text-[12px] truncate ${out.exists ? 'noether-link hover:underline' : 'text-[var(--noether-text-muted)] italic'}`}>
                         {out.link_text}
                       </span>
                     </div>
@@ -305,7 +305,7 @@ export const BacklinksView: React.FC = React.memo(() => {
                       <button
                         onClick={() => handleCreateUnresolvedDoc(out.link_text)}
                         title="Create note"
-                        className="px-2 py-0.5 rounded bg-[#252525] hover:bg-[#303030] text-[#a0a0a0] hover:text-white text-[10px] shrink-0 ml-2 transition-colors flex items-center gap-1"
+                        className="px-2 py-0.5 rounded bg-[var(--noether-bg-surface)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] text-[10px] shrink-0 ml-2 flex items-center gap-1 cursor-pointer"
                       >
                         <PlusSignIcon size={10} />
                         <span>Create</span>
@@ -322,13 +322,13 @@ export const BacklinksView: React.FC = React.memo(() => {
         <div className="flex flex-col">
           <button
             onClick={() => setIsUnlinkedOpen(!isUnlinkedOpen)}
-            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-[#1a1a1a] text-left transition-colors group"
+            className="flex items-center justify-between py-1 px-1.5 rounded-md hover:bg-[var(--noether-bg-sidebar-hover)] text-left group cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 font-medium text-[#c0c0c0] group-hover:text-white">
-              {isUnlinkedOpen ? <ChevronDownIcon size={13} className="text-[#777]" /> : <ChevronRightIcon size={13} className="text-[#777]" />}
+            <div className="flex items-center gap-1.5 font-normal text-[var(--noether-text-secondary)] group-hover:text-[var(--noether-text-primary)]">
+              {isUnlinkedOpen ? <ChevronDownIcon size={13} className="text-[var(--noether-text-muted)]" /> : <ChevronRightIcon size={13} className="text-[var(--noether-text-muted)]" />}
               <span className="text-[12px]">Unlinked mentions</span>
             </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[#222] text-[#888] font-mono">
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--noether-bg-card)] text-[var(--noether-text-muted)] font-mono">
               {filteredUnlinked.length}
             </span>
           </button>
@@ -336,7 +336,7 @@ export const BacklinksView: React.FC = React.memo(() => {
           {isUnlinkedOpen && (
             <div className="mt-1 flex flex-col gap-1.5 pl-2">
               {filteredUnlinked.length === 0 ? (
-                <div className="py-2 text-center text-[#555] text-[11px]">
+                <div className="py-2 text-center text-[var(--noether-text-muted)] text-[11px]">
                   No unlinked mentions found
                 </div>
               ) : (
@@ -345,12 +345,12 @@ export const BacklinksView: React.FC = React.memo(() => {
                   return (
                     <div
                       key={idx}
-                      className="p-2 rounded-lg bg-[#181818] border border-[#242424] flex flex-col gap-1.5"
+                      className="p-2 rounded-lg bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] flex flex-col gap-1.5"
                     >
                       <div className="flex items-center justify-between">
                         <div
                           onClick={() => setActiveDocumentById(unlinked.source_document_id)}
-                          className="noether-link font-medium text-xs cursor-pointer hover:underline truncate flex-1 min-w-0"
+                          className="noether-link font-normal text-xs cursor-pointer hover:underline truncate flex-1 min-w-0"
                         >
                           {unlinked.source_document_title}
                         </div>
@@ -358,14 +358,14 @@ export const BacklinksView: React.FC = React.memo(() => {
                           onClick={() => handleConvertLink(unlinked.source_document_id, activeDocument.title)}
                           disabled={isLinking}
                           title={`Link [[${activeDocument.title}]] in ${unlinked.source_document_title}`}
-                          className="px-2 py-0.5 rounded bg-[#222] hover:bg-[#2e2e2e] text-[#38bdf8] hover:text-[#7dd3fc] text-[11px] font-medium transition-colors shrink-0 ml-2 flex items-center gap-1 border border-[#333]"
+                          className="px-2 py-0.5 rounded bg-[var(--noether-bg-surface)] hover:bg-[var(--noether-btn-hover-bg)] text-[var(--noether-accent)] text-[11px] font-normal shrink-0 ml-2 flex items-center gap-1 border border-[var(--noether-border-base)] cursor-pointer"
                         >
                           {isLinking ? <CheckIcon size={11} className="text-emerald-400" /> : <Link2Icon size={11} />}
                           <span>{isLinking ? 'Linked' : 'Link'}</span>
                         </button>
                       </div>
 
-                      <div className="text-[11px] text-[#888] leading-relaxed bg-[#121212] p-1.5 rounded border border-[#1e1e1e]">
+                      <div className="text-[11px] text-[var(--noether-text-muted)] leading-relaxed bg-[var(--noether-bg-input)] p-1.5 rounded border border-[var(--noether-border-base)]">
                         {unlinked.snippet}
                       </div>
                     </div>

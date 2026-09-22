@@ -626,10 +626,10 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                     <button
                       key={item.id}
                       onClick={() => handleNavigateTab(item.id)}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer transition-none ${
                         isActive
-                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
-                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)]'
+                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-normal shadow-xs'
+                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)] font-normal'
                       }`}
                     >
                       <span className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted,#888)]'}>{item.icon}</span>
@@ -643,17 +643,17 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             {/* Section 2: Core Extensions */}
             {filteredCoreExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Core extensions</div>
+                <div className="text-[11px] font-normal text-[var(--noether-text-muted,#666)] px-2.5 py-1">Core extensions</div>
                 {filteredCoreExtensions.map((item) => {
                   const isActive = !showAllOccurrences && isTabMatch(item, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
                     <button
                       key={item.id}
                       onClick={() => handleNavigateTab(item.id)}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer transition-none ${
                         isActive
-                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
-                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)]'
+                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-normal shadow-xs'
+                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)] font-normal'
                       }`}
                     >
                       <span className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted,#888)]'}>{item.icon || <PackageIcon size={14} />}</span>
@@ -667,17 +667,17 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
             {/* Section 3: Community Extensions Settings */}
             {filteredCommunityExtensions.length > 0 && (
               <div className="flex flex-col gap-0.5">
-                <div className="text-[11px] font-medium text-[var(--noether-text-muted,#666)] px-2.5 py-1">Community extensions</div>
+                <div className="text-[11px] font-normal text-[var(--noether-text-muted,#666)] px-2.5 py-1">Community extensions</div>
                 {filteredCommunityExtensions.map((tab) => {
                   const isActive = !showAllOccurrences && isTabMatch(tab, activeTab) && !fontPickerMode && !isTrashViewOpen;
                   return (
                     <button
                       key={tab.id}
                       onClick={() => handleNavigateTab(tab.id)}
-                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer ${
+                      className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-left text-xs cursor-pointer transition-none ${
                         isActive
-                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-medium shadow-xs'
-                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)]'
+                          ? 'bg-[var(--noether-bg-sidebar-active,#252525)] text-[var(--noether-text-primary)] font-normal shadow-xs'
+                          : 'text-[var(--noether-text-secondary,#999)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] hover:text-[var(--noether-text-primary)] font-normal'
                       }`}
                     >
                       <span className={isActive ? 'text-[var(--noether-text-primary)]' : 'text-[var(--noether-text-muted,#888)]'}>{tab.icon || <PuzzleIcon size={14} />}</span>
@@ -706,7 +706,7 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                   },
                 });
               }}
-              className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--noether-text-muted,#777)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] cursor-pointer border border-transparent hover:border-[var(--noether-border-base)]"
+              className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] text-[var(--noether-text-muted,#777)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#202020)] cursor-pointer transition-none"
               title="Restore all settings across all tabs and extensions to default"
             >
               <RotateCcwIcon size={12} />

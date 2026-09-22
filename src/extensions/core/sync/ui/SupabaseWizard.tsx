@@ -49,21 +49,21 @@ export const SupabaseWizard: React.FC<SupabaseWizardProps> = ({
   };
 
   return (
-    <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden divide-y divide-[#282828]">
+    <div className="bg-[var(--noether-bg-card)] border border-[var(--noether-border-base)] rounded-xl overflow-hidden divide-y divide-[var(--noether-border-base)]">
       {/* Header Banner */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[#252525] border border-[#333] flex items-center justify-center text-[#34d399] shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[var(--noether-bg-surface)] border border-[var(--noether-border-base)] flex items-center justify-center text-[#34d399] shrink-0">
             <DatabaseIcon size={16} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-[13px] font-medium text-white">Supabase Free Tier Setup</span>
+              <span className="text-[13px] font-normal text-[var(--noether-text-primary)]">Supabase Free Tier Setup</span>
               <span className="px-2 py-0.5 text-[10px] font-semibold bg-[#162a20] text-[#34d399] border border-[#065f46]/60 rounded-[4px]">
                 Free Forever
               </span>
             </div>
-            <p className="text-[11px] text-[#777] mt-0.5">
+            <p className="text-[11px] text-[var(--noether-text-muted)] mt-0.5">
               500 MB cloud database with zero subscriptions, payment cards, or usage fees.
             </p>
           </div>
@@ -80,7 +80,7 @@ export const SupabaseWizard: React.FC<SupabaseWizardProps> = ({
       </div>
 
       {isExpanded && (
-        <div className="p-4 space-y-4 bg-[#1b1b1b]">
+        <div className="p-4 space-y-4 bg-[var(--noether-bg-card)]">
           {/* Step 1 */}
           <div className="flex items-start gap-3">
             <div className="w-5 h-5 rounded-full bg-[#282828] text-[#aaa] text-[11px] flex items-center justify-center font-semibold border border-[#383838] shrink-0 mt-0.5">

@@ -89,10 +89,10 @@ const OutlineTreeNode: React.FC<OutlineTreeNodeProps> = ({
       {/* Heading Item Row */}
       <div
         onClick={() => onSelect(node)}
-        className={`group flex items-center gap-1.5 px-2 py-1 rounded-[5px] cursor-pointer transition-colors ${
+        className={`group flex items-center gap-1.5 px-2 py-1 rounded-[5px] cursor-pointer ${
           isActive
-            ? 'bg-[#2a2a2a] text-[#ffffff] font-normal'
-            : 'text-[#909090] hover:bg-[#202020] hover:text-[#e0e0e0]'
+            ? 'bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-normal'
+            : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-sidebar-hover)] hover:text-[var(--noether-text-primary)]'
         }`}
       >
         {/* Chevron for items with children, or empty spacer for leaf items */}
@@ -103,7 +103,7 @@ const OutlineTreeNode: React.FC<OutlineTreeNodeProps> = ({
               e.stopPropagation();
               toggleCollapse(nodeId);
             }}
-            className="w-4 h-4 flex items-center justify-center text-[#737373] group-hover:text-[#b0b0b0] hover:text-[#e0e0e0] shrink-0 transition-colors"
+            className="w-4 h-4 flex items-center justify-center text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-secondary)] hover:text-[var(--noether-text-primary)] shrink-0"
           >
             {isCollapsed ? <ChevronRightIcon size={12} /> : <ChevronDownIcon size={12} />}
           </button>
@@ -112,7 +112,7 @@ const OutlineTreeNode: React.FC<OutlineTreeNodeProps> = ({
         )}
 
         {showHeadingNumbers && (
-          <span className="text-[10px] font-mono text-[#666] shrink-0 px-1 py-0.2 bg-[#222] rounded-[3px]">
+          <span className="text-[10px] font-mono text-[var(--noether-text-muted)] shrink-0 px-1 py-0.2 bg-[var(--noether-bg-input)] rounded-[3px]">
             H{node.heading.level}
           </span>
         )}
@@ -125,7 +125,7 @@ const OutlineTreeNode: React.FC<OutlineTreeNodeProps> = ({
 
       {/* Children Sub-Tree with Hierarchy Guide Vertical Line */}
       {hasChildren && !isCollapsed && (
-        <div className="border-l border-[#303030] ml-[16px] pl-[6px] flex flex-col gap-0.5 mt-0.5">
+        <div className="border-l border-[var(--noether-border-base)] ml-[16px] pl-[6px] flex flex-col gap-0.5 mt-0.5">
           {node.children.map((child) => (
             <OutlineTreeNode
               key={child.heading.id || child.index}
@@ -278,7 +278,7 @@ export const OutlineView: React.FC = () => {
             <span className="text-[13px]">No headings found.</span>
             <span
               data-tooltip="Type # Heading 1 or ## Heading 2&#10;in your note to generate an outline"
-              className="inline-flex items-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-help transition-colors"
+              className="inline-flex items-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] cursor-help"
             >
               <HelpCircleIcon size={13} />
             </span>

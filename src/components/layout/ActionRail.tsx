@@ -66,7 +66,7 @@ export const ActionRail: React.FC = React.memo(() => {
           onClick={() => setIsCommandPaletteOpen(true)}
           title="Command palette (Ctrl+K)"
           data-tooltip="Command palette (Ctrl+K)"
-          className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+          className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] transition-none cursor-pointer"
         >
           <TerminalIcon size={16} />
         </button>
@@ -91,7 +91,7 @@ export const ActionRail: React.FC = React.memo(() => {
                 handleItemTrigger(item);
               }}
               title={item.title}
-              className="no-drag relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)]"
+              className="no-drag relative w-7 h-7 rounded-md flex items-center justify-center cursor-pointer text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] transition-none"
             >
               {item.icon}
               {item.badge != null && (
@@ -113,7 +113,7 @@ export const ActionRail: React.FC = React.memo(() => {
             onClick={() => setIsVaultModalOpen(true)}
             title="Vault switcher (Ctrl+Shift+O)"
             data-tooltip="Vault switcher (Ctrl+Shift+O)"
-            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] transition-none cursor-pointer"
           >
             <ArrowUpDownIcon size={15} />
           </button>
@@ -126,7 +126,7 @@ export const ActionRail: React.FC = React.memo(() => {
             onClick={() => platform.openHelpWindow()}
             title="Help (F1)"
             data-tooltip="Help (F1)"
-            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] transition-none cursor-pointer"
           >
             <HelpCircleIcon size={16} />
           </button>
@@ -139,7 +139,7 @@ export const ActionRail: React.FC = React.memo(() => {
             onClick={handleOpenSettings}
             title="Settings (Ctrl+,)"
             data-tooltip="Settings (Ctrl+,)"
-            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-card-hover)] cursor-pointer"
+            className="no-drag w-7 h-7 rounded-md flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)] transition-none cursor-pointer"
           >
             <Settings02Icon size={16} />
           </button>

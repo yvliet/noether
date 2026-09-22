@@ -123,35 +123,35 @@ export const TasksView: React.FC = React.memo(() => {
           )}
 
           {/* Sub-header Controls: Counts, Filters, and Search */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[#242424]">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-[var(--noether-border-base)]">
             {/* Filter Pills */}
-            <div className="flex items-center gap-1 bg-[#1a1a1a] p-0.5 rounded-[5px] border border-[#262626] text-xs">
+            <div className="flex items-center gap-1 bg-[var(--noether-bg-card)] p-0.5 rounded-[5px] border border-[var(--noether-border-base)] text-xs">
               <button
                 onClick={() => setFilter('all')}
-                className={`px-2.5 py-1 rounded-[4px] transition-all font-medium cursor-pointer ${
+                className={`px-2.5 py-1 rounded-[4px] font-normal cursor-pointer ${
                   filter === 'all'
-                    ? 'bg-[#2a2a2a] text-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-[#383838]'
-                    : 'border border-transparent text-[#888] hover:text-[#dcddde]'
+                    ? 'bg-[var(--noether-bg-input)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)]'
+                    : 'border border-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 All <span className="opacity-60 ml-0.5 text-[11px]">{totalCount}</span>
               </button>
               <button
                 onClick={() => setFilter('pending')}
-                className={`px-2.5 py-1 rounded-[4px] transition-all font-medium cursor-pointer ${
+                className={`px-2.5 py-1 rounded-[4px] font-normal cursor-pointer ${
                   filter === 'pending'
-                    ? 'bg-[#2a2a2a] text-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-[#383838]'
-                    : 'border border-transparent text-[#888] hover:text-[#dcddde]'
+                    ? 'bg-[var(--noether-bg-input)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)]'
+                    : 'border border-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 Pending <span className="opacity-60 ml-0.5 text-[11px]">{pendingCount}</span>
               </button>
               <button
                 onClick={() => setFilter('completed')}
-                className={`px-2.5 py-1 rounded-[4px] transition-all font-medium cursor-pointer ${
+                className={`px-2.5 py-1 rounded-[4px] font-normal cursor-pointer ${
                   filter === 'completed'
-                    ? 'bg-[#2a2a2a] text-white shadow-[0_1px_2px_rgba(0,0,0,0.35)] border border-[#383838]'
-                    : 'border border-transparent text-[#888] hover:text-[#dcddde]'
+                    ? 'bg-[var(--noether-bg-input)] text-[var(--noether-text-primary)] border border-[var(--noether-border-strong)]'
+                    : 'border border-transparent text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
                 }`}
               >
                 Completed <span className="opacity-60 ml-0.5 text-[11px]">{completedCount}</span>
@@ -159,19 +159,19 @@ export const TasksView: React.FC = React.memo(() => {
             </div>
 
             {/* Note-styled Search Input */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#262626] text-xs text-[#dcddde] w-full sm:w-64 focus-within:border-[#3e3e3e] transition-colors">
-              <Search01Icon size={14} className="text-[#666] shrink-0" />
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--noether-bg-input)] border border-[var(--noether-border-base)] text-xs text-[var(--noether-text-primary)] w-full sm:w-64 focus-within:border-[var(--noether-border-strong)]">
+              <Search01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search tasks or notes..."
-                className="bg-transparent outline-none text-xs text-white placeholder-[#555] w-full font-sans selection:bg-[#505560] selection:text-white"
+                className="bg-transparent outline-none text-xs text-[var(--noether-text-primary)] placeholder-[var(--noether-text-faint)] w-full font-sans selection:bg-[var(--noether-accent)] selection:text-white"
               />
               {search && (
                 <button
                   onClick={() => setSearch('')}
-                  className="text-[#666] hover:text-[#bbb] text-xs cursor-pointer"
+                  className="text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] text-xs cursor-pointer"
                 >
                   ✕
                 </button>
@@ -182,20 +182,20 @@ export const TasksView: React.FC = React.memo(() => {
           {/* Task Items List Laid Out in Note Prose Flow */}
           <div className="flex flex-col gap-1.5 flex-1">
             {filteredTasks.length === 0 ? (
-              <div className="text-center py-20 text-[#666] text-xs flex flex-col items-center select-none">
-                <CheckmarkSquare02Icon size={36} className="opacity-25 mb-3 text-[#888]" />
-                <p className="text-sm text-[#888] font-medium font-sans">
+              <div className="text-center py-20 text-[var(--noether-text-muted)] text-xs flex flex-col items-center select-none">
+                <CheckmarkSquare02Icon size={36} className="opacity-25 mb-3 text-[var(--noether-text-muted)]" />
+                <p className="text-sm text-[var(--noether-text-primary)] font-normal font-sans">
                   {search ? 'No tasks match your search' : filter === 'completed' ? 'No completed tasks yet' : 'No tasks found'}
                 </p>
-                <p className="text-[11px] text-[#555] mt-1.5 font-sans">
-                  Insert checklists into your notes with <code className="text-[#888] bg-[#222] px-1.5 py-0.5 rounded">/task</code> or <code className="text-[#888] bg-[#222] px-1.5 py-0.5 rounded">- [ ]</code>
+                <p className="text-[11px] text-[var(--noether-text-muted)] mt-1.5 font-sans">
+                  Insert checklists into your notes with <code className="text-[var(--noether-text-primary)] bg-[var(--noether-bg-card)] px-1.5 py-0.5 rounded">/task</code> or <code className="text-[var(--noether-text-primary)] bg-[var(--noether-bg-card)] px-1.5 py-0.5 rounded">- [ ]</code>
                 </p>
               </div>
             ) : (
               filteredTasks.map((t) => (
                 <div
                   key={t.id}
-                  className="group flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-[#1f1f1f]/80 transition-colors border border-transparent hover:border-[#282828]"
+                  className="group flex items-start gap-3 py-2 px-3 rounded-lg hover:bg-[var(--noether-btn-hover-bg)]"
                 >
                   {/* Task Checkbox */}
                   <div className="flex items-center justify-center h-[21px] shrink-0">
@@ -203,7 +203,7 @@ export const TasksView: React.FC = React.memo(() => {
                       type="checkbox"
                       checked={t.completed}
                       onChange={() => handleToggle(t.document_id, t.text, t.completed)}
-                      className="w-4 h-4 rounded cursor-pointer accent-[#e5e7eb] m-0"
+                      className="w-4 h-4 rounded cursor-pointer accent-[var(--noether-accent)] m-0"
                     />
                   </div>
 
@@ -212,8 +212,8 @@ export const TasksView: React.FC = React.memo(() => {
                     <span
                       className={`text-[13px] leading-relaxed select-text font-sans ${
                         t.completed
-                          ? `${strikethroughCompleted ? 'line-through' : ''} text-[#666]`
-                          : 'text-[#e5e7eb]'
+                          ? `${strikethroughCompleted ? 'line-through' : ''} text-[var(--noether-text-muted)]`
+                          : 'text-[var(--noether-text-primary)]'
                       }`}
                     >
                       {t.text}
@@ -223,9 +223,9 @@ export const TasksView: React.FC = React.memo(() => {
                     <button
                       onClick={() => handleOpenDoc(t.document_id)}
                       title={`Open note: ${t.document_title}`}
-                      className="inline-flex items-center gap-1 text-[11px] text-[#888] hover:text-[#e5e7eb] bg-[#222]/70 hover:bg-[#2a2a2a] px-2 py-0.5 rounded transition-all shrink-0 cursor-pointer max-w-[200px] border border-[#2a2a2a]"
+                      className="inline-flex items-center gap-1 text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] bg-[var(--noether-bg-card)] hover:bg-[var(--noether-btn-hover-bg)] px-2 py-0.5 rounded shrink-0 cursor-pointer max-w-[200px] border border-[var(--noether-border-base)]"
                     >
-                      <File01Icon size={11} className="shrink-0 text-[#777]" />
+                      <File01Icon size={11} className="shrink-0 text-[var(--noether-text-muted)]" />
                       <span className="truncate">{t.document_title}</span>
                     </button>
                   </div>

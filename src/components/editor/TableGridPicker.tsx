@@ -153,8 +153,8 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
                 }}
                 className={`w-[18px] h-[18px] rounded-[3px] cursor-pointer border ${
                   isHighlighted
-                    ? 'bg-white/15 border-white shadow-[0_0_2px_rgba(255,255,255,0.4)]'
-                    : 'bg-white/[0.04] border-white/10 hover:border-white/20'
+                    ? 'bg-[var(--noether-accent)]/25 border-[var(--noether-accent)] shadow-[0_0_2px_var(--noether-accent)]'
+                    : 'bg-[var(--noether-bg-input)] border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)]'
                 }`}
               />
             );
@@ -163,7 +163,7 @@ export const TableGridPicker = forwardRef<TableGridPickerHandle, TableGridPicker
       </div>
 
       {/* Dimension Label (standard font, centered, no 'Table' suffix) */}
-      <div className="text-center text-xs font-medium text-[var(--noether-text-primary,#fff)] pt-0.5">
+      <div className="text-center text-xs font-normal text-[var(--noether-text-primary)] pt-0.5">
         {hovered.cols} × {hovered.rows}
       </div>
     </div>
