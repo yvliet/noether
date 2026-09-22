@@ -107,17 +107,7 @@ export default class CustomHistoryExtension extends Extension {
       render: () => <HistoryTimelineView />,
     });
 
-    // 2. Register Document Header Action Button
-    this.registerDocumentHeaderAction({
-      id: 'open-history',
-      title: 'Version history',
-      icon: () => <ClockIcon size={14} />,
-      onClick: () => {
-        this.app.workspace.setActiveSidebarTab('right', 'history');
-      },
-    });
-
-    // 3. Listen to Document Save Events for Debounced Snapshots
+    // 2. Listen to Document Save Events for Debounced Snapshots
     this.registerEvent(
       this.app.workspace.eventBus.on('document:saved', async ({ path }) => {
         if (path) {

@@ -31,7 +31,6 @@ import {
   ArrowRight01Icon,
   BookOpen01Icon,
   Edit02Icon,
-  Bookmark01Icon,
   Search01Icon,
   Tag01Icon,
   ChevronDownIcon,
@@ -175,7 +174,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
   const createNewNote = useDocumentStore((s) => s.createNewNote);
   const setActiveDocumentById = useDocumentStore((s) => s.setActiveDocumentById);
   const updateDocumentTitleInMemory = useDocumentStore((s) => s.updateDocumentTitleInMemory);
-  const toggleBookmark = useDocumentStore((s) => s.toggleBookmark);
   const renameDocument = useDocumentStore((s) => s.renameDocument);
   const updateProperties = useDocumentStore((s) => s.updateProperties);
 
@@ -1654,28 +1652,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
             }`}
           >
             {effectiveReadingMode ? <BookOpen01Icon size={14} /> : <Edit02Icon size={14} />}
-          </button>
-
-          <button
-            onClick={async () => {
-              if (!currentDoc) return;
-              await toggleBookmark(currentDoc.id);
-              showToast(
-                currentDoc.is_bookmarked
-                  ? `Removed bookmark: "${currentDoc.title || 'Untitled'}"`
-                  : `Bookmarked: "${currentDoc.title || 'Untitled'}"`,
-                'info'
-              );
-            }}
-            disabled={!currentDoc}
-            title={currentDoc?.is_bookmarked ? 'Remove bookmark' : 'Bookmark note'}
-            className={`noether-toolbar-btn ${
-              currentDoc?.is_bookmarked
-                ? '!text-[#f59e0b] hover:!text-[#fbbf24]'
-                : ''
-            }`}
-          >
-            <Bookmark01Icon size={14} className={currentDoc?.is_bookmarked ? 'fill-current' : ''} />
           </button>
 
           <button
