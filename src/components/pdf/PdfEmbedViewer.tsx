@@ -2,6 +2,9 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import {
   DashboardSquare01Icon,
+  LeftToRightListBulletIcon,
+  ArrowDown01Icon,
+  ArrowRight02Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   MinusSignIcon,
@@ -102,7 +105,13 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [sidebarMode, setSidebarMode] = useState<PdfSidebarMode>('thumbnails');
+  const [revealedPageNumber, setRevealedPageNumber] = useState<number | null>(null);
   const [isPresenting, setIsPresenting] = useState<boolean>(false);
+
+  // Sidebar (drawer options) dropdown menu state
+  const [isSidebarMenuOpen, setIsSidebarMenuOpen] = useState(false);
+  const sidebarMenuTriggerRef = useRef<HTMLButtonElement>(null);
+  const [sidebarMenuPos, setSidebarMenuPos] = useState({ top: 0, left: 0 });
 
   // Zoom dropdown menu state
   const [isZoomMenuOpen, setIsZoomMenuOpen] = useState(false);
@@ -193,17 +202,19 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     return () => window.removeEventListener('resize', handleResize);
   }, [recomputeFitScale]);
 
-  // Close zoom dropdown on outside click
+  // Close dropdowns on outside click or Escape
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const targetEl = e.target as HTMLElement;
       if (!targetEl.closest('[data-pdf-dropdown]') && !targetEl.closest('[data-pdf-trigger]')) {
         setIsZoomMenuOpen(false);
+        setIsSidebarMenuOpen(false);
       }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsZoomMenuOpen(false);
+        setIsSidebarMenuOpen(false);
       }
     };
     window.addEventListener('mousedown', handleGlobalClick);
@@ -240,6 +251,15 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
   const handleZoomOut = () => {
     setZoomMode('custom');
     setScale((prev) => Math.max(0.3, prev * 0.8));
+  };
+
+  const openSidebarMenu = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!sidebarMenuTriggerRef.current) return;
+    const rect = sidebarMenuTriggerRef.current.getBoundingClientRect();
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - 228));
+    setSidebarMenuPos({ top: rect.bottom + 4, left });
+    setIsSidebarMenuOpen((prev) => !prev);
   };
 
   const openZoomMenu = (e: React.MouseEvent) => {
@@ -313,18 +333,37 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
         className="h-8 px-2.5 flex items-center justify-between bg-[#1a1a1a] border-b border-[#282828] text-xs text-[#888888] shrink-0 select-none"
       >
         {/* Left Actions: Drawer toggle & mode */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5">
           <button
             type="button"
             onClick={() => setIsSidebarOpen((prev) => !prev)}
-            data-tooltip={isSidebarOpen ? 'Close thumbnail drawer' : 'Open thumbnail drawer'}
-            aria-label={isSidebarOpen ? 'Close thumbnail drawer' : 'Open thumbnail drawer'}
+            data-tooltip={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
+            aria-label={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
             data-active={isSidebarOpen ? 'true' : undefined}
             className={`noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white flex items-center justify-center transition-none cursor-pointer ${
               isSidebarOpen ? 'text-white bg-[#2e2e2e]' : 'text-[#999999]'
             }`}
           >
-            <DashboardSquare01Icon size={13} />
+            {sidebarMode === 'thumbnails' ? (
+              <DashboardSquare01Icon size={13} />
+            ) : (
+              <LeftToRightListBulletIcon size={13} />
+            )}
+          </button>
+
+          <button
+            ref={sidebarMenuTriggerRef}
+            data-pdf-trigger="sidebar"
+            type="button"
+            onClick={openSidebarMenu}
+            data-tooltip="Drawer options"
+            aria-label="Drawer options"
+            data-active={isSidebarMenuOpen ? 'true' : undefined}
+            className={`noether-toolbar-btn w-[18px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white flex items-center justify-center transition-none cursor-pointer ${
+              isSidebarMenuOpen ? 'text-white bg-[#2e2e2e]' : 'text-[#999999]'
+            }`}
+          >
+            <ArrowDown01Icon size={11} />
           </button>
 
           <div className="w-[1px] h-3 bg-[#333333] mx-0.5 shrink-0" />
@@ -517,6 +556,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
               currentPage={currentPage}
               outline={pdfData.outline || []}
               pageInfos={pdfData.pageInfos || []}
+              revealedPageNumber={revealedPageNumber}
               onSelectPage={(pageNum) => {
                 handlePageChange(pageNum);
               }}
@@ -525,6 +565,86 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
           </div>
         )}
       </div>
+
+      {/* Portaled Sidebar Mode Dropdown (Drawer Options) */}
+      {isSidebarMenuOpen &&
+        createPortal(
+          <div
+            data-pdf-dropdown="sidebar"
+            data-noether-popover="true"
+            style={{
+              position: 'fixed',
+              top: `${sidebarMenuPos.top}px`,
+              left: `${sidebarMenuPos.left}px`,
+              zIndex: 99999,
+              background: 'var(--noether-bg-popover, var(--noether-bg-card))',
+              border: '1px solid var(--noether-border-base)',
+              boxShadow: 'var(--noether-shadow-2)',
+            }}
+            className="w-[220px] rounded-lg p-1 text-xs text-[var(--noether-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
+          >
+            <button
+              type="button"
+              onClick={() => {
+                setSidebarMode('thumbnails');
+                setIsSidebarOpen(true);
+                setIsSidebarMenuOpen(false);
+              }}
+              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                sidebarMode === 'thumbnails' && isSidebarOpen
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 truncate">
+                <DashboardSquare01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
+                <span className="truncate">Thumbnails</span>
+              </div>
+              {sidebarMode === 'thumbnails' && isSidebarOpen && (
+                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSidebarMode('outline');
+                setIsSidebarOpen(true);
+                setIsSidebarMenuOpen(false);
+              }}
+              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                sidebarMode === 'outline' && isSidebarOpen
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 truncate">
+                <LeftToRightListBulletIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
+                <span className="truncate">Table of contents</span>
+              </div>
+              {sidebarMode === 'outline' && isSidebarOpen && (
+                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
+              )}
+            </button>
+
+            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 mx-1 shrink-0" />
+
+            <button
+              type="button"
+              onClick={() => {
+                setSidebarMode('outline');
+                setIsSidebarOpen(true);
+                setRevealedPageNumber(currentPage);
+                setIsSidebarMenuOpen(false);
+              }}
+              className="w-full px-2.5 py-1.5 rounded-[5px] flex items-center gap-2.5 text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer select-none transition-none"
+            >
+              <ArrowRight02Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
+              <span className="truncate">Reveal page in table of contents</span>
+            </button>
+          </div>,
+          document.body
+        )}
 
       {/* Portaled Zoom Preset Dropdown (Matching SortDropdown style) */}
       {isZoomMenuOpen &&
