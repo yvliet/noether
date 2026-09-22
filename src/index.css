@@ -117,8 +117,8 @@
   --noether-bg-ribbon: #111111;
   --noether-bg-sidebar: #151515;
   --noether-bg-sidebar-gradient: #151515;
-  --noether-bg-sidebar-hover: #1f1f1f;
-  --noether-bg-sidebar-active: #272727;
+  --noether-bg-sidebar-hover: rgba(255, 255, 255, 0.05);
+  --noether-bg-sidebar-active: rgba(255, 255, 255, 0.09);
   --noether-bg-main: #1c1c1c;
   --noether-bg-main-gradient: #1c1c1c;
   --noether-bg-card: #222222;
@@ -132,8 +132,8 @@
   --noether-tab-corner-fill: #1c1c1c;
   --noether-tab-corner-hover-fill: #232323;
   --noether-bg-statusbar: #1f1f1f;
-  --noether-btn-hover-bg: rgba(255, 255, 255, 0.06);
-  --noether-btn-active-bg: #272727;
+  --noether-btn-hover-bg: rgba(255, 255, 255, 0.05);
+  --noether-btn-active-bg: rgba(255, 255, 255, 0.09);
 
   /* Border tokens */
   --noether-border-subtle: #202020;

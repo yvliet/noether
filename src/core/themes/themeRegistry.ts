@@ -392,8 +392,8 @@ class ThemeRegistry {
       '--noether-bg-topbar': tokens.bgTopBar,
       '--noether-bg-ribbon': tokens.bgRibbon || tokens.bgSidebar,
       '--noether-bg-sidebar': tokens.bgSidebar,
-      '--noether-bg-sidebar-hover': tokens.bgSidebarHover,
-      '--noether-bg-sidebar-active': tokens.bgSidebarActive,
+      '--noether-bg-sidebar-hover': tokens.bgSidebarHover || (isLightMode ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)'),
+      '--noether-bg-sidebar-active': tokens.bgSidebarActive || (isLightMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.09)'),
       '--noether-bg-main': tokens.bgMain,
       '--noether-bg-card': tokens.bgCard,
       '--noether-bg-card-hover': tokens.bgCardHover,
@@ -408,8 +408,8 @@ class ThemeRegistry {
       '--noether-bg-statusbar': tokens.bgStatusBar || tokens.bgCard,
 
       // Button interactive tokens
-      '--noether-btn-hover-bg': tokens.btnHoverBg || (isLightMode ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.06)'),
-      '--noether-btn-active-bg': tokens.btnActiveBg || (isLightMode ? 'rgba(0, 0, 0, 0.06)' : '#272727'),
+      '--noether-btn-hover-bg': tokens.btnHoverBg || (isLightMode ? 'rgba(0, 0, 0, 0.04)' : 'rgba(255, 255, 255, 0.05)'),
+      '--noether-btn-active-bg': tokens.btnActiveBg || (isLightMode ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.09)'),
 
       // Borders
       '--noether-border-subtle': tokens.borderSubtle,
