@@ -71,8 +71,8 @@ export const SidebarActionButton = React.forwardRef<HTMLButtonElement, SidebarAc
           disabled
             ? 'opacity-35 text-[var(--noether-text-muted,#888)] cursor-not-allowed pointer-events-none'
             : isActive
-            ? 'text-[var(--noether-text-primary,#fff)] bg-[var(--noether-bg-card-hover,rgba(255,255,255,0.08))]'
-            : 'text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary,#fff)] hover:bg-[var(--noether-bg-card-hover,rgba(255,255,255,0.08))]'
+            ? 'text-[var(--noether-text-primary,#fff)] bg-[var(--noether-bg-sidebar-active,#272727)]'
+            : 'text-[var(--noether-text-muted,#888)] hover:text-[var(--noether-text-primary,#fff)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)]'
         } ${className}`.trim()}
         {...props}
       >

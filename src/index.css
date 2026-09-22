@@ -1806,7 +1806,7 @@ a.noether-btn::after {
 
 .noether-toolbar-btn:hover:not(:disabled) {
   color: var(--noether-text-primary, #ffffff);
-  background-color: var(--noether-btn-hover-bg, rgba(255, 255, 255, 0.1));
+  background-color: var(--noether-btn-hover-bg, var(--noether-bg-sidebar-hover, #1f1f1f));
 }
 
 .noether-toolbar-btn.active,

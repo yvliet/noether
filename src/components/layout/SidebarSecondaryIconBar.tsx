@@ -309,8 +309,8 @@ export const SidebarSecondaryIconBar: React.FC<SidebarSecondaryIconBarProps> = R
               title={item.title}
               className={`w-7 h-7 rounded-md flex items-center justify-center cursor-pointer shrink-0 transition-none ${
                 isActive
-                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] shadow-xs'
-                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-btn-hover-bg)]'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-bg-sidebar-active,#272727)]'
+                  : 'text-[var(--noether-text-muted)] hover:text-[var(--noether-text-primary)] hover:bg-[var(--noether-bg-sidebar-hover,#1f1f1f)]'
               }`}
             >
               {renderIcon(item)}
