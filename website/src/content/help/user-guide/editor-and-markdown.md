@@ -196,5 +196,4 @@ Type `/` on any blank line to open the slash command menu:
 - `/callout`: Insert structured callout box
 - `/math`: Insert LaTeX display formula block
 - `/code`: Insert syntax-highlighted code block
-- `/sketch`: Insert vector drawing canvas
 - `/task`: Insert checklist task item

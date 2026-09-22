@@ -28,7 +28,7 @@ Learn the foundational writing and organization tools in Noether:
 ## 3. Core Extensions
 ---
 
-Explore dedicated guides for all 15 built-in extensions:
+Explore dedicated guides for all 14 built-in extensions:
 
 - **[[Backlinks]]**: View linked and unlinked mentions, and drag links into notes.
 - **[[Bookmarks]]**: Pin notes, canvas boards, and folders for fast access.
@@ -41,7 +41,6 @@ Explore dedicated guides for all 15 built-in extensions:
 - **[[More Icons]]**: Custom icons and colors for files and folders.
 - **[[Outline]]**: Document heading outline and table of contents.
 - **[[Properties]]**: Frontmatter properties editor with typed inputs.
-- **[[Sketch]]**: Freehand vector drawing and handwriting.
 - **[[Sync]]**: Multi-device sync with Supabase, Turso, Cloudflare D1, or REST.
 - **[[Tags]]**: Tag pane, nested tags (`#work/project`), and tag filtering.
 - **[[Tasks]]**: Vault-wide checklist aggregation and kanban boards.

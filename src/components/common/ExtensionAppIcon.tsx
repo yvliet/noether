@@ -80,7 +80,6 @@ const FAST_STATIC_ICON_MAP: Record<string, React.ComponentType<any>> = {
   pencil: PencilEdit02Icon,
   'pencil-edit': PencilEdit02Icon,
   'pencil-edit-02': PencilEdit02Icon,
-  sketch: PencilEdit02Icon,
   download: Download01Icon,
   'download-01': Download01Icon,
   inbox: Download01Icon,

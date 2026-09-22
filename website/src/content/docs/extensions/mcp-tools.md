@@ -175,7 +175,6 @@ Below is the complete reference of tools registered by built-in core extensions:
 - **More Icons**: `more-icons_list`, `more-icons_get`, `more-icons_update_icon`, `more-icons_delete_icon`
 - **Outline**: `outline_get_headings`
 - **Properties**: `properties_get`, `properties_set`, `properties_delete`
-- **Freehand Sketch**: `sketch_get_document_drawings`, `sketch_export_svg`, `sketch_delete_drawings`
 - **Database Sync**: `sync_sync_now`, `sync_get_sync_status`, `sync_test_connection`
 - **Tags**: `tags_list_all`, `tags_get_tree`, `tags_get_documents_for_tag`
 - **Tasks**: `tasks_get_all`, `tasks_get_by_document`, `tasks_toggle_status`

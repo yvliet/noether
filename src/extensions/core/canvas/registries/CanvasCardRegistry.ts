@@ -2,7 +2,7 @@
  * @module CanvasCardRegistry
  * @description
  * Inversion of Control (IoC) registry enabling extensions to register custom card renderers
- * for Noether's infinite canvas (e.g. Kanban boards, 3D model viewers, Excalidraw sketches,
+ * for Noether's infinite canvas (e.g. Kanban boards, 3D model viewers, Excalidraw drawings,
  * interactive charts, specialized widgets).
  *
  * Decouples canvas card rendering from hardcoded file extension checks, allowing extensions

@@ -21,7 +21,6 @@ import marketplaceRaw from '../content/help/core-extensions/marketplace.md?raw';
 import moreIconsRaw from '../content/help/core-extensions/more-icons.md?raw';
 import outlineRaw from '../content/help/core-extensions/outline.md?raw';
 import propertiesRaw from '../content/help/core-extensions/properties.md?raw';
-import sketchRaw from '../content/help/core-extensions/sketch.md?raw';
 import syncRaw from '../content/help/core-extensions/sync.md?raw';
 import tagsRaw from '../content/help/core-extensions/tags.md?raw';
 import tasksRaw from '../content/help/core-extensions/tasks.md?raw';
@@ -205,14 +204,6 @@ export const HELP_TREE: DocNode[] = [
         aliases: ['Properties', 'Frontmatter', 'YAML', 'Metadata'],
         portal: 'help',
         content: propertiesRaw,
-      },
-      {
-        id: 'sketch',
-        title: 'Sketch',
-        slug: 'sketch',
-        aliases: ['Sketch', 'Drawing', 'Handwriting', 'Vector Sketch'],
-        portal: 'help',
-        content: sketchRaw,
       },
       {
         id: 'sync',

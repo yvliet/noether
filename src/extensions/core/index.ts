@@ -10,7 +10,6 @@ import { PropertiesExtension, PROPERTIES_MANIFEST } from './properties/Propertie
 import { BookmarksExtension, BOOKMARKS_MANIFEST } from './bookmarks/BookmarksExtension';
 import { MarketplaceExtension, MARKETPLACE_MANIFEST } from './marketplace/MarketplaceExtension';
 import { MoreIconsExtension, MORE_ICONS_MANIFEST } from './more-icons/MoreIconsExtension';
-import { SketchExtension, SKETCH_MANIFEST } from './sketch/SketchExtension';
 import { SyncExtension, SYNC_MANIFEST } from './sync/SyncExtension';
 import { HistoryExtension, HISTORY_MANIFEST } from './history/HistoryExtension';
 import { CoversExtension, COVERS_MANIFEST } from './covers/CoversExtension';
@@ -29,6 +28,5 @@ export function registerAllCoreExtensions(app: NoetherApp): void {
   app.extensions.registerExtension(OUTLINE_MANIFEST, OutlineExtension);
   app.extensions.registerExtension(PROPERTIES_MANIFEST, PropertiesExtension);
   app.extensions.registerExtension(MORE_ICONS_MANIFEST, MoreIconsExtension);
-  app.extensions.registerExtension(SKETCH_MANIFEST, SketchExtension);
   app.extensions.registerExtension(COVERS_MANIFEST, CoversExtension);
 }

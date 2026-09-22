@@ -131,7 +131,7 @@ function createFallbackIcon(name: string, iconUrl?: string): React.ReactNode {
     if (lower === 'brain-02' || lower === 'brain' || lower === 'fsrs') {
       return React.createElement(Brain02Icon, { size: 18, className: 'text-[#ec4899]' });
     }
-    if (lower === 'pencil' || lower === 'pencil-edit' || lower === 'sketch2text' || lower === 'sketch') {
+    if (lower === 'pencil' || lower === 'pencil-edit') {
       return React.createElement(PencilEdit02Icon, { size: 18, className: 'text-[#38bdf8]' });
     }
     if (lower === 'cloud' || lower === 'sync' || lower === 'database' || lower === 'databasesync') {
@@ -260,7 +260,8 @@ const CORE_EXTENSION_IDS = new Set([
   'marketplace',
   'more-icons',
   'iconify',
-  'sketch',
+  'covers',
+  'history',
 ]);
 
 /**
@@ -281,9 +282,6 @@ function normalizeExtensionLookupKey(id: string): string {
   }
   if (stripped === 'copilot') {
     return 'copilot';
-  }
-  if (stripped === 'sketch2text' || stripped === 'sketch-to-text') {
-    return 'sketch2text';
   }
   return stripped;
 }
