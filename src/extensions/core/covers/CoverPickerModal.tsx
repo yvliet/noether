@@ -253,7 +253,7 @@ export const CoverPickerModal: React.FC<CoverPickerModalProps> = ({
                 onClick={() => {
                   onRemove();
                 }}
-                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-rose-400 hover:bg-rose-500/10 cursor-pointer text-center transition-none"
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs text-rose-500 hover:text-rose-400 hover:bg-rose-500/15 active:bg-rose-500/25 cursor-pointer text-center transition-none"
               >
                 <Delete02Icon size={13} />
                 <span>Remove cover</span>

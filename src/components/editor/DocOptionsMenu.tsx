@@ -571,7 +571,7 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
           hasColor
             ? ''
             : isDanger
-            ? 'text-rose-500 group-hover:text-rose-600'
+            ? 'text-rose-500 group-hover:text-rose-400'
             : 'text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)]'
         } shrink-0`.trim(),
       });
@@ -1063,9 +1063,9 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
                   type="button"
                   onMouseEnter={() => setActiveSubmenu(null)}
                   onClick={handleDelete}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 flex items-center gap-2.5 cursor-pointer group"
+                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/15 hover:text-rose-400 active:bg-rose-500/25 flex items-center gap-2.5 cursor-pointer group"
                 >
-                  <Delete02Icon size={14} className="text-rose-500 group-hover:text-rose-600 shrink-0" />
+                  <Delete02Icon size={14} className="text-rose-500 group-hover:text-rose-400 shrink-0" />
                   <span>Delete file</span>
                 </button>
 
@@ -1080,7 +1080,7 @@ const DocOptionsMenuDropdown: React.FC<DocOptionsMenuDropdownProps> = ({
                         action.onClick(app, doc);
                         setIsOpen(false);
                       }}
-                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 flex items-center gap-2.5 cursor-pointer group"
+                      className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-rose-500 hover:bg-rose-500/15 hover:text-rose-400 active:bg-rose-500/25 flex items-center gap-2.5 cursor-pointer group"
                     >
                       {renderActionIcon(action.icon, true)}
                       <span>{titleStr}</span>

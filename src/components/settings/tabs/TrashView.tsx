@@ -207,7 +207,7 @@ export const TrashView: React.FC<TrashViewProps> = React.memo(({ onClose }) => {
                         });
                       }}
                       title="Delete permanently"
-                      className="p-1.5 text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-[var(--noether-bg-card-hover)] rounded-[5px] cursor-pointer"
+                      className="p-1.5 text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-rose-500/15 rounded-[5px] cursor-pointer"
                     >
                       <Delete02Icon size={14} />
                     </button>

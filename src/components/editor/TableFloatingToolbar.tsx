@@ -41,7 +41,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().deleteRow().run()}
           title="Delete current row"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/10 cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-rose-500/15 active:bg-rose-500/25 cursor-pointer flex items-center gap-1"
         >
           <span>- Row</span>
         </button>
@@ -71,7 +71,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().deleteColumn().run()}
           title="Delete current column"
-          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted)] hover:text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/10 cursor-pointer flex items-center gap-1"
+          className="px-2 py-1 rounded-[4px] text-[11px] text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-rose-500/15 active:bg-rose-500/25 cursor-pointer flex items-center gap-1"
         >
           <span>- Col</span>
         </button>
@@ -93,7 +93,7 @@ export const TableFloatingToolbar: React.FC<TableFloatingToolbarProps> = ({ edit
           type="button"
           onClick={() => editor.chain().focus().deleteTable().run()}
           title="Delete entire table"
-          className="p-1 rounded-[4px] text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/15 cursor-pointer flex items-center justify-center"
+          className="p-1 rounded-[4px] text-rose-500 hover:text-rose-400 hover:bg-rose-500/15 active:bg-rose-500/25 cursor-pointer flex items-center justify-center"
         >
           <Delete02Icon size={14} />
         </button>

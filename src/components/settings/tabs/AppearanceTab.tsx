@@ -166,7 +166,7 @@ const ThemeCard: React.FC<ThemeCardProps> = React.memo(({
                   onDelete(theme.id, theme.name);
                 }}
                 title="Delete custom theme"
-                className="p-1 text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-[var(--noether-btn-hover-bg)] rounded cursor-pointer"
+                className="p-1 text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-rose-500/15 rounded cursor-pointer"
               >
                 <Delete02Icon size={13} />
               </button>

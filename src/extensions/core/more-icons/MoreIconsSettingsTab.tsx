@@ -456,7 +456,7 @@ export const MoreIconsSettingsTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeIcon(item.itemId)}
-                      className="p-1.5 text-[#777] hover:text-rose-400 hover:bg-rose-500/10 rounded-[5px] cursor-pointer"
+                      className="p-1.5 text-[#777] hover:text-rose-400 hover:bg-rose-500/15 rounded-[5px] cursor-pointer"
                       title="Remove custom icon"
                     >
                       <Delete02Icon size={13} />

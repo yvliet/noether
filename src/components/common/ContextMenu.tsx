@@ -142,7 +142,9 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
           item.disabled
             ? 'opacity-40 cursor-not-allowed text-[var(--noether-text-muted,#777)]'
             : item.isDanger
-            ? 'text-[var(--noether-danger,#ef4444)] hover:bg-[var(--noether-danger,#ef4444)]/10 hover:text-[var(--noether-danger,#ef4444)]'
+            ? isFocused || isPinned
+              ? 'bg-rose-500/20 text-rose-300'
+              : 'text-rose-500 hover:bg-rose-500/15 hover:text-rose-400 active:bg-rose-500/25'
             : isFocused || isPinned
             ? 'bg-[var(--noether-btn-active-bg)] text-[var(--noether-text-primary)]'
             : isSubmenuOpen
@@ -154,7 +156,9 @@ const MenuItemRow: React.FC<MenuItemProps> = React.memo(({
           <span
             className={`w-3.5 h-3.5 shrink-0 flex items-center justify-center ${
               item.isDanger
-                ? 'text-[var(--noether-danger,#ef4444)]'
+                ? isFocused || isPinned
+                  ? 'text-rose-300'
+                  : 'text-rose-500 group-hover:text-rose-400'
                 : 'text-[var(--noether-text-muted,#8b8e95)] group-hover:text-[var(--noether-text-primary)]'
             }`}
           >

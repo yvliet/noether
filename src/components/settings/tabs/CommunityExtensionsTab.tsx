@@ -261,7 +261,7 @@ export const CommunityExtensionsTab: React.FC<CommunityExtensionsTabProps> = Rea
                     type="button"
                     onClick={() => handleUninstallExtension(ext)}
                     title={`Uninstall ${ext.name}`}
-                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-[var(--noether-danger)] hover:bg-[var(--noether-btn-hover-bg)] cursor-pointer"
+                    className="w-7 h-7 rounded-[5px] flex items-center justify-center text-[var(--noether-text-muted)] hover:text-rose-400 hover:bg-rose-500/15 cursor-pointer"
                   >
                     <Delete02Icon size={14} />
                   </button>

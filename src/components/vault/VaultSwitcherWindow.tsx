@@ -283,9 +283,9 @@ export const VaultSwitcherWindow: React.FC = React.memo(() => {
                               setActiveMenuPath(null);
                               handleRemoveRecent(rv.path);
                             }}
-                            className="w-full text-left px-2.5 py-1.5 hover:bg-[var(--noether-bg-card-hover)] rounded-md text-[var(--noether-danger,#ef4444)] hover:text-red-400 flex items-center gap-2.5 cursor-pointer"
+                            className="w-full text-left px-2.5 py-1.5 rounded-md text-rose-500 hover:text-rose-400 hover:bg-rose-500/15 flex items-center gap-2.5 cursor-pointer group"
                           >
-                            <Cancel01Icon size={14} className="text-[var(--noether-danger,#ef4444)]" />
+                            <Cancel01Icon size={14} className="text-rose-500 group-hover:text-rose-400" />
                             <span>Remove from list</span>
                           </button>
                         </div>,

@@ -165,7 +165,7 @@ export const IconChipView: React.FC<NodeViewProps> = ({
                 deleteNode();
                 setIsPopoverOpen(false);
               }}
-              className="flex items-center gap-1 text-[11px] text-[#ef4444] hover:text-[#f87171] hover:bg-[#ef4444]/10 px-1.5 py-0.5 rounded cursor-pointer"
+              className="flex items-center gap-1 text-[11px] text-rose-500 hover:text-rose-400 hover:bg-rose-500/15 active:bg-rose-500/25 px-1.5 py-0.5 rounded cursor-pointer"
             >
               <Delete02Icon size={12} />
               <span>Remove</span>
