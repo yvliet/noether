@@ -980,14 +980,17 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       return;
     }
 
-    // Instant dismissal once cursor leaves the link boundary to an external element
+    // 200ms grace period dismissal once cursor leaves the link boundary to allow smooth movement into preview
     if (!isMouseOverPreviewRef.current) {
       if (hoverCloseTimerRef.current) {
         clearTimeout(hoverCloseTimerRef.current);
-        hoverCloseTimerRef.current = null;
       }
-      setWikilinkHoverPreview(null);
-      hoveredLinkRef.current = null;
+      hoverCloseTimerRef.current = setTimeout(() => {
+        if (!isMouseOverPreviewRef.current) {
+          setWikilinkHoverPreview(null);
+          hoveredLinkRef.current = null;
+        }
+      }, 200);
     }
   }, []);
 
@@ -1003,7 +1006,6 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
     isMouseOverPreviewRef.current = false;
     if (hoverCloseTimerRef.current) {
       clearTimeout(hoverCloseTimerRef.current);
-      hoverCloseTimerRef.current = null;
     }
 
     // Moving back to the active wikilink: retain preview
@@ -1012,9 +1014,12 @@ export const EditorCanvas: React.FC<EditorCanvasProps> = React.memo(({ pane = 'm
       return;
     }
 
-    // Instant dismissal once leaving the preview card
-    setWikilinkHoverPreview(null);
-    hoveredLinkRef.current = null;
+    hoverCloseTimerRef.current = setTimeout(() => {
+      if (!isMouseOverPreviewRef.current) {
+        setWikilinkHoverPreview(null);
+        hoveredLinkRef.current = null;
+      }
+    }, 200);
   }, []);
 
   // Dismiss hover preview on active doc change or tab switch

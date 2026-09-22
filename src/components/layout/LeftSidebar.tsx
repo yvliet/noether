@@ -239,26 +239,57 @@ export const LeftSidebar: React.FC = React.memo(() => {
   }, [leftSidebarWidth, setLeftSidebarWidth]);
 
 
+  const activeDocId = useDocumentStore((s) => s.activeDocument?.id);
+  const prevActiveDocIdRef = useRef<string | null>(null);
+
+  // Auto-scroll active document into view in the file tree when active note changes
+  useEffect(() => {
+    if (!activeDocId || activeDocId === prevActiveDocIdRef.current) return;
+    prevActiveDocIdRef.current = activeDocId;
+
+    if (activeLeftView === 'files') {
+      const node = document.getElementById(`noether-tree-item-${activeDocId}`);
+      if (node) {
+        node.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [activeDocId, activeLeftView]);
+
   // Keyboard shortcut listener for file tree selection
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+      const activeEl = document.activeElement as HTMLElement | null;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable ||
         target.closest('[contenteditable="true"]') ||
-        target.closest('form')
+        target.closest('form') ||
+        (activeEl && (
+          activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.isContentEditable ||
+          activeEl.closest('[contenteditable="true"]') ||
+          activeEl.closest('form')
+        ))
       ) {
         return;
       }
 
       const { selectedDocIds: currentSelected, lastSelectedDocId } = useDocumentStore.getState();
 
+      const sidebarEl = document.querySelector('[data-sidebar="true"]');
+      const isInsideSidebar = sidebarEl && (
+        sidebarEl.contains(target) ||
+        sidebarEl.matches(':hover') ||
+        sidebarEl.contains(document.activeElement) ||
+        document.activeElement === document.body ||
+        document.activeElement?.getAttribute('role') === 'treeitem'
+      );
+
       // Ctrl+A / Cmd+A: Select all visible items (only when interacting with sidebar)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar) {
           e.preventDefault();
           const visibleIds = getVisibleTreeItemIds();
@@ -271,8 +302,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Ctrl+C / Cmd+C: Copy selected item(s) to clipboard
       if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C')) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar && currentSelected.length > 0) {
           e.preventDefault();
           useFileClipboardStore.getState().copy(currentSelected);
@@ -282,8 +311,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Ctrl+X / Cmd+X: Cut selected item(s) to clipboard
       if ((e.ctrlKey || e.metaKey) && (e.key === 'x' || e.key === 'X')) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar && currentSelected.length > 0) {
           e.preventDefault();
           useFileClipboardStore.getState().cut(currentSelected);
@@ -293,8 +320,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Ctrl+V / Cmd+V: Paste items into selected folder or root
       if ((e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V')) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar) {
           const { mode, itemIds } = useFileClipboardStore.getState();
           let targetParentId: string | null = null;
@@ -328,8 +353,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Ctrl+D / Cmd+D: Duplicate selected item(s)
       if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar && currentSelected.length > 0) {
           e.preventDefault();
           useDocumentStore.getState().duplicateDocuments(currentSelected);
@@ -339,8 +362,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // F2: Trigger inline rename on active tree item
       if (e.key === 'F2' && currentSelected.length > 0) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar) {
           e.preventDefault();
           useDocumentStore.getState().setEditingDocId(currentSelected[0]);
@@ -350,8 +371,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Enter: Open document or toggle folder expand/collapse
       if (e.key === 'Enter' && currentSelected.length === 1) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar) {
           const targetDoc = documents.find((d) => d.id === currentSelected[0]);
           if (targetDoc) {
@@ -369,8 +388,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // ArrowRight: If folder closed → expand; if open → select first child
       if (e.key === 'ArrowRight' && currentSelected.length === 1 && !e.ctrlKey && !e.metaKey) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover'));
         if (isInsideSidebar) {
           const targetDoc = documents.find((d) => d.id === currentSelected[0]);
           if (targetDoc && targetDoc.is_folder) {
@@ -395,8 +412,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // ArrowLeft: If folder open → collapse; if closed folder or note → select parent folder
       if (e.key === 'ArrowLeft' && currentSelected.length === 1 && !e.ctrlKey && !e.metaKey) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover'));
         if (isInsideSidebar) {
           const targetDoc = documents.find((d) => d.id === currentSelected[0]);
           if (targetDoc) {
@@ -416,8 +431,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Home / End: Jump to first or last item in visible list
       if ((e.key === 'Home' || e.key === 'End') && currentSelected.length > 0 && !e.ctrlKey && !e.metaKey) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover'));
         if (isInsideSidebar) {
           e.preventDefault();
           const visibleIds = getVisibleTreeItemIds();
@@ -455,8 +468,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // Delete / Backspace: Delete selected items (only when interacting with sidebar)
       if ((e.key === 'Delete' || e.key === 'Backspace') && currentSelected.length > 0) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover') || sidebarEl.contains(document.activeElement));
         if (isInsideSidebar) {
           e.preventDefault();
           const count = currentSelected.length;
@@ -484,8 +495,6 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
       // ArrowUp / ArrowDown navigation
       if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && currentSelected.length > 0) {
-        const sidebarEl = document.querySelector('[data-sidebar="true"]');
-        const isInsideSidebar = sidebarEl && (sidebarEl.contains(target) || sidebarEl.matches(':hover'));
         if (isInsideSidebar) {
           e.preventDefault();
           const currentAnchor = lastSelectedDocId || currentSelected[currentSelected.length - 1];
@@ -512,7 +521,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
 
           const targetNode = document.getElementById(`noether-tree-item-${nextId}`);
           if (targetNode) {
-            targetNode.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            targetNode.scrollIntoView({ block: 'nearest' });
           }
         }
       }
@@ -530,6 +539,7 @@ export const LeftSidebar: React.FC = React.memo(() => {
     setActiveDocumentById,
     showToast,
     openConfirmDialog,
+    cancelFolderSelection,
   ]);
 
   // System Clipboard Paste listener for external files

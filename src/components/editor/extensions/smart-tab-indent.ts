@@ -617,6 +617,42 @@ export const SmartTabIndent = Extension.create({
       'Mod-End': () => handleDocEnd(this.editor, false),
 
       'Mod-Shift-End': () => handleDocEnd(this.editor, true),
+
+      // Code Block: Mod-Enter to create a new paragraph below code block
+      'Mod-Enter': () => {
+        const { state } = this.editor;
+        const { $from } = state.selection;
+        const parentType = $from.parent.type.name;
+        if (parentType === 'codeBlock' || parentType === 'code_block') {
+          const afterPos = $from.after();
+          return this.editor
+            .chain()
+            .focus()
+            .insertContentAt(afterPos, { type: 'paragraph' })
+            .setTextSelection(afterPos + 1)
+            .run();
+        }
+        return false;
+      },
+
+      // Code Block: ArrowDown at the end of a document-terminal code block appends a paragraph
+      ArrowDown: () => {
+        const { state, view } = this.editor;
+        const { selection, doc } = state;
+        const { $from } = selection;
+        const parentType = $from.parent.type.name;
+        if (parentType === 'codeBlock' || parentType === 'code_block') {
+          const isAtEnd = $from.parentOffset === $from.parent.content.size;
+          const afterPos = $from.after();
+          if (isAtEnd && afterPos >= doc.content.size) {
+            const tr = state.tr.insert(afterPos, state.schema.nodes.paragraph.create());
+            tr.setSelection(TextSelection.create(tr.doc, afterPos + 1));
+            view.dispatch(tr);
+            return true;
+          }
+        }
+        return false;
+      },
     };
   },
 });

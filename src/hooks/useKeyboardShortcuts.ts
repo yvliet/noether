@@ -9,9 +9,9 @@ import { platform } from '@/lib/platform/platformAdapter';
 function matchesHotkey(e: KeyboardEvent, hotkeyStr?: string): boolean {
   if (!hotkeyStr) return false;
   const parts = hotkeyStr.split('+').map((p) => p.trim().toLowerCase());
-  const needsCtrl = parts.includes('ctrl') || parts.includes('cmd');
+  const needsCtrl = parts.includes('ctrl') || parts.includes('cmd') || parts.includes('meta');
   const needsShift = parts.includes('shift');
-  const needsAlt = parts.includes('alt');
+  const needsAlt = parts.includes('alt') || parts.includes('option');
 
   const actualCtrl = e.ctrlKey || e.metaKey;
   const actualShift = e.shiftKey;
@@ -21,7 +21,7 @@ function matchesHotkey(e: KeyboardEvent, hotkeyStr?: string): boolean {
   if (needsShift !== actualShift) return false;
   if (needsAlt !== actualAlt) return false;
 
-  const nonModifiers = parts.filter((p) => !['ctrl', 'cmd', 'shift', 'alt'].includes(p));
+  const nonModifiers = parts.filter((p) => !['ctrl', 'cmd', 'meta', 'shift', 'alt', 'option'].includes(p));
   if (nonModifiers.length !== 1) return false;
 
   const targetKey = nonModifiers[0];
@@ -198,9 +198,15 @@ export function useKeyboardShortcuts() {
 
       // 4. Command Palette / Quick Open: Ctrl + K, Ctrl + P
       if (isMatch('workspace:command-palette', ['Ctrl+K', 'Ctrl+P']) || isMatch('workspace:quick-open', ['Ctrl+K', 'Ctrl+P'])) {
-        e.preventDefault();
-        ws.setIsCommandPaletteOpen(true);
-        return;
+        const isEditorFocused = Boolean(document.activeElement?.closest('.ProseMirror, .tiptap'));
+        const isKeyK = e.key === 'k' || e.key === 'K';
+        if (isEditorFocused && isKeyK && !e.shiftKey) {
+          // Allow TipTap MarkdownShortcuts to handle Ctrl+K for link creation
+        } else {
+          e.preventDefault();
+          ws.setIsCommandPaletteOpen(true);
+          return;
+        }
       }
 
       // If Command Palette is open, let its own handlers handle keyboard navigation
@@ -510,26 +516,33 @@ export function useKeyboardShortcuts() {
         }
       }
 
-      if (!isAnyEditorOrInput) {
-        const isBack =
-          isMatch('workspace:navigate-back', ['Alt+Left', 'Alt+ArrowLeft', 'Alt+A']) ||
-          ((e.key === 'ArrowLeft' || keyLower === 'a' || code === 'KeyA') && isAlt && !isCtrlOrMeta && !isShift);
+      // 19. History Navigation: Alt+Left / Alt+Right, Cmd+[ / Cmd+]
+      const isSingleLineInput =
+        target?.tagName === 'INPUT' ||
+        activeEl?.tagName === 'INPUT' ||
+        target?.tagName === 'MATH-FIELD' ||
+        activeEl?.tagName === 'MATH-FIELD';
 
-        if (isBack) {
-          e.preventDefault();
-          ws.navigateBack();
-          return;
-        }
+      const isBack =
+        isMatch('workspace:navigate-back', ['Alt+Left', 'Alt+ArrowLeft', 'Alt+A', 'Cmd+[', 'Ctrl+[']) ||
+        ((e.key === 'ArrowLeft' || keyLower === 'a' || code === 'KeyA') && isAlt && !isCtrlOrMeta && !isShift) ||
+        ((e.key === '[' || code === 'BracketLeft') && (e.metaKey || e.ctrlKey) && !isShift && !isAlt);
 
-        const isForward =
-          isMatch('workspace:navigate-forward', ['Alt+Right', 'Alt+ArrowRight', 'Alt+D']) ||
-          ((e.key === 'ArrowRight' || keyLower === 'd' || code === 'KeyD') && isAlt && !isCtrlOrMeta && !isShift);
+      if (isBack && !isSingleLineInput) {
+        e.preventDefault();
+        ws.navigateBack();
+        return;
+      }
 
-        if (isForward) {
-          e.preventDefault();
-          ws.navigateForward();
-          return;
-        }
+      const isForward =
+        isMatch('workspace:navigate-forward', ['Alt+Right', 'Alt+ArrowRight', 'Alt+D', 'Cmd+]', 'Ctrl+]']) ||
+        ((e.key === 'ArrowRight' || keyLower === 'd' || code === 'KeyD') && isAlt && !isCtrlOrMeta && !isShift) ||
+        ((e.key === ']' || code === 'BracketRight') && (e.metaKey || e.ctrlKey) && !isShift && !isAlt);
+
+      if (isForward && !isSingleLineInput) {
+        e.preventDefault();
+        ws.navigateForward();
+        return;
       }
     };
 

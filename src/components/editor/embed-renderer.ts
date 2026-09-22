@@ -936,17 +936,7 @@ export function renderEmbedWidget(
 
     img.onclick = (e: MouseEvent) => {
       if (e.button !== 0) return;
-      if (e.ctrlKey || e.metaKey || e.detail === 2) {
-        triggerLightbox(e);
-        return;
-      }
-      e.preventDefault();
-      e.stopPropagation();
-      document.dispatchEvent(
-        new CustomEvent('noether:focus-embed-code', {
-          detail: { target: rawTarget, cleanTarget: embed.target },
-        })
-      );
+      triggerLightbox(e);
     };
 
     imgWrapper.appendChild(img);

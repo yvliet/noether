@@ -120,7 +120,7 @@ export const TableExitBehavior = Extension.create({
         return exitTableAbove(editor);
       },
 
-      // 5. Enter in an empty trailing cell: exit table below only if in the last cell of the last row
+      // 5. Enter in table: advance to next row cell, add row if in last row, or exit if trailing empty cell
       Enter: ({ editor }) => {
         const { state } = editor;
         const { selection } = state;
@@ -140,9 +140,19 @@ export const TableExitBehavior = Extension.create({
         const isLastRow = $from.index(tableDepth) === tableNode.childCount - 1;
         const isLastCellInRow = $from.index(rowDepth) === rowNode.childCount - 1;
 
-        // Only exit if the cell is completely empty and in the last cell of the last row
+        // If in the last row and the cell is empty, exit table below
         if (isLastRow && isLastCellInRow && $from.parent.content.size === 0) {
           return exitTableBelow(editor);
+        }
+
+        // If in the last row and not empty, add a new row below
+        if (isLastRow) {
+          return editor.chain().focus().addRowAfter().goToNextCell().run();
+        }
+
+        // Navigate to next cell in the table
+        if (editor.commands.goToNextCell()) {
+          return true;
         }
 
         return false;

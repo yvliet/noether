@@ -91,8 +91,25 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
     <div
       data-tree-item-id={id}
       data-is-folder={isFolder ? 'true' : 'false'}
-      className={`select-none text-xs w-full rounded-md ${
-        isDropTarget ? 'bg-[#202020]' : ''
+      role="treeitem"
+      aria-expanded={isFolder ? isOpen : undefined}
+      aria-selected={isSelected || isActive}
+      aria-level={level + 1}
+      tabIndex={isSelected || isActive ? 0 : -1}
+      style={
+        isDropTarget && isFolder
+          ? {
+              marginLeft: `${level * 16}px`,
+              width: `calc(100% - ${level * 16}px)`,
+            }
+          : undefined
+      }
+      className={`select-none text-xs rounded-md ${
+        isDropTarget && isFolder
+          ? 'bg-[var(--noether-bg-sidebar-hover,#282828)] transition-none'
+          : isDropTarget
+          ? 'bg-[var(--noether-bg-sidebar-hover,#282828)] w-full'
+          : 'w-full'
       } ${className}`}
       {...dataAttributes}
     >
@@ -116,7 +133,9 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
         onDragEnter={isDisabled ? undefined : onDragEnter}
         onDragLeave={isDisabled ? undefined : onDragLeave}
         onDrop={isDisabled ? undefined : onDrop}
-        style={{ paddingLeft: `${8 + level * 16}px` }}
+        style={{
+          paddingLeft: isDropTarget && isFolder ? '8px' : `${8 + level * 16}px`,
+        }}
         className={`group flex items-center justify-between py-1.5 pr-2.5 my-0 rounded-md w-full overflow-visible ${
           isCut ? 'opacity-50 ' : ''
         }${
@@ -128,8 +147,8 @@ export const TreeNodeRow: React.FC<TreeNodeRowProps> = React.memo(({
             ? 'cursor-pointer opacity-40 bg-[var(--noether-bg-main,#1c1c1c)]'
             : isHighlighted
             ? 'cursor-pointer bg-[#82691b] text-white font-normal shadow-sm'
-            : isDropTarget
-            ? 'cursor-pointer bg-[var(--noether-bg-card-hover)] ring-1 ring-inset ring-[var(--noether-accent,#eb584d)]/60 text-[var(--noether-text-primary,#ffffff)] font-normal'
+            : isDropTarget && !isFolder
+            ? 'cursor-pointer bg-[var(--noether-bg-sidebar-hover)] text-[var(--noether-text-primary,#ffffff)] font-normal'
             : isSelected || isMultiSelected || (isActive && !isFolder) || isEditing
             ? 'cursor-pointer bg-[var(--noether-bg-sidebar-active)] text-[var(--noether-text-primary)] font-normal'
             : 'cursor-pointer text-[var(--noether-text-muted)] hover:bg-[var(--noether-bg-sidebar-hover)] hover:text-[var(--noether-text-primary)] font-normal'

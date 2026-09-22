@@ -13,6 +13,7 @@ import type {
 } from '@/core/registries/TabContextMenuRegistry';
 import { getDocumentPath } from '@/lib/db/documents';
 import { useContentScrolled } from '@/hooks/useContentScrolled';
+import { platform } from '@/lib/platform/platformAdapter';
 import {
   Cancel01Icon,
   PlusSignIcon,
@@ -21,6 +22,7 @@ import {
   SplitDownIcon,
   Copy01Icon,
   PinIcon,
+  Folder01Icon,
 } from '@/components/common/Icons';
 
 interface SplitTabHeaderProps {
@@ -356,6 +358,27 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
       if (doc) {
         items.push({ type: 'separator' });
         items.push({
+          id: 'reveal-tree',
+          title: 'Reveal in file tree',
+          icon: <Folder01Icon size={14} />,
+          onClick: () => {
+            const ws = useWorkspaceStore.getState();
+            if (!ws.isLeftSidebarOpen) ws.setIsLeftSidebarOpen(true);
+            ws.setActiveLeftView('files');
+            window.dispatchEvent(new CustomEvent('noether:reveal-tree-item', { detail: { id: doc.id } }));
+          },
+        });
+        items.push({
+          id: 'reveal-os',
+          title: platform.isMacOS() ? 'Reveal in Finder' : 'Reveal in File Explorer',
+          icon: <Folder01Icon size={14} />,
+          onClick: async () => {
+            const rel = getDocumentPath(doc, documents) + '.md';
+            const abs = vaultPath ? `${vaultPath}/${rel}` : `/${rel}`;
+            await platform.revealInExplorer(abs);
+          },
+        });
+        items.push({
           id: 'copy-path',
           title: 'Copy path',
           icon: <Copy01Icon size={14} />,
@@ -493,7 +516,7 @@ export const SplitTabHeader: React.FC<SplitTabHeaderProps> = React.memo(({ paneI
                 setActiveTabInPane(targetPaneId, tab.id);
               }}
               onAuxClick={(e) => {
-                if (e.button === 1 && canCloseTab) {
+                if (e.button === 1 && isClosable) {
                   e.preventDefault();
                   e.stopPropagation();
                   closeTabInPane(targetPaneId, tab.id);

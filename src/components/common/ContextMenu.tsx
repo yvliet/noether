@@ -419,20 +419,42 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setFocusedIndex((prev) => (prev - 1 + (actionableItems.length || 1)) % (actionableItems.length || 1));
-      } else if (e.key === 'Enter') {
+      } else if (e.key === 'ArrowRight') {
+        if (focusedIndex >= 0 && actionableItems[focusedIndex]) {
+          const item = actionableItems[focusedIndex];
+          if (item.submenu && item.submenu.length > 0) {
+            e.preventDefault();
+            // Enter submenu by setting active hovered submenu
+            const el = menuRef.current?.querySelector(`[data-context-item-id="${item.id}"]`) as HTMLElement | null;
+            if (el) {
+              el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            }
+          }
+        }
+      } else if (e.key === 'Enter' || e.key === ' ') {
         if (focusedIndex >= 0 && actionableItems[focusedIndex]) {
           e.preventDefault();
           const target = actionableItems[focusedIndex];
           if (target.onClick) {
             target.onClick();
+            closeContextMenu();
+          } else if (target.submenu && target.submenu.length > 0) {
+            const el = menuRef.current?.querySelector(`[data-context-item-id="${target.id}"]`) as HTMLElement | null;
+            if (el) {
+              el.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+            }
           }
-          closeContextMenu();
         }
       }
     };
 
+    const handleBlur = () => {
+      closeContextMenu();
+    };
+
     window.addEventListener('resize', handleScrollOrResize);
     window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('blur', handleBlur);
     document.addEventListener('mousedown', handlePointerDown);
     document.addEventListener('contextmenu', handleGlobalContextMenu);
     document.addEventListener('keydown', handleKeyDown);
@@ -440,6 +462,7 @@ export const ContextMenuRenderer: React.FC = React.memo(() => {
     return () => {
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('blur', handleBlur);
       document.removeEventListener('mousedown', handlePointerDown);
       document.removeEventListener('contextmenu', handleGlobalContextMenu);
       document.removeEventListener('keydown', handleKeyDown);

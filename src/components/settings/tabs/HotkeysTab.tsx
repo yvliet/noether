@@ -4,6 +4,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useNoetherApp, useCommands } from '@/core/app/AppContext';
 import { CommandItem } from '@/core/extensions/types';
+import { platform } from '@/lib/platform/platformAdapter';
 import {
   highlightMatch,
   SettingsSearchContext,
@@ -122,24 +123,57 @@ export const HotkeysTab: React.FC = React.memo(() => {
 
       if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
 
+      const isMac = platform.isMacOS();
       const parts: string[] = [];
-      if (e.ctrlKey || e.metaKey) parts.push('Ctrl');
+      if (e.ctrlKey || e.metaKey) parts.push(isMac ? 'Cmd' : 'Ctrl');
       if (e.shiftKey) parts.push('Shift');
-      if (e.altKey) parts.push('Alt');
+      if (e.altKey) parts.push(isMac ? 'Option' : 'Alt');
 
       let keyName = e.key.length === 1 ? e.key.toUpperCase() : e.key;
       if (keyName === ' ') keyName = 'Space';
+      if (keyName === 'ArrowLeft') keyName = 'Left';
+      if (keyName === 'ArrowRight') keyName = 'Right';
+      if (keyName === 'ArrowUp') keyName = 'Up';
+      if (keyName === 'ArrowDown') keyName = 'Down';
       parts.push(keyName);
       const newHotkey = parts.join('+');
 
+      // Canonical normalization for conflict checking
+      const normalize = (h: string) =>
+        h
+          .toLowerCase()
+          .replace(/\bcmd\b|\bmeta\b/g, 'ctrl')
+          .replace(/\boption\b/g, 'alt')
+          .replace(/\barrowleft\b/g, 'left')
+          .replace(/\barrowright\b/g, 'right')
+          .replace(/\barrowup\b/g, 'up')
+          .replace(/\barrowdown\b/g, 'down')
+          .split('+')
+          .sort()
+          .join('+');
+
+      const normalizedNew = normalize(newHotkey);
+      const conflictingCmd = allCommands.find((c) => {
+        if (c.id === recordingCommandId) return false;
+        const existing = customHotkeys[c.id] !== undefined ? customHotkeys[c.id] : c.hotkey;
+        if (!existing) return false;
+        return normalize(existing) === normalizedNew;
+      });
+
       setCustomHotkey(recordingCommandId, newHotkey);
       setRecordingCommandId(null);
-      showToast(`Assigned shortcut: ${newHotkey}`, 'success');
+
+      if (conflictingCmd) {
+        const confTitle = typeof conflictingCmd.title === 'function' ? conflictingCmd.title(app) : conflictingCmd.title;
+        showToast(`Assigned ${newHotkey} (overrides conflict with "${confTitle}")`, 'warning');
+      } else {
+        showToast(`Assigned shortcut: ${newHotkey}`, 'success');
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown, true);
     return () => window.removeEventListener('keydown', handleKeyDown, true);
-  }, [recordingCommandId, setCustomHotkey, resetCustomHotkey, showToast]);
+  }, [recordingCommandId, setCustomHotkey, resetCustomHotkey, showToast, allCommands, customHotkeys, app]);
 
   const filteredCommands = useMemo(() => {
     if (!searchQuery.trim()) return allCommands;

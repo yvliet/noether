@@ -454,7 +454,17 @@ function finishGlobalDrag(hasStartedDrag: boolean, explicitDrag?: ActiveTabDrag 
         if (drag.sourcePaneId === drag.targetPaneId) {
           const sIdx = drag.sourceIndex;
           const tSlot = drag.targetSlotIndex;
-          const targetIdx = sIdx < tSlot ? tSlot - 1 : tSlot;
+          let targetIdx = sIdx < tSlot ? tSlot - 1 : tSlot;
+          const currentTabs = (useWorkspaceStore.getState().panes[drag.sourcePaneId]?.tabs || []) as any[];
+          const pinnedCount = currentTabs.filter((t) => Boolean(t.is_pinned)).length;
+          const isDraggingPinned = Boolean(currentTabs[sIdx]?.is_pinned);
+
+          if (isDraggingPinned) {
+            targetIdx = Math.max(0, Math.min(targetIdx, pinnedCount - 1));
+          } else if (pinnedCount > 0) {
+            targetIdx = Math.max(pinnedCount, Math.min(targetIdx, currentTabs.length - 1));
+          }
+
           if (sIdx !== targetIdx) {
             useWorkspaceStore.getState().reorderTabsInPane(drag.sourcePaneId, sIdx, targetIdx);
           }

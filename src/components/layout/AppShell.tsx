@@ -411,6 +411,20 @@ export const AppShell: React.FC = React.memo(() => {
     window.addEventListener('keydown', reportUserActivity, { passive: true });
     window.addEventListener('pointerdown', reportUserActivity, { passive: true });
 
+    // 5b. Hardware mouse navigation buttons (Button 4 = Back, Button 5 = Forward)
+    const handleMouseNav = (e: MouseEvent) => {
+      if (e.button === 3) {
+        e.preventDefault();
+        e.stopPropagation();
+        useWorkspaceStore.getState().navigateBack();
+      } else if (e.button === 4) {
+        e.preventDefault();
+        e.stopPropagation();
+        useWorkspaceStore.getState().navigateForward();
+      }
+    };
+    window.addEventListener('mouseup', handleMouseNav, true);
+
     // 6. Pre-warm Settings bundle during idle time so first open is instant
     if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
       (window as Window & { requestIdleCallback: (cb: () => void) => void }).requestIdleCallback(() => {
@@ -432,6 +446,7 @@ export const AppShell: React.FC = React.memo(() => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('keydown', reportUserActivity);
       window.removeEventListener('pointerdown', reportUserActivity);
+      window.removeEventListener('mouseup', handleMouseNav, true);
     };
   }, [initVaultInfo, loadInitialData]);
 

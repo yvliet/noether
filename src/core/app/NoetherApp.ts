@@ -361,7 +361,27 @@ export class NoetherApp {
       revealInFileTree: (documentId: string): void => {
         storeRefs.workspace?.getState()?.setIsLeftSidebarOpen(true);
         storeRefs.workspace?.getState()?.setActiveLeftView('files');
+
+        // Expand all ancestor folders
+        const allDocs: DocumentItem[] = storeRefs.document?.getState()?.documents || [];
+        let currentDoc = allDocs.find((d: DocumentItem) => d.id === documentId);
+        while (currentDoc && currentDoc.parent_id) {
+          storeRefs.workspace?.getState()?.setFolderOpen(currentDoc.parent_id, true);
+          currentDoc = allDocs.find((d: DocumentItem) => d.id === currentDoc?.parent_id);
+        }
+
         storeRefs.document?.getState()?.selectSingleDoc(documentId);
+
+        if (typeof window !== 'undefined') {
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              const el = document.getElementById(`noether-tree-item-${documentId}`);
+              if (el) {
+                el.scrollIntoView({ block: 'nearest' });
+              }
+            }, 30);
+          });
+        }
       },
 
       // ── Split View ──

@@ -229,6 +229,10 @@ export const MarkdownShortcuts = Extension.create({
       'Mod-Shift-4': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),
       'Mod-Shift-$': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),
       'Mod-$': ({ editor }) => editor.commands.insertMathChip({ startEditing: true }),
+
+      // Hyperlink: Ctrl+K / Cmd+K (wrap selected text in [text]() or insert empty link)
+      'Mod-k': ({ editor }) => insertOrWrapMarkdownLink(editor),
+      'Mod-K': ({ editor }) => insertOrWrapMarkdownLink(editor),
     };
   },
 });

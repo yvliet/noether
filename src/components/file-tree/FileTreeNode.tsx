@@ -1211,7 +1211,16 @@ const FileTreeNodeComponent: React.FC<FileTreeNodeProps> = ({
       onDoubleClick={(e) => {
         if (isPickingFolder) return;
         e.stopPropagation();
-        setLocalIsEditing(true);
+        if (isFolder) {
+          setIsOpen((prev) => !prev);
+        } else {
+          openTab(item.id, displayTitle, {
+            replaceCurrentTab: false,
+            newTab: true,
+            viewType: customType ? customType.viewType : 'document',
+            viewMode: customType ? (customType.viewType as any) : 'document',
+          });
+        }
       }}
       onAuxClick={isPickingFolder ? undefined : handleAuxClick}
       onContextMenu={isPickingFolder ? undefined : handleContextMenu}

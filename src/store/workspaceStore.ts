@@ -72,6 +72,8 @@ export interface NavigationHistoryItem {
   documentId?: string | null;
   title?: string;
   timestamp: number;
+  scrollTop?: number;
+  cursorPos?: number;
 }
 
 import { FileSortOrder } from '@/lib/sort';
@@ -1250,12 +1252,18 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       return;
     }
 
+    const scrollContainer = typeof document !== 'undefined'
+      ? (document.querySelector('.noether-standard-doc-inner, .noether-compact-doc-inner, .tiptap-reading-view, [data-scroll-container="true"]') as HTMLElement | null)
+      : null;
+    const currentScrollTop = scrollContainer?.scrollTop || 0;
+
     const newEntry: NavigationHistoryItem = {
       id: `nav-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       viewType: targetViewType,
       documentId: targetDocId,
       title: item.title || (targetDocId ? 'Document' : targetViewType),
       timestamp: Date.now(),
+      scrollTop: currentScrollTop,
     };
 
     const newHistory = [...history.slice(0, historyIndex + 1), newEntry];
@@ -1305,6 +1313,13 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
         } else {
           set({ mainViewMode: 'document' });
           useDocumentStore.setState({ activeDocument: null });
+        }
+
+        if (typeof entry.scrollTop === 'number' && entry.scrollTop > 0) {
+          setTimeout(() => {
+            const scroller = document.querySelector('.noether-standard-doc-inner, .noether-compact-doc-inner, .tiptap-reading-view, [data-scroll-container="true"]');
+            if (scroller) scroller.scrollTop = entry.scrollTop!;
+          }, 40);
         }
       }
     } catch (e) {
@@ -1576,22 +1591,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
     if (currentPane.activeTabId === tabId) {
       const closedIndex = currentPane.tabs.findIndex((t) => t.id === tabId);
-      const history = currentPane.tabHistory || [];
-      let historyMatch: string | undefined;
-      for (let i = history.length - 1; i >= 0; i--) {
-        const cand = history[i];
-        if (cand !== tabId && remainingTabs.some((t) => t.id === cand)) {
-          historyMatch = cand;
-          break;
-        }
-      }
-
-      if (historyMatch) {
-        nextActiveTabId = historyMatch;
-      } else {
-        const nextIndex = Math.min(Math.max(0, closedIndex), remainingTabs.length - 1);
-        nextActiveTabId = remainingTabs[nextIndex].id;
-      }
+      const nextIndex = Math.min(Math.max(0, closedIndex), remainingTabs.length - 1);
+      nextActiveTabId = remainingTabs[nextIndex]?.id || null;
     }
 
     const nextTab = remainingTabs.find((t) => t.id === nextActiveTabId);

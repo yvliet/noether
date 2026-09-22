@@ -266,6 +266,27 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
         if (doc) {
           items.push({ type: 'separator' });
           items.push({
+            id: 'reveal-tree',
+            title: 'Reveal in file tree',
+            icon: <Folder01Icon size={14} />,
+            onClick: () => {
+              const ws = useWorkspaceStore.getState();
+              if (!ws.isLeftSidebarOpen) ws.setIsLeftSidebarOpen(true);
+              ws.setActiveLeftView('files');
+              window.dispatchEvent(new CustomEvent('noether:reveal-tree-item', { detail: { id: doc.id } }));
+            },
+          });
+          items.push({
+            id: 'reveal-os',
+            title: platform.isMacOS() ? 'Reveal in Finder' : 'Reveal in File Explorer',
+            icon: <Folder01Icon size={14} />,
+            onClick: async () => {
+              const rel = getDocumentPath(doc, documents) + '.md';
+              const abs = vaultPath ? `${vaultPath}/${rel}` : `/${rel}`;
+              await platform.revealInExplorer(abs);
+            },
+          });
+          items.push({
             id: 'copy-path',
             title: 'Copy path',
             icon: <Copy01Icon size={14} />,
@@ -633,7 +654,7 @@ const WindowHeaderTopPaneTabs: React.FC<WindowHeaderTopPaneTabsProps> = React.me
                   setActiveTabInPane(paneId, tab.id);
                 }}
                 onAuxClick={(e) => {
-                  if (e.button === 1 && canCloseTab) {
+                  if (e.button === 1 && isClosable) {
                     e.preventDefault();
                     e.stopPropagation();
                     closeTabInPane(paneId, tab.id);

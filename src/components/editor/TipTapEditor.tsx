@@ -303,6 +303,14 @@ function extractLinkTargetFromEvent(
   editor: any,
   event: MouseEvent
 ): { type: 'wikilink' | 'url' | 'tag'; target: string } | null {
+  const isModifierClick = event.ctrlKey || event.metaKey || event.button === 1;
+  const isEditable = editor?.isEditable ?? true;
+
+  // In edit mode without modifier keys, allow standard text selection and caret placement
+  if (isEditable && !isModifierClick) {
+    return null;
+  }
+
   const rawTarget = event.target as Node | null;
   const targetElem = (
     rawTarget && rawTarget.nodeType === Node.ELEMENT_NODE
@@ -336,15 +344,12 @@ function extractLinkTargetFromEvent(
     (document.elementFromPoint(event.clientX, event.clientY) as HTMLElement | null)?.closest('.md-link');
 
   if (mdLinkElem) {
-    // If the element directly has data-wikilink-target set (e.g. from live preview syntax for [alias]([[target]])),
-    // always navigate directly without focused editing lockout.
     const explicitWikiTarget = mdLinkElem.getAttribute('data-wikilink-target');
     if (explicitWikiTarget) {
       return { type: 'wikilink', target: explicitWikiTarget };
     }
 
     const isFocused = mdLinkElem.classList.contains('is-focused');
-    const isModifierClick = event.ctrlKey || event.metaKey || event.button === 1;
 
     const rawUrl =
       mdLinkElem.getAttribute('data-link-url') ||
@@ -363,14 +368,10 @@ function extractLinkTargetFromEvent(
         if (decoded) wikiTarget = decoded;
       }
 
-      // Internal note link: clicking anywhere on the alias text redirects to the target note immediately
       if (wikiTarget) {
         return { type: 'wikilink', target: wikiTarget };
       }
 
-      // For external URLs:
-      // When unfocused (rendered view), clicking directly opens the link.
-      // When focused (editing raw syntax), clicking places the cursor for editing unless modifier/middle-click.
       if (!isFocused || isModifierClick) {
         return { type: 'url', target: rawUrl };
       }
@@ -379,9 +380,8 @@ function extractLinkTargetFromEvent(
   }
 
   // 1c. Direct check for markdown syntax tokens (dimmed or hidden syntax)
-  // When editing syntax (e.g. [ or ](url)), normal clicks should place cursor for editing
   const syntaxElem = targetElem?.closest('.md-syntax-dimmed, .md-syntax-hidden');
-  if (syntaxElem && !(event.ctrlKey || event.metaKey || event.button === 1)) {
+  if (syntaxElem && !isModifierClick) {
     return null;
   }
 
@@ -392,7 +392,7 @@ function extractLinkTargetFromEvent(
   if (anchor) {
     if (
       anchor.closest('.is-focused, .md-syntax-dimmed, .md-syntax-hidden') &&
-      !(event.ctrlKey || event.metaKey || event.button === 1)
+      !isModifierClick
     ) {
       return null;
     }
@@ -1132,17 +1132,37 @@ export const TipTapEditor: React.FC<TipTapEditorProps> = React.memo(({
       SlashCommands.configure({
         suggestion: {
           allowSpaces: true,
-          allow: ({ editor }) => {
+          allow: ({ editor, state }) => {
             const isEditorFocused = editor.isFocused || editor.view.hasFocus();
-            if (isEditorFocused) return true;
-            if (
-              typeof document !== 'undefined' &&
-              document.activeElement &&
-              containerRef.current?.contains(document.activeElement)
-            ) {
-              return true;
+            if (!isEditorFocused) {
+              if (
+                typeof document !== 'undefined' &&
+                document.activeElement &&
+                containerRef.current?.contains(document.activeElement)
+              ) {
+                // Focused within container
+              } else {
+                return false;
+              }
             }
-            return false;
+            if (!state) return true;
+            const { $from } = state.selection;
+            const parentType = $from.parent.type.name;
+            if (
+              parentType === 'codeBlock' ||
+              parentType === 'code_block' ||
+              parentType === 'tableCell' ||
+              parentType === 'table_cell' ||
+              parentType === 'tableHeader' ||
+              parentType === 'table_header' ||
+              parentType === 'mathChip' ||
+              parentType === 'math_chip'
+            ) {
+              return false;
+            }
+            const textBefore = $from.parent.textBetween(0, $from.parentOffset, '\n', '\n');
+            const match = textBefore.match(/(?:^|\s)\/$/);
+            return Boolean(match);
           },
           items: ({ query }) => {
             const currentSlashItems = getSlashItemsRef.current();

@@ -45,10 +45,12 @@ export const CommandPalette: React.FC = React.memo(() => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // Focus input and reset on open
+  // Focus input on open, and restore previous active focus on close
   useEffect(() => {
     if (isCommandPaletteOpen) {
+      previousFocusRef.current = typeof document !== 'undefined' ? (document.activeElement as HTMLElement | null) : null;
       setQuery('');
       setResults([]);
       setProviderResults([]);
@@ -58,6 +60,9 @@ export const CommandPalette: React.FC = React.memo(() => {
         inputRef.current?.focus();
       }, 30);
       return () => clearTimeout(timer);
+    } else if (previousFocusRef.current) {
+      previousFocusRef.current.focus?.();
+      previousFocusRef.current = null;
     }
   }, [isCommandPaletteOpen]);
 
@@ -390,6 +395,7 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         e.stopPropagation();
 
         if (totalItems === 0 || !isIndexEnabled(selectedIndex)) return;
+        const isSplitOpen = e.ctrlKey || e.metaKey;
 
         if (query.trim()) {
           if (activeSearchProvider) {
@@ -398,7 +404,13 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
           } else {
             if (selectedIndex < displayedNotes.length) {
               const note = displayedNotes[selectedIndex];
-              handleSelectNote(note.document_id, note.document_title);
+              if (isSplitOpen) {
+                setIsCommandPaletteOpen(false);
+                const focusedId = useWorkspaceStore.getState().focusedPaneId || 'main';
+                useWorkspaceStore.getState().splitPane(focusedId, 'horizontal', note.document_id, note.document_title);
+              } else {
+                handleSelectNote(note.document_id, note.document_title);
+              }
             } else if (selectedIndex < displayedNotes.length + providerResults.length) {
               const item = providerResults[selectedIndex - displayedNotes.length];
               if (item) handleSelectProviderItem(item);
@@ -413,7 +425,13 @@ function getCommandIcon(cmd: CommandItem, app: NoetherApp): React.ReactNode {
         } else {
           if (selectedIndex < recentNotes.length) {
             const note = recentNotes[selectedIndex];
-            handleSelectNote(note.document_id, note.document_title);
+            if (isSplitOpen) {
+              setIsCommandPaletteOpen(false);
+              const focusedId = useWorkspaceStore.getState().focusedPaneId || 'main';
+              useWorkspaceStore.getState().splitPane(focusedId, 'horizontal', note.document_id, note.document_title);
+            } else {
+              handleSelectNote(note.document_id, note.document_title);
+            }
           } else {
             const cmdIndex = selectedIndex - recentNotes.length;
             const cmd = registeredCommands[cmdIndex];

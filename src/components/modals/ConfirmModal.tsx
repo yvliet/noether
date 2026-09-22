@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Cancel01Icon } from '@/components/common/Icons';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 export const ConfirmModal: React.FC = React.memo(() => {
   const confirmDialog = useWorkspaceStore((state) => state.confirmDialog);
@@ -9,6 +10,12 @@ export const ConfirmModal: React.FC = React.memo(() => {
   const setSkipDeleteConfirmation = useSettingsStore((state) => state.setSkipDeleteConfirmation);
   const setSkipRenameConfirmation = useSettingsStore((state) => state.setSkipRenameConfirmation);
   const [dontAskAgain, setDontAskAgain] = useState(false);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement>(null);
+
+  useFocusTrap(Boolean(confirmDialog?.isOpen), modalContainerRef, {
+    initialFocusRef: cancelButtonRef,
+  });
 
   useEffect(() => {
     setDontAskAgain(false);
@@ -42,21 +49,36 @@ export const ConfirmModal: React.FC = React.memo(() => {
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
         if (confirmDialog.onCancel) confirmDialog.onCancel();
         closeConfirmDialog();
       } else if (e.key === 'Enter') {
-        handleConfirm();
+        if (confirmDialog.isDanger) {
+          // Destructive actions require explicit focus on the confirm button
+          const isDangerConfirmFocused = document.activeElement?.getAttribute('data-danger-confirm') === 'true';
+          if (isDangerConfirmFocused) {
+            e.preventDefault();
+            e.stopPropagation();
+            handleConfirm();
+          }
+        } else {
+          e.preventDefault();
+          e.stopPropagation();
+          handleConfirm();
+        }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [confirmDialog, closeConfirmDialog, handleConfirm]);
 
   if (!confirmDialog?.isOpen) return null;
 
   return (
     <div
+      ref={modalContainerRef}
       onClick={() => {
         if (confirmDialog.onCancel) confirmDialog.onCancel();
         closeConfirmDialog();
@@ -110,6 +132,7 @@ export const ConfirmModal: React.FC = React.memo(() => {
 
           <div className="flex items-center gap-2">
             <button
+              ref={cancelButtonRef}
               onClick={() => {
                 if (confirmDialog.onCancel) confirmDialog.onCancel();
                 closeConfirmDialog();
@@ -119,6 +142,7 @@ export const ConfirmModal: React.FC = React.memo(() => {
               {confirmDialog.cancelText || 'Cancel'}
             </button>
             <button
+              data-danger-confirm={confirmDialog.isDanger ? 'true' : undefined}
               onClick={handleConfirm}
               className={confirmDialog.isDanger ? 'noether-btn noether-btn-danger' : 'noether-btn noether-btn-primary'}
             >
