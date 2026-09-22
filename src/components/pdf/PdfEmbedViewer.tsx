@@ -407,7 +407,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     }
   };
 
-  const handleZoomIn = () => {
+  const handleZoomIn = useCallback(() => {
     const vp = viewportRef.current;
     const currentScale = scale;
     const nextScale = Math.min(4.0, +(currentScale + 0.15).toFixed(2));
@@ -437,9 +437,9 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
 
     setZoomMode('custom');
     setScale(nextScale);
-  };
+  }, [scale]);
 
-  const handleZoomOut = () => {
+  const handleZoomOut = useCallback(() => {
     const vp = viewportRef.current;
     const currentScale = scale;
     const nextScale = Math.max(0.2, +(currentScale - 0.15).toFixed(2));
@@ -469,7 +469,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
 
     setZoomMode('custom');
     setScale(nextScale);
-  };
+  }, [scale]);
 
   const openSidebarMenu = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -525,12 +525,12 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
       tabIndex={0}
       onKeyDown={handleKeyDown}
       style={{ height: containerHeight, width: containerWidth }}
-      className={`noether-embed-card noether-pdf-embed-card relative flex flex-col rounded-lg border border-[var(--noether-border-base,#2a2a2a)] bg-[#141414] overflow-hidden my-2.5 shadow-sm select-none cursor-default focus:outline-none focus:ring-1 focus:ring-[var(--noether-accent,#eb584d)]/40 ${className}`}
+      className={`noether-embed-card noether-pdf-embed-card relative flex flex-col rounded-lg border border-[var(--noether-border-subtle,var(--noether-border-base))] bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] overflow-hidden my-2.5 shadow-sm select-none cursor-default focus:outline-none focus:ring-1 focus:ring-[var(--noether-accent,#eb584d)]/40 ${className}`}
     >
       {/* Top Control Toolbar */}
       <div
         data-pdf-toolbar="true"
-        className="h-8 px-2.5 flex items-center justify-between bg-[#1a1a1a] border-b border-[#282828] text-xs text-[#888888] shrink-0 select-none cursor-default"
+        className="h-8 px-2.5 flex items-center justify-between bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] border-b border-[var(--noether-border-subtle,var(--noether-border-base))] text-xs text-[var(--noether-text-secondary,#888888)] shrink-0 select-none cursor-default"
       >
         {/* Left Actions: Drawer toggle & mode */}
         <div className="flex items-center gap-0.5">
@@ -540,8 +540,8 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             data-tooltip={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
             aria-label={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
             data-active={isSidebarOpen ? 'true' : undefined}
-            className={`noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white flex items-center justify-center transition-none cursor-pointer ${
-              isSidebarOpen ? 'text-white bg-[#2e2e2e]' : 'text-[#999999]'
+            className={`noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] flex items-center justify-center transition-none cursor-pointer ${
+              isSidebarOpen ? 'text-[var(--noether-text-primary,#ffffff)] bg-[var(--noether-btn-active-bg,#2e2e2e)]' : 'text-[var(--noether-text-muted,#999999)]'
             }`}
           >
             {sidebarMode === 'thumbnails' ? (
@@ -559,14 +559,14 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             data-tooltip="Drawer options"
             aria-label="Drawer options"
             data-active={isSidebarMenuOpen ? 'true' : undefined}
-            className={`noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white flex items-center justify-center transition-none cursor-pointer ${
-              isSidebarMenuOpen ? 'text-white bg-[#2e2e2e]' : 'text-[#999999]'
+            className={`noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] flex items-center justify-center transition-none cursor-pointer ${
+              isSidebarMenuOpen ? 'text-[var(--noether-text-primary,#ffffff)] bg-[var(--noether-btn-active-bg,#2e2e2e)]' : 'text-[var(--noether-text-muted,#999999)]'
             }`}
           >
             <ArrowDown01Icon size={12} />
           </button>
 
-          <div className="w-[1px] h-3 bg-[#333333] mx-0.5 shrink-0" />
+          <div className="w-[1px] h-3 bg-[var(--noether-border-base,#333333)] mx-0.5 shrink-0" />
 
           {/* Zoom controls */}
           <button
@@ -574,7 +574,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={handleZoomOut}
             data-tooltip="Zoom out (Ctrl + -)"
             aria-label="Zoom out"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] flex items-center justify-center transition-none cursor-pointer"
           >
             <ZoomOutIcon size={13} />
           </button>
@@ -584,7 +584,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={handleZoomIn}
             data-tooltip="Zoom in (Ctrl + +)"
             aria-label="Zoom in"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] flex items-center justify-center transition-none cursor-pointer"
           >
             <ZoomInIcon size={13} />
           </button>
@@ -598,7 +598,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={() => handlePageChange(currentPage - 1)}
             data-tooltip="Previous page (Left arrow / PageUp)"
             aria-label="Previous page"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
           >
             <ArrowLeft01Icon size={12} />
           </button>
@@ -618,10 +618,10 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
               }}
               data-tooltip="Page number (press Enter to jump)"
               aria-label="Page number"
-              className="w-7 h-5 text-center text-[11px] tabular-nums font-sans bg-[#222222] border border-[#333333] hover:border-[#444444] focus:border-[var(--noether-accent,#eb584d)] rounded text-white outline-none p-0 selection:bg-[var(--noether-accent,#eb584d)]"
+              className="w-7 h-5 text-center text-[11px] tabular-nums font-sans bg-[var(--noether-bg-input,var(--noether-bg-card))] border border-[var(--noether-border-base)] hover:border-[var(--noether-border-strong)] focus:border-[var(--noether-accent,#eb584d)] rounded text-[var(--noether-text-primary)] outline-none p-0 selection:bg-[var(--noether-accent,#eb584d)]"
             />
-            <span className="text-[#666666] mx-1 text-[11px] font-sans select-none">of</span>
-            <span className="text-[#aaaaaa] tabular-nums font-sans text-[11px] min-w-[12px] text-left select-none">
+            <span className="text-[var(--noether-text-muted,#666666)] mx-1 text-[11px] font-sans select-none">of</span>
+            <span className="text-[var(--noether-text-secondary,#aaaaaa)] tabular-nums font-sans text-[11px] min-w-[12px] text-left select-none">
               {pdfData?.numPages || 1}
             </span>
           </form>
@@ -632,7 +632,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={() => handlePageChange(currentPage + 1)}
             data-tooltip="Next page (Right arrow / PageDown)"
             aria-label="Next page"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-default flex items-center justify-center transition-none cursor-pointer"
           >
             <ArrowRight01Icon size={12} />
           </button>
@@ -645,7 +645,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={handleRotateCw}
             data-tooltip="Rotate clockwise"
             aria-label="Rotate clockwise"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] flex items-center justify-center transition-none cursor-pointer"
           >
             <RotateCcwIcon size={12} />
           </button>
@@ -655,7 +655,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={() => setIsPresenting(true)}
             data-tooltip="Fullscreen slideshow presentation"
             aria-label="Fullscreen slideshow presentation"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] flex items-center justify-center transition-none cursor-pointer"
           >
             <Presentation01Icon size={13} />
           </button>
@@ -665,12 +665,12 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={handleOpenInTab}
             data-tooltip="Open PDF in dedicated tab"
             aria-label="Open PDF in dedicated tab"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] flex items-center justify-center transition-none cursor-pointer"
           >
             <ExternalLinkIcon size={12} />
           </button>
 
-          <div className="w-[1px] h-3 bg-[#333333] mx-0.5 shrink-0" />
+          <div className="w-[1px] h-3 bg-[var(--noether-border-base,#333333)] mx-0.5 shrink-0" />
 
           {/* Source Code Toggle button (</>) */}
           <button
@@ -678,7 +678,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
             onClick={handleFocusEmbedCode}
             data-tooltip="Edit raw embed source markdown"
             aria-label="Edit raw embed source markdown"
-            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[#2c2c2c] hover:text-white text-[#999999] flex items-center justify-center transition-none cursor-pointer"
+            className="noether-toolbar-btn w-[22px] h-[22px] rounded hover:bg-[var(--noether-btn-hover-bg,#2c2c2c)] hover:text-[var(--noether-text-primary,#ffffff)] text-[var(--noether-text-muted,#999999)] flex items-center justify-center transition-none cursor-pointer"
           >
             <SourceCodeIcon size={13} />
           </button>
@@ -686,7 +686,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
       </div>
 
       {/* Main Container: Absolute Overlay Drawer + Full Width Slide Canvas Viewport */}
-      <div className="flex-1 min-h-0 relative overflow-hidden bg-[#111111]">
+      <div className="flex-1 min-h-0 relative overflow-hidden bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]">
         {/* Full-width Viewport & Continuous Slide Display */}
         <div
           ref={viewportRef}
@@ -694,21 +694,21 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
           className="w-full h-full overflow-auto custom-scrollbar relative select-none"
         >
           {isLoading && (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#777777] text-xs py-16">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[var(--noether-text-muted,#777777)] text-xs py-16">
               <div className="w-5 h-5 border-2 border-[var(--noether-accent,#eb584d)] border-t-transparent rounded-full animate-spin" />
               <span>Loading PDF...</span>
             </div>
           )}
 
           {errorMessage && !isLoading && (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[#777777] text-xs text-center px-4 py-16">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-[var(--noether-text-muted,#777777)] text-xs text-center px-4 py-16">
               <File01Icon size={28} className="text-rose-400/60" />
-              <span className="text-[#cccccc] font-medium">{documentTitle}</span>
+              <span className="text-[var(--noether-text-primary,#cccccc)] font-medium">{documentTitle}</span>
               <span className="text-rose-400 text-[11px]">{errorMessage}</span>
               <button
                 type="button"
                 onClick={handleOpenInTab}
-                className="mt-1 px-2.5 py-1 bg-[#222222] hover:bg-[#2c2c2c] border border-[#333333] text-white rounded text-xs cursor-pointer transition-none"
+                className="mt-1 px-2.5 py-1 bg-[var(--noether-bg-card,#222222)] hover:bg-[var(--noether-bg-card-hover,#2c2c2c)] border border-[var(--noether-border-base,#333333)] text-[var(--noether-text-primary,#ffffff)] rounded text-xs cursor-pointer transition-none"
               >
                 Try opening file
               </button>
@@ -729,7 +729,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
                   rotation={rotation}
                   isVisible={visiblePageSet.has(pageNum)}
                   pageInfo={pdfData.pageInfos[pageNum - 1]}
-                  className="shadow-[0_4px_24px_rgba(0,0,0,0.6)] rounded-xs border border-[#2a2a2a]"
+                  className="shadow-[0_4px_24px_rgba(0,0,0,0.4)] rounded-xs border border-[var(--noether-border-base,#2a2a2a)]"
                 />
               ))}
             </div>

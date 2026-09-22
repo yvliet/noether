@@ -962,7 +962,7 @@ function scanBlockDecorations(
           stopEvent: (event) => {
             const target = event.target as HTMLElement;
             return !!target.closest(
-              'button, a, audio, video, iframe, input, select, canvas, [data-embed-action], [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-toolbar-btn'
+              'button, a, audio, video, iframe, input, select, canvas, [data-embed-action], [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-pdf-embed-wrapper, .noether-embed-wrapper, .noether-toolbar-btn'
             );
           },
         })
@@ -1004,7 +1004,7 @@ function scanBlockDecorations(
           stopEvent: (event) => {
             const target = event.target as HTMLElement;
             return !!target.closest(
-              'button, a, audio, video, iframe, input, select, canvas, [data-embed-action], [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-toolbar-btn'
+              'button, a, audio, video, iframe, input, select, canvas, [data-embed-action], [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-pdf-embed-wrapper, .noether-embed-wrapper, .noether-toolbar-btn'
             );
           },
         })

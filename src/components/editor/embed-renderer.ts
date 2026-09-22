@@ -36,13 +36,27 @@ let cachedDocsRef: any = null;
 let cachedDocIndex: Map<string, any> = new Map();
 const imageSrcCache = new Map<string, string>();
 
+interface CachedPdfWidget {
+  container: HTMLElement;
+  wrapper: HTMLElement;
+  root: import('react-dom/client').Root;
+  lastTarget: string;
+}
+const pdfWidgetCache = new Map<string, CachedPdfWidget>();
+
 /**
- * Evicts cached image source strings for a deleted or renamed document/target.
- * If called without arguments, flushes the entire image source cache.
+ * Evicts cached image source strings and PDF widgets for a deleted or renamed document/target.
+ * If called without arguments, flushes the caches.
  */
 export function evictImageSrcCache(targetOrTitleOrId?: string): void {
   if (!targetOrTitleOrId) {
     imageSrcCache.clear();
+    for (const entry of pdfWidgetCache.values()) {
+      try {
+        entry.root?.unmount();
+      } catch {}
+    }
+    pdfWidgetCache.clear();
     return;
   }
   const keys = normalizeTargetKeys(targetOrTitleOrId);
@@ -50,6 +64,15 @@ export function evictImageSrcCache(targetOrTitleOrId?: string): void {
     imageSrcCache.delete(k);
   }
   imageSrcCache.delete(targetOrTitleOrId.trim().toLowerCase());
+
+  for (const [key, entry] of pdfWidgetCache.entries()) {
+    if (keys.some((k) => key.toLowerCase().includes(k))) {
+      try {
+        entry.root?.unmount();
+      } catch {}
+      pdfWidgetCache.delete(key);
+    }
+  }
 }
 
 if (typeof window !== 'undefined') {
@@ -1032,6 +1055,22 @@ export function renderEmbedWidget(
 
   // 5. PDF Embed
   if (embed.kind === 'pdf') {
+    const cacheKey = `${rawTarget}_${embed.target}_${embed.page || 1}_${embed.height || 520}_${embed.width || 'auto'}`;
+    const cached = pdfWidgetCache.get(cacheKey);
+
+    if (cached && cached.container) {
+      cached.root.render(
+        React.createElement(PdfEmbedViewer, {
+          target: embed.target,
+          rawTarget: rawTarget,
+          initialPage: embed.page || 1,
+          height: embed.height || 520,
+          width: embed.width || null,
+        })
+      );
+      return cached.container;
+    }
+
     const pdfWrapper = document.createElement('div');
     pdfWrapper.className = 'noether-embed-media noether-pdf-embed-wrapper my-1.5 w-full max-w-full';
 
@@ -1047,6 +1086,25 @@ export function renderEmbedWidget(
     );
 
     container.appendChild(pdfWrapper);
+
+    if (pdfWidgetCache.size >= 16) {
+      const oldestKey = pdfWidgetCache.keys().next().value;
+      if (oldestKey) {
+        const oldEntry = pdfWidgetCache.get(oldestKey);
+        try {
+          oldEntry?.root?.unmount();
+        } catch {}
+        pdfWidgetCache.delete(oldestKey);
+      }
+    }
+
+    pdfWidgetCache.set(cacheKey, {
+      container,
+      wrapper: pdfWrapper,
+      root,
+      lastTarget: embed.target,
+    });
+
     return container;
   }
 

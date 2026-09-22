@@ -61,6 +61,7 @@ export function usePdfSmoothZoom({
       // Only capture zoom gestures (Ctrl/Cmd + scroll or touchpad pinch)
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
+      e.stopPropagation();
 
       const vpRect = viewport.getBoundingClientRect();
       cursorCoordsRef.current = {
