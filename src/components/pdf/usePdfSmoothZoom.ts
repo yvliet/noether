@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
 export interface UsePdfSmoothZoomOptions {
   viewportRef: React.RefObject<HTMLDivElement | null>;
@@ -17,8 +17,10 @@ export interface UsePdfSmoothZoomOptions {
  * - Direct PDF.js canvas rasterization on every wheel event causes severe thread thrashing and frame drops.
  * - During active pinch/wheel gestures, this hook applies an immediate CSS transform (scale) centered
  *   on the pointer coordinates directly on the GPU compositor thread (60-120fps).
- * - A debounced timer (150ms) commits the final scale to React state and re-aligns scroll offsets
- *   so the PDF canvases re-render at crisp native resolution with zero visual shift.
+ * - A debounced timer (150ms) triggers scale commit to React state.
+ * - Crucially, useLayoutEffect synchronizes the scroll offset adjustment and clears the CSS transform
+ *   on the exact same browser frame where the DOM page wrappers expand to the new scale, preventing
+ *   browser scroll clamping jumps, size popping, and visual stutter.
  */
 export function usePdfSmoothZoom({
   viewportRef,
@@ -46,12 +48,41 @@ export function usePdfSmoothZoom({
     baseScale: number;
   } | null>(null);
 
+  const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
+
   // Keep targetScale in sync with external scale changes (e.g. toolbar button clicks)
   useEffect(() => {
     if (!isZoomingRef.current) {
       targetScaleRef.current = scale;
     }
   }, [scale]);
+
+  // Synchronously adjust scroll and release GPU transform on the exact DOM commit frame
+  useLayoutEffect(() => {
+    if (pendingScrollRef.current) {
+      const { left, top } = pendingScrollRef.current;
+      pendingScrollRef.current = null;
+
+      const viewport = viewportRef.current;
+      const content = contentRef.current;
+
+      // Clear GPU transform synchronously with DOM size update
+      if (content) {
+        content.style.transform = '';
+        content.style.transformOrigin = '';
+        content.style.willChange = '';
+      }
+
+      // Viewport scrollWidth and scrollHeight now reflect the new scale, preventing clamping
+      if (viewport) {
+        viewport.scrollLeft = left;
+        viewport.scrollTop = top;
+      }
+
+      isZoomingRef.current = false;
+      gestureOriginRef.current = null;
+    }
+  }, [scale, viewportRef, contentRef]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -112,6 +143,18 @@ export function usePdfSmoothZoom({
         }
 
         const finalScale = +(targetScaleRef.current).toFixed(2);
+
+        if (Math.abs(finalScale - currentScaleRef.current) < 0.001) {
+          if (content) {
+            content.style.transform = '';
+            content.style.transformOrigin = '';
+            content.style.willChange = '';
+          }
+          isZoomingRef.current = false;
+          gestureOriginRef.current = null;
+          return;
+        }
+
         const { originX, originY, cursorVpX, cursorVpY, contentOffsetTop, contentOffsetLeft, baseScale: startScale } = gestureOriginRef.current;
         const commitRatio = finalScale / startScale;
 
@@ -121,21 +164,11 @@ export function usePdfSmoothZoom({
         const targetScrollLeft = Math.max(0, Math.round((contentOffsetLeft + newContentX) - cursorVpX));
         const targetScrollTop = Math.max(0, Math.round((contentOffsetTop + newContentY) - cursorVpY));
 
-        // Reset CSS transform before committing high-DPI rasterization
-        if (content) {
-          content.style.transform = '';
-          content.style.transformOrigin = '';
-          content.style.willChange = '';
-        }
+        // Stash pending scroll offset for synchronous application in useLayoutEffect upon DOM mutation
+        pendingScrollRef.current = { left: targetScrollLeft, top: targetScrollTop };
 
-        // Adjust scroll position to maintain focus point
-        viewport.scrollLeft = targetScrollLeft;
-        viewport.scrollTop = targetScrollTop;
-
-        // Commit resolution scale to PDF.js
+        // Commit resolution scale to trigger React render
         onScaleCommit(finalScale);
-        isZoomingRef.current = false;
-        gestureOriginRef.current = null;
       }, 150);
     };
 

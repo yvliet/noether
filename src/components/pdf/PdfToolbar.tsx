@@ -24,11 +24,15 @@ export interface PdfSubHeaderLeftActionsProps {
   onToggleSidebar: () => void;
   onSelectSidebarMode: (mode: PdfSidebarMode) => void;
   onRevealInToc: () => void;
+  scale?: number;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
 }
 
 /**
  * Left-side controls for PDF viewer inside the native document subheader:
- * Collapsible drawer toggle (thumbnails / table of contents) with dropdown switcher.
+ * Collapsible drawer toggle (thumbnails / table of contents), dropdown switcher,
+ * and zoom in/out controls.
  */
 export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = React.memo(({
   isSidebarOpen,
@@ -36,6 +40,9 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
   onToggleSidebar,
   onSelectSidebarMode,
   onRevealInToc,
+  scale,
+  onZoomIn,
+  onZoomOut,
 }) => {
   const [isSidebarMenuOpen, setIsSidebarMenuOpen] = useState(false);
   const sidebarMenuTriggerRef = useRef<HTMLButtonElement>(null);
@@ -99,6 +106,33 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
       >
         <ArrowDown01Icon size={12} />
       </button>
+
+      {onZoomIn && onZoomOut && (
+        <>
+          <div className="w-[1px] h-3.5 bg-[var(--noether-border-base,#333)] mx-1 shrink-0" />
+          <div className="flex items-center gap-0.5">
+            <button
+              type="button"
+              onClick={onZoomOut}
+              data-tooltip="Zoom out (Ctrl + -)"
+              aria-label="Zoom out"
+              className="noether-toolbar-btn w-[21px] h-[21px]"
+            >
+              <ZoomOutIcon size={13} />
+            </button>
+
+            <button
+              type="button"
+              onClick={onZoomIn}
+              data-tooltip="Zoom in (Ctrl + +)"
+              aria-label="Zoom in"
+              className="noether-toolbar-btn w-[21px] h-[21px]"
+            >
+              <ZoomInIcon size={13} />
+            </button>
+          </div>
+        </>
+      )}
 
       {/* Portaled Sidebar Mode Dropdown */}
       {isSidebarMenuOpen &&
@@ -183,30 +217,25 @@ PdfSubHeaderLeftActions.displayName = 'PdfSubHeaderLeftActions';
 export interface PdfSubHeaderRightActionsProps {
   currentPage: number;
   numPages: number;
-  scale: number;
-  zoomMode: PdfZoomMode;
   onPageChange: (pageNum: number) => void;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onSetZoomMode: (mode: PdfZoomMode, customScale?: number) => void;
   onRotateCw: () => void;
   onDownload: () => void;
   onPresent: () => void;
+  scale?: number;
+  zoomMode?: PdfZoomMode;
+  onZoomIn?: () => void;
+  onZoomOut?: () => void;
+  onSetZoomMode?: (mode: PdfZoomMode, customScale?: number) => void;
 }
 
 /**
  * Right-side controls for PDF viewer inside the native document subheader:
- * Page jump [ 1 ] / N, zoom controls (- 100% + present), rotate CW, and download.
+ * Page jump [ 1 ] / N, rotate CW, presentation mode, and download.
  */
 export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> = React.memo(({
   currentPage,
   numPages,
-  scale,
-  zoomMode,
   onPageChange,
-  onZoomIn,
-  onZoomOut,
-  onSetZoomMode,
   onRotateCw,
   onDownload,
   onPresent,
@@ -276,42 +305,7 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
 
       <div className="w-[1px] h-3.5 bg-[var(--noether-border-base,#333)] mx-1 shrink-0" />
 
-      {/* 2. Zoom Controls */}
-      <div className="flex items-center gap-0.5">
-        <button
-          type="button"
-          onClick={onZoomOut}
-          data-tooltip="Zoom out (Ctrl + -)"
-          aria-label="Zoom out"
-          className="noether-toolbar-btn"
-        >
-          <ZoomOutIcon size={13} />
-        </button>
-
-        <button
-          type="button"
-          onClick={onZoomIn}
-          data-tooltip="Zoom in (Ctrl + +)"
-          aria-label="Zoom in"
-          className="noether-toolbar-btn"
-        >
-          <ZoomInIcon size={13} />
-        </button>
-
-        <button
-          type="button"
-          onClick={onPresent}
-          data-tooltip="Present slideshow"
-          aria-label="Present slideshow"
-          className="noether-toolbar-btn w-[21px] h-[21px]"
-        >
-          <Presentation01Icon size={13} />
-        </button>
-      </div>
-
-      <div className="w-[1px] h-3.5 bg-[var(--noether-border-base,#333)] mx-1 shrink-0" />
-
-      {/* 3. Rotate Clockwise */}
+      {/* 2. Rotate Clockwise */}
       <button
         type="button"
         onClick={onRotateCw}
@@ -320,6 +314,17 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
         className="noether-toolbar-btn"
       >
         <RotateCcwIcon size={13} />
+      </button>
+
+      {/* 3. Fullscreen Presentation */}
+      <button
+        type="button"
+        onClick={onPresent}
+        data-tooltip="Present slideshow (F5)"
+        aria-label="Present slideshow"
+        className="noether-toolbar-btn w-[21px] h-[21px]"
+      >
+        <Presentation01Icon size={13} />
       </button>
 
       {/* 4. Download / Save Copy */}
@@ -375,6 +380,9 @@ export const PdfToolbar: React.FC<PdfToolbarProps> = React.memo((props) => {
         onToggleSidebar={props.onToggleSidebar}
         onSelectSidebarMode={props.onSelectSidebarMode}
         onRevealInToc={props.onRevealInToc}
+        scale={props.scale}
+        onZoomIn={props.onZoomIn}
+        onZoomOut={props.onZoomOut}
       />
       <div className="text-[12px] truncate max-w-sm px-1.5 py-0.5 text-center select-none font-sans text-[var(--noether-text-secondary,#dcddde)]">
         {props.title}
@@ -382,12 +390,7 @@ export const PdfToolbar: React.FC<PdfToolbarProps> = React.memo((props) => {
       <PdfSubHeaderRightActions
         currentPage={props.currentPage}
         numPages={props.numPages}
-        scale={props.scale}
-        zoomMode={props.zoomMode}
         onPageChange={props.onPageChange}
-        onZoomIn={props.onZoomIn}
-        onZoomOut={props.onZoomOut}
-        onSetZoomMode={props.onSetZoomMode}
         onRotateCw={props.onRotateCw}
         onDownload={props.onDownload}
         onPresent={props.onPresent || (() => {})}

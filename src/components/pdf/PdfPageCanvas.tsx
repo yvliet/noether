@@ -102,10 +102,8 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const renderTaskRef = useRef<any>(null);
-  const [isRendered, setIsRendered] = useState(false);
-  const [actualSize, setActualSize] = useState<{ width: number; height: number } | null>(null);
 
-  // Compute fallback CSS display dimensions
+  // Compute synchronous exact display dimensions from page geometry and scale
   const baseWidth = pageInfo?.width || 595;
   const baseHeight = pageInfo?.height || 842;
   const isSideways = rotation === 90 || rotation === 270;
@@ -127,7 +125,6 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
     if (cached) {
       const canvas = canvasRef.current;
       if (canvas) {
-        setActualSize({ width: cached.actualWidth, height: cached.actualHeight });
         canvas.width = cached.canvas.width;
         canvas.height = cached.canvas.height;
         canvas.style.width = '100%';
@@ -137,13 +134,8 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
           ctx.drawImage(cached.canvas, 0, 0);
         }
         renderedKeyRef.current = currentKey;
-        setIsRendered(true);
         return;
       }
-    }
-
-    if (renderedKeyRef.current !== currentKey) {
-      setIsRendered(false);
     }
 
     const renderPage = async () => {
@@ -202,9 +194,7 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
             visibleCtx.drawImage(offscreen, 0, 0);
           }
 
-          setActualSize({ width: actualW, height: actualH });
           renderedKeyRef.current = currentKey;
-          setIsRendered(true);
         }
       } catch (err: any) {
         if (err?.name !== 'RenderingCancelledException') {
@@ -225,16 +215,13 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
     };
   }, [pdfDoc, pageNumber, scale, rotation, isVisible]);
 
-  const displayWidth = actualSize?.width ?? cssWidth;
-  const displayHeight = actualSize?.height ?? cssHeight;
-
   return (
     <div
       ref={containerRef}
       data-page-number={pageNumber}
       style={{
-        width: `${displayWidth}px`,
-        height: `${displayHeight}px`,
+        width: `${cssWidth}px`,
+        height: `${cssHeight}px`,
       }}
       className={`relative mx-auto bg-[var(--noether-bg-tab-active,var(--noether-bg-main))] shadow-xl border border-[var(--noether-border-base,#2a2a2a)] select-text select-none overflow-hidden ${className}`}
     >

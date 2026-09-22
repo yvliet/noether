@@ -1071,18 +1071,16 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
                 setIsSidebarOpen(true);
               }}
               onRevealInToc={handleRevealInToc}
+              scale={scale}
+              onZoomIn={handleZoomIn}
+              onZoomOut={handleZoomOut}
             />
           }
           customRightActions={
             <PdfSubHeaderRightActions
               currentPage={currentPage}
               numPages={pdfData?.numPages || 1}
-              scale={scale}
-              zoomMode={zoomMode}
               onPageChange={scrollToPage}
-              onZoomIn={handleZoomIn}
-              onZoomOut={handleZoomOut}
-              onSetZoomMode={handleSetZoomMode}
               onRotateCw={handleRotateCw}
               onDownload={handleDownload}
               onPresent={handleStartPresentation}
