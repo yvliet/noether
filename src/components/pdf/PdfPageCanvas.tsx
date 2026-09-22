@@ -203,10 +203,13 @@ export const PdfPageCanvas: React.FC<PdfPageCanvasProps> = React.memo(({
       }
     };
 
-    renderPage();
+    const renderTimer = setTimeout(() => {
+      renderPage();
+    }, 100);
 
     return () => {
       isCancelled = true;
+      clearTimeout(renderTimer);
       if (renderTaskRef.current) {
         try {
           renderTaskRef.current.cancel();

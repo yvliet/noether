@@ -138,7 +138,7 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
     return () => {
       isCancelled = true;
     };
-  }, [currentDoc?.id, currentDoc?.content_json, diskPath, documentId]);
+  }, [currentDoc?.id, diskPath, documentId]);
 
   // Precompute page vertical layout offsets for instant math-based viewport culling without DOM reflow
   const pageOffsets = useMemo(() => {

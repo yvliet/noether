@@ -273,12 +273,15 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     const pageIndex = Math.max(0, Math.min(pageOffsets.length - 1, pageNum - 1));
     const offset = pageOffsets[pageIndex];
     if (offset) {
-      viewportRef.current.scrollTo({ top: Math.max(0, offset.top - 16), behavior: 'smooth' });
+      viewportRef.current.scrollTo({ top: Math.max(0, offset.top - 16), behavior: 'auto' });
       currentPageRef.current = pageNum;
       setCurrentPage(pageNum);
       updateVisiblePages(pageNum);
     }
   }, [pageOffsets, updateVisiblePages]);
+
+  const scrollToPageRef = useRef(scrollToPage);
+  scrollToPageRef.current = scrollToPage;
 
   // 3. Load PDF Document asynchronously
   useEffect(() => {
@@ -296,7 +299,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
           setPageInput(String(initialPage));
           if (initialPage > 1) {
             setTimeout(() => {
-              scrollToPage(initialPage);
+              scrollToPageRef.current(initialPage);
             }, 60);
           }
         }
@@ -311,7 +314,7 @@ export const PdfEmbedViewer: React.FC<PdfEmbedViewerProps> = React.memo(({
     return () => {
       isCancelled = true;
     };
-  }, [currentDoc?.id, diskPath, target, initialPage, scrollToPage]);
+  }, [currentDoc?.id, diskPath, target, initialPage]);
 
   // Sync page input on page changes
   useEffect(() => {

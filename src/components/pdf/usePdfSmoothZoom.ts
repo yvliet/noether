@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef } from 'react';
 
 export interface UsePdfSmoothZoomOptions {
   viewportRef: React.RefObject<HTMLDivElement | null>;
-  contentRef: React.RefObject<HTMLDivElement | null>;
+  contentRef?: React.RefObject<HTMLDivElement | null>;
   scale: number;
   minScale?: number;
   maxScale?: number;
@@ -14,17 +14,15 @@ export interface UsePdfSmoothZoomOptions {
  * High-performance, GPU-accelerated touchpad pinch and Ctrl+wheel zoom hook for PDF viewers.
  *
  * Technical Rationale:
- * - Direct PDF.js canvas rasterization on every wheel event causes severe thread thrashing and frame drops.
- * - During active pinch/wheel gestures, this hook applies an immediate CSS transform (scale) centered
- *   on the pointer coordinates directly on the GPU compositor thread (60-120fps).
- * - A debounced timer (150ms) triggers scale commit to React state.
- * - Crucially, useLayoutEffect synchronizes the scroll offset adjustment and clears the CSS transform
- *   on the exact same browser frame where the DOM page wrappers expand to the new scale, preventing
- *   browser scroll clamping jumps, size popping, and visual stutter.
+ * - Rather than applying an artificial CSS transform to the outer container (which scales page gaps,
+ *   borders, and padding incorrectly and causes violent layout jumps when cleared upon re-render),
+ *   this hook updates the layout scale on each animation frame while keeping the exact document
+ *   point under the cursor anchored.
+ * - In useLayoutEffect, the scroll offsets are applied synchronously on the exact DOM frame when
+ *   page wrappers resize, completely eliminating scroll clamping, jitter, and post-render shifting.
  */
 export function usePdfSmoothZoom({
   viewportRef,
-  contentRef,
   scale,
   minScale = 0.25,
   maxScale = 5.0,
@@ -34,67 +32,26 @@ export function usePdfSmoothZoom({
   const currentScaleRef = useRef(scale);
   currentScaleRef.current = scale;
 
-  const targetScaleRef = useRef(scale);
-  const debounceTimerRef = useRef<any>(null);
-  const isZoomingRef = useRef(false);
-
-  const gestureOriginRef = useRef<{
-    cursorVpX: number;
-    cursorVpY: number;
-    originX: number;
-    originY: number;
-    contentOffsetTop: number;
-    contentOffsetLeft: number;
-    baseScale: number;
-    wasHorizontallyCentered: boolean;
-    initialScrollWidth: number;
-  } | null>(null);
-
   const pendingScrollRef = useRef<{ left: number; top: number } | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+  const accumulatedDeltaRef = useRef<number>(0);
+  const cursorCoordsRef = useRef<{ x: number; y: number } | null>(null);
 
-  // Keep targetScale in sync with external scale changes (e.g. toolbar button clicks)
-  useEffect(() => {
-    if (!isZoomingRef.current) {
-      targetScaleRef.current = scale;
-    }
-  }, [scale]);
-
-  // Synchronously adjust scroll and release GPU transform on the exact DOM commit frame
+  // Synchronously apply anchored scroll coordinates on the exact DOM commit frame
   useLayoutEffect(() => {
     if (pendingScrollRef.current) {
       const { left, top } = pendingScrollRef.current;
       pendingScrollRef.current = null;
 
       const viewport = viewportRef.current;
-      const content = contentRef.current;
-
-      // Clear GPU transform synchronously with DOM size update
-      if (content) {
-        content.style.transform = '';
-        content.style.transformOrigin = '';
-        content.style.willChange = '';
-      }
-
-      // Force synchronous reflow so viewport scrollWidth/scrollHeight match the new scale
       if (viewport) {
         void viewport.scrollWidth;
         void viewport.scrollHeight;
-        viewport.scrollLeft = left;
         viewport.scrollTop = top;
+        viewport.scrollLeft = left;
       }
-
-      // Guard against layout shifts in the subsequent paint frame
-      requestAnimationFrame(() => {
-        if (viewportRef.current) {
-          viewportRef.current.scrollLeft = left;
-          viewportRef.current.scrollTop = top;
-        }
-      });
-
-      isZoomingRef.current = false;
-      gestureOriginRef.current = null;
     }
-  }, [scale, viewportRef, contentRef]);
+  }, [scale, viewportRef]);
 
   useEffect(() => {
     const viewport = viewportRef.current;
@@ -105,125 +62,55 @@ export function usePdfSmoothZoom({
       if (!e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
 
-      const content = contentRef.current;
-      if (!content) return;
+      const vpRect = viewport.getBoundingClientRect();
+      cursorCoordsRef.current = {
+        x: Math.max(0, e.clientX - vpRect.left),
+        y: Math.max(0, e.clientY - vpRect.top),
+      };
 
-      const baseScale = currentScaleRef.current;
+      accumulatedDeltaRef.current += e.deltaY;
 
-      // Natural exponential scaling factor: ~20% per notched wheel tick, silky on touchpad
-      const rawDelta = e.deltaY;
-      const clampedDelta = Math.max(-120, Math.min(120, rawDelta));
-      const factor = Math.exp(-clampedDelta * 0.002);
-      const nextScale = Math.max(minScale, Math.min(maxScale, targetScaleRef.current * factor));
-      targetScaleRef.current = nextScale;
+      if (rafIdRef.current !== null) return;
 
-      // On initial gesture tick, record pristine unscaled coordinates relative to content
-      if (!isZoomingRef.current || !gestureOriginRef.current) {
-        isZoomingRef.current = true;
-        const vpRect = viewport.getBoundingClientRect();
-        const contentRect = content.getBoundingClientRect();
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null;
 
-        // Check whether content is horizontally centered within the viewport
-        const isHorizontallyCentered = content.scrollWidth <= viewport.clientWidth + 4;
+        const delta = accumulatedDeltaRef.current;
+        accumulatedDeltaRef.current = 0;
 
-        // When horizontally centered, anchor horizontally at the content midpoint
-        // so scaling expands symmetrically without drifting sideways toward the off-center cursor
-        const originX = isHorizontallyCentered
-          ? content.clientWidth / 2
-          : Math.max(0, e.clientX - contentRect.left);
-        const originY = Math.max(0, e.clientY - contentRect.top);
+        const cursor = cursorCoordsRef.current;
+        if (!cursor) return;
 
-        gestureOriginRef.current = {
-          cursorVpX: e.clientX - vpRect.left,
-          cursorVpY: e.clientY - vpRect.top,
-          originX,
-          originY,
-          contentOffsetTop: content.offsetTop,
-          contentOffsetLeft: content.offsetLeft,
-          baseScale,
-          wasHorizontallyCentered: isHorizontallyCentered,
-          initialScrollWidth: content.scrollWidth,
-        };
+        // Natural exponential scaling factor
+        const clampedDelta = Math.max(-100, Math.min(100, delta));
+        const factor = Math.exp(-clampedDelta * 0.003);
+        const prevScale = currentScaleRef.current;
+        const nextScale = Math.max(minScale, Math.min(maxScale, +(prevScale * factor).toFixed(2)));
 
-        content.style.transformOrigin = `${originX}px ${originY}px`;
-        content.style.willChange = 'transform';
-      }
+        if (Math.abs(nextScale - prevScale) < 0.001) return;
 
-      if (!gestureOriginRef.current) return;
+        const ratio = nextScale / prevScale;
+        const currentScrollTop = viewport.scrollTop;
+        const targetScrollTop = Math.max(0, Math.round((currentScrollTop + cursor.y) * ratio - cursor.y));
 
-      // GPU-accelerated immediate visual scaling without re-rendering PDF canvas
-      const ratio = nextScale / gestureOriginRef.current.baseScale;
-      content.style.transform = `scale(${ratio})`;
-
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-
-      debounceTimerRef.current = setTimeout(() => {
-        if (!gestureOriginRef.current) {
-          isZoomingRef.current = false;
-          return;
-        }
-
-        const finalScale = +(targetScaleRef.current).toFixed(2);
-
-        if (Math.abs(finalScale - currentScaleRef.current) < 0.001) {
-          if (content) {
-            content.style.transform = '';
-            content.style.transformOrigin = '';
-            content.style.willChange = '';
-          }
-          isZoomingRef.current = false;
-          gestureOriginRef.current = null;
-          return;
-        }
-
-        const {
-          originX,
-          originY,
-          cursorVpX,
-          cursorVpY,
-          contentOffsetTop,
-          contentOffsetLeft,
-          baseScale: startScale,
-          wasHorizontallyCentered,
-          initialScrollWidth,
-        } = gestureOriginRef.current as any;
-        const commitRatio = finalScale / startScale;
-
-        // Calculate exact vertical scroll offset to keep the focused content point anchored at cursor
-        const newContentY = originY * commitRatio;
-        const targetScrollTop = Math.max(0, Math.round((contentOffsetTop + newContentY) - cursorVpY));
-
-        // Calculate horizontal scroll offset:
         let targetScrollLeft = 0;
-        if (wasHorizontallyCentered) {
-          const estimatedNewWidth = initialScrollWidth * commitRatio;
-          if (estimatedNewWidth > viewport.clientWidth) {
-            targetScrollLeft = Math.max(0, Math.round((estimatedNewWidth - viewport.clientWidth) / 2));
-          } else {
-            targetScrollLeft = 0;
-          }
-        } else {
-          const newContentX = originX * commitRatio;
-          targetScrollLeft = Math.max(0, Math.round((contentOffsetLeft + newContentX) - cursorVpX));
+        if (viewport.scrollWidth > viewport.clientWidth + 4) {
+          const currentScrollLeft = viewport.scrollLeft;
+          targetScrollLeft = Math.max(0, Math.round((currentScrollLeft + cursor.x) * ratio - cursor.x));
         }
 
-        // Stash pending scroll offset for synchronous application in useLayoutEffect upon DOM mutation
         pendingScrollRef.current = { left: targetScrollLeft, top: targetScrollTop };
-
-        // Commit resolution scale to trigger React render
-        onScaleCommit(finalScale);
-      }, 150);
+        onScaleCommit(nextScale);
+      });
     };
 
     viewport.addEventListener('wheel', handleWheel, { passive: false });
 
     return () => {
       viewport.removeEventListener('wheel', handleWheel);
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current);
       }
     };
-  }, [viewportRef, contentRef, minScale, maxScale, onScaleCommit, enabled]);
+  }, [viewportRef, minScale, maxScale, onScaleCommit, enabled]);
 }
