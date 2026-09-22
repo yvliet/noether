@@ -88,8 +88,11 @@ export const TooltipProvider: React.FC = React.memo(() => {
     const titleAttr = target.getAttribute('title');
     if (titleAttr) {
       rawContent = titleAttr;
-      // Do not mutate DOM if inside ProseMirror or contenteditable to avoid breaking editor state & DOMObserver
-      if (!target.closest('.ProseMirror, [contenteditable="true"]')) {
+      // Do not mutate DOM if inside editable ProseMirror text blocks, but safely strip on widgets and toolbars
+      const isEditableText =
+        target.closest('.ProseMirror, [contenteditable="true"]') &&
+        !target.closest('.noether-embed-card, .noether-embed-wrapper, .noether-embed-media, [data-pdf-toolbar], [data-pdf-sidebar], .noether-toolbar-btn');
+      if (!isEditableText) {
         target.setAttribute('data-tooltip', titleAttr);
         target.removeAttribute('title');
       }

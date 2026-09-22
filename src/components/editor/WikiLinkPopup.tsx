@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { File01Icon, FileAddIcon } from '@/components/common/Icons';
+import { isImageFileName, isAudioFileName, isVideoFileName } from '@/core/registries/FileTypeRegistry';
 import { WikiLinkItem } from './extensions/wikilink';
 
 interface WikiLinkPopupProps {
@@ -67,10 +68,14 @@ export const WikiLinkPopup = React.memo(
           className="pointer-events-auto bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg shadow-[var(--noether-shadow-2)] overflow-hidden w-64 max-h-72 overflow-y-auto py-1 z-50 text-xs select-none"
         >
           <div className="px-3 py-1.5 text-[10px] font-semibold text-[var(--noether-text-muted)] uppercase tracking-wider">
-            Link to Note
+            Link to Note or File
           </div>
           {displayItems.map((item, index) => {
             const isSelected = index === selectedIndex;
+            const isPdf = item.title.toLowerCase().endsWith('.pdf');
+            const isImg = isImageFileName(item.title);
+            const isMedia = isAudioFileName(item.title) || isVideoFileName(item.title);
+
             return (
               <button
                 key={item.id}
@@ -89,6 +94,12 @@ export const WikiLinkPopup = React.memo(
               >
                 {item.isNew ? (
                   <FileAddIcon size={16} className="text-[var(--noether-accent)] shrink-0" />
+                ) : isPdf ? (
+                  <File01Icon size={16} className="text-rose-400 shrink-0" />
+                ) : isImg ? (
+                  <File01Icon size={16} className="text-blue-400 shrink-0" />
+                ) : isMedia ? (
+                  <File01Icon size={16} className="text-amber-400 shrink-0" />
                 ) : (
                   <File01Icon size={16} className="text-[var(--noether-text-muted)] shrink-0" />
                 )}
@@ -97,6 +108,11 @@ export const WikiLinkPopup = React.memo(
                   {item.isNew && (
                     <span className="ml-1.5 text-[10px] text-[var(--noether-text-secondary)] bg-[var(--noether-bg-card-hover)] px-1 py-0.5 rounded border border-[var(--noether-border-subtle)]">
                       Create new
+                    </span>
+                  )}
+                  {isPdf && !item.isNew && (
+                    <span className="ml-1.5 text-[9px] font-mono uppercase text-rose-400/90 bg-rose-500/10 px-1 py-0.5 rounded">
+                      PDF
                     </span>
                   )}
                 </div>

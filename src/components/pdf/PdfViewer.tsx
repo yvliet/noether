@@ -1204,7 +1204,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
               type="button"
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage <= 1}
-              title="Previous slide (Left / Up / PageUp)"
+              data-tooltip="Previous slide (Left / Up / PageUp)"
+              aria-label="Previous slide"
               className="p-1 rounded text-white/50 hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-default"
             >
               <ArrowLeft01Icon size={14} />
@@ -1218,7 +1219,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
               type="button"
               onClick={() => setCurrentPage((prev) => Math.min(pdfData.numPages, prev + 1))}
               disabled={currentPage >= pdfData.numPages}
-              title="Next slide (Right / Down / Space / PageDown)"
+              data-tooltip="Next slide (Right / Down / Space / PageDown)"
+              aria-label="Next slide"
               className="p-1 rounded text-white/50 hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-default"
             >
               <ArrowRight01Icon size={14} />
@@ -1231,7 +1233,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
             <button
               type="button"
               onClick={() => applyPresentationZoom(1.3, window.innerWidth / 2, window.innerHeight / 2)}
-              title="Zoom in (+)"
+              data-tooltip="Zoom in (+)"
+              aria-label="Zoom in"
               className="p-1 rounded text-white/50 hover:text-white cursor-pointer"
             >
               <PlusSignIcon size={14} />
@@ -1241,7 +1244,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
               type="button"
               onClick={() => applyPresentationZoom(0.75, window.innerWidth / 2, window.innerHeight / 2)}
               disabled={presentZoomScale <= 1.01}
-              title="Zoom out (-)"
+              data-tooltip="Zoom out (-)"
+              aria-label="Zoom out"
               className="p-1 rounded text-white/50 hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-default"
             >
               <MinusSignIcon size={14} />
@@ -1254,7 +1258,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
                 setPresentPosition({ x: 0, y: 0 });
               }}
               disabled={presentZoomScale <= 1.01 && presentPosition.x === 0 && presentPosition.y === 0}
-              title="Reset zoom (0)"
+              data-tooltip="Reset zoom (0)"
+              aria-label="Reset zoom"
               className="p-1 rounded text-white/50 hover:text-white disabled:opacity-20 cursor-pointer disabled:cursor-default"
             >
               <RotateCcwIcon size={14} />
@@ -1267,7 +1272,8 @@ export const PdfViewer: React.FC<PdfViewerProps> = React.memo(({
             <button
               type="button"
               onClick={handleExitPresentation}
-              title="Exit presentation (Esc)"
+              data-tooltip="Exit presentation (Esc)"
+              aria-label="Exit presentation"
               className="p-1 rounded text-white/50 hover:text-white cursor-pointer"
             >
               <Cancel01Icon size={14} />

@@ -961,7 +961,9 @@ function scanBlockDecorations(
           side: 1,
           stopEvent: (event) => {
             const target = event.target as HTMLElement;
-            return !!target.closest('button, a, audio, video, iframe, input, select, [data-embed-action]');
+            return !!target.closest(
+              'button, a, audio, video, iframe, input, select, canvas, [data-embed-action], [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-toolbar-btn'
+            );
           },
         })
       );
@@ -1001,7 +1003,9 @@ function scanBlockDecorations(
           side: 1,
           stopEvent: (event) => {
             const target = event.target as HTMLElement;
-            return !!target.closest('button, a, audio, video, iframe, input, select, [data-embed-action]');
+            return !!target.closest(
+              'button, a, audio, video, iframe, input, select, canvas, [data-embed-action], [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-toolbar-btn'
+            );
           },
         })
       );
@@ -1748,7 +1752,9 @@ export const LivePreviewSyntax = Extension.create({
               return true;
             }
 
-            const actionEl = target.closest('.noether-embed-action, audio, video, iframe, button, a, input, select') as HTMLElement | null;
+            const actionEl = target.closest(
+              '.noether-embed-action, audio, video, iframe, button, a, input, select, canvas, [data-pdf-toolbar], [data-pdf-sidebar], .noether-pdf-embed-card, .noether-toolbar-btn'
+            ) as HTMLElement | null;
             if (actionEl) {
               return true;
             }

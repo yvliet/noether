@@ -1,3 +1,5 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
 import { useDocumentStore } from '@/store/documentStore';
 import { useWorkspaceStore } from '@/store/workspaceStore';
 import { getDocumentById, getDocumentPath, getDocumentDiskPath } from '@/lib/db/documents';
@@ -11,6 +13,7 @@ import {
   getMediaMimeType,
 } from '@/core/registries/FileTypeRegistry';
 import { DocumentItem } from '@/types';
+import { PdfEmbedViewer } from '@/components/pdf/PdfEmbedViewer';
 import katex from 'katex';
 
 export type EmbedKind = 'note' | 'image' | 'audio' | 'video' | 'pdf' | 'youtube' | 'web';
@@ -23,6 +26,7 @@ export interface ParsedEmbed {
   aliasOrDimensions: string | null;
   width: number | null;
   height: number | null;
+  page: number | null;
   url: string;
   isExternalUrl: boolean;
   youtubeId: string | null;
@@ -336,6 +340,24 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
     }
   }
 
+  let pageNumber: number | null = null;
+  if (target.includes('#')) {
+    const parts = target.split('#');
+    const anchor = parts.slice(1).join('#').trim();
+    const pageMatch = anchor.match(/^(?:page=|p=)?(\d+)$/i);
+    if (pageMatch) {
+      pageNumber = parseInt(pageMatch[1], 10);
+      target = parts[0].trim();
+    }
+  }
+
+  if (!pageNumber && aliasOrDim) {
+    const pageMatch = aliasOrDim.match(/^(?:page=|p=)(\d+)$/i);
+    if (pageMatch) {
+      pageNumber = parseInt(pageMatch[1], 10);
+    }
+  }
+
   const { width, height } = parseDimensions(aliasOrDim);
 
   const isExternalUrl = /^https?:\/\//i.test(target) || /^data:/i.test(target) || /^blob:/i.test(target) || /^file:\/\//i.test(target);
@@ -350,6 +372,7 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
       aliasOrDimensions: aliasOrDim,
       width,
       height,
+      page: null,
       url: target,
       isExternalUrl: true,
       youtubeId: ytId,
@@ -370,6 +393,7 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
       aliasOrDimensions: aliasOrDim,
       width,
       height,
+      page: null,
       url: target,
       isExternalUrl,
       youtubeId: null,
@@ -385,6 +409,7 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
       aliasOrDimensions: aliasOrDim,
       width,
       height,
+      page: null,
       url: target,
       isExternalUrl,
       youtubeId: null,
@@ -400,6 +425,7 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
       aliasOrDimensions: aliasOrDim,
       width,
       height,
+      page: null,
       url: target,
       isExternalUrl,
       youtubeId: null,
@@ -407,14 +433,19 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
   }
 
   if (PDF_EXTS.has(ext)) {
+    // If a single dimension was passed like ![[doc.pdf|600]], use it as height if no 'x' was present
+    const resolvedHeight = height || (width && !aliasOrDim?.includes('x') ? width : null);
+    const resolvedWidth = aliasOrDim?.includes('x') ? width : null;
+
     return {
       kind: 'pdf',
       target,
       noteTitle: '',
       headingAnchor: null,
       aliasOrDimensions: aliasOrDim,
-      width,
-      height,
+      width: resolvedWidth,
+      height: resolvedHeight,
+      page: pageNumber,
       url: target,
       isExternalUrl,
       youtubeId: null,
@@ -430,6 +461,7 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
       aliasOrDimensions: aliasOrDim,
       width,
       height,
+      page: null,
       url: target,
       isExternalUrl: true,
       youtubeId: null,
@@ -452,6 +484,7 @@ export function parseEmbedTarget(raw: string, format: 'wikilink' | 'markdown' = 
     aliasOrDimensions: aliasOrDim,
     width,
     height,
+    page: pageNumber,
     url: target,
     isExternalUrl: false,
     youtubeId: null,
@@ -771,7 +804,8 @@ export function renderEmbedWidget(
 
     const zoomBtn = document.createElement('button');
     zoomBtn.type = 'button';
-    zoomBtn.title = 'Zoom image';
+    zoomBtn.setAttribute('data-tooltip', 'Zoom image');
+    zoomBtn.setAttribute('aria-label', 'Zoom image');
     zoomBtn.setAttribute('data-embed-action', 'zoom');
     zoomBtn.className =
       'p-1 rounded text-[#a0a0a0] hover:text-white hover:bg-[#303030] cursor-pointer transition-none flex items-center justify-center';
@@ -788,7 +822,8 @@ export function renderEmbedWidget(
 
     const codeBtn = document.createElement('button');
     codeBtn.type = 'button';
-    codeBtn.title = 'Edit embed source';
+    codeBtn.setAttribute('data-tooltip', 'Edit embed source');
+    codeBtn.setAttribute('aria-label', 'Edit embed source');
     codeBtn.setAttribute('data-embed-action', 'code');
     codeBtn.className =
       'p-1 rounded text-[#a0a0a0] hover:text-white hover:bg-[#303030] cursor-pointer transition-none flex items-center justify-center';
@@ -997,37 +1032,21 @@ export function renderEmbedWidget(
 
   // 5. PDF Embed
   if (embed.kind === 'pdf') {
-    const pdfCard = document.createElement('div');
-    pdfCard.className = 'noether-embed-card noether-pdf-embed rounded-lg border border-[#2a2a2a] bg-[#1a1a1a] p-3 my-2 flex items-center justify-between gap-3 max-w-xl';
+    const pdfWrapper = document.createElement('div');
+    pdfWrapper.className = 'noether-embed-media noether-pdf-embed-wrapper my-1.5 w-full max-w-full';
 
-    const info = document.createElement('div');
-    info.className = 'flex items-center gap-2.5 truncate min-w-0';
-    info.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-rose-400 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span class="text-xs font-medium text-[#e0e0e0] truncate">${embed.target}</span>`;
-    pdfCard.appendChild(info);
+    const root = createRoot(pdfWrapper);
+    root.render(
+      React.createElement(PdfEmbedViewer, {
+        target: embed.target,
+        rawTarget: rawTarget,
+        initialPage: embed.page || 1,
+        height: embed.height || 520,
+        width: embed.width || null,
+      })
+    );
 
-    const openBtn = document.createElement('button');
-    openBtn.type = 'button';
-    openBtn.className = 'noether-embed-action px-2.5 py-1 text-xs rounded bg-[#252525] hover:bg-[#303030] text-[#cccccc] hover:text-white transition-none shrink-0 cursor-pointer flex items-center gap-1';
-    openBtn.innerHTML = `<span>Open</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>`;
-    openBtn.onclick = (e) => {
-      e.stopPropagation();
-      const ds = useDocumentStore.getState();
-      const cleanTarget = embed.target.trim().toLowerCase();
-      const matched = ds.documents.find(
-        (d) =>
-          d.title.toLowerCase() === cleanTarget ||
-          d.title.toLowerCase() === `${cleanTarget}.pdf` ||
-          d.id === embed.target
-      );
-      if (matched) {
-        useWorkspaceStore.getState().openTab(matched.id, matched.title, { viewType: 'pdf' });
-      } else {
-        window.open(embed.url, '_blank');
-      }
-    };
-    pdfCard.appendChild(openBtn);
-
-    container.appendChild(pdfCard);
+    container.appendChild(pdfWrapper);
     return container;
   }
 
@@ -1071,7 +1090,8 @@ export function renderEmbedWidget(
     const openBtn = document.createElement('button');
     openBtn.type = 'button';
     openBtn.className = 'noether-embed-action flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-[#999999] hover:text-white rounded hover:bg-[#2c2c2c] transition-none cursor-pointer';
-    openBtn.title = 'Open note in new tab';
+    openBtn.setAttribute('data-tooltip', 'Open note in new tab');
+    openBtn.setAttribute('aria-label', 'Open note in new tab');
     openBtn.innerHTML = `<span>Open</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>`;
     openBtn.onclick = (e) => {
       e.stopPropagation();
@@ -1079,6 +1099,22 @@ export function renderEmbedWidget(
     };
     headerRight.appendChild(openBtn);
   }
+
+  const codeBtn = document.createElement('button');
+  codeBtn.type = 'button';
+  codeBtn.className = 'noether-embed-action flex items-center gap-1 px-1.5 py-0.5 text-[11px] text-[#999999] hover:text-white rounded hover:bg-[#2c2c2c] transition-none cursor-pointer';
+  codeBtn.setAttribute('data-tooltip', 'Edit embed source');
+  codeBtn.setAttribute('aria-label', 'Edit embed source');
+  codeBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`;
+  codeBtn.onclick = (e) => {
+    e.stopPropagation();
+    document.dispatchEvent(
+      new CustomEvent('noether:focus-embed-code', {
+        detail: { target: rawTarget, cleanTarget: embed.target },
+      })
+    );
+  };
+  headerRight.appendChild(codeBtn);
 
   header.appendChild(headerRight);
   card.appendChild(header);

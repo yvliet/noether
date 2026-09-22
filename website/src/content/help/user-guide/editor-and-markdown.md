@@ -55,6 +55,7 @@ Noether supports standard CommonMark formatting and desktop keyboard shortcuts:
 | **Blockquote** | `> Quote` | `Ctrl+Shift+.` |
 | **Horizontal Rule** | `---` | Auto-converted on `Enter` |
 | **Wikilink** | `[[Note Title]]` | Type `[[` |
+| **Embed Wikilink** | `![[File.pdf]]` or `![[Image.png]]` | Type `![[` |
 
 ### Auto-Pairing Characters
 

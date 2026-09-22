@@ -75,7 +75,8 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
       <button
         type="button"
         onClick={onToggleSidebar}
-        title={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
+        data-tooltip={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
+        aria-label={isSidebarOpen ? 'Collapse drawer' : 'Expand drawer'}
         data-active={isSidebarOpen ? 'true' : undefined}
         className={`noether-toolbar-btn w-[21px] h-[21px] ${isSidebarOpen ? 'active' : ''}`}
       >
@@ -91,7 +92,8 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
         data-pdf-trigger="sidebar"
         type="button"
         onClick={openSidebarMenu}
-        title="Drawer options"
+        data-tooltip="Drawer options"
+        aria-label="Drawer options"
         data-active={isSidebarMenuOpen ? 'true' : undefined}
         className={`noether-toolbar-btn w-[21px] h-[21px] ${isSidebarMenuOpen ? 'active' : ''}`}
       >
@@ -109,9 +111,11 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
               top: `${sidebarMenuPos.top}px`,
               left: `${sidebarMenuPos.left}px`,
               zIndex: 99999,
+              background: 'var(--noether-bg-popover, var(--noether-bg-card))',
+              border: '1px solid var(--noether-border-base)',
               boxShadow: 'var(--noether-shadow-2)',
             }}
-            className="w-[220px] bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] select-none"
+            className="w-[220px] rounded-lg p-1 text-xs text-[var(--noether-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
           >
             <button
               type="button"
@@ -119,14 +123,18 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
                 onSelectSidebarMode('thumbnails');
                 setIsSidebarMenuOpen(false);
               }}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                sidebarMode === 'thumbnails' && isSidebarOpen
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+              }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <DashboardSquare01Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
+                <DashboardSquare01Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="truncate">Thumbnails</span>
               </div>
               {sidebarMode === 'thumbnails' && isSidebarOpen && (
-                <CheckIcon size={13} className="text-[var(--noether-accent,#eb584d)] shrink-0 ml-1" />
+                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
               )}
             </button>
 
@@ -136,18 +144,22 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
                 onSelectSidebarMode('outline');
                 setIsSidebarMenuOpen(false);
               }}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                sidebarMode === 'outline' && isSidebarOpen
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+              }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <LeftToRightListBulletIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
+                <LeftToRightListBulletIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="truncate">Table of contents</span>
               </div>
               {sidebarMode === 'outline' && isSidebarOpen && (
-                <CheckIcon size={13} className="text-[var(--noether-accent,#eb584d)] shrink-0 ml-1" />
+                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
               )}
             </button>
 
-            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 shrink-0" />
+            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 mx-1 shrink-0" />
 
             <button
               type="button"
@@ -155,9 +167,9 @@ export const PdfSubHeaderLeftActions: React.FC<PdfSubHeaderLeftActionsProps> = R
                 onRevealInToc();
                 setIsSidebarMenuOpen(false);
               }}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center gap-2.5 cursor-pointer group"
+              className="w-full px-2.5 py-1.5 rounded-[5px] flex items-center gap-2.5 text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] cursor-pointer select-none transition-none"
             >
-              <ArrowRight02Icon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
+              <ArrowRight02Icon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
               <span className="truncate">Reveal page in table of contents</span>
             </button>
           </div>,
@@ -265,7 +277,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
           type="button"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(currentPage - 1)}
-          title="Previous page (PageUp)"
+          data-tooltip="Previous page (PageUp)"
+          aria-label="Previous page"
           className="noether-toolbar-btn"
         >
           <ArrowLeft01Icon size={12} />
@@ -284,10 +297,11 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
                 setPageInput(String(currentPage));
               }
             }}
-            title="Page number (press Enter to jump)"
+            data-tooltip="Page number (press Enter to jump)"
+            aria-label="Page number"
             className="w-7 h-5 text-center text-[11px] tabular-nums font-sans bg-transparent hover:bg-[var(--noether-bg-card-hover)] focus:bg-[var(--noether-bg-card-active)] rounded text-[var(--noether-text-primary,#fff)] outline-none selection:bg-[var(--noether-accent,#eb584d)] p-0 border-none"
           />
-          <span className="text-[#555] mx-0.5 select-none">/</span>
+          <span className="text-[#555] mx-0.5 select-none font-sans">/</span>
           <span className="text-[var(--noether-text-muted,#777)] tabular-nums font-sans min-w-[12px] text-left select-none">{numPages}</span>
         </form>
 
@@ -295,7 +309,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
           type="button"
           disabled={currentPage >= numPages}
           onClick={() => onPageChange(currentPage + 1)}
-          title="Next page (PageDown)"
+          data-tooltip="Next page (PageDown)"
+          aria-label="Next page"
           className="noether-toolbar-btn"
         >
           <ArrowRight01Icon size={12} />
@@ -309,7 +324,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
         <button
           type="button"
           onClick={onZoomOut}
-          title="Zoom out (Ctrl + -)"
+          data-tooltip="Zoom out (Ctrl + -)"
+          aria-label="Zoom out"
           className="noether-toolbar-btn"
         >
           <MinusSignIcon size={13} />
@@ -320,7 +336,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
           data-pdf-trigger="zoom"
           type="button"
           onClick={openZoomMenu}
-          title="Zoom options"
+          data-tooltip="Zoom options"
+          aria-label="Zoom options"
           className="noether-toolbar-btn px-1.5 text-[11px] tabular-nums font-sans text-[var(--noether-text-muted,#aaa)] hover:text-white"
         >
           {Math.round(scale * 100)}%
@@ -329,7 +346,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
         <button
           type="button"
           onClick={onZoomIn}
-          title="Zoom in (Ctrl + +)"
+          data-tooltip="Zoom in (Ctrl + +)"
+          aria-label="Zoom in"
           className="noether-toolbar-btn"
         >
           <PlusSignIcon size={13} />
@@ -338,7 +356,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
         <button
           type="button"
           onClick={onPresent}
-          title="Present slideshow"
+          data-tooltip="Present slideshow"
+          aria-label="Present slideshow"
           className="noether-toolbar-btn w-[21px] h-[21px]"
         >
           <Presentation01Icon size={13} />
@@ -356,9 +375,11 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
               top: `${zoomMenuPos.top}px`,
               left: `${zoomMenuPos.left}px`,
               zIndex: 99999,
+              background: 'var(--noether-bg-popover, var(--noether-bg-card))',
+              border: '1px solid var(--noether-border-base)',
               boxShadow: 'var(--noether-shadow-2)',
             }}
-            className="w-[180px] bg-[var(--noether-bg-popover,var(--noether-bg-card))] border border-[var(--noether-border-base)] rounded-lg p-1 text-xs flex flex-col gap-[1px] select-none"
+            className="w-[180px] rounded-lg p-1 text-xs text-[var(--noether-text-secondary)] select-none z-[99999] backdrop-blur-md flex flex-col gap-[1px]"
           >
             <button
               type="button"
@@ -366,14 +387,18 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
                 onSetZoomMode('fit-width');
                 setIsZoomMenuOpen(false);
               }}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                zoomMode === 'fit-width'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+              }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <CenterFocusIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
+                <CenterFocusIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="truncate">Fit to width</span>
               </div>
               {zoomMode === 'fit-width' && (
-                <CheckIcon size={13} className="text-[var(--noether-accent,#eb584d)] shrink-0 ml-1" />
+                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
               )}
             </button>
 
@@ -383,18 +408,22 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
                 onSetZoomMode('fit-page');
                 setIsZoomMenuOpen(false);
               }}
-              className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+              className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                zoomMode === 'fit-page'
+                  ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                  : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+              }`}
             >
               <div className="flex items-center gap-2.5 truncate">
-                <FitToScreenIcon size={14} className="text-[var(--noether-text-muted)] group-hover:text-[var(--noether-text-primary)] shrink-0" />
+                <FitToScreenIcon size={14} className="text-[var(--noether-text-muted)] shrink-0" />
                 <span className="truncate">Fit to page</span>
               </div>
               {zoomMode === 'fit-page' && (
-                <CheckIcon size={13} className="text-[var(--noether-accent,#eb584d)] shrink-0 ml-1" />
+                <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
               )}
             </button>
 
-            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 shrink-0" />
+            <div className="h-[1px] bg-[var(--noether-border-base)] my-1 mx-1 shrink-0" />
 
             {zoomPresets.map((preset) => {
               const isSelected =
@@ -407,14 +436,15 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
                     onSetZoomMode('custom', preset.scale);
                     setIsZoomMenuOpen(false);
                   }}
-                  className="w-full px-2.5 py-1.5 rounded-[5px] text-left text-xs text-[var(--noether-text-secondary)] hover:bg-[var(--noether-bg-card-hover)] hover:text-[var(--noether-text-primary)] flex items-center justify-between gap-2.5 cursor-pointer group"
+                  className={`w-full px-2.5 py-1.5 rounded-[5px] flex items-center justify-between text-left text-xs cursor-pointer select-none transition-none ${
+                    isSelected
+                      ? 'text-[var(--noether-text-primary)] bg-[var(--noether-btn-active-bg)] font-normal'
+                      : 'text-[var(--noether-text-secondary)] hover:bg-[var(--noether-btn-hover-bg)] hover:text-[var(--noether-text-primary)] font-normal'
+                  }`}
                 >
-                  <div className="flex items-center gap-2.5 truncate">
-                    <div className="w-3.5 shrink-0" />
-                    <span className="tabular-nums font-sans truncate">{preset.label}</span>
-                  </div>
+                  <span className="tabular-nums font-sans truncate">{preset.label}</span>
                   {isSelected && (
-                    <CheckIcon size={13} className="text-[var(--noether-accent,#eb584d)] shrink-0 ml-1" />
+                    <CheckIcon size={13} className="text-[var(--noether-text-primary)] shrink-0 ml-1.5" />
                   )}
                 </button>
               );
@@ -429,7 +459,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
       <button
         type="button"
         onClick={onRotateCw}
-        title="Rotate clockwise (Ctrl + ])"
+        data-tooltip="Rotate clockwise (Ctrl + ])"
+        aria-label="Rotate clockwise"
         className="noether-toolbar-btn"
       >
         <RotateCcwIcon size={13} />
@@ -439,7 +470,8 @@ export const PdfSubHeaderRightActions: React.FC<PdfSubHeaderRightActionsProps> =
       <button
         type="button"
         onClick={onDownload}
-        title="Save a copy"
+        data-tooltip="Save a copy"
+        aria-label="Save a copy"
         className="noether-toolbar-btn"
       >
         <Download01Icon size={13} />

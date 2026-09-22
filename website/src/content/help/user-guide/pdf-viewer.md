@@ -84,11 +84,14 @@ Presentation mode eliminates accidental vertical and horizontal wheel scrolling:
 ## 4. Markdown Embed Integration
 ---
 
-You can open, read, and reference PDF files alongside your notes:
+You can embed and interact with PDF files directly within your notes using standard wikilink syntax:
 
-- Write `![[research-paper.pdf]]` to embed a live interactive PDF preview directly inside any Markdown note.
-- The embed renders the document with smooth page navigation and scroll containment.
-- Clicking the embed opens the full document in a dedicated tab where you can inspect the outline, search pages, or enter presentation mode.
+- **Rich Slide & Page Viewer**: Write `![[research-paper.pdf]]` to render an inline PDF viewer widget directly below your syntax line.
+- **Collapsible Thumbnail Drawer**: Click the drawer icon on the widget toolbar to inspect slide thumbnails on the left and jump between pages.
+- **Page Jump & Pagination**: Navigate with `<` and `>` buttons, or type a page number into the counter (e.g. `1 of 5`) and press `Enter`.
+- **Custom Sizing & Page Anchors**: Specify initial page targets or custom height dimensions (e.g. `![[slides.pdf#page=3]]` or `![[presentation.pdf|600]]`).
+- **Source Code Toggle (`</>`)**: Click the `</>` button on the widget toolbar to jump into and edit the underlying markdown wikilink syntax.
+- **Dedicated Tab & Presentation**: Launch fullscreen presentation slideshows or open the PDF in a dedicated workspace tab directly from the embed controls.
 
 ## 5. Keyboard Shortcuts & Controls
 ---
