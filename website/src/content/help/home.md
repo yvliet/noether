@@ -1,6 +1,8 @@
 # Noether Help
 
-Welcome to the Noether user guide and documentation hub. Noether is a fast, local-first note-taking app and Markdown workspace built for deep focus, clean organization, and high-speed desktop performance.
+Oh ye of little faith, welcome to the Noether docs. If you're here to figure out how things work, look up keyboard shortcuts, or get your vault set up, you're in the right place.
+
+Noether is a fast, local-first note-taking app and Markdown workspace built for deep focus, clean organization, and high-speed desktop performance. Notes live as plain `.md` files on your disk, backed by an embedded SQLite search index.
 
 If you are looking for developer documentation, architecture specifications, or how to build custom extensions, click **Noether Help** in the top-left corner anytime to switch over to **Noether Docs**.
 

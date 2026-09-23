@@ -47,8 +47,8 @@ My-Vault/
 ### Tips for Clean Organization
 
 - **Limit Root Files**: Keep your vault root directory clean by grouping notes into broad top-level topic folders (such as `Life/`, `Projects/`, `Resources/`).
-- **Use Wikilinks over Deep Nesting**: Instead of nesting folders five levels deep, keep folders shallow (1 to 2 levels) and connect related notes using `[[Wikilinks]]`.
-- **Use Properties for Metadata**: Use note properties (`status: in-progress`, `priority: high`) instead of moving files between status folders.
+- **Use Wikilinks over Deep Nesting**: Instead of nesting folders five levels deep, keep folders shallow (1 to 2 levels) and connect related notes using [[Live Preview Editor & Markdown|Wikilinks]].
+- **Use Properties for Metadata**: Use note properties (`status: in-progress`, `priority: high`) instead of moving files between status folders (see [[Properties]]).
 
 ## 3. File Tree Power Interactions & Multi-Selection
 ---
@@ -118,8 +118,8 @@ Noether protects your files against data corruption and accidental loss:
 
 Because your vault consists of plain files on disk, backing up and syncing your notes is simple:
 
-- **Git Versioning**: Initialize a Git repository inside your vault folder to version all changes with `git commit`.
+- **Git Versioning**: Initialize a Git repository inside your vault folder to version all changes with `git commit`, or use the built-in [[Version History]] extension.
 - **Cloud Drives**: You can store your vault in Dropbox, Google Drive, OneDrive, or iCloud Drive.
-- **Syncthing**: For private peer-to-peer syncing across computers without third-party servers, point Syncthing at your vault directory.
+- **Syncthing**: For private peer-to-peer syncing across computers without third-party servers, point [Syncthing](https://syncthing.net) at your vault directory.
 - **Noether Sync**: Use the built-in [[Sync]] extension to synchronize notes to free cloud databases (Turso, Supabase, Cloudflare D1) with optional end-to-end encryption.
 

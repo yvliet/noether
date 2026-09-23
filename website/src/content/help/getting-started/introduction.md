@@ -65,7 +65,7 @@ You can organize your vault however you prefer. A clean approach is using a few 
 
 A dedicated **Android** build is planned following the desktop 1.0.0 release.
 
-Because Noether is built with Tauri v2, bringing it to Android allows direct access to local folders on your phone. You will be able to sync your vault with Syncthing, Git, or cloud drives and open your notes on mobile.
+Because Noether is built with Tauri v2, bringing it to Android allows direct access to local folders on your phone. You will be able to sync your vault with [Syncthing](https://syncthing.net), Git, or cloud drives and open your notes on mobile.
 
 An iOS build is not planned in the near term due to Apple's strict filesystem sandboxing and App Store developer requirements.
 
@@ -75,4 +75,5 @@ An iOS build is not planned in the near term due to Apple's strict filesystem sa
 
 - Ready to install? Read [[Installation & Setup]].
 - Learn the editor tools in [[Live Preview Editor & Markdown]].
-- Explore the 15 built-in [[Canvas]], [[Graph View]], and [[Tasks]] extensions.
+- Master keyboard navigation with [[Keyboard Shortcuts & Commands]].
+- Explore the 14 built-in [[Canvas]], [[Graph View]], and [[Tasks]] extensions.

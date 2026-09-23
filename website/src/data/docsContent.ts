@@ -130,7 +130,7 @@ export const DOCS_TREE: DocNode[] = [
         id: 'performance-engineering',
         title: 'Systems & Performance Engineering',
         slug: 'performance-engineering',
-        aliases: ['Performance', 'Systems Engineering', 'Sub-8ms', 'Working Set Trimming'],
+        aliases: ['Performance', 'Systems Engineering', 'Low Latency', 'High Performance', 'Working Set Trimming'],
         portal: 'docs',
         content: performanceEngineeringRaw,
       },

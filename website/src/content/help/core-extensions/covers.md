@@ -7,7 +7,7 @@ Add header banner images to notes with Wallhaven wallpaper search, offline prese
 
 Hover above your note title in the editor and click **Add cover** (or run `Covers: Add cover image` from `Ctrl+K`). You can pick from three sources:
 
-- **Wallhaven**: Search online wallpapers by keyword (e.g. `pixel art`, `minimal`, `cyberpunk`).
+- **Wallhaven**: Search online wallpapers on [Wallhaven](https://wallhaven.cc) by keyword (e.g. `pixel art`, `minimal`, `cyberpunk`).
 - **Offline Presets**: Curated gradients and abstract textures bundled with the app, available without an internet connection.
 - **Custom URL or Local File**: Paste an image link or select any local image attachment in your vault.
 
@@ -16,7 +16,7 @@ To adjust the crop, hover over the banner, click **Reposition**, drag the image 
 ## 2. Where Cover Data Lives
 ---
 
-Covers writes directly to your note's YAML frontmatter. It never touches your Markdown body text:
+Covers writes directly to your note's YAML frontmatter (see [[Properties]]). It never touches your Markdown body text:
 
 ```yaml
 ---

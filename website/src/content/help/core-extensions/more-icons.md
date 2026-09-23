@@ -7,7 +7,7 @@ Assign custom icons and colors to files, folders, and tabs in the sidebar so you
 
 Right-click any note, folder, or canvas in the left sidebar and select **Change icon** (or run `Icons: Set icon for active note` from `Ctrl+K`).
 
-- **Search Glyphs**: Browse thousands of icons from HugeIcons by name (e.g. `terminal`, `sparkles`, `book`, `code`).
+- **Search Glyphs**: Browse thousands of icons from [Hugeicons](https://hugeicons.com) by name (e.g. `terminal`, `sparkles`, `book`, `code`).
 - **Color Accents**: Pick a color swatch to tint the icon, or leave it neutral to follow your current theme colors.
 - **Custom SVGs**: Paste raw SVG markup directly into the search bar if you want a custom glyph that isn't in the library.
 
@@ -26,5 +26,5 @@ In **Settings (`Ctrl+,`) → More Icons**, you can set path rules:
 ## 3. Storage
 ---
 
-All custom icon mappings and rules are stored locally in `.noether/icons.json`. Icons also appear on Canvas cards, search results, and editor tab headers.
+All custom icon mappings and rules are stored locally in `.noether/icons.json`. Icons also appear on [[Canvas]] cards, search results, and editor tab headers.
 

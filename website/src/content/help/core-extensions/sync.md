@@ -9,7 +9,7 @@ Noether doesn't force you into a proprietary cloud subscription. Instead, you co
 
 Edits are always written to your local disk first. When you are connected, Noether pushes changes upstream in the background. If you edit offline, changes queue locally and sync automatically when you reconnect.
 
-If two devices edit the same note while offline, Noether flags the conflict, preserves both revisions, and logs the collision in Version History so nothing gets overwritten.
+If two devices edit the same note while offline, Noether flags the conflict, preserves both revisions, and logs the collision in [[Version History]] so nothing gets overwritten.
 
 ## 2. Connecting a Database
 ---
@@ -38,7 +38,7 @@ Turso runs SQLite at edge locations and works well with Noether's data model.
 <details>
 <summary><b>Cloudflare D1</b></summary>
 
-Cloudflare D1 runs serverless SQLite on Cloudflare's network.
+[Cloudflare D1](https://developers.cloudflare.com/d1/) runs serverless SQLite on Cloudflare's global edge network.
 
 1. In the Cloudflare Dashboard, go to **Workers & Pages → D1 SQL Database** and create `noether-sync`.
 2. Generate an API token with D1 write permissions under **My Profile → API Tokens**.

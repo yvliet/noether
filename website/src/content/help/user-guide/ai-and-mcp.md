@@ -29,7 +29,7 @@ Choose your preferred AI client below to view quick setup instructions:
 <details open>
 <summary><b>Claude Desktop & Claude Code CLI</b></summary>
 
-Anthropic's Claude Desktop app and Claude Code CLI natively support MCP tools.
+Anthropic's [Claude Desktop](https://claude.ai/download) app and [Claude Code CLI](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) natively support MCP tools.
 
 ### Setup for Claude Desktop
 1. Open your Claude Desktop configuration file:
@@ -64,7 +64,7 @@ claude mcp add noether node /path/to/noether/bin/noether-mcp-server.cjs
 <details>
 <summary><b>Cursor IDE</b></summary>
 
-Cursor can query your notes directly during AI chat and agent composer workflows.
+[Cursor](https://www.cursor.com) can query your notes directly during AI chat and agent composer workflows.
 
 ### Setup Instructions
 1. Open **Cursor Settings → Features → MCP**.
@@ -93,7 +93,7 @@ Cursor can query your notes directly during AI chat and agent composer workflows
 <details>
 <summary><b>Windsurf IDE</b></summary>
 
-Codeium's Windsurf IDE supports MCP tools through Cascade.
+Codeium's [Windsurf](https://codeium.com/windsurf) IDE supports MCP tools through Cascade.
 
 ### Setup Instructions
 1. Open your Windsurf MCP configuration file:
@@ -298,4 +298,8 @@ When core extensions load inside Noether, they register domain-specific tools:
 - **Database Sync**: `sync_sync_now`, `sync_get_sync_status`, `sync_test_connection`
 - **Tags**: `tags_list_all`, `tags_get_tree`, `tags_get_documents_for_tag`
 - **Tasks**: `tasks_get_all`, `tasks_get_by_document`, `tasks_toggle_status`
+
+> [!TIP]
+> For architecture specifications and how to register custom tools in your own extensions, see [[Model Context Protocol (MCP) Runtime]] and [[Model Context Protocol (MCP) Tools]].
+
 

@@ -254,10 +254,16 @@ export function renderInlineMarkdown(text: string): string {
       '<a href="#$1" data-wikilink="$1" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal cursor-pointer">$1</a>'
     );
 
-  // 5. Standard markdown links [text](url) with Noether orange accent
+  // 5. Standard markdown links [text](url) with Noether orange accent and external link indicator
   processed = processed.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" target="_blank" rel="noreferrer" class="text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal">$1</a>'
+    (_, label, href) => {
+      const isExternal = /^(https?:)?\/\//i.test(href) || href.startsWith('mailto:');
+      if (isExternal) {
+        return `<a href="${href}" target="_blank" rel="noreferrer" class="external-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal">${label}</a>`;
+      }
+      return `<a href="${href}" class="internal-link text-[#eb584d] hover:text-[#d94338] underline underline-offset-2 font-normal">${label}</a>`;
+    }
   );
 
   // 6. Highlight ==text==

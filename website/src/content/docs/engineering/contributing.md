@@ -7,8 +7,8 @@ I welcome contributions, bug fixes, performance improvements, and extension enha
 
 To build and run Noether locally from source, ensure you have the following prerequisites installed on your system:
 
-- **Node.js**: Version 20.x or higher (LTS recommended).
-- **Rust & Cargo**: Latest stable Rust toolchain (`rustup update stable`).
+- **Node.js**: Version 20.x or higher (from [nodejs.org](https://nodejs.org)).
+- **Rust & Cargo**: Latest stable Rust toolchain via [rustup.rs](https://rustup.rs).
 - **Tauri Prerequisites**: Follow the [Tauri v2 OS Prerequisites Guide](https://v2.tauri.app/start/prerequisites/) for your operating system (C++ build tools on Windows, Xcode command line tools on macOS, webkit2gtk development libraries on Linux).
 
 ### Initial Repository Setup

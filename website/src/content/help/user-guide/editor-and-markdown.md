@@ -8,7 +8,7 @@ Noether includes a fast Live Preview Markdown editor built on TipTap and ProseMi
 Noether provides two primary editing modes:
 
 1. **Live Preview (Default)**: Markdown formatting renders interactively as you type. Elements like `**bold**`, `# headings`, tables, and math equations display with live styling, and reveal their markdown syntax when your cursor moves over them.
-2. **Source Mode**: Displays raw, unrendered CommonMark text in a clean monospace font, ideal for editing complex frontmatter YAML blocks or inspecting raw syntax.
+2. **Source Mode**: Displays raw, unrendered CommonMark text in a clean monospace font, ideal for editing complex frontmatter YAML blocks (see [[Properties]]) or inspecting raw syntax.
 
 To toggle between modes, press `Ctrl+Shift+M` or select your preference from the **Document Options menu (`...`)** located in the top-right corner of the editor.
 
@@ -19,7 +19,7 @@ The Document Options menu (`...`) exposes powerful contextual note operations:
 - **Lock Note (Read-Only)**: Protects the note from accidental modifications, hiding the typing caret and disabling text changes.
 - **Merge Note With...**: Combines another vault note directly into the active document with a divider and heading.
 - **Zoom Presets**: Instant viewport scaling (50%, 75%, 90%, 100%, 110%, 125%, 150%, 175%, 200%) with toast confirmation.
-- **Export to PDF**: Triggers the system print and PDF export dialog (`window.print()`).
+- **Export to PDF**: Triggers the system print and PDF export dialog (`window.print()`). For side-by-side reading or slide presentations, see [[PDF Viewer & Presentation Mode]].
 - **Reveal in File Tree**: Automatically expands parent folders and highlights the active file in the sidebar.
 - **Show in System Explorer / Open in Default App**: Reveals the file in Windows Explorer or macOS Finder, or opens it with your operating system's default markdown reader.
 - **Copy Path Submenu**: Copies the note title, vault-relative path, absolute filesystem path, or Wikilink syntax (`[[Note Title]]`) directly to your clipboard.
@@ -196,4 +196,4 @@ Type `/` on any blank line to open the slash command menu:
 - `/callout`: Insert structured callout box
 - `/math`: Insert LaTeX display formula block
 - `/code`: Insert syntax-highlighted code block
-- `/task`: Insert checklist task item
+- `/task`: Insert checklist task item (aggregated across your vault in [[Tasks]])

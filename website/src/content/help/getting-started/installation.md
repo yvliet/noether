@@ -26,7 +26,7 @@ You can compile and run Noether locally at any time. Choose your operating syste
 <details open>
 <summary><b>Windows Build Prerequisites</b></summary>
 
-1. **Node.js**: Version 18.0.0 or higher.
+1. **Node.js**: Version 18.0.0 or higher (from [nodejs.org](https://nodejs.org)).
 2. **Rust & Cargo**: Install via [rustup.rs](https://rustup.rs).
 3. **C++ Build Tools**: Install [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) (select "Desktop development with C++").
 4. **WebView2**: Built into Windows 10 and 11 by default.
@@ -88,9 +88,9 @@ The compiled binaries are generated in `src-tauri/target/release/bundle/`.
 ---
 
 1. Launch Noether.
-2. When prompted, select **Open Folder as Vault** or **Create New Vault**.
+2. When prompted, select **Open Folder as Vault** or **Create New Vault** (see [[Vaults & Workspace Storage]]).
 3. Choose any folder on your computer.
 4. Noether initializes the workspace and opens your note canvas immediately.
 
 > [!TIP]
-> You can open existing folders containing `.md` files (such as an existing Obsidian vault or Git repository). Noether reads your Markdown notes without modifying their structure.
+> You can open existing folders containing `.md` files (such as an existing Obsidian vault or Git repository). Noether reads your Markdown notes without modifying their structure. For codebase and contributor setups, see [[Contributing to Noether]].
