@@ -1,4 +1,4 @@
-# AI Assistants & Model Context Protocol (MCP)
+# AI Assistants & MCP
 
 Connect external AI assistants like Claude Desktop, Cursor, Windsurf, Google Antigravity, or Cline directly to your local notes using the Model Context Protocol (MCP).
 
@@ -17,7 +17,7 @@ Instead of sending your entire vault to the cloud, your AI assistant simply call
 When an AI assistant connects to Noether:
 
 - **100% Private & Local**: The AI communicates over local `stdio`. No notes or queries are ever sent to external Noether servers because Noether has no cloud servers.
-- **On-Demand Precision**: The assistant does not ingest your whole disk. It runs targeted SQLite queries (FTS5 BM25 search and indexed link lookups) to pull only the exact paragraphs relevant to your prompt.
+- **On-Demand Precision**: The assistant does not ingest your whole disk. It searches indexed note titles, contents, and links on demand to pull only the specific notes and paragraphs relevant to your prompt.
 - **Preference-Aware Formatting**: When an assistant creates or edits notes, Noether formats the output according to your active editor preferences (indentation width, bullet marker style, and callout casing).
 - **Safety First**: File mutations are atomic, and any note deleted by an AI is moved to the `.trash/` folder rather than permanently removed.
 
@@ -254,52 +254,10 @@ Noether exposes structured prompts that guide connecting AI models in multi-step
 | `noether_daily_review` | `date?: string` | Synthesizes daily journal entries, created notes, modified files, and open tasks for reflection. |
 | `noether_synthesize_topic` | `topic: string`, `depth?: 'brief' \| 'detailed' \| 'exhaustive'` | Aggregates all notes, backlinks, and tags matching a topic for deep multi-document research synthesis. |
 
-## 5. Built-in MCP Tools Reference
+## 5. Built-in Tools Reference
 ---
 
-### Standalone Stdio Tools (`bin/noether-mcp-server.cjs`)
-
-| Tool Identifier | Scope | Description |
-| :--- | :--- | :--- |
-| `noether_list_vaults` | Workspace | Discovers and returns all known vaults and paths. |
-| `noether_get_active_vault` | Workspace | Retrieves path, document count, and active vault metadata. |
-| `noether_switch_vault` | Workspace | Switches active vault workspace in config and hot-reloads custom tools. |
-| `noether_search_notes` | Search | Fast text matching across all note titles and Markdown contents. |
-| `noether_search_across_vaults` | Search | Multi-vault parallel full-text search. |
-| `noether_read_note` | Notes | Reads note body and YAML frontmatter properties. |
-| `noether_create_note` | Notes | Creates new note or updates existing note in place safely. |
-| `noether_update_note` | Notes | Safely updates body Markdown while merging frontmatter properties. |
-| `noether_delete_note` | Notes | Safely moves note file to `.trash/`. |
-| `noether_list_all_notes` | Notes | Scans and lists all files and folders with metadata. |
-| `tasks_get_all` | Tasks | Aggregates all open and completed `- [ ]` checklist items. |
-| `fsrs-spaced-repetition_get_due_cards` | Study | Scans notes for flashcard patterns (`Concept :: Descriptor`, `{cloze}`). |
-| `noether_get_backlinks` | Graph | Discovers incoming `[[wikilinks]]` referencing the target note. |
-| `noether_run_script` | Automation | Executes ad-hoc JavaScript against `vault` API in a Node.js VM sandbox. |
-| `noether_create_custom_tool` | Automation | Authors and saves custom tool module in `.noether/tools/<name>.js`. |
-| `noether_list_custom_tools` | Automation | Lists custom tools stored in the active vault. |
-| `noether_run_custom_tool` | Automation | Executes a custom tool by name with arguments. |
-| `noether_delete_custom_tool` | Automation | Deletes custom tool file from `.noether/tools/`. |
-
-### Core Extension In-App MCP Tools
-
-When core extensions load inside Noether, they register domain-specific tools:
-
-- **Backlinks**: `backlinks_get_incoming`, `backlinks_get_outgoing`, `backlinks_get_unlinked_mentions`, `backlinks_convert_mention`, `backlinks_insert_link`
-- **Bookmarks**: `bookmarks_list`, `bookmarks_toggle`
-- **Canvas**: `canvas_create_board`, `canvas_get_board`, `canvas_create_node`, `canvas_create_edge`, `canvas_delete_node`
-- **Covers**: `covers_get`, `covers_set`, `covers_remove`
-- **Graph View**: `graph_get_network`, `graph_get_orphans`, `graph_get_local_graph`, `graph_get_related_notes`, `graph_find_path`, `graph_get_hub_notes`
-- **Version History**: `history_get_file_history`, `history_get_file_diff`, `history_restore_file_version`, `history_create_file_snapshot`
-- **Daily Journal**: `journal_open_today`, `journal_open_date`, `journal_append_entry`
-- **Marketplace**: `marketplace_list_installed`, `marketplace_search`
-- **More Icons**: `more-icons_list`, `more-icons_get`, `more-icons_update_icon`, `more-icons_delete_icon`
-- **Outline**: `outline_get_headings`
-- **Properties**: `properties_get`, `properties_set`, `properties_delete`
-- **Database Sync**: `sync_sync_now`, `sync_get_sync_status`, `sync_test_connection`
-- **Tags**: `tags_list_all`, `tags_get_tree`, `tags_get_documents_for_tag`
-- **Tasks**: `tasks_get_all`, `tasks_get_by_document`, `tasks_toggle_status`
+Noether exposes native tools for discovering vaults, searching notes, reading frontmatter, creating notes, exploring backlinks, and running extensions.
 
 > [!TIP]
-> For architecture specifications and how to register custom tools in your own extensions, see [[Model Context Protocol (MCP) Runtime]] and [[Model Context Protocol (MCP) Tools]].
-
-
+> For the complete table of tools, parameters, and core extension tool endpoints, see [[MCP Tools Reference]]. To learn how to build your own tools in extensions, see [[Model Context Protocol (MCP) Runtime]] and [[Model Context Protocol (MCP) Tools]].

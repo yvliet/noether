@@ -4,11 +4,17 @@ import homeRaw from '../content/help/home.md?raw';
 import introRaw from '../content/help/getting-started/introduction.md?raw';
 import installRaw from '../content/help/getting-started/installation.md?raw';
 
-import editorMarkdownRaw from '../content/help/user-guide/editor-and-markdown.md?raw';
+import editorRaw from '../content/help/user-guide/editor.md?raw';
+import basicFormattingRaw from '../content/help/user-guide/basic-formatting.md?raw';
+import mathLatexRaw from '../content/help/user-guide/math-and-latex.md?raw';
+import tablesRaw from '../content/help/user-guide/tables.md?raw';
+import calloutsRaw from '../content/help/user-guide/callouts.md?raw';
 import vaultsStorageRaw from '../content/help/user-guide/vaults-and-storage.md?raw';
+import workspaceDockingRaw from '../content/help/user-guide/workspace-docking.md?raw';
 import shortcutsCommandsRaw from '../content/help/user-guide/shortcuts-and-commands.md?raw';
 import pdfViewerRaw from '../content/help/user-guide/pdf-viewer.md?raw';
 import aiMcpRaw from '../content/help/user-guide/ai-and-mcp.md?raw';
+import mcpToolsRefRaw from '../content/help/user-guide/mcp-tools-reference.md?raw';
 
 import backlinksRaw from '../content/help/core-extensions/backlinks.md?raw';
 import bookmarksRaw from '../content/help/core-extensions/bookmarks.md?raw';
@@ -69,20 +75,60 @@ export const HELP_TREE: DocNode[] = [
     isFolder: true,
     children: [
       {
-        id: 'editor-and-markdown',
-        title: 'Live Preview Editor & Markdown',
-        slug: 'editor-and-markdown',
-        aliases: ['Editor', 'Markdown', 'Live Preview', 'Slash Commands', 'Math', 'KaTeX', 'Tables', 'Callouts'],
+        id: 'editor',
+        title: 'Editor',
+        slug: 'editor',
+        aliases: ['Live Preview Editor & Markdown', 'Live Preview', 'Source Mode', 'Editor Modes', 'Document Options', 'Image Lightbox', 'Find & Replace'],
         portal: 'help',
-        content: editorMarkdownRaw,
+        content: editorRaw,
+      },
+      {
+        id: 'basic-formatting',
+        title: 'Basic Formatting',
+        slug: 'basic-formatting',
+        aliases: ['Formatting', 'Markdown', 'Text Formatting', 'Headings', 'Lists', 'Checklists', 'Wikilinks', 'Slash Commands'],
+        portal: 'help',
+        content: basicFormattingRaw,
+      },
+      {
+        id: 'math-and-latex',
+        title: 'Math & LaTeX',
+        slug: 'math-and-latex',
+        aliases: ['Math', 'LaTeX', 'KaTeX', 'Formulas', 'MathLive', 'Math Keyboard'],
+        portal: 'help',
+        content: mathLatexRaw,
+      },
+      {
+        id: 'tables',
+        title: 'Tables',
+        slug: 'tables',
+        aliases: ['Table Editor', 'Interactive Tables', 'Markdown Tables'],
+        portal: 'help',
+        content: tablesRaw,
+      },
+      {
+        id: 'callouts',
+        title: 'Callouts',
+        slug: 'callouts',
+        aliases: ['Admonitions', 'Callout Boxes', 'Alerts', 'Badges'],
+        portal: 'help',
+        content: calloutsRaw,
       },
       {
         id: 'vaults-and-storage',
-        title: 'Vaults & Workspace Storage',
+        title: 'Vaults & Storage',
         slug: 'vaults-and-storage',
-        aliases: ['Vaults', 'Workspaces', 'Full-Text Search', 'FTS5', 'Trash Bin', 'Sync', 'Organization', 'Folder Structure'],
+        aliases: ['Vaults & Workspace Storage', 'Vaults', 'Workspaces', 'Trash Bin', 'Sync', 'Organization', 'Folder Structure'],
         portal: 'help',
         content: vaultsStorageRaw,
+      },
+      {
+        id: 'workspace-docking',
+        title: 'Workspace Layout & Docking',
+        slug: 'workspace-docking',
+        aliases: ['Docking', 'Layout', 'Sidebar', 'Search', 'Vault Search', 'Panels', 'File Tree'],
+        portal: 'help',
+        content: workspaceDockingRaw,
       },
       {
         id: 'shortcuts-and-commands',
@@ -102,11 +148,19 @@ export const HELP_TREE: DocNode[] = [
       },
       {
         id: 'ai-and-mcp',
-        title: 'AI Assistants & MCP Tools',
+        title: 'AI Assistants & MCP',
         slug: 'ai-and-mcp',
-        aliases: ['MCP', 'Model Context Protocol', 'AI Assistants', 'Claude Desktop', 'Antigravity', 'Cursor'],
+        aliases: ['AI Assistants & MCP Tools', 'MCP', 'Model Context Protocol', 'AI Assistants', 'Claude Desktop', 'Antigravity', 'Cursor'],
         portal: 'help',
         content: aiMcpRaw,
+      },
+      {
+        id: 'mcp-tools-reference',
+        title: 'MCP Tools Reference',
+        slug: 'mcp-tools-reference',
+        aliases: ['MCP Tools', 'Tools Reference', 'Built-in Tools', 'Native Vault Tools'],
+        portal: 'help',
+        content: mcpToolsRefRaw,
       },
     ],
   },

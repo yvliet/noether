@@ -2,7 +2,7 @@
 
 Welcome to the Noether Developer Documentation. This portal is for engineers, extension developers, and contributors who want to understand how Noether works under the hood and how to build on top of it.
 
-If you are looking for user guides and feature walkthroughs, click **Noether Docs** in the top-left corner anytime to switch over to **Noether Help**.
+If you are looking for user guides and feature walkthroughs, switch over to [[Noether Help]] (or click the brand logo in the top-left corner).
 
 ## 1. Core Architecture Principles
 ---

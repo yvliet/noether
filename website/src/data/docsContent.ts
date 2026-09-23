@@ -65,7 +65,7 @@ export const DOCS_TREE: DocNode[] = [
     id: 'home',
     title: 'Home',
     slug: 'home',
-    aliases: ['Noether Developer Docs', 'Overview', 'Developer Portal'],
+    aliases: ['Noether Docs', 'Noether Developer Docs', 'Overview', 'Developer Portal'],
     portal: 'docs',
     content: homeRaw,
   },

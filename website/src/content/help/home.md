@@ -4,7 +4,7 @@ Oh ye of little faith, welcome to the Noether docs. If you're here to figure out
 
 Noether is a fast, local-first note-taking app and Markdown workspace built for deep focus, clean organization, and high-speed desktop performance. Notes live as plain `.md` files on your disk, backed by an embedded SQLite search index.
 
-If you are looking for developer documentation, architecture specifications, or how to build custom extensions, click **Noether Help** in the top-left corner anytime to switch over to **Noether Docs**.
+If you are looking for developer documentation, architecture specifications, or how to build custom extensions, switch over to [[Noether Docs]] (or click the brand logo in the top-left corner).
 
 ## 1. Getting Started
 ---
@@ -21,11 +21,17 @@ Learn the foundational writing and organization tools in Noether:
 
 | Guide | What It Covers |
 | :--- | :--- |
-| **[[Live Preview Editor & Markdown]]** | Live preview editing, slash commands, math formulas ($KaTeX$), tables, and callouts. |
-| **[[Vaults & Workspace Storage]]** | Organizing vault folders, fast search, file backups, and syncing across devices. |
-| **[[PDF Viewer & Presentation Mode]]** | High-DPI PDF reading, thumbnail and TOC sidebars, and distraction-free slide presentations. |
+| **[[Editor]]** | Live preview and source mode, document options, find and replace, and image zoom. |
+| **[[Basic Formatting]]** | Headings, checklists, bold/italic, wikilinks, auto-pairing brackets, and slash commands. |
+| **[[Math & LaTeX]]** | Inline and display math formulas ($KaTeX$), interactive formula chips, and visual math keyboard. |
+| **[[Tables]]** | Interactive table grid picker, column/row controls, drag column resizing, and formatting. |
+| **[[Callouts]]** | Admonition blocks, foldable callouts, and the 11 built-in badge styles. |
+| **[[Vaults & Storage]]** | Plain Markdown files, atomic file saves, folder organization, and `.trash/` recovery. |
+| **[[Workspace Layout & Docking]]** | 4-zone panel docking, split sidebars, file tree controls, and fast vault search. |
 | **[[Keyboard Shortcuts & Commands]]** | Command Palette (`Ctrl+K`), window split hotkeys, and editing shortcuts. |
-| **[[AI Assistants & MCP Tools]]** | Connecting Claude Desktop, Cursor, and Antigravity to your local notes via MCP. |
+| **[[PDF Viewer & Presentation Mode]]** | High-DPI PDF reading, thumbnail and TOC sidebars, and distraction-free slide presentations. |
+| **[[AI Assistants & MCP]]** | Connecting Claude Desktop, Cursor, and Antigravity to your local notes via MCP. |
+| **[[MCP Tools Reference]]** | Complete reference of native vault tools and extension endpoints. |
 
 ## 3. Core Extensions
 ---
@@ -53,4 +59,4 @@ Explore dedicated guides for all 14 built-in extensions:
 - **[[Frequently Asked Questions]]**: Answers regarding local file safety, privacy, offline access, and mobile plans.
 
 > [!TIP]
-> You can switch between **Noether Help** (for daily note-taking) and **Noether Docs** (for developers and extension builders) at any time by clicking the brand logo in the top left of the sidebar.
+> You can switch between [[Noether Help]] (for daily note-taking) and [[Noether Docs]] (for developers and extension builders) at any time by clicking the brand logo in the top left of the sidebar.

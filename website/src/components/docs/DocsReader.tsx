@@ -28,6 +28,7 @@ import {
 import { ComponentPreviewMap } from './ComponentPreview';
 import { WikilinkHoverPreview } from './WikilinkHoverPreview';
 import { DocsAccordionItem } from './DocsMarkdownView';
+import { findDocAcrossPortals } from '../../data/portalRegistry';
 
 
 export interface DocsReaderProps {
@@ -476,33 +477,53 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
       return null;
     };
 
-    return findInTree(allDocs);
+    const treeMatch = findInTree(allDocs);
+    if (treeMatch) return treeMatch;
+
+    // 5. Cross-portal fallback (Noether Help <-> Noether Docs)
+    const crossMatch = findDocAcrossPortals(cleanTarget);
+    if (crossMatch) {
+      return crossMatch.doc;
+    }
+
+    return null;
   }, [flattenedDocs, allDocs]);
 
-  // Click delegation for internal wikilinks
+  // Click delegation for internal wikilinks and hash links
   const handleContentClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const target = (e.target as HTMLElement).closest('a.internal-link');
     if (target) {
-      e.preventDefault();
       const rawTarget = target.getAttribute('data-wikilink');
       if (rawTarget) {
+        e.preventDefault();
         const [docTarget, anchor] = rawTarget.split('#');
         const match = findDocByTarget(docTarget);
         if (match) {
-          onSelectDoc(match);
-          if (anchor) {
-            setTimeout(() => {
-              const el = document.getElementById(slugify(anchor));
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }, 80);
+          const currentPortal = doc.portal || portal || 'help';
+          if (match.portal && match.portal !== currentPortal) {
+            window.location.hash = `#${match.portal}/${match.slug || match.id}${anchor ? '#' + slugify(anchor) : ''}`;
+          } else {
+            onSelectDoc(match);
+            if (anchor) {
+              setTimeout(() => {
+                const el = document.getElementById(slugify(anchor));
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }, 80);
+            }
           }
         } else {
           const currentPortal = doc.portal || portal || 'help';
           window.location.hash = `#${currentPortal}/${slugify(docTarget)}${anchor ? '#' + slugify(anchor) : ''}`;
         }
+      } else {
+        const href = target.getAttribute('href');
+        if (href && href.startsWith('#')) {
+          e.preventDefault();
+          window.location.hash = href;
+        }
       }
     }
-  }, [findDocByTarget, onSelectDoc]);
+  }, [findDocByTarget, onSelectDoc, doc.portal, portal]);
 
   // Hover preview state & timers for internal wikilinks
   const [hoverPreview, setHoverPreview] = useState<{
