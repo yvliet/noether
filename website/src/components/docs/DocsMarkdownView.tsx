@@ -138,7 +138,7 @@ export const DocsAccordionItem: React.FC<DocsAccordionItemProps> = ({
         <div
           className={`${
             compact ? 'p-2.5 text-[13px]' : 'p-3.5 sm:p-4 text-[14.5px]'
-          } border-t border-[#262626] bg-[#131313]`}
+          } border-t border-[#262626] bg-[#131313] [&>*:first-child]:!mt-0 [&>*:last-child]:!mb-0`}
         >
           <DocsMarkdownView
             content={contentLines.join('\n')}

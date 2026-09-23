@@ -1,20 +1,20 @@
 # Component Variables
 
-CSS variables and class tokens for interactive UI components: 3D tactile buttons (`noether-btn`), form inputs, checkboxes, toggles, select menus, dropdowns, and modal dialogs.
+CSS variables and class tokens for interactive UI components: buttons (`noether-btn`), form inputs, checkboxes, toggles, select menus, dropdowns, and modal dialogs.
 
 
-## 1. Tactile 3D Buttons (`noether-btn`)
+## 1. Buttons (`noether-btn`)
 
 ---
 
-Noether features tactile buttons with crisp borders and visual depth:
+Noether buttons feature crisp borders and visual depth:
 
 | Token | Dark Default | Description |
 | :--- | :--- | :--- |
 | `--noether-btn-bg` | `#232323` | Default button background. |
 | `--noether-btn-bg-hover` | `#2d2d2d` | Hover state background. |
 | `--noether-btn-border` | `#383838` | Button boundary border. |
-| `--noether-btn-border-bottom` | `#181818` | Darker bottom border producing tactile 3D depth. |
+| `--noether-btn-border-bottom` | `#181818` | Darker bottom border providing visual depth. |
 | `--noether-btn-primary-bg` | `var(--noether-accent)` | Primary action button background. |
 | `--noether-btn-primary-hover` | `var(--noether-accent-hover)` | Primary action hover background. |
 

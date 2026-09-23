@@ -154,16 +154,16 @@ To avoid name collisions between independent extensions:
 - **Database Tables**: Tables created via `this.defineTable()` are namespaced with the extension ID prefix in SQLite to prevent cross-extension schema corruption.
 
 
-## 5. Decoupled Lighting Mode Architecture
+## 5. Dark and Light Theme Modes
 
 ---
 
-The theme and lighting system separates visual color schemes from lighting modes (light, dark, system):
+Noether separates visual themes from dark/light appearance modes:
 
-- **Decoupled Lighting State**: Lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is independent from theme selection (`activeTheme`). Users can switch lighting modes without losing their selected theme styles.
-- **Explicit Theme Mode Support**: Themes declare supported modes via `modeSupport: 'both' | 'dark-only' | 'light-only'`. Single-mode themes enforce their designed aesthetic, while dual-mode themes dynamically adapt to the active lighting mode.
-- **Dynamic Token Resolution**: When activating a theme, `resolveThemeTokens()` merges baseline variables with `modes.light` overrides for light mode sessions, producing a single resolved token tree.
-- **Semantic Interactive Surface Variables**: Themes compile through `generateCssVariables()`, which derives consistent interactive surface variables (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`). Extensions and components rely on these variables for reliable dual-mode contrast.
+- **Independent Mode Setting**: The appearance setting (`themeMode: 'system' | 'dark' | 'light'`) is separate from the selected theme (`activeTheme`). Users can switch dark and light modes without resetting their active theme.
+- **Theme Mode Support**: Themes declare supported modes via `modeSupport: 'both' | 'dark-only' | 'light-only'`. Single-mode themes enforce their designed aesthetic, while dual-mode themes adapt dynamically to the active mode.
+- **Automatic Token Resolution**: When activating a theme, `resolveThemeTokens()` merges base variables with `modes.light` overrides for light mode sessions, producing a single resolved token tree.
+- **Surface Color Generation**: Themes compile through `generateCssVariables()`, which creates consistent surface colors (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`) with proper contrast in both light and dark modes.
 
 
 ## 6. Related Reading & References

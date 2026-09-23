@@ -173,7 +173,7 @@ export default class SpacedRepetitionExtension extends Extension {
 
 ### Features of `defineTable()`
 - **Foreign Key Cascade**: Columns referencing `documents(id)` with `onDelete: 'cascade'` are cleaned up automatically when the user deletes a note.
-- **Automated Versioned Migrations**: Declare a `migrations` map for seamless schema evolution across extension versions.
+- **Automated Versioned Migrations**: Declare a `migrations` map to update table schemas across extension versions.
 - **Teardown Safety**: When `teardownPolicy: 'drop-on-uninstall'` is specified, Noether removes the table upon extension uninstallation, leaving no database bloat behind.
 
 ## 4. Off-Thread Web Workers (`this.registerWorkerTask`)

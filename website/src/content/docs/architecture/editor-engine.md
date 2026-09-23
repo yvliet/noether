@@ -13,10 +13,10 @@ Noether implements a **Live Preview Architecture**:
 - When your cursor is outside a formatted block, it renders as rich typography, live math, interactive checkboxes, and callout containers.
 - When your cursor moves inside a formatted element, the underlying Markdown tokens (`# heading`, `**bold**`, `[[wikilink]]`, `$E=mc^2$`) dynamically unveil themselves right under your cursor for instant editing.
 
-## 2. Incremental Decoration Mapping
+## 2. Fast Syntax Decorations
 ---
 
-On long documents, re-scanning the entire document AST on every keystroke causes noticeable typing lag. To keep typing responsive, Noether employs **incremental transaction decoration mapping**:
+On long documents, re-scanning the entire document on every keystroke causes noticeable typing lag. To keep typing responsive, Noether updates syntax decorations incrementally:
 
 ```
 [ User Keystroke at Pos 1,420 ]
@@ -39,7 +39,7 @@ Mathematical equations rendered via $KaTeX$ can be computationally expensive to 
 
 Noether memoizes rendered equation DOM nodes in an in-memory LRU cache keyed by equation source string and display mode (`inline` vs `display`). When you type in a paragraph at the top of a research paper, hundreds of complex mathematical formulas further down the page are retrieved directly from the cache without re-invoking the $KaTeX$ compiler.
 
-## 4. Bounded Undo Stack Memory Hygiene
+## 4. Undo History and Memory Limits
 ---
 
 In long-running editing sessions, ProseMirror's undo/redo history can capture hundreds of step inversions, bloating heap memory by hundreds of megabytes.

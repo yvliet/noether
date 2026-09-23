@@ -103,13 +103,29 @@ export function extractTocItems(content: string): TableOfContentItem[] {
   const lines = content.replace(/\r\n/g, '\n').split('\n');
   const items: TableOfContentItem[] = [];
   let inCodeBlock = false;
+  let inDetailsBlock = false;
+  const seenIds = new Map<string, number>();
 
   for (const line of lines) {
-    if (line.trim().startsWith('```')) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('```')) {
       inCodeBlock = !inCodeBlock;
       continue;
     }
     if (inCodeBlock) continue;
+
+    // Track <details> ... </details> blocks so collapsible accordion content never pollutes page TOC
+    if (/<details(\s+[^>]*)?>/i.test(trimmed)) {
+      if (!/<\/details>/i.test(trimmed)) {
+        inDetailsBlock = true;
+      }
+      continue;
+    }
+    if (/<\/details>/i.test(trimmed)) {
+      inDetailsBlock = false;
+      continue;
+    }
+    if (inDetailsBlock) continue;
 
     const match = line.match(/^(#{2,3})\s+(.+)$/);
     if (match) {
@@ -130,7 +146,10 @@ export function extractTocItems(content: string): TableOfContentItem[] {
         .replace(/(?<!\\)\$([^\$\r\n]+?)(?<!\\)\$/g, '$1')
         .replace(/\*\*([^*]+)\*\*/g, '$1')
         .replace(/\*([^*]+)\*/g, '$1');
-      const id = slugify(text);
+      const baseId = slugify(text);
+      const count = seenIds.get(baseId) ?? 0;
+      seenIds.set(baseId, count + 1);
+      const id = count === 0 ? baseId : `${baseId}-${count}`;
       items.push({ id, text, level });
     }
   }
@@ -709,6 +728,20 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
     };
     let listBuffer: ListItem[] = [];
     let lastWasHeading = false;
+
+    const seenHeadingIds = new Map<string, number>();
+    const getHeadingId = (rawText: string) => {
+      const text = rawText
+        .replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_, target, display) => display || target)
+        .replace(/`([^`]+)`/g, '$1')
+        .replace(/(?<!\\)\$([^\$\r\n]+?)(?<!\\)\$/g, '$1')
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1');
+      const baseId = slugify(text);
+      const count = seenHeadingIds.get(baseId) ?? 0;
+      seenHeadingIds.set(baseId, count + 1);
+      return count === 0 ? baseId : `${baseId}-${count}`;
+    };
 
     const flushList = (key: number) => {
       if (listBuffer.length > 0) {
@@ -1526,7 +1559,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
         flushHtmlTable(i);
         flushQuote(i);
         const headingText = h2Match[1].trim();
-        const id = slugify(headingText);
+        const id = getHeadingId(headingText);
         nodes.push(
           renderHeading(
             'h2',
@@ -1548,7 +1581,7 @@ export const DocsReader: React.FC<DocsReaderProps> = React.memo(({
         flushHtmlTable(i);
         flushQuote(i);
         const headingText = h3Match[1].trim();
-        const id = slugify(headingText);
+        const id = getHeadingId(headingText);
         nodes.push(
           renderHeading(
             'h3',

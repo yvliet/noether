@@ -23,7 +23,7 @@ Noether remains fundamentally local-first. Once installed from the Turso registr
 
 - **Local Discovery**: Installed extensions reside within your active workspace at `<vault>/.noether/extensions/<id>/`.
 - **Zero Network Required After Download**: Extensions execute completely offline inside the local sandbox without making telemetry or licensing calls.
-- **Seamless Portability**: Moving your Vault folder to another machine or backing it up automatically carries your installed extensions and settings with it.
+- **Direct Portability**: Moving your Vault folder to another machine or backing it up automatically carries your installed extensions and settings with it.
 
 ```
 My-Vault/

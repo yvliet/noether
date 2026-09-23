@@ -427,6 +427,7 @@ export const App: React.FC = () => {
       }
 
       setActiveDoc(targetDoc);
+      setActiveHeadingId('');
       window.location.hash = `#${nextPortal}/${targetDoc.slug || targetDoc.id}`;
       scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
       return nextPortal;
@@ -448,6 +449,7 @@ export const App: React.FC = () => {
     } catch {}
 
     setActiveDoc(doc);
+    setActiveHeadingId('');
     window.location.hash = `#${docPortal}/${doc.slug || doc.id}`;
     scrollContainerRef.current?.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
   }, [activePortal]);
@@ -661,6 +663,7 @@ export const App: React.FC = () => {
             {/* On This Page Document Outline & Backlinks */}
             <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar mt-6">
               <OnThisPageOutline
+                key={`${activePortal}-${activeDoc.slug || activeDoc.id}`}
                 items={tocItems}
                 activeHeadingId={activeHeadingId}
                 onSelectHeading={handleScrollToHeading}

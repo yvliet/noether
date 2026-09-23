@@ -108,12 +108,12 @@ Below is the complete catalog of native Rust commands registered via `tauri::gen
 | `read_clipboard_files` / `has_clipboard_files` / `copy_files_to_vault` | `vault_path` | Handles OS-level clipboard file drops and pastes into vault. |
 | `set_accent_icon` | `accent_color: String` (`icon_tint.rs`) | Dynamically renders window taskbar icons tinted to theme accent. |
 
-## 3. Crash-Safe Atomic Persistence & 3-Tier Asynchronous Pipeline
+## 3. Atomic File Saves & Save Pipeline
 ---
 
-A primary risk in local-first note-taking software is data corruption if power cuts out or the OS crashes during a write operation, paired with UI micro-stutters when persisting large documents. Noether eliminates both risks through a **temp-and-rename atomic save pipeline** combined with a **3-tier asynchronous state separation**:
+A primary risk in local-first note-taking software is data corruption if power cuts out or the OS crashes during a write operation, paired with UI micro-stutters when persisting large documents. Noether eliminates both risks through a **temp-and-rename atomic save pipeline** combined with **three separate save tiers**:
 
-### 3-Tier Asynchronous Pipeline
+### Three-Tier Save Pipeline
 To keep typing responsive and prevent UI stutter, document mutations are split across three decoupled tiers:
 
 1. **Tier 1 (Instant In-Memory Keystroke)**: Keystrokes mutate the local ProseMirror document state synchronously. Primitive status metrics (character count, word count) update immediately without touching secondary stores or triggering parent component re-renders.
@@ -134,7 +134,7 @@ Noether prevents this through internal write timestamp tracking:
 - **External Change Detection**: If an external modification occurs (from Git, another editor, or a background script), Noether detects it, debounces the burst, and reloads the note in the editor without losing external changes.
 - **Conflict Protection**: When the editor is actively focused, ProseMirror maintains sole authority over its active buffer, preventing cursor jumps or typing interruptions during background file sync.
 
-## 5. Win32 Working Set Memory Trimming
+## 5. Windows Memory Management
 ---
 
 Electron applications frequently consume 1GB to 2GB of RAM because Chromium holds onto cached garbage collection heaps indefinitely.

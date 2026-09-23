@@ -40,8 +40,6 @@ Noether is currently developing an automated community directory. In the current
 
 ```bash
 # Clone directly into the Vault's themes folder
-
----
 cd /path/to/my-vault/.noether/themes/
 git clone https://github.com/yvliet/solar-ember-theme.git solar-ember
 ```

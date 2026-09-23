@@ -31,7 +31,7 @@ Choose your preferred AI client below to view quick setup instructions:
 
 Anthropic's [Claude Desktop](https://claude.ai/download) app and [Claude Code CLI](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview) natively support MCP tools.
 
-### Setup for Claude Desktop
+**Claude Desktop Setup**:
 1. Open your Claude Desktop configuration file:
    - **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
    - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
@@ -52,7 +52,7 @@ Anthropic's [Claude Desktop](https://claude.ai/download) app and [Claude Code CL
 
 3. Restart Claude Desktop. A **hammer icon** appears in the chat box showing all active Noether tools.
 
-### Setup for Claude Code CLI
+**Claude Code CLI Setup**:
 Run Claude Code with the Noether MCP server configuration flag:
 
 ```bash
@@ -66,7 +66,7 @@ claude mcp add noether node /path/to/noether/bin/noether-mcp-server.cjs
 
 [Cursor](https://www.cursor.com) can query your notes directly during AI chat and agent composer workflows.
 
-### Setup Instructions
+**Setup Steps**:
 1. Open **Cursor Settings → Features → MCP**.
 2. Click **+ Add New MCP Server**.
 3. Fill in the server details:
@@ -95,7 +95,7 @@ claude mcp add noether node /path/to/noether/bin/noether-mcp-server.cjs
 
 Codeium's [Windsurf](https://codeium.com/windsurf) IDE supports MCP tools through Cascade.
 
-### Setup Instructions
+**Setup Steps**:
 1. Open your Windsurf MCP configuration file:
    - `~/.codeium/windsurf/mcp_config.json`
 2. Add the `noether` server entry:
@@ -120,7 +120,7 @@ Codeium's [Windsurf](https://codeium.com/windsurf) IDE supports MCP tools throug
 
 Google Antigravity connects directly to Noether via stdio MCP.
 
-### Setup Instructions
+**Setup Steps**:
 1. Open Antigravity settings or edit your workspace `mcp.json`.
 2. Add the `noether` tool server:
 
@@ -144,7 +144,7 @@ Google Antigravity connects directly to Noether via stdio MCP.
 
 The Cline and Roo Code extensions for VS Code support full MCP integrations.
 
-### Setup Instructions
+**Setup Steps**:
 1. Open the Cline / Roo Code panel in VS Code.
 2. Click the **MCP Servers** icon in the header.
 3. Click **Configure MCP Servers** (opens `cline_mcp_settings.json`).
@@ -170,7 +170,7 @@ The Cline and Roo Code extensions for VS Code support full MCP integrations.
 <details>
 <summary><b>LibreChat & Continue.dev</b></summary>
 
-### LibreChat Setup
+**LibreChat Setup**:
 In your `librechat.yaml` configuration file, add the Noether MCP endpoint:
 
 ```yaml
@@ -182,7 +182,7 @@ mcpServers:
       - /path/to/noether/bin/noether-mcp-server.cjs
 ```
 
-### Continue.dev Setup
+**Continue.dev Setup**:
 In your `~/.continue/config.json` file, add the tool server:
 
 ```json
@@ -208,7 +208,7 @@ In your `~/.continue/config.json` file, add the tool server:
 
 Zed supports Model Context Protocol servers natively via `context_servers`.
 
-### Setup Instructions
+**Setup Steps**:
 1. Open Zed's `settings.json` (`Ctrl+,` or `Cmd+,`).
 2. Add the Noether context server configuration:
 
@@ -234,7 +234,7 @@ Zed supports Model Context Protocol servers natively via `context_servers`.
 
 You can test and call the MCP server directly from the command line or custom automation scripts.
 
-### Test via Terminal
+**Test via Terminal**:
 ```bash
 node bin/noether-mcp-server.cjs
 ```

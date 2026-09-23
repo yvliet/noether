@@ -12,7 +12,7 @@ Noether avoids hardcoded color hex values and proprietary CSS runtimes. Every vi
 ### Key Benefits
 - **Zero Layout Shifts**: Design tokens evaluate synchronously in the browser engine.
 - **Dark & Light Mode Support**: Themes provide definitions for dark mode (`:root`) and light mode (`.theme-light`).
-- **Seamless Extension Integration**: Extensions inherit host design tokens automatically.
+- **Direct Extension Integration**: Extensions inherit host design tokens automatically.
 
 
 ## 2. Token Cascade & Scopes

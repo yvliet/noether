@@ -2,7 +2,7 @@
 
 Noether is designed to handle vaults with thousands of notes without stuttering, high CPU usage, or runaway memory growth. Rather than adding complex caching layers after the fact, performance comes from a few straightforward architecture decisions: keeping the UI thread decoupled from disk I/O, streaming metadata on launch instead of whole files, and stopping background loops when they aren't visible.
 
-## 1. The 3-Tier Persistence Pipeline
+## 1. Save Pipeline
 
 ---
 
@@ -109,13 +109,13 @@ Rather than relying on ad-hoc timers in each individual component, Noether coord
 - **Single-Click Window Activation**: Mouse hit-testing remains active so clicking an unfocused window immediately activates and registers the clicked target without needing an extra focus click.
 - **Background Sync Throttling**: The sync engine skips periodic background polling cycles while the window is hidden, triggering an instant catch-up sync the moment the window is restored.
 
-## 6. Native Win32 Working Set Memory Reclamation
+## 6. Windows Memory Management
 
 ---
 
 On Windows, Chromium-based desktop applications tend to retain memory pages in their working set long after intensive tasks (such as cold-boot vault scanning or full-text indexing) have completed.
 
-To maintain a lightweight desktop footprint without causing UI stalls, Noether uses a two-tier memory reclamation strategy:
+To maintain a low memory footprint without causing UI stalls, Noether manages Windows memory in two stages:
 
 1. **Instant Minimize Reclamation**: When the native window is minimized, the Rust backend invokes `SetProcessWorkingSetSize(GetCurrentProcess(), usize::MAX, usize::MAX)`, prompting the OS to flush unreferenced working set pages to the standby pool.
 2. **Debounced 5-Second Idle Reclamation**: When the application loses focus or transitions to the background, the platform adapter starts a 5-second debounce timer before calling memory trimming. If you Alt-Tab back or glance at the app before 5 seconds elapse, the timer cancels immediately, completely preventing memory paging churn.

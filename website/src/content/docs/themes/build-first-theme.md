@@ -62,22 +62,22 @@ Create `manifest.json` inside your theme folder:
 }
 ```
 
-### Lighting Mode Declarations (`modeSupport`)
+### Supported Theme Modes (`modeSupport`)
 
-Noether's lighting mode engine decouples lighting mode from theme identity. Declare your theme's capabilities via `modeSupport`:
-- `"both"`: Your theme provides tailored palettes for both Dark and Light environments. Baseline tokens in `variables` define dark mode values, while `modes.light` defines overrides merged dynamically when light mode is active.
-- `"dark-only"`: Your theme is strictly optimized for dark environments.
-- `"light-only"`: Your theme is strictly optimized for light porcelain environments.
+Declare which appearance modes your theme supports using `modeSupport`:
+- `"both"`: Your theme provides palettes for both Dark and Light modes. Base variables in `variables` define dark mode colors, while `modes.light` defines overrides applied when light mode is selected.
+- `"dark-only"`: Your theme is designed specifically for dark environments.
+- `"light-only"`: Your theme is designed specifically for light environments.
 
 
-## 3. Orthogonal Lighting Modes & Dynamic Derivation
+## 3. Dark and Light Theme Modes
 
 ---
 
-In Noether, theme lighting mode (`themeMode: 'system' | 'dark' | 'light'`) is completely orthogonal to theme selection:
-- Users can switch between **System** (OS preference), **Dark**, and **Light** modes under **Settings > Appearance** without losing their active theme choice.
-- When `modeSupport` is `"both"`, switching to Light mode dynamically merges `modes.light` overrides via `resolveThemeTokens()`.
-- Interactive surface tokens (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`) are derived automatically across dark and light modes, guaranteeing contrast compliance even if you omit explicit overrides.
+In Noether, theme selection and dark/light mode work together cleanly:
+- Users can switch between **System** (follows your OS), **Dark**, and **Light** modes under **Settings > Appearance** without losing their active theme choice.
+- When `modeSupport` is `"both"`, switching to Light mode automatically applies your `modes.light` overrides.
+- Surface and button colors (`--noether-btn-hover-bg`, `--noether-btn-active-bg`, `--noether-bg-card`, `--noether-bg-popover`) adapt automatically between dark and light modes, maintaining readable contrast even if you do not customize every single token.
 
 
 ## 4. Writing Theme CSS (`styles.css`)

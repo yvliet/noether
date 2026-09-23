@@ -2,11 +2,11 @@
 
 Noether combines the permanence of plain CommonMark files on your hard drive with the speed of an embedded relational database. Plain Markdown files act as the single ground truth, while an embedded native SQLite engine accelerates search, backlinks, and graph traversals.
 
-## 1. The 1,000-Note Performance Wall
+## 1. Scaling Beyond Thousands of Notes
 
 ---
 
-If you build a note-taking app purely on top of plain Markdown files, you run directly into a performance wall once a vault grows past a few thousand notes:
+If you build a note-taking app purely on top of plain Markdown files, you run into performance limits once a vault grows past a few thousand notes:
 
 - Resolving backlinks requires scanning every file on disk to find incoming `[[Wikilinks]]`. On a 5,000-note vault, that means reading gigabytes of text off disk on every document open.
 - Graph view rendering requires parsing the entire vault's AST before it can calculate even a single force-directed physics edge.
@@ -45,7 +45,7 @@ If `.noether/noether.sqlite` is ever deleted, corrupted, or wiped, Noether autom
                         (Internal Write Filtering)
 ```
 
-## 2. The 3-Tier Save Lifecycle
+## 2. Save Lifecycle
 
 ---
 

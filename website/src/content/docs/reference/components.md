@@ -1,6 +1,6 @@
 # Noether UI Components
 
-Noether provides a suite of native UI primitives and setting builders directly via the Noether Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components use Noether's design tokens and are designed to feel like native desktop controls: clean, tactile, and responding instantly to clicks and keyboard navigation without cosmetic animation delays.
+Noether provides a suite of native UI primitives and setting builders directly via the Noether Extension SDK (`src/sdk/index.ts` and `src/components/ui/`). All components use Noether's design tokens and are designed to feel like native desktop controls: clean and responding instantly to clicks and keyboard navigation without cosmetic animation delays.
 
 Extension authors can use these components to build custom settings tabs, modal dialogs, status bar widgets, and workspace panels that match the host application styling.
 
@@ -374,13 +374,13 @@ export const CustomAnalyticsView: React.FC = () => {
 };
 ```
 
-### Architectural Features
+### Features
 
 - **Active Tab Cutout Passthrough**: In Noether's tabbed workspace, tabs feature curved wing cutouts. `PageView` renders with `data-main="true"` and `bg-[var(--noether-bg-tab-active,var(--noether-bg-main))]` so the active tab visually merges into the page content without visual breaks.
 - **Floating Sticky Subheader**: Positions the subheader floating at `top: var(--noether-header-offset, 0px)` with navigation history buttons (back/forward), icon, title, options dropdown, and custom action slots.
 - **Dynamic Scroll Transparency**: When the user scrolls down, the subheader transitions its background to transparent and adds subtle text and icon drop-shadows, maintaining contrast above scrolling text while maximizing visible workspace area.
 - **Scrollbar Offset**: Applies `.scrollbar-track-offset-subheader` so the native scrollbar track begins neatly below the floating subheader rather than clashing against subheader buttons.
-- **Spatial / Non-Scrollable Modes**: Passing `scrollable={false}` disables internal scrolling for canvas, graph, or infinite-pan interfaces.
+- **Non-Scrollable Mode**: Setting `scrollable={false}` disables scrolling for canvas or graph interfaces.
 
 ### Props Reference
 
@@ -467,11 +467,11 @@ export const CustomSidebarView: React.FC = () => {
 };
 ```
 
-### Architectural Alignment Invariant
+### Layout and Sizing Rules
 
-- **Baseline Y-Coordinate Synchronization**: The top icon in the Action Rail / Ribbon aligns at `y = 49px` (`pt-[41px]` header padding + `pt-2` inner container padding). `SidebarActionHeader` applies `h-9 mt-1` (36px height + 4px top margin + 4px inner button offset = `y = 49px`). This prevents awkward vertical staggering when glancing across the top of the sidebar and ribbon.
+- **Header Alignment**: The top icon in the Action Rail / Ribbon aligns at `y = 49px` (`pt-[41px]` header padding + `pt-2` inner container padding). `SidebarActionHeader` applies `h-9 mt-1` (36px height + 4px top margin + 4px inner button offset = `y = 49px`). This prevents awkward vertical staggering between the sidebar header and ribbon.
 - **Button Sizing & Density**: `SidebarActionButton` and `CollapseAllButton` render at `w-7 h-7 rounded-md` (28×28px) with `16px` icon size and `gap-0.5` (2px) horizontal spacing, matching the dock control cluster and window header tools.
-- **Instant Responsiveness**: Micro-interaction hover states and active toggles engage immediately without artificial transition delays, preserving the snappy feel of a native desktop utility.
+- **Instant Responsiveness**: Hover states and active toggles engage immediately without animation delays, preserving the snappy feel of a native desktop utility.
 
 ### Props Reference
 

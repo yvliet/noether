@@ -64,7 +64,7 @@ The `icon` property is fully dynamic and manifest-driven. Noether automatically 
   ```
 - **Solid Fills**: Set `"type": "solid"` with `backgroundColor` for a flat background.
 - **Automatic Fallback Gradients**: If colors are omitted entirely (e.g., `"icon": "clock-01"`), Noether deterministically hashes the extension ID to assign a consistent, vibrant gradient from its curated palette.
-- **SVGs & Vector Marks**: Raw SVG strings and custom vector marks are rendered cleanly inside the tactile squircle. Emojis are strictly disallowed as extension icons.
+- **SVGs & Vector Marks**: Raw SVG strings and custom vector marks are rendered cleanly inside the squircle icon container. Emojis are strictly disallowed as extension icons.
 
 
 ## 3. Manifest JSON Schema
