@@ -55,6 +55,6 @@ While the centralized marketplace registry is in development:
 
 1. Push your theme repository to GitHub.
 2. Tag your repository with the topics `noether-theme` and `noether-notes`.
-3. Share your theme in the [Noether GitHub Discussions Showcase](https://github.com/yvliet/Noether/discussions) with a screenshot and installation steps.
+3. Share your theme in the [Noether GitHub Discussions Showcase](https://github.com/yvliet/noether/discussions) with a screenshot and installation steps.
 
 To learn more about developer standards, read [[Developer Policies & Guidelines]].

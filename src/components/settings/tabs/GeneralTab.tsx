@@ -48,7 +48,7 @@ export const GeneralTab: React.FC = React.memo(() => {
             <div className="flex flex-col">
               <span className="text-xs text-[#888]">Installer version: {APP_VERSION}</span>
               <a
-                href="https://github.com/yvliet/Noether/releases"
+                href="https://github.com/yvliet/noether/releases"
                 target="_blank"
                 rel="noreferrer"
                 className="text-xs text-[#38bdf8] hover:underline mt-0.5 inline-block w-fit"

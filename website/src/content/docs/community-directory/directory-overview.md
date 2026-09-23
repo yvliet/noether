@@ -47,4 +47,4 @@ My-Vault/
 - To style custom themes, follow [[Build Your First Theme]].
 - To publish your extension to the Turso registry, follow [[Publishing Extensions & Marketplace Roadmap]].
 - Review privacy and performance standards in [[Developer Policies & Guidelines]].
-- Share your extensions and discuss new APIs with me and fellow developers on [GitHub Discussions](https://github.com/yvliet/Noether/discussions).
+- Share your extensions and discuss new APIs with me and fellow developers on [GitHub Discussions](https://github.com/yvliet/noether/discussions).

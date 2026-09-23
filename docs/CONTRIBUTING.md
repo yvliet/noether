@@ -20,7 +20,7 @@ Here's what you need to build and run Noether locally:
 Clone the repo and install dependencies:
 
 ```bash
-git clone https://github.com/yvliet/Noether.git
+git clone https://github.com/yvliet/noether.git
 cd noether
 npm install
 ```

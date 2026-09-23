@@ -59,7 +59,7 @@ const RESOURCES: ResourceItem[] = [
     title: 'GitHub repository',
     description: 'Browse source code, report issues, contribute features, and track releases.',
     buttonLabel: 'Visit',
-    url: 'https://github.com/yvliet/Noether',
+    url: 'https://github.com/yvliet/noether',
   },
   {
     id: 'discord',

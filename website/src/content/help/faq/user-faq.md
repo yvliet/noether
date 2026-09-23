@@ -124,7 +124,7 @@ When you run Noether, it runs entirely on your local machine. The only network c
 
 Noether's extension catalog is actively growing, and I am porting popular tools and plugins to native Noether community extensions.
 
-If there is a specific workflow or plugin you depend on that is not yet available in Noether, reach out directly on Discord: **[@yvliet](https://discord.com/users/1271415962909933680)**. Share what features you rely on, and I will see if I can build a native Noether extension for you. You can also file bug reports and feature requests on [GitHub Issues](https://github.com/yvliet/Noether/issues).
+If there is a specific workflow or plugin you depend on that is not yet available in Noether, reach out directly on Discord: **[@yvliet](https://discord.com/users/1271415962909933680)**. Share what features you rely on, and I will see if I can build a native Noether extension for you. You can also file bug reports and feature requests on [GitHub Issues](https://github.com/yvliet/noether/issues).
 
 </details>
 

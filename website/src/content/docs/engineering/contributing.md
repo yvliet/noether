@@ -17,8 +17,8 @@ Clone the repository and install all dependencies:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yvliet/Noether.git
-cd Noether
+git clone https://github.com/yvliet/noether.git
+cd noether
 
 # Install frontend dependencies
 npm install
@@ -113,3 +113,11 @@ npm run build
 3. Format clean commit messages using Conventional Commits: `type(scope): subject` (e.g. `feat(editor): optimize katex formula memoization`).
 4. Push your branch to your fork and open a Pull Request against `main`.
 5. Reach out on Discord at **[@yvliet](https://discord.com/users/1271415962909933680)** if you'd like to discuss features or get early feedback!
+
+## 6. Contributing with AI Coding Agents
+---
+
+If you contribute using AI coding assistants (such as Claude Code, Cursor, OpenAI Codex, Google Antigravity, Windsurf, Roo Code, Cline, or Aider), Noether provides an authoritative [`AGENTS.md`](https://github.com/yvliet/noether/blob/main/AGENTS.md) in the repository root.
+
+Most modern AI coding harnesses discover and read `AGENTS.md` automatically when opening the workspace, ensuring AI-assisted contributions adhere to our architectural isolation boundaries, instant UI responsiveness standards, and verification quality gates.
+

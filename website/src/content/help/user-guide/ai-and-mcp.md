@@ -1,6 +1,6 @@
 # AI Assistants & MCP
 
-Connect external AI assistants like Claude Desktop, Cursor, Windsurf, Google Antigravity, or Cline directly to your local notes using the Model Context Protocol (MCP).
+Connect external AI assistants like Claude Desktop, Cursor, OpenAI Codex, Windsurf, Google Antigravity, or Roo Code directly to your local notes using the Model Context Protocol (MCP).
 
 ## 1. What is Model Context Protocol (MCP)?
 ---
@@ -87,6 +87,29 @@ claude mcp add noether node /path/to/noether/bin/noether-mcp-server.cjs
 ```
 
 5. Click the refresh button in Cursor's MCP panel. The green indicator confirms Noether tools are active.
+
+</details>
+
+<details>
+<summary><b>OpenAI Codex CLI</b></summary>
+
+OpenAI's [Codex CLI](https://github.com/openai/codex) connects directly to Noether's MCP server for terminal pair programming workflows.
+
+**Setup via CLI**:
+```bash
+codex mcp add noether --command node --args /path/to/noether/bin/noether-mcp-server.cjs
+```
+
+**Setup via Config File**:
+Add the `noether` server block to your Codex configuration file (`~/.codex/config.toml`):
+
+```toml
+[mcp_servers.noether]
+command = "node"
+args = ["/path/to/noether/bin/noether-mcp-server.cjs"]
+```
+
+Restart or start a new Codex session to use note search, backlink queries, and task tools.
 
 </details>
 

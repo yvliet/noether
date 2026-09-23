@@ -65,7 +65,7 @@ sudo pacman -S webkit2gtk-4.1 openssl gtk3
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yvliet/Noether.git
+git clone https://github.com/yvliet/noether.git
 cd noether
 
 # 2. Install dependencies

@@ -10,7 +10,7 @@ Noether provides a dedicated standalone stdio server script (`bin/noether-mcp-se
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                 AI Assistants / External Clients            │
-│  Claude Desktop • Claude Code • Cursor • Antigravity • Cline│
+│  Claude Desktop • Claude Code • Cursor • Codex • Antigravity│
 └──────────────────────────────┬──────────────────────────────┘
                                │ JSON-RPC 2.0 over stdio
                                ▼

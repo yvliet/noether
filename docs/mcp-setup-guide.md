@@ -86,6 +86,21 @@ Add to `.cursor/mcp.json` in your project or home directory:
 }
 ```
 
+### OpenAI Codex CLI
+
+Add to `~/.codex/config.toml`:
+
+```toml
+[mcp_servers.noether]
+command = "node"
+args = ["<path-to-noether>/bin/noether-mcp-server.cjs"]
+```
+
+Or add via CLI:
+```bash
+codex mcp add noether --command node --args <path-to-noether>/bin/noether-mcp-server.cjs
+```
+
 ### Antigravity & Agent CLI
 
 Noether tools are auto-discovered when the MCP server is configured in your agent workspace settings.

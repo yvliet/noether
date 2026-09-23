@@ -62,7 +62,7 @@ I wanted a note-taking app that feels like a native desktop utility: fast, light
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yvliet/Noether.git
+git clone https://github.com/yvliet/noether.git
 cd noether
 
 # 2. Install dependencies

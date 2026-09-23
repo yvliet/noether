@@ -31,6 +31,6 @@ Noether is engineered around four core principles:
 
 Noether is fully open source under the GPLv3 license:
 
-- **GitHub Repository**: [github.com/yvliet/Noether](https://github.com/yvliet/Noether)
-- **Issue Tracker**: [GitHub Issues](https://github.com/yvliet/Noether/issues)
+- **GitHub Repository**: [github.com/yvliet/noether](https://github.com/yvliet/noether)
+- **Issue Tracker**: [GitHub Issues](https://github.com/yvliet/noether/issues)
 - **Discord Community**: Connect directly with **[@yvliet](https://discord.com/users/1271415962909933680)** on Discord for architectural discussions and extension development.
