@@ -737,13 +737,11 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                         <CommunityExtensionsTab onNavigateTab={handleNavigateTab} onClose={handleClose} />
                       </>
                     ) : (
-                      <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl p-8 text-center mt-4 flex flex-col items-center justify-center">
-                        <div className="w-10 h-10 rounded-xl bg-[var(--noether-bg-card-hover)] flex items-center justify-center text-[var(--noether-text-muted)] mb-3">
-                          <Search01Icon size={20} />
-                        </div>
-                        <h4 className="text-sm font-semibold text-[var(--noether-text-primary)] mb-1">No settings found</h4>
-                        <p className="text-xs text-[var(--noether-text-muted)] max-w-sm leading-relaxed">
-                          No settings matching &ldquo;<span className="text-[var(--noether-accent)]">{searchQuery}</span>&rdquo; were found.
+                      <div className="text-center py-16 flex flex-col items-center justify-center select-none gap-2 text-[#666] text-xs">
+                        <Search01Icon size={32} className="opacity-40 mb-1" />
+                        <span className="text-[13px] text-[#888] font-normal">No settings found</span>
+                        <p className="text-xs text-[#666] max-w-sm leading-relaxed">
+                          No settings matching &ldquo;<span className="text-[#888]">{searchQuery}</span>&rdquo; were found.
                         </p>
                       </div>
                     )}
@@ -907,16 +905,18 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
 
                           {/* Extension Setting Content */}
                           {!isEnabled ? (
-                            <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl p-8 flex flex-col items-center justify-center text-center gap-3">
-                              <span className="text-xs text-[var(--noether-text-muted)]">
-                                {tabName} is currently disabled.
-                              </span>
+                            <div className="py-12 flex flex-col items-center justify-center text-center gap-2 text-[#666] text-xs select-none">
+                              <PuzzleIcon size={36} className="opacity-40 mb-1" />
+                              <span className="text-[13px] text-[#888] font-normal">{tabName} is disabled</span>
+                              <p className="text-xs text-[#666] max-w-sm leading-relaxed mb-1">
+                                Enable this extension to configure its settings.
+                              </p>
                               <button
                                 type="button"
                                 onClick={async () => {
                                   await app.extensions.enableExtension(extId);
                                 }}
-                                className="noether-btn noether-btn-primary"
+                                className="noether-btn noether-btn-primary text-xs cursor-pointer"
                               >
                                 Enable {tabName}
                               </button>
@@ -924,9 +924,9 @@ export const SettingsWindowContent: React.FC<SettingsWindowContentProps> = React
                           ) : currentTab?.render ? (
                             currentTab.render()
                           ) : (
-                            <div className="bg-[var(--noether-bg-card,#202020)] border border-[var(--noether-border-base,#2a2a2a)] rounded-xl p-5 flex flex-col gap-2">
-                              <h4 className="text-sm font-semibold text-[var(--noether-text-primary)]">{tabName}</h4>
-                              <p className="text-xs text-[var(--noether-text-muted)] leading-relaxed">
+                            <div className="py-8 flex flex-col items-center justify-center text-center gap-2 text-[#666] text-xs select-none">
+                              <span className="text-[13px] text-[#888] font-normal">{tabName}</span>
+                              <p className="text-xs text-[#666] max-w-sm leading-relaxed">
                                 {manifest?.description || `${tabName} is enabled and active.`}
                               </p>
                             </div>

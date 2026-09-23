@@ -314,14 +314,12 @@ export const MarketplaceView: React.FC = () => {
 
           {/* 2-Column Extension Cards Grid matching page width */}
           {extensions.length === 0 ? (
-            <div className="text-center py-20 flex flex-col items-center justify-center max-w-sm mx-auto">
-              <div className="w-12 h-12 rounded-lg bg-[#202020] border border-[#2a2a2a] flex items-center justify-center mb-3 text-[var(--noether-accent,#eb584d)]">
-                <Store01Icon size={24} />
-              </div>
-              <h3 className="text-sm font-semibold text-white mb-1.5">
-                {isOffline ? 'You Are Currently Offline' : 'No Community Extensions Yet'}
-              </h3>
-              <p className="text-xs text-[#888] leading-relaxed mb-4 text-center">
+            <div className="text-center py-20 flex flex-col items-center justify-center max-w-sm mx-auto select-none gap-2 text-[#666] text-xs">
+              <Store01Icon size={36} className="opacity-40 mb-1" />
+              <span className="text-[13px] text-[#888] font-normal">
+                {isOffline ? 'You are currently offline' : 'No community extensions yet'}
+              </span>
+              <p className="text-xs text-[#666] leading-relaxed mb-2 text-center">
                 {isOffline
                   ? 'Connect to the internet to discover, explore, and install community extensions from the registry.'
                   : 'The Noether community extensions registry is open with a clean slate. Publish or sync extensions from the registry.'}
@@ -335,8 +333,10 @@ export const MarketplaceView: React.FC = () => {
               </button>
             </div>
           ) : filteredExtensions.length === 0 ? (
-            <div className="text-center py-16 flex flex-col items-center justify-center">
-              <p className="text-xs text-[#777] mb-3">
+            <div className="text-center py-16 flex flex-col items-center justify-center select-none gap-2 text-[#666] text-xs">
+              <Store01Icon size={36} className="opacity-40 mb-1" />
+              <span className="text-[13px] text-[#888] font-normal">No matching extensions</span>
+              <p className="text-xs text-[#666] mb-2">
                 No community extensions match your filter.
               </p>
               <button
@@ -344,7 +344,7 @@ export const MarketplaceView: React.FC = () => {
                   setSearchQuery('');
                   setSelectedCategory('All');
                 }}
-                className="noether-btn cursor-pointer"
+                className="noether-btn text-xs cursor-pointer"
               >
                 Clear filters
               </button>
