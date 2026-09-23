@@ -9,9 +9,11 @@
 [![Frontend](https://img.shields.io/badge/Frontend-React%2019%20%2B%20TypeScript%205.7-20232a.svg?logo=react&logoColor=white)](package.json)
 [![Help Center](https://img.shields.io/badge/Help_Center-User_Guide-eb584d.svg?logo=bookstack&logoColor=white)](https://yvliet.github.io/noether/#help/home)
 [![Developer Docs](https://img.shields.io/badge/Docs-Architecture_%26_SDK-38bdf8.svg?logo=rust&logoColor=white)](https://yvliet.github.io/noether/#docs/home)
+[![Discord](https://img.shields.io/badge/Discord-Community-5865F2.svg?logo=discord&logoColor=white)](https://dsc.gg/noether)
 
 [Help Center](https://yvliet.github.io/noether/#help/home) •
 [Developer Docs](https://yvliet.github.io/noether/#docs/home) •
+[Discord](https://dsc.gg/noether) •
 [Availability](#1-availability) •
 [Why Noether?](#2-why-noether) •
 [Features](#3-key-capabilities) •

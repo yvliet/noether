@@ -30,4 +30,4 @@ Noether includes native support for the Model Context Protocol (MCP). In your ex
 ## 6. Where can I ask technical questions or report bugs?
 ---
 
-Join technical discussions and report issues on the official [Noether GitHub Repository](https://github.com/yvliet/noether/discussions).
+Join technical discussions in the [Noether Discord Server](https://dsc.gg/noether) and report bugs on [GitHub Issues](https://github.com/yvliet/noether/issues).

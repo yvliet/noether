@@ -112,7 +112,7 @@ npm run build
 2. Commit your changes locally.
 3. Format clean commit messages using Conventional Commits: `type(scope): subject` (e.g. `feat(editor): optimize katex formula memoization`).
 4. Push your branch to your fork and open a Pull Request against `main`.
-5. Reach out on Discord at **[@yvliet](https://discord.com/users/1271415962909933680)** if you'd like to discuss features or get early feedback!
+5. Join the [Noether Discord Server](https://dsc.gg/noether) if you'd like to discuss features or get early feedback!
 
 ## 6. Contributing with AI Coding Agents
 ---

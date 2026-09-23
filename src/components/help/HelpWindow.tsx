@@ -67,7 +67,7 @@ const RESOURCES: ResourceItem[] = [
     title: 'Discord server',
     description: 'Join the Noether community on Discord to chat, get help, and share extensions.',
     buttonLabel: 'Join',
-    url: 'https://discord.gg/hJr5H4k8vW',
+    url: 'https://dsc.gg/noether',
   },
 ];
 
